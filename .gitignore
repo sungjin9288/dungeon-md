@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.keystore
+*.jks
+android/app/release/
+android/.gradle/
+android/build/
+android/app/build/
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+.DS_Store

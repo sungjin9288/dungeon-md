@@ -1,0 +1,188 @@
+import Phaser from 'phaser';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { loadGameState } from '../data/wisdom';
+import type { InvasionConfig } from '../data/quests';
+import type { InvaderType } from '../data/invaders';
+import { MONSTER_DEFS } from '../data/monsters';
+import { getMonsterAtk } from '../data/barracks';
+import { MONSTER_EMOJI, MONSTER_NAME } from '../data/monsterDisplay';
+
+// Map invasion invader type names → DungeonScene InvaderType
+const INVASION_TYPE_MAP: Record<string, InvaderType> = {
+  peasant_soldier: 'peasant',
+  shield_knight:   'knight',
+  shadow_thief:    'shadow_ninja',
+  field_medic:     'shaman',
+};
+
+const ENEMY_EMOJI: Record<string, string> = {
+  peasant_soldier: '👤', shield_knight:  '🛡️',
+  shadow_thief:    '🗡️', field_medic:   '💊',
+};
+const ENEMY_NAME: Record<string, string> = {
+  peasant_soldier: '농민병사',  shield_knight: '방패기사',
+  shadow_thief:    '그림자도적', field_medic:   '야전 의무병',
+};
+
+export class PreBattleScene extends Phaser.Scene {
+  constructor() { super({ key: 'PreBattleScene' }); }
+
+  create(): void {
+    const cfg     = this.registry.get('invasionConfig') as InvasionConfig | undefined;
+    const questId = this.registry.get('questId')        as string        | undefined;
+    const gs      = loadGameState();
+
+    // ─ Dark background ───────────────────────────────────────────────────────
+    const bg = this.add.graphics();
+    bg.fillStyle(0x080400, 1);
+    bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    bg.lineStyle(1, 0x1a0f00, 0.5);
+    for (let y = 0; y < CANVAS_HEIGHT; y += 24) bg.lineBetween(0, y, CANVAS_WIDTH, y);
+    for (let x = 0; x < CANVAS_WIDTH; x += 48) bg.lineBetween(x, 0, x, CANVAS_HEIGHT);
+
+    // ─ Back button ───────────────────────────────────────────────────────────
+    const backBtn = this.add.text(14, 14, '← 취소', {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#664422',
+    }).setInteractive();
+    backBtn.on('pointerdown', () => this.scene.start('DungeonHomeScene'));
+
+    // ─ TOP: Invasion Info ─────────────────────────────────────────────────────
+    const iY = 44, iH = cfg ? 60 + (cfg.waves[0]?.invaders.length ?? 0) * 22 + (cfg.waves.length > 1 ? 22 : 0) + 38 : 120;
+    const ig = this.add.graphics();
+    ig.fillStyle(0x1a0800, 1);
+    ig.fillRoundedRect(12, iY, CANVAS_WIDTH - 24, iH, 8);
+    ig.lineStyle(2, 0x8b0000, 0.8);
+    ig.strokeRoundedRect(12, iY, CANVAS_WIDTH - 24, iH, 8);
+    ig.lineStyle(1, 0x4a2200, 0.5);
+    ig.lineBetween(24, iY + 66, CANVAS_WIDTH - 24, iY + 66);
+
+    this.add.text(CANVAS_WIDTH / 2, iY + 18, `⚔️  ${cfg?.name ?? '침략'}`, {
+      fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ff5555', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#886644',
+    }).setOrigin(0.5);
+
+    this.add.text(22, iY + 76, '예상 적군:', {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#c8921a',
+    });
+
+    let ey = iY + 96;
+    const wave1 = cfg?.waves?.[0]?.invaders ?? [];
+    wave1.forEach(({ type, count }) => {
+      this.add.text(30, ey, `${ENEMY_EMOJI[type] ?? '👥'}  ${ENEMY_NAME[type] ?? type}  ×${count}`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e6c8',
+      });
+      ey += 22;
+    });
+    if ((cfg?.waves?.length ?? 0) > 1) {
+      this.add.text(30, ey, `+ ${cfg!.waves.length - 1}개 추가 웨이브`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
+      });
+      ey += 20;
+    }
+    this.add.text(CANVAS_WIDTH / 2, ey + 10, '⚠️  이 침략은 건너뛸 수 없습니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ff6655',
+    }).setOrigin(0.5);
+
+    // ─ MIDDLE: Deployed Defenders ─────────────────────────────────────────────
+    const dY = iY + iH + 16, dH = 180;
+    const dg = this.add.graphics();
+    dg.fillStyle(0x0f0a04, 1);
+    dg.fillRoundedRect(12, dY, CANVAS_WIDTH - 24, dH, 8);
+    dg.lineStyle(1.5, 0xc8921a, 0.4);
+    dg.strokeRoundedRect(12, dY, CANVAS_WIDTH - 24, dH, 8);
+    dg.lineStyle(1, 0x3a2810, 0.5);
+    dg.lineBetween(24, dY + 34, CANVAS_WIDTH - 24, dY + 34);
+
+    this.add.text(CANVAS_WIDTH / 2, dY + 16, '배치된 수호자', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8921a', fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    const SLOTS = 3;
+    const slotW = Math.floor((CANVAS_WIDTH - 48) / SLOTS);
+    for (let i = 0; i < SLOTS; i++) {
+      const sx = 24 + i * slotW;
+      const sy = dY + 44;
+      const mon = gs.ownedMonsters[i];
+
+      dg.fillStyle(mon ? 0x2a1a08 : 0x0f0a04, 1);
+      dg.fillRoundedRect(sx, sy, slotW - 6, 116, 6);
+      dg.lineStyle(1, mon ? 0x664400 : 0x2a1a00, 0.5);
+      dg.strokeRoundedRect(sx, sy, slotW - 6, 116, 6);
+
+      if (mon) {
+        this.add.text(sx + (slotW - 6) / 2, sy + 28, MONSTER_EMOJI[mon.id] ?? '👾', {
+          fontFamily: 'sans-serif', fontSize: '26px',
+        }).setOrigin(0.5);
+        this.add.text(sx + (slotW - 6) / 2, sy + 64, MONSTER_NAME[mon.id] ?? mon.id, {
+          fontFamily: 'Georgia, serif', fontSize: '9px', color: '#f0e6c8',
+        }).setOrigin(0.5);
+        this.add.text(sx + (slotW - 6) / 2, sy + 80, `Lv.${mon.level}`, {
+          fontFamily: 'sans-serif', fontSize: '10px', color: '#c8921a',
+        }).setOrigin(0.5);
+        const monDef = MONSTER_DEFS[mon.id as keyof typeof MONSTER_DEFS];
+        const atk = monDef ? getMonsterAtk(monDef.baseDamage, mon.level, mon.spentSkills) : 100;
+        this.add.text(sx + (slotW - 6) / 2, sy + 96, `ATK: ${atk}`, {
+          fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+        }).setOrigin(0.5);
+      } else {
+        this.add.text(sx + (slotW - 6) / 2, sy + 58, '+', {
+          fontFamily: 'sans-serif', fontSize: '22px', color: '#3a2810',
+        }).setOrigin(0.5).setAlpha(0.4);
+        this.add.text(sx + (slotW - 6) / 2, sy + 88, '빈 슬롯', {
+          fontFamily: 'sans-serif', fontSize: '9px', color: '#2a1808',
+        }).setOrigin(0.5);
+      }
+    }
+
+    // ─ BOTTOM: Start Button ──────────────────────────────────────────────────
+    const startY = dY + dH + 28;
+    const startBtn = this.add.text(CANVAS_WIDTH / 2, startY, '⚔️   방어 시작', {
+      fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
+      backgroundColor: '#8b0000', padding: { x: 36, y: 14 },
+    }).setOrigin(0.5).setInteractive();
+
+    this.tweens.add({
+      targets: startBtn, alpha: { from: 0.82, to: 1.0 },
+      duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    startBtn.on('pointerdown', () => this.launchBattle(cfg, questId));
+
+    // Fade in
+    this.cameras.main.fadeIn(300, 0, 0, 0);
+  }
+
+  private launchBattle(cfg: InvasionConfig | undefined, questId: string | undefined): void {
+    if (!cfg) return;
+
+    // Convert InvasionConfig → StageConfig format that DungeonScene understands
+    const waveSpecs = cfg.waves.map(w => ({
+      wave:        w.waveNumber,
+      clearReward: 120,
+      invaders:    w.invaders.map(inv => ({
+        type:       (INVASION_TYPE_MAP[inv.type] ?? 'peasant') as InvaderType,
+        count:      inv.count,
+        spawnDelay: 2200,
+      })),
+    }));
+
+    this.registry.set('stageConfig', {
+      id:         999,
+      chapter:    1,
+      koreanName: cfg.name,
+      dungeonHp:  800,
+      startGold:  400,
+      waves:      waveSpecs,
+    });
+    this.registry.set('returnTo',  'DungeonHomeScene');
+    this.registry.set('questId',   questId ?? '');
+    this.registry.remove('invasionConfig');  // don't re-trigger on restart
+
+    this.cameras.main.fadeOut(350, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('DungeonScene');
+    });
+  }
+}

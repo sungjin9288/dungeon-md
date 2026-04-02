@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a0f00" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>던전 수호자</title>
+    <style>
+      :root {
+        --sat: env(safe-area-inset-top,    0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left,   0px);
+        --sar: env(safe-area-inset-right,  0px);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        background: #1a0f00;
+        width: 100%; height: 100%;
+        overflow: hidden;
+        /* prevent iOS rubber-band scroll */
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      canvas { display: block; touch-action: none; }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

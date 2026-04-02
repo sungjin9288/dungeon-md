@@ -1,0 +1,22 @@
+{
+  "name": "dungeon-guardian",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 8083",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 8084"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
+    "phaser": "^3.88.2",
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
+  }
+}

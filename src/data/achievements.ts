@@ -1,0 +1,634 @@
+// ─── Achievement definitions ──────────────────────────────────────────────────
+
+export type AchievementCategory =
+  | 'combat'     // kills, damage
+  | 'economy'    // gold, crystals
+  | 'build'      // rooms, upgrades
+  | 'endless'    // endless mode milestones
+  | 'mastery'    // streaks, special conditions
+  | 'collection' // codex, skins, fusion
+  | 'growth';    // DM level, progression
+
+export interface AchievementReward {
+  gems?:         number;
+  soulCrystals?: number;
+}
+
+export interface AchievementDef {
+  id:          string;
+  name:        string;          // Korean display name
+  description: string;         // Korean description
+  icon:        string;          // emoji
+  category:    AchievementCategory;
+  target:      number;          // unlock threshold
+  reward:      AchievementReward;   // always present
+  /** Map a GameState snapshot to current progress value */
+  getProgress: (ctx: AchievementContext) => number;
+}
+
+/** Subset of GameState fields needed for progress calculation */
+export interface AchievementContext {
+  totalKills:       number;
+  totalGoldEarned:  number;
+  roomsBuilt:       string[];
+  bossesKilled:     string[];
+  endlessHighScore: number;
+  consecutiveDays:  number;
+  soulCrystals:     number;
+  wisdomTree:       Record<string, number>;
+  stageProgress:    Array<{ unlocked: boolean; bestStars: number }>;
+  // Phase 4 additions
+  dmLevel:          number;
+  ownedMonsterCount: number;
+  ownedSkinCount:   number;
+  totalFusions:     number;
+  completedTribes:  number;       // tribes with 100% codex
+  totalSummons:     number;
+}
+
+export const ACHIEVEMENT_DEFS: AchievementDef[] = [
+  // ── Combat ────────────────────────────────────────────────────────────────
+  {
+    id: 'first_blood',
+    name: '첫 번째 피',
+    description: '첫 번째 침략자를 처치하세요.',
+    icon: '⚔️',
+    category: 'combat',
+    target: 1,
+    reward: { gems: 5 },
+    getProgress: ctx => ctx.totalKills,
+  },
+  {
+    id: 'slayer_100',
+    name: '백전노장',
+    description: '침략자 100명을 처치하세요.',
+    icon: '🗡️',
+    category: 'combat',
+    target: 100,
+    reward: { gems: 5, soulCrystals: 10 },
+    getProgress: ctx => ctx.totalKills,
+  },
+  {
+    id: 'slayer_500',
+    name: '정예 학살자',
+    description: '침략자 500명을 처치하세요.',
+    icon: '💀',
+    category: 'combat',
+    target: 500,
+    reward: { gems: 15, soulCrystals: 20 },
+    getProgress: ctx => ctx.totalKills,
+  },
+  {
+    id: 'slayer_1000',
+    name: '천인 학살자',
+    description: '침략자 1000명을 처치하세요.',
+    icon: '☠️',
+    category: 'combat',
+    target: 1000,
+    reward: { gems: 30, soulCrystals: 30 },
+    getProgress: ctx => ctx.totalKills,
+  },
+  {
+    id: 'slayer_5000',
+    name: '전설의 학살자',
+    description: '침략자 5000명을 처치하세요.',
+    icon: '🔱',
+    category: 'combat',
+    target: 5000,
+    reward: { gems: 80, soulCrystals: 50 },
+    getProgress: ctx => ctx.totalKills,
+  },
+  {
+    id: 'boss_slayer',
+    name: '보스 사냥꾼',
+    description: '기사 침략자를 처음 처치하세요.',
+    icon: '🛡️',
+    category: 'combat',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'knight').length,
+  },
+  {
+    id: 'shaman_bane',
+    name: '무당의 적',
+    description: '무당 침략자를 50명 처치하세요.',
+    icon: '🔮',
+    category: 'combat',
+    target: 50,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'shaman').length,
+  },
+  {
+    id: 'void_vanquisher',
+    name: '공허 정복자',
+    description: '공허 침략자를 처음 처치하세요.',
+    icon: '🌌',
+    category: 'combat',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'void').length,
+  },
+  {
+    id: 'undying_slayer',
+    name: '불사를 죽이다',
+    description: '불사 전사를 처음 처치하세요.',
+    icon: '🩸',
+    category: 'combat',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'undying').length,
+  },
+
+  // ── Economy ───────────────────────────────────────────────────────────────
+  {
+    id: 'gold_100',
+    name: '첫 수확',
+    description: '골드 100을 획득하세요.',
+    icon: '🪙',
+    category: 'economy',
+    target: 100,
+    reward: { gems: 5 },
+    getProgress: ctx => ctx.totalGoldEarned,
+  },
+  {
+    id: 'gold_1000',
+    name: '금화 수집가',
+    description: '골드 1,000을 획득하세요.',
+    icon: '💰',
+    category: 'economy',
+    target: 1000,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.totalGoldEarned,
+  },
+  {
+    id: 'gold_10000',
+    name: '황금 제왕',
+    description: '골드 10,000을 획득하세요.',
+    icon: '👑',
+    category: 'economy',
+    target: 10000,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.totalGoldEarned,
+  },
+  {
+    id: 'gold_100000',
+    name: '전설의 부자',
+    description: '골드 100,000을 획득하세요.',
+    icon: '🏆',
+    category: 'economy',
+    target: 100000,
+    reward: { gems: 50 },
+    getProgress: ctx => ctx.totalGoldEarned,
+  },
+  {
+    id: 'crystal_10',
+    name: '결정 수집가',
+    description: '영혼 수정 10개를 모으세요.',
+    icon: '💎',
+    category: 'economy',
+    target: 10,
+    reward: { soulCrystals: 20 },
+    getProgress: ctx => ctx.soulCrystals,
+  },
+  {
+    id: 'crystal_50',
+    name: '결정 마스터',
+    description: '영혼 수정 50개를 모으세요.',
+    icon: '🔷',
+    category: 'economy',
+    target: 50,
+    reward: { soulCrystals: 40 },
+    getProgress: ctx => ctx.soulCrystals,
+  },
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+  {
+    id: 'first_room',
+    name: '건축가의 첫 걸음',
+    description: '첫 번째 방을 설치하세요.',
+    icon: '🏗️',
+    category: 'build',
+    target: 1,
+    reward: { gems: 5 },
+    getProgress: ctx => ctx.roomsBuilt.length,
+  },
+  {
+    id: 'rooms_10',
+    name: '방 마스터',
+    description: '방을 총 10개 설치하세요.',
+    icon: '🏰',
+    category: 'build',
+    target: 10,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.roomsBuilt.length,
+  },
+  {
+    id: 'rooms_50',
+    name: '던전 건설자',
+    description: '방을 총 50개 설치하세요.',
+    icon: '🏯',
+    category: 'build',
+    target: 50,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.roomsBuilt.length,
+  },
+  {
+    id: 'rooms_200',
+    name: '위대한 건축가',
+    description: '방을 총 200개 설치하세요.',
+    icon: '🗼',
+    category: 'build',
+    target: 200,
+    reward: { gems: 50 },
+    getProgress: ctx => ctx.roomsBuilt.length,
+  },
+  {
+    id: 'all_rooms',
+    name: '완전한 던전',
+    description: '모든 종류의 방을 설치해보세요.',
+    icon: '📐',
+    category: 'build',
+    target: 5,    // number of distinct room types
+    reward: { gems: 15 },
+    getProgress: ctx => new Set(ctx.roomsBuilt).size,
+  },
+  {
+    id: 'wisdom_tier3',
+    name: '선조의 학생',
+    description: '선조의 지혜 분기 하나를 3단계로 올리세요.',
+    icon: '📜',
+    category: 'build',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => Object.values(ctx.wisdomTree).filter(t => t >= 3).length,
+  },
+  {
+    id: 'wisdom_maxed',
+    name: '선조의 계승자',
+    description: '선조의 지혜 분기 하나를 5단계(최대)로 올리세요.',
+    icon: '🌟',
+    category: 'build',
+    target: 1,
+    reward: { gems: 30 },
+    getProgress: ctx => Object.values(ctx.wisdomTree).filter(t => t >= 5).length,
+  },
+  {
+    id: 'chapter1_3star',
+    name: '퍼펙트 클리어',
+    description: '스테이지 1을 별 3개로 클리어하세요.',
+    icon: '⭐',
+    category: 'build',
+    target: 1,
+    reward: { gems: 20 },
+    getProgress: ctx => (ctx.stageProgress[0]?.bestStars === 3 ? 1 : 0),
+  },
+  {
+    id: 'star_collector',
+    name: '별 수집가',
+    description: '스테이지 30개를 별 3개로 클리어하세요.',
+    icon: '🌟',
+    category: 'build',
+    target: 30,
+    reward: { gems: 50 },
+    getProgress: ctx => Math.min(ctx.stageProgress.filter(s => s.bestStars === 3).length, 30),
+  },
+  {
+    id: 'all_3star',
+    name: '완벽한 정복자',
+    description: '모든 62개 스테이지를 별 3개로 클리어하세요.',
+    icon: '🌠',
+    category: 'build',
+    target: 62,
+    reward: { gems: 200 },
+    getProgress: ctx => ctx.stageProgress.filter(s => s.bestStars === 3).length,
+  },
+
+  // ── Endless ───────────────────────────────────────────────────────────────
+  {
+    id: 'endless_first',
+    name: '무한의 시작',
+    description: '무한 던전에 처음 입장하세요.',
+    icon: '♾️',
+    category: 'endless',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.endlessHighScore > 0 ? 1 : 0,
+  },
+  {
+    id: 'endless_wave10',
+    name: '첫 번째 고비',
+    description: '무한 던전 10웨이브를 달성하세요.',
+    icon: '🌊',
+    category: 'endless',
+    target: 10,
+    reward: { gems: 15 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 10),
+  },
+  {
+    id: 'endless_wave20',
+    name: '미니 보스 격파',
+    description: '무한 던전 20웨이브를 달성하세요.',
+    icon: '👹',
+    category: 'endless',
+    target: 20,
+    reward: { gems: 20 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 20),
+  },
+  {
+    id: 'endless_wave30',
+    name: '엘리트 돌파자',
+    description: '무한 던전 30웨이브를 달성하세요.',
+    icon: '🔥',
+    category: 'endless',
+    target: 30,
+    reward: { gems: 30 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 30),
+  },
+  {
+    id: 'endless_wave50',
+    name: '반세기 생존자',
+    description: '무한 던전 50웨이브를 달성하세요.',
+    icon: '💫',
+    category: 'endless',
+    target: 50,
+    reward: { gems: 50 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 50),
+  },
+  {
+    id: 'endless_wave100',
+    name: '백 웨이브의 전설',
+    description: '무한 던전 100웨이브를 달성하세요.',
+    icon: '🏅',
+    category: 'endless',
+    target: 100,
+    reward: { gems: 100 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 100),
+  },
+
+  // ── Mastery ───────────────────────────────────────────────────────────────
+  {
+    id: 'streak_3',
+    name: '꾸준한 수호자',
+    description: '3일 연속으로 플레이하세요.',
+    icon: '📅',
+    category: 'mastery',
+    target: 3,
+    reward: { gems: 10 },
+    getProgress: ctx => Math.min(ctx.consecutiveDays, 3),
+  },
+  {
+    id: 'streak_7',
+    name: '일주일의 헌신',
+    description: '7일 연속으로 플레이하세요.',
+    icon: '🗓️',
+    category: 'mastery',
+    target: 7,
+    reward: { gems: 20 },
+    getProgress: ctx => Math.min(ctx.consecutiveDays, 7),
+  },
+  {
+    id: 'streak_30',
+    name: '한 달의 수호자',
+    description: '30일 연속으로 플레이하세요.',
+    icon: '🌙',
+    category: 'mastery',
+    target: 30,
+    reward: { gems: 50 },
+    getProgress: ctx => Math.min(ctx.consecutiveDays, 30),
+  },
+  {
+    id: 'all_wisdom',
+    name: '선조의 완성',
+    description: '모든 선조의 지혜 분기를 최소 1단계 업그레이드하세요.',
+    icon: '🌿',
+    category: 'mastery',
+    target: 7,
+    reward: { gems: 30 },
+    getProgress: ctx => Object.values(ctx.wisdomTree).filter(t => t >= 1).length,
+  },
+  {
+    id: 'kill_all_types',
+    name: '다양한 적의 정복자',
+    description: '모든 종류의 침략자를 처치하세요.',
+    icon: '🎯',
+    category: 'mastery',
+    target: 6,
+    reward: { gems: 20 },
+    getProgress: ctx => new Set(ctx.bossesKilled).size,
+  },
+  // ── Collection ─────────────────────────────────────────────────────────────
+  {
+    id: 'codex_10',
+    name: '초보 수집가',
+    description: '몬스터 10종을 수집하세요.',
+    icon: '📖',
+    category: 'collection',
+    target: 10,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.ownedMonsterCount,
+  },
+  {
+    id: 'codex_50',
+    name: '열정 수집가',
+    description: '몬스터 50종을 수집하세요.',
+    icon: '📚',
+    category: 'collection',
+    target: 50,
+    reward: { gems: 30 },
+    getProgress: ctx => ctx.ownedMonsterCount,
+  },
+  {
+    id: 'codex_100',
+    name: '전설의 수집가',
+    description: '몬스터 100종을 수집하세요.',
+    icon: '🏛️',
+    category: 'collection',
+    target: 100,
+    reward: { gems: 80 },
+    getProgress: ctx => ctx.ownedMonsterCount,
+  },
+  {
+    id: 'tribe_complete_1',
+    name: '부족 마스터',
+    description: '하나의 부족 도감을 완성하세요.',
+    icon: '🎖️',
+    category: 'collection',
+    target: 1,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.completedTribes,
+  },
+  {
+    id: 'tribe_complete_all',
+    name: '팔족 정복자',
+    description: '모든 8부족 도감을 완성하세요.',
+    icon: '👑',
+    category: 'collection',
+    target: 8,
+    reward: { gems: 100 },
+    getProgress: ctx => ctx.completedTribes,
+  },
+  {
+    id: 'skin_first',
+    name: '패셔니스타',
+    description: '첫 번째 스킨을 획득하세요.',
+    icon: '🎨',
+    category: 'collection',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.ownedSkinCount,
+  },
+  {
+    id: 'skin_5',
+    name: '스킨 수집가',
+    description: '스킨 5개를 획득하세요.',
+    icon: '🎭',
+    category: 'collection',
+    target: 5,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.ownedSkinCount,
+  },
+  {
+    id: 'skin_all',
+    name: '스킨 마스터',
+    description: '스킨 13개를 모두 획득하세요.',
+    icon: '💎',
+    category: 'collection',
+    target: 13,
+    reward: { gems: 50 },
+    getProgress: ctx => ctx.ownedSkinCount,
+  },
+  {
+    id: 'fusion_first',
+    name: '합성 입문자',
+    description: '첫 번째 몬스터 합성을 완료하세요.',
+    icon: '🔬',
+    category: 'collection',
+    target: 1,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.totalFusions,
+  },
+  {
+    id: 'fusion_10',
+    name: '합성 전문가',
+    description: '몬스터 합성을 10회 완료하세요.',
+    icon: '⚗️',
+    category: 'collection',
+    target: 10,
+    reward: { gems: 30 },
+    getProgress: ctx => ctx.totalFusions,
+  },
+  // ── Growth ───────────────────────────────────────────────────────────────
+  {
+    id: 'dm_lv5',
+    name: '던전 견습생',
+    description: '던전 마스터 레벨 5에 도달하세요.',
+    icon: '🏰',
+    category: 'growth',
+    target: 5,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.dmLevel,
+  },
+  {
+    id: 'dm_lv10',
+    name: '던전 관리자',
+    description: '던전 마스터 레벨 10에 도달하세요.',
+    icon: '🏯',
+    category: 'growth',
+    target: 10,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.dmLevel,
+  },
+  {
+    id: 'dm_lv20',
+    name: '던전 대군주',
+    description: '던전 마스터 레벨 20에 도달하세요.',
+    icon: '⚜️',
+    category: 'growth',
+    target: 20,
+    reward: { gems: 50 },
+    getProgress: ctx => ctx.dmLevel,
+  },
+  {
+    id: 'summon_10',
+    name: '소환사 입문',
+    description: '몬스터 소환을 10회 수행하세요.',
+    icon: '🔮',
+    category: 'growth',
+    target: 10,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.totalSummons,
+  },
+  {
+    id: 'summon_50',
+    name: '대소환사',
+    description: '몬스터 소환을 50회 수행하세요.',
+    icon: '✨',
+    category: 'growth',
+    target: 50,
+    reward: { gems: 20 },
+    getProgress: ctx => ctx.totalSummons,
+  },
+  {
+    id: 'summon_100',
+    name: '전설의 소환사',
+    description: '몬스터 소환을 100회 수행하세요.',
+    icon: '🌟',
+    category: 'growth',
+    target: 100,
+    reward: { gems: 50 },
+    getProgress: ctx => ctx.totalSummons,
+  },
+  {
+    id: 'crystal_100',
+    name: '영혼 수확자',
+    description: '영혼 결정 100개를 모으세요.',
+    icon: '💠',
+    category: 'economy',
+    target: 100,
+    reward: { gems: 10 },
+    getProgress: ctx => ctx.soulCrystals,
+  },
+  {
+    id: 'crystal_500',
+    name: '영혼 대부호',
+    description: '영혼 결정 500개를 모으세요.',
+    icon: '💎',
+    category: 'economy',
+    target: 500,
+    reward: { gems: 30 },
+    getProgress: ctx => ctx.soulCrystals,
+  },
+
+  // ── Story Completion ───────────────────────────────────────────────────────
+  {
+    id: 'story_complete',
+    name: '던전의 수호자',
+    description: '모든 6개 챕터(62 스테이지)를 클리어하세요.',
+    icon: '👑',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 300 },
+    getProgress: ctx => (ctx.stageProgress[61]?.bestStars > 0 ? 1 : 0),
+  },
+];
+
+/** Look up a definition by id (returns undefined if not found) */
+export function getAchievementDef(id: string): AchievementDef | undefined {
+  return ACHIEVEMENT_DEFS.find(a => a.id === id);
+}
+
+/** Check which achievements should unlock given current context.
+ *  Returns ids of newly-unlocked achievements. */
+export function checkAchievements(
+  ctx: AchievementContext,
+  alreadyUnlocked: Record<string, { unlocked: boolean }>,
+): string[] {
+  const newlyUnlocked: string[] = [];
+  for (const def of ACHIEVEMENT_DEFS) {
+    if (alreadyUnlocked[def.id]?.unlocked) continue;
+    if (def.getProgress(ctx) >= def.target) {
+      newlyUnlocked.push(def.id);
+    }
+  }
+  return newlyUnlocked;
+}
