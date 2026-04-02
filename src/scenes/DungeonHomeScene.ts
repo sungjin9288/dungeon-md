@@ -2411,6 +2411,18 @@ export class DungeonHomeScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH - 55;
     const btnY = 140;
 
+    // Rule label mapping
+    const ELEMENT_KR: Record<string, string> = {
+      fire: '화염', frost: '빙결', lightning: '뇌전', dark: '암흑', holy: '신성',
+    };
+    const RULE_LABELS: Record<string, { text: string; color: string }> = {
+      element_restrict: { text: ELEMENT_KR[daily.elementRestrict ?? ''] ?? '속성', color: '#88ccff' },
+      gold_rush:        { text: '골드 3×',   color: '#ffdd44' },
+      speed_run:        { text: '스피드',     color: '#ff8844' },
+      boss_rush:        { text: '보스전',     color: '#ff4466' },
+    };
+    const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: '#aaaaaa' };
+
     // Daily dungeon button
     const dailyBg = this.add.graphics().setDepth(10);
     dailyBg.fillStyle(dailyDone ? 0x1a3a1a : 0x3a1a00, 0.9);
@@ -2418,11 +2430,18 @@ export class DungeonHomeScene extends Phaser.Scene {
     dailyBg.lineStyle(1.5, dailyDone ? 0x44cc44 : 0xc8921a, 0.8);
     dailyBg.strokeRoundedRect(btnX, btnY, 48, 48, 8);
 
-    this.add.text(btnX + 24, btnY + 14, dailyDone ? '✅' : '⚔️', {
-      fontFamily: 'sans-serif', fontSize: '18px',
+    this.add.text(btnX + 24, btnY + 10, dailyDone ? '✅' : '⚔️', {
+      fontFamily: 'sans-serif', fontSize: '16px',
     }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(btnX + 24, btnY + 34, '일일', {
+    // Rule sub-label (small, inside button)
+    if (!dailyDone) {
+      this.add.text(btnX + 24, btnY + 27, ruleLabel.text, {
+        fontFamily: 'sans-serif', fontSize: '7px', color: ruleLabel.color,
+      }).setOrigin(0.5).setDepth(11);
+    }
+
+    this.add.text(btnX + 24, btnY + 38, '일일', {
       fontFamily: 'sans-serif', fontSize: '8px', color: '#c8921a',
     }).setOrigin(0.5).setDepth(11);
 
@@ -2454,11 +2473,20 @@ export class DungeonHomeScene extends Phaser.Scene {
     weeklyBg.lineStyle(1.5, weeklyDone ? 0x44cc44 : 0xaa44ff, 0.8);
     weeklyBg.strokeRoundedRect(btnX, weekBtnY, 48, 48, 8);
 
-    this.add.text(btnX + 24, weekBtnY + 14, weeklyDone ? '✅' : '👑', {
-      fontFamily: 'sans-serif', fontSize: '18px',
+    this.add.text(btnX + 24, weekBtnY + 10, weeklyDone ? '✅' : '👑', {
+      fontFamily: 'sans-serif', fontSize: '16px',
     }).setOrigin(0.5).setDepth(11);
 
-    this.add.text(btnX + 24, weekBtnY + 34, '주간', {
+    // Boss name sub-label
+    if (!weeklyDone) {
+      // Truncate boss name to fit button width
+      const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
+      this.add.text(btnX + 24, weekBtnY + 27, bossShort, {
+        fontFamily: 'sans-serif', fontSize: '7px', color: '#cc99ff',
+      }).setOrigin(0.5).setDepth(11);
+    }
+
+    this.add.text(btnX + 24, weekBtnY + 38, '주간', {
       fontFamily: 'sans-serif', fontSize: '8px', color: weeklyDone ? '#44cc44' : '#aa44ff',
     }).setOrigin(0.5).setDepth(11);
 
