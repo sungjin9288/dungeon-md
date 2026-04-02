@@ -1259,10 +1259,17 @@ export const MONSTER_DEFS: Record<MonsterId, MonsterDef> = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Returns all monsters that can be placed in this room type at the given stage. */
-export function getMonstersForRoom(roomType: RoomType, unlockedStage: number): MonsterDef[] {
-  return (Object.values(MONSTER_DEFS) as MonsterDef[]).filter(
-    m => m.roomTypes.includes(roomType) && m.unlockStage <= unlockedStage,
-  );
+export function getMonstersForRoom(
+  roomType: RoomType,
+  unlockedStage: number,
+  elementFilter?: ElementId,
+): MonsterDef[] {
+  return (Object.values(MONSTER_DEFS) as MonsterDef[]).filter(m => {
+    if (!m.roomTypes.includes(roomType)) return false;
+    if (m.unlockStage > unlockedStage) return false;
+    if (elementFilter && m.element !== elementFilter) return false;
+    return true;
+  });
 }
 
 /** Returns all monsters belonging to the given tribe. */

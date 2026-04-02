@@ -635,7 +635,7 @@ export class DungeonScene extends Phaser.Scene {
       const hasMonstersAvailable = getMonstersForRoom(room.roomData.type, this.unlockedStage).length > 0;
       if (hasMonstersAvailable && !room.roomData.monsterSlot) {
         // No monster assigned yet — open monster panel first
-        this.monsterPanel.open(room.row, room.col, room.roomData.type, this.unlockedStage);
+        this.monsterPanel.open(room.row, room.col, room.roomData.type, this.unlockedStage, this.dailyMode?.elementRestrict);
       } else {
         // Monster assigned (or no monsters for this room type) — open upgrade panel
         this.upgradePanel.open(room.row, room.col, room.roomData);

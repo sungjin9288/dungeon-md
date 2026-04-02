@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type RoomType } from '../data/rooms';
-import { getMonstersForRoom, type MonsterDef, type MonsterId } from '../data/monsters';
+import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } from '../data/monsters';
 
 const PANEL_H    = 286;
 const CARD_W     = 90;
@@ -35,10 +35,10 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
-  open(row: number, col: number, roomType: RoomType, unlockedStage: number): void {
+  open(row: number, col: number, roomType: RoomType, unlockedStage: number, elementFilter?: ElementId): void {
     this.pendingRow = row;
     this.pendingCol = col;
-    const monsters = getMonstersForRoom(roomType, unlockedStage);
+    const monsters = getMonstersForRoom(roomType, unlockedStage, elementFilter);
     this.rebuildCards(monsters);
 
     if (this.isOpen) return;
