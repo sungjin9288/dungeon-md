@@ -2897,6 +2897,11 @@ export class DungeonScene extends Phaser.Scene {
         gs.weeklyBossHpDealt   = 0;
         gs.soulCrystals += this.weeklyBossMode.rewards.skinShards * 10;
         gs.materials['boss_essence'] = (gs.materials['boss_essence'] ?? 0) + 1;
+        // Unlock boss blueprint on first clear
+        gs.blueprints = gs.blueprints ?? [];
+        if (!gs.blueprints.includes('bp_boss_amulet')) {
+          gs.blueprints.push('bp_boss_amulet');
+        }
       }
     }
 

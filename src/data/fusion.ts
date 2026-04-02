@@ -282,6 +282,9 @@ export const MATERIAL_DEFS: Record<string, MaterialDef> = {
   shadow_cloth:  { id: 'shadow_cloth',  name: '어둠 천',     emoji: '⬛' },
   old_cloth:     { id: 'old_cloth',     name: '낡은 천',     emoji: '🟤' },
   herb:          { id: 'herb',          name: '약초',        emoji: '🌿' },
+  common_ore:    { id: 'common_ore',    name: '일반 광석',   emoji: '🪨' },
+  magic_dust:    { id: 'magic_dust',    name: '마법 가루',   emoji: '✨' },
+  boss_essence:  { id: 'boss_essence',  name: '보스 정수',   emoji: '💠' },
 };
 
 export const DROP_TABLE: Record<string, Array<{ id: string; chance: number }>> = {
@@ -447,6 +450,28 @@ export const BLUEPRINT_DEFS: Record<string, BlueprintDef> = {
     stats: { adjacentAtkBonus: 0.25, roomHPBonus: 200 },
     materials: { dok_fragment: 12, fox_fur: 8, soul_fragment: 6, shadow_cloth: 5 },
     resultId: 'eq_guardian_crown', resultEmoji: '👑',
+  },
+  // ─── 주간 보스 전용 레시피 ─────────────────────────────────────────────────
+  bp_boss_amulet: {
+    id: 'bp_boss_amulet', name: '보스 부적', type: 'accessory', rarity: 3,
+    statDesc: '보스 추가 피해 +40% · 스킬 쿨다운 -20%',
+    stats: { bossDmgBonus: 0.40, skillCDReduction: 0.20 },
+    materials: { boss_essence: 2, soul_fragment: 5, dok_fragment: 4 },
+    resultId: 'eq_boss_amulet', resultEmoji: '🔮',
+  },
+  bp_arcane_core: {
+    id: 'bp_arcane_core', name: '마법 핵심', type: 'weapon', rarity: 3,
+    statDesc: 'ATK +30% · 마법 가루 3개 소모',
+    stats: { atkMultiplier: 0.30, magicBoost: 1 },
+    materials: { magic_dust: 3, common_ore: 4, soul_fragment: 3 },
+    resultId: 'eq_arcane_core', resultEmoji: '💫',
+  },
+  bp_ore_plate: {
+    id: 'bp_ore_plate', name: '광석 흉갑', type: 'armor', rarity: 2,
+    statDesc: '방 HP +200 · 피해 감소 +10%',
+    stats: { roomHPBonus: 200, dmgReduction: 0.10 },
+    materials: { common_ore: 5, iron_shard: 3 },
+    resultId: 'eq_ore_plate', resultEmoji: '🪖',
   },
 };
 

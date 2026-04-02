@@ -1129,6 +1129,26 @@ export class DungeonHomeScene extends Phaser.Scene {
       logger.debug(`[AWAKEN] +1 awakening stone (total: ${this.gs.awakeningStones})`);
     }
 
+    // MQ-015: unlock ore plate blueprint
+    if (result.completedQuest.id === 'MQ-015') {
+      this.gs.blueprints = this.gs.blueprints ?? [];
+      if (!this.gs.blueprints.includes('bp_ore_plate')) {
+        this.gs.blueprints.push('bp_ore_plate');
+        logger.debug('[FORGE] Blueprint unlocked: bp_ore_plate');
+      }
+      saveGameState(this.gs);
+    }
+
+    // MQ-020: unlock arcane core blueprint
+    if (result.completedQuest.id === 'MQ-020') {
+      this.gs.blueprints = this.gs.blueprints ?? [];
+      if (!this.gs.blueprints.includes('bp_arcane_core')) {
+        this.gs.blueprints.push('bp_arcane_core');
+        logger.debug('[FORGE] Blueprint unlocked: bp_arcane_core');
+      }
+      saveGameState(this.gs);
+    }
+
     this.showQuestCompleteOverlay(result.completedQuest);
   }
 
