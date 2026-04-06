@@ -100,6 +100,7 @@ export function openRoomDetail(
   const c = scene.add.container(CW / 2, CH / 2).setDepth(100).setAlpha(0);
   state.roomDetailContainer = c;
 
+
   // ── Cave chamber background ─────────────────────────────────────────────────
   const t  = theme;
   const bg = scene.add.graphics();
@@ -121,7 +122,7 @@ export function openRoomDetail(
   c.add(bg);
 
   // ── Header ────────────────────────────────────────────────────────────────
-  const headerH = 44;
+  const headerH = 56;
   const hdrG = scene.add.graphics();
   hdrG.fillStyle(t.panelDark, 1);
   hdrG.fillRect(-CW / 2, -CH / 2, CW, headerH);
@@ -130,7 +131,7 @@ export function openRoomDetail(
   c.add(hdrG);
 
   const backBtn = scene.add.text(-CW / 2 + 16, -CH / 2 + headerH / 2, '← 나가기', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: t.panelBorderCSS,
+    fontFamily: 'Georgia, serif', fontSize: '15px', color: t.panelBorderCSS,
   }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
   backBtn.on('pointerdown', () => closeRoomDetail(state, cb));
   c.add(backBtn);
@@ -139,7 +140,7 @@ export function openRoomDetail(
   const typeLabel = typeDef ? `${typeDef.icon} ${typeDef.name}` : '🏚 일반실';
   c.add(scene.add.text(0, -CH / 2 + headerH / 2,
     `방 #${slotIdx + 1}  ${typeLabel}  ${'★'.repeat(slot.roomLevel)}`, {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: t.textPrimary,
+    fontFamily: 'Georgia, serif', fontSize: '15px', color: t.textPrimary,
   }).setOrigin(0.5));
 
   // ── Bioluminescent glow dots ────────────────────────────────────────────────
@@ -153,10 +154,10 @@ export function openRoomDetail(
   c.add(glowG);
 
   // ── Layout constants ──────────────────────────────────────────────────────
-  const secPad = 14;
+  const secPad = 16;
   const secX   = -CW / 2 + secPad;
   const secW   = CW - secPad * 2;
-  const typeStripY = -CH / 2 + headerH + 10;
+  const typeStripY = -CH / 2 + headerH + 12;
 
   // ── Room Type Selector strip ───────────────────────────────────────────────
   const reopen = () => {
@@ -174,27 +175,27 @@ export function openRoomDetail(
   const trapSecH = buildTrapSection(scene, state, theme, cb, c, slot, slotIdx, secX, secW, trapSecY);
 
   // ── Durability bar ────────────────────────────────────────────────────────
-  const durY    = trapSecY + trapSecH + 10;
+  const durY    = trapSecY + trapSecH + 14;
   const hpPct   = Math.max(0, slot.hp / slot.maxHp);
-  const barW    = secW - 80;
+  const barW    = secW - 90;
   const barColor = hpPct > 0.66 ? 0x2d9e2d : hpPct > 0.33 ? 0xc8921a : 0x8b0000;
   const durG = scene.add.graphics();
   durG.fillStyle(0x0e0900, 1);
-  durG.fillRoundedRect(secX + 40, durY, barW, 10, 3);
+  durG.fillRoundedRect(secX + 52, durY, barW, 14, 5);
   durG.fillStyle(barColor, 1);
-  durG.fillRoundedRect(secX + 40, durY, barW * hpPct, 10, 3);
+  durG.fillRoundedRect(secX + 52, durY, barW * hpPct, 14, 5);
   durG.lineStyle(1, 0x664400, 0.4);
-  durG.strokeRoundedRect(secX + 40, durY, barW, 10, 3);
+  durG.strokeRoundedRect(secX + 52, durY, barW, 14, 5);
   c.add(durG);
-  c.add(scene.add.text(secX + 36, durY + 5, '내구도', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#664400',
+  c.add(scene.add.text(secX + 48, durY + 7, '내구도', {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#664400',
   }).setOrigin(1, 0.5));
-  c.add(scene.add.text(secX + 40 + barW + 4, durY + 5, `${slot.hp}/${slot.maxHp}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+  c.add(scene.add.text(secX + 52 + barW + 6, durY + 7, `${slot.hp}/${slot.maxHp}`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#806040',
   }).setOrigin(0, 0.5));
 
   // ── Repair button (only when damaged) ────────────────────────────────────
-  const repairY = durY + 18;
+  const repairY = durY + 26;
   if (slot.hp < slot.maxHp) {
     const missingHp  = slot.maxHp - slot.hp;
     const repairCost = Math.max(10, Math.ceil(missingHp / slot.maxHp * 80));
@@ -202,9 +203,9 @@ export function openRoomDetail(
     const repairBtn  = scene.add.text(
       secX + secW / 2, repairY,
       `🔧 수리  (${repairCost}g)  HP +${missingHp}`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px',
+        fontFamily: 'Georgia, serif', fontSize: '14px',
         color: canRepair ? '#88cc44' : '#664400',
-        backgroundColor: '#0e0900', padding: { x: 10, y: 5 },
+        backgroundColor: '#0e0900', padding: { x: 16, y: 8 },
       }).setOrigin(0.5).setInteractive({ useHandCursor: canRepair });
     if (canRepair) {
       repairBtn.on('pointerover', () => repairBtn.setColor('#bbff66'));
@@ -223,7 +224,7 @@ export function openRoomDetail(
 
   // ── Upgrade button (capped by DM level) ──────────────────────────────────
   const maxRoomLv = getMaxRoomLevel(gs.dmLevel);
-  const upgY = slot.hp < slot.maxHp ? repairY + 26 : durY + 22;
+  const upgY = slot.hp < slot.maxHp ? repairY + 40 : durY + 28;
   if (slot.roomLevel < 5 && slot.roomLevel < maxRoomLv) {
     const ROOM_UPGRADE_COSTS = [150, 300, 600, 1200, 2400];
     const ROOM_UPGRADE_HP    = [300, 450, 650, 900, 1200];
@@ -232,9 +233,9 @@ export function openRoomDetail(
     const newCap  = getRoomSlotCapacity(slot.roomLevel + 1, slot.roomType);
     const cdBonus = ['-10%', '-20%', '-30%', '-40%'][slot.roomLevel - 1] ?? '-40%';
     const upgBtn  = scene.add.text(secX + secW / 2, upgY,
-      `업그레이드  Lv.${slot.roomLevel}→${slot.roomLevel + 1}  (${upgCost}g)  몬스터 ${newCap.monsters} / 함정 ${newCap.traps}`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#c8921a',
-        backgroundColor: '#1e1206', padding: { x: 10, y: 5 },
+      `⬆️  Lv.${slot.roomLevel}→${slot.roomLevel + 1}  업그레이드  (${upgCost}g)\n몬스터 ${newCap.monsters}슬롯 / 함정 ${newCap.traps}슬롯`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8921a',
+        backgroundColor: '#1e1206', padding: { x: 14, y: 10 }, align: 'center',
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     upgBtn.on('pointerover', () => upgBtn.setColor('#ffe080'));
     upgBtn.on('pointerout',  () => upgBtn.setColor('#c8921a'));
@@ -244,7 +245,6 @@ export function openRoomDetail(
       slot.roomLevel    += 1;
       slot.maxHp         = nextHp;
       slot.hp            = nextHp;
-      // Expand slot arrays to new capacity
       const cap2 = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
       while (slot.monsterIds.length < cap2.monsters) slot.monsterIds.push(undefined);
       while (slot.trapIds.length    < cap2.traps)    slot.trapIds.push(undefined);
@@ -257,16 +257,39 @@ export function openRoomDetail(
     });
     c.add(upgBtn);
   } else if (slot.roomLevel < 5 && slot.roomLevel >= maxRoomLv) {
-    // Blocked by DM level
     const neededDm = [5, 10, 15, 20][slot.roomLevel - 1] ?? 20;
     c.add(scene.add.text(secX + secW / 2, upgY,
       `🔒 DM Lv.${neededDm} 달성 후 업그레이드 가능`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#664400',
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#664400',
+      backgroundColor: '#0e0900', padding: { x: 14, y: 8 },
     }).setOrigin(0.5));
   } else {
     c.add(scene.add.text(secX + secW / 2, upgY, '✨ 최고 레벨 (Lv.5)', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ffe080',
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffe080',
     }).setOrigin(0.5));
+  }
+
+  // ── Room type bonus info card ─────────────────────────────────────────────
+  const bonusCardY = upgY + (slot.roomLevel < 5 ? 64 : 36);
+  const bonusDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === (slot.roomType ?? 'combat'));
+  if (bonusDef) {
+    const cardH = 80;
+    const cardG = scene.add.graphics();
+    cardG.fillStyle(0x180e00, 0.9);
+    cardG.fillRoundedRect(secX, bonusCardY, secW, cardH, 10);
+    cardG.lineStyle(1, 0xc8921a, 0.25);
+    cardG.strokeRoundedRect(secX, bonusCardY, secW, cardH, 10);
+    c.add(cardG);
+    c.add(scene.add.text(secX + 14, bonusCardY + 12, `${bonusDef.icon} ${bonusDef.name} 보너스`, {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8921a',
+    }));
+    c.add(scene.add.text(secX + 14, bonusCardY + 34, bonusDef.bonus, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#a07040',
+      wordWrap: { width: secW - 28 },
+    }));
+    c.add(scene.add.text(secX + 14, bonusCardY + 58, `현재 레벨: Lv.${slot.roomLevel}  /  내구도: ${slot.hp}/${slot.maxHp}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#664400',
+    }));
   }
 
   // ── Expand animation from cell ─────────────────────────────────────────────
@@ -334,12 +357,12 @@ function buildRoomTypeStrip(
   reopen: () => void,
 ): number {
   const gs = _cb.getGameState();
-  const stripH = 42;
+  const stripH = 60;
   const bg = scene.add.graphics();
   bg.fillStyle(0x130c04, 0.95);
-  bg.fillRoundedRect(secX, secY, secW, stripH, 6);
+  bg.fillRoundedRect(secX, secY, secW, stripH, 8);
   bg.lineStyle(1, 0x3a2010, 0.4);
-  bg.strokeRoundedRect(secX, secY, secW, stripH, 6);
+  bg.strokeRoundedRect(secX, secY, secW, stripH, 8);
   c.add(bg);
 
   const btnW = (secW - 4) / 4;
@@ -348,13 +371,13 @@ function buildRoomTypeStrip(
     const isActive = slot.roomType === td.id;
     const btnBg = scene.add.graphics();
     btnBg.fillStyle(isActive ? 0xc8921a : 0x241208, isActive ? 0.9 : 0.6);
-    btnBg.fillRoundedRect(bx + 1, secY + 4, btnW - 2, stripH - 8, 4);
+    btnBg.fillRoundedRect(bx + 1, secY + 4, btnW - 2, stripH - 8, 6);
     c.add(btnBg);
-    c.add(scene.add.text(bx + btnW / 2, secY + 14, td.icon, {
-      fontFamily: 'sans-serif', fontSize: '14px',
+    c.add(scene.add.text(bx + btnW / 2, secY + 18, td.icon, {
+      fontFamily: 'sans-serif', fontSize: '18px',
     }).setOrigin(0.5));
-    c.add(scene.add.text(bx + btnW / 2, secY + 30, td.name, {
-      fontFamily: 'Georgia, serif', fontSize: '8px',
+    c.add(scene.add.text(bx + btnW / 2, secY + 44, td.name, {
+      fontFamily: 'Georgia, serif', fontSize: '11px',
       color: isActive ? '#0e0900' : '#806040',
     }).setOrigin(0.5));
 
@@ -390,25 +413,25 @@ function buildMonsterSection(
 ): number {
   const gs = cb.getGameState();
   const cap    = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-  const rowH   = 58;
-  const secH   = 26 + cap.monsters * rowH;
+  const rowH   = 80;
+  const secH   = 36 + cap.monsters * rowH;
 
   const bg = scene.add.graphics();
   bg.fillStyle(0x241208, 1);
-  bg.fillRoundedRect(secX, secY, secW, secH, 8);
+  bg.fillRoundedRect(secX, secY, secW, secH, 10);
   bg.lineStyle(1.5, 0xc8921a, 0.4);
-  bg.strokeRoundedRect(secX, secY, secW, secH, 8);
+  bg.strokeRoundedRect(secX, secY, secW, secH, 10);
   c.add(bg);
 
-  c.add(scene.add.text(secX + 12, secY + 8, `👊 몬스터 구역`, {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#c8921a',
+  c.add(scene.add.text(secX + 14, secY + 10, `👊 몬스터 구역`, {
+    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8921a',
   }));
-  c.add(scene.add.text(secX + secW - 12, secY + 8, `${cap.monsters}슬롯`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+  c.add(scene.add.text(secX + secW - 14, secY + 10, `${cap.monsters}슬롯`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#806040',
   }).setOrigin(1, 0));
 
   for (let mi = 0; mi < cap.monsters; mi++) {
-    const rowY   = secY + 24 + mi * rowH;
+    const rowY   = secY + 34 + mi * rowH;
     const mId    = slot.monsterIds[mi];
     const om     = mId ? gs.ownedMonsters.find(m => m.id === mId) : null;
     const typeId = om ? (Object.keys(MONSTER_DEFS).find(k => om.id === k || om.id.startsWith(k + '_')) ?? om.id) : null;
@@ -418,47 +441,46 @@ function buildMonsterSection(
     if (mi > 0) {
       const sepG = scene.add.graphics();
       sepG.lineStyle(1, 0x3a2010, 0.3);
-      sepG.lineBetween(secX + 8, rowY - 1, secX + secW - 8, rowY - 1);
+      sepG.lineBetween(secX + 8, rowY - 2, secX + secW - 8, rowY - 2);
       c.add(sepG);
     }
 
     // Slot number badge
-    c.add(scene.add.text(secX + 10, rowY + rowH / 2, `${mi + 1}`, {
-      fontFamily: 'monospace', fontSize: '9px', color: '#4a3020',
+    c.add(scene.add.text(secX + 12, rowY + rowH / 2, `${mi + 1}`, {
+      fontFamily: 'monospace', fontSize: '12px', color: '#4a3020',
     }).setOrigin(0.5));
 
     if (mDef && om) {
-      c.add(scene.add.text(secX + 30, rowY + rowH / 2, mDef.emoji, {
-        fontFamily: 'sans-serif', fontSize: '28px',
+      c.add(scene.add.text(secX + 36, rowY + rowH / 2, mDef.emoji, {
+        fontFamily: 'sans-serif', fontSize: '32px',
       }).setOrigin(0.5));
-      c.add(scene.add.text(secX + 50, rowY + 8, `${mDef.name}  Lv.${om.level}`, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#e8d090',
+      c.add(scene.add.text(secX + 58, rowY + 10, `${mDef.name}  Lv.${om.level}`, {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#e8d090',
       }));
-      c.add(scene.add.text(secX + 50, rowY + 22, `ATK:${mDef.baseDamage}  CD:${(mDef.attackCooldown/1000).toFixed(1)}s`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#a07040',
+      c.add(scene.add.text(secX + 58, rowY + 30, `ATK:${mDef.baseDamage}  CD:${(mDef.attackCooldown/1000).toFixed(1)}s`, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#a07040',
       }));
-      c.add(scene.add.text(secX + 50, rowY + 34, mDef.passiveDesc, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#806040',
+      c.add(scene.add.text(secX + 58, rowY + 50, mDef.passiveDesc, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#806040',
         fontStyle: 'italic',
       }));
-      makeDetailBtn(scene, c, secX + secW - 14, rowY + rowH / 2, '교체', () => {
+      makeDetailBtn(scene, c, secX + secW - 16, rowY + rowH / 2, '교체', () => {
         showMonsterPicker(scene, state, theme, cb, slotIdx, mi);
       });
-      // Remove button
-      makeDetailBtn(scene, c, secX + secW - 48, rowY + rowH / 2, '제거', () => {
+      makeDetailBtn(scene, c, secX + secW - 56, rowY + rowH / 2, '제거', () => {
         slot.monsterIds[mi] = undefined;
         saveGameState(gs);
         closeRoomDetail(state, cb);
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);
       });
     } else {
-      c.add(scene.add.text(secX + 30, rowY + rowH / 2, '👤', {
-        fontFamily: 'sans-serif', fontSize: '22px',
+      c.add(scene.add.text(secX + 36, rowY + rowH / 2, '👤', {
+        fontFamily: 'sans-serif', fontSize: '26px',
       }).setOrigin(0.5).setAlpha(0.3));
-      c.add(scene.add.text(secX + 50, rowY + rowH / 2 - 6, `슬롯 ${mi + 1} — 비어있음`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#4a3020',
+      c.add(scene.add.text(secX + 58, rowY + rowH / 2 - 8, `슬롯 ${mi + 1} — 비어있음`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3020',
       }));
-      makeDetailBtn(scene, c, secX + secW - 14, rowY + rowH / 2, '배치 →', () => {
+      makeDetailBtn(scene, c, secX + secW - 16, rowY + rowH / 2, '배치 →', () => {
         showMonsterPicker(scene, state, theme, cb, slotIdx, mi);
       });
     }
@@ -482,52 +504,52 @@ function buildTrapSection(
 ): number {
   const gs = cb.getGameState();
   const cap  = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-  const rowH = 58;
-  const secH = 26 + cap.traps * rowH;
+  const rowH = 80;
+  const secH = 36 + cap.traps * rowH;
 
   const bg = scene.add.graphics();
   bg.fillStyle(0x0f0f0f, 1);
-  bg.fillRoundedRect(secX, secY, secW, secH, 8);
+  bg.fillRoundedRect(secX, secY, secW, secH, 10);
   bg.lineStyle(1.5, 0x664400, 0.4);
-  bg.strokeRoundedRect(secX, secY, secW, secH, 8);
+  bg.strokeRoundedRect(secX, secY, secW, secH, 10);
   c.add(bg);
 
-  c.add(scene.add.text(secX + 12, secY + 8, `🕸 함정 구역`, {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#885500',
+  c.add(scene.add.text(secX + 14, secY + 10, `🕸 함정 구역`, {
+    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#885500',
   }));
-  c.add(scene.add.text(secX + secW - 12, secY + 8, `${cap.traps}슬롯`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+  c.add(scene.add.text(secX + secW - 14, secY + 10, `${cap.traps}슬롯`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#806040',
   }).setOrigin(1, 0));
 
   for (let ti = 0; ti < cap.traps; ti++) {
-    const rowY = secY + 24 + ti * rowH;
+    const rowY = secY + 34 + ti * rowH;
     const trap = TRAP_DEFS.find(t => t.id === slot.trapIds[ti]);
 
     if (ti > 0) {
       const sepG = scene.add.graphics();
       sepG.lineStyle(1, 0x3a2010, 0.3);
-      sepG.lineBetween(secX + 8, rowY - 1, secX + secW - 8, rowY - 1);
+      sepG.lineBetween(secX + 8, rowY - 2, secX + secW - 8, rowY - 2);
       c.add(sepG);
     }
 
-    c.add(scene.add.text(secX + 10, rowY + rowH / 2, `${ti + 1}`, {
-      fontFamily: 'monospace', fontSize: '9px', color: '#4a3020',
+    c.add(scene.add.text(secX + 12, rowY + rowH / 2, `${ti + 1}`, {
+      fontFamily: 'monospace', fontSize: '12px', color: '#4a3020',
     }).setOrigin(0.5));
 
     if (trap) {
-      c.add(scene.add.text(secX + 30, rowY + rowH / 2, trap.emoji, {
-        fontFamily: 'sans-serif', fontSize: '26px',
+      c.add(scene.add.text(secX + 36, rowY + rowH / 2, trap.emoji, {
+        fontFamily: 'sans-serif', fontSize: '30px',
       }).setOrigin(0.5));
-      c.add(scene.add.text(secX + 50, rowY + 8, trap.name, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#c8921a',
+      c.add(scene.add.text(secX + 58, rowY + 10, trap.name, {
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8921a',
       }));
-      c.add(scene.add.text(secX + 50, rowY + 22, `효과: ${trap.desc}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#a07040',
+      c.add(scene.add.text(secX + 58, rowY + 32, `효과: ${trap.desc}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#a07040',
       }));
-      makeDetailBtn(scene, c, secX + secW - 14, rowY + rowH / 2, '교체', () => {
+      makeDetailBtn(scene, c, secX + secW - 16, rowY + rowH / 2, '교체', () => {
         showTrapPicker(scene, state, theme, cb, slotIdx, ti);
       });
-      makeDetailBtn(scene, c, secX + secW - 48, rowY + rowH / 2, '제거', () => {
+      makeDetailBtn(scene, c, secX + secW - 56, rowY + rowH / 2, '제거', () => {
         slot.trapIds[ti] = undefined;
         const refund = Math.floor(trap.cost * 0.5);
         gs.homeGold += refund;
@@ -537,13 +559,13 @@ function buildTrapSection(
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);
       });
     } else {
-      c.add(scene.add.text(secX + 30, rowY + rowH / 2, '🔧', {
-        fontFamily: 'sans-serif', fontSize: '20px',
+      c.add(scene.add.text(secX + 36, rowY + rowH / 2, '🔧', {
+        fontFamily: 'sans-serif', fontSize: '24px',
       }).setOrigin(0.5).setAlpha(0.3));
-      c.add(scene.add.text(secX + 50, rowY + rowH / 2 - 6, `슬롯 ${ti + 1} — 비어있음`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#4a3020',
+      c.add(scene.add.text(secX + 58, rowY + rowH / 2 - 9, `슬롯 ${ti + 1} — 비어있음`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4a3020',
       }));
-      makeDetailBtn(scene, c, secX + secW - 14, rowY + rowH / 2, '설치 →', () => {
+      makeDetailBtn(scene, c, secX + secW - 16, rowY + rowH / 2, '설치 →', () => {
         showTrapPicker(scene, state, theme, cb, slotIdx, ti);
       });
     }
@@ -563,8 +585,8 @@ function makeDetailBtn(
   cb: () => void,
 ): void {
   const btn = scene.add.text(x, y, label, {
-    fontFamily: 'Georgia, serif', fontSize: '10px', color: '#e8d090',
-    backgroundColor: '#2a1806', padding: { x: 8, y: 4 },
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8d090',
+    backgroundColor: '#2a1806', padding: { x: 10, y: 7 },
   }).setOrigin(0.5).setInteractive({ useHandCursor: true });
   btn.on('pointerover', () => btn.setColor('#ffe080'));
   btn.on('pointerout',  () => btn.setColor('#e8d090'));
@@ -587,59 +609,61 @@ export function showTrapPicker(
 
   const gs = cb.getGameState();
   const CW = CANVAS_WIDTH, CH = CANVAS_HEIGHT;
-  const modalH = 240;
+  const trapRowH = 58;
+  const modalH = 56 + TRAP_DEFS.length * trapRowH;
   const c = scene.add.container(0, CH).setDepth(110);  // starts offscreen bottom
   state.trapPickerContainer = c;
 
   // Background
   const bg = scene.add.graphics();
   bg.fillStyle(0x0e0900, 1);
-  bg.fillRoundedRect(0, 0, CW, modalH, { tl: 12, tr: 12, bl: 0, br: 0 });
-  bg.lineStyle(1, 0xc8921a, 0.5);
-  bg.strokeRoundedRect(0, 0, CW, modalH, { tl: 12, tr: 12, bl: 0, br: 0 });
+  bg.fillRoundedRect(0, 0, CW, modalH, { tl: 16, tr: 16, bl: 0, br: 0 });
+  bg.lineStyle(1.5, 0xc8921a, 0.5);
+  bg.strokeRoundedRect(0, 0, CW, modalH, { tl: 16, tr: 16, bl: 0, br: 0 });
   c.add(bg);
 
-  c.add(scene.add.text(CW / 2, 16, '함정 선택', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#c8921a',
+  c.add(scene.add.text(CW / 2, 18, '함정 선택', {
+    fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c8921a',
   }).setOrigin(0.5, 0));
 
-  const closeBtn = scene.add.text(CW - 14, 10, '✕', {
-    fontFamily: 'sans-serif', fontSize: '14px', color: '#664422',
+  const closeBtn = scene.add.text(CW - 16, 14, '✕', {
+    fontFamily: 'sans-serif', fontSize: '18px', color: '#664422',
   }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
   closeBtn.on('pointerdown', () => { state.trapPickerContainer?.destroy(); state.trapPickerContainer = null; });
   c.add(closeBtn);
 
-  let rowY = 44;
+  let rowY = 52;
   TRAP_DEFS.forEach(trap => {
     const locked = gs.dmLevel < trap.unlockLv;
 
     const rowBg = scene.add.graphics();
     rowBg.fillStyle(locked ? 0x0a0900 : 0x1a0f00, 1);
-    rowBg.fillRect(8, rowY, CW - 16, 42);
+    rowBg.fillRect(8, rowY, CW - 16, trapRowH);
     rowBg.lineStyle(1, locked ? 0x332200 : 0x664400, 0.4);
-    rowBg.lineBetween(8, rowY + 42, CW - 8, rowY + 42);
+    rowBg.lineBetween(8, rowY + trapRowH, CW - 8, rowY + trapRowH);
     c.add(rowBg);
 
     const alpha = locked ? 0.4 : 1;
-    c.add(scene.add.text(28, rowY + 12, trap.emoji, {
-      fontFamily: 'sans-serif', fontSize: '20px',
+    c.add(scene.add.text(32, rowY + trapRowH / 2, trap.emoji, {
+      fontFamily: 'sans-serif', fontSize: '24px',
     }).setOrigin(0.5).setAlpha(alpha));
-    c.add(scene.add.text(48, rowY + 7, `${trap.name}`, {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: locked ? '#4a3020' : '#c8921a',
+    c.add(scene.add.text(52, rowY + 10, `${trap.name}`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: locked ? '#4a3020' : '#c8921a',
     }).setOrigin(0, 0));
-    c.add(scene.add.text(48, rowY + 22, trap.desc, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+    c.add(scene.add.text(52, rowY + 30, trap.desc, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#806040',
+      wordWrap: { width: CW - 130 },
     }).setOrigin(0, 0).setAlpha(alpha));
 
     const costLabel = locked ? `🔒 Lv.${trap.unlockLv} 해금` : `${trap.cost}g`;
     if (locked) {
-      c.add(scene.add.text(CW - 20, rowY + 14, costLabel, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#4a3020',
+      c.add(scene.add.text(CW - 20, rowY + trapRowH / 2, costLabel, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#4a3020',
       }).setOrigin(1, 0.5));
     } else {
-      const pickBtn = scene.add.text(CW - 20, rowY + 14, `${trap.cost}g  [선택]`, {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#e8d090',
-        backgroundColor: '#2a1806', padding: { x: 6, y: 3 },
+      const pickBtn = scene.add.text(CW - 16, rowY + trapRowH / 2, `${trap.cost}g  선택`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8d090',
+        backgroundColor: '#2a1806', padding: { x: 10, y: 6 },
       }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
       pickBtn.on('pointerdown', () => {
         if (gs.homeGold < trap.cost) {
