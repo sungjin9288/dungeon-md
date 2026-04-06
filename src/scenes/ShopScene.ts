@@ -12,13 +12,15 @@ interface ThemeListing {
   theme:   DungeonTheme;
   gemCost: number;   // 0 = free default
   emoji:   string;
-  rarity:  'default' | 'rare';
+  rarity:  'default' | 'rare' | 'epic' | 'legendary';
 }
 
 const THEME_LISTINGS: ThemeListing[] = [
   { theme: ALL_THEMES[0], gemCost: 0,   emoji: '🪨', rarity: 'default' },
   { theme: ALL_THEMES[1], gemCost: 150, emoji: '❄️', rarity: 'rare'    },
   { theme: ALL_THEMES[2], gemCost: 150, emoji: '🌋', rarity: 'rare'    },
+  { theme: ALL_THEMES[3], gemCost: 300, emoji: '🌑', rarity: 'epic'    },
+  { theme: ALL_THEMES[4], gemCost: 400, emoji: '✨', rarity: 'legendary' },
 ];
 
 // ─── Daily rotation seeded by UTC day ─────────────────────────────────────────
@@ -584,13 +586,19 @@ export class ShopScene extends Phaser.Scene {
     }
 
     // Rarity badge
-    if (rarity === 'rare') {
+    const RARITY_CONFIG: Record<string, { bg: number; label: string; color: string } | undefined> = {
+      rare:      { bg: 0x002244, label: '레어',   color: '#88aaff' },
+      epic:      { bg: 0x220044, label: '에픽',   color: '#cc88ff' },
+      legendary: { bg: 0x221100, label: '전설',   color: '#ffd700' },
+    };
+    const rarityConfig = RARITY_CONFIG[rarity];
+    if (rarityConfig) {
       const rdg = this.add.graphics();
-      rdg.fillStyle(0x002244, 1);
+      rdg.fillStyle(rarityConfig.bg, 1);
       rdg.fillRoundedRect(x + 6, y + 6, 38, 18, 4);
       this.contentCtr.add(rdg);
-      this.contentCtr.add(this.add.text(x + 25, y + 15, '레어', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#88aaff',
+      this.contentCtr.add(this.add.text(x + 25, y + 15, rarityConfig.label, {
+        fontFamily: 'sans-serif', fontSize: '9px', color: rarityConfig.color,
       }).setOrigin(0.5).setDepth(7));
     }
 

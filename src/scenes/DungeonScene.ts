@@ -317,7 +317,9 @@ export class DungeonScene extends Phaser.Scene {
     this.registry.set('wave',  this.wave);
     this.registry.set('status','');
 
-    this.theme = getActiveTheme(gameState.equippedTheme);
+    // Ch7 (stages 63-72) always use Celestial Realm theme
+    const effectiveTheme = (stageCfg?.stageNumber ?? 0) >= 63 ? 'celestial_realm' : gameState.equippedTheme;
+    this.theme = getActiveTheme(effectiveTheme);
     this.roomGrid = Array.from({ length: GRID_ROWS }, () => Array<RoomData | null>(this.effectiveCols).fill(null));
 
     this.drawBackground();
