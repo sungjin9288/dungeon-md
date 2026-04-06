@@ -2,10 +2,8 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   loadGameState, saveGameState,
-  getUnlockedSlots, SLOT_UNLOCK_LEVELS,
-  ROOM_SLOT_TYPE_DEFS,
+  getUnlockedSlots,
 } from '../data/wisdom';
-import { MONSTER_DEFS, getSkinForMonster } from '../data/monsters';
 import {
   getQuest, startQuest, updateQuestObjective, completeAndAdvance,
   assignSubQuests, tickSubQuestProgress,
@@ -18,10 +16,8 @@ import { TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE } from '../ui/TutorialOv
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
   drawStalactites, drawStalagmites, drawCaveWallTexture, addWaterDrip,
-  drawRoughEdgeRect, strokeRoughEdgeRect,
 } from '../themes/decorations';
 import { logger } from '../utils/logger';
-import { TRAP_DEFS } from '../data/traps';
 import { showAudioSettings } from '../ui/AudioSettingsPanel';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
@@ -37,6 +33,12 @@ import {
   type RoomDetailCallbacks,
 } from '../ui/RoomDetailOverlay';
 import { openPrestigeModal, buildPrestigeBadge } from '../ui/PrestigeModal';
+import {
+  type RoomSlotContext,
+  drawBattleSlot as _drawBattleSlot,
+  SLOT_W, SLOT_H,
+} from '../ui/RoomSlotRenderer';
+import { applyIdleAnimation as _applyIdleAnimation } from '../ui/MonsterAnimations';
 
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
@@ -49,16 +51,6 @@ const BOT_Y    = CANVAS_HEIGHT - BOT_H;
 const GRID_COLS_HOME = 3;
 const GRID_ROWS_HOME = 3;
 
-/**
- * Invasion traversal order for each slot (snake path):
- *   Row 0: right→left  (col2=1st, col1=2nd, col0=3rd)
- *   Row 1: left→right  (col0=4th, col1=5th, col2=6th)
- *   Row 2: right→left  (col2=7th, col1=8th, col0=9th)
- * Index = row * GRID_COLS_HOME + col
- */
-const INVASION_ORDER = [3, 2, 1, 4, 5, 6, 9, 8, 7];
-const SLOT_W     = 100;
-const SLOT_H     = 100;
 const SLOT_PAD_X = Math.floor((CANVAS_WIDTH - GRID_COLS_HOME * SLOT_W) / (GRID_COLS_HOME + 1));
 const SLOT_PAD_Y = 16;
 const GRID_START_Y = TOP_H + 32;
@@ -787,359 +779,28 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   // openSimulationModal → extracted to ../ui/SimulationModal.ts
 
+  private makeRoomSlotCtx(): RoomSlotContext {
+    return {
+      scene: this,
+      theme: this.theme,
+      gs: this.gs,
+      applyIdleAnimation: (emoji, monsterId, compact) => this.applyIdleAnimation(emoji, monsterId, compact),
+    };
+  }
+
   private drawBattleSlot(
     c: Phaser.GameObjects.Container,
     g: Phaser.GameObjects.Graphics,
     x: number, y: number,
     index: number, unlocked: boolean,
   ): void {
-    const t = this.theme;
-    if (!unlocked) {
-      // Dark cave alcove — locked
-      drawRoughEdgeRect(g, t.slotLocked, 0.7, x, y, SLOT_W, SLOT_H, index * 17);
-      strokeRoughEdgeRect(g, t.stoneDark, 0.3, 1, x, y, SLOT_W, SLOT_H, index * 17);
-      // X-chain pattern
-      g.lineStyle(2, t.stoneMid, 0.3);
-      g.lineBetween(x + 20, y + 20, x + SLOT_W - 20, y + SLOT_H - 20);
-      g.lineBetween(x + SLOT_W - 20, y + 20, x + 20, y + SLOT_H - 20);
-      const cx = x + SLOT_W / 2;
-      const cy = y + SLOT_H / 2;
-      c.add(this.add.text(cx, cy - 8, '🔒', { fontSize: '22px' }).setOrigin(0.5).setAlpha(0.5));
-      const reqLv = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
-      c.add(this.add.text(cx, cy + 16, `Lv.${reqLv} 해금`, {
-        fontFamily: 'Georgia, serif', fontSize: '9px', color: t.textSecondary,
-      }).setOrigin(0.5));
-      return;
-    }
-
-    const slot = this.gs.dungeonSlots?.[index];
-
-    // ── 파손 방: HP=0 특수 표시 ────────────────────────────────────────────────
-    if (slot && slot.hp <= 0) {
-      g.fillStyle(0x1a0000, 1);
-      g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 6);
-      g.lineStyle(2, 0x8b0000, 0.8);
-      g.strokeRoundedRect(x, y, SLOT_W, SLOT_H, 6);
-      // Crack lines
-      g.lineStyle(2, 0xff2222, 0.6);
-      g.lineBetween(x + 18, y + 8,  x + SLOT_W / 2 - 4, y + SLOT_H / 2 + 4);
-      g.lineBetween(x + SLOT_W / 2 - 4, y + SLOT_H / 2 + 4, x + SLOT_W - 14, y + SLOT_H - 6);
-      g.lineBetween(x + SLOT_W / 2 - 4, y + SLOT_H / 2 + 4, x + 10, y + SLOT_H - 14);
-      const cx = x + SLOT_W / 2;
-      c.add(this.add.text(cx, y + SLOT_H / 2 - 10, '💥', { fontFamily: 'sans-serif', fontSize: '22px' }).setOrigin(0.5).setAlpha(0.75));
-      c.add(this.add.text(cx, y + SLOT_H / 2 + 12, '파손', {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#ff4444',
-      }).setOrigin(0.5));
-      c.add(this.add.text(cx, y + SLOT_H - 10, '수리 필요', {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#884444',
-      }).setOrigin(0.5));
-      // Invasion order badge
-      const order = INVASION_ORDER[index];
-      if (order !== undefined) {
-        const bg2 = this.add.graphics();
-        bg2.fillStyle(0x8b0000, 0.7);
-        bg2.fillRoundedRect(x + 2, y + 2, 16, 14, 3);
-        c.add(bg2);
-        c.add(this.add.text(x + 10, y + 9, String(order), { fontFamily: 'monospace', fontSize: '9px', color: '#ff8888' }).setOrigin(0.5));
-      }
-      return;
-    }
-
-    const primaryMonsterId = slot?.monsterIds?.[0];
-    const monDef = primaryMonsterId
-      ? (() => {
-          const om = this.gs.ownedMonsters.find(m => m.id === primaryMonsterId);
-          if (!om) return null;
-          const typeId = Object.keys(MONSTER_DEFS).find(k => om.id === k || om.id.startsWith(k + '_')) ?? om.id;
-          return MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS] ?? null;
-        })()
-      : null;
-    const primaryTrapId = slot?.trapIds?.[0];
-    const trapDef = primaryTrapId ? TRAP_DEFS.find(t => t.id === primaryTrapId) : null;
-    // Extra occupied monster count for badge
-    const extraMonsterCount = Math.max(0, (slot?.monsterIds ?? []).filter(Boolean).length - 1);
-
-    if (monDef) {
-      // ── Occupied cell: cave alcove with rough edges ────────────────────────
-      drawRoughEdgeRect(g, t.slotFill, 1, x, y, SLOT_W, SLOT_H, index * 17);
-      const inset = 6;
-      g.fillStyle(t.stoneDark, 0.65);
-      g.fillRoundedRect(x + inset, y + inset, SLOT_W - inset * 2, SLOT_H - inset * 2, 4);
-
-      // Mineral-vein border
-      strokeRoughEdgeRect(g, t.slotBorder, 0.8, 1, x, y, SLOT_W, SLOT_H, index * 17);
-
-      // Glow behind emoji — cool-toned by monster type
-      const glowColor: Record<string, number> = {
-        melee:   0x884444,   // muted red
-        ranged:  0x446688,   // steel blue
-        magic:   0x664488,   // purple
-        support: 0x448866,   // teal
-      };
-      const glow = glowColor[monDef.type] ?? t.stoneMid;
-      const glowG = this.add.graphics();
-      const cx = x + SLOT_W / 2;
-      const cy = y + SLOT_H / 2 - 10;
-      for (let r = 22; r >= 6; r -= 4) {
-        glowG.fillStyle(glow, 0.06 * (22 - r) / 4 + 0.04);
-        glowG.fillCircle(cx, cy, r);
-      }
-      c.add(glowG);
-
-      // Monster emoji (36px) — apply equipped skin if any
-      const typeIdForSlot = Object.keys(MONSTER_DEFS).find(
-        k => primaryMonsterId === k || (primaryMonsterId ?? '').startsWith(k + '_'),
-      ) ?? (primaryMonsterId ?? '');
-      const slotSkin = getSkinForMonster(typeIdForSlot, this.gs.equippedSkins ?? {});
-      const emojiText = this.add.text(cx, cy, slotSkin ? slotSkin.emoji : monDef.emoji, {
-        fontFamily: 'sans-serif', fontSize: '36px',
-      }).setOrigin(0.5);
-      c.add(emojiText);
-      // Idle animation (compact — no particles)
-      this.applyIdleAnimation(emojiText, typeIdForSlot, true);
-
-      // Extra monster count badge (bottom-left)
-      if (extraMonsterCount > 0) {
-        const ebg = this.add.graphics();
-        ebg.fillStyle(0x8b0000, 0.85);
-        ebg.fillRoundedRect(x + 2, y + SLOT_H - 16, 18, 13, 3);
-        c.add(ebg);
-        c.add(this.add.text(x + 11, y + SLOT_H - 9, `+${extraMonsterCount}`, {
-          fontFamily: 'monospace', fontSize: '8px', color: '#ffcccc',
-        }).setOrigin(0.5));
-      }
-
-      // Level badge top-right
-      if (slot && slot.roomLevel > 1) {
-        const badgeBg = this.add.graphics();
-        badgeBg.fillStyle(t.panelBorder, 0.9);
-        badgeBg.fillRoundedRect(x + SLOT_W - 22, y + 2, 20, 13, 3);
-        c.add(badgeBg);
-        c.add(this.add.text(x + SLOT_W - 12, y + 8, `Lv${slot.roomLevel}`, {
-          fontFamily: 'sans-serif', fontSize: '8px', color: '#0a0e14',
-        }).setOrigin(0.5));
-      }
-
-      // Trap icon bottom-right with colored dot behind it
-      if (trapDef) {
-        const trapDotG = this.add.graphics();
-        const trapDotColors: Record<string, number> = {
-          spike_trap:  0x8b0000,
-          slow_trap:   0x004488,
-          poison_trap: 0x2d6b00,
-          stun_trap:   0x886600,
-        };
-        trapDotG.fillStyle(trapDotColors[trapDef.id] ?? 0x333333, 0.55);
-        trapDotG.fillCircle(x + SLOT_W - 10, y + SLOT_H - 12, 9);
-        c.add(trapDotG);
-        c.add(this.add.text(x + SLOT_W - 10, y + SLOT_H - 12, trapDef.emoji, {
-          fontFamily: 'sans-serif', fontSize: '14px',
-        }).setOrigin(0.5));
-      }
-
-      // HP bar bottom
-      if (slot) {
-        const hpPct = Math.max(0, slot.hp / slot.maxHp);
-        const barW  = SLOT_W - 10;
-        const barY  = y + SLOT_H - 8;
-        const barColor = hpPct > 0.66 ? 0x2d9e2d : hpPct > 0.33 ? t.panelBorder : 0x8b0000;
-        g.fillStyle(t.panelDark, 1);
-        g.fillRoundedRect(x + 5, barY, barW, 4, 2);
-        g.fillStyle(barColor, 1);
-        g.fillRoundedRect(x + 5, barY, barW * hpPct, 4, 2);
-      }
-    } else {
-      // ── Empty cell: dark cave alcove ──────────────────────────────────────
-      drawRoughEdgeRect(g, t.stoneDark, 1, x, y, SLOT_W, SLOT_H, index * 17);
-      const hasType = !!(slot?.roomType);
-      strokeRoughEdgeRect(g, hasType ? t.stoneMid : t.slotBorder, hasType ? 0.5 : 0.35, 1.5, x, y, SLOT_W, SLOT_H, index * 17);
-
-      if (hasType) {
-        const td = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot!.roomType);
-        const cx = x + SLOT_W / 2;
-        c.add(this.add.text(cx, y + SLOT_H / 2 - 14, td?.icon ?? '🏚', {
-          fontFamily: 'sans-serif', fontSize: '28px',
-        }).setOrigin(0.5).setAlpha(0.6));
-        c.add(this.add.text(cx, y + SLOT_H / 2 + 10, td?.name ?? '', {
-          fontFamily: 'Georgia, serif', fontSize: '9px', color: t.textSecondary,
-        }).setOrigin(0.5));
-        c.add(this.add.text(cx, y + SLOT_H - 10, '몬스터 미배치', {
-          fontFamily: 'sans-serif', fontSize: '8px', color: t.textSecondary,
-        }).setOrigin(0.5));
-        if (slot && slot.hp < slot.maxHp) {
-          const hpPct = Math.max(0, slot.hp / slot.maxHp);
-          const barW  = SLOT_W - 10;
-          const barY  = y + SLOT_H - 8;
-          g.fillStyle(t.panelDark, 1);
-          g.fillRoundedRect(x + 5, barY, barW, 4, 2);
-          g.fillStyle(hpPct > 0.33 ? t.panelBorder : 0x8b0000, 1);
-          g.fillRoundedRect(x + 5, barY, barW * hpPct, 4, 2);
-        }
-      } else {
-        // Truly empty — cave rock interior
-        g.lineStyle(1, t.stoneLight, 0.2);
-        for (let ty = y + 12; ty < y + SLOT_H - 4; ty += 12) {
-          g.lineBetween(x + 4, ty, x + SLOT_W - 4, ty);
-        }
-        c.add(this.add.text(x + SLOT_W / 2, y + SLOT_H / 2 - 10, '⚠️', {
-          fontFamily: 'sans-serif', fontSize: '20px',
-        }).setOrigin(0.5).setAlpha(0.35));
-        c.add(this.add.text(x + SLOT_W / 2, y + SLOT_H - 12, '빈 슬롯', {
-          fontFamily: 'Georgia, serif', fontSize: '9px', color: t.textSecondary,
-        }).setOrigin(0.5));
-      }
-    }
-
-    // ── Invasion order badge (top-left, all unlocked slots) ───────────────────
-    const order = INVASION_ORDER[index];
-    if (order !== undefined) {
-      const badgeG = this.add.graphics();
-      badgeG.fillStyle(0x000000, 0.55);
-      badgeG.fillRoundedRect(x + 2, y + 2, 16, 14, 3);
-      c.add(badgeG);
-      c.add(this.add.text(x + 10, y + 9, String(order), {
-        fontFamily: 'monospace', fontSize: '9px', color: '#c8921a',
-      }).setOrigin(0.5));
-    }
+    _drawBattleSlot(this.makeRoomSlotCtx(), c, g, x, y, index, unlocked);
   }
 
   // ─── Idle animations ────────────────────────────────────────────────────────
 
-  // (Zone B removed — monster dwelling moved to BarracksScene)
-
   private applyIdleAnimation(emoji: Phaser.GameObjects.Text, monsterId: string, _compact = false): void {
-    const x0 = emoji.x;
-    const y0 = emoji.y;
-
-    switch (monsterId) {
-      case 'dokkaebi_warrior': {
-        // PACE_AND_PUNCH: left-right walk
-        this.tweens.add({
-          targets: emoji, x: x0 - 20,
-          duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-        const doPunch = () => {
-          if (!emoji.active) return;
-          const orig = emoji.text;
-          emoji.setText('👊');
-          setTimeout(() => { if (emoji.active) emoji.setText(orig); }, 200);
-          setTimeout(doPunch, Phaser.Math.Between(4000, 7000));
-        };
-        setTimeout(doPunch, Phaser.Math.Between(4000, 7000));
-        break;
-      }
-      case 'dokkaebi_junior': {
-        // BOUNCE_AND_LOOK
-        this.tweens.add({
-          targets: emoji, y: y0 - 8,
-          duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-        setInterval(() => {
-          if (!emoji.active) return;
-          emoji.setScale(-1, 1);
-          setTimeout(() => { if (emoji.active) emoji.setScale(1, 1); }, 1000);
-        }, 5000);
-        setTimeout(() => setInterval(() => {
-          if (!emoji.active) return;
-          this.tweens.add({
-            targets: emoji, angle: 360, duration: 400,
-            onComplete: () => { if (emoji.active) emoji.setAngle(0); },
-          });
-        }, 5000), 2500);
-        break;
-      }
-      case 'fire_dokkaebi': {
-        // BREATHE_FIRE
-        this.tweens.add({
-          targets: emoji, scaleX: 1.05, scaleY: 1.05,
-          duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-        setInterval(() => {
-          if (!emoji.active) return;
-          for (let i = 0; i < 3; i++) {
-            const px = emoji.x + Phaser.Math.Between(-12, 12);
-            const fp = this.add.text(px, emoji.y - 8, '🔥', { fontSize: '12px' })
-              .setOrigin(0.5).setDepth(20);
-            this.tweens.add({
-              targets: fp, y: fp.y - 32, alpha: 0,
-              duration: 600, delay: i * 80,
-              onComplete: () => fp.destroy(),
-            });
-          }
-        }, 6000);
-        break;
-      }
-      case 'gumiho_guardian': {
-        // TAIL_GROOM
-        this.tweens.add({
-          targets: emoji, angle: 3,
-          duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-        setInterval(() => {
-          if (!emoji.active) return;
-          for (let i = 0; i < 3; i++) {
-            const ang = (i * 120) * Math.PI / 180;
-            const r = 22;
-            const sp = this.add.text(
-              emoji.x + Math.cos(ang) * r, emoji.y + Math.sin(ang) * r,
-              '✨', { fontSize: '10px' },
-            ).setOrigin(0.5).setDepth(20);
-            this.tweens.add({
-              targets: sp,
-              x: sp.x + Math.cos(ang) * 10,
-              y: sp.y + Math.sin(ang) * 10,
-              alpha: 0, duration: 800,
-              onComplete: () => sp.destroy(),
-            });
-          }
-        }, 8000);
-        break;
-      }
-      case 'sage': {
-        // MEDITATE_FLOAT
-        this.tweens.add({
-          targets: emoji, y: y0 - 6, alpha: 0.85,
-          duration: 2500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-        setInterval(() => {
-          if (!emoji.active) return;
-          const glow = this.add.graphics().setDepth(19);
-          glow.fillStyle(0xffd700, 0.28);
-          glow.fillCircle(emoji.x, emoji.y, 28);
-          this.tweens.add({
-            targets: glow, alpha: 0, duration: 350,
-            onComplete: () => glow.destroy(),
-          });
-        }, 10000);
-        break;
-      }
-      case 'frost_spirit': {
-        // FROST_STEP: wander + frost trail
-        const doWander = () => {
-          if (!emoji.active) return;
-          const fp = this.add.text(emoji.x, emoji.y, '❄', {
-            fontSize: '11px', color: '#88ccff',
-          }).setOrigin(0.5).setDepth(15).setAlpha(0.7);
-          this.tweens.add({ targets: fp, alpha: 0, duration: 2000, onComplete: () => fp.destroy() });
-          const dx = Phaser.Math.Between(-15, 15);
-          this.tweens.add({
-            targets: emoji,
-            x: Phaser.Math.Clamp(emoji.x + dx, x0 - 22, x0 + 22),
-            duration: 2000, ease: 'Sine.easeInOut',
-            onComplete: doWander,
-          });
-        };
-        setTimeout(doWander, 1500);
-        break;
-      }
-      default: {
-        // DEFAULT: gentle bob
-        this.tweens.add({
-          targets: emoji, y: y0 - 5,
-          duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-        });
-      }
-    }
+    _applyIdleAnimation(this, emoji, monsterId);
   }
 
 

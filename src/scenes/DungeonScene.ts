@@ -8,7 +8,6 @@ import { MonsterSelectPanel }  from '../ui/MonsterSelectPanel';
 import { RoomUpgradePanel }    from '../ui/RoomUpgradePanel';
 import { COLORS, CSS } from '../constants/colors';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
-import { rollWaveEvent, type WaveEventDef } from '../data/waveEvents';
 import { drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes/decorations';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
@@ -22,12 +21,11 @@ import { INVADER_DEFS } from '../data/invaders';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, getUnlockedSlots, ROOM_SLOT_TYPE_DEFS, type WisdomBonuses } from '../data/wisdom';
-import { checkAchievements, ACHIEVEMENT_DEFS, type AchievementContext } from '../data/achievements';
 import { addXp, ACTIVE_SKILLS, getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { rollMaterialDrop, MATERIAL_DEFS, HYBRID_DEFS } from '../data/fusion';
 import { buildEndlessSpawnQueue } from '../data/endlessWave';
 import { tickDailyChallenge, type DailyDungeon, type WeeklyBoss } from '../data/daily';
-import { updateQuestObjective, tickSubQuestProgress, completeAndAdvance } from '../data/quests';
+import { updateQuestObjective } from '../data/quests';
 import { STAGE_CONFIGS } from './StageSelectScene';
 import { applyChapterTheme } from './ChapterTheme';
 import { SkillHUD } from '../combat/SkillHUD';
@@ -97,6 +95,16 @@ import {
   showChapterClear as _showChapterClear,
   showRepairOption as _showRepairOption,
 } from '../combat/ResultFlow';
+import {
+  type WaveEventContext,
+  tryShowWaveEvent as _tryShowWaveEvent,
+} from '../combat/WaveEvents';
+import {
+  type QuestTrackerContext,
+  checkAchievementsAndToast as _checkAchievementsAndToast,
+  tickQuestAndNotify as _tickQuestAndNotify,
+  trackConsecutiveDays as _trackConsecutiveDays,
+} from '../combat/QuestTracker';
 import { logger } from '../utils/logger';
 
 export class DungeonScene extends Phaser.Scene {
@@ -2049,221 +2057,37 @@ export class DungeonScene extends Phaser.Scene {
 
   // ─── Wave random events ──────────────────────────────────────────────────
 
+  private makeWaveEventCtx(): WaveEventContext {
+    const self = this;
+    return {
+      scene: this,
+      get wave() { return self.wave; },
+      get maxWave() { return self.maxWave; },
+      get isEndless() { return self.isEndless; },
+      get waveConfigs() { return self.waveConfigs; },
+      get theme() { return self.theme; },
+      get synergyHasMoonlightHealUp() { return self.synergyManager.hasSpecial('MOONLIGHT_HEAL_UP'); },
+      get maxHp() { return self.maxHp; },
+      get stageNumber() { return self.registry.get('stageConfig')?.stageNumber ?? 1; },
+      get waveGoldMult() { return self.waveGoldMult; },
+      set waveGoldMult(v) { self.waveGoldMult = v; },
+      get waveHpMult() { return self.waveHpMult; },
+      set waveHpMult(v) { self.waveHpMult = v; },
+      get waveAtkMult() { return self.waveAtkMult; },
+      set waveAtkMult(v) { self.waveAtkMult = v; },
+      get waveSpdMult() { return self.waveSpdMult; },
+      set waveSpdMult(v) { self.waveSpdMult = v; },
+      get waveFogOverlay() { return self.waveFogOverlay; },
+      set waveFogOverlay(v) { self.waveFogOverlay = v; },
+      get dungeonHp() { return self.dungeonHp; },
+      set dungeonHp(v) { self.dungeonHp = v; },
+      startWave: () => self.startWave(),
+      setRegistryHp: (hp) => self.registry.set('hp', hp),
+    };
+  }
+
   private tryShowWaveEvent(): void {
-    const nextWave = this.wave + 1;
-    const stageId  = this.registry.get('stageConfig')?.stageNumber ?? 1;
-    const evt = rollWaveEvent(nextWave, this.maxWave, stageId);
-
-    if (evt) {
-      this.showWaveEvent(evt, () => this.showWavePreview());
-    } else {
-      this.showWavePreview();
-    }
-  }
-
-  private showWaveEvent(evt: WaveEventDef, onDone: () => void): void {
-    const t = this.theme;
-    const ov = this.add.container(0, 0).setDepth(250);
-
-    // Dim
-    const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.6);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    dim.setAlpha(0);
-    ov.add(dim);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 200 });
-
-    // Card
-    const cw = 260, ch = 120;
-    const cx = (CANVAS_WIDTH - cw) / 2;
-    const cy = CANVAS_HEIGHT / 2 - ch / 2 - 20;
-
-    const card = this.add.graphics();
-    card.fillStyle(t.panelDark, 1);
-    card.fillRoundedRect(cx, cy, cw, ch, 8);
-    card.lineStyle(2, parseInt(evt.color.replace('#', ''), 16), 0.9);
-    card.strokeRoundedRect(cx, cy, cw, ch, 8);
-    card.setAlpha(0).setY(-40);
-    ov.add(card);
-    this.tweens.add({ targets: card, y: 0, alpha: 1, duration: 300, ease: 'Power2.easeOut' });
-
-    // Icon
-    const icon = this.add.text(cx + cw / 2, cy + 28, evt.icon, {
-      fontSize: '32px',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(icon);
-    this.tweens.add({ targets: icon, alpha: 1, duration: 200, delay: 150 });
-
-    // Name
-    const name = this.add.text(cx + cw / 2, cy + 62, evt.name, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: evt.color,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(name);
-    this.tweens.add({ targets: name, alpha: 1, duration: 200, delay: 250 });
-
-    // Description
-    const desc = this.add.text(cx + cw / 2, cy + 86, evt.description, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#aabbcc',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(desc);
-    this.tweens.add({ targets: desc, alpha: 1, duration: 200, delay: 350 });
-
-    // Apply event effect
-    this.applyWaveEvent(evt);
-
-    // Auto-dismiss after 1.8s
-    this.time.delayedCall(1800, () => {
-      this.tweens.add({
-        targets: ov, alpha: 0, duration: 300,
-        onComplete: () => { ov.destroy(); onDone(); },
-      });
-    });
-  }
-
-  private applyWaveEvent(evt: WaveEventDef): void {
-    switch (evt.type) {
-      case 'merchant':
-        this.waveGoldMult = 1.5;
-        break;
-      case 'supply': {
-        const moonHealUp = this.synergyManager.hasSpecial('MOONLIGHT_HEAL_UP') ? 1.20 : 1;
-        this.dungeonHp = Math.min(this.maxHp, this.dungeonHp + Math.ceil(this.maxHp * 0.15 * moonHealUp));
-        this.registry.set('hp', this.dungeonHp);
-        break;
-      }
-      case 'curse':
-        this.waveHpMult   = 1.3;
-        this.waveGoldMult = 2.0;
-        break;
-      case 'rally':
-        this.waveAtkMult = 1.25;
-        break;
-      case 'fog':
-        this.waveSpdMult = 0.85;
-        // Visual fog overlay
-        this.waveFogOverlay = this.add.graphics().setDepth(15).setAlpha(0.3);
-        this.waveFogOverlay.fillStyle(0x556677, 0.25);
-        this.waveFogOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        break;
-    }
-    logger.debug(`[EVENT] ${evt.name} applied: gold×${this.waveGoldMult} hp×${this.waveHpMult} atk×${this.waveAtkMult} spd×${this.waveSpdMult}`);
-  }
-
-  // ─── 침략 예고 패널 ─────────────────────────────────────────────────────────
-
-  private showWavePreview(): void {
-    const nextWave = this.wave + 1;
-    if (nextWave > this.maxWave) { this.startWave(); return; }
-
-    // Gather wave info
-    const cfg = this.isEndless
-      ? null
-      : this.waveConfigs[Math.min(nextWave - 1, this.waveConfigs.length - 1)];
-
-    const ov = this.add.container(0, 0).setDepth(300);
-
-    // Dim
-    const dim = this.add.graphics().setAlpha(0);
-    dim.fillStyle(0x000000, 0.65);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ov.add(dim);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 200 });
-
-    // Card
-    const cw = 310, ch = cfg ? 40 + cfg.invaders.length * 36 + 80 : 140;
-    const cx = CANVAS_WIDTH / 2 - cw / 2;
-    const cy = CANVAS_HEIGHT / 2 - ch / 2;
-    const card = this.add.graphics();
-    card.fillStyle(0x1a0f00, 1);
-    card.fillRoundedRect(cx, cy, cw, ch, 10);
-    card.lineStyle(2, 0xc8921a, 0.9);
-    card.strokeRoundedRect(cx, cy, cw, ch, 10);
-    ov.add(card);
-
-    // Title
-    ov.add(this.add.text(CANVAS_WIDTH / 2, cy + 18,
-      `⚠️  ${nextWave}번째 침략 예고`, {
-      fontFamily: 'Georgia, serif', fontSize: '15px',
-      fontStyle: 'bold', color: '#c8921a',
-    }).setOrigin(0.5));
-
-    if (cfg) {
-      // Enemy list
-      let rowY = cy + 46;
-      const typeCount = new Map<string, number>();
-      for (const { type, count } of cfg.invaders) {
-        typeCount.set(type, (typeCount.get(type) ?? 0) + count);
-      }
-      const totalInvaders = [...typeCount.values()].reduce((a, b) => a + b, 0);
-
-      for (const [type, count] of typeCount) {
-        const def = INVADER_DEFS[type as import('../data/invaders').InvaderType];
-        if (!def) continue;
-
-        const rowG = this.add.graphics();
-        rowG.fillStyle(0x2d1a00, 0.7);
-        rowG.fillRoundedRect(cx + 12, rowY - 12, cw - 24, 30, 4);
-        ov.add(rowG);
-
-        // HP bar (relative strength)
-        const hpFrac = Math.min(1, def.hp / 1000);
-        const barW   = 60;
-        const hpG    = this.add.graphics();
-        hpG.fillStyle(0x0e0900, 1);
-        hpG.fillRoundedRect(cx + cw - 90, rowY - 6, barW, 8, 2);
-        hpG.fillStyle(def.hp > 400 ? 0x8b0000 : def.hp > 150 ? 0xc8921a : 0x2d9e2d, 1);
-        hpG.fillRoundedRect(cx + cw - 90, rowY - 6, barW * hpFrac, 8, 2);
-        ov.add(hpG);
-
-        ov.add(this.add.text(cx + 20, rowY,
-          `×${count}  ${def.koreanName}`, {
-          fontFamily: 'sans-serif', fontSize: '12px', color: '#e8d090',
-        }).setOrigin(0, 0.5));
-        ov.add(this.add.text(cx + cw - 24, rowY,
-          `HP ${def.hp}`, {
-          fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
-        }).setOrigin(1, 0.5));
-
-        // Special behavior badge
-        if (def.behavior) {
-          const behaviorLabel: Record<string, string> = {
-            VOID_PHASE: '순간이동', REVIVE_ONCE: '부활', NINJA_STEALTH: '은신',
-            SIEGE_SHIELD: '방어막', HOLY_PALADIN: '신성면역', IRON_GOLEM: '둔화면역',
-          };
-          ov.add(this.add.text(cx + 20 + 120, rowY,
-            `[${behaviorLabel[def.behavior] ?? def.behavior}]`, {
-            fontFamily: 'sans-serif', fontSize: '8px', color: '#ff8888',
-          }).setOrigin(0, 0.5));
-        }
-
-        rowY += 36;
-      }
-
-      // Total / damage warning
-      ov.add(this.add.text(CANVAS_WIDTH / 2, rowY + 2,
-        `총 ${totalInvaders}명  ·  돌파 시 던전 피해`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#664400',
-      }).setOrigin(0.5));
-    } else {
-      ov.add(this.add.text(CANVAS_WIDTH / 2, cy + 60,
-        '무한 모드 — 침략자가 계속 강해집니다', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#806040',
-      }).setOrigin(0.5));
-    }
-
-    // Confirm button
-    const btnY = cy + ch - 32;
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0x8b0000, 0.85);
-    btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6);
-    ov.add(btnBg);
-    const btnT = this.add.text(CANVAS_WIDTH / 2, btnY, '⚔  침략 시작', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8d090',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    btnT.on('pointerover', () => { btnBg.clear(); btnBg.fillStyle(0xb00000, 1); btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6); });
-    btnT.on('pointerout',  () => { btnBg.clear(); btnBg.fillStyle(0x8b0000, 0.85); btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6); });
-    btnT.on('pointerdown', () => { ov.destroy(); this.startWave(); });
-    ov.add(btnT);
+    _tryShowWaveEvent(this.makeWaveEventCtx());
   }
 
   private showWaveClear(): void {
@@ -2630,130 +2454,20 @@ export class DungeonScene extends Phaser.Scene {
 
   // ─── Achievement system ────────────────────────────────────────────────────
 
+  private makeQuestTrackerCtx(): QuestTrackerContext {
+    return { scene: this };
+  }
+
   private checkAchievementsAndToast(gs: ReturnType<typeof loadGameState>): void {
-    const ctx: AchievementContext = {
-      totalKills:        gs.totalKills       ?? 0,
-      totalGoldEarned:   gs.totalGoldEarned  ?? 0,
-      roomsBuilt:        gs.roomsBuilt       ?? [],
-      bossesKilled:      gs.bossesKilled     ?? [],
-      endlessHighScore:  gs.endlessHighScore ?? 0,
-      consecutiveDays:   gs.consecutiveDays  ?? 0,
-      soulCrystals:      gs.soulCrystals     ?? 0,
-      wisdomTree:        gs.wisdomTree       ?? {},
-      stageProgress:     gs.stageProgress    ?? [],
-      dmLevel:           gs.dmLevel          ?? 1,
-      ownedMonsterCount: (gs.ownedMonsters ?? []).length,
-      ownedSkinCount:    Object.values(gs.ownedSkins ?? {}).flat().length,
-      totalFusions:      gs.totalFusions     ?? 0,
-      completedTribes:   gs.completedTribes  ?? 0,
-      totalSummons:      (gs.summonHistory ?? []).length,
-    };
-
-    const newlyUnlocked = checkAchievements(ctx, gs.achievements ?? {});
-    if (newlyUnlocked.length === 0) return;
-
-    // Persist unlocks
-    gs.achievements = gs.achievements ?? {};
-    newlyUnlocked.forEach(id => {
-      gs.achievements[id] = { unlocked: true, current: 0, unlockedAt: Date.now() };
-    });
-    saveGameState(gs);
-
-    // Show toasts in sequence
-    newlyUnlocked.forEach((id, i) => {
-      const def = ACHIEVEMENT_DEFS.find(a => a.id === id);
-      if (!def) return;
-      this.time.delayedCall(i * 3200, () => this.showAchievementToast(def.name, def.icon));
-    });
+    _checkAchievementsAndToast(this.makeQuestTrackerCtx(), gs);
   }
 
   private tickQuestAndNotify(gs: ReturnType<typeof loadGameState>, type: Parameters<typeof updateQuestObjective>[1], amount = 1): void {
-    const update = updateQuestObjective(gs, type, amount);
-    tickSubQuestProgress(gs, type, amount);
-    if (update?.questDone) {
-      completeAndAdvance(gs);
-      this.time.delayedCall(600, () => this.showQuestCompleteToast());
-    }
+    _tickQuestAndNotify(this.makeQuestTrackerCtx(), gs, type, amount);
   }
-
-  private showQuestCompleteToast(): void {
-    const toast = this.add.container(CANVAS_WIDTH / 2, -50).setDepth(500);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x1a1060, 0.95);
-    bg.fillRoundedRect(-130, -22, 260, 44, 8);
-    bg.lineStyle(2, 0xaa88ff, 0.9);
-    bg.strokeRoundedRect(-130, -22, 260, 44, 8);
-    toast.add(bg);
-    toast.add(this.add.text(0, 0, '📜 퀘스트 완료!', {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#ddaaff',
-    }).setOrigin(0.5));
-    this.tweens.add({
-      targets: toast, y: 60, duration: 400, ease: 'Back.Out',
-      onComplete: () => {
-        this.time.delayedCall(2000, () => {
-          this.tweens.add({ targets: toast, y: -60, alpha: 0, duration: 350, onComplete: () => toast.destroy() });
-        });
-      },
-    });
-  }
-
-  private showAchievementToast(name: string, icon: string): void {
-    const toast = this.add.container(CANVAS_WIDTH / 2, -60).setDepth(500);
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x1a2a10, 0.95);
-    bg.fillRoundedRect(-120, -24, 240, 48, 8);
-    bg.lineStyle(2, 0x44cc44, 0.9);
-    bg.strokeRoundedRect(-120, -24, 240, 48, 8);
-
-    const iconTxt = this.add.text(-90, 0, icon, {
-      fontFamily: 'sans-serif', fontSize: '22px',
-    }).setOrigin(0.5);
-
-    const label = this.add.text(-60, -8, '업적 달성!', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#88dd44',
-    }).setOrigin(0, 0.5);
-
-    const nameTxt = this.add.text(-60, 7, name, {
-      fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold', color: '#ccff88',
-    }).setOrigin(0, 0.5);
-
-    toast.add([bg, iconTxt, label, nameTxt]);
-
-    // Slide in
-    this.tweens.add({
-      targets: toast,
-      y: 80,
-      duration: 400,
-      ease: 'Back.Out',
-      onComplete: () => {
-        // Slide out after 2.5s
-        this.tweens.add({
-          targets: toast,
-          y: -80,
-          duration: 350,
-          delay: 2500,
-          ease: 'Power2.In',
-          onComplete: () => toast.destroy(),
-        });
-      },
-    });
-  }
-
-  // ─── Consecutive day tracking ──────────────────────────────────────────────
 
   private trackConsecutiveDays(): void {
-    const gs    = loadGameState();
-    const today = new Date().toISOString().split('T')[0];
-    if (gs.lastPlayDate === today) return;   // already tracked today
-
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    gs.consecutiveDays = (gs.lastPlayDate === yesterday)
-      ? (gs.consecutiveDays ?? 0) + 1
-      : 1;
-    gs.lastPlayDate = today;
-    saveGameState(gs);
-    logger.debug(`[STREAK] day ${gs.consecutiveDays} (last: ${gs.lastPlayDate})`);
+    _trackConsecutiveDays();
   }
 
   // ─── Chapter 3: Armory buff ────────────────────────────────────────────────
