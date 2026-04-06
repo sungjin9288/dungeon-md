@@ -16,6 +16,7 @@ import {
 } from '../constants/layout';
 import { CSS } from '../constants/colors';
 import { logger } from '../utils/logger';
+import { showHolyBurst } from './VisualEffects';
 
 // ─── BossContext ─────────────────────────────────────────────────────────────
 
@@ -539,13 +540,42 @@ export function setupShadowRealm(ctx: BossContext, inv: Invader): void {
   });
 }
 
-// ─── God Emperor (Ch6) ─────────────────────────────────────────────────────
+// ─── God Emperor (Ch7 final boss) ──────────────────────────────────────────
+
+/** Flash a golden screen wash for ~400ms, then fade out */
+function flashCelestialScreen(scene: Phaser.Scene, colorHex: number = 0xffd700): void {
+  const flash = scene.add.graphics().setDepth(260).setAlpha(0);
+  flash.fillStyle(colorHex, 0.45);
+  flash.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  scene.tweens.add({
+    targets: flash, alpha: 1, duration: 120, yoyo: true, hold: 80,
+    onComplete: () => flash.destroy(),
+  });
+}
+
+/** Spawn golden burst particles radiating from (x, y) */
+function spawnGoldParticles(scene: Phaser.Scene, x: number, y: number, count: number = 10): void {
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const g = scene.add.graphics().setDepth(255);
+    g.fillStyle(0xffd700, 1);
+    g.fillCircle(x, y, 3);
+    scene.tweens.add({
+      targets: g,
+      x: x + Math.cos(angle) * 55,
+      y: y + Math.sin(angle) * 55,
+      alpha: 0, scaleX: 0.3, scaleY: 0.3,
+      duration: 550, ease: 'Quad.easeOut',
+      onComplete: () => g.destroy(),
+    });
+  }
+}
 
 export function setupGodEmperor(ctx: BossContext, inv: Invader): void {
   const { scene } = ctx;
   buildBossHpBar(ctx, inv.maxHp);
 
-  // Phase 1: DIVINE_WARD + mirror shield
+  // Phase 1: DIVINE_WARD + mirror shield (5 hits) + magic immune
   inv.isMagicImmune = true;
   inv.hasMirrorShield = true;
   inv.mirrorHitsRemaining = 5;
@@ -556,23 +586,38 @@ export function setupGodEmperor(ctx: BossContext, inv: Invader): void {
     const pct = inv.hp / inv.maxHp;
     updateBossHpBar(ctx);
 
-    // Phase 2: 65% HP
+    // ── Phase 2: 65% HP — celestial shield, spawn guards ──────────────────
     if (pct <= 0.65 && inv.ch6BossPhase < 2) {
       inv.ch6BossPhase = 2;
+
+      // 4s magic immunity burst
       inv.isMagicImmune = true;
       scene.time.delayedCall(4000, () => { if (!inv.isDead) inv.isMagicImmune = false; });
+
+      // Spawn 2 divine_archers in succession
       for (let i = 0; i < 2; i++)
         scene.time.delayedCall(i * 600, () => ctx.spawnInvader('divine_archer'));
-      ctx.showFloatText(CANVAS_WIDTH / 2, 160, '👼 천상의 방패!', '#ffd700');
+
+      // Visuals: phase banner + screen flash + holy bursts around inv
+      showBossPhaseText(ctx, inv, 2, '👑 2단계 — 천상의 방패!', 0xffd700);
+      flashCelestialScreen(scene, 0xffd700);
+      scene.cameras.main.shake(300, 0.008);
+      for (let i = 0; i < 5; i++)
+        scene.time.delayedCall(i * 80, () => showHolyBurst(scene, inv.x, inv.y));
+      spawnGoldParticles(scene, inv.x, inv.y, 12);
     }
 
-    // Phase 3: 35% HP
+    // ── Phase 3: 35% HP — divine rage, speed up, dragon descends ──────────
     if (pct <= 0.35 && inv.ch6BossPhase < 3) {
       inv.ch6BossPhase = 3;
+
+      // Speed boost: 30% faster
       if (inv.pathTween) {
         const rem = inv.pathTween.duration - inv.pathTween.elapsed;
         inv.pathTween.duration = inv.pathTween.elapsed + rem * 0.7;
       }
+
+      // Periodic 3s magic immunity every 12s
       scene.time.addEvent({
         delay: 12000, loop: true,
         callback: () => {
@@ -582,26 +627,50 @@ export function setupGodEmperor(ctx: BossContext, inv: Invader): void {
           scene.time.delayedCall(3000, () => { if (!inv.isDead) inv.isMagicImmune = false; });
         },
       });
-      ctx.spawnInvader('heaven_general');
-      ctx.showFloatText(CANVAS_WIDTH / 2, 160, '⚡ 천상의 분노!', '#ffaa00');
+
+      // Spawn celestial_dragon + heaven_general together
+      ctx.spawnInvader('celestial_dragon');
+      scene.time.delayedCall(800, () => ctx.spawnInvader('heaven_general'));
+
+      // Visuals: gold → orange tint flash + phase banner + particles
+      showBossPhaseText(ctx, inv, 3, '🐉 3단계 — 천룡 강림!', 0xff8800);
+      flashCelestialScreen(scene, 0xff8800);
+      scene.cameras.main.shake(500, 0.014);
+      spawnGoldParticles(scene, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 20);
+      for (let i = 0; i < 4; i++)
+        scene.time.delayedCall(i * 120, () => showHolyBurst(scene, inv.x, inv.y));
     }
 
-    // Phase 4: 10% HP
+    // ── Phase 4: 10% HP — final stand, rapid damage immunity ──────────────
     if (pct <= 0.10 && inv.ch6BossPhase < 4) {
       inv.ch6BossPhase = 4;
+
+      // Speed boost: 50% faster total
       if (inv.pathTween) {
         const rem = inv.pathTween.duration - inv.pathTween.elapsed;
         inv.pathTween.duration = inv.pathTween.elapsed + rem * 0.5;
       }
+
+      // Damage immunity cycle: 2s immune every 6s
       scene.time.addEvent({
         delay: 6000, loop: true,
         callback: () => {
           if (inv.isDead || !inv.active) return;
           inv.isDamageImmune = true;
-          scene.time.delayedCall(1500, () => { if (!inv.isDead) inv.isDamageImmune = false; });
+          ctx.showFloatText(inv.x, inv.y - 30, '🛡️ 불사', '#ffffff');
+          scene.time.delayedCall(2000, () => { if (!inv.isDead) inv.isDamageImmune = false; });
         },
       });
-      ctx.showFloatText(CANVAS_WIDTH / 2, 160, '👼 천제 최후의 강림!!', '#ffffff');
+
+      // Dramatic finale: white flash, heavy shake, 3 holy bursts
+      showBossPhaseText(ctx, inv, 4, '☀️ 4단계 — 천제 최후의 강림!!', 0xffffff);
+      flashCelestialScreen(scene, 0xffffff);
+      scene.cameras.main.shake(700, 0.020);
+      for (let i = 0; i < 6; i++)
+        scene.time.delayedCall(i * 100, () => {
+          showHolyBurst(scene, inv.x + Phaser.Math.Between(-30, 30), inv.y + Phaser.Math.Between(-30, 30));
+        });
+      spawnGoldParticles(scene, inv.x, inv.y, 18);
     }
 
     scene.time.delayedCall(400, checkPhase);
