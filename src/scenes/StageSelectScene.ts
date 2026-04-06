@@ -9,7 +9,7 @@ import { logger } from '../utils/logger';
 
 export type StageProgress = StageProgressEntry;
 
-export const TOTAL_STAGES = 62;
+export const TOTAL_STAGES = 72;
 
 // Minimal per-stage configs used to boot DungeonScene
 export const STAGE_CONFIGS = [
@@ -81,6 +81,17 @@ export const STAGE_CONFIGS = [
   { stageNumber: 60, slots: 14, unlockedStage: 60, chapter: 6 },
   { stageNumber: 61, slots: 14, unlockedStage: 60, chapter: 6 },
   { stageNumber: 62, slots: 14, unlockedStage: 60, chapter: 6, bossWave: true },
+  // ── Chapter 7: 신계 침공 ──
+  { stageNumber: 63, slots: 14, unlockedStage: 63, chapter: 7 },
+  { stageNumber: 64, slots: 14, unlockedStage: 64, chapter: 7 },
+  { stageNumber: 65, slots: 15, unlockedStage: 65, chapter: 7 },
+  { stageNumber: 66, slots: 15, unlockedStage: 66, chapter: 7 },
+  { stageNumber: 67, slots: 15, unlockedStage: 67, chapter: 7 },
+  { stageNumber: 68, slots: 16, unlockedStage: 68, chapter: 7 },
+  { stageNumber: 69, slots: 16, unlockedStage: 69, chapter: 7 },
+  { stageNumber: 70, slots: 16, unlockedStage: 70, chapter: 7 },
+  { stageNumber: 71, slots: 16, unlockedStage: 70, chapter: 7 },
+  { stageNumber: 72, slots: 16, unlockedStage: 70, chapter: 7, bossWave: true },
 ];
 
 // ─── Persistence helpers ──────────────────────────────────────────────────────
@@ -131,6 +142,8 @@ export function recordClear(stageIndex: number, stars: number, hpPercent?: numbe
   if (stageIndex === 41 && prog[42]) prog[42].unlocked = true;
   // Clearing Stage 52 (index 51) also unlocks Stage 53 (index 52) — Ch6 gate
   if (stageIndex === 51 && prog[52]) prog[52].unlocked = true;
+  // Clearing Stage 62 (index 61) also unlocks Stage 63 (index 62) — Ch7 gate
+  if (stageIndex === 61 && prog[62]) prog[62].unlocked = true;
   saveProgress(prog);
   return prog;
 }
@@ -141,7 +154,7 @@ export class StageSelectScene extends Phaser.Scene {
   private progress: StageProgress[] = [];
   private isDragging    = false;
   private dragStartY    = 0;
-  private maxScrollY    = 520;
+  private maxScrollY    = 720;
 
   constructor() { super({ key: 'StageSelectScene' }); }
 
@@ -156,6 +169,7 @@ export class StageSelectScene extends Phaser.Scene {
     this.drawCh4Section();
     this.drawCh5Section();
     this.drawCh6Section();
+    this.drawCh7Section();
     this.drawWisdomButton();
     this.drawEndlessButton();
     this.drawAchievementButton();
@@ -843,6 +857,108 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + 14, label, { fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: '#d4af37' }).setOrigin(0.5);
       const stars = '★'.repeat(prog.bestStars) + '☆'.repeat(3 - prog.bestStars);
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#d4af37' }).setOrigin(0.5);
+      if (prog.bestHpPercent !== undefined) {
+        const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+      }
+      const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.launchStage(idx));
+    }
+
+    if (cfg?.bossWave) {
+      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '10px' }).setOrigin(1, 0);
+    }
+  }
+
+  // ─── Chapter 7 Section ──────────────────────────────────────────────────
+
+  private drawCh7Section(): void {
+    const ch7Unlocked = this.progress[61]?.bestStars > 0;
+
+    const div = this.add.graphics();
+    div.lineStyle(1, ch7Unlocked ? 0xffd700 : 0x2a1a00, 0.6);
+    div.lineBetween(30, 1175, CANVAS_WIDTH - 30, 1175);
+
+    if (ch7Unlocked) {
+      this.add.text(CANVAS_WIDTH / 2, 1165, 'Chapter 7  —  신계 침공', {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#ffd700', letterSpacing: 2,
+      }).setOrigin(0.5, 1);
+      this.drawCh7Grid();
+    } else {
+      this.add.text(CANVAS_WIDTH / 2, 1165, 'Chapter 7  —  신계 침공  🔒', {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#4a3a00', letterSpacing: 2,
+      }).setOrigin(0.5, 1);
+
+      const bx = 30, by = 1183, bw = CANVAS_WIDTH - 60, bh = 56;
+      const bg = this.add.graphics();
+      bg.fillStyle(0x0a0800, 1);
+      bg.fillRoundedRect(bx, by, bw, bh, 8);
+      bg.lineStyle(1, 0x3a2a00, 0.8);
+      bg.strokeRoundedRect(bx, by, bw, bh, 8);
+      this.add.text(CANVAS_WIDTH / 2, by + bh / 2 - 6, '⛓ 스테이지 62를 클리어하면 열립니다', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#cc9900',
+      }).setOrigin(0.5);
+      this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '신계 침공  ·  10 스테이지', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#4a3a00',
+      }).setOrigin(0.5);
+    }
+  }
+
+  private drawCh7Grid(): void {
+    const COLS = 5, ROWS = 2;
+    const BW = 56, BH = 62;
+    const GAP_X = 6, GAP_Y = 10;
+    const gridW = COLS * BW + (COLS - 1) * GAP_X;
+    const startX = (CANVAS_WIDTH - gridW) / 2;
+    const startY = 1185;
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const stageIdx = 62 + r * COLS + c;  // indices 62–71
+        const x = startX + c * (BW + GAP_X);
+        const y = startY + r * (BH + GAP_Y);
+        this.drawCh7Plaque(stageIdx, x, y, BW, BH);
+      }
+    }
+  }
+
+  private drawCh7Plaque(
+    idx: number, x: number, y: number, w: number, h: number,
+  ): void {
+    const prog  = this.progress[idx];
+    const cfg   = STAGE_CONFIGS[idx];
+    const label = cfg ? String(cfg.stageNumber) : String(idx + 1);
+
+    const bg = this.add.graphics();
+
+    if (!prog?.unlocked) {
+      bg.fillStyle(0x0a0800, 1);
+      bg.fillRoundedRect(x, y, w, h, 6);
+      bg.lineStyle(1, 0x3a2a00, 0.8);
+      bg.strokeRoundedRect(x, y, w, h, 6);
+      this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#4a3a00' }).setOrigin(0.5);
+
+    } else if (prog.bestStars === 0) {
+      bg.fillStyle(0x1a1400, 1);
+      bg.fillRoundedRect(x, y, w, h, 6);
+      bg.lineStyle(1.5, 0xffd700, 0.9);
+      bg.strokeRoundedRect(x, y, w, h, 6);
+      this.add.text(x + w / 2, y + 14, label, { fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: '#ffd700' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 16, '☆☆☆', { fontFamily: 'sans-serif', fontSize: '11px', color: '#cc9900' }).setOrigin(0.5);
+      const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.launchStage(idx));
+      zone.on('pointerover', () => { bg.clear(); bg.fillStyle(0x2a2000, 1); bg.fillRoundedRect(x, y, w, h, 6); bg.lineStyle(1.5, 0xffd700, 1); bg.strokeRoundedRect(x, y, w, h, 6); });
+      zone.on('pointerout',  () => { bg.clear(); bg.fillStyle(0x1a1400, 1); bg.fillRoundedRect(x, y, w, h, 6); bg.lineStyle(1.5, 0xffd700, 0.9); bg.strokeRoundedRect(x, y, w, h, 6); });
+
+    } else {
+      bg.fillStyle(0x2a2000, 1);
+      bg.fillRoundedRect(x, y, w, h, 6);
+      bg.lineStyle(2, 0xffd700, 0.9);
+      bg.strokeRoundedRect(x, y, w, h, 6);
+      this.add.text(x + w / 2, y + 14, label, { fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: '#ffd700' }).setOrigin(0.5);
+      const stars = '★'.repeat(prog.bestStars) + '☆'.repeat(3 - prog.bestStars);
+      this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#ffd700' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
         this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);

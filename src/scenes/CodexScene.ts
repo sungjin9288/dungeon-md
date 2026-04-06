@@ -43,6 +43,9 @@ const TRIBE_META: TribeMeta[] = [
   { id: 'dragon',     name: '용족',      emoji: '🐉', color: 0xc04000,
     bonus: '전설 몬스터 ATK +25%',
     reward: '오룡 완성체 (전설) 해금' },
+  { id: 'celestial',  name: '천상족',    emoji: '✨', color: 0xffd700,
+    bonus: '천상족 성스러운 피해 +30%',
+    reward: '천제 분신 (전설) 해금' },
 ];
 
 // Tribe ID → reward monster to unlock on 100% completion
@@ -55,6 +58,7 @@ const TRIBE_REWARD_MONSTER: Record<string, MonsterId> = {
   mask:       'mask_complete',
   moonlight:  'moonlight_complete',
   dragon:     'five_dragon_complete',
+  celestial:  'god_realm_general',
 };
 
 // ─── Layout ───────────────────────────────────────────────────────────────────

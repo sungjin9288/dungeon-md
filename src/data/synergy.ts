@@ -119,6 +119,17 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { atkMult: 1.35, special: 'MOONLIGHT_MASS_HEAL' } },
     ],
   },
+  {
+    tribe: 'celestial',
+    tiers: [
+      { count: 2, name: '천상의 가호', desc: '성스러운 피해 +20%',
+        effect: { atkMult: 1.20 } },
+      { count: 4, name: '천상 군단', desc: '성스러운 피해 +35%, DIVINE_WARD 무시',
+        effect: { atkMult: 1.35, special: 'CELESTIAL_PIERCE' } },
+      { count: 6, name: '천제의 강림', desc: 'ATK +50%, 웨이브 시작 시 전체 침략자 느리게',
+        effect: { atkMult: 1.50, special: 'CELESTIAL_DESCENT' } },
+    ],
+  },
 ];
 
 // ─── Element Combo ─────────────────────────────────────────────────────────────

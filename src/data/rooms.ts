@@ -1,5 +1,5 @@
 export type RoomType = 'guardian' | 'trap' | 'gold' | 'tower' | 'scroll_library' | 'trap_corridor' | 'armory' | 'medicine_hall'
-  | 'spirit_altar' | 'dragons_lair';
+  | 'spirit_altar' | 'dragons_lair' | 'celestial_shrine' | 'void_forge';
 
 export interface RoomDef {
   type: RoomType;
@@ -134,6 +134,28 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     attackDamage: 30, attackRange: 1, attackCooldown: 5000,
     goldPerSec: 0, baseHp: 300, upgradeMult: 1.6,
     upgradeCosts: [250, 500],
+  },
+
+  // ─── Chapter 5 rooms ───────────────────────────────────────────────────────
+
+  celestial_shrine: {
+    type: 'celestial_shrine', koreanName: '천상 신전', chapter: 5,
+    description: 'Lv1: 성스러운 피해+감속; Lv2: +50% 피해, 신성 면역 감소; Lv3: 전열 성스러운 파동 (2× 피해)',
+    emoji: '🕌', cost: 160, accentColor: 0xe8c060, accentCSS: '#e8c060',
+    attackDamage: 22, attackRange: 1, attackCooldown: 3000,
+    goldPerSec: 0, baseHp: 180, upgradeMult: 1.5,
+    upgradeCosts: [200, 380],
+  },
+
+  // ─── Chapter 6 rooms ───────────────────────────────────────────────────────
+
+  void_forge: {
+    type: 'void_forge', koreanName: '공허 용광로', chapter: 6,
+    description: 'Lv1: 3행 관통 공허 포화 (5s 쿨타임); Lv2: 피해 +70%, 쿨타임 4s; Lv3: 전열 공허 폭발 + 1s 기절',
+    emoji: '🔥', cost: 190, accentColor: 0x3300aa, accentCSS: '#3300aa',
+    attackDamage: 260, attackRange: 3, attackCooldown: 5500,
+    goldPerSec: 0, baseHp: 220, upgradeMult: 1.6,
+    upgradeCosts: [280, 560],
   },
 };
 

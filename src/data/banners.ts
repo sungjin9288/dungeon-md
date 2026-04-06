@@ -128,6 +128,26 @@ export const SEASON_BANNERS: SeasonBanner[] = [
     endDate:          '2027-01-31',
   },
 
+  // ── 천상족 Ch7 기념 배너 (2026-04-06 ~ 2026-05-31) ──────────────────────────
+  {
+    id:               'ch7_celestial_2026',
+    name:             '신계의 부름 배너',
+    subname:          '✨ Ch7 기념 한정 배너',
+    icon:             '✨',
+    description:      '신계가 열렸다! 천상족 전원 등장 확률 3배!',
+    season:           'special',
+    bgColor:          0x090e24,
+    borderColor:      0xffd700,
+    glowColor:        0xffeebb,
+    accentCss:        '#ffd700',
+    featuredMonsters: ['celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior', 'divine_healer', 'starlight_knight', 'celestial_sage', 'god_realm_general'],
+    boostedRarity:    'epic',
+    rateMultiplier:   0.65,
+    validSummonTypes: ['normal', 'special'],
+    startDate:        '2026-04-06',
+    endDate:          '2026-05-31',
+  },
+
   // ── 용족 특별 배너 (2026-05-01 ~ 2026-05-31) ─────────────────────────────────
   {
     id:               'special_dragon_2026',

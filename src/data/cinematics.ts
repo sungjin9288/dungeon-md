@@ -133,6 +133,32 @@ export const CINEMATICS: CinematicDef[] = [
     ],
   },
   {
+    id: 'ch7_opening',
+    lines: [
+      { speaker: '산신령', emoji: '⛩️', side: 'left',
+        text: '...천상계의 문이 열렸다. 이곳은 신들의 영역.' },
+      { speaker: '천상 수호자', emoji: '✨', side: 'right',
+        text: '당신이 이 땅을 지키는 수호자인가. 우리의 힘이 필요할 것이오.' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '천상족이라... 재밌군! 같이 싸워보자고!!' },
+      { speaker: '산신령', emoji: '⛩️', side: 'left',
+        text: '하지만 천제(天帝)가 강림한다. 모든 힘을 결집해야 한다.' },
+    ],
+  },
+  {
+    id: 'god_emperor_boss_intro',
+    lines: [
+      { speaker: '천제', emoji: '👼', side: 'left',
+        text: '...감히 천상계까지 올라왔구나.' },
+      { speaker: '천제', emoji: '👼', side: 'left',
+        text: '도깨비, 구미호, 용, 저승, 달빛... 모두를 이겨냈다 해도—' },
+      { speaker: '천제', emoji: '👼', side: 'left',
+        text: '천상의 뜻은 꺾이지 않는다. 네 던전이 버텨낼 수 있을까?' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '신이든 뭐든 관계없다! 우리 던전은 절대 무너지지 않아!!!', pause: 800 },
+    ],
+  },
+  {
     id: 'ch6_opening',
     lines: [
       { speaker: '산신령', emoji: '⛩️', side: 'left',
@@ -216,4 +242,6 @@ export const STAGE_CINEMATICS: Record<number, string> = {
   52: 'final_boss_intro',
   53: 'ch6_opening',
   62: 'eternal_emperor_boss_intro',
+  63: 'ch7_opening',
+  72: 'god_emperor_boss_intro',
 };

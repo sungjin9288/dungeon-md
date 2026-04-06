@@ -46,6 +46,7 @@ function getTribeGradient(ctx: CanvasRenderingContext2D, tribe?: TribeId): Canva
     sea:       ['#001830', '#000c18'],
     mask:      ['#2a1000', '#150800'],
     moonlight: ['#0a0a2a', '#050515'],
+    celestial: ['#2a2000', '#151000'],
   };
 
   const [inner, outer] = tribe ? (colors[tribe] ?? ['#1a1a1a', '#0a0a0a']) : ['#1a1a1a', '#0a0a0a'];
@@ -73,6 +74,7 @@ function drawTribeInsignia(ctx: CanvasRenderingContext2D, tribe?: TribeId): void
     sea: '海',
     mask: '面',
     moonlight: '月',
+    celestial: '天',
   };
 
   ctx.fillStyle = '#ffffff';

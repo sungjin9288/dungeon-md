@@ -3,6 +3,23 @@ import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type RoomType } from '../data/rooms';
 import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } from '../data/monsters';
+import { HYBRID_DEFS } from '../data/fusion';
+import { loadGameState } from '../data/wisdom';
+
+// Map roomType → melee/ranged/magic/support for hybrid card type badge
+function inferMonsterType(roomTypes: string[]): MonsterDef['type'] {
+  if (roomTypes.some(r => r.includes('library') || r.includes('altar') || r.includes('shrine'))) return 'magic';
+  if (roomTypes.some(r => r.includes('archer') || r.includes('tower'))) return 'ranged';
+  if (roomTypes.some(r => r.includes('garden') || r.includes('healer'))) return 'support';
+  return 'melee';
+}
+
+// Map rarity → accent color
+function rarityColor(rarity: number): number {
+  if (rarity >= 4) return 0xffd700;   // gold — legendary
+  if (rarity >= 3) return 0xaa44dd;   // purple — epic
+  return 0x44aacc;                     // blue — rare
+}
 
 const PANEL_H    = 286;
 const CARD_W     = 90;
@@ -39,7 +56,26 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.pendingRow = row;
     this.pendingCol = col;
     const monsters = getMonstersForRoom(roomType, unlockedStage, elementFilter);
-    this.rebuildCards(monsters);
+
+    // Append owned hybrid monsters that fit this room type
+    const ownedIds = new Set(loadGameState().ownedMonsters.map(m => m.id));
+    const hybridCards: MonsterDef[] = Object.values(HYBRID_DEFS)
+      .filter(h => ownedIds.has(h.id) && h.roomTypes.includes(roomType as string))
+      .map(h => ({
+        id:              h.id as MonsterId,
+        name:            h.name,
+        emoji:           h.emoji,
+        type:            inferMonsterType(h.roomTypes),
+        roomTypes:       h.roomTypes as RoomType[],
+        baseDamage:      h.baseDamage,
+        attackCooldown:  300,
+        range:           1,
+        passive:         h.passive as MonsterDef['passive'],
+        passiveDesc:     h.passiveDesc,
+        accentColor:     rarityColor(h.rarity),
+        unlockStage:     0,
+      }));
+    this.rebuildCards([...monsters, ...hybridCards]);
 
     if (this.isOpen) return;
     this.isOpen = true;

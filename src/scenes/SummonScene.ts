@@ -683,6 +683,20 @@ export class SummonScene extends Phaser.Scene {
       }
     }
 
+    // ── Unlock-gated pool helper ──────────────────────────────────
+    // Filter each rarity pool to monsters whose unlockStage <= player's highest cleared stage.
+    const highestCleared = (gs.stageProgress ?? []).reduce(
+      (max: number, p: { bestStars?: number }, idx: number) => (p?.bestStars ?? 0) > 0 ? idx + 1 : max, 0,
+    );
+    const getPool = (rarity: SummonRarity): MonsterId[] => {
+      const base = RARITY_POOLS[rarity];
+      if (highestCleared <= 0) return base;
+      return base.filter(id => {
+        const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS];
+        return !def || (def.unlockStage ?? 1) <= highestCleared;
+      });
+    };
+
     // ── Roll results ──────────────────────────────────────────────
     const results: Array<{
       monsterId: MonsterId;
@@ -716,7 +730,7 @@ export class SummonScene extends Phaser.Scene {
       }
 
       const rarity = RARITIES[rarityIdx];
-      const pool   = RARITY_POOLS[rarity];
+      const pool   = getPool(rarity);
 
       // Soul summon: prefer unowned
       let monsterId: MonsterId;

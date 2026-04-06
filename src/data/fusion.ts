@@ -27,6 +27,10 @@ const MONSTER_BASE_INFO: Record<string, MonsterBaseInfo> = {
   ghost_hunter:     { name: '귀신 사냥꾼',   emoji: '👻', baseDamage: 20 },
   mask_dancer:      { name: '탈춤꾼',        emoji: '💃', baseDamage: 18 },
   venom_warrior:    { name: '독 전사',       emoji: '☠️', baseDamage: 24 },
+  // Ch7 — Celestial
+  celestial_guardian: { name: '천상 수호자', emoji: '✨', baseDamage: 28 },
+  sky_archer:         { name: '하늘 궁수',   emoji: '🏹', baseDamage: 24 },
+  heaven_mage:        { name: '천계 법사',   emoji: '🔮', baseDamage: 22 },
 };
 
 const RARITY_PREFIXES = ['', '강화 ', '정예 ', '영웅 ', '전설 '];
@@ -80,6 +84,8 @@ const EVOLVABLE_BASES = new Set([
   'dokkaebi_warrior', 'dokkaebi_junior', 'village_archer', 'gold_turtle',
   'fire_dokkaebi', 'sage', 'gumiho_guardian', 'frost_spirit',
   'white_tiger', 'sea_god_spear', 'fox_shaman', 'iron_mask',
+  // Ch7
+  'celestial_guardian', 'sky_archer', 'heaven_mage',
 ]);
 
 export function getNextEvolution(monsterId: string): (EvolutionTier & { resultId: string }) | null {
@@ -197,6 +203,17 @@ export const HYBRID_DEFS: Record<string, HybridDef> = {
     passive: 'GLACIAL_DOMAIN', passiveDesc: '전체 적 이동속도 -20% + 동결 확률',
     roomTypes: ['guardian'],
   },
+  // ─── Ch7 celestial hybrids ─────────────────────────────────────────────────
+  celestial_sentinel: {
+    id: 'celestial_sentinel', name: '천상 파수꾼', emoji: '✨🛡', rarity: 3, baseDamage: 32,
+    passive: 'HOLY_BARRIER', passiveDesc: '5번째 공격마다 전체 방 1초 피해 면역',
+    roomTypes: ['guardian', 'celestial_shrine'],
+  },
+  divine_oracle: {
+    id: 'divine_oracle', name: '신탁 현자', emoji: '👁️✨', rarity: 4, baseDamage: 28,
+    passive: 'DIVINE_PROPHECY', passiveDesc: '처치 시 5% 확률로 던전 HP 5% 회복 + 전체 방 ATK +10% (5초)',
+    roomTypes: ['celestial_shrine', 'void_forge'],
+  },
 };
 
 // Canonical 10-entry lookup: sort both IDs alphabetically → join with '+'
@@ -220,6 +237,9 @@ export const COMBINATION_TABLE: Record<string, string> = {
   'mountain_god+storm_archer':        'storm_mountain',
   'gumiho_guardian+shadow_dokkaebi':  'shadow_fox',
   'frost_spirit+sea_dragon_lord':     'ice_dragon_lord',
+  // ─── Ch7 celestial combinations ───
+  'celestial_guardian+sky_archer':    'celestial_sentinel',
+  'divine_healer+heaven_mage':        'divine_oracle',
 };
 
 export function combinationKey(idA: string, idB: string): string {
@@ -334,6 +354,14 @@ export const DROP_TABLE: Record<string, Array<{ id: string; chance: number }>> =
   plague_herald:         [{ id: 'herb',          chance: 0.30 }, { id: 'shadow_cloth',  chance: 0.15 }],
   titan_sentinel:        [{ id: 'iron_shard',    chance: 0.32 }, { id: 'dok_fragment',  chance: 0.18 }],
   eternal_emperor:       [{ id: 'dok_fragment',  chance: 0.35 }, { id: 'soul_fragment', chance: 0.20 }],
+  // ── Chapter 7 ─────────────────────────────────────────────────────────────
+  celestial_knight:      [{ id: 'ice_crystal',   chance: 0.28 }, { id: 'soul_fragment', chance: 0.15 }],
+  divine_archer:         [{ id: 'ice_crystal',   chance: 0.30 }, { id: 'magic_dust',    chance: 0.15 }],
+  heaven_general:        [{ id: 'soul_fragment', chance: 0.30 }, { id: 'dok_fragment',  chance: 0.18 }],
+  sky_titan:             [{ id: 'iron_shard',    chance: 0.32 }, { id: 'soul_fragment', chance: 0.18 }],
+  radiant_seraph:        [{ id: 'magic_dust',    chance: 0.32 }, { id: 'ice_crystal',   chance: 0.20 }],
+  celestial_dragon:      [{ id: 'dok_fragment',  chance: 0.35 }, { id: 'soul_fragment', chance: 0.22 }],
+  god_emperor:           [{ id: 'boss_essence',  chance: 0.40 }, { id: 'soul_fragment', chance: 0.25 }],
 };
 
 export function rollMaterialDrop(invaderType: string): string | null {
@@ -458,6 +486,21 @@ export const BLUEPRINT_DEFS: Record<string, BlueprintDef> = {
     stats: { bossDmgBonus: 0.40, skillCDReduction: 0.20 },
     materials: { boss_essence: 2, soul_fragment: 5, dok_fragment: 4 },
     resultId: 'eq_boss_amulet', resultEmoji: '🔮',
+  },
+  // ─── Chapter 7 ────────────────────────────────────────────────────────────
+  bp_celestial_lance: {
+    id: 'bp_celestial_lance', name: '천상의 창', type: 'weapon', rarity: 3,
+    statDesc: 'ATK +45% · 성스러운 피해 +20%',
+    stats: { atkMultiplier: 0.45, holyDmgBonus: 0.20 },
+    materials: { soul_fragment: 8, ice_crystal: 6, magic_dust: 3 },
+    resultId: 'eq_celestial_lance', resultEmoji: '🔱',
+  },
+  bp_divine_aegis: {
+    id: 'bp_divine_aegis', name: '신성 방패', type: 'armor', rarity: 4,
+    statDesc: '방 HP +500 · 피해 감소 +25% · 천상족 ATK +20%',
+    stats: { roomHPBonus: 500, dmgReduction: 0.25, celestialAtkBonus: 0.20 },
+    materials: { boss_essence: 3, soul_fragment: 10, ice_crystal: 8, dok_fragment: 5 },
+    resultId: 'eq_divine_aegis', resultEmoji: '🛡️',
   },
   bp_arcane_core: {
     id: 'bp_arcane_core', name: '마법 핵심', type: 'weapon', rarity: 3,

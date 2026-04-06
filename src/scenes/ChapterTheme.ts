@@ -21,6 +21,7 @@ export function applyChapterTheme(
     case 4: applyChapter4Theme(scene, effectiveCellSize); break;
     case 5: applyChapter5Theme(scene, effectiveCellSize); break;
     case 6: applyChapter6Theme(scene, effectiveCellSize); break;
+    case 7: applyChapter7Theme(scene, effectiveCellSize); break;
     // Chapter 1 has no overlay theme
   }
 }
@@ -198,4 +199,62 @@ function applyChapter6Theme(scene: Phaser.Scene, effectiveCellSize: number): voi
   crystalGfx.lineBetween(310, bY + 5, 340, bY + 50);
 
   logger.debug('[CH6 THEME] void throne applied');
+}
+
+// ─── Ch7: Celestial Realm ─────────────────────────────────────────────────────
+
+function applyChapter7Theme(scene: Phaser.Scene, effectiveCellSize: number): void {
+  // Golden divine radiance overlay
+  const divineGlow = scene.add.graphics().setDepth(5);
+  divineGlow.fillStyle(0x1a1400, 1);
+  divineGlow.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  divineGlow.setAlpha(0.18);
+  scene.tweens.add({
+    targets: divineGlow,
+    alpha: { from: 0.12, to: 0.28 },
+    duration: 3500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+  });
+
+  // Golden holy light shaft from above
+  const shaft = scene.add.graphics().setDepth(6);
+  shaft.fillStyle(0xffd700, 0.06);
+  shaft.fillTriangle(
+    CANVAS_WIDTH / 2 - 60, 0,
+    CANVAS_WIDTH / 2 + 60, 0,
+    CANVAS_WIDTH / 2, CANVAS_HEIGHT,
+  );
+  scene.tweens.add({
+    targets: shaft,
+    alpha: { from: 0.04, to: 0.10 },
+    duration: 2800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+  });
+
+  // Floating golden stars / holy particles
+  const cs = effectiveCellSize;
+  scene.add.particles(CANVAS_WIDTH / 2, GRID_Y + GRID_ROWS * cs / 2, 'dust', {
+    x: { min: -CANVAS_WIDTH / 2, max: CANVAS_WIDTH / 2 },
+    y: { min: -GRID_ROWS * cs / 2, max: GRID_ROWS * cs / 2 },
+    speedX: { min: -4, max: 4 }, speedY: { min: -18, max: -6 },
+    alpha: { min: 0.08, max: 0.30 },
+    scale: { min: 0.15, max: 0.55 },
+    tint: [0xffd700, 0xfff0aa, 0xffffff, 0xffcc00],
+    lifespan: { min: 4000, max: 9000 }, frequency: 300, quantity: 1,
+  }).setDepth(33);
+
+  // Divine pillars along the bottom edge
+  const bY = GRID_Y + GRID_ROWS * cs + 10;
+  const pillarGfx = scene.add.graphics().setDepth(8);
+  pillarGfx.fillStyle(0xffd700, 0.22);
+  const pillarPositions = [20, 90, 170, 250, 320];
+  pillarPositions.forEach(px => {
+    pillarGfx.fillRect(px, bY - 30, 8, 50);
+    // Pillar top cap
+    pillarGfx.fillTriangle(px - 4, bY - 30, px + 12, bY - 30, px + 4, bY - 46);
+  });
+  pillarGfx.lineStyle(1, 0xffd700, 0.35);
+  pillarPositions.forEach(px => {
+    pillarGfx.lineBetween(px - 4, bY - 30, px + 12, bY - 30);
+  });
+
+  logger.debug('[CH7 THEME] celestial realm applied');
 }

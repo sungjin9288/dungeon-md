@@ -26,6 +26,7 @@ const TRIBE_EMOJI: Record<string, string> = {
   sea:        '🌊',
   mask:       '🎭',
   moonlight:  '🌙',
+  celestial:  '✨',
 };
 
 export class SynergyManager {
@@ -79,6 +80,11 @@ export class SynergyManager {
 
   getSpdMult(): number {
     return getSynergySpdMult(this.activeSynergies);
+  }
+
+  hasSpecial(special: string): boolean {
+    return this.activeSynergies.some(s => s.tier.effect.special === special)
+      || this.activeElementCombos.some(e => e.combo.effect.special === special);
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
