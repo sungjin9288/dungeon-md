@@ -35,12 +35,20 @@ const safeTop    = parseInt(getComputedStyle(document.documentElement).getProper
 const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0');
 (window as unknown as Record<string, unknown>).__safeArea = { top: safeTop, bottom: safeBottom };
 
-const config: Phaser.Types.Core.GameConfig = {
+const dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+const config = {
   type: Phaser.AUTO,
   width:  CANVAS_WIDTH,
   height: CANVAS_HEIGHT,
+  resolution: dpr,
   backgroundColor: '#1a0f00',
   parent: document.body,
+  render: {
+    antialias:    true,
+    antialiasGL:  true,
+    pixelArt:     false,
+  },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
