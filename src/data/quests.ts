@@ -450,6 +450,61 @@ export const MAIN_QUESTS: MainQuest[] = [
       { id: 'O1', type: 'complete_stage', target: 62, current: 0, description: '스테이지 62 클리어' },
     ],
     reward: { gold: 5000, dmXP: 1000, soulCrystals: 200 },
+    nextQuestId: 'MQ-031',
+  },
+  {
+    id: 'MQ-031', chapter: 7, autoTrigger: true,
+    title: '천상계의 문',
+    npcSpeaker: '천상 수호자', npcEmoji: '✨',
+    description: '천상계의 문이 열렸다. 신들의 영역에 처음 발을 내딛어라.\n첫 번째 신계 시련을 통과하라.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 63, current: 0, description: '스테이지 63 클리어' },
+    ],
+    reward: { gold: 3000, dmXP: 800, soulCrystals: 60 },
+    nextQuestId: 'MQ-032',
+  },
+  {
+    id: 'MQ-032', chapter: 7, autoTrigger: true,
+    title: '천상 군단 소집',
+    npcSpeaker: '천상 수호자', npcEmoji: '✨',
+    description: '신계를 지키려면 천상족 수호자가 필요하다.\n천상 신전을 건설하고 소환을 강화하라.',
+    objectives: [
+      { id: 'O1', type: 'build_room',   target: 1,  current: 0, description: '천상 신전 건설' },
+      { id: 'O2', type: 'summon',       target: 5,  current: 0, description: '소환 5회 실행' },
+      { id: 'O3', type: 'upgrade_room', target: 3,  current: 0, description: '방 업그레이드 3회' },
+    ],
+    invasionOnComplete: {
+      id: 'INV-007', name: '천상계 척후대', isStoryInvasion: true,
+      waves: [
+        { waveNumber: 1, invaders: [{ type: 'celestial_knight', count: 3 }] },
+        { waveNumber: 2, invaders: [{ type: 'divine_archer', count: 3 }, { type: 'celestial_knight', count: 2 }] },
+        { waveNumber: 3, invaders: [{ type: 'heaven_general', count: 1 }, { type: 'divine_archer', count: 3 }] },
+      ],
+    },
+    reward: { gold: 4000, dmXP: 1000, soulCrystals: 80 },
+    nextQuestId: 'MQ-033',
+  },
+  {
+    id: 'MQ-033', chapter: 7, autoTrigger: true,
+    title: '신계의 전선',
+    npcSpeaker: '산신령', npcEmoji: '⛩️',
+    description: '천상계의 관문에 도달했다. 자원을 확보하고 신계 중심부로 돌진하라.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 68, current: 0, description: '스테이지 68 클리어' },
+      { id: 'O2', type: 'collect_gold',   target: 30000, current: 0, description: '골드 30000 누적 획득' },
+    ],
+    reward: { gold: 5000, dmXP: 1200, soulCrystals: 100 },
+    nextQuestId: 'MQ-034',
+  },
+  {
+    id: 'MQ-034', chapter: 7, autoTrigger: true,
+    title: '천제를 쓰러뜨려라',
+    npcSpeaker: '천제', npcEmoji: '👼',
+    description: '드디어 천제와 마주할 시간이다.\n모든 힘을 모아 신계 최고의 존재를 물리쳐라.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 72, current: 0, description: '스테이지 72 클리어' },
+    ],
+    reward: { gold: 10000, dmXP: 2000, soulCrystals: 500 },
     nextQuestId: null,
   },
 ];
@@ -613,6 +668,25 @@ export const SUB_QUEST_POOL: SubQuest[] = [
   { id: 'SQ-009', icon: '⬆️', title: '연속 강화',
     objective: { type: 'upgrade_room', target: 3, description: '방 업그레이드 3회' },
     reward: { dmXP: 100, gold: 350 } },
+  // ── Ch7 specific ──
+  { id: 'SQ-010', icon: '⚔️', title: '천계 도전',
+    objective: { type: 'complete_stage', target: 65, description: '스테이지 65 클리어' },
+    reward: { dmXP: 200, soulCrystals: 150 } },
+  { id: 'SQ-011', icon: '🏰', title: '신계 방어선',
+    objective: { type: 'defend_invasion', target: 5, description: '침략 5회 격퇴' },
+    reward: { dmXP: 180, gold: 800 } },
+  { id: 'SQ-012', icon: '💎', title: '천상의 보물',
+    objective: { type: 'collect_gold', target: 5000, description: '골드 5000 획득' },
+    reward: { dmXP: 160, soulCrystals: 100 } },
+  { id: 'SQ-013', icon: '🌟', title: '각성의 경지',
+    objective: { type: 'upgrade_room', target: 5, description: '방 업그레이드 5회' },
+    reward: { dmXP: 250, gold: 1000 } },
+  { id: 'SQ-014', icon: '🔮', title: '강화 소환',
+    objective: { type: 'summon', target: 10, description: '소환 10회' },
+    reward: { dmXP: 200, soulCrystals: 120 } },
+  { id: 'SQ-015', icon: '👑', title: '신황제 격파',
+    objective: { type: 'complete_stage', target: 72, description: '스테이지 72 클리어' },
+    reward: { dmXP: 500, soulCrystals: 300 } },
 ];
 
 // Legacy alias kept for compatibility

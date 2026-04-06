@@ -19,6 +19,7 @@ const T3: InvaderType[] = ['undying_knight', 'scarecrow_mage', 'venom_dancer', '
 const T4: InvaderType[] = ['void_assassin_elite'];
 const T5: InvaderType[] = ['void_invader', 'undying_warrior'];
 const T6: InvaderType[] = ['mirror_knight', 'shadow_wraith', 'celestial_crusader', 'plague_herald', 'swarm_larva', 'void_colossus', 'titan_sentinel'];
+const T7: InvaderType[] = ['celestial_knight', 'divine_archer', 'heaven_general', 'sky_titan', 'radiant_seraph'];
 
 function buildPool(w: number): InvaderType[] {
   const pool: InvaderType[] = [...T1];
@@ -28,6 +29,7 @@ function buildPool(w: number): InvaderType[] {
   if (w >= 30) pool.push(...T4);
   if (w >= 40) pool.push(...T5);
   if (w >= 50) pool.push(...T6);
+  if (w >= 60) pool.push(...T7);
   return pool;
 }
 
@@ -97,12 +99,18 @@ export function buildEndlessSpawnQueue(
     queue.push({ def: makeScaledDef('titan_sentinel', { hp: Math.round(INVADER_DEFS['titan_sentinel'].hp * hpMult * 1.5), isMiniBoss: true }), delay: 1500 });
   }
 
+  // Wave 70: sky titan + radiant seraph elite pair
+  if (w === 70) {
+    queue.push({ def: makeScaledDef('sky_titan', { hp: Math.round(INVADER_DEFS['sky_titan'].hp * hpMult * 2), isMiniBoss: true }), delay: 0 });
+    queue.push({ def: makeScaledDef('radiant_seraph', { hp: Math.round(INVADER_DEFS['radiant_seraph'].hp * hpMult * 1.8), isMiniBoss: true }), delay: 1500 });
+  }
+
   // ── Standard fillers ───────────────────────────────────────────────────────
   // Weight selection toward newer (harder) types as wave increases.
   // Bias index: newer types in pool get higher probability with higher waves.
   for (let i = 0; i < baseCount; i++) {
     // Pick an index biased toward the upper end of the pool
-    const bias    = Math.min(1, (w - 1) / 60); // 0→1 over 60 waves
+    const bias    = Math.min(1, (w - 1) / 70); // 0→1 over 70 waves
     const raw     = Math.random();
     const biased  = Math.pow(raw, 1 - bias * 0.7); // skews toward higher indices
     const typeIdx = Math.floor(biased * pool.length);

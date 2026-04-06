@@ -16,25 +16,87 @@ import {
   TORCH_POSITIONS, INVADER_WAYPOINTS,
   TOP_BAR_HEIGHT, FOG_START_Y, FOG_HEIGHT,
 } from '../constants/layout';
-import { ROOM_DEFS, getUpgradeCost, getScrollAuraBonus, MAX_ROOM_LEVEL, getAltarKillsNeeded, type RoomData, type RoomType } from '../data/rooms';
-import { MONSTER_DEFS, getMonstersForRoom, type MonsterId } from '../data/monsters';
+import { ROOM_DEFS, getUpgradeCost, getScrollAuraBonus, MAX_ROOM_LEVEL, type RoomData, type RoomType } from '../data/rooms';
+import { MONSTER_DEFS, getMonstersForRoom, resolveMonsterDef, type MonsterId } from '../data/monsters';
 import { INVADER_DEFS } from '../data/invaders';
 import type { InvaderType, InvaderDef } from '../data/invaders';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, type WaveSpec } from '../data/stages';
-import { getMedicineHealRate, getArmoryDmgBonus, getArmoryRadius } from '../data/rooms';
-import { loadGameState, saveGameState, getWisdomBonuses, getUnlockedSlots, ROOM_SLOT_TYPE_DEFS, type WisdomBonuses } from '../data/wisdom';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, type WaveSpec } from '../data/stages';
+import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, getUnlockedSlots, ROOM_SLOT_TYPE_DEFS, type WisdomBonuses } from '../data/wisdom';
 import { checkAchievements, ACHIEVEMENT_DEFS, type AchievementContext } from '../data/achievements';
 import { addXp, ACTIVE_SKILLS, getEquipmentStats, type EquipmentStats } from '../data/barracks';
-import { rollMaterialDrop, MATERIAL_DEFS } from '../data/fusion';
+import { rollMaterialDrop, MATERIAL_DEFS, HYBRID_DEFS } from '../data/fusion';
 import { buildEndlessSpawnQueue } from '../data/endlessWave';
-import { tickDailyChallenge, getTodayString, type DailyDungeon, type WeeklyBoss, getThisWeekMonday } from '../data/daily';
+import { tickDailyChallenge, type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import { updateQuestObjective, tickSubQuestProgress, completeAndAdvance } from '../data/quests';
-import { recordClear, STAGE_CONFIGS } from './StageSelectScene';
-import { STAGE_CINEMATICS } from '../data/cinematics';
+import { STAGE_CONFIGS } from './StageSelectScene';
 import { applyChapterTheme } from './ChapterTheme';
 import { SkillHUD } from '../combat/SkillHUD';
 import { MonsterSwapManager } from '../combat/MonsterSwap';
 import { SynergyManager } from '../combat/SynergyManager';
+import {
+  type BossContext,
+  scheduleNinjaInvisibilityCycle as _scheduleNinjaInvisibilityCycle,
+  setupFoxQueenPhase as _setupFoxQueenPhase,
+  setupUndyingKnight as _setupUndyingKnight,
+  setupDecoyClone as _setupDecoyClone,
+  scheduleVoidTeleport as _scheduleVoidTeleport,
+  setupDragonKingPhase as _setupDragonKingPhase,
+  setupVoidStealthElite as _setupVoidStealthElite,
+  setupDeathEmissary as _setupDeathEmissary,
+  setupThreeGodDestroyer as _setupThreeGodDestroyer,
+  setupShadowRealm as _setupShadowRealm,
+  setupGodEmperor as _setupGodEmperor,
+  setupEternalEmperor as _setupEternalEmperor,
+} from '../combat/BossBehaviors';
+import {
+  type RoomMechanicsContext,
+  runTigersPounce as _runTigersPounce,
+  runMercenaryAuras as _runMercenaryAuras,
+  runGoldVeins as _runGoldVeins,
+  runHealers as _runHealers,
+  runSoulHarvest as _runSoulHarvest,
+  runMedicineHallHeal as _runMedicineHallHeal,
+  runPoisonTrailDamage as _runPoisonTrailDamage,
+  runEntrancingVeil as _runEntrancingVeil,
+  runSpiritAltar as _runSpiritAltar,
+  spawnGhostWarrior as _spawnGhostWarrior,
+  runLunarRhythm as _runLunarRhythm,
+  runExtraMonsterAttacks as _runExtraMonsterAttacks,
+  updateArmoryBonuses as _updateArmoryBonuses,
+  runTrapEffects as _runTrapEffects,
+  triggerScrollBurst as _triggerScrollBurst,
+  triggerChainLightning as _triggerChainLightning,
+  triggerSpectralBolt as _triggerSpectralBolt,
+  triggerWhirlwind as _triggerWhirlwind,
+  recalcRoomTypeBonuses as _recalcRoomTypeBonuses,
+} from '../combat/RoomMechanics';
+import {
+  showAttackLine as _showAttackLine,
+  showFirstStrikeEffect as _showFirstStrikeEffect,
+  showTrapRing as _showTrapRing,
+  showHolyBurst as _showHolyBurst,
+  spawnCharmOrb as _spawnCharmOrb,
+  showTideWave as _showTideWave,
+  showMagicImmuneMiss as _showMagicImmuneMiss,
+  showGoldFloat as _showGoldFloat,
+  showHealEffect as _showHealEffect,
+  showFloatText as _showFloatText,
+  showHolyPaladinAura as _showHolyPaladinAura,
+  showSoulHarvestExec as _showSoulHarvestExec,
+  showBossWarning as _showBossWarning,
+  showWisdomToast as _showWisdomToast,
+  showXpToast as _showXpToast,
+  triggerDragonRoar as _triggerDragonRoar,
+  showTigersPounce as _showTigersPounce,
+  showRallyCryEffect as _showRallyCryEffect,
+} from '../combat/VisualEffects';
+import {
+  type ResultFlowContext,
+  showWaveClear as _showWaveClear,
+  triggerWaveFail as _triggerWaveFail,
+  showChapterClear as _showChapterClear,
+  showRepairOption as _showRepairOption,
+} from '../combat/ResultFlow';
 import { logger } from '../utils/logger';
 
 export class DungeonScene extends Phaser.Scene {
@@ -91,7 +153,8 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Wisdom bonuses ─────────────────────────────────────────────────────────
   private wisdomBonuses!: WisdomBonuses;
-  private baseSlots      = 12;   // overridden in create() from stage config
+  private prestigeDmgMult = 1;   // +10% per prestige level
+  private baseSlots       = 12;  // overridden in create() from stage config
 
   // ── Player state ───────────────────────────────────────────────────────────
   private gold      = 500;
@@ -155,6 +218,7 @@ export class DungeonScene extends Phaser.Scene {
     // ── Wisdom bonuses ────────────────────────────────────────────────────────
     const gameState       = loadGameState();
     this.wisdomBonuses    = getWisdomBonuses(gameState);
+    this.prestigeDmgMult  = getPrestigeDmgMult(gameState);
     this.synergyManager   = new SynergyManager(this);
     this.dungeonTrapSlots = gameState.dungeonSlots ?? [];
 
@@ -199,7 +263,7 @@ export class DungeonScene extends Phaser.Scene {
       stageStartGold  = stageCfg.startGold ?? 300;
     } else {
       const stageId = stageCfg?.stageNumber ?? 1;
-      const allStages = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6];
+      const allStages = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7];
       const stageDef  = allStages.find(s => s.id === stageId) ?? CHAPTER_1[0];
       waveConfigs     = stageDef.waves;
       stageChapter    = stageDef.chapter;
@@ -237,7 +301,7 @@ export class DungeonScene extends Phaser.Scene {
     this.startGold        = this.gold;
 
     // Apply dungeon HP bonus
-    this.maxHp            = stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus;
+    this.maxHp            = stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus + this.wisdomBonuses.fortressHp;
     this.dungeonHp        = this.maxHp;
 
     // Load unlockedStage from STAGE_CONFIGS so the monster picker shows correct options
@@ -632,7 +696,10 @@ export class DungeonScene extends Phaser.Scene {
       this.panel.open(room.row, room.col, this.gold);
 
     } else if (room.state === 'occupied' && room.roomData) {
-      const hasMonstersAvailable = getMonstersForRoom(room.roomData.type, this.unlockedStage).length > 0;
+      const ownedHybridForRoom = Object.values(HYBRID_DEFS)
+        .filter(h => h.roomTypes.includes(room.roomData!.type as string) && loadGameState().ownedMonsters.some(m => m.id === h.id));
+      const hasMonstersAvailable = getMonstersForRoom(room.roomData.type, this.unlockedStage).length > 0
+        || ownedHybridForRoom.length > 0;
       if (hasMonstersAvailable && !room.roomData.monsterSlot) {
         // No monster assigned yet — open monster panel first
         this.monsterPanel.open(room.row, room.col, room.roomData.type, this.unlockedStage, this.dailyMode?.elementRestrict);
@@ -923,9 +990,11 @@ export class DungeonScene extends Phaser.Scene {
       this.recalcRoomTypeBonuses();
     }
 
-    // Open monster panel if this room type supports monsters
+    // Open monster panel if this room type supports monsters (including owned hybrids)
     const available = getMonstersForRoom(type, this.unlockedStage);
-    if (available.length > 0) {
+    const ownedHybrid = Object.values(HYBRID_DEFS)
+      .some(h => h.roomTypes.includes(type as string) && loadGameState().ownedMonsters.some(m => m.id === h.id));
+    if (available.length > 0 || ownedHybrid) {
       window.setTimeout(() => {
         this.monsterPanel.open(row, col, type, this.unlockedStage);
       }, 200);
@@ -937,14 +1006,16 @@ export class DungeonScene extends Phaser.Scene {
     if (!data) return;
     data.monsterSlot = id;
     data.hasFirstStrikeUsed = false;
-    const mDef = MONSTER_DEFS[id];
-    if (!mDef) return;
-    // Update effective cooldown to monster's cooldown
-    if (mDef.attackCooldown > 0) data.attackCooldown = mDef.attackCooldown;
+    const mDef  = MONSTER_DEFS[id];
+    const hbDef = mDef ? null : HYBRID_DEFS[id];
+    if (!mDef && !hbDef) return;
+    const emoji = mDef?.emoji ?? hbDef!.emoji;
+    // Update effective cooldown to monster's cooldown (hybrids use room default)
+    if (mDef?.attackCooldown && mDef.attackCooldown > 0) data.attackCooldown = mDef.attackCooldown;
     // Equipment: roomHpBonus
     const eqS = this.equipmentMap.get(id);
     if (eqS?.roomHpBonus) this.rooms[row][col].addBonusHp(eqS.roomHpBonus);
-    this.rooms[row][col].setMonsterSprite(id, mDef.emoji);
+    this.rooms[row][col].setMonsterSprite(id, emoji);
     audioManager.playSfx('monster_place');
     {
       const gs_q = loadGameState();
@@ -1067,6 +1138,35 @@ export class DungeonScene extends Phaser.Scene {
 
     if (this.stageChapter >= 3) this.updateArmoryBonuses();
 
+    // STEAM_BURST (fire+frost combo): every 10s, 25 dmg AoE to all active invaders
+    if (this.synergyManager.hasSpecial('STEAM_BURST')) {
+      this.time.addEvent({
+        delay: 10000, repeat: 8,
+        callback: () => {
+          if (!this.waveActive) return;
+          this.activeInvaders.forEach(i => { if (i.active) i.takeDamage(25); });
+          const g = this.add.graphics().setDepth(55);
+          g.fillStyle(0x88ddff, 0.2);
+          g.fillRect(0, GRID_Y, CANVAS_WIDTH, GRID_ROWS * this.effectiveCellSize);
+          this.tweens.add({ targets: g, alpha: 0, duration: 600, onComplete: () => g.destroy() });
+        },
+      });
+    }
+
+    // MOONLIGHT_MASS_HEAL (6 moonlight): heal 5% maxHp every 8s during this wave
+    if (this.synergyManager.hasSpecial('MOONLIGHT_MASS_HEAL')) {
+      this.time.addEvent({
+        delay: 8000, repeat: 4,
+        callback: () => {
+          if (this.dungeonHp <= 0) return;
+          const heal = Math.ceil(this.maxHp * 0.05);
+          this.dungeonHp = Math.min(this.maxHp, this.dungeonHp + heal);
+          this.registry.set('hp', this.dungeonHp);
+          this.showFloatText(CANVAS_WIDTH / 2, 80, `🌙 +${heal}`, '#44ffaa');
+        },
+      });
+    }
+
     // Lv3 scroll_library SCROLL_BURST: 2× for all magic rooms for 4000ms
     for (const row of this.roomGrid)
       for (const data of row) {
@@ -1124,6 +1224,8 @@ export class DungeonScene extends Phaser.Scene {
       : def;
     const inv = new Invader(this, this.invaderPath, modDef);
     inv.setDepth(40);
+    // CELESTIAL_DESCENT (6 celestial): all spawned invaders start slowed 25%
+    if (this.synergyManager.hasSpecial('CELESTIAL_DESCENT')) inv.applySlow(0.75, 3000);
     this.activeInvaders.push(inv);
     this.waveHasSpawned = true;
 
@@ -1215,97 +1317,21 @@ export class DungeonScene extends Phaser.Scene {
       case 'EMPEROR_PHASE':
         this.setupEternalEmperor(inv);
         break;
+      // ── Chapter 7 behaviors ──────────────────────────────────────────────
+      case 'GOD_EMPEROR_PHASE':
+        this.setupGodEmperor(inv);
+        break;
     }
   }
 
   private triggerScrollBurst(libraryData: RoomData): void {
-    libraryData.scrollBurstActiveUntil = this.time.now + 4000;
-    // Purple wave ripple visual from this library's room
-    for (let row = 0; row < GRID_ROWS; row++)
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const d = this.roomGrid[row][col];
-        if (d === libraryData) {
-          const g = this.add.graphics().setDepth(50);
-          g.lineStyle(3, 0xaa44ff, 0.9);
-          g.strokeCircle(this.rooms[row][col].x, this.rooms[row][col].y, 10);
-          this.tweens.add({ targets: g, scaleX: 10, scaleY: 10, alpha: 0, duration: 600,
-            onComplete: () => g.destroy() });
-          const t = this.add.text(this.rooms[row][col].x, this.rooms[row][col].y - 20, '📜 폭발!', {
-            fontFamily: 'sans-serif', fontSize: '11px', color: '#cc88ff',
-          }).setOrigin(0.5).setDepth(51);
-          this.tweens.add({ targets: t, y: this.rooms[row][col].y - 50, alpha: 0, duration: 800,
-            onComplete: () => t.destroy() });
-        }
-      }
-    logger.debug('[SCROLL_BURST] Lv3 burst — 2× magic dmg for 4s');
+    _triggerScrollBurst(this.makeRoomMechanicsCtx(), libraryData);
   }
 
   // ─── Dungeon slot trap effects ────────────────────────────────────────────
 
-  // Column center X positions for the 3 grid columns
-  private static readonly TRAP_COL_CENTERS = [
-    GRID_X + CELL_SIZE * 0.5,   // col 0: x ≈ 85
-    GRID_X + CELL_SIZE * 1.5,   // col 1: x ≈ 195
-    GRID_X + CELL_SIZE * 2.5,   // col 2: x ≈ 305
-  ];
-
   private runTrapEffects(now: number): void {
-    if (this.dungeonTrapSlots.length === 0) return;
-    for (const inv of this.activeInvaders) {
-      if (!inv.active || inv.isDead || inv.isTrapImmune) continue;
-      if (!('_trapCols' in inv)) (inv as unknown as Record<string, unknown>)['_trapCols'] = new Set<number>();
-      const triggered = (inv as unknown as Record<string, unknown>)['_trapCols'] as Set<number>;
-
-      for (let col = 0; col < 3; col++) {
-        const cx = DungeonScene.TRAP_COL_CENTERS[col];
-        if (Math.abs(inv.x - cx) > 45 || triggered.has(col)) continue;
-        triggered.add(col);
-
-        // Check all rows of dungeonSlots for this column
-        for (let row = 0; row < GRID_ROWS; row++) {
-          const slotIdx = row * 3 + col;
-          const slot    = this.dungeonTrapSlots[slotIdx];
-          if (!slot) continue;
-          for (const trapId of (slot.trapIds ?? [])) {
-            this.applyTrapToInvader(inv, slot, slotIdx, trapId, now);
-          }
-        }
-      }
-    }
-  }
-
-  private applyTrapToInvader(
-    inv: import('../objects/Invader').Invader,
-    slot: import('../data/wisdom').DungeonSlot,
-    slotIdx: number,
-    trapId: string | undefined,
-    now: number,
-  ): void {
-    if (!trapId || slot.hp <= 0) return;   // broken rooms don't trigger traps
-    // Trap room bonus: +20% trap damage + synergy bonus (함정+지원 인접 +15%)
-    const trapRoomMult  = slot.roomType === 'trap' ? 1.2 : 1.0;
-    const synergyMult   = this.slotTrapSynergyMult.get(slotIdx) ?? 1.0;
-    const dmgMult = slot.roomLevel * trapRoomMult * synergyMult;
-    switch (trapId) {
-      case 'spike_trap': {
-        const dmg = 20 * dmgMult;
-        inv.takeDamage(dmg);
-        logger.debug(`[TRAP] slot${slotIdx} spike_trap: ${dmg} dmg`);
-        break;
-      }
-      case 'slow_trap':
-        inv.applySlow(0.6, 2000);   // speed × 0.6 = -40%
-        logger.debug(`[TRAP] slot${slotIdx} slow_trap: -40% speed 2s`);
-        break;
-      case 'poison_trap':
-        inv.burnStacks.push({ startTime: now, lastTickTime: now, damage: 8, duration: 4000 });
-        logger.debug(`[TRAP] slot${slotIdx} poison_trap: DoT 8/s×4s`);
-        break;
-      case 'stun_trap':
-        inv.applyStun(1000);
-        logger.debug(`[TRAP] slot${slotIdx} stun_trap: stun 1s`);
-        break;
-    }
+    _runTrapEffects(this.makeRoomMechanicsCtx(), now);
   }
 
   // ─── Combat (update loop) ─────────────────────────────────────────────────
@@ -1318,7 +1344,7 @@ export class DungeonScene extends Phaser.Scene {
         if (!data || !data.attackCooldown) continue;
         if (now - data.lastAttackTime < data.attackCooldown) continue;
 
-        const mDef        = data.monsterSlot ? (MONSTER_DEFS[data.monsterSlot] ?? null) : null;
+        const mDef        = resolveMonsterDef(data.monsterSlot ?? undefined);
         const range       = mDef ? mDef.range : 1;
         const cellCenterY = GRID_Y + row * cs + cs / 2;
         const rowRange    = cs * Math.max(range - 0.2, 0.8);
@@ -1353,7 +1379,7 @@ export class DungeonScene extends Phaser.Scene {
           const baseDmg = (mDef && mDef.baseDamage > 0)
             ? mDef.baseDamage
             : ROOM_DEFS[data.type].attackDamage;
-          let dmg = baseDmg * Math.pow(1.4, data.level - 1) * data.roomTypeDmgMult * this.waveAtkMult;
+          let dmg = baseDmg * Math.pow(1.4, data.level - 1) * data.roomTypeDmgMult * this.waveAtkMult * this.wisdomBonuses.monsterAtkMult * this.prestigeDmgMult;
 
           // ── Equipment bonus ─────────────────────────────────────────────
           const eqStats = data.monsterSlot ? this.equipmentMap.get(data.monsterSlot) : undefined;
@@ -1392,7 +1418,7 @@ export class DungeonScene extends Phaser.Scene {
           if (this.hasDivineTerritory()) dmg *= 1.2;
 
           // ── TRIBE_MASTERY: same-tribe monsters +15% ATK ───────────────────
-          if (mDef?.tribe && this.hasTribeMasteryFor(mDef.tribe)) dmg *= 1.15;
+          if (mDef?.tribe && this.hasTribeMasteryFor(mDef.tribe as import('../data/monsters').TribeId)) dmg *= 1.15;
 
           // ── SEASONAL_BOON: all monsters +10% ATK ──────────────────────────
           if (this.hasSeasonalBoon()) dmg *= 1.10;
@@ -1481,6 +1507,32 @@ export class DungeonScene extends Phaser.Scene {
             }
           }
 
+          // ── celestial_shrine: holy slow + bypasses DIVINE_WARD ──────────
+          if (data.type === 'celestial_shrine') {
+            // Holy light slows target 30% for 1.5s
+            target.applySlow(0.7, 1500);
+            // Lv2+: holy damage bypasses DIVINE_WARD (magic immune) — force dmg
+            if (data.level >= 2 && target.isMagicImmune) dmg = Math.max(dmg, 10);
+            // Lv3: bonus radiant burst (50% extra)
+            if (data.level >= 3) dmg *= 1.5;
+            this.showHolyBurst(this.rooms[row][col].x, cellCenterY);
+          }
+
+          // ── void_forge: 3-row penetrating AoE ────────────────────────────
+          if (data.type === 'void_forge') {
+            // Hits all invaders in this row AND adjacent rows
+            const voidRows = [row - 1, row, row + 1].filter(r => r >= 0 && r < GRID_ROWS);
+            for (const vr of voidRows) {
+              for (const inv of this.activeInvaders) {
+                if (!inv.active || inv === target) continue;
+                const invRow = this.getInvaderRow(inv);
+                if (invRow === vr) {
+                  inv.takeDamage(Math.round(dmg * 0.6));
+                }
+              }
+            }
+          }
+
           // ── trap_corridor per-level effects ───────────────────────────────
           if (data.type === 'trap_corridor') {
             // Lv1: slow 40% for 2s + base spike dmg
@@ -1511,8 +1563,9 @@ export class DungeonScene extends Phaser.Scene {
             continue;
           }
 
-          // ── DIVINE_WARD: magic attacks miss (full immunity) ───────────────
-          if (target.isMagicImmune && (mDef?.type === 'magic')) dmg = 0;
+          // ── DIVINE_WARD: magic attacks miss — CELESTIAL_PIERCE bypasses ──
+          const celestialPierce = this.synergyManager.hasSpecial('CELESTIAL_PIERCE') && mDef?.tribe === 'celestial';
+          if (target.isMagicImmune && (mDef?.type === 'magic') && !celestialPierce) dmg = 0;
           // ── MAGIC_IMMUNITY_WINDOW: first 5s magic immune ─────────────────
           if (now < target.magicImmuneUntil && (mDef?.type === 'magic')) {
             this.showMagicImmuneMiss(target.x, target.y);
@@ -1619,6 +1672,27 @@ export class DungeonScene extends Phaser.Scene {
             }
           }
 
+          // ── GOLD_KILL: +10g on every kill ────────────────────────────────
+          if (mDef?.passive === 'GOLD_KILL' && target.hp <= 0) {
+            this.gold += 10;
+            this.registry.set('gold', this.gold);
+            this.showGoldFloat('+10', target.x, target.y - 18);
+          }
+
+          // ── QUAKE_STUN: every 5th hit stuns all invaders 1.5s ────────────
+          if (mDef?.passive === 'QUAKE_STUN') {
+            data.whirlwindHitCount = (data.whirlwindHitCount ?? 0) + 1;
+            if (data.whirlwindHitCount % 5 === 0) {
+              this.activeInvaders.forEach(i => {
+                if (i.active && !i.isUnstoppable) i.applyStun(1500);
+              });
+              const g = this.add.graphics().setDepth(55);
+              g.fillStyle(0x886600, 0.3);
+              g.fillRect(0, GRID_Y, CANVAS_WIDTH, GRID_ROWS * this.effectiveCellSize);
+              this.tweens.add({ targets: g, alpha: 0, duration: 500, onComplete: () => g.destroy() });
+            }
+          }
+
           // ── Dragon's Lair Lv3: 10% Dragon's Roar on any kill (checked after dmg) ─
           if (data.type === 'dragons_lair' && data.level >= 3 && Math.random() < 0.10) {
             this.triggerDragonRoar(this.rooms[row][col].x, cellCenterY);
@@ -1632,202 +1706,187 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private runExtraMonsterAttacks(now: number): void {
-    const cs = this.effectiveCellSize;
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const data = this.roomGrid[row][col];
-        if (!data || !data.monsterSlots || data.monsterSlots.length <= 1) continue;
+    _runExtraMonsterAttacks(this.makeRoomMechanicsCtx(), now);
+  }
 
-        const cellCenterY = GRID_Y + row * cs + cs / 2;
-        // Process slots 1+ (slot 0 = primary, already handled by main runCombat)
-        for (let si = 1; si < data.monsterSlots.length; si++) {
-          const mId = data.monsterSlots[si];
-          if (!mId) continue;
-          const mDef = MONSTER_DEFS[mId as import('../data/monsters').MonsterId];
-          if (!mDef) continue;
+  private makeBossCtx(): BossContext {
+    // Returns a mutable context object. Boss HP bar fields are written through
+    // closures so mutations propagate back to the scene automatically.
+    const self = this;
+    return {
+      scene: this,
+      activeInvaders: this.activeInvaders,
+      rooms: this.rooms,
+      roomGrid: this.roomGrid,
+      get effectiveCols() { return self.effectiveCols; },
+      get effectiveCellSize() { return self.effectiveCellSize; },
+      invaderPath: this.invaderPath,
+      get bossMaxHp() { return self.bossMaxHp; },
+      set bossMaxHp(v) { self.bossMaxHp = v; },
+      get bossHpBarBg() { return self.bossHpBarBg; },
+      set bossHpBarBg(v) { self.bossHpBarBg = v; },
+      get bossHpBarFill() { return self.bossHpBarFill; },
+      set bossHpBarFill(v) { self.bossHpBarFill = v; },
+      get bossHpLabel() { return self.bossHpLabel; },
+      set bossHpLabel(v) { self.bossHpLabel = v; },
+      showFloatText: (x, y, text, color) => this.showFloatText(x, y, text, color),
+      spawnInvader: (type) => this.spawnInvader(type),
+      triggerChainLightning: (source, chainDmg, maxChains) => this.triggerChainLightning(source, chainDmg, maxChains),
+    };
+  }
 
-          const cdKey = `${row}_${col}_${si}`;
-          const lastAt = this.extraMonsterCooldowns.get(cdKey) ?? 0;
-          const cd     = mDef.attackCooldown > 0 ? mDef.attackCooldown : data.attackCooldown;
-          if (now - lastAt < cd) continue;
+  private makeResultFlowCtx(): ResultFlowContext {
+    const self = this;
+    return {
+      scene: this,
+      get effectiveCols() { return self.effectiveCols; },
+      get effectiveCellSize() { return self.effectiveCellSize; },
+      get dungeonHp() { return self.dungeonHp; },
+      get maxHp() { return self.maxHp; },
+      get gold() { return self.gold; },
+      get startGold() { return self.startGold; },
+      get gems() { return self.gems; },
+      get wave() { return self.wave; },
+      get maxWave() { return self.maxWave; },
+      get stageChapter() { return self.stageChapter; },
+      get isEndless() { return self.isEndless; },
+      get waveActive() { return self.waveActive; },
+      get killsThisRun() { return self.killsThisRun; },
+      get killsThisWave() { return self.killsThisWave; },
+      get breakthruCount() { return self.breakthruCount; },
+      get goldEarnedThisRun() { return self.goldEarnedThisRun; },
+      get materialsEarnedThisRun() { return self.materialsEarnedThisRun; },
+      get waveGoldMult() { return self.waveGoldMult; },
+      get waveEndChecked() { return self.waveEndChecked; },
+      get waveHasSpawned() { return self.waveHasSpawned; },
+      get prepActive() { return self.prepActive; },
+      get prepTimer() { return self.prepTimer; },
+      get returnTo() { return self.returnTo; },
+      get dailyMode() { return self.dailyMode; },
+      get weeklyBossMode() { return self.weeklyBossMode; },
+      get wisdomBonuses() { return self.wisdomBonuses; },
+      get waveConfigs() { return self.waveConfigs; },
+      get dungeonTrapSlots() { return self.dungeonTrapSlots; },
+      get waveStartSlotHps() { return self.waveStartSlotHps; },
+      activeInvaders: this.activeInvaders,
+      get waveBtnBg() { return self.waveBtnBg; },
+      get waveBtnZone() { return self.waveBtnZone; },
+      get waveLabel() { return self.waveLabel; },
+      get resultOverlay() { return self.resultOverlay; },
+      get countdownBar() { return self.countdownBar; },
+      rooms: this.rooms,
+      roomGrid: this.roomGrid,
+      drawBtn: (g, x, y, w, h, hover) => this.drawBtn(g, x, y, w, h, hover),
+      startWave: () => this.startWave(),
+      grantMonsterXp: (amount) => this.grantMonsterXp(amount),
+      saveRoomHpsToGameState: () => this.saveRoomHpsToGameState(),
+      showFloatText: (x, y, text, color) => this.showFloatText(x, y, text, color),
+      showEndlessResult: () => this.showEndlessResult(),
+      checkAchievementsAndToast: (gs) => this.checkAchievementsAndToast(gs),
+      tickQuestAndNotify: (gs, type) => this.tickQuestAndNotify(gs, type as Parameters<typeof import('../data/quests').updateQuestObjective>[1]),
+      setDungeonHp: (hp) => { self.dungeonHp = hp; self.registry.set('hp', hp); },
+      setGold: (g) => { self.gold = g; self.registry.set('gold', g); },
+      setGems: (g) => { self.gems = g; self.registry.set('gems', g); },
+      setWave: (w) => { self.wave = w; self.registry.set('wave', w); },
+      setWaveActive: (v) => { self.waveActive = v; },
+      setWaveEndChecked: (v) => { self.waveEndChecked = v; },
+      setWaveHasSpawned: (v) => { self.waveHasSpawned = v; },
+      setPrepActive: (v) => { self.prepActive = v; },
+      setPrepTimer: (v) => { self.prepTimer = v; },
+      setResultOverlay: (ov) => { self.resultOverlay = ov; },
+      setCountdownBar: (bar) => { self.countdownBar = bar; },
+    };
+  }
 
-          // Find nearest target in row range
-          const rowRange = cs * (mDef.range ?? 1) * 0.8;
-          let target: import('../objects/Invader').Invader | null = null;
-          let bestDist = Infinity;
-          for (const inv of this.activeInvaders) {
-            if (!inv.active || inv.isInvisible) continue;
-            if (Math.abs(inv.y - cellCenterY) > rowRange) continue;
-            const d = Math.hypot(inv.x - this.rooms[row][col].x, inv.y - cellCenterY);
-            if (d < bestDist) { bestDist = d; target = inv; }
-          }
-          if (!target) continue;
-
-          this.extraMonsterCooldowns.set(cdKey, now);
-          let dmg = (mDef.baseDamage > 0 ? mDef.baseDamage : ROOM_DEFS[data.type].attackDamage)
-            * Math.pow(1.4, data.level - 1)
-            * data.roomTypeDmgMult;
-          if (now < this.tauntBoostActiveUntil) dmg *= 1.3;
-          if (this.hasDivineTerritory()) dmg *= 1.2;
-          target.takeDamage(dmg);
-          this.rooms[row][col].flashAttack();
-        }
-      }
-    }
+  private makeRoomMechanicsCtx(): RoomMechanicsContext {
+    const self = this;
+    return {
+      scene: this,
+      roomGrid: this.roomGrid,
+      rooms: this.rooms,
+      activeInvaders: this.activeInvaders,
+      get effectiveCols() { return self.effectiveCols; },
+      get effectiveCellSize() { return self.effectiveCellSize; },
+      get waveActive() { return self.waveActive; },
+      invaderPath: this.invaderPath,
+      get stageChapter() { return self.stageChapter; },
+      get gold() { return self.gold; },
+      set gold(v) { self.gold = v; },
+      get dungeonHp() { return self.dungeonHp; },
+      set dungeonHp(v) { self.dungeonHp = v; },
+      get maxHp() { return self.maxHp; },
+      dungeonTrapSlots: this.dungeonTrapSlots,
+      slotTrapSynergyMult: this.slotTrapSynergyMult,
+      extraMonsterCooldowns: this.extraMonsterCooldowns,
+      get tauntBoostActiveUntil() { return self.tauntBoostActiveUntil; },
+      pounceReadyMap: this.pounceReadyMap,
+      get goldTick() { return self.goldTick; },
+      set goldTick(v) { self.goldTick = v; },
+      get medicineHealTick() { return self.medicineHealTick; },
+      set medicineHealTick(v) { self.medicineHealTick = v; },
+      get medicineGlobalPulseLast() { return self.medicineGlobalPulseLast; },
+      set medicineGlobalPulseLast(v) { self.medicineGlobalPulseLast = v; },
+      get poisonDamageTick() { return self.poisonDamageTick; },
+      set poisonDamageTick(v) { self.poisonDamageTick = v; },
+      get entrancingVeilApplied() { return self.entrancingVeilApplied; },
+      set entrancingVeilApplied(v) { self.entrancingVeilApplied = v; },
+      setGoldRegistry: (g) => this.registry.set('gold', g),
+      showGoldFloat: (text, x, y) => this.showGoldFloat(text, x, y),
+      showTigersPounce: (rx, ry, tx, ty) => this.showTigersPounce(rx, ry, tx, ty),
+      showHealEffect: (healer, target, amount) => this.showHealEffect(healer, target, amount),
+      showSoulHarvestExec: (x, y) => this.showSoulHarvestExec(x, y),
+      showFloatText: (x, y, text, color) => this.showFloatText(x, y, text, color),
+      flashRoom: (row, col) => this.rooms[row][col].flashAttack(),
+      healRoomHp: (row, col, amount) => this.rooms[row][col].healRoomHp(amount),
+      damageRoomHp: (row, col, amount) => this.rooms[row][col].damageRoomHp(amount),
+      hasDivineTerritory: () => this.hasDivineTerritory(),
+      pushInvader: (inv) => this.activeInvaders.push(inv),
+    };
   }
 
   private scheduleNinjaInvisibilityCycle(inv: Invader): void {
-    // After 3s visible window expires, become visible for 5s, then repeat
-    const beVisible = () => {
-      if (!inv.active) return;
-      inv.isInvisible = false;
-      this.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-      this.time.delayedCall(5000, () => {
-        if (!inv.active) return;
-        inv.isInvisible = true;
-        this.tweens.add({ targets: inv, alpha: 0.2, duration: 300 });
-        this.time.delayedCall(3000, beVisible);
-      });
-    };
-    this.time.delayedCall(3000, beVisible);
+    _scheduleNinjaInvisibilityCycle(this.makeBossCtx(), inv);
   }
 
   private showHolyPaladinAura(inv: Invader): void {
-    const aura = this.add.graphics().setDepth(inv.depth - 1);
-    const step = () => {
-      if (!inv.active) { aura.destroy(); return; }
-      const remaining = inv.magicImmuneUntil - this.time.now;
-      if (remaining <= 0) { aura.destroy(); return; }
-      const alpha = Math.min(0.6, remaining / 3000) * 0.8;
-      aura.clear();
-      aura.lineStyle(2.5, 0xffffff, alpha);
-      aura.strokeCircle(inv.x, inv.y, inv.def.radius + 8);
-      aura.fillStyle(0xffffff, alpha * 0.15);
-      aura.fillCircle(inv.x, inv.y, inv.def.radius + 8);
-      this.time.delayedCall(80, step);
-    };
-    step();
+    _showHolyPaladinAura(this, inv);
   }
 
   private setupFoxQueenPhase(inv: Invader): void {
-    let phase = 1;
-    const checkPhase = () => {
-      if (!inv.active) return;
-      const pct = inv.hp / inv.maxHp;
-      if (pct <= 0.6 && phase === 1) {
-        phase = 2;
-        this.showFoxQueenPhaseTransition(inv, 2);
-        // Phase 2: start charming player monsters every 15s
-        this.time.addEvent({
-          delay: 15000, repeat: -1,
-          callback: () => {
-            if (!inv.active || phase < 2) return;
-            this.foxQueenCharmMonster();
-          },
-        });
-      }
-      if (pct <= 0.3 && phase === 2) {
-        phase = 3;
-        this.showFoxQueenPhaseTransition(inv, 3);
-        // Phase 3: spawn 3 shadow ninjas every 20s
-        this.time.addEvent({
-          delay: 20000, repeat: -1,
-          callback: () => {
-            if (!inv.active || phase < 3) return;
-            for (let i = 0; i < 3; i++)
-              this.time.delayedCall(i * 500, () => this.spawnInvader('shadow_ninja'));
-            const portal = this.add.text(INVADER_WAYPOINTS[0].x, INVADER_WAYPOINTS[0].y, '🌀', {
-              fontFamily: 'sans-serif', fontSize: '24px',
-            }).setOrigin(0.5).setDepth(50);
-            this.tweens.add({ targets: portal, alpha: 0, duration: 1200, onComplete: () => portal.destroy() });
-          },
-        });
-      }
-      this.time.delayedCall(500, checkPhase);
-    };
-    this.time.delayedCall(500, checkPhase);
-  }
-
-  private showFoxQueenPhaseTransition(inv: Invader, phase: number): void {
-    this.cameras.main.shake(400, 0.015);
-    const colors = ['', '#ff9900', '#ff4400'];
-    const t = this.add.text(inv.x, inv.y - 30, `🦊 Phase ${phase}!`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-      color: colors[phase - 1] ?? '#ff4400',
-    }).setOrigin(0.5).setDepth(55);
-    this.tweens.add({ targets: t, y: inv.y - 65, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
-    logger.debug(`[FOX_QUEEN] entering phase ${phase} at ${Math.round((inv.hp / inv.maxHp) * 100)}% HP`);
-  }
-
-  private foxQueenCharmMonster(): void {
-    // Charm the monster in a random occupied room for 5000ms
-    for (let row = 0; row < GRID_ROWS; row++)
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const data = this.roomGrid[row][col];
-        if (data?.monsterSlot) {
-          const warn = this.add.text(
-            this.rooms[row][col].x, this.rooms[row][col].y,
-            '홀렸다!', { fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#ff66bb' },
-          ).setOrigin(0.5).setDepth(55);
-          this.tweens.add({ targets: warn, y: this.rooms[row][col].y - 30, alpha: 0, duration: 1200,
-            onComplete: () => warn.destroy() });
-          // Briefly flash the room pink
-          this.rooms[row][col].flashAttack();
-          return;  // only one room charmed per trigger
-        }
-      }
+    _setupFoxQueenPhase(this.makeBossCtx(), inv);
   }
 
   private showAttackLine(x1: number, y1: number, x2: number, y2: number): void {
-    const g = this.add.graphics().setDepth(45);
-    g.lineStyle(1.5, COLORS.TORCH_GOLD, 0.9);
-    g.lineBetween(x1, y1, x2, y2);
-    this.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });
+    _showAttackLine(this, x1, y1, x2, y2);
   }
 
   private showFirstStrikeEffect(x: number, y: number): void {
-    const t = this.add.text(x, y - 10, '일격!', {
-      fontFamily: "Georgia, serif", fontSize: '13px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(50);
-    this.tweens.add({
-      targets: t, y: y - 45, alpha: 0, duration: 700,
-      onComplete: () => t.destroy(),
-    });
+    _showFirstStrikeEffect(this, x, y);
   }
 
   private showTigersPounce(rx: number, ry: number, tx: number, ty: number): void {
-    // Orange slash line from room to target
-    const g = this.add.graphics().setDepth(50);
-    g.lineStyle(3, 0xe8a000, 0.9);
-    g.lineBetween(rx, ry, tx, ty);
-    this.tweens.add({ targets: g, alpha: 0, duration: 200, onComplete: () => g.destroy() });
-    const t = this.add.text(tx, ty - 16, '포효!', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: '#e8a000',
-    }).setOrigin(0.5).setDepth(51);
-    this.tweens.add({ targets: t, y: ty - 45, alpha: 0, duration: 600, onComplete: () => t.destroy() });
+    _showTigersPounce(this, rx, ry, tx, ty);
   }
 
   private showRallyCryEffect(x: number, y: number): void {
-    const g = this.add.graphics().setDepth(50);
-    g.lineStyle(2.5, 0xffcc00, 0.8);
-    g.strokeCircle(x, y, 10);
-    this.tweens.add({ targets: g, scaleX: 20, scaleY: 20, alpha: 0, duration: 600,
-      onComplete: () => g.destroy() });
-    const t = this.add.text(x, y - 18, '집결!', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#ffcc00',
-    }).setOrigin(0.5).setDepth(51);
-    this.tweens.add({ targets: t, y: y - 48, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    _showRallyCryEffect(this, x, y);
   }
 
   private showTrapRing(x: number, y: number): void {
-    const g = this.add.graphics().setDepth(45);
-    g.lineStyle(2, 0x9040e0, 0.9);
-    g.strokeCircle(x, y, 20);
-    this.tweens.add({
-      targets: g, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 400,
-      onComplete: () => g.destroy(),
-    });
+    _showTrapRing(this, x, y);
+  }
+
+  private showHolyBurst(x: number, y: number): void {
+    _showHolyBurst(this, x, y);
+  }
+
+  private getInvaderRow(inv: Invader): number {
+    const cs = this.effectiveCellSize;
+    for (let r = 0; r < GRID_ROWS; r++) {
+      const rowY = GRID_Y + r * cs + cs / 2;
+      if (Math.abs(inv.y - rowY) <= cs * 0.7) return r;
+    }
+    return -1;
   }
 
   private isScrollBurstActive(row: number, col: number, now: number): boolean {
@@ -1842,38 +1901,11 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private spawnCharmOrb(rx: number, ry: number, target: Invader): void {
-    const orb = this.add.graphics().setDepth(52);
-    orb.fillStyle(0xff44aa, 1);
-    orb.fillCircle(rx, ry, 6);
-    this.tweens.add({
-      targets: orb,
-      x: target.x, y: target.y,
-      duration: 400, ease: 'Power2',
-      onComplete: () => {
-        orb.destroy();
-        if (target.active) {
-          target.applyCharm(3000);
-          // Heart burst at impact
-          const h = this.add.text(target.x, target.y - 14, '💗', {
-            fontFamily: 'sans-serif', fontSize: '16px',
-          }).setOrigin(0.5).setDepth(53);
-          this.tweens.add({ targets: h, y: target.y - 44, alpha: 0, duration: 700,
-            onComplete: () => h.destroy() });
-        }
-      },
-    });
+    _spawnCharmOrb(this, rx, ry, target);
   }
 
   private showTideWave(tx: number, ty: number): void {
-    const g = this.add.graphics().setDepth(50);
-    g.lineStyle(2.5, 0x44aaff, 0.9);
-    g.strokeCircle(tx, ty, 12);
-    this.tweens.add({ targets: g, scaleX: 3, scaleY: 3, alpha: 0, duration: 350,
-      onComplete: () => g.destroy() });
-    const t = this.add.text(tx, ty - 18, '밀어냄!', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#44aaff',
-    }).setOrigin(0.5).setDepth(51);
-    this.tweens.add({ targets: t, y: ty - 45, alpha: 0, duration: 500, onComplete: () => t.destroy() });
+    _showTideWave(this, tx, ty);
   }
 
   private applyWarHexToHighestHP(): void {
@@ -1928,72 +1960,20 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private showMagicImmuneMiss(tx: number, ty: number): void {
-    const t = this.add.text(tx, ty - 16, 'IMMUNE', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
-      backgroundColor: '#ffffff22',
-    }).setOrigin(0.5).setDepth(53);
-    this.tweens.add({ targets: t, y: ty - 40, alpha: 0, duration: 500, onComplete: () => t.destroy() });
+    _showMagicImmuneMiss(this, tx, ty);
   }
 
   // ── Tigers Pounce update loop ──────────────────────────────────────────────
   private pounceReadyMap = new Map<string, { ready: boolean; cooldownUntil: number }>();
 
   private runTigersPounce(now: number): void {
-    if (!this.waveActive) return;
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const data = this.roomGrid[row][col];
-        if (!data || data.monsterSlot !== 'white_tiger') continue;
-        const key = `${row},${col}`;
-        let state = this.pounceReadyMap.get(key);
-        if (!state) { state = { ready: true, cooldownUntil: 0 }; this.pounceReadyMap.set(key, state); }
-        if (!state.ready && now < state.cooldownUntil) continue;
-        state.ready = true;
-        if (!state.ready) continue;
-
-        // Find furthest-advanced invader (highest pathTween.progress)
-        let target: Invader | null = null;
-        let bestProgress = 0;
-        for (const inv of this.activeInvaders) {
-          if (!inv.active || inv.isInvisible) continue;
-          const prog = (inv.pathTween as Phaser.Tweens.Tween).progress ?? 0;
-          if (prog > 0.6 && prog > bestProgress) { bestProgress = prog; target = inv; }
-        }
-        if (!target) continue;
-
-        // Trigger pounce
-        const rdef = MONSTER_DEFS['white_tiger'];
-        const dmg  = Math.round(rdef.baseDamage * 3 * Math.pow(1.4, data.level - 1));
-        target.takeDamage(dmg);
-        state.ready = false;
-        state.cooldownUntil = now + 5000;
-
-        const rx = this.rooms[row][col].x;
-        const cs = this.effectiveCellSize;
-        const ry = GRID_Y + row * cs + cs / 2;
-        this.showTigersPounce(rx, ry, target.x, target.y);
-      }
-    }
+    _runTigersPounce(this.makeRoomMechanicsCtx(), now);
   }
 
   // ── Mercenary Captain continuous speed aura ───────────────────────────────
 
   private runMercenaryAuras(_now: number): void {
-    if (!this.waveActive) return;
-    const captains = this.activeInvaders.filter(
-      i => i.active && i.def.type === 'mercenary_captain',
-    );
-    if (captains.length === 0) return;
-
-    this.activeInvaders.forEach(inv => {
-      if (!inv.active || inv.def.type === 'mercenary_captain') return;
-      const nearCaptain = captains.some(c => Math.hypot(c.x - inv.x, c.y - inv.y) < 200);
-      if (nearCaptain && inv.pathTween && inv.pathTween.timeScale < 1.3) {
-        inv.pathTween.timeScale = 1.3;
-      } else if (!nearCaptain && inv.pathTween && inv.pathTween.timeScale === 1.3) {
-        inv.pathTween.timeScale = 1;
-      }
-    });
+    _runMercenaryAuras(this.makeRoomMechanicsCtx(), _now);
   }
 
   // ─── Gold Vein passive income ─────────────────────────────────────────────
@@ -2001,83 +1981,23 @@ export class DungeonScene extends Phaser.Scene {
   private goldTick = 0;
 
   private runGoldVeins(now: number): void {
-    if (now - this.goldTick < 1000) return;
-    this.goldTick = now;
-    let income = 0;
-    for (const row of this.roomGrid)
-      for (const data of row)
-        if (data?.goldPerSec) income += data.goldPerSec;
-    if (income <= 0) return;
-    this.gold += income;
-    this.registry.set('gold', this.gold);
-    this.showGoldFloat(`+${income}`, CANVAS_WIDTH / 2, GRID_Y - 20);
+    _runGoldVeins(this.makeRoomMechanicsCtx(), now);
   }
 
   private showGoldFloat(text: string, x: number, y: number): void {
-    const t = this.add.text(x, y, text, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(95);
-    this.tweens.add({
-      targets: t, y: y - 35, alpha: 0, duration: 900,
-      onComplete: () => t.destroy(),
-    });
+    _showGoldFloat(this, text, x, y);
   }
 
   // ─── Healer loop (soldier = 야전 치유사) ──────────────────────────────────
 
   private runHealers(now: number): void {
-    const HEAL_INTERVAL = 2000;
-    const HEAL_AMOUNT   = 20;
-    const HEAL_RANGE    = 150;
-
-    for (const healer of this.activeInvaders) {
-      if (!healer.active || healer.def.type !== 'soldier') continue;
-      if (now - healer.lastHealTime < HEAL_INTERVAL) continue;
-
-      // Find lowest HP% invader within 150px (excluding self)
-      let target: typeof healer | null = null;
-      let lowestPct = 1;
-      for (const inv of this.activeInvaders) {
-        if (!inv.active || inv === healer) continue;
-        const dist = Math.hypot(inv.x - healer.x, inv.y - healer.y);
-        if (dist > HEAL_RANGE) continue;
-        const pct = inv.hp / inv.maxHp;
-        if (pct < lowestPct && inv.hp < inv.maxHp) { lowestPct = pct; target = inv; }
-      }
-
-      healer.lastHealTime = now;
-      if (!target) continue;
-
-      target.receiveHeal(HEAL_AMOUNT);
-      this.showHealEffect(healer, target, HEAL_AMOUNT);
-      logger.debug(`[HEAL] target hp=${target.hp}/${target.maxHp} (${Math.round(lowestPct * 100)}%) +${HEAL_AMOUNT}`);
-    }
+    _runHealers(this.makeRoomMechanicsCtx(), now);
   }
 
   private showHealEffect(
     healer: Invader, target: Invader, amount: number,
   ): void {
-    // Green beam from healer → target
-    const beam = this.add.graphics().setDepth(46);
-    beam.lineStyle(2, 0x44ff44, 1);
-    beam.lineBetween(healer.x, healer.y, target.x, target.y);
-    this.tweens.add({ targets: beam, alpha: 0, duration: 400, onComplete: () => beam.destroy() });
-
-    // "+20" float above target
-    const t = this.add.text(target.x, target.y - 20, `+${amount}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#44ff44',
-    }).setOrigin(0.5).setDepth(50);
-    this.tweens.add({ targets: t, y: target.y - 50, alpha: 0, duration: 600, onComplete: () => t.destroy() });
-
-    // Green cross on target
-    const cross = this.add.text(target.x + 12, target.y - 12, '✚', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#44ff44',
-    }).setOrigin(0.5).setDepth(51);
-    this.tweens.add({
-      targets: cross, scaleX: { from: 0, to: 1 }, scaleY: { from: 0, to: 1 },
-      duration: 150, yoyo: true, hold: 200,
-      onComplete: () => cross.destroy(),
-    });
+    _showHealEffect(this, healer, target, amount);
   }
 
   // ─── Wave End Detection ───────────────────────────────────────────────────
@@ -2203,10 +2123,12 @@ export class DungeonScene extends Phaser.Scene {
       case 'merchant':
         this.waveGoldMult = 1.5;
         break;
-      case 'supply':
-        this.dungeonHp = Math.min(this.maxHp, this.dungeonHp + Math.ceil(this.maxHp * 0.15));
+      case 'supply': {
+        const moonHealUp = this.synergyManager.hasSpecial('MOONLIGHT_HEAL_UP') ? 1.20 : 1;
+        this.dungeonHp = Math.min(this.maxHp, this.dungeonHp + Math.ceil(this.maxHp * 0.15 * moonHealUp));
         this.registry.set('hp', this.dungeonHp);
         break;
+      }
       case 'curse':
         this.waveHpMult   = 1.3;
         this.waveGoldMult = 2.0;
@@ -2343,292 +2265,13 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private showWaveClear(): void {
-    const waveCfgReward = this.waveConfigs[this.wave - 1]?.clearReward;
-    const fallback = 50 + this.wave * 10 + (this.stageChapter - 1) * 40;
-    const dailyGold = this.dailyMode?.modifiers.goldMult ?? 1;
-    const reward = Math.round((waveCfgReward ?? fallback) * this.wisdomBonuses.waveRewardMult * this.waveGoldMult * dailyGold);
-    this.gold += reward;
-    this.registry.set('gold', this.gold);
-    audioManager.playSfx('wave_clear');
-
-    const stars = this.dungeonHp / this.maxHp > 0.8 ? 3
-                : this.dungeonHp / this.maxHp > 0.4 ? 2 : 1;
-
-    // Wave participation XP
-    this.grantMonsterXp(10);
-
-    logger.debug(`[WAVE CLEAR] reward=${reward}g stars=${stars}`);
-    this.showResultPanel(false, reward, stars);
-    this.startPrepCountdown();
-  }
-
-  private showResultPanel(isFail: boolean, reward: number, stars: number): void {
-    if (this.resultOverlay) this.resultOverlay.destroy();
-    const ov = this.add.container(0, 0).setDepth(300);
-    this.resultOverlay = ov;
-
-    // Compute wave stat summary
-    const damagedSlots = this.dungeonTrapSlots.filter(
-      (s, i) => s && (this.waveStartSlotHps[i] ?? s.hp) > s.hp
-    );
-    const damagedCount  = damagedSlots.length;
-    const destroyedCount = this.dungeonTrapSlots.filter(s => s && s.hp <= 0).length;
-
-    // Dim overlay
-    const dim = this.add.graphics();
-    dim.fillStyle(isFail ? COLORS.BLOOD_RED : COLORS.BLACK, 0.7);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    dim.setAlpha(0);
-    ov.add(dim);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 400 });
-
-    // Card — taller to fit stats
-    const cw = 300;
-    const statsH = 60;   // extra height for the 3-stat row
-    const ch = isFail ? 220 : 200 + statsH;
-    const cx = CANVAS_WIDTH / 2 - cw / 2;
-    const cy = CANVAS_HEIGHT / 2 - ch / 2;
-
-    const card = this.add.graphics();
-    card.fillStyle(COLORS.STONE_DARK, 1);
-    card.fillRoundedRect(cx, cy, cw, ch, 10);
-    card.lineStyle(2, isFail ? COLORS.BLOOD_GLOW : COLORS.TORCH_GOLD, 0.9);
-    card.strokeRoundedRect(cx, cy, cw, ch, 10);
-    card.setY(-80).setAlpha(0);
-    ov.add(card);
-    this.tweens.add({ targets: card, y: 0, alpha: 1, duration: 350, ease: 'Power2.easeOut' });
-
-    const title = isFail ? '던전 함락!' : '침입자 격퇴!';
-    const titleColor = isFail ? CSS.BLOOD_GLOW : CSS.TORCH_AMBER;
-    const titleT = this.add.text(CANVAS_WIDTH / 2, cy + 30, title, {
-      fontFamily: "Georgia, serif", fontSize: '24px', fontStyle: 'bold', color: titleColor,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(titleT);
-    this.tweens.add({ targets: titleT, alpha: 1, duration: 300, delay: 200 });
-
-    if (!isFail) {
-      // Stars
-      const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-      const starsT = this.add.text(CANVAS_WIDTH / 2, cy + 68, starStr, {
-        fontFamily: 'sans-serif', fontSize: '22px', color: CSS.TORCH_AMBER,
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(starsT);
-      this.tweens.add({ targets: starsT, alpha: 1, duration: 300, delay: 350 });
-
-      // Reward
-      const rewardT = this.add.text(CANVAS_WIDTH / 2, cy + 106, `황금 보상  +${reward}💰`, {
-        fontFamily: 'sans-serif', fontSize: '14px', color: CSS.PARCHMENT,
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(rewardT);
-      this.tweens.add({ targets: rewardT, alpha: 1, duration: 300, delay: 450 });
-
-      // ── Wave stat row ───────────────────────────────────────────────────────
-      const statY = cy + 138;
-      const statDivider = this.add.graphics().setAlpha(0);
-      statDivider.lineStyle(1, COLORS.TORCH_GOLD, 0.2);
-      statDivider.lineBetween(cx + 16, statY - 10, cx + cw - 16, statY - 10);
-      ov.add(statDivider);
-      this.tweens.add({ targets: statDivider, alpha: 1, duration: 200, delay: 480 });
-
-      const statItems = [
-        { icon: '⚔', label: '격퇴', value: String(this.killsThisWave),   color: '#88ff88' },
-        { icon: '💥', label: '돌파', value: String(this.breakthruCount),  color: this.breakthruCount > 0 ? '#ff8888' : '#888888' },
-        { icon: '🏚', label: '손상 방', value: `${damagedCount}칸`,       color: damagedCount > 0 ? '#ffbb44' : '#888888' },
-      ];
-      const colW = cw / 3;
-      statItems.forEach(({ icon, label, value, color }, i) => {
-        const sx = cx + colW * i + colW / 2;
-        const iconT = this.add.text(sx, statY + 4, icon, {
-          fontFamily: 'sans-serif', fontSize: '16px',
-        }).setOrigin(0.5).setAlpha(0);
-        ov.add(iconT);
-        this.tweens.add({ targets: iconT, alpha: 1, duration: 200, delay: 520 + i * 60 });
-
-        const valT = this.add.text(sx, statY + 24, value, {
-          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color,
-        }).setOrigin(0.5).setAlpha(0);
-        ov.add(valT);
-        this.tweens.add({ targets: valT, alpha: 1, duration: 200, delay: 540 + i * 60 });
-
-        const lblT = this.add.text(sx, statY + 40, label, {
-          fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
-        }).setOrigin(0.5).setAlpha(0);
-        ov.add(lblT);
-        this.tweens.add({ targets: lblT, alpha: 1, duration: 200, delay: 560 + i * 60 });
-      });
-
-      // Destroyed room warning
-      if (destroyedCount > 0) {
-        const warnT = this.add.text(CANVAS_WIDTH / 2, statY + 60,
-          `⚠ 파손된 방 ${destroyedCount}칸 — 홈에서 수리 필요`, {
-          fontFamily: 'sans-serif', fontSize: '9px', color: '#ff6666',
-          backgroundColor: '#1a0000', padding: { x: 4, y: 2 },
-        }).setOrigin(0.5).setAlpha(0);
-        ov.add(warnT);
-        this.tweens.add({ targets: warnT, alpha: 1, duration: 200, delay: 680 });
-      }
-      // ──────────────────────────────────────────────────────────────────────
-
-      const wave = this.wave;
-      const btnT = this.add.text(CANVAS_WIDTH / 2, cy + ch - 40, `다음 침략 준비 (${wave + 1}/${this.maxWave})`, {
-        fontFamily: "Georgia, serif", fontSize: '13px', color: CSS.PARCHMENT,
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(btnT);
-      this.tweens.add({ targets: btnT, alpha: 1, duration: 300, delay: 700 });
-
-      const btnZone = this.add.zone(CANVAS_WIDTH / 2, cy + ch - 40, 280, 36).setInteractive();
-      ov.add(btnZone);
-      btnZone.on('pointerdown', () => {
-        ov.destroy();
-        this.resultOverlay = undefined;
-        this.prepActive = false; // allow wave button to fire even if countdown still running
-        this.enableWaveButton();
-      });
-
-    } else {
-      // Fail options
-      const failMsg = this.add.text(CANVAS_WIDTH / 2, cy + 72, '던전이 함락되었습니다', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(failMsg);
-      this.tweens.add({ targets: failMsg, alpha: 1, duration: 300, delay: 200 });
-
-      const options: Array<{ label: string; action: () => void }> = [
-        ...(this.returnTo ? [{
-          label: '🏰  던전으로 귀환',
-          action: () => {
-            this.registry.set('battleResult', { won: false, goldEarned: this.gold, dmXP: 30, materialsEarned: { ...this.materialsEarnedThisRun } });
-            ov.destroy();
-            this.scene.start('DungeonHomeScene');
-          },
-        }] : []),
-        { label: '광고 보기 (부활)',      action: () => this.revive(0) },
-        { label: '💎 5보석으로 부활',     action: () => this.revive(5) },
-        { label: '처음부터',              action: () => this.resetStage() },
-      ];
-      options.forEach(({ label, action }, i) => {
-        const oy = cy + 110 + i * 38;
-        const ob = this.add.graphics();
-        ob.fillStyle(i === 2 ? COLORS.STONE_MID : COLORS.BLOOD_RED, 0.7);
-        ob.fillRoundedRect(cx + 20, oy - 14, cw - 40, 30, 5);
-        ov.add(ob);
-        const ot = this.add.text(CANVAS_WIDTH / 2, oy, label, {
-          fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT,
-        }).setOrigin(0.5).setAlpha(0);
-        ov.add(ot);
-        this.tweens.add({ targets: ot, alpha: 1, duration: 250, delay: 250 + i * 80 });
-        const oz = this.add.zone(CANVAS_WIDTH / 2, oy, cw - 40, 30).setInteractive();
-        ov.add(oz);
-        oz.on('pointerdown', () => { ov.destroy(); this.resultOverlay = undefined; action(); });
-      });
-    }
-  }
-
-  private enableWaveButton(): void {
-    const bw = 270, bh = 48;
-    const bx = CANVAS_WIDTH / 2 - bw / 2;
-    const by = GRID_Y + GRID_ROWS * this.effectiveCellSize + 20;
-    this.waveEndChecked = false;
-    this.waveHasSpawned = false;
-    this.drawBtn(this.waveBtnBg, bx, by, bw, bh, false);
-    this.waveBtnBg.setAlpha(1);
-    this.waveBtnZone.setInteractive();
-    this.waveLabel.setText('⚔  침략 시작').setColor(CSS.PARCHMENT);
-  }
-
-  // ─── Prep countdown ───────────────────────────────────────────────────────
-
-  private startPrepCountdown(): void {
-    this.prepActive   = true;
-    this.prepTimer    = 10;
-
-    if (!this.countdownBar) {
-      const barBg = this.add.graphics().setDepth(70);
-      const bx = CANVAS_WIDTH / 2 - 130;
-      const by = GRID_Y + GRID_ROWS * this.effectiveCellSize + 78;
-      barBg.fillStyle(COLORS.STONE_DARK, 1);
-      barBg.fillRoundedRect(bx, by, 260, 10, 3);
-      this.countdownBar = this.add.graphics().setDepth(71);
-    }
-
-    const tick = () => {
-      this.prepTimer--;
-      const bx = CANVAS_WIDTH / 2 - 130;
-      const by = GRID_Y + GRID_ROWS * this.effectiveCellSize + 78;
-      this.countdownBar!.clear();
-      this.countdownBar!.fillStyle(COLORS.TORCH_GOLD, 0.8);
-      this.countdownBar!.fillRoundedRect(bx, by, 260 * (this.prepTimer / 10), 10, 3);
-      this.registry.set('status', `다음 침략까지 ${this.prepTimer}초`);
-
-      if (this.prepTimer <= 0) {
-        this.prepActive = false;
-        this.countdownBar!.clear();
-        this.registry.set('status', '');
-        this.waveEndChecked = false;
-        this.enableWaveButton();
-      } else {
-        this.time.delayedCall(1000, tick);
-      }
-    };
-    this.time.delayedCall(1000, tick);
+    _showWaveClear(this.makeResultFlowCtx());
   }
 
   // ─── Wave Fail ────────────────────────────────────────────────────────────
 
   private triggerWaveFail(): void {
-    audioManager.playSfx('defeat');
-    this.waveActive = false;
-    this.activeInvaders.forEach(i => { if (i.active) i.destroy(); });
-    this.activeInvaders = [];
-    this.saveRoomHpsToGameState();
-
-    // Screen shake
-    this.cameras.main.shake(600, 0.02);
-
-    // Red vignette
-    const vig = this.add.graphics().setDepth(290);
-    vig.fillStyle(COLORS.BLOOD_RED, 0.5);
-    vig.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    this.tweens.add({ targets: vig, alpha: 0, duration: 600 });
-
-    if (this.isEndless) {
-      logger.debug(`[ENDLESS FAIL] wave=${this.wave} kills=${this.killsThisRun}`);
-      this.time.delayedCall(700, () => this.showEndlessResult());
-    } else {
-      logger.debug('[WAVE FAIL] dungeonHP=0');
-      this.showResultPanel(true, 0, 0);
-    }
-  }
-
-  private revive(gemCost: number): void {
-    if (gemCost > 0 && this.gems < gemCost) {
-      this.registry.set('status', '보석 부족!');
-      return;
-    }
-    if (gemCost > 0) {
-      this.gems -= gemCost;
-      this.registry.set('gems', this.gems);
-    } else {
-      logger.debug('[AD] watch_ad triggered');
-    }
-    this.dungeonHp = Math.round(this.maxHp * 0.5);
-    this.registry.set('hp', this.dungeonHp);
-    this.waveEndChecked = false;
-    this.wave--; // pre-decrement so startWave's ++ lands on the same wave
-    this.startWave();
-  }
-
-  private resetStage(): void {
-    this.wave      = 0;
-    this.dungeonHp = this.maxHp;
-    this.gold      = this.startGold;
-    this.registry.set('wave', 0);
-    this.registry.set('hp',   this.dungeonHp);
-    this.registry.set('gold', this.gold);
-    this.activeInvaders = [];
-    this.waveEndChecked = false;
-    this.enableWaveButton();
-    logger.debug('[RESET] stage reset');
+    _triggerWaveFail(this.makeResultFlowCtx());
   }
 
   // ─── Boss HP bar ──────────────────────────────────────────────────────────
@@ -2680,408 +2323,22 @@ export class DungeonScene extends Phaser.Scene {
   // ─── Wisdom toast ─────────────────────────────────────────────────────────
 
   private showWisdomToast(): void {
-    const b = this.wisdomBonuses;
-    const lines: string[] = [];
-    if (b.startingGold   > 0) lines.push(`💰 시작 골드 +${b.startingGold}`);
-    if (b.dungeonMaxHpBonus > 0) lines.push(`🏰 던전 HP +${b.dungeonMaxHpBonus}`);
-    if (b.roomCostMult   < 1) lines.push(`🔨 방 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
-    if (b.waveRewardMult > 1) lines.push(`⚡ 웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);
-    if (b.extraSlots     > 0) lines.push(`📜 추가 슬롯 +${b.extraSlots}`);
-    if (b.crystalEarnMult > 1) lines.push(`💎 수정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);
-    if (b.monsterDmgMult < 1) lines.push(`🛡 몬스터 피해 -${Math.round((1 - b.monsterDmgMult) * 100)}%`);
-    if (lines.length === 0) return;
-
-    const toast = this.add.text(CANVAS_WIDTH / 2, 98, `⛩ 선조의 가호\n${lines.join('  ')}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#c070ff',
-      align: 'center', backgroundColor: '#0d0a1a',
-      padding: { x: 10, y: 6 },
-      wordWrap: { width: 340 },
-    }).setOrigin(0.5, 0).setDepth(200).setAlpha(0);
-
-    this.tweens.add({
-      targets: toast, alpha: 1, duration: 300,
-      onComplete: () => {
-        this.tweens.add({
-          targets: toast, alpha: 0, duration: 400, delay: 2500,
-          onComplete: () => toast.destroy(),
-        });
-      },
-    });
+    _showWisdomToast(this, this.wisdomBonuses);
   }
 
   // ─── Boss (Wave 10) ───────────────────────────────────────────────────────
 
   private showBossWarning(): void {
-    const cam = this.cameras.main;
-
-    // Resolve boss info from current wave config
-    const waveCfg = this.waveConfigs[this.wave - 1];
-    const bossGrp = waveCfg?.invaders.find(i => i.isBoss);
-    const bossDef = bossGrp ? INVADER_DEFS[bossGrp.type] : null;
-    const endlessBossName = this.wave >= 50 ? '전설적 침략자' : this.wave >= 30 ? '고위 보스' : this.wave >= 20 ? '엘리트 보스' : '미니 보스';
-    const bossName = bossDef?.koreanName ?? (this.isEndless ? endlessBossName : '보스');
-    const bossHp   = bossDef?.hp ?? (this.isEndless ? 200 + this.wave * 30 : 350);
-
-    // Boss-specific accent color (hex → CSS string)
-    const bossColorNum = bossDef?.color ?? 0xff2222;
-    const bossColorCss = '#' + bossColorNum.toString(16).padStart(6, '0');
-
-    // Boss emoji per type
-    const BOSS_EMOJI: Record<string, string> = {
-      fox_queen:          '🦊',
-      dragon_king:        '🐉',
-      death_emissary:     '💀',
-      three_god_destroyer:'⛩️',
-      eternal_emperor:    '👑',
-    };
-    const bossEmoji = (bossGrp ? BOSS_EMOJI[bossGrp.type] : null) ?? '⚔️';
-
-    // Boss one-liner quote
-    const BOSS_QUOTES: Record<string, string> = {
-      fox_queen:           '내 꼬리 아홉 개가 너희를 집어삼킬 것이다.',
-      dragon_king:         '이 바다의 모든 것은 내 것이다!',
-      death_emissary:      '저승의 문은 이미 열렸다...',
-      three_god_destroyer: '모든 것을 부숴버리겠다!!',
-      eternal_emperor:     '영원히... 너희는 나를 이길 수 없다.',
-    };
-    const bossQuote = bossGrp ? (BOSS_QUOTES[bossGrp.type] ?? null) : null;
-
-    // ── 0ms: BGM slowdown + dark overlay ────────────────────────────────────
-    audioManager.rampBpm(80, 1.5);
-
-    const overlay = this.add.graphics().setDepth(198).setAlpha(0);
-    overlay.fillStyle(0x000000, 0.75);
-    overlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    this.tweens.add({ targets: overlay, alpha: 1, duration: 800 });
-
-    // ── 300ms: Boss-colored vignette pulse (3×) ──────────────────────────────
-    const vignette = this.add.graphics().setDepth(199).setAlpha(0);
-    vignette.lineStyle(18, bossColorNum, 1);
-    vignette.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    this.time.delayedCall(300, () => {
-      this.tweens.add({
-        targets: vignette, alpha: { from: 0, to: 0.6 },
-        duration: 350, yoyo: true, repeat: 2,
-        onComplete: () => vignette.destroy(),
-      });
+    _showBossWarning(this, {
+      waveConfigs: this.waveConfigs,
+      wave: this.wave,
+      isEndless: this.isEndless,
+      buildBossHpBar: (hp: number) => this.buildBossHpBar(hp),
     });
-
-    // ── 800ms: Boss name card slide-in ──────────────────────────────────────
-    const cardH = bossQuote ? 100 : 80;
-    const nameCard = this.add.container(CANVAS_WIDTH + 220, CANVAS_HEIGHT / 2 - cardH / 2).setDepth(200);
-
-    const cardBg = this.add.graphics();
-    cardBg.fillStyle(0x080808, 0.92);
-    cardBg.fillRoundedRect(-170, 0, 340, cardH, 8);
-    cardBg.lineStyle(2, bossColorNum, 0.9);
-    cardBg.strokeRoundedRect(-170, 0, 340, cardH, 8);
-    // Top accent stripe in boss color
-    cardBg.fillStyle(bossColorNum, 0.7);
-    cardBg.fillRoundedRect(-170, 0, 340, 4, { tl: 8, tr: 8, bl: 0, br: 0 });
-    nameCard.add(cardBg);
-
-    // ⚠ label
-    const warningT = this.add.text(0, 14, '⚠  보스 출현', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: bossColorCss,
-      letterSpacing: 2,
-    }).setOrigin(0.5);
-    nameCard.add(warningT);
-
-    // Emoji + Name
-    const nameT = this.add.text(0, 36, `${bossEmoji} ${bossName}`, {
-      fontFamily: 'Georgia, serif', fontSize: '19px', fontStyle: 'bold', color: '#ffffff',
-      shadow: { color: bossColorCss, blur: 10, fill: true },
-    }).setOrigin(0.5);
-    nameCard.add(nameT);
-
-    // HP bar preview
-    const hpLabel = this.add.text(0, 62, `HP  ${bossHp.toLocaleString()}`, {
-      fontFamily: 'monospace', fontSize: '11px', color: '#aaaaaa',
-    }).setOrigin(0.5);
-    nameCard.add(hpLabel);
-
-    // Optional quote line
-    if (bossQuote) {
-      const quoteT = this.add.text(0, 83, `"${bossQuote}"`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#cccccc',
-        fontStyle: 'italic', wordWrap: { width: 300 },
-      }).setOrigin(0.5, 0);
-      nameCard.add(quoteT);
-    }
-
-    this.time.delayedCall(800, () => {
-      this.tweens.add({
-        targets: nameCard, x: CANVAS_WIDTH / 2,
-        duration: 380, ease: 'Power2.easeOut',
-      });
-      audioManager.playSfx('boss_appear');
-    });
-
-    // ── 850ms: Camera shake ──────────────────────────────────────────────────
-    this.time.delayedCall(850, () => {
-      cam.shake(700, 0.014);
-    });
-
-    // ── 1000ms: Camera zoom-in ──────────────────────────────────────────────
-    this.time.delayedCall(1000, () => {
-      cam.zoomTo(1.06, 1500, 'Sine.easeInOut');
-    });
-
-    // Camera boss-color flash
-    const r = (bossColorNum >> 16) & 0xff;
-    const g = (bossColorNum >> 8)  & 0xff;
-    const b = bossColorNum          & 0xff;
-    cam.flash(500, r, g, b);
-
-    // ── 2500ms: Name card fade out ──────────────────────────────────────────
-    this.time.delayedCall(2500, () => {
-      this.tweens.add({
-        targets: nameCard, alpha: 0, duration: 400,
-        onComplete: () => nameCard.destroy(),
-      });
-    });
-
-    // ── 2700ms: Zoom restore + BGM accelerate + overlay fade ────────────────
-    this.time.delayedCall(2700, () => {
-      cam.zoomTo(1.0, 500, 'Sine.easeOut');
-      audioManager.rampBpm(130, 2);
-      this.tweens.add({
-        targets: overlay, alpha: 0, duration: 600,
-        onComplete: () => overlay.destroy(),
-      });
-    });
-
-    logger.debug(`[BOSS] ${bossName} appears! HP: ${bossHp}`);
-    this.buildBossHpBar(bossHp);
   }
 
   private showChapterClear(): void {
-    audioManager.playSfx('victory');
-    const baseCrystals = 5;
-    const crystals     = Math.round(baseCrystals * this.wisdomBonuses.crystalEarnMult);
-    const stars        = this.dungeonHp / this.maxHp > 0.8 ? 3
-                       : this.dungeonHp / this.maxHp > 0.4 ? 2 : 1;
-    this.registry.set('soulCrystals', crystals);
-
-    // Persist soul crystals to GameState
-    const gs = loadGameState();
-    gs.soulCrystals += crystals;
-    // Also persist star progress — skip for invasion battles (no stageNumber)
-    const stageCfg = this.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-    const stageNum = stageCfg?.stageNumber;
-    if (stageNum !== undefined) {
-      const stageIdx = stageNum - 1;
-      if (gs.stageProgress[stageIdx]) {
-        gs.stageProgress[stageIdx].bestStars = Math.max(gs.stageProgress[stageIdx].bestStars, stars);
-      }
-      if (stageIdx + 1 < gs.stageProgress.length) gs.stageProgress[stageIdx + 1].unlocked = true;
-    }
-    this.tickQuestAndNotify(gs, 'complete_stage');
-
-    // ── Daily dungeon clear ─────────────────────────────────────────────────
-    if (this.dailyMode) {
-      const today = getTodayString();
-      gs.dailyDungeonCompleted = today;
-      gs.soulCrystals += this.dailyMode.rewards.crystals;
-      for (const matId of this.dailyMode.rewards.materials) {
-        gs.materials[matId] = (gs.materials[matId] ?? 0) + 1;
-      }
-    }
-
-    // ── Weekly boss clear ───────────────────────────────────────────────────
-    if (this.weeklyBossMode) {
-      const thisWeek = getThisWeekMonday();
-      // Only grant rewards if not already claimed this week
-      if (gs.weeklyBossResetDate !== thisWeek) {
-        gs.weeklyBossResetDate = thisWeek;
-        gs.weeklyBossHpDealt   = 0;
-        gs.soulCrystals += this.weeklyBossMode.rewards.skinShards * 10;
-        gs.materials['boss_essence'] = (gs.materials['boss_essence'] ?? 0) + 1;
-        // Unlock boss blueprint on first clear
-        gs.blueprints = gs.blueprints ?? [];
-        if (!gs.blueprints.includes('bp_boss_amulet')) {
-          gs.blueprints.push('bp_boss_amulet');
-        }
-      }
-    }
-
-    saveGameState(gs);
-
-    // Sync to StageSelectScene's own progress key (bestStars + bestHpPercent)
-    const hpPercent = Math.round((this.dungeonHp / this.maxHp) * 100);
-    if (stageNum !== undefined) recordClear(stageNum - 1, stars, hpPercent);
-
-    logger.debug(`[CHAPTER CLEAR] stars=${stars} +${crystals} soul crystals (×${this.wisdomBonuses.crystalEarnMult.toFixed(2)})`);
-
-    // Full overlay
-    const ov = this.add.container(0, 0).setDepth(310);
-
-    const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.85);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    dim.setAlpha(0);
-    ov.add(dim);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 600 });
-
-    // Card
-    const cw = 320, ch = 320;
-    const cx = CANVAS_WIDTH / 2 - cw / 2;
-    const cy = CANVAS_HEIGHT / 2 - ch / 2;
-    const card = this.add.graphics();
-    card.fillStyle(COLORS.STONE_DARK, 1);
-    card.fillRoundedRect(cx, cy, cw, ch, 12);
-    card.lineStyle(2, COLORS.TORCH_GOLD, 0.9);
-    card.strokeRoundedRect(cx, cy, cw, ch, 12);
-    card.setY(-60).setAlpha(0);
-    ov.add(card);
-    this.tweens.add({ targets: card, y: 0, alpha: 1, duration: 500, ease: 'Power2.easeOut', delay: 200 });
-
-    const chLabel = `${this.stageChapter}장`;
-
-    // Game complete: only stage 62 (final stage of Ch6)
-    const stageCfgX = this.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-    if (stageCfgX?.stageNumber === 62) {
-      this.time.delayedCall(200, () => this.showGameComplete());
-      return;
-    }
-    const clearTitle = this.dailyMode
-      ? `⚔️  ${this.dailyMode.name}  클리어!`
-      : this.weeklyBossMode
-      ? `👑  ${this.weeklyBossMode.name}  격파!`
-      : `🎉  ${chLabel} 클리어!`;
-    const title = this.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
-      fontFamily: "Georgia, serif", fontSize: '24px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(title);
-    this.tweens.add({ targets: title, alpha: 1, duration: 300, delay: 500 });
-
-    const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-    const starsT = this.add.text(CANVAS_WIDTH / 2, cy + 78, starStr, {
-      fontFamily: 'sans-serif', fontSize: '24px', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(starsT);
-    this.tweens.add({ targets: starsT, alpha: 1, duration: 300, delay: 650 });
-
-    const crystalT = this.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💎`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#88aaff',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(crystalT);
-    this.tweens.add({ targets: crystalT, alpha: 1, duration: 300, delay: 780 });
-
-    // Daily dungeon reward line
-    if (this.dailyMode) {
-      const dailyCrystals = this.dailyMode.rewards.crystals;
-      const dailyT = this.add.text(CANVAS_WIDTH / 2, cy + 148, `일일 보상  +${dailyCrystals} 💠  재료 ×${this.dailyMode.rewards.materials.length}`, {
-        fontFamily: 'sans-serif', fontSize: '13px', color: '#44ffcc',
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(dailyT);
-      this.tweens.add({ targets: dailyT, alpha: 1, duration: 300, delay: 880 });
-    }
-
-    const killT = this.add.text(CANVAS_WIDTH / 2, cy + 152, `골드 획득: ${this.gold}💰`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(killT);
-    this.tweens.add({ targets: killT, alpha: 1, duration: 300, delay: 880 });
-
-    // Materials earned this run
-    const matEntries = Object.entries(this.materialsEarnedThisRun).filter(([, q]) => q > 0);
-    if (matEntries.length > 0) {
-      const matStr = '획득 재료: ' + matEntries.map(([id, q]) => {
-        const def = MATERIAL_DEFS[id];
-        return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${q}`;
-      }).join('  ');
-      const matT = this.add.text(CANVAS_WIDTH / 2, cy + 170, matStr, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8844',
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(matT);
-      this.tweens.add({ targets: matT, alpha: 1, duration: 300, delay: 940 });
-    }
-
-    // Divider
-    const divG = this.add.graphics();
-    divG.lineStyle(1, COLORS.STONE_MID, 0.5);
-    divG.lineBetween(cx + 20, cy + 178, cx + cw - 20, cy + 178);
-    divG.setAlpha(0);
-    ov.add(divG);
-    this.tweens.add({ targets: divG, alpha: 1, duration: 300, delay: 900 });
-
-    // Buttons
-    const goldEarned = this.gold;
-    const curStageCfg = this.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-    const curStageNum = curStageCfg?.stageNumber;
-    // For invasion battles (no stageNumber), never offer "다음 스테이지"
-    const nextCfg = (curStageNum !== undefined && !this.returnTo)
-      ? STAGE_CONFIGS[curStageNum]  // STAGE_CONFIGS is 0-indexed; next stage = curStageNum
-      : undefined;
-
-    const launchNext = () => {
-      if (!nextCfg) return;
-      this.registry.set('stageConfig', nextCfg);
-      const cinematicId = STAGE_CINEMATICS[nextCfg.stageNumber];
-      if (cinematicId) {
-        const gs2 = loadGameState();
-        const seen = gs2.cinematicSeen ?? [];
-        if (!seen.includes(cinematicId)) {
-          ov.destroy();
-          this.scene.stop('UIScene');
-          this.scene.start('CinematicScene', { cinematicId, nextScene: 'DungeonScene' });
-          return;
-        }
-      }
-      ov.destroy();
-      this.scene.stop('UIScene');
-      this.scene.start('DungeonScene');
-    };
-
-    const btnData: Array<{ label: string; action: () => void; enabled: boolean }> = [
-      {
-        label: nextCfg ? `다음 스테이지 →  (${nextCfg.stageNumber}스테이지)` : '🏆  모든 챕터 클리어!',
-        action: nextCfg ? launchNext : () => {},
-        enabled: !!nextCfg,
-      },
-      {
-        label: this.returnTo ? '🏰  던전으로 귀환' : '스테이지 선택으로',
-        action: () => {
-          if (this.returnTo) {
-            this.registry.set('battleResult', { won: true, goldEarned, dmXP: 150, materialsEarned: { ...this.materialsEarnedThisRun } });
-            ov.destroy();
-            this.scene.start('DungeonHomeScene');
-          } else {
-            ov.destroy();
-            this.scene.start('StageSelectScene');
-          }
-        },
-        enabled: true,
-      },
-    ];
-    btnData.forEach(({ label, action, enabled }, i) => {
-      const btnY = cy + 200 + i * 48;
-      const btnBg = this.add.graphics();
-      const bgColor = !enabled ? COLORS.STONE_DARK : i === 0 ? 0x1a6040 : COLORS.BLOOD_RED;
-      btnBg.fillStyle(bgColor, enabled ? 0.85 : 0.5);
-      btnBg.fillRoundedRect(cx + 20, btnY, cw - 40, 36, 5);
-      if (enabled && i === 0) {
-        btnBg.lineStyle(1, 0x44ff88, 0.5);
-        btnBg.strokeRoundedRect(cx + 20, btnY, cw - 40, 36, 5);
-      }
-      btnBg.setAlpha(0);
-      ov.add(btnBg);
-      this.tweens.add({ targets: btnBg, alpha: 1, duration: 250, delay: 1000 + i * 120 });
-
-      const btnT = this.add.text(CANVAS_WIDTH / 2, btnY + 18, label, {
-        fontFamily: "Georgia, serif", fontSize: '13px',
-        color: enabled ? CSS.PARCHMENT : '#666666',
-      }).setOrigin(0.5).setAlpha(0);
-      ov.add(btnT);
-      this.tweens.add({ targets: btnT, alpha: 1, duration: 250, delay: 1000 + i * 120 });
-
-      if (enabled) {
-        const zone = this.add.zone(CANVAS_WIDTH / 2, btnY + 18, cw - 40, 36).setInteractive();
-        ov.add(zone);
-        zone.on('pointerdown', action);
-      }
-    });
+    _showChapterClear(this.makeResultFlowCtx());
   }
 
   // ─── Events ───────────────────────────────────────────────────────────────
@@ -3159,6 +2416,37 @@ export class DungeonScene extends Phaser.Scene {
         }
       }
 
+      // DIVINE_PROPHECY: 5% chance on kill → heal 5% dungeonHp
+      if (Math.random() < 0.05) {
+        const hasProphecy = this.roomGrid.flat().some(
+          d => d?.monsterSlot && HYBRID_DEFS[d.monsterSlot]?.passive === 'DIVINE_PROPHECY'
+        );
+        if (hasProphecy) {
+          const heal = Math.ceil(this.maxHp * 0.05);
+          this.dungeonHp = Math.min(this.maxHp, this.dungeonHp + heal);
+          this.registry.set('hp', this.dungeonHp);
+          this.showFloatText(CANVAS_WIDTH / 2, 80, `👁️ +${heal} 신탁의 가호`, '#ffd700');
+        }
+      }
+
+      // CHAIN_CURSE: on kill, chain 30 dmg to 3 nearest invaders
+      if (this.synergyManager.hasSpecial('CHAIN_CURSE')) {
+        const nearby = this.activeInvaders
+          .filter(o => o.active && o !== inv)
+          .sort((a, b) => Math.hypot(a.x - inv.x, a.y - inv.y) - Math.hypot(b.x - inv.x, b.y - inv.y))
+          .slice(0, 3);
+        nearby.forEach((o, i) => {
+          this.time.delayedCall(i * 80, () => {
+            if (!o.active) return;
+            o.takeDamage(30);
+            const g = this.add.graphics().setDepth(55);
+            g.lineStyle(2, 0x4422ff, 0.9);
+            g.lineBetween(inv.x, inv.y, o.x, o.y);
+            this.tweens.add({ targets: g, alpha: 0, duration: 250, onComplete: () => g.destroy() });
+          });
+        });
+      }
+
       // Track recently dead for HIGH_PRIEST resurrection (keep last 3)
       this.recentlyDeadInvaders.unshift(inv.def);
       if (this.recentlyDeadInvaders.length > 3) this.recentlyDeadInvaders.pop();
@@ -3213,7 +2501,8 @@ export class DungeonScene extends Phaser.Scene {
     });
 
     this.events.on('invaderReachedEnd', (inv: Invader) => {
-      const actualDamage = Math.round(inv.def.damage * this.wisdomBonuses.monsterDmgMult);
+      const balanceDefMult = this.synergyManager.hasSpecial('BALANCE_DEF') ? 0.85 : 1;
+      const actualDamage = Math.round(inv.def.damage * this.wisdomBonuses.monsterDmgMult * balanceDefMult);
       this.dungeonHp = Math.max(0, this.dungeonHp - actualDamage);
       this.registry.set('hp', this.dungeonHp);
       this.activeInvaders = this.activeInvaders.filter(i => i !== inv);
@@ -3469,162 +2758,35 @@ export class DungeonScene extends Phaser.Scene {
 
   /** Recompute and cache armory bonus for every guardian room. Called at wave start. */
   private updateArmoryBonuses(): void {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const d = this.roomGrid[row][col];
-        if (!d || d.type !== 'guardian') continue;
-        let bonus = 0;
-        // Find nearest armory within its radius
-        for (let ar = 0; ar < GRID_ROWS; ar++) {
-          for (let ac = 0; ac < this.effectiveCols; ac++) {
-            const ad = this.roomGrid[ar][ac];
-            if (!ad || ad.type !== 'armory') continue;
-            const radius = getArmoryRadius(ad.level);
-            const dist = Math.max(Math.abs(ar - row), Math.abs(ac - col));
-            if (dist <= radius) {
-              bonus = Math.max(bonus, getArmoryDmgBonus(ad.level));
-            }
-          }
-        }
-        d.armoryDmgBonus = bonus;
-      }
-    }
+    _updateArmoryBonuses(this.makeRoomMechanicsCtx());
   }
 
   // ─── Chapter 3: SOUL_HARVEST ───────────────────────────────────────────────
 
   private runSoulHarvest(now: number): void {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const data = this.roomGrid[row][col];
-        if (!data || data.monsterSlot !== 'death_messenger') continue;
-        if (now - data.soulHarvestLastTime < 800) continue;
-
-        // Check all invaders in row for ≤15% HP
-        const cs = this.effectiveCellSize;
-        const cellCenterY = GRID_Y + row * cs + cs / 2;
-        for (const inv of this.activeInvaders) {
-          if (!inv.active || inv.isDecoy) continue;
-          if (Math.abs(inv.y - cellCenterY) > cs * 1.5) continue;
-          const pct = inv.hp / inv.maxHp;
-          if (pct <= 0.15) {
-            // Execute!
-            inv.takeDamage(inv.hp, true);
-            data.soulHarvestLastTime = now;
-            this.gold += 5;
-            this.registry.set('gold', this.gold);
-            this.showSoulHarvestExec(inv.x, inv.y);
-            this.rooms[row][col].flashAttack();
-            logger.debug(`[SOUL_HARVEST] executed ${inv.def.type} hp=${inv.hp}`);
-            break;
-          }
-        }
-      }
-    }
+    _runSoulHarvest(this.makeRoomMechanicsCtx(), now);
   }
 
   private showSoulHarvestExec(x: number, y: number): void {
-    const g = this.add.graphics().setDepth(55);
-    g.fillStyle(0x400060, 0.9);
-    g.fillCircle(x, y, 28);
-    this.tweens.add({ targets: g, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 500,
-      onComplete: () => g.destroy() });
-    const t = this.add.text(x, y - 20, '💀 처형 +5💰', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#cc88ff',
-    }).setOrigin(0.5).setDepth(56);
-    this.tweens.add({ targets: t, y: y - 50, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    _showSoulHarvestExec(this, x, y);
   }
 
   // ─── Chapter 3: CHAIN_LIGHTNING ────────────────────────────────────────────
 
   private triggerChainLightning(source: Invader, chainDmg: number, maxChains: number): void {
-    const chained = new Set<Invader>([source]);
-    let current = source;
-    for (let i = 0; i < maxChains; i++) {
-      let nearest: Invader | null = null;
-      let nearestDist = Infinity;
-      for (const inv of this.activeInvaders) {
-        if (!inv.active || chained.has(inv)) continue;
-        const d = Math.hypot(inv.x - current.x, inv.y - current.y);
-        if (d < 120 && d < nearestDist) { nearestDist = d; nearest = inv; }
-      }
-      if (!nearest) break;
-      chained.add(nearest);
-      nearest.takeDamage(chainDmg, true);
-      // Lightning arc visual
-      const arc = this.add.graphics().setDepth(55);
-      arc.lineStyle(2, 0xffee44, 0.9);
-      arc.lineBetween(current.x, current.y, nearest.x, nearest.y);
-      // Zig-zag: add 2 mid points offset
-      const mx = (current.x + nearest.x) / 2 + Phaser.Math.Between(-12, 12);
-      const my = (current.y + nearest.y) / 2 + Phaser.Math.Between(-12, 12);
-      arc.lineStyle(1.5, 0xffffff, 0.7);
-      arc.lineBetween(current.x, current.y, mx, my);
-      arc.lineBetween(mx, my, nearest.x, nearest.y);
-      this.tweens.add({ targets: arc, alpha: 0, duration: 250, onComplete: () => arc.destroy() });
-      current = nearest;
-    }
-    if (chained.size > 1) {
-      const t = this.add.text(source.x, source.y - 18, `⚡×${chained.size - 1}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#ffee44',
-      }).setOrigin(0.5).setDepth(56);
-      this.tweens.add({ targets: t, y: source.y - 45, alpha: 0, duration: 600, onComplete: () => t.destroy() });
-      logger.debug(`[CHAIN_LIGHTNING] chained ${chained.size - 1} targets @ ${chainDmg} dmg`);
-    }
+    _triggerChainLightning(this.makeRoomMechanicsCtx(), source, chainDmg, maxChains);
   }
 
   // ─── Chapter 3: SPECTRAL_BOLT ──────────────────────────────────────────────
 
   private triggerSpectralBolt(fromX: number, _fromY: number, row: number, dmg: number): void {
-    const cs = this.effectiveCellSize;
-    const rowY = GRID_Y + row * cs + cs / 2;
-    let hits = 0;
-
-    // Ghostly bolt visual travelling right to left (invaders move right to left)
-    const bolt = this.add.graphics().setDepth(55);
-    bolt.fillStyle(0xaaddff, 0.9);
-    bolt.fillEllipse(fromX, rowY, 14, 8);
-    this.tweens.add({
-      targets: bolt, x: -40, duration: 600, ease: 'Linear',
-      onComplete: () => bolt.destroy(),
-    });
-
-    // Deal damage to all invaders in row
-    this.activeInvaders.forEach(inv => {
-      if (!inv.active || Math.abs(inv.y - rowY) > cs * 0.7) return;
-      inv.takeDamage(dmg, true);
-      hits++;
-      const flash = this.add.graphics().setDepth(inv.depth + 2);
-      flash.fillStyle(0xaaddff, 0.6);
-      flash.fillCircle(inv.x, inv.y, inv.def.radius + 4);
-      this.tweens.add({ targets: flash, alpha: 0, duration: 200, onComplete: () => flash.destroy() });
-    });
-
-    if (hits > 0) logger.debug(`[SPECTRAL_BOLT] row=${row} hits=${hits} dmg=${dmg}`);
+    _triggerSpectralBolt(this.makeRoomMechanicsCtx(), fromX, _fromY, row, dmg);
   }
 
   // ─── Chapter 3: WHIRLWIND_DANCE ────────────────────────────────────────────
 
   private triggerWhirlwind(row: number, dmg: number, rx: number, ry: number): void {
-    const cs = this.effectiveCellSize;
-    const rowY = GRID_Y + row * cs + cs / 2;
-    let hits = 0;
-    this.activeInvaders.forEach(inv => {
-      if (!inv.active || Math.abs(inv.y - rowY) > cs * 0.8) return;
-      inv.takeDamage(dmg);
-      hits++;
-    });
-    // Spinning vortex visual
-    const g = this.add.graphics().setDepth(55);
-    g.lineStyle(3, 0xff6622, 0.9);
-    g.strokeCircle(rx, ry, 20);
-    this.tweens.add({ targets: g, scaleX: 5, scaleY: 5, alpha: 0, rotation: Math.PI * 2, duration: 600,
-      onComplete: () => g.destroy() });
-    const t = this.add.text(rx, ry - 20, '🌀 회오리!', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#ff8844',
-    }).setOrigin(0.5).setDepth(56);
-    this.tweens.add({ targets: t, y: ry - 50, alpha: 0, duration: 700, onComplete: () => t.destroy() });
-    logger.debug(`[WHIRLWIND] row=${row} hits=${hits} dmg=${dmg}`);
+    _triggerWhirlwind(this.makeRoomMechanicsCtx(), row, dmg, rx, ry);
   }
 
   // ─── Chapter 3: Medicine Hall healing ─────────────────────────────────────
@@ -3633,48 +2795,7 @@ export class DungeonScene extends Phaser.Scene {
   private medicineGlobalPulseLast = 0;
 
   private runMedicineHallHeal(now: number): void {
-    if (now - this.medicineHealTick < 1000) return;
-    this.medicineHealTick = now;
-
-    for (let mr = 0; mr < GRID_ROWS; mr++) {
-      for (let mc = 0; mc < this.effectiveCols; mc++) {
-        const md = this.roomGrid[mr][mc];
-        if (!md || md.type !== 'medicine_hall') continue;
-        const healRate = getMedicineHealRate(md.level);
-
-        // Lv2+: self-heal
-        if (md.level >= 2) this.rooms[mr][mc].healRoomHp(healRate);
-
-        // Heal adjacent rooms
-        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-        for (const [dr, dc] of dirs) {
-          const nr = mr + dr, nc = mc + dc;
-          if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= this.effectiveCols) continue;
-          const nd = this.roomGrid[nr][nc];
-          if (!nd) continue;
-          this.rooms[nr][nc].healRoomHp(healRate);
-        }
-
-        // Lv3: global pulse every 15s
-        if (md.level >= 3 && now - this.medicineGlobalPulseLast >= 15000) {
-          this.medicineGlobalPulseLast = now;
-          this.triggerMedicineGlobalPulse(healRate * 2);
-        }
-      }
-    }
-  }
-
-  private triggerMedicineGlobalPulse(amount: number): void {
-    for (let r = 0; r < GRID_ROWS; r++)
-      for (let c = 0; c < this.effectiveCols; c++)
-        if (this.roomGrid[r][c]) this.rooms[r][c].healRoomHp(amount);
-
-    const pulse = this.add.graphics().setDepth(50);
-    pulse.lineStyle(3, 0x44ff88, 0.8);
-    pulse.strokeCircle(CANVAS_WIDTH / 2, GRID_Y + GRID_ROWS * this.effectiveCellSize / 2, 20);
-    this.tweens.add({ targets: pulse, scaleX: 20, scaleY: 20, alpha: 0, duration: 800,
-      onComplete: () => pulse.destroy() });
-    logger.debug(`[MEDICINE HALL] Lv3 global pulse +${amount} HP`);
+    _runMedicineHallHeal(this.makeRoomMechanicsCtx(), now);
   }
 
   // ─── Chapter 3: POISON_TRAIL room damage ───────────────────────────────────
@@ -3682,165 +2803,31 @@ export class DungeonScene extends Phaser.Scene {
   private poisonDamageTick = 0;
 
   private runPoisonTrailDamage(now: number): void {
-    if (now - this.poisonDamageTick < 1000) return;
-    this.poisonDamageTick = now;
-
-    const cs = this.effectiveCellSize;
-    for (const inv of this.activeInvaders) {
-      if (!inv.active || inv.def.behavior !== 'POISON_TRAIL') continue;
-      // Damage rooms near this invader (5 HP/s)
-      for (let r = 0; r < GRID_ROWS; r++) {
-        for (let c = 0; c < this.effectiveCols; c++) {
-          if (!this.roomGrid[r][c]) continue;
-          const cx = GRID_X + c * cs + cs / 2;
-          const cy = GRID_Y + r * cs + cs / 2;
-          if (Math.hypot(inv.x - cx, inv.y - cy) < cs * 0.8) {
-            const rd = this.roomGrid[r][c];
-            if (rd && this.time.now < (rd.immuneUntil ?? 0)) break; // fortress/shield active
-            this.rooms[r][c].damageRoomHp(5);
-            // Green puddle beneath invader
-            const puddle = this.add.graphics().setDepth(inv.depth - 2);
-            puddle.fillStyle(0x44ff44, 0.18);
-            puddle.fillEllipse(inv.x, inv.y + inv.def.radius, 30, 14);
-            this.tweens.add({ targets: puddle, alpha: 0, duration: 600, onComplete: () => puddle.destroy() });
-          }
-        }
-      }
-    }
+    _runPoisonTrailDamage(this.makeRoomMechanicsCtx(), now);
   }
 
   // ─── Chapter 3: UNDYING_KNIGHT (revive once if killed by non-magic) ────────
 
   private setupUndyingKnight(inv: Invader): void {
-    const checkRevive = () => {
-      if (!inv.active) return;
-      if (inv.hp <= 0 && !inv.revivedOnce && !inv.killedByMagic) {
-        inv.revivedOnce = true;
-        inv.hp = Math.round(inv.maxHp * 0.60);
-        inv.setTint(0xaaaaff);
-        const t = this.add.text(inv.x, inv.y - 22, '불사 부활!', {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#88aaff',
-        }).setOrigin(0.5).setDepth(56);
-        this.tweens.add({ targets: t, y: inv.y - 50, alpha: 0, duration: 800, onComplete: () => t.destroy() });
-        logger.debug('[UNDYING_KNIGHT] revived at 60% HP');
-      }
-      this.time.delayedCall(200, checkRevive);
-    };
-    this.time.delayedCall(200, checkRevive);
+    _setupUndyingKnight(this.makeBossCtx(), inv);
   }
 
   // ─── Chapter 3: DECOY_CLONE ────────────────────────────────────────────────
 
   private setupDecoyClone(inv: Invader): void {
-    const spawnDecoy = () => {
-      if (!inv.active || !inv.active) return;
-      if (inv.hasDecoyAlive) { this.time.delayedCall(15000, spawnDecoy); return; }
-      // Spawn a ghost-like decoy that walks the path
-      const decoyDef = { ...inv.def, hp: 1, reward: 0, damage: 0 };
-      const decoy = new Invader(this, this.invaderPath, decoyDef);
-      decoy.isDecoy = true;
-      decoy.setAlpha(0.45);
-      decoy.setTint(0xaaaaff);
-      decoy.setDepth(38);
-      this.activeInvaders.push(decoy);
-      inv.hasDecoyAlive = true;
-      // When decoy dies, release flag
-      this.events.once(`decoyDied_${decoy.def.type}_${Date.now()}`, () => {
-        inv.hasDecoyAlive = false;
-      });
-      logger.debug('[DECOY_CLONE] spawned decoy');
-      this.time.delayedCall(15000, spawnDecoy);
-    };
-    this.time.delayedCall(15000, spawnDecoy);
+    _setupDecoyClone(this.makeBossCtx(), inv);
   }
 
   // ─── Chapter 3: VOID_TELEPORT ──────────────────────────────────────────────
 
   private scheduleVoidTeleport(inv: Invader): void {
-    this.time.delayedCall(2000, () => {
-      if (!inv.active) return;
-      // Teleport invader to the last row of the grid
-      const cs = this.effectiveCellSize;
-      const finalRowY = GRID_Y + (GRID_ROWS - 1) * cs + cs / 2;
-      const targetX   = GRID_X + cs / 2;  // leftmost col
-      // Visual: void flash at current position
-      const flash = this.add.graphics().setDepth(60);
-      flash.fillStyle(0x220044, 0.9);
-      flash.fillCircle(inv.x, inv.y, 28);
-      this.tweens.add({ targets: flash, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 400,
-        onComplete: () => flash.destroy() });
-      // Re-appear at target
-      inv.setPosition(targetX, finalRowY);
-      inv.setAlpha(0);
-      this.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-      const t = this.add.text(targetX, finalRowY - 22, '공허 이동!', {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#cc44ff',
-      }).setOrigin(0.5).setDepth(56);
-      this.tweens.add({ targets: t, y: finalRowY - 50, alpha: 0, duration: 700, onComplete: () => t.destroy() });
-      logger.debug('[VOID_TELEPORT] teleported to final row');
-    });
+    _scheduleVoidTeleport(this.makeBossCtx(), inv);
   }
 
   // ─── Chapter 3: DRAGON_KING_PHASE boss ─────────────────────────────────────
 
   private setupDragonKingPhase(inv: Invader): void {
-    this.buildDragonKingHpBar(inv.maxHp);
-    let phase = 1;
-    const checkPhase = () => {
-      if (!inv.active) return;
-      const pct = inv.hp / inv.maxHp;
-      if (pct <= 0.66 && phase === 1) {
-        phase = 2;
-        inv.isFireImmune = true;
-        inv.applySpeedBoost(55 / inv.def.speed, 9999999);
-        this.showDragonPhaseTransition(inv, 2, '🐲 불꽃 형태! 화염 면역!');
-        logger.debug('[DRAGON_KING] phase 2 — fire immune, speed 55');
-      }
-      if (pct <= 0.33 && phase === 2) {
-        phase = 3;
-        inv.dragonPhase = 3;
-        this.showDragonPhaseTransition(inv, 3, '🐲 해저 잠수! 함정만 통함!');
-        // Begin submerge cycle
-        inv.applySubmerge(6000);
-        logger.debug('[DRAGON_KING] phase 3 — submerge loop begins');
-      }
-      this.time.delayedCall(400, checkPhase);
-    };
-    this.time.delayedCall(400, checkPhase);
-  }
-
-  private buildDragonKingHpBar(maxHp: number): void {
-    this.bossMaxHp = maxHp;
-    const bx = CANVAS_WIDTH / 2 - 100;
-    const by = TOP_BAR_HEIGHT + 2;
-    if (!this.bossHpBarBg) {
-      this.bossHpBarBg = this.add.graphics().setDepth(95);
-      this.bossHpBarBg.fillStyle(0x001430, 1);
-      this.bossHpBarBg.fillRoundedRect(bx - 2, by - 2, 204, 16, 3);
-    }
-    if (!this.bossHpBarFill) this.bossHpBarFill = this.add.graphics().setDepth(96);
-    if (!this.bossHpLabel) {
-      this.bossHpLabel = this.add.text(CANVAS_WIDTH / 2, by - 12, '🐲 용왕', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#44aaff',
-      }).setOrigin(0.5).setDepth(97);
-    }
-  }
-
-  private showDragonPhaseTransition(_inv: Invader, phase: number, msg: string): void {
-    this.cameras.main.shake(400, 0.02);
-    this.cameras.main.flash(300, 0, 100, 180, false);
-    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40, msg, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
-      color: phase === 2 ? '#ff8844' : '#44aaff',
-      backgroundColor: '#001430', padding: { x: 12, y: 6 },
-    }).setOrigin(0.5).setDepth(260).setAlpha(0);
-    this.tweens.add({
-      targets: t, alpha: 1, duration: 300,
-      onComplete: () => {
-        this.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1500, onComplete: () => t.destroy() });
-      },
-    });
-    logger.debug(`[DRAGON_KING] phase transition → ${phase}: "${msg}"`);
+    _setupDragonKingPhase(this.makeBossCtx(), inv);
   }
 
   // ─── Ch4/Ch5 helpers ──────────────────────────────────────────────────────
@@ -3879,456 +2866,47 @@ export class DungeonScene extends Phaser.Scene {
   private entrancingVeilApplied = false;
 
   private runEntrancingVeil(): void {
-    // Check if any room has celestial_dancer
-    let hasDancer = false;
-    for (const row of this.roomGrid)
-      for (const d of row)
-        if (d?.monsterSlot === 'celestial_dancer') { hasDancer = true; break; }
-
-    if (hasDancer && !this.entrancingVeilApplied) {
-      this.entrancingVeilApplied = true;
-      // Apply 0.88 speed multiplier to all active + future invaders
-      for (const inv of this.activeInvaders)
-        if (inv.active) inv.applySlow(0.88, 9999999);
-      logger.debug('[ENTRANCING_VEIL] global 0.88× speed active');
-    } else if (!hasDancer && this.entrancingVeilApplied) {
-      this.entrancingVeilApplied = false;
-    }
+    _runEntrancingVeil(this.makeRoomMechanicsCtx());
   }
 
   // ─── Ch4: Spirit Altar — summon ghost warrior on kill threshold ────────────
 
   private runSpiritAltar(_now: number): void {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const d = this.roomGrid[row][col];
-        if (!d || d.type !== 'spirit_altar') continue;
-        const needed = getAltarKillsNeeded(d.level);
-        if (d.altarKillCount >= needed && d.altarGhostActiveUntil <= this.time.now) {
-          d.altarKillCount = 0;
-          const ghostCount = d.level >= 2 ? 2 : 1;
-          d.altarGhostActiveUntil = this.time.now + 10000;
-          for (let g = 0; g < ghostCount; g++) {
-            this.time.delayedCall(g * 400, () => this.spawnGhostWarrior(row, col));
-          }
-          logger.debug(`[SPIRIT_ALTAR Lv${d.level}] summoning ${ghostCount} ghost(s)`);
-        }
-      }
-    }
+    _runSpiritAltar(this.makeRoomMechanicsCtx(), _now);
   }
 
   private spawnGhostWarrior(altarRow: number, _altarCol: number): void {
-    // Ghost patrols exit row — spawn a ghost_add at entrance and fast-track it
-    const def = INVADER_DEFS['ghost_add'];
-    const inv  = new Invader(this, this.invaderPath, def);
-    inv.setDepth(42);
-    inv.setAlpha(0.7);
-    inv.setTint(0x8888ff);
-    inv.isMagicImmune = true;   // physical-immune ghost
-    this.activeInvaders.push(inv);
-    const label = this.add.text(inv.x, inv.y - 18, '👻 소환!', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#aaaaff',
-    }).setOrigin(0.5).setDepth(56);
-    this.tweens.add({ targets: label, y: label.y - 30, alpha: 0, duration: 900, onComplete: () => label.destroy() });
-    logger.debug(`[GHOST] spawned from altar row=${altarRow}`);
+    _spawnGhostWarrior(this.makeRoomMechanicsCtx(), altarRow, _altarCol);
   }
 
   // ─── Ch4: LUNAR_RHYTHM — every 30s reset adjacent room cooldowns ───────────
 
   private runLunarRhythm(now: number): void {
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const d = this.roomGrid[row][col];
-        if (!d || d.monsterSlot !== 'moon_rabbit_sage') continue;
-        if (now - d.lunarResetLastTime < 30000) continue;
-        d.lunarResetLastTime = now;
-        // Reset adjacent rooms (4 cardinal dirs)
-        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-        for (const [dr, dc] of dirs) {
-          const nr = row + dr, nc = col + dc;
-          if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= this.effectiveCols) continue;
-          const nd = this.roomGrid[nr][nc];
-          if (nd) nd.lastAttackTime = 0;
-        }
-        const t = this.add.text(this.rooms[row][col].x, this.rooms[row][col].y - 20, '🌙 쿨타임 초기화!', {
-          fontFamily: 'sans-serif', fontSize: '10px', color: '#ddeeff',
-        }).setOrigin(0.5).setDepth(55);
-        this.tweens.add({ targets: t, y: t.y - 36, alpha: 0, duration: 1000, onComplete: () => t.destroy() });
-        logger.debug(`[LUNAR_RHYTHM] adjacent cooldowns reset at [${row},${col}]`);
-      }
-    }
+    _runLunarRhythm(this.makeRoomMechanicsCtx(), now);
   }
 
   // ─── Ch4: Dragon's Roar effect ─────────────────────────────────────────────
 
   private triggerDragonRoar(x: number, y: number): void {
-    this.cameras.main.shake(300, 0.015);
-    const flash = this.add.graphics().setDepth(60);
-    flash.lineStyle(3, 0xff4400, 0.9);
-    flash.strokeCircle(x, y, 20);
-    this.tweens.add({ targets: flash, scaleX: 5, scaleY: 5, alpha: 0, duration: 500, onComplete: () => flash.destroy() });
-
-    // Slow all invaders 50% for 3s
-    for (const inv of this.activeInvaders)
-      if (inv.active) inv.applySlow(0.5, 3000);
-
-    const t = this.add.text(x, y - 24, '🐲 포효!', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: '#ff8844',
-    }).setOrigin(0.5).setDepth(56);
-    this.tweens.add({ targets: t, y: t.y - 36, alpha: 0, duration: 900, onComplete: () => t.destroy() });
-    logger.debug('[DRAGONS_ROAR] all invaders slowed 50% for 3s');
+    _triggerDragonRoar(this, x, y, this.activeInvaders);
   }
 
   // ─── Ch4: VOID_STEALTH_ELITE behavior ──────────────────────────────────────
 
   private setupVoidStealthElite(inv: Invader): void {
-    // Teleport after 2s, then 2s stealth
-    this.time.delayedCall(2000, () => {
-      if (!inv.active) return;
-      // Flash at current position
-      const flash = this.add.graphics().setDepth(60);
-      flash.fillStyle(0x440066, 0.85);
-      flash.fillCircle(inv.x, inv.y, 22);
-      this.tweens.add({ targets: flash, scaleX: 2, scaleY: 2, alpha: 0, duration: 350, onComplete: () => flash.destroy() });
-
-      // Move to halfway point
-      const cs = this.effectiveCellSize;
-      inv.setPosition(GRID_X + cs / 2, GRID_Y + Math.floor(GRID_ROWS / 2) * cs + cs / 2);
-      inv.isInvisible = true;
-      inv.setAlpha(0.15);
-
-      // Re-appear after 2s
-      this.time.delayedCall(2000, () => {
-        if (!inv.active) return;
-        inv.isInvisible = false;
-        this.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-      });
-      logger.debug('[VOID_STEALTH_ELITE] teleported + stealth 2s');
-    });
+    _setupVoidStealthElite(this.makeBossCtx(), inv);
   }
 
   // ─── Ch4: setupDeathEmissary (STUN_IMMUNE boss) ─────────────────────────────
 
   private setupDeathEmissary(inv: Invader): void {
-    this.buildBossHpBar(inv.maxHp);
-
-    // Draw immunity aura (dark purple ring)
-    const aura = this.add.graphics().setDepth(inv.depth - 1);
-    const drawAura = () => {
-      if (!inv.active) { aura.destroy(); return; }
-      aura.clear();
-      const pulse = 0.5 + 0.3 * Math.sin(this.time.now * 0.004);
-      if (inv.isDamageImmune) {
-        aura.lineStyle(3, 0x660088, pulse);
-        aura.strokeCircle(inv.x, inv.y, inv.def.radius + 12);
-        aura.fillStyle(0x220044, pulse * 0.3);
-        aura.fillCircle(inv.x, inv.y, inv.def.radius + 12);
-      } else {
-        // While stunned: bright red — damageable
-        aura.lineStyle(3, 0xff0000, 0.9);
-        aura.strokeCircle(inv.x, inv.y, inv.def.radius + 12);
-      }
-      this.time.delayedCall(60, drawAura);
-    };
-    drawAura();
-
-    let emissaryPhase = 1;
-
-    const checkPhase = () => {
-      if (!inv.active) return;
-      const pct = inv.hp / inv.maxHp;
-
-      if (pct <= 0.66 && emissaryPhase === 1) {
-        emissaryPhase = 2;
-        logger.debug('[DEATH_EMISSARY] phase 2 — faster ghost adds (12s)');
-        this.showBossPhaseText(inv, 2, '💀 2단계! 망령 가속!', 0x8800cc);
-      }
-      if (pct <= 0.33 && emissaryPhase === 2) {
-        emissaryPhase = 3;
-        logger.debug('[DEATH_EMISSARY] phase 3 — JUDGMENT every 25s');
-        this.showBossPhaseText(inv, 3, '💀 3단계! 심판의 심판!', 0xcc0000);
-        // JUDGMENT: random room loses 50% HP every 25s
-        this.time.addEvent({
-          delay: 25000, repeat: -1,
-          callback: () => {
-            if (!inv.active || emissaryPhase < 3) return;
-            this.triggerJudgment();
-          },
-        });
-      }
-      this.time.delayedCall(300, checkPhase);
-    };
-    checkPhase();
-
-    // Ghost adds every 20s (12s in phase 2)
-    const spawnGhostAdd = () => {
-      if (!inv.active) return;
-      const delay = emissaryPhase >= 2 ? 12000 : 20000;
-      this.spawnInvader('ghost_add');
-      const t = this.add.text(INVADER_WAYPOINTS[0].x, INVADER_WAYPOINTS[0].y, '👻', {
-        fontFamily: 'sans-serif', fontSize: '20px',
-      }).setOrigin(0.5).setDepth(50);
-      this.tweens.add({ targets: t, alpha: 0, y: t.y - 30, duration: 800, onComplete: () => t.destroy() });
-      this.time.delayedCall(delay, spawnGhostAdd);
-    };
-    this.time.delayedCall(20000, spawnGhostAdd);
-
-    // Show immunity / stun-to-damage hint
-    const hintLoop = () => {
-      if (!inv.active) return;
-      const msg = inv.isDamageImmune
-        ? '면역 — 기절시켜야 피해!'
-        : '⚡ 피해 가능!';
-      const color = inv.isDamageImmune ? '#cc44ff' : '#ff4444';
-      const t = this.add.text(inv.x, inv.y - inv.def.radius - 18, msg, {
-        fontFamily: 'sans-serif', fontSize: '9px', color,
-      }).setOrigin(0.5).setDepth(70);
-      this.tweens.add({ targets: t, y: t.y - 22, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
-      this.time.delayedCall(1500, hintLoop);
-    };
-    this.time.delayedCall(500, hintLoop);
-
-    logger.debug('[DEATH_EMISSARY] setup complete — isDamageImmune=true, ghost adds every 20s');
-  }
-
-  private triggerJudgment(): void {
-    // Pick a random non-null room and deal 50% HP
-    const candidates: Array<[number, number]> = [];
-    for (let r = 0; r < GRID_ROWS; r++)
-      for (let c = 0; c < this.effectiveCols; c++)
-        if (this.roomGrid[r][c]) candidates.push([r, c]);
-    if (!candidates.length) return;
-    const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
-    const d = this.roomGrid[r][c]!;
-    const dmg = Math.round(d.maxRoomHp * 0.5);
-    d.roomHp = Math.max(0, d.roomHp - dmg);
-    const rm = this.rooms[r][c];
-    this.cameras.main.shake(500, 0.025);
-    const t = this.add.text(rm.x, rm.y, '☠️ 심판!', {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: '#ff0000',
-    }).setOrigin(0.5).setDepth(70);
-    this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
-    logger.debug(`[JUDGMENT] room [${r},${c}] −50% HP (−${dmg})`);
+    _setupDeathEmissary(this.makeBossCtx(), inv);
   }
 
   // ─── Ch5: setupThreeGodDestroyer (FIVE_PHASE boss) ─────────────────────────
 
   private setupThreeGodDestroyer(inv: Invader): void {
-    this.buildBossHpBar(inv.maxHp);
-
-    let phase5 = 1;
-    const phaseColors = [0xff4444, 0xff8800, 0xffff00, 0x44ff88, 0xaa00ff];
-    const phaseNames = ['화염', '번개', '공허', '독', '신성'];
-
-    const checkPhase5 = () => {
-      if (!inv.active) return;
-      const pct = inv.hp / inv.maxHp;
-      const thresholds = [0.80, 0.60, 0.40, 0.20];
-      if (phase5 <= 4 && pct <= thresholds[phase5 - 1]) {
-        phase5++;
-        inv.ch5BossPhase = phase5;
-        const color = phaseColors[phase5 - 1];
-        const name  = phaseNames[phase5 - 1];
-        this.showBossPhaseText(inv, phase5, `⛰️ ${name} 단계!`, color);
-        this.cameras.main.shake(600, 0.03);
-        this.cameras.main.flash(400, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff, false);
-
-        // Each phase adds a new ability
-        switch (phase5) {
-          case 2: // Lightning: chain lightning every 10s
-            this.time.addEvent({
-              delay: 10000, repeat: -1,
-              callback: () => {
-                if (!inv.active || inv.ch5BossPhase < 2) return;
-                const nearest = this.activeInvaders.filter(i => i !== inv && i.active)[0];
-                if (nearest) this.triggerChainLightning(nearest, 60, 5);
-              },
-            });
-            break;
-          case 3: // Void: teleport every 15s (target closest room to exit)
-            this.time.addEvent({
-              delay: 15000, repeat: -1,
-              callback: () => {
-                if (!inv.active || inv.ch5BossPhase < 3) return;
-                inv.setAlpha(0);
-                const cs = this.effectiveCellSize;
-                inv.setPosition(GRID_X + cs / 2, GRID_Y + (GRID_ROWS - 1) * cs + cs / 2);
-                this.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-                logger.debug('[THREE_GOD] phase 3 void teleport');
-              },
-            });
-            break;
-          case 4: // Venom: apply burn to all rooms every 20s
-            this.time.addEvent({
-              delay: 20000, repeat: -1,
-              callback: () => {
-                if (!inv.active || inv.ch5BossPhase < 4) return;
-                for (const r of this.roomGrid)
-                  for (const d of r)
-                    if (d) { d.roomHp = Math.max(0, d.roomHp - 40); }
-                const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, '🐍 독 홍수!', {
-                  fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cc00',
-                  backgroundColor: '#001400', padding: { x: 10, y: 5 },
-                }).setOrigin(0.5).setDepth(260).setAlpha(0);
-                this.tweens.add({ targets: t, alpha: 1, duration: 300,
-                  onComplete: () => this.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1200, onComplete: () => t.destroy() }) });
-                logger.debug('[THREE_GOD] phase 4 venom flood — all rooms −40 HP');
-              },
-            });
-            break;
-          case 5: // Divine: all invaders heal + speed boost
-            this.time.addEvent({
-              delay: 12000, repeat: -1,
-              callback: () => {
-                if (!inv.active || inv.ch5BossPhase < 5) return;
-                for (const ai of this.activeInvaders)
-                  if (ai.active) { ai.receiveHeal(100); ai.applySpeedBoost(1.3, 8000); }
-                const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, '✨ 신성 가호!', {
-                  fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ffeeaa',
-                  backgroundColor: '#201000', padding: { x: 10, y: 5 },
-                }).setOrigin(0.5).setDepth(260).setAlpha(0);
-                this.tweens.add({ targets: t, alpha: 1, duration: 300,
-                  onComplete: () => this.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1200, onComplete: () => t.destroy() }) });
-                logger.debug('[THREE_GOD] phase 5 divine blessing — all invaders +100HP +30% speed');
-              },
-            });
-            break;
-        }
-        logger.debug(`[THREE_GOD_DESTROYER] phase ${phase5} (${name}) — HP ${Math.round(pct * 100)}%`);
-      }
-      this.time.delayedCall(300, checkPhase5);
-    };
-    checkPhase5();
-
-    logger.debug('[THREE_GOD_DESTROYER] setup complete — 5-phase final boss');
-  }
-
-  private showBossPhaseText(inv: Invader, phase: number, msg: string, colorHex: number): void {
-    const cs = `#${colorHex.toString(16).padStart(6, '0')}`;
-    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 50, msg, {
-      fontFamily: 'Georgia, serif', fontSize: '18px', fontStyle: 'bold',
-      color: cs, backgroundColor: '#000000cc', padding: { x: 14, y: 8 },
-    }).setOrigin(0.5).setDepth(265).setAlpha(0);
-    this.tweens.add({
-      targets: t, alpha: 1, duration: 300,
-      onComplete: () => {
-        this.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1800, onComplete: () => t.destroy() });
-      },
-    });
-    logger.debug(`[BOSS_PHASE_${phase}] "${msg}"`);
-    // Ring flash around boss
-    const ring = this.add.graphics().setDepth(inv.depth + 2);
-    ring.lineStyle(4, colorHex, 1);
-    ring.strokeCircle(inv.x, inv.y, inv.def.radius + 6);
-    this.tweens.add({ targets: ring, scaleX: 3, scaleY: 3, alpha: 0, duration: 600, onComplete: () => ring.destroy() });
-  }
-
-  // ─── Game Complete Screen ─────────────────────────────────────────────────
-
-  private showGameComplete(): void {
-    // Persist rewards first (guard against duplicate triggers)
-    const crystalBonus = 50;
-    const gs0 = loadGameState();
-    if (!gs0.gameCompleted) {
-      gs0.soulCrystals += crystalBonus;
-      gs0.gameCompleted = true;
-      saveGameState(gs0);
-      // Fire achievement check now that stageProgress[61] is set
-      this.checkAchievementsAndToast(gs0);
-    }
-
-    // Play game_complete cinematic on first clear
-    const gs1 = loadGameState();
-    const seen = gs1.cinematicSeen ?? [];
-    if (!seen.includes('game_complete')) {
-      this.scene.stop('UIScene');
-      this.scene.start('CinematicScene', { cinematicId: 'game_complete', nextScene: 'StageSelectScene' });
-      return;
-    }
-
-    // Cinematic already seen — show summary overlay
-    this.waveActive = false;
-    this.scene.pause();
-
-    const ov = this.add.container(0, 0).setDepth(400);
-
-    const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.92);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ov.add(dim);
-
-    // Gold glow background
-    const glow = this.add.graphics();
-    glow.fillStyle(0xffcc00, 0.08);
-    glow.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ov.add(glow);
-
-    const titleT = this.add.text(CANVAS_WIDTH / 2, 140, '🌟 게임 완료! 🌟', {
-      fontFamily: 'Georgia, serif', fontSize: '28px', fontStyle: 'bold', color: '#ffcc00',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(titleT);
-    this.tweens.add({ targets: titleT, alpha: 1, duration: 600, delay: 200 });
-
-    const subT = this.add.text(CANVAS_WIDTH / 2, 190, '모든 6개 챕터를 클리어했습니다!', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#ffeeaa',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(subT);
-    this.tweens.add({ targets: subT, alpha: 1, duration: 400, delay: 500 });
-
-    // Star display
-    const stars3 = this.add.text(CANVAS_WIDTH / 2, 250, '★★★★★★', {
-      fontFamily: 'sans-serif', fontSize: '32px', color: '#ffcc00',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(stars3);
-    this.tweens.add({ targets: stars3, alpha: 1, duration: 400, delay: 700,
-      onComplete: () => {
-        this.tweens.add({ targets: stars3, scaleX: 1.15, scaleY: 1.15, duration: 400, yoyo: true, repeat: 2 });
-      },
-    });
-
-    const crystalT = this.add.text(CANVAS_WIDTH / 2, 310, `보너스 영혼 결정체 +${crystalBonus} 💎`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#88aaff',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(crystalT);
-    this.tweens.add({ targets: crystalT, alpha: 1, duration: 400, delay: 900 });
-
-    const hpT = this.add.text(CANVAS_WIDTH / 2, 340, `최종 던전 HP: ${this.dungeonHp}/${this.maxHp}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#aaaaaa',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(hpT);
-    this.tweens.add({ targets: hpT, alpha: 1, duration: 300, delay: 1050 });
-
-    // Prestige prompt
-    const pressT = this.add.text(CANVAS_WIDTH / 2, 410, '✨ 명성 시스템 잠금 해제! ✨', {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#cc88ff',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(pressT);
-    this.tweens.add({ targets: pressT, alpha: 1, duration: 400, delay: 1200 });
-
-    // Return to map button
-    const btnBg = this.add.graphics();
-    btnBg.fillStyle(0x330066, 1);
-    btnBg.fillRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8);
-    btnBg.lineStyle(2, 0xffcc00, 0.9);
-    btnBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8);
-    btnBg.setAlpha(0);
-    ov.add(btnBg);
-
-    const btnT = this.add.text(CANVAS_WIDTH / 2, 483, '스테이지 선택으로', {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: '#ffcc00',
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(btnT);
-    this.tweens.add({ targets: [btnBg, btnT], alpha: 1, duration: 400, delay: 1400 });
-
-    const zone = this.add.zone(CANVAS_WIDTH / 2, 483, 220, 46).setInteractive();
-    zone.on('pointerdown', () => {
-      this.scene.stop('UIScene');
-      this.scene.start('StageSelectScene');
-    });
-    zone.on('pointerover', () => { btnBg.clear(); btnBg.fillStyle(0x550088, 1); btnBg.fillRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8); btnBg.lineStyle(2, 0xffcc00, 0.9); btnBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8); });
-    zone.on('pointerout',  () => { btnBg.clear(); btnBg.fillStyle(0x330066, 1); btnBg.fillRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8); btnBg.lineStyle(2, 0xffcc00, 0.9); btnBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 110, 460, 220, 46, 8); });
-
-    logger.debug(`[GAME COMPLETE] all 6 chapters cleared! +${crystalBonus} soul crystals`);
+    _setupThreeGodDestroyer(this.makeBossCtx(), inv);
   }
 
   // ─── Monster XP ──────────────────────────────────────────────────────────
@@ -4349,17 +2927,7 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private showXpToast(msg: string): void {
-    const t = this.add.text(CANVAS_WIDTH / 2, 120, `⬆ LEVEL UP! ${msg}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: '#ffdd44', stroke: '#000000', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(350).setAlpha(0);
-    this.tweens.add({
-      targets: t, alpha: 1, y: 100, duration: 300, ease: 'Back.easeOut',
-      onComplete: () => {
-        this.tweens.add({ targets: t, alpha: 0, y: 80, duration: 400, delay: 1200,
-          onComplete: () => t.destroy() });
-      },
-    });
+    _showXpToast(this, msg);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -4442,48 +3010,11 @@ export class DungeonScene extends Phaser.Scene {
 
   /** Show a repair button on a damaged room. Cost = 50% of build cost. */
   private showRepairOption(row: number, col: number): void {
-    const data = this.roomGrid[row]?.[col];
-    if (!data || data.roomHp >= data.maxRoomHp) return;
-
-    const def = ROOM_DEFS[data.type];
-    const cost = Math.round(def.cost * 0.5);
-
-    const room = this.rooms[row]?.[col];
-    if (!room) return;
-
-    const btn = this.add.text(room.x, room.y - 40, `🔧 수리 (${cost}💰)`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#44ff44',
-      backgroundColor: '#000000cc', padding: { x: 6, y: 3 },
-    }).setOrigin(0.5).setDepth(80).setInteractive();
-
-    btn.on('pointerdown', () => {
-      if (this.gold < cost) {
-        this.showFloatText(room.x, room.y, '골드 부족!', '#ff4444');
-        btn.destroy();
-        return;
-      }
-      this.gold -= cost;
-      this.registry.set('gold', this.gold);
-      data.roomHp = data.maxRoomHp;
-      room.updateHpBar();
-      this.showFloatText(room.x, room.y, `🔧 수리 완료!`, '#44ff44');
-      btn.destroy();
-    });
-
-    // Auto-dismiss after 3s
-    this.time.delayedCall(3000, () => btn.destroy());
+    _showRepairOption(this.makeResultFlowCtx(), row, col);
   }
 
   private showFloatText(x: number, y: number, text: string, color: string): void {
-    const t = this.add.text(x, y, text, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color,
-      stroke: '#000000', strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(99);
-    this.tweens.add({
-      targets: t, y: y - 30, alpha: { from: 1, to: 0 },
-      duration: 800, ease: 'Cubic.easeOut',
-      onComplete: () => t.destroy(),
-    });
+    _showFloatText(this, x, y, text, color);
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -4518,148 +3049,22 @@ export class DungeonScene extends Phaser.Scene {
   // ─── Room Type Bonuses ────────────────────────────────────────────────────
 
   private recalcRoomTypeBonuses(): void {
-    const gc = this.effectiveCols;
-
-    // Reset all bonuses
-    this.slotTrapSynergyMult.clear();
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < gc; c++) {
-        const data = this.roomGrid[r][c];
-        if (data) data.roomTypeDmgMult = 1.0;
-      }
-    }
-
-    const adj = (r: number, c: number): Array<[number, number]> =>
-      ([ [-1,0],[1,0],[0,-1],[0,1] ] as Array<[number, number]>)
-        .filter(([dr, dc]) => r+dr>=0 && r+dr<GRID_ROWS && c+dc>=0 && c+dc<gc)
-        .map(([dr, dc]) => [r+dr, c+dc] as [number, number]);
-
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < gc; c++) {
-        const idx  = r * gc + c;
-        const slot = this.dungeonTrapSlots[idx];
-        if (!slot || slot.hp <= 0) continue;   // broken rooms grant no bonus
-
-        // ── 지원실: 인접 방 ATK +15% ────────────────────────────────────────
-        if (slot.roomType === 'support') {
-          for (const [nr, nc] of adj(r, c)) {
-            const adjData = this.roomGrid[nr][nc];
-            if (adjData) adjData.roomTypeDmgMult = Math.max(adjData.roomTypeDmgMult, 1.15);
-          }
-        }
-
-        // ── 시너지: 전투실 + 마법진 인접 → 전투실 ATK +10%, 마법진 CD -10% ─
-        if (slot.roomType === 'combat') {
-          const hasMagicNeighbor = adj(r, c).some(([nr, nc]) => {
-            const ns = this.dungeonTrapSlots[nr * gc + nc];
-            return ns && ns.roomType === 'magic' && ns.hp > 0;
-          });
-          if (hasMagicNeighbor) {
-            const data = this.roomGrid[r][c];
-            if (data) data.roomTypeDmgMult = Math.max(data.roomTypeDmgMult, 1.1);
-            logger.debug(`[SYNERGY] ⚔️+🔮 전투+마법 시너지 at [${r},${c}]`);
-          }
-        }
-        if (slot.roomType === 'magic') {
-          const hasCombatNeighbor = adj(r, c).some(([nr, nc]) => {
-            const ns = this.dungeonTrapSlots[nr * gc + nc];
-            return ns && ns.roomType === 'combat' && ns.hp > 0;
-          });
-          if (hasCombatNeighbor) {
-            const data = this.roomGrid[r][c];
-            if (data) data.attackCooldown = Math.round(data.attackCooldown * 0.9);
-          }
-        }
-
-        // ── 시너지: 함정실 + 지원실 인접 → 함정 피해 +15% ──────────────────
-        if (slot.roomType === 'trap') {
-          const hasSupportNeighbor = adj(r, c).some(([nr, nc]) => {
-            const ns = this.dungeonTrapSlots[nr * gc + nc];
-            return ns && ns.roomType === 'support' && ns.hp > 0;
-          });
-          if (hasSupportNeighbor) {
-            this.slotTrapSynergyMult.set(idx, 1.15);
-            logger.debug(`[SYNERGY] 🕸️+💚 함정+지원 시너지 at [${r},${c}]`);
-          }
-        }
-      }
-    }
+    _recalcRoomTypeBonuses(this.makeRoomMechanicsCtx());
   }
 
   // ─── Ch6: Shadow Realm (phases out periodically) ─────────────────────────
 
   private setupShadowRealm(inv: Invader): void {
-    inv.shadowRealmGfx = this.add.graphics().setDepth(inv.depth - 1);
-    const phaseIn = () => {
-      if (inv.isDead || !inv.active) return;
-      inv.isInShadowRealm = true;
-      inv.isDamageImmune = true;
-      this.tweens.add({ targets: inv, alpha: 0.15, duration: 300 });
-      this.time.delayedCall(2000, () => {
-        if (inv.isDead || !inv.active) return;
-        inv.isInShadowRealm = false;
-        inv.isDamageImmune = false;
-        this.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-      });
-    };
-    inv.shadowRealmTimer = this.time.addEvent({
-      delay: 8000, callback: phaseIn, loop: true,
-    });
+    _setupShadowRealm(this.makeBossCtx(), inv);
   }
 
   // ─── Ch6: Eternal Emperor (EMPEROR_PHASE boss) ──────────────────────────
 
+  private setupGodEmperor(inv: Invader): void {
+    _setupGodEmperor(this.makeBossCtx(), inv);
+  }
+
   private setupEternalEmperor(inv: Invader): void {
-    this.buildBossHpBar(inv.maxHp);
-
-    // Phase 1: Mirror shield active
-    inv.hasMirrorShield = true;
-    inv.mirrorHitsRemaining = 3;
-    inv.mirrorGfx = this.add.graphics().setDepth(inv.depth + 1);
-
-    const checkPhase = () => {
-      if (inv.isDead || !inv.active) return;
-      const pct = inv.hp / inv.maxHp;
-      this.updateBossHpBar();
-
-      // Phase 2: 70% HP — summon titan_sentinel adds
-      if (pct <= 0.7 && inv.ch6BossPhase < 2) {
-        inv.ch6BossPhase = 2;
-        for (let i = 0; i < 2; i++) {
-          this.time.delayedCall(i * 500, () => this.spawnInvader('titan_sentinel'));
-        }
-      }
-
-      // Phase 3: 40% HP — activate shadow realm cycle
-      if (pct <= 0.4 && inv.ch6BossPhase < 3) {
-        inv.ch6BossPhase = 3;
-        this.setupShadowRealm(inv);
-      }
-
-      // Phase 4: 15% HP — enrage (double speed + periodic immunity)
-      if (pct <= 0.15 && inv.ch6BossPhase < 4) {
-        inv.ch6BossPhase = 4;
-        // Double speed
-        if (inv.pathTween) {
-          const remaining = inv.pathTween.duration - inv.pathTween.elapsed;
-          inv.pathTween.duration = inv.pathTween.elapsed + remaining * 0.5;
-        }
-        // Periodic 1s immunity every 5s
-        this.time.addEvent({
-          delay: 5000,
-          callback: () => {
-            if (inv.isDead || !inv.active) return;
-            inv.isDamageImmune = true;
-            this.time.delayedCall(1000, () => {
-              if (!inv.isDead) inv.isDamageImmune = false;
-            });
-          },
-          loop: true,
-        });
-      }
-
-      this.time.delayedCall(400, checkPhase);
-    };
-    this.time.delayedCall(1000, checkPhase);
+    _setupEternalEmperor(this.makeBossCtx(), inv);
   }
 }

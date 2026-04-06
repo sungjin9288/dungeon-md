@@ -79,6 +79,34 @@ export const BRANCH_DEFS: BranchDef[] = [
     getValue: (tier) => tier * 5,
     position: { x: 50, y: 260 },
   },
+  // ─── 새 브랜치 (3개) ─────────────────────────────────────────────────────────
+  {
+    id: 'eliteTrainer',
+    name: '정예 조련사',
+    icon: '⚔️',
+    effect: '모든 몬스터 공격력 +{value}%',
+    costPerTier: [8, 15, 25, 40, 60],
+    getValue: (tier) => tier * 3,
+    position: { x: 50, y: 422 },
+  },
+  {
+    id: 'celestialBlood',
+    name: '천계의 혈통',
+    icon: '✨',
+    effect: '웨이브 클리어 시 소울 크리스탈 +{value}개',
+    costPerTier: [10, 20, 35, 55, 80],
+    getValue: (tier) => tier,
+    position: { x: 340, y: 760 },
+  },
+  {
+    id: 'dungeonFortress',
+    name: '요새화된 던전',
+    icon: '🏯',
+    effect: '던전 시작 추가 HP +{value}',
+    costPerTier: [8, 15, 25, 40, 60],
+    getValue: (tier) => tier * 50,
+    position: { x: 195, y: 760 },
+  },
 ];
 
 // ─── Game state ───────────────────────────────────────────────────────────────
@@ -251,6 +279,8 @@ export interface GameState {
   activeSubQuestIds:    string[];             // up to 2 active sub-quest IDs
   subQuestProgress:     Record<string, number>; // sqId → current progress
   completedSubQuestIds: string[];             // claimed sub-quest IDs
+  // New Game+ / Prestige
+  prestigeLevel?: number;   // 0 = not prestiged, 1+ = prestige count
 }
 
 const GAME_STATE_KEY = 'dungeonGameState';
@@ -261,7 +291,7 @@ function defaultGameState(): GameState {
   return {
     soulCrystals:     0,
     wisdomTree:       tree,
-    stageProgress:    Array.from({ length: 62 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 })),
+    stageProgress:    Array.from({ length: 72 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 })),
     endlessHighScore: 0,
     totalKills:       0,
     totalGoldEarned:  0,
@@ -443,17 +473,87 @@ export interface WisdomBonuses {
   extraSlots:         number;   // additional room slots unlocked
   crystalEarnMult:    number;   // multiplier on soul crystal drops
   monsterDmgMult:     number;   // multiplier on incoming monster damage
+  monsterAtkMult:     number;   // multiplier on monster attack damage (>= 1)
+  crystalPerWave:     number;   // flat soul crystals earned on each wave clear
+  fortressHp:         number;   // extra HP added at dungeon start
 }
 
 export function getWisdomBonuses(state: GameState): WisdomBonuses {
   const t = state.wisdomTree;
   return {
-    startingGold:      BRANCH_DEFS[0].getValue(t['goldHands']      ?? 0),
-    dungeonMaxHpBonus: BRANCH_DEFS[1].getValue(t['ironWalls']       ?? 0),
-    roomCostMult:      1 - BRANCH_DEFS[2].getValue(t['masterCraft']  ?? 0) / 100,
-    waveRewardMult:    1 + BRANCH_DEFS[3].getValue(t['swiftVictory'] ?? 0) / 100,
-    extraSlots:        BRANCH_DEFS[4].getValue(t['ancestorsWisdom'] ?? 0),
+    startingGold:      BRANCH_DEFS[0].getValue(t['goldHands']         ?? 0),
+    dungeonMaxHpBonus: BRANCH_DEFS[1].getValue(t['ironWalls']          ?? 0),
+    roomCostMult:      1 - BRANCH_DEFS[2].getValue(t['masterCraft']    ?? 0) / 100,
+    waveRewardMult:    1 + BRANCH_DEFS[3].getValue(t['swiftVictory']   ?? 0) / 100,
+    extraSlots:        BRANCH_DEFS[4].getValue(t['ancestorsWisdom']    ?? 0),
     crystalEarnMult:   1 + BRANCH_DEFS[5].getValue(t['crystalResonance'] ?? 0) / 100,
     monsterDmgMult:    1 - BRANCH_DEFS[6].getValue(t['guardianBlessing'] ?? 0) / 100,
+    monsterAtkMult:    1 + BRANCH_DEFS[7].getValue(t['eliteTrainer']   ?? 0) / 100,
+    crystalPerWave:        BRANCH_DEFS[8].getValue(t['celestialBlood'] ?? 0),
+    fortressHp:            BRANCH_DEFS[9].getValue(t['dungeonFortress'] ?? 0),
+  };
+}
+
+// ── New Game+ / Prestige ──────────────────────────────────────────────────────
+
+/** Returns a flat damage multiplier bonus from prestige (10% per level). */
+export function getPrestigeDmgMult(state: GameState): number {
+  return 1 + (state.prestigeLevel ?? 0) * 0.10;
+}
+
+/**
+ * Starts a New Game+ run: resets run-specific progress while keeping
+ * permanent progression (wisdom tree, DM level, crystals, equipment).
+ * Increments prestigeLevel and saves state.
+ *
+ * Returns the new state (does NOT call saveGameState — caller must save).
+ */
+export function startPrestige(state: GameState): GameState {
+  const nextPrestige = (state.prestigeLevel ?? 0) + 1;
+
+  // Build a fresh default to reset run-specific fields
+  const fresh = defaultGameState();
+
+  return {
+    ...state,
+    // ── Reset ──────────────────────────────────────────────────────────────
+    stageProgress:          fresh.stageProgress,
+    homeGold:               fresh.homeGold,
+    activeMainQuestId:      'MQ-001',
+    questProgress:          {},
+    activeSubQuestIds:      [],
+    subQuestProgress:       {},
+    completedSubQuestIds:   [],
+    dungeonSlots:           fresh.dungeonSlots,
+    gameCompleted:          false,
+    cinematicSeen:          [],           // re-watch all cinematics
+    dailyDungeonCompleted:  '',
+    weeklyBossHpDealt:      0,
+    weeklyBossResetDate:    '',
+    dailyChallenges:        {},
+    dailyChallengeDate:     '',
+    // ── Keep ───────────────────────────────────────────────────────────────
+    soulCrystals:           state.soulCrystals,
+    wisdomTree:             state.wisdomTree,
+    dmLevel:                state.dmLevel,
+    dmXP:                   state.dmXP,
+    ownedMonsters:          state.ownedMonsters,
+    ownedEquipment:         state.ownedEquipment,
+    ownedActiveSkills:      state.ownedActiveSkills,
+    ownedSkins:             state.ownedSkins,
+    equippedSkins:          state.equippedSkins,
+    ownedThemes:            state.ownedThemes,
+    equippedTheme:          state.equippedTheme,
+    achievements:           state.achievements,
+    gems:                   state.gems,
+    discoveredCombinations: state.discoveredCombinations,
+    blueprints:             state.blueprints,
+    materials:              state.materials,
+    craftedEquipment:       state.craftedEquipment,
+    endlessHighScore:       state.endlessHighScore,
+    consecutiveDays:        state.consecutiveDays,
+    lastPlayDate:           state.lastPlayDate,
+    // ── Prestige level ─────────────────────────────────────────────────────
+    prestigeLevel: nextPrestige,
   };
 }

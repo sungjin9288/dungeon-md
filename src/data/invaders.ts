@@ -27,7 +27,15 @@ export type InvaderType =
   | 'void_colossus'
   | 'plague_herald'
   | 'titan_sentinel'
-  | 'eternal_emperor';
+  | 'eternal_emperor'
+  // ─── Chapter 7 ───
+  | 'celestial_knight'
+  | 'divine_archer'
+  | 'heaven_general'
+  | 'sky_titan'
+  | 'radiant_seraph'
+  | 'celestial_dragon'
+  | 'god_emperor';
 
 export type InvaderBehavior =
   | 'VOID_PHASE'         // immune to traps for 5s after spawn (purple aura)
@@ -52,7 +60,9 @@ export type InvaderBehavior =
   | 'MIRROR_SHIELD'       // reflects 30% damage back; shield breaks after 3 hits
   | 'SWARM'               // on death: splits into 3 swarm_spawn (30% HP each)
   | 'SHADOW_REALM'        // phases out (immune + invisible) for 2s every 8s
-  | 'EMPEROR_PHASE';      // 4-phase final boss (100%→70%→40%→15%)
+  | 'EMPEROR_PHASE'       // 4-phase final boss (100%→70%→40%→15%)
+  // ─── Chapter 7 ───
+  | 'GOD_EMPEROR_PHASE';  // 5-phase god boss (100%→80%→60%→40%→20%)
 
 export interface InvaderDef {
   type:          InvaderType;
@@ -122,7 +132,7 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
   },
   fox_queen: {
     type: 'fox_queen', koreanName: '여우 여왕 (보스)', chapter: 2,
-    hp: 2000, speed: 45, reward: 400, damage: 500,
+    hp: 1600, speed: 45, reward: 400, damage: 500,
     color: 0xff6600, radius: 22, behavior: 'FOX_QUEEN_PHASE', isMiniBoss: true,
   },
 
@@ -150,7 +160,7 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
   },
   dragon_king: {
     type: 'dragon_king', koreanName: '용왕 (보스)', chapter: 3,
-    hp: 3500, speed: 40, reward: 600, damage: 700,
+    hp: 2800, speed: 40, reward: 600, damage: 700,
     color: 0x006080, radius: 28, behavior: 'DRAGON_KING_PHASE', isMiniBoss: true,
   },
 
@@ -236,7 +246,44 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
   },
   eternal_emperor: {
     type: 'eternal_emperor', koreanName: '영원의 황제 (보스)', chapter: 6,
-    hp: 8000, speed: 30, reward: 2000, damage: 800,
+    hp: 5500, speed: 30, reward: 2000, damage: 800,
     color: 0xd4af37, radius: 36, behavior: 'EMPEROR_PHASE', isBoss: true,
+  },
+
+  // ─── Chapter 7 ────────────────────────────────────────────────────────────
+  celestial_knight: {
+    type: 'celestial_knight', koreanName: '천상 기사', chapter: 7,
+    hp: 650, speed: 55, reward: 80, damage: 110,
+    color: 0xe8d4a0, radius: 16, behavior: 'DIVINE_WARD',
+  },
+  divine_archer: {
+    type: 'divine_archer', koreanName: '신성 궁수', chapter: 7,
+    hp: 480, speed: 78, reward: 85, damage: 105,
+    color: 0xffd080, radius: 13, behavior: 'STEALTH',
+  },
+  heaven_general: {
+    type: 'heaven_general', koreanName: '천계 장군', chapter: 7,
+    hp: 1300, speed: 42, reward: 120, damage: 200,
+    color: 0xcc8800, radius: 18, behavior: 'RALLY_CRY',
+  },
+  sky_titan: {
+    type: 'sky_titan', koreanName: '창공 거인', chapter: 7,
+    hp: 2200, speed: 25, reward: 160, damage: 280,
+    color: 0x6080cc, radius: 22, behavior: 'IRON_BODY',
+  },
+  radiant_seraph: {
+    type: 'radiant_seraph', koreanName: '광휘 세라프', chapter: 7,
+    hp: 800, speed: 60, reward: 90, damage: 120,
+    color: 0xffeebb, radius: 14, behavior: 'DIVINE_WARD',
+  },
+  celestial_dragon: {
+    type: 'celestial_dragon', koreanName: '천룡 (보스)', chapter: 7,
+    hp: 3800, speed: 30, reward: 900, damage: 650,
+    color: 0xaaddff, radius: 28, behavior: 'DRAGON_KING_PHASE', isMiniBoss: true,
+  },
+  god_emperor: {
+    type: 'god_emperor', koreanName: '신황제 (최종 보스)', chapter: 7,
+    hp: 10000, speed: 22, reward: 4000, damage: 1400,
+    color: 0xffd700, radius: 40, behavior: 'GOD_EMPEROR_PHASE', isBoss: true,
   },
 };

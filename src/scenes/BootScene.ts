@@ -44,14 +44,18 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`invader-ai-${type}`, `/assets/invaders/${type}.jpg`);
     });
 
-    // Load AI-generated monster portraits (Ch1-5 pre-loaded; Ch6 loaded lazily)
+    // Load AI-generated monster portraits (Ch1-5 pre-loaded; Ch6+ loaded lazily)
     const monsterIds = [
+      // Ch1–5
       'dokkaebi_warrior','dokkaebi_junior','village_archer','gold_turtle','fire_dokkaebi','sage',
       'gumiho_guardian','frost_spirit','white_tiger','sea_god_spear','fox_shaman','iron_mask',
       'death_messenger','thunder_hero','ghost_hunter','mask_dancer','venom_warrior',
       'celestial_dancer','three_legged_crow','great_serpent','moon_rabbit_sage',
       'mountain_god','volcanic_warrior','storm_archer','abyss_mage','celestial_healer',
       'mask_berserker','sea_dragon_lord','fox_spirit_elder',
+      // Ch7 (pre-loaded when available; procedural fallback if absent)
+      'celestial_guardian','sky_archer','heaven_mage','solar_warrior','divine_healer',
+      'starlight_knight','celestial_sage','god_realm_general',
     ];
     monsterIds.forEach(id => {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
