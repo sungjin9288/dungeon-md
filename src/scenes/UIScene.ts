@@ -83,7 +83,7 @@ export class UIScene extends Phaser.Scene {
     });
     this.add.text(16, st + 40, 'DUNGEON  GUARDIAN', {
       fontFamily: 'sans-serif',
-      fontSize: '8px',
+      fontSize: '11px',
       color: CSS.PARCHMENT_MUTED,
       letterSpacing: 4,
     });
@@ -106,7 +106,7 @@ export class UIScene extends Phaser.Scene {
     const endlessHS = this.registry.get('endlessHighScore') as number | undefined;
     if (endlessHS !== undefined) {
       this.add.text(106, st + 71, `🏆 최고: ${endlessHS}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
       }).setOrigin(0, 0.5);
     }
 
@@ -124,8 +124,8 @@ export class UIScene extends Phaser.Scene {
     goldPill.fillStyle(COLORS.BLACK, 0.3);
     goldPill.fillCircle(gx + 13, st + 23, 4);
 
-    this.add.text(gx + 26, st + 12, '황금', { fontFamily: 'sans-serif', fontSize: '8px', color: CSS.PARCHMENT_MUTED });
-    this.goldText = this.add.text(gx + 26, st + 23, `${this.gold}`, {
+    this.add.text(gx + 26, st + 12, '황금', { fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED });
+    this.goldText = this.add.text(gx + 26, st + 23, this.gold.toLocaleString('ko-KR'), {
       fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
     }).setOrigin(0, 0.5);
 
@@ -142,8 +142,8 @@ export class UIScene extends Phaser.Scene {
     gemPill.fillTriangle(px + 13, st + 16, px + 7, st + 23, px + 19, st + 23);
     gemPill.fillTriangle(px + 13, st + 30, px + 7, st + 23, px + 19, st + 23);
 
-    this.add.text(px + 26, st + 12, '보석', { fontFamily: 'sans-serif', fontSize: '8px', color: CSS.PARCHMENT_MUTED });
-    this.gemsText = this.add.text(px + 26, st + 23, `${this.gems}`, {
+    this.add.text(px + 26, st + 12, '보석', { fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED });
+    this.gemsText = this.add.text(px + 26, st + 23, this.gems.toLocaleString('ko-KR'), {
       fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: '#b080f0',
     }).setOrigin(0, 0.5);
 
@@ -154,7 +154,7 @@ export class UIScene extends Phaser.Scene {
     const hbh = 14;
 
     this.add.text(hbx, hby - 1, '던전 내구도', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
     }).setOrigin(0, 1);
 
     const hpBg = this.add.graphics();
@@ -186,10 +186,10 @@ export class UIScene extends Phaser.Scene {
 
   private bindRegistry(): void {
     this.registry.events.on('changedata-gold', (_: unknown, v: number) => {
-      this.gold = v; this.goldText?.setText(`${v}`);
+      this.gold = v; this.goldText?.setText(v.toLocaleString('ko-KR'));
     });
     this.registry.events.on('changedata-gems', (_: unknown, v: number) => {
-      this.gems = v; this.gemsText?.setText(`${v}`);
+      this.gems = v; this.gemsText?.setText(v.toLocaleString('ko-KR'));
     });
     this.registry.events.on('changedata-hp', (_: unknown, v: number) => {
       this.hp = v; this.redrawHp();

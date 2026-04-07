@@ -54,12 +54,12 @@ export function buildDailyContentPanel(
   // Rule sub-label (small, inside button)
   if (!dailyDone) {
     scene.add.text(btnX + 24, btnY + 27, ruleLabel.text, {
-      fontFamily: 'sans-serif', fontSize: '7px', color: ruleLabel.color,
+      fontFamily: 'sans-serif', fontSize: '11px', color: ruleLabel.color,
     }).setOrigin(0.5).setDepth(11);
   }
 
   scene.add.text(btnX + 24, btnY + 38, '일일', {
-    fontFamily: 'sans-serif', fontSize: '8px', color: '#c8921a',
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#c8921a',
   }).setOrigin(0.5).setDepth(11);
 
   if (!dailyDone) {
@@ -98,12 +98,12 @@ export function buildDailyContentPanel(
   if (!weeklyDone) {
     const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
     scene.add.text(btnX + 24, weekBtnY + 27, bossShort, {
-      fontFamily: 'sans-serif', fontSize: '7px', color: '#cc99ff',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#cc99ff',
     }).setOrigin(0.5).setDepth(11);
   }
 
   scene.add.text(btnX + 24, weekBtnY + 38, '주간', {
-    fontFamily: 'sans-serif', fontSize: '8px', color: weeklyDone ? '#44cc44' : '#aa44ff',
+    fontFamily: 'sans-serif', fontSize: '11px', color: weeklyDone ? '#44cc44' : '#aa44ff',
   }).setOrigin(0.5).setDepth(11);
 
   // Weekly boss click - launch as invasion-style battle
@@ -149,7 +149,7 @@ export function buildDailyContentPanel(
   }).setOrigin(0.5).setDepth(11);
 
   scene.add.text(btnX + 24, chalBtnY + 34, `${completedCount}/3`, {
-    fontFamily: 'sans-serif', fontSize: '8px', color: '#44cccc',
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#44cccc',
   }).setOrigin(0.5).setDepth(11);
 
   const chalZone = scene.add.zone(btnX + 24, chalBtnY + 24, 48, 48)
@@ -236,7 +236,7 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     c.add(prog);
 
     c.add(scene.add.text(barX + barW + 6, barY - 1, `${entry.progress}/${ch.objective.target}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#88aacc',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#88aacc',
     }));
   });
 

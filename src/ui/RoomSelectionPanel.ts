@@ -111,9 +111,12 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     }).setOrigin(0.5);
     this.add(closeText);
 
-    const closeZone = this.scene.add.zone(CANVAS_WIDTH - 40, 6, 32, 32)
+    const closeZone = this.scene.add.zone(CANVAS_WIDTH - 44, 0, 44, 44)
       .setOrigin(0, 0).setInteractive();
-    closeZone.on('pointerdown', () => this.close());
+    closeZone.on('pointerdown', () => {
+      this.scene.tweens.add({ targets: closeText, scaleX: 0.75, scaleY: 0.75, duration: 80, yoyo: true });
+      this.close();
+    });
     closeZone.on('pointerover', () => closeText.setColor(CSS.TORCH_AMBER));
     closeZone.on('pointerout',  () => closeText.setColor(CSS.PARCHMENT_MUTED));
     this.add(closeZone);
@@ -193,6 +196,7 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     if (canAfford) {
       zone.setInteractive();
       zone.on('pointerdown', () => {
+        this.scene.tweens.add({ targets: btnBg, scaleX: 0.95, scaleY: 0.95, duration: 80, yoyo: true });
         this.onPlaceCb(this.pendingRow, this.pendingCol, type);
         this.close();
       });

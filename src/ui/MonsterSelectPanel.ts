@@ -197,7 +197,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       melee: '#cc4444', ranged: '#44aa44', magic: '#9944cc', support: '#44aacc',
     };
     const badge = this.scene.add.text(cx + CARD_W / 2, cy + 48, def.type.toUpperCase(), {
-      fontFamily: 'sans-serif', fontSize: '7px', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: typeColor[def.type] ?? CSS.PARCHMENT_MUTED,
     }).setOrigin(0.5, 0);
     this.add(badge); this.cardGroup.push(badge);
@@ -210,7 +210,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
 
     // Passive description
     const descT = this.scene.add.text(cx + CARD_W / 2, cy + 76, def.passiveDesc, {
-      fontFamily: 'sans-serif', fontSize: '8px',
+      fontFamily: 'sans-serif', fontSize: '11px',
       color: CSS.PARCHMENT_MUTED,
       wordWrap: { width: CARD_W - 10 }, align: 'center',
     }).setOrigin(0.5, 0).setAlpha(0.85);

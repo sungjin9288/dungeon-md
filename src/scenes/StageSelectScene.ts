@@ -4,6 +4,46 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState, type StageProgressEntry } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7 } from '../data/stages';
+import type { InvaderType } from '../data/invaders';
+
+// ─── Invader type → emoji ─────────────────────────────────────────────────────
+
+const INVADER_EMOJI: Partial<Record<InvaderType, string>> = {
+  peasant: '👤', soldier: '🪖', knight: '⚔️', shaman: '🔮',
+  berserker: '😡', shadow_ninja: '🥷', siege_soldier: '🛡',
+  holy_paladin: '✝️', iron_golem: '🤖', high_priest: '🧙', mercenary_captain: '🗡',
+  fox_queen: '🦊',
+  undying_knight: '💀', scarecrow_mage: '🎃', venom_dancer: '🐍', void_assassin: '👁',
+  dragon_king: '🐉',
+  void_assassin_elite: '👁', death_emissary: '💀', ghost_add: '👻',
+  void_invader: '🌀', undying_warrior: '💀', three_god_destroyer: '⚡',
+  mirror_knight: '🪞', shadow_wraith: '👤', celestial_crusader: '✝️',
+  void_colossus: '🌑', eternal_emperor: '👑',
+  celestial_knight: '🌟', divine_archer: '🏹', sky_titan: '⛅',
+  radiant_seraph: '😇', heaven_general: '👑', celestial_dragon: '🐉', god_emperor: '👼',
+};
+
+// Compute top-2 invader type emojis for each stage (index 0-71)
+const ALL_STAGES = [
+  ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4,
+  ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7,
+];
+
+const STAGE_ENEMY_ICONS: string[] = ALL_STAGES.map(cfg => {
+  const counts: Partial<Record<InvaderType, number>> = {};
+  for (const wave of cfg.waves) {
+    for (const inv of wave.invaders) {
+      if (!inv.isBoss) counts[inv.type] = (counts[inv.type] ?? 0) + inv.count;
+    }
+  }
+  const top = (Object.entries(counts) as [InvaderType, number][])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([t]) => INVADER_EMOJI[t] ?? '')
+    .join('');
+  return top;
+});
 
 // ─── Stage progress types ─────────────────────────────────────────────────────
 
@@ -268,7 +308,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '20px',
       }).setOrigin(0.5);
       this.add.text(x + w / 2, y + h - 14, label, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#5a3a1a',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#5a3a1a',
       }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
@@ -282,6 +322,14 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: "Georgia, serif", fontSize: '18px', fontStyle: 'bold',
         color: CSS.PARCHMENT,
       }).setOrigin(0.5);
+
+      // Enemy type icons
+      const icons0 = STAGE_ENEMY_ICONS[idx];
+      if (icons0) {
+        this.add.text(x + w / 2, y + 36, icons0, {
+          fontFamily: 'sans-serif', fontSize: '10px',
+        }).setOrigin(0.5).setAlpha(0.6);
+      }
 
       // 3 empty star outlines
       this.add.text(x + w / 2, y + h - 18, '☆☆☆', {
@@ -311,10 +359,18 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '12px', color: CSS.TORCH_AMBER,
       }).setOrigin(0.5);
 
+      // Enemy type icons
+      const icons1 = STAGE_ENEMY_ICONS[idx];
+      if (icons1) {
+        this.add.text(x + w / 2, y + 30, icons1, {
+          fontFamily: 'sans-serif', fontSize: '10px',
+        }).setOrigin(0.5).setAlpha(0.5);
+      }
+
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
         this.add.text(x + w / 2, y + h - 30, `HP ${prog.bestHpPercent}%`, {
-          fontFamily: 'sans-serif', fontSize: '8px', color: hpColor,
+          fontFamily: 'sans-serif', fontSize: '10px', color: hpColor,
         }).setOrigin(0.5);
       }
 
@@ -366,7 +422,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#2a6040',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '구미호 계곡  ·  10 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#1a3a28',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#1a3a28',
       }).setOrigin(0.5);
     }
   }
@@ -408,7 +464,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '20px',
       }).setOrigin(0.5);
       this.add.text(x + w / 2, y + h - 14, label, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#1a4a30',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#1a4a30',
       }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
@@ -448,7 +504,7 @@ export class StageSelectScene extends Phaser.Scene {
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
         this.add.text(x + w / 2, y + h - 30, `HP ${prog.bestHpPercent}%`, {
-          fontFamily: 'sans-serif', fontSize: '8px', color: hpColor,
+          fontFamily: 'sans-serif', fontSize: '10px', color: hpColor,
         }).setOrigin(0.5);
       }
 
@@ -491,7 +547,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#1a3880',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '용왕 해저궁  ·  12 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#0e1e48',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#0e1e48',
       }).setOrigin(0.5);
     }
   }
@@ -529,7 +585,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.lineStyle(1, 0x0a1830, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
-      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#0a2048' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '10px', color: '#0a2048' }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
       bg.fillStyle(0x050e20, 1);
@@ -553,14 +609,14 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#4488ff' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
       }
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.launchStage(idx));
     }
 
     if (cfg?.bossWave) {
-      this.add.text(x + w - 4, y + 4, '🐲', { fontSize: '10px' }).setOrigin(1, 0);
+      this.add.text(x + w - 4, y + 4, '🐲', { fontSize: '12px' }).setOrigin(1, 0);
     }
   }
 
@@ -593,7 +649,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#6a1a30',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '저승 관문  ·  10 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#3a0a18',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#3a0a18',
       }).setOrigin(0.5);
     }
   }
@@ -631,7 +687,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.lineStyle(1, 0x3a0820, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
-      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#5a1030' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '10px', color: '#5a1030' }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
       bg.fillStyle(0x200010, 1);
@@ -655,14 +711,14 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#cc2244' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
       }
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.launchStage(idx));
     }
 
     if (cfg?.bossWave) {
-      this.add.text(x + w - 4, y + 4, '☠️', { fontSize: '10px' }).setOrigin(1, 0);
+      this.add.text(x + w - 4, y + 4, '☠️', { fontSize: '12px' }).setOrigin(1, 0);
     }
   }
 
@@ -695,7 +751,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#8a6000',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '삼신산  ·  10 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#4a3000',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#4a3000',
       }).setOrigin(0.5);
     }
   }
@@ -733,7 +789,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.lineStyle(1, 0x3a2800, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
-      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#5a4000' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '10px', color: '#5a4000' }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
       bg.fillStyle(0x1a1000, 1);
@@ -757,14 +813,14 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#ddaa00' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
       }
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.launchStage(idx));
     }
 
     if (cfg?.bossWave) {
-      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '10px' }).setOrigin(1, 0);
+      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '12px' }).setOrigin(1, 0);
     }
   }
 
@@ -797,7 +853,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#8844cc',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '영원의 왕좌  ·  10 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#4a2870',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#4a2870',
       }).setOrigin(0.5);
     }
   }
@@ -835,7 +891,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.lineStyle(1, 0x2a1050, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
-      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#4a2870' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '10px', color: '#4a2870' }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
       bg.fillStyle(0x140028, 1);
@@ -859,14 +915,14 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#d4af37' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
       }
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.launchStage(idx));
     }
 
     if (cfg?.bossWave) {
-      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '10px' }).setOrigin(1, 0);
+      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '12px' }).setOrigin(1, 0);
     }
   }
 
@@ -899,7 +955,7 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#cc9900',
       }).setOrigin(0.5);
       this.add.text(CANVAS_WIDTH / 2, by + bh / 2 + 10, '신계 침공  ·  10 스테이지', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#4a3a00',
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#4a3a00',
       }).setOrigin(0.5);
     }
   }
@@ -937,7 +993,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.lineStyle(1, 0x3a2a00, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
-      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '8px', color: '#4a3a00' }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h - 12, label, { fontFamily: 'sans-serif', fontSize: '10px', color: '#4a3a00' }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
       bg.fillStyle(0x1a1400, 1);
@@ -961,14 +1017,14 @@ export class StageSelectScene extends Phaser.Scene {
       this.add.text(x + w / 2, y + h - 16, stars, { fontFamily: 'sans-serif', fontSize: '11px', color: '#ffd700' }).setOrigin(0.5);
       if (prog.bestHpPercent !== undefined) {
         const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '8px', color: hpColor }).setOrigin(0.5);
+        this.add.text(x + w / 2, y + h - 28, `HP ${prog.bestHpPercent}%`, { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
       }
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => this.launchStage(idx));
     }
 
     if (cfg?.bossWave) {
-      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '10px' }).setOrigin(1, 0);
+      this.add.text(x + w - 4, y + 4, '🌟', { fontSize: '12px' }).setOrigin(1, 0);
     }
   }
 
@@ -1053,8 +1109,11 @@ export class StageSelectScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '16px',
       }).setOrigin(0.5);
       this.add.text(btnX + btnW / 2, btnY + btnH - 12, '무한 던전', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#5a3a1a',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#5a3a1a',
       }).setOrigin(0.5);
+      this.add.text(btnX + btnW / 2, btnY + btnH + 6, 'Ch.1 보스 클리어 후 해금', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#664444',
+      }).setOrigin(0.5, 0);
     }
   }
 

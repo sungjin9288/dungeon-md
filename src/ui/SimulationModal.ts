@@ -145,6 +145,7 @@ export function openSimulationModal(
   }).setOrigin(0.5).setDepth(203).setInteractive();
   container.add(closeT);
   closeT.on('pointerdown', () => {
+    scene.tweens.add({ targets: closeT, scaleX: 0.9, scaleY: 0.9, duration: 80, yoyo: true });
     scene.tweens.add({ targets: [dim, card, container], alpha: 0, duration: 200,
       onComplete: () => { dim.destroy(); card.destroy(); container.destroy(); },
     });

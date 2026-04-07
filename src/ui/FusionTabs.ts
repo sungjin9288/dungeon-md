@@ -59,12 +59,12 @@ export function drawMonsterSlot(
       fontFamily: 'sans-serif', fontSize: '26px',
     }).setOrigin(0.5));
     c.add(ctx.scene.add.text(x + w / 2, y + h / 2 + 12, `Lv.${monster.level}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#669977',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#669977',
     }).setOrigin(0.5));
     const rarity = monster.rarity ?? getMonsterRarity(monster.id);
     if (rarity > 0) {
       c.add(ctx.scene.add.text(x + w / 2, y + h - 12, RARITY_STARS[rarity], {
-        fontFamily: 'sans-serif', fontSize: '8px',
+        fontFamily: 'sans-serif', fontSize: '11px',
       }).setOrigin(0.5));
     }
   } else {
@@ -223,12 +223,12 @@ export function openMonsterPicker(
       fontFamily: 'sans-serif', fontSize: '22px',
     }).setOrigin(0.5));
     c.add(ctx.scene.add.text(mx + cellW / 2, my + cellH / 2 + 8, `Lv.${m.level}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aa66',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#44aa66',
     }).setOrigin(0.5));
     const rarity = m.rarity ?? getMonsterRarity(m.id);
     if (rarity > 0) {
       c.add(ctx.scene.add.text(mx + cellW / 2, my + cellH - 10, RARITY_STARS[rarity], {
-        fontFamily: 'sans-serif', fontSize: '7px',
+        fontFamily: 'sans-serif', fontSize: '11px',
       }).setOrigin(0.5));
     }
 
@@ -335,11 +335,11 @@ export function buildEvolutionTab(
         fontFamily: 'sans-serif', fontSize: '10px',
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 62, evolvedName, {
-        fontFamily: 'sans-serif', fontSize: '7px', color: RARITY_COLORS[rarity],
+        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[rarity],
         wordWrap: { width: slotW - 4 },
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 76, `ATK: ${baseAtk}→${newAtk}`, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#44cc66',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#44cc66',
       }).setOrigin(0.5));
 
       const execBtn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 30, '✨ 진화 실행', {
@@ -350,7 +350,10 @@ export function buildEvolutionTab(
         targets: execBtn, alpha: { from: 0.8, to: 1.0 },
         duration: 800, yoyo: true, repeat: -1,
       });
-      execBtn.on('pointerdown', () => executeEvolution(ctx, state));
+      execBtn.on('pointerdown', () => {
+        ctx.scene.tweens.add({ targets: execBtn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
+        executeEvolution(ctx, state);
+      });
       c.add(execBtn);
     }
   } else {
@@ -434,7 +437,7 @@ export function buildAbsorptionTab(
 
   // Target (베이스) slot
   c.add(ctx.scene.add.text(PAD + slotW / 2, y - 6, '베이스', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#cc8844',
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
   }).setOrigin(0.5));
   drawMonsterSlot(ctx, c, PAD, y, slotW, slotH, state.absorbTarget, '흡수', () => {
     openMonsterPicker(ctx, undefined, (m) => {
@@ -446,7 +449,7 @@ export function buildAbsorptionTab(
   // Sacrifice slots
   let sacrificeX = PAD + slotW + 18;
   const sacrificeLabel = ctx.scene.add.text(sacrificeX, y - 6, '희생 (최대 5)', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#885533',
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#885533',
   });
   c.add(sacrificeLabel);
 
@@ -471,7 +474,7 @@ export function buildAbsorptionTab(
       const rarityVal = sac.rarity ?? getMonsterRarity(sac.id);
       const xpVal = RARITY_XP_VALUES[rarityVal] ?? 30;
       c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH - 12, `+${xpVal} XP`, {
-        fontFamily: 'sans-serif', fontSize: '7px', color: '#cc8844',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
       }).setOrigin(0.5));
       const xBtn = ctx.scene.add.text(sx + sacW - 3, y + 3, '×', {
         fontFamily: 'sans-serif', fontSize: '12px', color: '#aa4422',
@@ -543,7 +546,10 @@ export function buildAbsorptionTab(
     backgroundColor: canExec ? '#2a1400' : '#0d0800',
     padding: { x: 28, y: 10 },
   }).setOrigin(0.5);
-  if (canExec) btn.setInteractive().on('pointerdown', () => executeAbsorption(ctx, state));
+  if (canExec) btn.setInteractive().on('pointerdown', () => {
+    ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
+    executeAbsorption(ctx, state);
+  });
   c.add(btn);
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50,
@@ -675,7 +681,7 @@ export function buildCombinationTab(
         fontFamily: 'sans-serif', fontSize: '10px',
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 62, hybrid.name, {
-        fontFamily: 'sans-serif', fontSize: '7px', color: RARITY_COLORS[hybrid.rarity],
+        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[hybrid.rarity],
         wordWrap: { width: slotW - 4 },
       }).setOrigin(0.5));
     } else {
@@ -695,7 +701,10 @@ export function buildCombinationTab(
       backgroundColor: allReady ? '#001433' : '#000810',
       padding: { x: 20, y: 10 },
     }).setOrigin(0.5);
-  if (allReady) btn.setInteractive().on('pointerdown', () => executeCombination(ctx, state));
+  if (allReady) btn.setInteractive().on('pointerdown', () => {
+    ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
+    executeCombination(ctx, state);
+  });
   c.add(btn);
 }
 
@@ -832,7 +841,7 @@ export function buildAwakeningTab(
       color: awakened ? '#cc44cc' : '#c8b090',
     }));
     c.add(ctx.scene.add.text(PAD + 48, ry + 26, `Lv.${m.level}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#664466',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#664466',
     }));
 
     // Affinity bar
@@ -846,7 +855,7 @@ export function buildAwakeningTab(
     }
     c.add(barBg);
     c.add(ctx.scene.add.text(barX + barW + 4, barY + 3, `${affinity}/100`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#884488',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#884488',
     }).setOrigin(0, 0.5));
 
     // Right side: action or status
@@ -857,7 +866,7 @@ export function buildAwakeningTab(
       const ap = AWAKENED_PASSIVES[getBaseId(m.id)];
       if (ap) {
         c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2 + 14, ap.desc, {
-          fontFamily: 'sans-serif', fontSize: '8px', color: '#884488',
+          fontFamily: 'sans-serif', fontSize: '11px', color: '#884488',
         }).setOrigin(1, 0.5));
       }
     } else if (eligible) {
@@ -872,7 +881,7 @@ export function buildAwakeningTab(
       if (affinity < 100) reasons.push(`친밀도 ${affinity}/100`);
       if (stones < 1)     reasons.push('각성석 필요');
       c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, reasons.join(' · '), {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#442244',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#442244',
       }).setOrigin(1, 0.5));
     }
   });

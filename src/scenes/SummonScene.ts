@@ -257,7 +257,7 @@ export class SummonScene extends Phaser.Scene {
     badgeBg.fillRoundedRect(BX + 8, topY + 7, 70, 16, 8);
     c.add(badgeBg);
     c.add(this.add.text(BX + 43, topY + 15, banner.subname, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: banner.accentCss,
+      fontFamily: 'sans-serif', fontSize: '11px', color: banner.accentCss,
     }).setOrigin(0.5));
 
     // ── Banner name ───────────────────────────────────────────────
@@ -268,12 +268,12 @@ export class SummonScene extends Phaser.Scene {
 
     // ── Description ───────────────────────────────────────────────
     c.add(this.add.text(BX + 16, topY + 50, banner.description, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#bbbbbb',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#bbbbbb',
     }).setOrigin(0, 0.5));
 
     // ── Countdown (bottom-left) ───────────────────────────────────
     const timeText = this.add.text(BX + 16, topY + BANER_H - 12, getBannerTimeLeft(banner), {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#888888',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#888888',
     }).setOrigin(0, 0.5);
     c.add(timeText);
     // Live update countdown
@@ -305,7 +305,7 @@ export class SummonScene extends Phaser.Scene {
     });
     if (banner.featuredMonsters.length > 4) {
       c.add(this.add.text(CANVAS_WIDTH - 14, topY + BANER_H / 2, `+${banner.featuredMonsters.length - 4}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#888888',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#888888',
       }).setOrigin(1, 0.5));
     }
 
@@ -316,7 +316,7 @@ export class SummonScene extends Phaser.Scene {
     boostBg.fillRoundedRect(BX + BW - 72, topY + 6, 62, 18, 9);
     c.add(boostBg);
     c.add(this.add.text(BX + BW - 41, topY + 15, `피처드 ${boostPct}%↑`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: banner.accentCss, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: banner.accentCss, fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
@@ -349,21 +349,21 @@ export class SummonScene extends Phaser.Scene {
     const currencyIcon = def.currency === 'gems' ? '💎' : def.currency === 'soul' ? '💠' : '🤝';
     if (def.currency === 'fp') {
       c.add(this.add.text(cx, cardTop + 70, '무료 1회/일', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#aaaaaa',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#aaaaaa',
       }).setOrigin(0.5));
     } else {
       c.add(this.add.text(cx, cardTop + 70, `${currencyIcon} ${def.cost1}/뽑`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#aaaaaa',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#aaaaaa',
       }).setOrigin(0.5));
     }
     if (def.cost10 !== null) {
       c.add(this.add.text(cx, cardTop + 81, `×10: ${def.cost10}`, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#777777',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#777777',
       }).setOrigin(0.5));
     }
     if (def.id === 'soul') {
       c.add(this.add.text(cx, cardTop + 81, '미보유만', {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#44ffcc',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
       }).setOrigin(0.5));
     }
 
@@ -385,7 +385,7 @@ export class SummonScene extends Phaser.Scene {
     // ── 확률 보기 ────────────────────────────────────────────────
     if (def.id !== 'friendship') {
       const rateT = this.add.text(cx, cardTop + 130, '확률 보기 ▼', {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#664488',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#664488',
       }).setOrigin(0.5).setInteractive();
       rateT.on('pointerdown', () => this.showRatesModal(def.id));
       c.add(rateT);
@@ -418,7 +418,7 @@ export class SummonScene extends Phaser.Scene {
       }).setOrigin(0.5));
     } else {
       c.add(this.add.text(cx, cardTop + 148, def.desc, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#444466',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#444466',
       }).setOrigin(0.5));
     }
   }
@@ -541,7 +541,7 @@ export class SummonScene extends Phaser.Scene {
 
       const boostPct = Math.round(b.rateMultiplier * 100);
       overlay.add(this.add.text(CANVAS_WIDTH / 2, rowY + 30, `${RARITY_KO[RARITIES.indexOf(b.boostedRarity)]} 등급 뽑기 시 ${boostPct}% 확률로 피처드`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#aaaaaa',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#aaaaaa',
       }).setOrigin(0.5));
 
       const emojis = b.featuredMonsters.slice(0, 5).map(id => {
@@ -635,15 +635,15 @@ export class SummonScene extends Phaser.Scene {
           fontFamily: 'sans-serif', fontSize: '10px', color: rec.isNew ? '#ffdd44' : '#888888',
         }).setOrigin(0, 0.5));
         c.add(this.add.text(160, ry + 12, RARITY_STARS[rarityIdx] ?? '', {
-          fontFamily: 'sans-serif', fontSize: '9px',
+          fontFamily: 'sans-serif', fontSize: '11px',
         }).setOrigin(0, 0.5));
         if (!rec.isNew && rec.scCompensation) {
           c.add(this.add.text(CANVAS_WIDTH - 12, ry + 12, `+${rec.scCompensation}💠`, {
-            fontFamily: 'sans-serif', fontSize: '9px', color: '#44ffcc',
+            fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
           }).setOrigin(1, 0.5));
         } else if (rec.isNew) {
           c.add(this.add.text(CANVAS_WIDTH - 12, ry + 12, 'NEW', {
-            fontFamily: 'sans-serif', fontSize: '9px', color: '#ffdd44',
+            fontFamily: 'sans-serif', fontSize: '11px', color: '#ffdd44',
           }).setOrigin(1, 0.5));
         }
         ry += 27;
@@ -655,7 +655,7 @@ export class SummonScene extends Phaser.Scene {
     const epics  = gs.summonHistory?.filter(r => r.rarity === 'epic').length ?? 0;
     const legs   = gs.summonHistory?.filter(r => r.rarity === 'legendary').length ?? 0;
     c.add(this.add.text(CX, CANVAS_HEIGHT - 52, `총 소환: ${total}회  |  에픽: ${epics}회  |  전설: ${legs}회`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#443355',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#443355',
     }).setOrigin(0.5));
   }
 

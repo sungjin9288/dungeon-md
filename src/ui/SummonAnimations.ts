@@ -335,12 +335,12 @@ export function playMultiPullAnimation(
 
           // Name
           cc.add(scene.add.text(0, 12, mDef.name.slice(0, 5), {
-            fontFamily: 'sans-serif', fontSize: '8px', color: result.isNew ? '#ffdd44' : '#888888',
+            fontFamily: 'sans-serif', fontSize: '11px', color: result.isNew ? '#ffdd44' : '#888888',
           }).setOrigin(0.5));
 
           // Stars
           cc.add(scene.add.text(0, 26, RARITY_STARS[result.rarityIdx], {
-            fontFamily: 'sans-serif', fontSize: '8px',
+            fontFamily: 'sans-serif', fontSize: '11px',
           }).setOrigin(0.5));
 
           // New/dupe tag
@@ -350,7 +350,7 @@ export function playMultiPullAnimation(
             dg2.fillRoundedRect(-28, cardH / 2 - 16, 56, 13, 3);
             cc.add(dg2);
             cc.add(scene.add.text(0, cardH / 2 - 9, `+${result.scComp}💠`, {
-              fontFamily: 'sans-serif', fontSize: '7px', color: '#44ffcc',
+              fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
             }).setOrigin(0.5));
           } else {
             const ng = scene.add.graphics();
@@ -358,7 +358,7 @@ export function playMultiPullAnimation(
             ng.fillRoundedRect(-16, cardH / 2 - 16, 32, 13, 3);
             cc.add(ng);
             cc.add(scene.add.text(0, cardH / 2 - 9, 'NEW', {
-              fontFamily: 'sans-serif', fontSize: '7px', color: '#000000',
+              fontFamily: 'sans-serif', fontSize: '11px', color: '#000000',
             }).setOrigin(0.5));
           }
 

@@ -168,7 +168,7 @@ export class BarracksScene extends Phaser.Scene {
     this.contentContainer.add(barBg);
 
     const xpT = this.add.text(x + CARD_W / 2, y + 108, m.level >= 50 ? 'MAX' : `${m.xp}/${xpNeeded}`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#88cc88',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#88cc88',
     }).setOrigin(0.5);
     this.contentContainer.add(xpT);
 
@@ -530,7 +530,7 @@ export class BarracksScene extends Phaser.Scene {
       ov.add(emojiT);
 
       const nameT = this.add.text(bx + optW / 2, y + 36, skin ? '스킨' : '기본', {
-        fontFamily: 'sans-serif', fontSize: '8px',
+        fontFamily: 'sans-serif', fontSize: '11px',
         color: isActive ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
       }).setOrigin(0.5, 0);
       ov.add(nameT);

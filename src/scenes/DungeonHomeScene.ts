@@ -582,8 +582,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     for (const { icon, val, x } of currencies) {
       this.add.text(x, 10, icon, { fontFamily: 'sans-serif', fontSize: '14px' })
         .setOrigin(0.5, 0).setDepth(6);
-      this.add.text(x, 28, String(val), {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#e8d090',
+      this.add.text(x, 28, val.toLocaleString('ko-KR'), {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#e8d090',
       }).setOrigin(0.5, 0).setDepth(6);
     }
   }
@@ -885,7 +885,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '20px',
       }).setOrigin(0.5, 0).setDepth(9);
       this.add.text(tx, BOT_Y + 36, label, {
-        fontFamily: 'Georgia, serif', fontSize: '9px',
+        fontFamily: 'Georgia, serif', fontSize: '11px',
         color: isActive ? t.panelBorderCSS : t.textSecondary,
         fontStyle: isActive ? 'bold' : 'normal',
       }).setOrigin(0.5, 0).setDepth(9);
@@ -897,6 +897,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       if (!isActive) {
         iconTxt.setInteractive();
         iconTxt.on('pointerdown', () => {
+          this.tweens.add({ targets: iconTxt, scaleX: 0.82, scaleY: 0.82, duration: 80, yoyo: true });
           audioManager.playSfx('button_click');
           this.cameras.main.fadeOut(220, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => {

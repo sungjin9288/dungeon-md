@@ -320,12 +320,12 @@ export class CodexScene extends Phaser.Scene {
       };
       const stars = rarityMap[m.rarityTier ?? 'C'] ?? '⭐';
       const starsT = this.add.text(x + w / 2, y + 43, stars, {
-        fontFamily: 'sans-serif', fontSize: '7px',
+        fontFamily: 'sans-serif', fontSize: '11px',
       }).setOrigin(0.5, 0);
       this.contentCtr.add(starsT);
 
       const nameT = this.add.text(x + w / 2, y + h - 13, m.name, {
-        fontFamily: 'Georgia, serif', fontSize: '9px', color: CSS.PARCHMENT_DIM,
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
         align: 'center', wordWrap: { width: w - 8 },
       }).setOrigin(0.5, 0);
       this.contentCtr.add(nameT);
@@ -349,7 +349,7 @@ export class CodexScene extends Phaser.Scene {
       this.contentCtr.add(shadowT);
 
       const unknownT = this.add.text(x + w / 2, y + h - 18, '???', {
-        fontFamily: 'Georgia, serif', fontSize: '9px', color: '#3a2800',
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#3a2800',
       }).setOrigin(0.5, 0);
       this.contentCtr.add(unknownT);
     }
@@ -461,7 +461,7 @@ export class CodexScene extends Phaser.Scene {
       ctr.add(sbg);
 
       const slabel = this.add.text(sx + (statW - 4) / 2, cy + 4, label, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
       }).setOrigin(0.5, 0);
       ctr.add(slabel);
 
@@ -520,7 +520,7 @@ export class CodexScene extends Phaser.Scene {
         ctr.add(bbg);
 
         const brNameT = this.add.text(bx + (branchW - 4) / 2, cy + 4, tree.branchNames[br], {
-          fontFamily: 'Georgia, serif', fontSize: '9px', fontStyle: 'bold',
+          fontFamily: 'Georgia, serif', fontSize: '11px', fontStyle: 'bold',
           color: CSS.TORCH_AMBER,
         }).setOrigin(0.5, 0);
         ctr.add(brNameT);
@@ -532,7 +532,7 @@ export class CodexScene extends Phaser.Scene {
           ctr.add(t1icon);
 
           const t1name = this.add.text(bx + (branchW - 4) / 2, cy + 34, tier1.name, {
-            fontFamily: 'Georgia, serif', fontSize: '8px', color: '#ccaa66',
+            fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ccaa66',
             align: 'center', wordWrap: { width: branchW - 12 },
           }).setOrigin(0.5, 0);
           ctr.add(t1name);
@@ -627,7 +627,7 @@ export class CodexScene extends Phaser.Scene {
       });
     } else if (!done) {
       const rewardT = this.add.text(CANVAS_WIDTH - PAD - 12, y + 8, tribe.reward, {
-        fontFamily: 'Georgia, serif', fontSize: '9px', color: '#cc8800',
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc8800',
       }).setOrigin(1, 0);
       this.contentCtr.add(rewardT);
     }
