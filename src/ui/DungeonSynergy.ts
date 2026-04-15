@@ -1,0 +1,156 @@
+// ─── DungeonSynergy ───────────────────────────────────────────────────────────
+// Synergy connector lines and summary badges drawn over the dungeon slot grid.
+// Extracted from DungeonHomeScene.rebuildDungeonSlots().
+
+import Phaser from 'phaser';
+import type { DungeonTheme } from '../themes/themes';
+import type { DungeonSlot } from '../data/wisdom';
+import { SLOT_W, SLOT_H } from './RoomSlotRenderer';
+
+// ─── Layout context ───────────────────────────────────────────────────────────
+
+export interface SynergyDrawContext {
+  readonly scene: Phaser.Scene;
+  readonly theme: DungeonTheme;
+  readonly slots: (DungeonSlot | null)[];
+  readonly gridCols: number;
+  readonly gridRows: number;
+  readonly slotW: number;
+  readonly slotH: number;
+  readonly slotPadX: number;
+  readonly slotPadY: number;
+  readonly gridStartY: number;
+}
+
+// ─── Connector lines ─────────────────────────────────────────────────────────
+
+const SYNERGY_COLOR: Record<string, number> = {
+  combat:  0xcc3333,
+  trap:    0x884488,
+  support: 0x33aa55,
+  magic:   0x3366cc,
+};
+
+/**
+ * Draw animated glow lines between adjacent slots that share the same room type.
+ * Each pair gets a wide soft line + a travelling pulse dot.
+ */
+export function drawSynergyConnectors(
+  ctx: SynergyDrawContext,
+  c: Phaser.GameObjects.Container,
+  unlockedCount: number,
+): void {
+  const { scene, slots, gridCols, gridRows, slotPadX, slotPadY, gridStartY } = ctx;
+
+  const pairs: Array<[number, number]> = [];
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      const idx = row * gridCols + col;
+      if (idx >= unlockedCount) continue;
+      // Horizontal neighbour
+      if (col + 1 < gridCols) {
+        const nIdx = row * gridCols + (col + 1);
+        if (nIdx < unlockedCount) pairs.push([idx, nIdx]);
+      }
+      // Vertical neighbour
+      if (row + 1 < gridRows) {
+        const nIdx = (row + 1) * gridCols + col;
+        if (nIdx < unlockedCount) pairs.push([idx, nIdx]);
+      }
+    }
+  }
+
+  for (const [aIdx, bIdx] of pairs) {
+    const aSlot = slots[aIdx];
+    const bSlot = slots[bIdx];
+    if (!aSlot?.roomType || !bSlot?.roomType) continue;
+    if (aSlot.roomType !== bSlot.roomType) continue;
+    if (aSlot.hp <= 0 || bSlot.hp <= 0) continue;
+
+    const aRow = Math.floor(aIdx / gridCols), aCol = aIdx % gridCols;
+    const bRow = Math.floor(bIdx / gridCols), bCol = bIdx % gridCols;
+
+    const ax = slotPadX + aCol * (SLOT_W + slotPadX) + SLOT_W / 2;
+    const ay = gridStartY + aRow * (SLOT_H + slotPadY) + SLOT_H / 2;
+    const bx = slotPadX + bCol * (SLOT_W + slotPadX) + SLOT_W / 2;
+    const by = gridStartY + bRow * (SLOT_H + slotPadY) + SLOT_H / 2;
+
+    const color = SYNERGY_COLOR[aSlot.roomType] ?? 0xffffff;
+
+    // Layered glow line
+    const sg = scene.add.graphics().setDepth(4);
+    sg.lineStyle(6, color, 0.15);
+    sg.lineBetween(ax, ay, bx, by);
+    sg.lineStyle(3, color, 0.5);
+    sg.lineBetween(ax, ay, bx, by);
+    sg.lineStyle(1, 0xffffff, 0.4);
+    sg.lineBetween(ax, ay, bx, by);
+    c.add(sg);
+
+    // Travelling pulse dot
+    const dot = scene.add.graphics().setDepth(5);
+    dot.fillStyle(color, 0.9);
+    dot.fillCircle(0, 0, 3);
+    dot.setPosition(ax, ay);
+    c.add(dot);
+    scene.tweens.add({
+      targets: dot, x: bx, y: by,
+      duration: 1200 + Math.random() * 600,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      delay: Math.random() * 800,
+    });
+  }
+}
+
+// ─── Summary badges ──────────────────────────────────────────────────────────
+
+const TYPE_INFO: Record<string, { color: string; icon: string; bonus: string }> = {
+  combat:  { color: '#cc5555', icon: '👊', bonus: '몬스터 슬롯+1'   },
+  trap:    { color: '#aa66cc', icon: '🕸', bonus: '함정피해+20%'    },
+  support: { color: '#44bb77', icon: '💚', bonus: '인접ATK+15%'    },
+  magic:   { color: '#5588dd', icon: '🔮', bonus: '쿨다운-20%'     },
+};
+
+/**
+ * Render a compact badge row below the grid for each active synergy type
+ * (≥2 rooms of the same type with HP > 0).
+ */
+export function drawSynergySummary(
+  ctx: SynergyDrawContext,
+  c: Phaser.GameObjects.Container,
+  canvasWidth: number,
+): void {
+  const { scene, theme: t, slots, gridRows, slotPadY, gridStartY } = ctx;
+
+  const typeCounts: Record<string, number> = {};
+  for (const slot of slots) {
+    if (slot?.roomType && slot.hp > 0) {
+      typeCounts[slot.roomType] = (typeCounts[slot.roomType] ?? 0) + 1;
+    }
+  }
+
+  const activeTypes = Object.entries(typeCounts).filter(([, cnt]) => cnt >= 2);
+  if (activeTypes.length === 0) return;
+
+  const baseY = gridStartY + gridRows * (SLOT_H + slotPadY) + 4;
+  let xOff = 8;
+
+  for (const [type, count] of activeTypes) {
+    const info = TYPE_INFO[type];
+    if (!info) continue;
+
+    const badge = scene.add.graphics().setDepth(4);
+    badge.fillStyle(t.panelDark, 0.9);
+    badge.fillRoundedRect(xOff, baseY, 106, 18, 4);
+    badge.lineStyle(1, parseInt(info.color.replace('#', ''), 16), 0.7);
+    badge.strokeRoundedRect(xOff, baseY, 106, 18, 4);
+    c.add(badge);
+
+    c.add(scene.add.text(xOff + 5, baseY + 9, `${info.icon} ×${count} ${info.bonus}`, {
+      fontFamily: 'sans-serif', fontSize: '8px', color: info.color,
+    }).setOrigin(0, 0.5).setDepth(5));
+
+    xOff += 112;
+    if (xOff + 106 > canvasWidth) break;
+  }
+}
