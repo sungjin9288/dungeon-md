@@ -5,6 +5,7 @@ import { loadGameState, saveGameState } from '../data/wisdom';
 import { ACTIVE_SKILLS, EQUIPMENT_DEFS, type ActiveSkill, type Equipment } from '../data/barracks';
 import { SKIN_DATA, MONSTER_DEFS, type MonsterSkin } from '../data/monsters';
 import { ALL_THEMES, type DungeonTheme } from '../themes/themes';
+import { addPanelShadow, addInnerGlow } from '../ui/PanelDepth';
 
 // ─── Theme shop metadata ───────────────────────────────────────────────────────
 
@@ -101,6 +102,30 @@ export class ShopScene extends Phaser.Scene {
     this.gemsText = this.add.text(CANVAS_WIDTH / 2, 50, `💎 ${gs.gems} 젬`, {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#88aaff',
     }).setOrigin(0.5).setDepth(10);
+
+    // Daily refresh countdown — time until next UTC midnight
+    const msUntilReset = 86_400_000 - (Date.now() % 86_400_000);
+    const h = Math.floor(msUntilReset / 3_600_000);
+    const m = Math.floor((msUntilReset % 3_600_000) / 60_000);
+    const s = Math.floor((msUntilReset % 60_000) / 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timerText = this.add.text(CANVAS_WIDTH - 12, 52,
+      `🔄 ${pad(h)}:${pad(m)}:${pad(s)}`, {
+      fontFamily: 'monospace', fontSize: '10px', color: '#6688aa',
+    }).setOrigin(1, 0.5).setDepth(10);
+
+    // Live countdown tick
+    let remaining = Math.floor(msUntilReset / 1000);
+    const tick = this.time.addEvent({
+      delay: 1000, loop: true, callback: () => {
+        remaining = Math.max(0, remaining - 1);
+        const th = Math.floor(remaining / 3600);
+        const tm = Math.floor((remaining % 3600) / 60);
+        const ts = remaining % 60;
+        timerText.setText(`🔄 ${pad(th)}:${pad(tm)}:${pad(ts)}`);
+      },
+    });
+    this.events.once('shutdown', () => tick.remove());
   }
 
   // ─── Tab bar ────────────────────────────────────────────────────────────────
@@ -232,6 +257,10 @@ export class ShopScene extends Phaser.Scene {
     const rarityLabel = { normal: '일반', rare: '레어', limited: '한정' };
     const rarityStars = { normal: '⭐', rare: '⭐⭐⭐', limited: '⭐⭐⭐⭐⭐' };
 
+    // Drop shadow behind card (adds depth)
+    const shadow = addPanelShadow(this, x, y, w, h, 10, { offsetY: 3, opacity: 0.5 });
+    this.contentCtr.add(shadow);
+
     // Card bg
     const g = this.add.graphics();
     g.fillStyle(isOwned ? 0x0a1a1a : 0x0d0d22, 1);
@@ -239,6 +268,10 @@ export class ShopScene extends Phaser.Scene {
     g.lineStyle(1.5, isOwned ? 0x44aa88 : (skin.rarity === 'limited' ? 0xcc2222 : 0x4466aa), 0.7);
     g.strokeRoundedRect(x, y, w, h, 10);
     this.contentCtr.add(g);
+
+    // Top inner glow (bevel highlight)
+    const glowColor = skin.rarity === 'limited' ? 0xffaa88 : 0xaaccff;
+    this.contentCtr.add(addInnerGlow(this, x, y, w, h, 10, glowColor, 0.14));
 
     // Limited banner
     if (skin.rarity === 'limited') {
@@ -387,6 +420,7 @@ export class ShopScene extends Phaser.Scene {
         }
         saveGameState(state);
         this.gemsText.setText(`💎 ${state.gems} 젬`);
+        this.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
         this.showToast(`${skin.name} 구입 완료!`);
         this.buildContent();
       });
@@ -529,6 +563,7 @@ export class ShopScene extends Phaser.Scene {
         state.equippedSkins[skin.monsterId] = skin.id;
         saveGameState(state);
         this.gemsText.setText(`💎 ${state.gems} 젬`);
+        this.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
         ov.destroy();
         this.previewModal = undefined;
         this.buildContent();
@@ -566,6 +601,9 @@ export class ShopScene extends Phaser.Scene {
     const owned    = rarity === 'default' || (gs.ownedThemes ?? []).includes(theme.id);
     const equipped = (gs.equippedTheme ?? 'cave') === theme.id;
 
+    // Drop shadow (depth)
+    this.contentCtr.add(addPanelShadow(this, x, y, w, h, 10, { offsetY: 3, opacity: 0.5 }));
+
     // Card bg — tinted with theme's primary color
     const g = this.add.graphics();
     g.fillStyle(theme.bgSecondary, 1);
@@ -573,6 +611,9 @@ export class ShopScene extends Phaser.Scene {
     g.lineStyle(2, equipped ? theme.panelBorder : (owned ? 0x446644 : 0x334), equipped ? 1 : 0.7);
     g.strokeRoundedRect(x, y, w, h, 10);
     this.contentCtr.add(g);
+
+    // Bevel glow (uses theme accent when equipped)
+    this.contentCtr.add(addInnerGlow(this, x, y, w, h, 10, equipped ? theme.panelBorder : 0xaaccff, 0.14));
 
     // Equipped badge
     if (equipped) {
@@ -706,6 +747,7 @@ export class ShopScene extends Phaser.Scene {
         state.equippedTheme = theme.id;
         saveGameState(state);
         this.gemsText.setText(`💎 ${state.gems} 젬`);
+        this.showPurchaseFlash(gemCost, '💎', '#88aaff');
         this.showToast(`${theme.name} 테마 구입 및 장착!`);
         this.buildContent();
       }
@@ -834,6 +876,31 @@ export class ShopScene extends Phaser.Scene {
         .setInteractive().setDepth(9);
       this.contentCtr.add(zone);
       zone.on('pointerdown', onBuy);
+    }
+  }
+
+  // ─── Purchase flash (cost float + currency pop) ────────────────────────────
+
+  private showPurchaseFlash(cost: number, icon: string, color: string): void {
+    // Float: "-N💎" rising above the currency text
+    const f = this.add.text(CANVAS_WIDTH / 2, 68, `-${cost}${icon}`, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color, stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(250).setAlpha(0);
+    this.tweens.add({
+      targets: f, y: 92, alpha: { from: 1, to: 0 },
+      duration: 900, ease: 'Cubic.easeOut',
+      onComplete: () => f.destroy(),
+    });
+
+    // Currency text scale pop
+    if (this.gemsText) {
+      this.tweens.killTweensOf(this.gemsText);
+      this.gemsText.setScale(1.3);
+      this.tweens.add({
+        targets: this.gemsText, scaleX: 1, scaleY: 1,
+        duration: 260, ease: 'Back.easeIn',
+      });
     }
   }
 

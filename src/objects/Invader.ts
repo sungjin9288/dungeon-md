@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../constants/colors';
 import type { InvaderDef } from '../data/invaders';
 import { logger } from '../utils/logger';
+import { showFloatText } from '../combat/VisualEffects';
 
 // ─── Burn stack ───────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   public  hasBerserkerRage = false;   // BERSERKER_RAGE
   public  isUnstoppable    = false;   // UNSTOPPABLE: immune to all CC
   public  isSlowed         = false;
+  private slowGfx?:        Phaser.GameObjects.Graphics;
   public  hexed            = false;   // WAR_HEX: +25% damage received
   public  damageMultiplier = 1;       // >1 = takes more dmg (hex); applied in takeDamage
   public  isInvisible      = false;   // shadow_ninja: single-target attacks miss
@@ -107,8 +109,20 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   public  hasRevived = false;
 
   // ── HP bar ────────────────────────────────────────────────────────────────
-  private hpBarBg:   Phaser.GameObjects.Graphics;
-  private hpBarFill: Phaser.GameObjects.Graphics;
+  private hpBarBg:    Phaser.GameObjects.Graphics;
+  private hpBarFill:  Phaser.GameObjects.Graphics;
+  private bossLabel?: Phaser.GameObjects.Text;
+  private crisisRing?: Phaser.GameObjects.Graphics;
+  private crisisTween?: Phaser.Tweens.Tween;
+
+  // ── Phase D: hit reaction + idle breathing ───────────────────────────────
+  /** Base scale captured after setDisplaySize — anchor for scale tweens. */
+  private baseScaleX = 1;
+  private baseScaleY = 1;
+  /** Active hit-flash tween, killed on new hit to prevent stacking. */
+  private hitTween?:    Phaser.Tweens.Tween;
+  /** Active breathing tween. */
+  private breathTween?: Phaser.Tweens.Tween;
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -127,6 +141,16 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     if (texSrc && texSrc.width === 128) {
       this.setDisplaySize(def.radius * 3, def.radius * 3);
     }
+
+    // Phase D: defer breathing start until after the external spawn pop-in
+    // tween (in DungeonScene.spawnInvaderWithDef) has finished setting its
+    // final scaleX/scaleY. 500ms covers the longest spawn tween (boss 420ms).
+    scene.time.delayedCall(500, () => {
+      if (!this.active || this.isDead) return;
+      this.baseScaleX = this.scaleX;
+      this.baseScaleY = this.scaleY;
+      this.startIdleBreathing();
+    });
 
     // Burn visuals (always created, hidden when stacks=0)
     this.burnAura  = scene.add.graphics().setDepth(this.depth - 1);
@@ -165,9 +189,13 @@ export class Invader extends Phaser.GameObjects.PathFollower {
       this.canRevive = true;
     }
 
-    // Boss aura (pulsing outer ring)
+    // Boss aura (pulsing outer ring) + name label above HP bar
     if (def.isBoss) {
       this.bossAura = scene.add.graphics().setDepth(this.depth - 2);
+      this.bossLabel = scene.add.text(0, 0, `👹 ${def.koreanName}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+        color: '#ff6644', stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5, 1).setDepth(this.depth + 3);
     }
   }
 
@@ -439,11 +467,17 @@ export class Invader extends Phaser.GameObjects.PathFollower {
 
   applySlow(mult: number, durationMs: number): void {
     if (this.isDead || this.isSlowed || this.isUnstoppable) return;
-    this.isSlowed     = true;
+    this.isSlowed = true;
     if (this.pathTween) this.pathTween.timeScale = mult;
+    // Visual: cyan pulsing ring to indicate slow
+    if (!this.slowGfx) {
+      this.slowGfx = this.scene.add.graphics().setDepth(this.depth + 1);
+    }
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
-      this.isSlowed    = false;
+      this.isSlowed = false;
+      this.slowGfx?.destroy();
+      this.slowGfx = undefined;
       if (this.pathTween && !this.isFrozen && !this.isStunned && !this.isRooted) {
         this.pathTween.timeScale = 1;
       }
@@ -544,6 +578,14 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     // Charm breaks on taking any damage
     if (this.isCharmed) this.breakCharm();
     this.hp = Math.max(0, this.hp - actual);
+    if (actual >= 10) {
+      const col = actual >= 500 ? '#ffee44' : actual >= 200 ? '#ffaa44' : '#ff7777';
+      showFloatText(this.scene, this.x, this.y - this.def.radius * 2, `-${actual}`, col);
+    }
+    // Phase D: hit reaction flash + scale bump (skip if killed — die() handles visuals)
+    if (actual > 0 && this.hp > 0) {
+      this.playHitReaction();
+    }
     if (this.hp <= 0) this.killedByMagic = isMagic;
     if (this.hp <= 0) this.die();
   }
@@ -736,6 +778,12 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.charmedGfx?.destroy();
     this.berserkerAura?.destroy();
     this.hexGfx?.destroy();
+    this.slowGfx?.destroy();
+    this.slowGfx = undefined;
+    this.crisisTween?.stop();
+    this.crisisRing?.destroy();
+    this.crisisRing  = undefined;
+    this.crisisTween = undefined;
     this.venomGfx?.destroy();
     this.venomGfx = undefined;
     this.submergeAura?.destroy();
@@ -748,7 +796,70 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.bossAura?.destroy();
     this.hpBarBg.destroy();
     this.hpBarFill.destroy();
+    this.bossLabel?.destroy();
+    this.hitTween?.stop();
+    this.breathTween?.stop();
     if (this.active) this.destroy();
+  }
+
+  // ─── Phase D: hit reaction + idle breathing ─────────────────────────────
+
+  /**
+   * Idle breathing tween — subtle Y-scale pulse (1.00 → 1.035 → 1.00)
+   * on a 1400ms cycle. Uses baseScaleY as anchor so it doesn't drift.
+   * Paused while a hit tween is active to avoid conflicts.
+   */
+  private startIdleBreathing(): void {
+    this.breathTween?.stop();
+    this.breathTween = this.scene.tweens.add({
+      targets: this,
+      scaleY: this.baseScaleY * 1.035,
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      // randomize start offset so multiple invaders don't sync-breathe
+      delay: Math.random() * 1400,
+    });
+  }
+
+  /**
+   * Hit reaction — brief white tint flash + scale bump.
+   * Called from takeDamage() whenever damage > 0 is applied.
+   */
+  private playHitReaction(): void {
+    // Kill prior hit tween + suspend breathing so they don't fight
+    this.hitTween?.stop();
+    this.breathTween?.stop();
+
+    // If breathing hasn't started yet (first 500ms of life), capture the
+    // current scale as base now. Prevents scale drift on early hits.
+    if (!this.breathTween) {
+      this.baseScaleX = this.scaleX;
+      this.baseScaleY = this.scaleY;
+    }
+
+    // White flash
+    this.setTintFill(0xffffff);
+    this.scene.time.delayedCall(60, () => {
+      if (this.active && !this.isDead) this.clearTint();
+    });
+
+    // Scale bump — 1.18× → base over 180ms (Back.easeOut for overshoot feel)
+    this.setScale(this.baseScaleX * 1.18, this.baseScaleY * 1.18);
+    this.hitTween = this.scene.tweens.add({
+      targets: this,
+      scaleX: this.baseScaleX,
+      scaleY: this.baseScaleY,
+      duration: 180,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        // Resume breathing if not destroyed
+        if (this.active && !this.isDead) {
+          this.startIdleBreathing();
+        }
+      },
+    });
   }
 
   // ─── Update ───────────────────────────────────────────────────────────────
@@ -828,6 +939,23 @@ export class Invader extends Phaser.GameObjects.PathFollower {
       this.hexGfx.fillStyle(0xaa00ff, 0.85);
       this.hexGfx.fillCircle(this.x + Math.cos(a) * r, this.y + Math.sin(a) * r, 4);
       this.hexGfx.fillCircle(this.x + Math.cos(a + Math.PI) * r, this.y + Math.sin(a + Math.PI) * r, 3);
+    }
+
+    // Slow — cyan dashed ring pulses to signal reduced speed
+    if (this.isSlowed && this.slowGfx) {
+      this.slowGfx.clear();
+      const pulse = 0.35 + 0.25 * Math.sin(time / 220);
+      this.slowGfx.lineStyle(2.5, 0x44aaff, pulse + 0.25);
+      this.slowGfx.strokeCircle(this.x, this.y, this.def.radius + 6);
+      this.slowGfx.lineStyle(1.5, 0x88ccff, pulse);
+      this.slowGfx.strokeCircle(this.x, this.y, this.def.radius + 10);
+      // 3 small blue diamond droplets above
+      for (let i = 0; i < 3; i++) {
+        const a = time / 600 + (i / 3) * Math.PI * 2;
+        const r = this.def.radius + 7;
+        this.slowGfx.fillStyle(0x44aaff, 0.7);
+        this.slowGfx.fillCircle(this.x + Math.cos(a) * r, this.y + Math.sin(a) * r - 2, 2.5);
+      }
     }
 
     // Venom stack dots track position
@@ -941,9 +1069,16 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   }
 
   private updateHpBar(): void {
-    const bw = 38, bh = 5;
+    const isBoss = this.def.isBoss ?? false;
+    const bw = isBoss ? 72 : 38;
+    const bh = isBoss ? 8  : 5;
     const bx = this.x - bw / 2;
-    const by = this.y - this.def.radius - 12;
+    const by = this.y - this.def.radius - (isBoss ? 16 : 12);
+
+    // Boss name label tracks position above bar
+    if (this.bossLabel) {
+      this.bossLabel.setPosition(this.x, by - 2);
+    }
 
     this.hpBarBg.clear();
     this.hpBarBg.fillStyle(0x000000, 0.75);
@@ -962,6 +1097,29 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     if (this.hasShield) {
       this.hpBarFill.fillStyle(0x4488ff, 0.3);
       this.hpBarFill.fillRect(bx + 1, by + 1, Math.max(0, (bw - 2) * pct), bh - 2);
+    }
+
+    // Crisis ring: pulsing red border when HP ≤ 10%
+    if (pct <= 0.10 && !this.isDead) {
+      if (!this.crisisRing) {
+        this.crisisRing = this.scene.add.graphics().setDepth(this.depth + 5);
+        this.crisisTween = this.scene.tweens.add({
+          targets: this.crisisRing,
+          alpha: { from: 0.9, to: 0.2 },
+          duration: 200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
+      }
+      const r = this.def.radius + 4;
+      this.crisisRing.clear();
+      this.crisisRing.lineStyle(2, 0xff2222, 1);
+      this.crisisRing.strokeCircle(this.x, this.y, r);
+      this.crisisRing.lineStyle(1, 0xff6666, 0.5);
+      this.crisisRing.strokeCircle(this.x, this.y, r + 3);
+    } else if (this.crisisRing && pct > 0.10) {
+      this.crisisTween?.stop();
+      this.crisisRing.destroy();
+      this.crisisRing  = undefined;
+      this.crisisTween = undefined;
     }
   }
 }

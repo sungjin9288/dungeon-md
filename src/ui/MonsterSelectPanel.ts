@@ -5,6 +5,7 @@ import { type RoomType } from '../data/rooms';
 import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } from '../data/monsters';
 import { HYBRID_DEFS } from '../data/fusion';
 import { loadGameState } from '../data/wisdom';
+import { getMonsterAtk } from '../data/barracks';
 
 // Map roomType → melee/ranged/magic/support for hybrid card type badge
 function inferMonsterType(roomTypes: string[]): MonsterDef['type'] {
@@ -215,6 +216,18 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       wordWrap: { width: CARD_W - 10 }, align: 'center',
     }).setOrigin(0.5, 0).setAlpha(0.85);
     this.add(descT); this.cardGroup.push(descT);
+
+    // ATK preview — find owned monster with this id to show real level ATK
+    const gs = loadGameState();
+    const owned = gs.ownedMonsters.find(m => m.id === def.id);
+    if (owned) {
+      const atk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills);
+      const atkT = this.scene.add.text(cx + CARD_W / 2, cy + CARD_H - 58,
+        `⚔ ${atk}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: '#ff9944',
+      }).setOrigin(0.5, 0);
+      this.add(atkT); this.cardGroup.push(atkT);
+    }
 
     // [배치] button
     const btnY   = cy + CARD_H - 40;

@@ -12,11 +12,10 @@ import type { InvaderType } from '../data/invaders';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   GRID_ROWS, GRID_X, GRID_Y,
-  TOP_BAR_HEIGHT, INVADER_WAYPOINTS,
+  INVADER_WAYPOINTS,
 } from '../constants/layout';
-import { CSS } from '../constants/colors';
 import { logger } from '../utils/logger';
-import { showHolyBurst } from './VisualEffects';
+import { BossHud } from './BossHud';
 
 // ─── BossContext ─────────────────────────────────────────────────────────────
 
@@ -37,15 +36,20 @@ export interface BossContext {
   readonly effectiveCols: number;
   readonly effectiveCellSize: number;
 
+  /** Battle speed multiplier (1 or 2). Needed for time-based windows. */
+  readonly speedMult: number;
+
   /** Invader movement path. */
   readonly invaderPath: Phaser.Curves.Path;
 
   // ── Boss HP bar ──────────────────────────────────────────────────────────
 
-  bossMaxHp: number;
-  bossHpBarBg?: Phaser.GameObjects.Graphics;
-  bossHpBarFill?: Phaser.GameObjects.Graphics;
-  bossHpLabel?: Phaser.GameObjects.Text;
+  /**
+   * Shared boss HP bar instance owned by the scene. BossBehaviors only calls
+   * `build()` here — `update()` is driven from the scene's per-frame loop so
+   * a single update path stays in sync with `activeInvaders`.
+   */
+  readonly bossHud: BossHud;
 
   // ── Delegated methods ────────────────────────────────────────────────────
 
@@ -241,21 +245,11 @@ export function setupDragonKingPhase(ctx: BossContext, inv: Invader): void {
 }
 
 function buildDragonKingHpBar(ctx: BossContext, maxHp: number): void {
-  const { scene } = ctx;
-  ctx.bossMaxHp = maxHp;
-  const bx = CANVAS_WIDTH / 2 - 100;
-  const by = TOP_BAR_HEIGHT + 2;
-  if (!ctx.bossHpBarBg) {
-    ctx.bossHpBarBg = scene.add.graphics().setDepth(95);
-    ctx.bossHpBarBg.fillStyle(0x001430, 1);
-    ctx.bossHpBarBg.fillRoundedRect(bx - 2, by - 2, 204, 16, 3);
-  }
-  if (!ctx.bossHpBarFill) ctx.bossHpBarFill = scene.add.graphics().setDepth(96);
-  if (!ctx.bossHpLabel) {
-    ctx.bossHpLabel = scene.add.text(CANVAS_WIDTH / 2, by - 12, '🐲 용왕', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aaff',
-    }).setOrigin(0.5).setDepth(97);
-  }
+  ctx.bossHud.build(maxHp, {
+    label:      '🐲 용왕',
+    bgColor:    0x001430,
+    labelColor: '#44aaff',
+  });
 }
 
 function showDragonPhaseTransition(ctx: BossContext, _inv: Invader, phase: number, msg: string): void {
@@ -404,98 +398,6 @@ function triggerJudgment(ctx: BossContext): void {
   logger.debug(`[JUDGMENT] room [${r},${c}] −50% HP (−${dmg})`);
 }
 
-// ─── Three God Destroyer (Ch5) ─────────────────────────────────────────────
-
-export function setupThreeGodDestroyer(ctx: BossContext, inv: Invader): void {
-  const { scene, activeInvaders, roomGrid } = ctx;
-  buildBossHpBar(ctx, inv.maxHp);
-
-  let phase5 = 1;
-  const phaseColors = [0xff4444, 0xff8800, 0xffff00, 0x44ff88, 0xaa00ff];
-  const phaseNames = ['화염', '번개', '공허', '독', '신성'];
-
-  const checkPhase5 = () => {
-    if (!inv.active) return;
-    const pct = inv.hp / inv.maxHp;
-    const thresholds = [0.80, 0.60, 0.40, 0.20];
-    if (phase5 <= 4 && pct <= thresholds[phase5 - 1]) {
-      phase5++;
-      inv.ch5BossPhase = phase5;
-      const color = phaseColors[phase5 - 1];
-      const name  = phaseNames[phase5 - 1];
-      showBossPhaseText(ctx, inv, phase5, `⛰️ ${name} 단계!`, color);
-      scene.cameras.main.shake(600, 0.03);
-      scene.cameras.main.flash(400, (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff, false);
-
-      switch (phase5) {
-        case 2: // Lightning: chain lightning every 10s
-          scene.time.addEvent({
-            delay: 10000, repeat: -1,
-            callback: () => {
-              if (!inv.active || inv.ch5BossPhase < 2) return;
-              const nearest = activeInvaders.filter(i => i !== inv && i.active)[0];
-              if (nearest) ctx.triggerChainLightning(nearest, 60, 5);
-            },
-          });
-          break;
-        case 3: // Void: teleport every 15s
-          scene.time.addEvent({
-            delay: 15000, repeat: -1,
-            callback: () => {
-              if (!inv.active || inv.ch5BossPhase < 3) return;
-              inv.setAlpha(0);
-              const cs = ctx.effectiveCellSize;
-              inv.setPosition(GRID_X + cs / 2, GRID_Y + (GRID_ROWS - 1) * cs + cs / 2);
-              scene.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-              logger.debug('[THREE_GOD] phase 3 void teleport');
-            },
-          });
-          break;
-        case 4: // Venom: burn all rooms every 20s
-          scene.time.addEvent({
-            delay: 20000, repeat: -1,
-            callback: () => {
-              if (!inv.active || inv.ch5BossPhase < 4) return;
-              for (const r of roomGrid)
-                for (const d of r)
-                  if (d) { d.roomHp = Math.max(0, d.roomHp - 40); }
-              const t = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, '🐍 독 홍수!', {
-                fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cc00',
-                backgroundColor: '#001400', padding: { x: 10, y: 5 },
-              }).setOrigin(0.5).setDepth(260).setAlpha(0);
-              scene.tweens.add({ targets: t, alpha: 1, duration: 300,
-                onComplete: () => scene.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1200, onComplete: () => t.destroy() }) });
-              logger.debug('[THREE_GOD] phase 4 venom flood — all rooms −40 HP');
-            },
-          });
-          break;
-        case 5: // Divine: heal + speed boost all invaders every 12s
-          scene.time.addEvent({
-            delay: 12000, repeat: -1,
-            callback: () => {
-              if (!inv.active || inv.ch5BossPhase < 5) return;
-              for (const ai of activeInvaders)
-                if (ai.active) { ai.receiveHeal(100); ai.applySpeedBoost(1.3, 8000); }
-              const t = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, '✨ 신성 가호!', {
-                fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ffeeaa',
-                backgroundColor: '#201000', padding: { x: 10, y: 5 },
-              }).setOrigin(0.5).setDepth(260).setAlpha(0);
-              scene.tweens.add({ targets: t, alpha: 1, duration: 300,
-                onComplete: () => scene.tweens.add({ targets: t, alpha: 0, duration: 400, delay: 1200, onComplete: () => t.destroy() }) });
-              logger.debug('[THREE_GOD] phase 5 divine blessing — all invaders +100HP +30% speed');
-            },
-          });
-          break;
-      }
-      logger.debug(`[THREE_GOD_DESTROYER] phase ${phase5} (${name}) — HP ${Math.round(pct * 100)}%`);
-    }
-    scene.time.delayedCall(300, checkPhase5);
-  };
-  checkPhase5();
-
-  logger.debug('[THREE_GOD_DESTROYER] setup complete — 5-phase final boss');
-}
-
 // ─── showBossPhaseText (shared) ────────────────────────────────────────────
 
 export function showBossPhaseText(ctx: BossContext, inv: Invader, phase: number, msg: string, colorHex: number): void {
@@ -518,261 +420,8 @@ export function showBossPhaseText(ctx: BossContext, inv: Invader, phase: number,
   scene.tweens.add({ targets: ring, scaleX: 3, scaleY: 3, alpha: 0, duration: 600, onComplete: () => ring.destroy() });
 }
 
-// ─── Shadow Realm (Ch6) ────────────────────────────────────────────────────
+// ─── Shared boss HP bar helper ─────────────────────────────────────────────
 
-export function setupShadowRealm(ctx: BossContext, inv: Invader): void {
-  const { scene } = ctx;
-  inv.shadowRealmGfx = scene.add.graphics().setDepth(inv.depth - 1);
-  const phaseIn = () => {
-    if (inv.isDead || !inv.active) return;
-    inv.isInShadowRealm = true;
-    inv.isDamageImmune = true;
-    scene.tweens.add({ targets: inv, alpha: 0.15, duration: 300 });
-    scene.time.delayedCall(2000, () => {
-      if (inv.isDead || !inv.active) return;
-      inv.isInShadowRealm = false;
-      inv.isDamageImmune = false;
-      scene.tweens.add({ targets: inv, alpha: 1, duration: 300 });
-    });
-  };
-  inv.shadowRealmTimer = scene.time.addEvent({
-    delay: 8000, callback: phaseIn, loop: true,
-  });
-}
-
-// ─── God Emperor (Ch7 final boss) ──────────────────────────────────────────
-
-/** Flash a golden screen wash for ~400ms, then fade out */
-function flashCelestialScreen(scene: Phaser.Scene, colorHex: number = 0xffd700): void {
-  const flash = scene.add.graphics().setDepth(260).setAlpha(0);
-  flash.fillStyle(colorHex, 0.45);
-  flash.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  scene.tweens.add({
-    targets: flash, alpha: 1, duration: 120, yoyo: true, hold: 80,
-    onComplete: () => flash.destroy(),
-  });
-}
-
-/** Spawn golden burst particles radiating from (x, y) */
-function spawnGoldParticles(scene: Phaser.Scene, x: number, y: number, count: number = 10): void {
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2;
-    const g = scene.add.graphics().setDepth(255);
-    g.fillStyle(0xffd700, 1);
-    g.fillCircle(x, y, 3);
-    scene.tweens.add({
-      targets: g,
-      x: x + Math.cos(angle) * 55,
-      y: y + Math.sin(angle) * 55,
-      alpha: 0, scaleX: 0.3, scaleY: 0.3,
-      duration: 550, ease: 'Quad.easeOut',
-      onComplete: () => g.destroy(),
-    });
-  }
-}
-
-export function setupGodEmperor(ctx: BossContext, inv: Invader): void {
-  const { scene } = ctx;
-  buildBossHpBar(ctx, inv.maxHp);
-
-  // Phase 1: DIVINE_WARD + mirror shield (5 hits) + magic immune
-  inv.isMagicImmune = true;
-  inv.hasMirrorShield = true;
-  inv.mirrorHitsRemaining = 5;
-  inv.mirrorGfx = scene.add.graphics().setDepth(inv.depth + 1);
-
-  const checkPhase = () => {
-    if (inv.isDead || !inv.active) return;
-    const pct = inv.hp / inv.maxHp;
-    updateBossHpBar(ctx);
-
-    // ── Phase 2: 65% HP — celestial shield, spawn guards ──────────────────
-    if (pct <= 0.65 && inv.ch6BossPhase < 2) {
-      inv.ch6BossPhase = 2;
-
-      // 4s magic immunity burst
-      inv.isMagicImmune = true;
-      scene.time.delayedCall(4000, () => { if (!inv.isDead) inv.isMagicImmune = false; });
-
-      // Spawn 2 divine_archers in succession
-      for (let i = 0; i < 2; i++)
-        scene.time.delayedCall(i * 600, () => ctx.spawnInvader('divine_archer'));
-
-      // Visuals: phase banner + screen flash + holy bursts around inv
-      showBossPhaseText(ctx, inv, 2, '👑 2단계 — 천상의 방패!', 0xffd700);
-      flashCelestialScreen(scene, 0xffd700);
-      scene.cameras.main.shake(300, 0.008);
-      for (let i = 0; i < 5; i++)
-        scene.time.delayedCall(i * 80, () => showHolyBurst(scene, inv.x, inv.y));
-      spawnGoldParticles(scene, inv.x, inv.y, 12);
-    }
-
-    // ── Phase 3: 35% HP — divine rage, speed up, dragon descends ──────────
-    if (pct <= 0.35 && inv.ch6BossPhase < 3) {
-      inv.ch6BossPhase = 3;
-
-      // Speed boost: 30% faster
-      if (inv.pathTween) {
-        const rem = inv.pathTween.duration - inv.pathTween.elapsed;
-        inv.pathTween.duration = inv.pathTween.elapsed + rem * 0.7;
-      }
-
-      // Periodic 3s magic immunity every 12s
-      scene.time.addEvent({
-        delay: 12000, loop: true,
-        callback: () => {
-          if (inv.isDead || !inv.active) return;
-          inv.isMagicImmune = true;
-          ctx.showFloatText(inv.x, inv.y - 30, '✨ 신성 방어', '#ffd700');
-          scene.time.delayedCall(3000, () => { if (!inv.isDead) inv.isMagicImmune = false; });
-        },
-      });
-
-      // Spawn celestial_dragon + heaven_general together
-      ctx.spawnInvader('celestial_dragon');
-      scene.time.delayedCall(800, () => ctx.spawnInvader('heaven_general'));
-
-      // Visuals: gold → orange tint flash + phase banner + particles
-      showBossPhaseText(ctx, inv, 3, '🐉 3단계 — 천룡 강림!', 0xff8800);
-      flashCelestialScreen(scene, 0xff8800);
-      scene.cameras.main.shake(500, 0.014);
-      spawnGoldParticles(scene, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 20);
-      for (let i = 0; i < 4; i++)
-        scene.time.delayedCall(i * 120, () => showHolyBurst(scene, inv.x, inv.y));
-    }
-
-    // ── Phase 4: 10% HP — final stand, rapid damage immunity ──────────────
-    if (pct <= 0.10 && inv.ch6BossPhase < 4) {
-      inv.ch6BossPhase = 4;
-
-      // Speed boost: 50% faster total
-      if (inv.pathTween) {
-        const rem = inv.pathTween.duration - inv.pathTween.elapsed;
-        inv.pathTween.duration = inv.pathTween.elapsed + rem * 0.5;
-      }
-
-      // Damage immunity cycle: 2s immune every 6s
-      scene.time.addEvent({
-        delay: 6000, loop: true,
-        callback: () => {
-          if (inv.isDead || !inv.active) return;
-          inv.isDamageImmune = true;
-          ctx.showFloatText(inv.x, inv.y - 30, '🛡️ 불사', '#ffffff');
-          scene.time.delayedCall(2000, () => { if (!inv.isDead) inv.isDamageImmune = false; });
-        },
-      });
-
-      // Dramatic finale: white flash, heavy shake, 3 holy bursts
-      showBossPhaseText(ctx, inv, 4, '☀️ 4단계 — 천제 최후의 강림!!', 0xffffff);
-      flashCelestialScreen(scene, 0xffffff);
-      scene.cameras.main.shake(700, 0.020);
-      for (let i = 0; i < 6; i++)
-        scene.time.delayedCall(i * 100, () => {
-          showHolyBurst(scene, inv.x + Phaser.Math.Between(-30, 30), inv.y + Phaser.Math.Between(-30, 30));
-        });
-      spawnGoldParticles(scene, inv.x, inv.y, 18);
-    }
-
-    scene.time.delayedCall(400, checkPhase);
-  };
-  scene.time.delayedCall(1000, checkPhase);
-}
-
-// ─── Eternal Emperor (Ch6) ─────────────────────────────────────────────────
-
-export function setupEternalEmperor(ctx: BossContext, inv: Invader): void {
-  const { scene } = ctx;
-  buildBossHpBar(ctx, inv.maxHp);
-
-  // Phase 1: Mirror shield active
-  inv.hasMirrorShield = true;
-  inv.mirrorHitsRemaining = 3;
-  inv.mirrorGfx = scene.add.graphics().setDepth(inv.depth + 1);
-
-  const checkPhase = () => {
-    if (inv.isDead || !inv.active) return;
-    const pct = inv.hp / inv.maxHp;
-    updateBossHpBar(ctx);
-
-    // Phase 2: 70% HP — summon titan_sentinel adds
-    if (pct <= 0.7 && inv.ch6BossPhase < 2) {
-      inv.ch6BossPhase = 2;
-      for (let i = 0; i < 2; i++) {
-        scene.time.delayedCall(i * 500, () => ctx.spawnInvader('titan_sentinel'));
-      }
-    }
-
-    // Phase 3: 40% HP — activate shadow realm cycle
-    if (pct <= 0.4 && inv.ch6BossPhase < 3) {
-      inv.ch6BossPhase = 3;
-      setupShadowRealm(ctx, inv);
-    }
-
-    // Phase 4: 15% HP — enrage
-    if (pct <= 0.15 && inv.ch6BossPhase < 4) {
-      inv.ch6BossPhase = 4;
-      if (inv.pathTween) {
-        const remaining = inv.pathTween.duration - inv.pathTween.elapsed;
-        inv.pathTween.duration = inv.pathTween.elapsed + remaining * 0.5;
-      }
-      scene.time.addEvent({
-        delay: 5000,
-        callback: () => {
-          if (inv.isDead || !inv.active) return;
-          inv.isDamageImmune = true;
-          scene.time.delayedCall(1000, () => {
-            if (!inv.isDead) inv.isDamageImmune = false;
-          });
-        },
-        loop: true,
-      });
-    }
-
-    scene.time.delayedCall(400, checkPhase);
-  };
-  scene.time.delayedCall(1000, checkPhase);
-}
-
-// ─── Shared boss HP bar helpers ────────────────────────────────────────────
-
-function buildBossHpBar(ctx: BossContext, maxHp: number): void {
-  const { scene } = ctx;
-  ctx.bossMaxHp = maxHp;
-  const bx = CANVAS_WIDTH / 2 - 100;
-  const by = TOP_BAR_HEIGHT + 2;
-
-  ctx.bossHpBarBg = scene.add.graphics().setDepth(95);
-  ctx.bossHpBarBg.fillStyle(0x220011, 1);
-  ctx.bossHpBarBg.fillRoundedRect(bx - 2, by - 2, 204, 16, 3);
-
-  ctx.bossHpBarFill = scene.add.graphics().setDepth(96);
-
-  ctx.bossHpLabel = scene.add.text(CANVAS_WIDTH / 2, by - 12, '👹 도깨비 대왕', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CSS.BLOOD_GLOW,
-  }).setOrigin(0.5).setDepth(97);
-}
-
-function updateBossHpBar(ctx: BossContext): void {
-  if (!ctx.bossHpBarFill || !ctx.bossHpBarBg) return;
-  const boss = ctx.activeInvaders.find(i => i.active && (i.def.type === 'knight' || i.def.type === 'dragon_king'));
-  if (!boss) {
-    ctx.bossHpBarBg?.destroy();  ctx.bossHpBarBg  = undefined;
-    ctx.bossHpBarFill?.destroy(); ctx.bossHpBarFill = undefined;
-    ctx.bossHpLabel?.destroy();   ctx.bossHpLabel  = undefined;
-    return;
-  }
-
-  const bx  = CANVAS_WIDTH / 2 - 100;
-  const by  = TOP_BAR_HEIGHT + 2;
-  const pct = boss.hp / ctx.bossMaxHp;
-  const col = pct > 0.5 ? 0x440044 : 0x8b0000;
-
-  ctx.bossHpBarFill.clear();
-  ctx.bossHpBarFill.fillStyle(col, 1);
-  ctx.bossHpBarFill.fillRoundedRect(bx, by, Math.max(0, 200 * pct), 12, 3);
-
-  if (ctx.bossHpLabel) {
-    const bossIcon = boss.def.type === 'dragon_king' ? '🐲 용왕' : '👹 도깨비 대왕';
-    ctx.bossHpLabel.setText(`${bossIcon}  ${boss.hp} / ${ctx.bossMaxHp}`);
-  }
+export function buildBossHpBar(ctx: BossContext, maxHp: number): void {
+  ctx.bossHud.build(maxHp);
 }

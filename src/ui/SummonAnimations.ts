@@ -145,6 +145,26 @@ export function playSinglePullAnimation(
       ov.add(revealObj);
       scene.tweens.add({ targets: revealObj, scaleX: 1, scaleY: 1, duration: 350, ease: 'Back.easeOut' });
 
+      // Rarity particle burst — intensity scales with rarity tier
+      const burstCount = 6 + result.rarityIdx * 2;
+      const burstDist  = 60 + result.rarityIdx * 12;
+      for (let i = 0; i < burstCount; i++) {
+        const angle = (i / burstCount) * Math.PI * 2;
+        const pg = scene.add.graphics().setDepth(97);
+        pg.fillStyle(rColor, 0.9);
+        pg.fillCircle(CX, panY + 80, 3 + result.rarityIdx);
+        ov.add(pg);
+        scene.tweens.add({
+          targets: pg,
+          x: Math.cos(angle) * burstDist,
+          y: Math.sin(angle) * burstDist,
+          alpha: 0, scaleX: 0.3, scaleY: 0.3,
+          duration: 480 + result.rarityIdx * 40,
+          ease: 'Cubic.easeOut',
+          onComplete: () => pg.destroy(),
+        });
+      }
+
       // Ceiling badge
       if (result.ceilingHit) {
         const cb = scene.add.text(CX, panY + 22, '🎯 천장 달성!', {
@@ -201,12 +221,26 @@ export function playSinglePullAnimation(
         scene.tweens.add({ targets: badgeT, alpha: 1, duration: 300 });
       });
 
-      // Confirm button
+      // Action buttons: [ 다시 소환 ] [ 확인 ✓ ]
       wait(800, () => {
         scene.input.enabled = true;
-        const confirmT = scene.add.text(CX, panY + 278, '확인  ✓', {
-          fontFamily: 'sans-serif', fontSize: '13px', color: '#9966cc',
-          backgroundColor: '#1a0030', padding: { x: 20, y: 8 },
+
+        const againT = scene.add.text(CX - 58, panY + 278, '다시 소환', {
+          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
+          backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
+        }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
+        ov.add(againT);
+        scene.tweens.add({ targets: againT, alpha: 1, duration: 300 });
+        againT.on('pointerdown', () => {
+          skipZone.destroy();
+          ov.destroy();
+          darkOverlay.destroy();
+          onComplete();
+        });
+
+        const confirmT = scene.add.text(CX + 52, panY + 278, '확인  ✓', {
+          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
+          backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
         }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
         ov.add(confirmT);
         scene.tweens.add({ targets: confirmT, alpha: 1, duration: 300 });

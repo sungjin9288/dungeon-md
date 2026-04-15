@@ -125,6 +125,7 @@ class SkillSlot {
   private bg: Phaser.GameObjects.Graphics;
   private cooldownArc: Phaser.GameObjects.Graphics;
   private iconText: Phaser.GameObjects.Text;
+  private cdLabel: Phaser.GameObjects.Text;
   private highlight = false;
 
   constructor(
@@ -155,6 +156,13 @@ class SkillSlot {
     }).setOrigin(0.5);
     this.container.add(this.iconText);
 
+    // Cooldown seconds label
+    this.cdLabel = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE / 2, '', {
+      fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5).setVisible(false);
+    this.container.add(this.cdLabel);
+
     // Touch zone
     const zone = scene.add.zone(x + SLOT_SIZE / 2, y + SLOT_SIZE / 2, SLOT_SIZE, SLOT_SIZE)
       .setInteractive()
@@ -179,7 +187,10 @@ class SkillSlot {
 
   updateCooldown(remainingMs: number, totalMs: number): void {
     this.cooldownArc.clear();
-    if (remainingMs <= 0 || totalMs <= 0) return;
+    if (remainingMs <= 0 || totalMs <= 0) {
+      this.cdLabel.setVisible(false);
+      return;
+    }
 
     const pct = remainingMs / totalMs;
     const cx = SLOT_SIZE / 2;
@@ -197,5 +208,9 @@ class SkillSlot {
     this.cooldownArc.beginPath();
     this.cooldownArc.arc(cx, cy, r, startAngle, endAngle, false);
     this.cooldownArc.strokePath();
+
+    // Remaining seconds
+    const secs = Math.ceil(remainingMs / 1000);
+    this.cdLabel.setText(`${secs}`).setVisible(true);
   }
 }

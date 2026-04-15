@@ -12,6 +12,10 @@ export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
 
   preload(): void {
+    // Phaser 3.90 loader stalls when maxParallelDownloads (default 32) matches
+    // the number of simultaneously-completing files — set high to avoid the deadlock.
+    this.load.maxParallelDownloads = 200;
+
     // Loading bar
     const barBg = this.add.graphics();
     barBg.fillStyle(COLORS.STONE_DARK, 1);
@@ -45,6 +49,8 @@ export class BootScene extends Phaser.Scene {
     });
 
     // Load AI-generated monster portraits (Ch1-5 pre-loaded; Ch6+ loaded lazily)
+    // Ch7 assets are NOT pre-loaded here — large files caused loader deadlock
+    // (inflight=0 / list>0 stall in Phaser 3.90). They use procedural fallback.
     const monsterIds = [
       // Ch1–5
       'dokkaebi_warrior','dokkaebi_junior','village_archer','gold_turtle','fire_dokkaebi','sage',
@@ -53,12 +59,17 @@ export class BootScene extends Phaser.Scene {
       'celestial_dancer','three_legged_crow','great_serpent','moon_rabbit_sage',
       'mountain_god','volcanic_warrior','storm_archer','abyss_mage','celestial_healer',
       'mask_berserker','sea_dragon_lord','fox_spirit_elder',
-      // Ch7 (pre-loaded when available; procedural fallback if absent)
-      'celestial_guardian','sky_archer','heaven_mage','solar_warrior','divine_healer',
-      'starlight_knight','celestial_sage','god_realm_general',
     ];
     monsterIds.forEach(id => {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
+    });
+
+    // Fail-safe: if loader somehow stalls, force-complete after 8 s
+    this.load.once('complete', () => { /* normal path */ });
+    this.time.delayedCall(8000, () => {
+      if (this.sys.settings.status === 3 /* LOADING */) {
+        this.load.emit('complete');
+      }
     });
   }
 

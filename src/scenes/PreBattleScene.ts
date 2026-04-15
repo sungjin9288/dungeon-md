@@ -4,7 +4,7 @@ import { loadGameState } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
 import type { InvaderType } from '../data/invaders';
 import { MONSTER_DEFS } from '../data/monsters';
-import { getMonsterAtk } from '../data/barracks';
+import { getMonsterAtk, ACTIVE_SKILLS } from '../data/barracks';
 import { MONSTER_EMOJI, MONSTER_NAME } from '../data/monsterDisplay';
 
 // Map invasion invader type names → DungeonScene InvaderType
@@ -126,6 +126,54 @@ export class PreBattleScene extends Phaser.Scene {
         this.add.text(sx + (slotW - 6) / 2, sy + 96, `ATK: ${atk}`, {
           fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
         }).setOrigin(0.5);
+
+        // Tap card → info popup
+        const hitZone = this.add.zone(sx, sy, slotW - 6, 116).setOrigin(0).setInteractive({ useHandCursor: true });
+        hitZone.on('pointerdown', () => {
+          this.children.getByName('monInfoOv')?.destroy();
+
+          const ov = this.add.container(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
+            .setName('monInfoOv').setDepth(200);
+          const ovBg = this.add.graphics();
+          ovBg.fillStyle(0x0f0a04, 0.96);
+          ovBg.fillRoundedRect(-130, -100, 260, 200, 8);
+          ovBg.lineStyle(1.5, 0xc8921a, 0.85);
+          ovBg.strokeRoundedRect(-130, -100, 260, 200, 8);
+          ov.add(ovBg);
+
+          ov.add(this.add.text(0, -80, `${MONSTER_EMOJI[mon.id] ?? '👾'}  ${MONSTER_NAME[mon.id] ?? mon.id}`, {
+            fontFamily: 'Georgia, serif', fontSize: '14px', color: '#f0e6c8', fontStyle: 'bold',
+          }).setOrigin(0.5));
+          ov.add(this.add.text(0, -52, `Lv.${mon.level}  |  ATK ${atk}`, {
+            fontFamily: 'sans-serif', fontSize: '12px', color: '#c8921a',
+          }).setOrigin(0.5));
+          if (monDef) {
+            ov.add(this.add.text(0, -28, `종족: ${monDef.tribe ?? '없음'}  |  유형: ${monDef.type}`, {
+              fontFamily: 'sans-serif', fontSize: '10px', color: '#886644',
+            }).setOrigin(0.5));
+          }
+          const skillId = mon.equippedSkills?.[0];
+          if (skillId) {
+            const sk = ACTIVE_SKILLS.find(s => s.id === skillId);
+            ov.add(this.add.text(0, -6, `스킬: ${sk?.icon ?? ''} ${sk?.name ?? skillId}`, {
+              fontFamily: 'sans-serif', fontSize: '10px', color: '#88aaff',
+            }).setOrigin(0.5));
+          }
+          const rarityLabels = ['일반', '고급', '희귀', '영웅', '전설'];
+          const rarity = mon.rarity ?? 0;
+          ov.add(this.add.text(0, 16, `희귀도: ${rarityLabels[rarity] ?? '일반'}`, {
+            fontFamily: 'sans-serif', fontSize: '10px', color: rarity >= 3 ? '#ffcc44' : '#886644',
+          }).setOrigin(0.5));
+          ov.add(this.add.text(0, 76, '탭하여 닫기', {
+            fontFamily: 'sans-serif', fontSize: '9px', color: '#443322',
+          }).setOrigin(0.5));
+
+          this.tweens.add({ targets: ov, alpha: { from: 0, to: 1 }, duration: 180 });
+
+          const dismissZone = this.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+            .setOrigin(0).setInteractive().setDepth(199);
+          dismissZone.once('pointerdown', () => { ov.destroy(); dismissZone.destroy(); });
+        });
       } else {
         this.add.text(sx + (slotW - 6) / 2, sy + 58, '+', {
           fontFamily: 'sans-serif', fontSize: '22px', color: '#3a2810',
@@ -136,8 +184,37 @@ export class PreBattleScene extends Phaser.Scene {
       }
     }
 
+    // ─ SYNERGY: Active tribe combos from first 3 monsters ──────────────────
+    const TRIBE_KO: Record<string, string> = {
+      dokkaebi: '도깨비', gumiho: '구미호', sansin: '산신',
+      sea: '해신', underworld: '저승', mask: '탈', moonlight: '달빛', dragon: '용',
+    };
+    const tribeCount: Record<string, number> = {};
+    gs.ownedMonsters.slice(0, SLOTS).forEach(m => {
+      const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
+      const tribe = def?.tribe;
+      if (tribe) tribeCount[tribe] = (tribeCount[tribe] ?? 0) + 1;
+    });
+    const activeSynergies = Object.entries(tribeCount).filter(([, c]) => c >= 2);
+    const synY = dY + dH + 8;
+    if (activeSynergies.length > 0) {
+      let chipX = 14;
+      activeSynergies.forEach(([tribe, count]) => {
+        const label = `✨ ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
+        const chip = this.add.text(chipX, synY, label, {
+          fontFamily: 'sans-serif', fontSize: '10px', color: '#ffdd88',
+          backgroundColor: '#2a1800', padding: { x: 8, y: 4 },
+        });
+        chipX += chip.width + 8;
+      });
+    } else {
+      this.add.text(CANVAS_WIDTH / 2, synY + 2, '시너지 없음', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#443322',
+      }).setOrigin(0.5);
+    }
+
     // ─ BOTTOM: Start Button ──────────────────────────────────────────────────
-    const startY = dY + dH + 28;
+    const startY = dY + dH + 38;
     const startBtn = this.add.text(CANVAS_WIDTH / 2, startY, '⚔️   방어 시작', {
       fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
       backgroundColor: '#8b0000', padding: { x: 36, y: 14 },

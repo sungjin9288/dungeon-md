@@ -28,6 +28,9 @@ export class Room extends Phaser.GameObjects.Container {
   private roomHpBar?: Phaser.GameObjects.Graphics;
   private roomHpValue = 0;
   private roomHpMax  = 0;
+  private damageFlash?: Phaser.GameObjects.Graphics;
+  private hpCriticalTween?: Phaser.Tweens.Tween;
+  private cooldownRing?: Phaser.GameObjects.Graphics;
   private waterRipple?: Phaser.GameObjects.Graphics;
   private waterTween?: Phaser.Tweens.Tween;
   private isDestroyed = false;
@@ -209,7 +212,27 @@ export class Room extends Phaser.GameObjects.Container {
     if (this.isDestroyed) return;
     this.roomHpValue = Math.max(0, this.roomHpValue - amount);
     this.drawRoomHpBar();
+    this._flashDamage();
     if (this.roomHpValue <= 0) this.collapseRoom();
+  }
+
+  private _flashDamage(): void {
+    // Reuse existing graphic to avoid stacking
+    if (!this.damageFlash) {
+      this.damageFlash = this.scene.add.graphics();
+      this.add(this.damageFlash);
+    }
+    const s = this.cs;
+    this.damageFlash.clear();
+    this.damageFlash.fillStyle(0xff2222, 0.55);
+    this.damageFlash.fillRect(-s / 2, -s / 2, s, s);
+    this.damageFlash.setDepth(this.depth + 4).setAlpha(1);
+    this.scene.tweens.add({
+      targets: this.damageFlash,
+      alpha: 0,
+      duration: 280,
+      ease: 'Power2.easeOut',
+    });
   }
 
   healRoomHp(amount: number): void {
@@ -250,6 +273,19 @@ export class Room extends Phaser.GameObjects.Container {
     g.fillRect(bx, by, Math.round(bw * pct), bh);
     // Hide bar if full HP
     g.setAlpha(pct < 1 ? 1 : 0);
+
+    // Critical HP pulse: start tween when ≤30%, stop when recovered
+    if (pct <= 0.3 && pct > 0 && !this.hpCriticalTween) {
+      this.hpCriticalTween = this.scene.tweens.add({
+        targets: g,
+        alpha: { from: 1, to: 0.25 },
+        duration: 350, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    } else if ((pct > 0.3 || pct <= 0) && this.hpCriticalTween) {
+      this.hpCriticalTween.stop();
+      this.hpCriticalTween = undefined;
+      g.setAlpha(pct < 1 ? 1 : 0);
+    }
   }
 
   private collapseRoom(): void {
@@ -381,6 +417,35 @@ export class Room extends Phaser.GameObjects.Container {
       targets: flash, alpha: 0, duration: 350,
       onComplete: () => flash.destroy(),
     });
+
+    // Scale bounce: pop to 1.18 then settle
+    this.scene.tweens.add({
+      targets: this, scaleX: 1.18, scaleY: 1.18,
+      duration: 140, ease: 'Back.easeOut',
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: this, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.easeIn',
+        });
+      },
+    });
+
+    // Star burst: 6 golden ★ flying outward
+    const angles = [0, 60, 120, 180, 240, 300];
+    for (const deg of angles) {
+      const rad  = (deg * Math.PI) / 180;
+      const dist = this.cs * 0.7;
+      const star = this.scene.add.text(this.x, this.y, '★', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#ffee44',
+      }).setOrigin(0.5).setDepth(200).setAlpha(1);
+      this.scene.tweens.add({
+        targets: star,
+        x: this.x + Math.cos(rad) * dist,
+        y: this.y + Math.sin(rad) * dist,
+        alpha: 0, scaleX: 0.5, scaleY: 0.5,
+        duration: 480, ease: 'Quad.easeOut',
+        onComplete: () => star.destroy(),
+      });
+    }
   }
 
   private drawLevelBadge(): void {
@@ -472,9 +537,51 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   flashAttack(): void {
+    // Alpha flash (original)
     this.scene.tweens.add({
       targets: this.bg, alpha: { from: 1, to: 0.3 },
       duration: 80, yoyo: true, repeat: 2,
+    });
+
+    // Phase D3: attack choreography — anticipation (squash) → strike
+    // (overshoot) → recoil (settle). Animates the monsterBadge so the
+    // room frame stays stable while the occupant "pounces".
+    const badge = this.monsterBadge;
+    if (!badge) return;
+
+    // Kill any in-flight attack tween on the badge
+    this.scene.tweens.killTweensOf(badge);
+    badge.setScale(1, 1);
+
+    // Anticipation: brief inward squash (0.85× over 60ms)
+    this.scene.tweens.add({
+      targets: badge,
+      scaleX: 0.88,
+      scaleY: 0.82,
+      duration: 60,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        if (!badge.active) return;
+        // Strike: overshoot forward (1.25× over 100ms)
+        this.scene.tweens.add({
+          targets: badge,
+          scaleX: 1.22,
+          scaleY: 1.22,
+          duration: 100,
+          ease: 'Back.easeOut',
+          onComplete: () => {
+            if (!badge.active) return;
+            // Recoil: settle back to rest (1.0× over 180ms)
+            this.scene.tweens.add({
+              targets: badge,
+              scaleX: 1,
+              scaleY: 1,
+              duration: 180,
+              ease: 'Cubic.easeOut',
+            });
+          },
+        });
+      },
     });
   }
 
@@ -512,6 +619,38 @@ export class Room extends Phaser.GameObjects.Container {
     });
     // Disable interaction for water cells
     this.removeInteractive();
+  }
+
+  /** Called from DungeonScene.update() during waves to draw a circular progress ring. */
+  updateAttackCooldown(now: number): void {
+    const data = this.roomData;
+    if (!data || !data.attackCooldown || this.state !== 'occupied') {
+      this.cooldownRing?.setVisible(false);
+      return;
+    }
+    if (!this.cooldownRing) {
+      this.cooldownRing = this.scene.add.graphics().setDepth(this.depth + 3);
+      this.add(this.cooldownRing);
+    }
+    this.cooldownRing.setVisible(true);
+    const pct = Math.min(1, (now - data.lastAttackTime) / data.attackCooldown);
+    const r   = 6;
+    const cx  = this.cs / 2 - r - 3;   // bottom-right corner in container-local space
+    const cy  = this.cs / 2 - r - 3;
+    this.cooldownRing.clear();
+    // Background circle
+    this.cooldownRing.lineStyle(1.5, 0x222222, 0.55);
+    this.cooldownRing.strokeCircle(cx, cy, r);
+    // Progress arc (clockwise from top)
+    if (pct > 0.02) {
+      const start = Phaser.Math.DegToRad(-90);
+      const end   = start + pct * Phaser.Math.PI2;
+      const color = pct >= 0.95 ? 0xffdd44 : 0xaa6622;
+      this.cooldownRing.lineStyle(2.5, color, 0.9);
+      this.cooldownRing.beginPath();
+      this.cooldownRing.arc(cx, cy, r, start, end, false);
+      this.cooldownRing.strokePath();
+    }
   }
 
   destroy(fromScene?: boolean): void {

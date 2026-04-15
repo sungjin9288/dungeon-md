@@ -468,8 +468,23 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.state.wisdomTree[branch.id] = tier + 1;
     saveGameState(this.state);
 
-    // Update crystal display
+    // Update crystal display + cost deduction float + pop
     this.crystalText.setText(`💎 ${this.state.soulCrystals} 영혼 수정`);
+    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${cost}💎`, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: '#aa88ff', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(250).setAlpha(0);
+    this.tweens.add({
+      targets: costFloat, y: 106, alpha: { from: 1, to: 0 },
+      duration: 900, ease: 'Cubic.easeOut',
+      onComplete: () => costFloat.destroy(),
+    });
+    this.tweens.killTweensOf(this.crystalText);
+    this.crystalText.setScale(1.3);
+    this.tweens.add({
+      targets: this.crystalText, scaleX: 1, scaleY: 1,
+      duration: 260, ease: 'Back.easeIn',
+    });
 
     // Animate node
     const container = this.nodeContainers.get(branch.id);

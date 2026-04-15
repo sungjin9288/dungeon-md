@@ -9,6 +9,7 @@ import {
   xpToNextLevel, getMonsterAtk, addXp, type SkillTree,
 } from '../data/barracks';
 import { generatePortrait } from '../art/PortraitGenerator';
+import { addPanelShadow, addInnerGlow } from '../ui/PanelDepth';
 
 const CARD_W  = 162;
 const CARD_H  = 210;
@@ -23,6 +24,10 @@ export class BarracksScene extends Phaser.Scene {
   private contentContainer!: Phaser.GameObjects.Container;
   private detailOverlay?: Phaser.GameObjects.Container;
   private shopOverlay?:   Phaser.GameObjects.Container;
+  private sortKey: 'level' | 'atk' | 'rarity' = 'level';
+  private sortChips: Phaser.GameObjects.GameObject[] = [];
+  private filterType: 'all' | 'melee' | 'ranged' | 'magic' | 'support' = 'all';
+  private filterChips: Phaser.GameObjects.GameObject[] = [];
 
   constructor() { super({ key: 'BarracksScene' }); }
 
@@ -32,6 +37,8 @@ export class BarracksScene extends Phaser.Scene {
 
     this.drawBackground();
     this.drawHeader();
+    this.buildSortChips();
+    this.buildFilterChips();
     this.buildContent();
     this.buildBottomNav();
     this.setupScroll();
@@ -79,45 +86,173 @@ export class BarracksScene extends Phaser.Scene {
     this.buildBtn(24, 24, '← 뒤로', 0x2d2416, () => this.scene.start('StageSelectScene'));
   }
 
+  // ─── Sort chips ───────────────────────────────────────────────────────────────
+
+  private buildSortChips(): void {
+    const KEYS: Array<{ key: 'level' | 'atk' | 'rarity'; label: string }> = [
+      { key: 'level',  label: '레벨 ↓' },
+      { key: 'atk',    label: '공격력' },
+      { key: 'rarity', label: '희귀도' },
+    ];
+    const chipW = 88, chipH = 22, chipGap = 10;
+    const totalW = KEYS.length * chipW + (KEYS.length - 1) * chipGap;
+    const startX = (CANVAS_WIDTH - totalW) / 2;
+    const chipY = 91;
+
+    // Destroy previous chips
+    this.sortChips.forEach(c => c.destroy());
+    this.sortChips = [];
+
+    KEYS.forEach(({ key, label }, i) => {
+      const cx = startX + i * (chipW + chipGap);
+      const isActive = this.sortKey === key;
+
+      const bg = this.add.graphics().setDepth(11);
+      bg.fillStyle(isActive ? COLORS.TORCH_GOLD : COLORS.STONE_DARK, 1);
+      bg.fillRoundedRect(cx, chipY, chipW, chipH, 4);
+      bg.lineStyle(1, isActive ? COLORS.TORCH_GOLD : COLORS.STONE_MID, isActive ? 1 : 0.5);
+      bg.strokeRoundedRect(cx, chipY, chipW, chipH, 4);
+
+      const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: isActive ? 'bold' : 'normal',
+        color: isActive ? '#1a0800' : CSS.PARCHMENT_MUTED,
+      }).setOrigin(0.5).setDepth(12);
+
+      const hitArea = this.add.rectangle(cx + chipW / 2, chipY + chipH / 2, chipW, chipH)
+        .setDepth(13).setInteractive({ useHandCursor: true }).setAlpha(0.001);
+      hitArea.on('pointerdown', () => {
+        if (this.sortKey === key) return;
+        this.sortKey = key;
+        this.buildSortChips();
+        this.buildContent();
+        this.scrollY = 0;
+        this.contentContainer.setY(0);
+      });
+
+      this.sortChips.push(bg, t, hitArea);
+    });
+  }
+
+  // ─── Type filter chips ────────────────────────────────────────────────────────
+
+  private buildFilterChips(): void {
+    this.filterChips.forEach(c => (c as Phaser.GameObjects.GameObject).destroy());
+    this.filterChips = [];
+
+    const TYPES: Array<{ key: 'all' | 'melee' | 'ranged' | 'magic' | 'support'; label: string }> = [
+      { key: 'all',     label: '전체' },
+      { key: 'melee',   label: '⚔근접' },
+      { key: 'ranged',  label: '🏹원거리' },
+      { key: 'magic',   label: '✨마법' },
+      { key: 'support', label: '💚지원' },
+    ];
+    const chipW = 66, chipH = 20, chipGap = 4;
+    const totalW = TYPES.length * chipW + (TYPES.length - 1) * chipGap;
+    const startX = (CANVAS_WIDTH - totalW) / 2;
+    const chipY  = 117;
+
+    TYPES.forEach(({ key, label }, i) => {
+      const cx      = startX + i * (chipW + chipGap);
+      const isActive = this.filterType === key;
+
+      const bg = this.add.graphics().setDepth(11);
+      bg.fillStyle(isActive ? 0x334466 : COLORS.STONE_DARK, 1);
+      bg.fillRoundedRect(cx, chipY, chipW, chipH, 3);
+      bg.lineStyle(1, isActive ? 0x6688cc : COLORS.STONE_MID, isActive ? 0.9 : 0.4);
+      bg.strokeRoundedRect(cx, chipY, chipW, chipH, 3);
+
+      const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
+        fontFamily: 'sans-serif', fontSize: '10px',
+        color: isActive ? '#aaccff' : CSS.PARCHMENT_MUTED,
+      }).setOrigin(0.5).setDepth(12);
+
+      const hit = this.add.rectangle(cx + chipW / 2, chipY + chipH / 2, chipW, chipH)
+        .setDepth(13).setInteractive({ useHandCursor: true }).setAlpha(0.001);
+      hit.on('pointerdown', () => {
+        if (this.filterType === key) return;
+        this.filterType = key;
+        this.buildFilterChips();
+        this.buildContent();
+        this.scrollY = 0;
+        this.contentContainer.setY(0);
+      });
+
+      this.filterChips.push(bg, t, hit);
+    });
+  }
+
   // ─── Scrollable card grid ─────────────────────────────────────────────────────
 
   private buildContent(): void {
+    this.contentContainer?.destroy();
     this.contentContainer = this.add.container(0, 0).setDepth(5);
 
-    const monsters = this.gs.ownedMonsters;
+    const sorted = [...this.gs.ownedMonsters]
+      .filter(m => {
+        if (this.filterType === 'all') return true;
+        const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
+        return def?.type === this.filterType;
+      })
+      .sort((a, b) => {
+        if (this.sortKey === 'level') return b.level - a.level;
+        if (this.sortKey === 'rarity') return (b.rarity ?? 0) - (a.rarity ?? 0);
+        const defA = MONSTER_DEFS[a.id as keyof typeof MONSTER_DEFS];
+        const defB = MONSTER_DEFS[b.id as keyof typeof MONSTER_DEFS];
+        return getMonsterAtk(defB?.baseDamage ?? 10, b.level, b.spentSkills)
+             - getMonsterAtk(defA?.baseDamage ?? 10, a.level, a.spentSkills);
+      });
     const cols = 2;
+    const cardY0 = CARD_START_Y + 52; // extra 32px for filter chip row
 
-    monsters.forEach((m, i) => {
+    sorted.forEach((m, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const x   = CARD_START_X + col * (CARD_W + CARD_PAD);
-      const y   = CARD_START_Y + row * (CARD_H + CARD_PAD);
+      const y   = cardY0 + row * (CARD_H + CARD_PAD);
       this.buildMonsterCard(m, x, y);
     });
 
     // "소환" empty slot at the end
-    const nextIdx = monsters.length;
+    const nextIdx = sorted.length;
     const col = nextIdx % cols;
     const row = Math.floor(nextIdx / cols);
     const x   = CARD_START_X + col * (CARD_W + CARD_PAD);
-    const y   = CARD_START_Y + row * (CARD_H + CARD_PAD);
+    const y   = cardY0 + row * (CARD_H + CARD_PAD);
     this.buildSummonSlot(x, y);
 
-    const rows = Math.ceil((monsters.length + 1) / cols);
-    this.maxScrollY = Math.max(0, CARD_START_Y + rows * (CARD_H + CARD_PAD) + 20 - (CANVAS_HEIGHT - 80));
+    const rows = Math.ceil((sorted.length + 1) / cols);
+    this.maxScrollY = Math.max(0, cardY0 + rows * (CARD_H + CARD_PAD) + 20 - (CANVAS_HEIGHT - 80));
   }
 
   private buildMonsterCard(m: OwnedMonster, x: number, y: number): void {
     const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
     if (!def) return;
 
-    // Card background
+    // Card background — border color by rarity
+    const rarityColors: number[] = [0x555555, 0x44aa44, 0x4488ff, 0xaa44ff, 0xffcc00];
+    const rarityAlphas: number[] = [0.6,      0.85,    0.9,     0.9,     1.0   ];
+    const rarity = m.rarity ?? 0;
+    const borderColor = rarityColors[rarity] ?? rarityColors[0];
+    const borderAlpha = rarityAlphas[rarity] ?? rarityAlphas[0];
+    // Drop shadow beneath the card
+    this.contentContainer.add(
+      addPanelShadow(this, x, y, CARD_W, CARD_H, 10, { offsetY: 3, opacity: 0.55 }),
+    );
     const bg = this.add.graphics();
-    bg.fillStyle(COLORS.STONE_DARK, 1);
+    bg.fillStyle(rarity >= 3 ? 0x1a0d2e : COLORS.STONE_DARK, 1);
     bg.fillRoundedRect(x, y, CARD_W, CARD_H, 10);
-    bg.lineStyle(2, def.accentColor ?? COLORS.TORCH_GOLD, 0.8);
+    bg.lineStyle(rarity >= 4 ? 2.5 : 2, borderColor, borderAlpha);
     bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 10);
+    // Legendary: extra inner glow ring
+    if (rarity >= 4) {
+      bg.lineStyle(1, borderColor, 0.3);
+      bg.strokeRoundedRect(x + 3, y + 3, CARD_W - 6, CARD_H - 6, 8);
+    }
     this.contentContainer.add(bg);
+    // Top bevel highlight (tinted to rarity color)
+    this.contentContainer.add(
+      addInnerGlow(this, x, y, CARD_W, CARD_H, 10, borderColor, rarity >= 3 ? 0.18 : 0.12),
+    );
 
     // Monster portrait / emoji — apply skin if equipped
     const cardSkin = getSkinForMonster(m.id, this.gs.equippedSkins ?? {});
@@ -205,6 +340,33 @@ export class BarracksScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
       }).setOrigin(0.5);
       this.contentContainer.add(spT);
+    }
+
+    // No-skill warning badge — orange "!" dot top-left
+    if (m.equippedSkills.length === 0) {
+      const nb = this.add.graphics();
+      nb.fillStyle(0xff8800, 1);
+      nb.fillCircle(x + 13, y + 13, 9);
+      this.contentContainer.add(nb);
+      const nt = this.add.text(x + 13, y + 13, '!', {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#000000',
+      }).setOrigin(0.5);
+      this.contentContainer.add(nt);
+    }
+
+    // Deployed badge — 🏰 bottom-right if monster is in an active dungeon slot
+    const deployedIds = new Set(
+      this.gs.dungeonSlots.flatMap(slot => slot.monsterIds.filter(Boolean) as string[])
+    );
+    if (deployedIds.has(m.id)) {
+      const db = this.add.graphics();
+      db.fillStyle(0x224488, 0.9);
+      db.fillRoundedRect(x + CARD_W - 26, y + CARD_H - 22, 22, 18, 4);
+      this.contentContainer.add(db);
+      const dt = this.add.text(x + CARD_W - 15, y + CARD_H - 13, '🏰', {
+        fontFamily: 'sans-serif', fontSize: '10px',
+      }).setOrigin(0.5);
+      this.contentContainer.add(dt);
     }
 
     // Tap zone
@@ -390,6 +552,7 @@ export class BarracksScene extends Phaser.Scene {
       gs3.homeGold -= 50;
       // Apply XP to the monster
       const idx3 = gs3.ownedMonsters.findIndex(om => om.id === m.id);
+      const oldLevel = m.level;
       if (idx3 >= 0) {
         addXp(gs3.ownedMonsters[idx3], 20);
         m.xp    = gs3.ownedMonsters[idx3].xp;
@@ -398,7 +561,29 @@ export class BarracksScene extends Phaser.Scene {
       updateQuestObjective(gs3, 'feed_monster');
       tickSubQuestProgress(gs3, 'feed_monster');
       saveGameState(gs3);
-      feedT.setText('✅ 먹이 줬다!').setColor('#88ff88');
+
+      const didLevelUp = m.level > oldLevel;
+      if (didLevelUp) {
+        // Scale pop the overlay
+        this.tweens.add({
+          targets: ov, scaleX: 1.06, scaleY: 1.06, duration: 120, ease: 'Back.easeOut',
+          onComplete: () => this.tweens.add({ targets: ov, scaleX: 1, scaleY: 1, duration: 160, ease: 'Back.easeIn' }),
+        });
+        // Golden "레벨 업!" banner
+        const lvUpT = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60, `⬆ LEVEL UP!  Lv.${m.level}`, {
+          fontFamily: 'Georgia, serif', fontSize: '20px', fontStyle: 'bold', color: '#ffee44',
+          stroke: '#000000', strokeThickness: 4,
+        }).setOrigin(0.5).setDepth(310).setScale(0.4).setAlpha(0);
+        ov.add(lvUpT);
+        this.tweens.add({
+          targets: lvUpT, scaleX: 1, scaleY: 1, alpha: 1,
+          duration: 220, ease: 'Back.easeOut',
+        });
+        feedT.setText('⬆ 레벨 업!').setColor('#ffee44');
+      } else {
+        feedT.setText('✅ 먹이 줬다!').setColor('#88ff88');
+      }
+
       this.time.delayedCall(1200, () => {
         ov.destroy(); this.detailOverlay = undefined;
         this.showMonsterDetail(m);

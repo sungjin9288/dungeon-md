@@ -262,10 +262,22 @@ export class ForgeScene extends Phaser.Scene {
     if (!bp) return;
     if (!this.canCraft(bp, gs.materials ?? {})) return;
 
-    // Deduct materials
+    // Deduct materials + per-material float feedback
     const matsBefore = { ...gs.materials };
-    Object.entries(bp.materials).forEach(([id, qty]) => {
+    const matEntries = Object.entries(bp.materials);
+    matEntries.forEach(([id, qty], i) => {
       gs.materials[id] = Math.max(0, (gs.materials[id] ?? 0) - qty);
+      const emoji  = MATERIAL_DEFS[id]?.emoji ?? '?';
+      const baseX  = CANVAS_WIDTH / 2 - ((matEntries.length - 1) * 32) / 2 + i * 32;
+      const floatT = this.add.text(baseX, 120, `-${qty}${emoji}`, {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: '#ffaa66', stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(260).setAlpha(0);
+      this.tweens.add({
+        targets: floatT, y: 96, alpha: { from: 1, to: 0 },
+        duration: 900, ease: 'Cubic.easeOut',
+        onComplete: () => floatT.destroy(),
+      });
     });
 
     // Create equipment entry

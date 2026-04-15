@@ -1,14 +1,23 @@
 import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
-import { CANVAS_WIDTH, TOP_BAR_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout';
 import { getGameSafeArea } from '../constants/safeArea';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
   private gemsText!: Phaser.GameObjects.Text;
   private hpFill!: Phaser.GameObjects.Graphics;
+  private hpText?: Phaser.GameObjects.Text;
   private waveLabel!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private speedBtn!: Phaser.GameObjects.Text;
+  private pauseBtn!: Phaser.GameObjects.Text;
+  private remainingText?: Phaser.GameObjects.Text;
+  private currentSpeed: 1 | 2 = 1;
+  private isPaused = false;
+  private vignetteG?: Phaser.GameObjects.Graphics;
+  private hpPulseOverlay?: Phaser.GameObjects.Graphics;
+  private hpPulseTween?: Phaser.Tweens.Tween;
 
   private gold    = 500;
   private gems    = 200;
@@ -88,19 +97,53 @@ export class UIScene extends Phaser.Scene {
       letterSpacing: 4,
     });
 
-    // ── Wave pill (left, row 2) ────────────────────────────
+    // ── Wave pill + speed toggle (left, row 2) ────────────────────────────
     const wavePill = this.add.graphics();
     wavePill.fillStyle(COLORS.STONE_DARK, 1);
-    wavePill.fillRoundedRect(12, st + 58, 88, 26, 4);
+    wavePill.fillRoundedRect(12, st + 58, 120, 26, 4);
     wavePill.lineStyle(1, COLORS.BLOOD_RED, 0.5);
-    wavePill.strokeRoundedRect(12, st + 58, 88, 26, 4);
+    wavePill.strokeRoundedRect(12, st + 58, 120, 26, 4);
+    // Divider between wave label and speed button
+    wavePill.lineStyle(1, COLORS.BLOOD_RED, 0.3);
+    wavePill.lineBetween(96, st + 62, 96, st + 80);
 
-    this.waveLabel = this.add.text(56, st + 71, `침략 ${this.wave}/${this.maxWave}`, {
+    this.waveLabel = this.add.text(54, st + 71, `침략 ${this.wave}/${this.maxWave}`, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
       color: CSS.PARCHMENT,
     }).setOrigin(0.5);
+
+    // ── Speed toggle button ───────────────────────────────
+    this.speedBtn = this.add.text(110, st + 71, '1x', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      fontStyle: 'bold',
+      color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.speedBtn.on('pointerdown', () => {
+      this.currentSpeed = this.currentSpeed === 1 ? 2 : 1;
+      this.speedBtn.setText(this.currentSpeed + 'x');
+      this.speedBtn.setColor(this.currentSpeed === 2 ? '#ffcc44' : CSS.PARCHMENT_MUTED);
+      this.registry.set('battleSpeed', this.currentSpeed);
+    });
+
+    // ── Pause button (right of wave pill) ────────────────
+    const pausePill = this.add.graphics();
+    pausePill.fillStyle(COLORS.STONE_DARK, 1);
+    pausePill.fillRoundedRect(136, st + 58, 28, 26, 4);
+    pausePill.lineStyle(1, 0x444444, 0.5);
+    pausePill.strokeRoundedRect(136, st + 58, 28, 26, 4);
+
+    this.pauseBtn = this.add.text(150, st + 71, '⏸', {
+      fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.pauseBtn.on('pointerdown', () => {
+      this.isPaused = !this.isPaused;
+      this.pauseBtn.setText(this.isPaused ? '▶' : '⏸');
+      this.pauseBtn.setColor(this.isPaused ? '#ffcc44' : CSS.PARCHMENT_MUTED);
+      this.registry.set('battlePaused', this.isPaused);
+    });
 
     // ── Endless high score ────────────────────────────────
     const endlessHS = this.registry.get('endlessHighScore') as number | undefined;
@@ -148,7 +191,7 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
 
     // ── HP bar ────────────────────────────────────────────
-    const hbx = 108;
+    const hbx = 138;
     const hby = st + 60;
     const hbw = CANVAS_WIDTH - hbx - 8;
     const hbh = 14;
@@ -165,7 +208,18 @@ export class UIScene extends Phaser.Scene {
 
     this.hpFill = this.add.graphics();
     this.safeHby = hby;
+
+    // Numerical HP readout inside the bar
+    this.hpText = this.add.text(hbx + hbw / 2, hby + hbh / 2, '', {
+      fontFamily: 'monospace', fontSize: '9px', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(103).setAlpha(0.85);
+
     this.redrawHp();
+
+    // ── Remaining invaders counter (right of HP bar label) ──
+    this.remainingText = this.add.text(CANVAS_WIDTH - 8, hby - 1, '', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(1, 1);
 
     // ── Status text (wave info) ───────────────────────────
     this.statusText = this.add.text(CANVAS_WIDTH / 2, TOP_BAR_HEIGHT + st + 10, '', {
@@ -176,30 +230,108 @@ export class UIScene extends Phaser.Scene {
   private safeHby = 60;
 
   private redrawHp(): void {
-    const hbx = 108, hby = this.safeHby, hbw = CANVAS_WIDTH - hbx - 8, hbh = 14;
+    const hbx = 138, hby = this.safeHby, hbw = CANVAS_WIDTH - hbx - 8, hbh = 14;
     const pct  = this.hp / this.maxHp;
     const col  = pct > 0.6 ? COLORS.MOSS_LIGHT : pct > 0.3 ? COLORS.TORCH_GOLD : COLORS.BLOOD_GLOW;
     this.hpFill.clear();
     this.hpFill.fillStyle(col, 1);
     this.hpFill.fillRoundedRect(hbx + 1, hby + 1, Math.max(1, (hbw - 2) * pct), hbh - 2, 2);
+    this.hpText?.setText(`${this.hp} / ${this.maxHp}`);
+
+    // HP danger pulse — start when ≤20%, stop when recovered
+    if (pct <= 0.2 && !this.hpPulseTween) {
+      if (!this.hpPulseOverlay) {
+        this.hpPulseOverlay = this.add.graphics().setDepth(102);
+        this.hpPulseOverlay.fillStyle(COLORS.BLOOD_GLOW, 1);
+        this.hpPulseOverlay.fillRoundedRect(hbx, hby, hbw, hbh, 2);
+      }
+      this.hpPulseTween = this.tweens.add({
+        targets: this.hpPulseOverlay, alpha: { from: 0, to: 0.55 },
+        duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    } else if (pct > 0.2 && this.hpPulseTween) {
+      this.hpPulseTween.stop();
+      this.hpPulseTween = undefined;
+      this.hpPulseOverlay?.destroy();
+      this.hpPulseOverlay = undefined;
+    }
+  }
+
+  private flashDamageVignette(): void {
+    if (!this.vignetteG) {
+      const r = 55;
+      this.vignetteG = this.add.graphics().setDepth(500);
+      this.vignetteG.fillStyle(0xcc0000, 1);
+      this.vignetteG.fillRect(0, 0, r, CANVAS_HEIGHT);
+      this.vignetteG.fillRect(CANVAS_WIDTH - r, 0, r, CANVAS_HEIGHT);
+      this.vignetteG.fillRect(0, 0, CANVAS_WIDTH, r);
+      this.vignetteG.fillRect(0, CANVAS_HEIGHT - r, CANVAS_WIDTH, r);
+      this.vignetteG.setAlpha(0);
+    }
+    this.tweens.killTweensOf(this.vignetteG);
+    this.vignetteG.setAlpha(0.42);
+    this.tweens.add({
+      targets: this.vignetteG, alpha: 0,
+      duration: 450, ease: 'Power2.easeOut',
+    });
   }
 
   private bindRegistry(): void {
     this.registry.events.on('changedata-gold', (_: unknown, v: number) => {
       this.gold = v; this.goldText?.setText(v.toLocaleString('ko-KR'));
     });
+    this.registry.events.on('changedata-goldWarn', () => {
+      if (!this.goldText) return;
+      this.goldText.setColor('#ff4444');
+      this.tweens.add({
+        targets: this.goldText, alpha: { from: 0.4, to: 1 },
+        duration: 80, yoyo: true, repeat: 2,
+        onComplete: () => this.goldText?.setColor(CSS.TORCH_AMBER),
+      });
+    });
     this.registry.events.on('changedata-gems', (_: unknown, v: number) => {
       this.gems = v; this.gemsText?.setText(v.toLocaleString('ko-KR'));
     });
     this.registry.events.on('changedata-hp', (_: unknown, v: number) => {
+      if (v < this.hp) {
+        this.flashDamageVignette();
+        // HP text scale/color pulse
+        if (this.hpText) {
+          this.tweens.killTweensOf(this.hpText);
+          this.hpText.setScale(1.35).setColor('#ff4444');
+          this.tweens.add({
+            targets: this.hpText, scaleX: 1, scaleY: 1,
+            duration: 260, ease: 'Back.easeIn',
+            onComplete: () => this.hpText?.setColor('#ffffff'),
+          });
+        }
+        // HP fill alpha pulse
+        if (this.hpFill) {
+          this.tweens.killTweensOf(this.hpFill);
+          this.hpFill.setAlpha(0.4);
+          this.tweens.add({
+            targets: this.hpFill, alpha: 1, duration: 220, ease: 'Quad.easeOut',
+          });
+        }
+      }
       this.hp = v; this.redrawHp();
     });
     this.registry.events.on('changedata-wave', (_: unknown, v: number) => {
       this.wave = v;
-      this.waveLabel?.setText(`침략 ${v}/${this.maxWave}`);
+      const isFinal = v > 0 && v === this.maxWave;
+      this.waveLabel?.setText(isFinal ? `⚠ 최종 침략!` : `침략 ${v}/${this.maxWave}`);
+      this.waveLabel?.setColor(isFinal ? '#ff4444' : CSS.PARCHMENT);
     });
     this.registry.events.on('changedata-status', (_: unknown, v: string) => {
       this.statusText?.setText(v);
+    });
+    this.registry.events.on('changedata-remainingInvaders', (_: unknown, v: number) => {
+      if (v > 0) {
+        this.remainingText?.setText(`👾 ${v}명`);
+        this.remainingText?.setColor(v <= 3 ? '#ffcc44' : CSS.PARCHMENT_MUTED);
+      } else {
+        this.remainingText?.setText('');
+      }
     });
   }
 }

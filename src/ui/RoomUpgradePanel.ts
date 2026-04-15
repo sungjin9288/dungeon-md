@@ -6,7 +6,7 @@ import {
   type RoomData,
 } from '../data/rooms';
 
-const PANEL_H = 300;
+const PANEL_H = 340;  // extra 40px for synergy hints at bottom
 
 export class RoomUpgradePanel extends Phaser.GameObjects.Container {
   private isOpen       = false;
@@ -52,7 +52,7 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     this.setDepth(210);
   }
 
-  open(row: number, col: number, data: RoomData): void {
+  open(row: number, col: number, data: RoomData, synergies?: Array<{ name: string; desc: string }>): void {
     if (this.isOpen) return;
     this.isOpen = true;
 
@@ -160,6 +160,33 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
         this.close();
       });
       this.add(zone); this.contentGroup.push(zone);
+
+      // ── Active synergy hints ──────────────────────────────────────────────
+      if (synergies && synergies.length > 0) {
+        const synY = btnY + btnH + 10;
+        const divS = this.scene.add.graphics();
+        divS.lineStyle(1, COLORS.STONE_MID, 0.3);
+        divS.lineBetween(tableX, synY, CANVAS_WIDTH - 20, synY);
+        this.add(divS); this.contentGroup.push(divS);
+
+        const hdr = this.scene.add.text(CANVAS_WIDTH / 2, synY + 7, '✨ 활성 시너지', {
+          fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+        }).setOrigin(0.5);
+        this.add(hdr); this.contentGroup.push(hdr);
+
+        const maxShow = Math.min(synergies.length, 3);
+        for (let si = 0; si < maxShow; si++) {
+          const syn = synergies[si];
+          const sy  = synY + 20 + si * 18;
+          const nT  = this.scene.add.text(tableX, sy, `• ${syn.name}`, {
+            fontFamily: 'sans-serif', fontSize: '10px', color: '#ffcc88',
+          });
+          const dT  = this.scene.add.text(CANVAS_WIDTH - 20, sy, syn.desc, {
+            fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+          }).setOrigin(1, 0);
+          [nT, dT].forEach(t => { this.add(t); this.contentGroup.push(t); });
+        }
+      }
     }
 
     // Slide up
@@ -168,6 +195,22 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       y: CANVAS_HEIGHT - PANEL_H,
       duration: 250,
       ease: 'Power2.easeOut',
+    });
+  }
+
+  /** Flash red + shake when player taps upgrade with insufficient gold. */
+  shakeInsufficient(): void {
+    this.scene.tweens.add({
+      targets: this, x: { from: 0, to: 8 },
+      duration: 45, yoyo: true, repeat: 4, ease: 'Linear',
+      onComplete: () => { this.x = 0; },
+    });
+    const flash = this.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 300 + 24, '골드 부족!', {
+      fontFamily: "Georgia, serif", fontSize: '13px', color: '#ff4444',
+    }).setOrigin(0.5).setDepth(220);
+    this.scene.tweens.add({
+      targets: flash, alpha: 0, y: flash.y - 22, duration: 800,
+      onComplete: () => flash.destroy(),
     });
   }
 

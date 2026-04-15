@@ -7,7 +7,9 @@ import Phaser from 'phaser';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { checkAchievements, ACHIEVEMENT_DEFS, type AchievementContext } from '../data/achievements';
 import { updateQuestObjective, tickSubQuestProgress, completeAndAdvance } from '../data/quests';
+import { addXp } from '../data/barracks';
 import { CANVAS_WIDTH } from '../constants/layout';
+import { showXpToast } from './VisualEffects';
 import { logger } from '../utils/logger';
 
 // ─── QuestTrackerContext ───────────────────────────────────────────────────
@@ -146,6 +148,25 @@ export function showAchievementToast(
       });
     },
   });
+}
+
+// ─── grantMonsterXp ───────────────────────────────────────────────────────────
+// Awards `amount` XP to every owned monster, saves state, then shows a
+// level-up toast for each monster that levelled up (staggered 400ms apart).
+
+export function grantMonsterXp(ctx: QuestTrackerContext, amount: number): void {
+  const gs = loadGameState();
+  if (!gs.ownedMonsters || gs.ownedMonsters.length === 0) return;
+  const levelled: string[] = [];
+  for (const m of gs.ownedMonsters) {
+    const result = addXp(m, amount);
+    if (result.levelled) levelled.push(`${m.id} → Lv.${result.newLevel}`);
+  }
+  saveGameState(gs);
+  levelled.forEach((msg, i) => {
+    ctx.scene.time.delayedCall(i * 400, () => showXpToast(ctx.scene, msg));
+  });
+  logger.debug(`[XP] +${amount} XP granted to ${gs.ownedMonsters.length} monsters`);
 }
 
 // ─── trackConsecutiveDays ──────────────────────────────────────────────────

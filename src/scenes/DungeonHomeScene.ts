@@ -53,7 +53,8 @@ const GRID_ROWS_HOME = 3;
 
 const SLOT_PAD_X = Math.floor((CANVAS_WIDTH - GRID_COLS_HOME * SLOT_W) / (GRID_COLS_HOME + 1));
 const SLOT_PAD_Y = 16;
-const GRID_START_Y = TOP_H + 32;
+const QUEST_BANNER_H = 22;
+const GRID_START_Y = TOP_H + QUEST_BANNER_H + 10;
 
 function xpForLevel(lv: number): number { return lv * 100; }
 
@@ -78,6 +79,10 @@ export class DungeonHomeScene extends Phaser.Scene {
   private invasionConfig?: InvasionConfig;
   private alertBanner?: Phaser.GameObjects.Container;
   private reminderIcon?: Phaser.GameObjects.Text;
+  private invasionShownAt = 0;
+
+  // Currency value text references (gold, crystal, gem) for live animation
+  private currencyTexts: Phaser.GameObjects.Text[] = [];
 
   // Theme
   private theme!: DungeonTheme;
@@ -91,7 +96,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.theme = getActiveTheme(this.gs.equippedTheme);
     this.buildBackground();
     this.buildTopBar();
+    this.buildQuestBanner();
     this.buildDungeonGrid();
+    this.buildStatsBar();
     this.buildBottomNav();
     buildDailyContentPanel(this, () => showChallengePanel(this));
     this.addAmbientEffects();
@@ -175,13 +182,18 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.registry.remove('battleResult');
     this.registry.remove('returnTo');
 
+    const prevGold    = this.gs.homeGold;
+    const prevCrystal = this.gs.soulCrystals;
+    const prevGems    = this.gs.gems;
     this.gs.homeGold      += result.goldEarned;
     this.gs.dmXP          += result.dmXP;
     // DM level-up loop
+    const prevDmLevel = this.gs.dmLevel;
     while (this.gs.dmXP >= xpForLevel(this.gs.dmLevel)) {
       this.gs.dmXP    -= xpForLevel(this.gs.dmLevel);
       this.gs.dmLevel += 1;
     }
+    const didLevelUp = this.gs.dmLevel > prevDmLevel;
     this.gs.totalGoldEarned = (this.gs.totalGoldEarned ?? 0) + result.goldEarned;
     updateQuestObjective(this.gs, 'collect_gold', result.goldEarned);
     tickSubQuestProgress(this.gs, 'collect_gold', result.goldEarned);
@@ -196,11 +208,39 @@ export class DungeonHomeScene extends Phaser.Scene {
       });
     }
 
+    // Refresh + animate changed currency displays
+    const newVals = [this.gs.homeGold, this.gs.soulCrystals, this.gs.gems];
+    const oldVals = [prevGold, prevCrystal, prevGems];
+    newVals.forEach((nv, i) => {
+      const t = this.currencyTexts[i];
+      if (!t || !t.active) return;
+      t.setText(nv.toLocaleString('ko-KR'));
+      if (nv !== oldVals[i]) {
+        t.setColor('#ffee44');
+        this.tweens.add({
+          targets: t, scaleX: 1.4, scaleY: 1.4, duration: 130, ease: 'Back.easeOut',
+          onComplete: () => this.tweens.add({
+            targets: t, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.easeIn',
+            onComplete: () => t.setColor('#e8d090'),
+          }),
+        });
+      }
+    });
+
     if (result.won) {
       const update = updateQuestObjective(this.gs, 'defend_invasion');
       tickSubQuestProgress(this.gs, 'defend_invasion');
       saveGameState(this.gs);
-      if (update?.questDone) {
+      const afterReturn = () => {
+        if (didLevelUp) {
+          setTimeout(() => this.showDmLevelUpOverlay(this.gs.dmLevel), 200);
+        } else if (update?.questDone) {
+          const done = completeAndAdvance(this.gs);
+          saveGameState(this.gs);
+          if (done) this.handleQuestComplete(done);
+        }
+      };
+      if (update?.questDone && !didLevelUp) {
         const done = completeAndAdvance(this.gs);
         saveGameState(this.gs);
         setTimeout(() => {
@@ -209,7 +249,7 @@ export class DungeonHomeScene extends Phaser.Scene {
           });
         }, 400);
       } else {
-        setTimeout(() => this.showBattleReturnOverlay(result, () => {}), 400);
+        setTimeout(() => this.showBattleReturnOverlay(result, afterReturn), 400);
       }
     } else {
       saveGameState(this.gs); // persist gold/XP/materials even on defeat
@@ -259,6 +299,69 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     c.setAlpha(0).setScale(0.88);
     this.tweens.add({ targets: c, alpha: 1, scaleX: 1, scaleY: 1, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  private showDmLevelUpOverlay(newLevel: number): void {
+    const newSlots = getUnlockedSlots(newLevel);
+    const prevSlots = getUnlockedSlots(newLevel - 1);
+    const slotUnlocked = newSlots > prevSlots;
+
+    const c = this.add.container(0, 0).setDepth(75);
+    const dim = this.add.graphics();
+    dim.fillStyle(0x000000, 0.78);
+    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    c.add(dim);
+
+    const PW = 280, PH = 210;
+    const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
+    const pg = this.add.graphics();
+    pg.fillStyle(0x1a1000, 1);
+    pg.fillRoundedRect(PX, PY, PW, PH, 10);
+    pg.lineStyle(2.5, 0xffcc44, 1);
+    pg.strokeRoundedRect(PX, PY, PW, PH, 10);
+    // Gold inner glow
+    pg.lineStyle(1, 0xffdd88, 0.3);
+    pg.strokeRoundedRect(PX + 4, PY + 4, PW - 8, PH - 8, 8);
+    c.add(pg);
+
+    c.add(this.add.text(CANVAS_WIDTH / 2, PY + 26, '✨ LEVEL UP! ✨', {
+      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#ffcc44',
+      letterSpacing: 3,
+    }).setOrigin(0.5));
+
+    c.add(this.add.text(CANVAS_WIDTH / 2, PY + 60, `던전 마스터 Lv.${newLevel}`, {
+      fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: '#ffee88',
+    }).setOrigin(0.5));
+
+    if (slotUnlocked) {
+      c.add(this.add.text(CANVAS_WIDTH / 2, PY + 100, `🏰 방 슬롯 해금!  ${prevSlots} → ${newSlots}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#88ffcc',
+        backgroundColor: '#002a1a', padding: { x: 8, y: 4 },
+      }).setOrigin(0.5));
+    } else {
+      c.add(this.add.text(CANVAS_WIDTH / 2, PY + 100, '전투력이 강화되었습니다', {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#c8d880',
+      }).setOrigin(0.5));
+    }
+
+    const btn = this.add.text(CANVAS_WIDTH / 2, PY + PH - 36, '확인', {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffcc44',
+      backgroundColor: '#2a1a00', padding: { x: 32, y: 9 },
+    }).setOrigin(0.5).setInteractive();
+    btn.on('pointerdown', () => {
+      this.tweens.add({ targets: c, alpha: 0, duration: 200, onComplete: () => c.destroy(true) });
+    });
+    c.add(btn);
+
+    c.setAlpha(0).setScale(0.82);
+    this.tweens.add({ targets: c, alpha: 1, scaleX: 1, scaleY: 1, duration: 280, ease: 'Back.easeOut' });
+
+    // Auto-dismiss after 4s
+    this.time.delayedCall(4000, () => {
+      if (c.active) {
+        this.tweens.add({ targets: c, alpha: 0, duration: 200, onComplete: () => c.destroy(true) });
+      }
+    });
   }
 
   private showBattleDefeatOverlay(): void {
@@ -330,6 +433,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (this.alertBanner) return;
     const cfg = this.invasionConfig;
     if (!cfg) return;
+    if (!this.invasionShownAt) this.invasionShownAt = Date.now();
 
     const c = this.add.container(0, -110).setDepth(60);
 
@@ -385,11 +489,31 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   private showReminderIcon(): void {
     if (this.reminderIcon) return;
-    this.reminderIcon = this.add.text(CANVAS_WIDTH / 2, 72, '🔴  침략 대기 중 — 탭하여 준비', {
+
+    const COUNTDOWN_MS = 15 * 60 * 1000;
+    const getLabel = () => {
+      const elapsed = Date.now() - (this.invasionShownAt || Date.now());
+      const remaining = Math.max(0, COUNTDOWN_MS - elapsed);
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      return `🔴  침략  ${mins}:${String(secs).padStart(2, '0')} 후 — 탭하여 준비`;
+    };
+
+    this.reminderIcon = this.add.text(CANVAS_WIDTH / 2, 72, getLabel(), {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ff5544',
       backgroundColor: '#2a0000', padding: { x: 10, y: 5 },
     }).setOrigin(0.5).setDepth(30).setInteractive();
+
+    const timerEvent = this.time.addEvent({
+      delay: 1000,
+      repeat: 14 * 60 + 59,
+      callback: () => {
+        if (this.reminderIcon?.active) this.reminderIcon.setText(getLabel());
+      },
+    });
+
     this.reminderIcon.on('pointerdown', () => {
+      timerEvent.remove();
       this.reminderIcon?.destroy();
       this.reminderIcon = undefined;
       this.showInvasionBanner();
@@ -514,14 +638,48 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.lineStyle(2, t.panelBorder, 1);
     g.lineBetween(0, TOP_H - 1, CANVAS_WIDTH, TOP_H - 1);
 
-    // DM avatar
+    // DM avatar — stone base + double ring + pulsing glow + emoji
     g.fillStyle(t.stoneDark, 1);
     g.fillCircle(36, 32, 22);
     g.lineStyle(2, t.panelBorder, 0.8);
     g.strokeCircle(36, 32, 22);
-    this.add.text(36, 32, '🏰', {
+    g.lineStyle(1, t.panelBorder, 0.3);
+    g.strokeCircle(36, 32, 26);
+
+    // Phase B1: pulsing glow aura behind the avatar
+    const glowRing = this.add.graphics().setDepth(4);
+    glowRing.fillStyle(t.panelBorder, 0.22);
+    glowRing.fillCircle(36, 32, 30);
+    this.tweens.add({
+      targets: glowRing,
+      scaleX: { from: 0.85, to: 1.15 },
+      scaleY: { from: 0.85, to: 1.15 },
+      alpha:  { from: 0.22, to: 0.05 },
+      duration: 1800,
+      yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    // Origin needs to be the circle center for scale
+    glowRing.setPosition(36, 32);
+    glowRing.clear();
+    glowRing.fillStyle(t.panelBorder, 0.22);
+    glowRing.fillCircle(0, 0, 30);
+
+    const dmEmoji = this.add.text(36, 32, '🏰', {
       fontFamily: 'sans-serif', fontSize: '22px',
     }).setOrigin(0.5).setDepth(6);
+    // Subtle breathing on the emoji
+    this.tweens.add({
+      targets: dmEmoji,
+      scaleX: 1.06, scaleY: 1.06,
+      duration: 1600,
+      yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Flanking torches at top corners of the header (small, flickery)
+    this.buildHeaderTorch(14, TOP_H - 14, t);
+    this.buildHeaderTorch(CANVAS_WIDTH - 14, TOP_H - 14, t);
 
     // DM level + XP bar
     this.add.text(66, 12, `던전 마스터  Lv.${this.gs.dmLevel}`, {
@@ -548,6 +706,30 @@ export class DungeonHomeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '20px',
     }).setOrigin(0.5).setDepth(6).setInteractive();
     questBtn.on('pointerdown', () => openQuestLog(this, this.questLogState, this.gs));
+
+    // Quest notification badge — shows when active quest is completable
+    const activeQuest = getQuest(this.gs.activeMainQuestId);
+    if (activeQuest) {
+      const qprog = this.gs.questProgress?.[activeQuest.id];
+      const allDone = activeQuest.objectives.every(obj =>
+        (qprog?.objectives?.[obj.id] ?? 0) >= obj.target,
+      );
+      if (allDone) {
+        const badge = this.add.graphics().setDepth(7);
+        badge.fillStyle(0xff3322, 1);
+        badge.fillCircle(241, TOP_H / 2 - 8, 6);
+        badge.lineStyle(1, 0xffffff, 0.8);
+        badge.strokeCircle(241, TOP_H / 2 - 8, 6);
+        this.add.text(241, TOP_H / 2 - 8, '!', {
+          fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: '#ffffff',
+        }).setOrigin(0.5).setDepth(8);
+        // Pulse the badge
+        this.tweens.add({
+          targets: badge, scaleX: { from: 1, to: 1.3 }, scaleY: { from: 1, to: 1.3 },
+          duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
+      }
+    }
 
     // ⚙️ Audio settings button
     const settingsBtn = this.add.text(258, TOP_H / 2, '⚙️', {
@@ -579,13 +761,93 @@ export class DungeonHomeScene extends Phaser.Scene {
       { icon: '💠', val: this.gs.soulCrystals,  x: CANVAS_WIDTH - 68  },
       { icon: '💎', val: this.gs.gems,           x: CANVAS_WIDTH - 20  },
     ];
+    this.currencyTexts = [];
     for (const { icon, val, x } of currencies) {
       this.add.text(x, 10, icon, { fontFamily: 'sans-serif', fontSize: '14px' })
         .setOrigin(0.5, 0).setDepth(6);
-      this.add.text(x, 28, val.toLocaleString('ko-KR'), {
+      const valT = this.add.text(x, 28, val.toLocaleString('ko-KR'), {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#e8d090',
       }).setOrigin(0.5, 0).setDepth(6);
+      this.currencyTexts.push(valT);
     }
+  }
+
+  // ─── Phase B1: decorative header torch ──────────────────────────────────
+  /**
+   * Small flickering torch drawn with Graphics.
+   * Base + handle + pulsating flame. Adds atmosphere to the header corners.
+   */
+  private buildHeaderTorch(x: number, y: number, theme: typeof this.theme): void {
+    // Handle (brown rect)
+    const handle = this.add.graphics().setDepth(6);
+    handle.fillStyle(0x5a3018, 1);
+    handle.fillRect(x - 2, y - 2, 4, 12);
+    handle.fillStyle(0x2a1008, 1);
+    handle.fillRect(x - 2, y + 6, 4, 4);
+
+    // Flame — animated via tween on a Graphics shape
+    const flame = this.add.graphics().setDepth(7);
+    const drawFlame = (scale: number): void => {
+      flame.clear();
+      // Outer orange
+      flame.fillStyle(0xff7722, 0.85);
+      flame.fillCircle(x, y - 6, 5 * scale);
+      // Inner yellow
+      flame.fillStyle(0xffd066, 0.9);
+      flame.fillCircle(x, y - 7, 3 * scale);
+      // Glow halo (uses theme accent)
+      flame.fillStyle(theme.panelBorder, 0.18);
+      flame.fillCircle(x, y - 6, 10 * scale);
+    };
+    drawFlame(1);
+
+    // Flicker tween: random scale between 0.85 and 1.15 on 220ms cycle
+    const flickerState = { s: 1 };
+    this.tweens.add({
+      targets: flickerState,
+      s: 1.18,
+      duration: 220,
+      yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => drawFlame(flickerState.s),
+    });
+  }
+
+  // ─── Quest progress banner ────────────────────────────────────────────────────
+
+  private buildQuestBanner(): void {
+    const quest = getQuest(this.gs.activeMainQuestId);
+    if (!quest) return;
+    const t = this.theme;
+
+    const bY = TOP_H;
+    const bH = 22;
+    const bg = this.add.graphics().setDepth(4);
+    bg.fillStyle(t.stoneDark, 1);
+    bg.fillRect(0, bY, CANVAS_WIDTH, bH);
+    bg.lineStyle(1, t.panelBorder, 0.35);
+    bg.lineBetween(0, bY + bH - 1, CANVAS_WIDTH, bY + bH - 1);
+
+    // Objective summary
+    const obj = quest.objectives[0];
+    const prog = this.gs.questProgress?.[quest.id];
+    const cur  = prog?.objectives?.[obj?.id] ?? 0;
+    const tgt  = obj?.target ?? 1;
+    const pct  = Math.min(cur / tgt, 1);
+
+    // Mini progress bar
+    const barX = 8, barW = 80;
+    bg.fillStyle(0x1a1a1a, 1);
+    bg.fillRoundedRect(barX, bY + 7, barW, 7, 2);
+    if (pct > 0) {
+      bg.fillStyle(t.panelBorder, 1);
+      bg.fillRoundedRect(barX, bY + 7, Math.round(barW * pct), 7, 2);
+    }
+
+    this.add.text(barX + barW + 6, bY + 11,
+      `📜 ${quest.title}  ${cur}/${tgt}`,
+      { fontFamily: 'sans-serif', fontSize: '10px', color: t.textSecondary },
+    ).setOrigin(0, 0.5).setDepth(5);
   }
 
   // ─── Zone A — Battle Arena (6 slots) ─────────────────────────────────────────
@@ -852,6 +1114,40 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   // buildDailyContentPanel + showChallengePanel → extracted to ../ui/DailyContentPanel.ts
+
+  // ─── Stats bar ────────────────────────────────────────────────────────────────
+
+  private buildStatsBar(): void {
+    const t   = this.theme;
+    const bH  = 26;
+    const bY  = BOT_Y - bH;
+    const g   = this.add.graphics().setDepth(3);
+    g.fillStyle(t.stoneDark, 1);
+    g.fillRect(0, bY, CANVAS_WIDTH, bH);
+    g.lineStyle(1, t.panelBorder, 0.2);
+    g.lineBetween(0, bY, CANVAS_WIDTH, bY);
+
+    const clearedStages = this.gs.stageProgress.filter(p => p.bestStars > 0).length;
+    const totalStages   = 62;
+    const stats = [
+      { icon: '💀', val: (this.gs.totalKills ?? 0).toLocaleString('ko-KR'),    label: '처치' },
+      { icon: '💰', val: (this.gs.totalGoldEarned ?? 0).toLocaleString('ko-KR'), label: '황금' },
+      { icon: '🗺', val: `${clearedStages}/${totalStages}`,                       label: '스테이지' },
+    ];
+
+    const colW = CANVAS_WIDTH / stats.length;
+    stats.forEach(({ icon, val, label }, i) => {
+      const cx = i * colW + colW / 2;
+      this.add.text(cx, bY + 13,
+        `${icon} ${val} ${label}`,
+        { fontFamily: 'sans-serif', fontSize: '10px', color: t.textSecondary },
+      ).setOrigin(0.5).setDepth(4);
+      if (i > 0) {
+        g.lineStyle(1, t.stoneDark, 0.4);
+        g.lineBetween(i * colW, bY + 4, i * colW, bY + bH - 4);
+      }
+    });
+  }
 
   // ─── Bottom nav ───────────────────────────────────────────────────────────────
 
