@@ -56,6 +56,7 @@ const TRIBE_BORDER: Record<string, number> = {
 export class SynergyManager {
   private scene: Phaser.Scene;
   private display?: Phaser.GameObjects.Container;
+  private tooltipZones: Phaser.GameObjects.Zone[] = [];
 
   public activeSynergies:     ActiveSynergy[]     = [];
   public activeElementCombos: ActiveElementCombo[] = [];
@@ -116,11 +117,15 @@ export class SynergyManager {
   destroy(): void {
     this.display?.destroy();
     this.display = undefined;
+    this.tooltipZones.forEach(z => z.destroy());
+    this.tooltipZones = [];
   }
 
   // ── Private ────────────────────────────────────────────────────────────────
 
   private updateDisplay(): void {
+    this.tooltipZones.forEach(z => z.destroy());
+    this.tooltipZones = [];
     this.display?.destroy();
     if (this.activeSynergies.length === 0 && this.activeElementCombos.length === 0) return;
 
@@ -155,6 +160,31 @@ export class SynergyManager {
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
+
+      const synZone = this.scene.add.zone(pillX, yOff, pillW, PILL_H)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(90);
+      this.tooltipZones.push(synZone);
+      synZone.once('pointerdown', () => {
+        const desc = syn.tier.desc;
+        const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
+        const tipY = yOff - 10;
+        const tip = this.scene.add.text(tipX, tipY, desc, {
+          fontFamily: 'sans-serif', fontSize: '11px', color: '#ffeecc',
+          backgroundColor: '#2a1800',
+          padding: { x: 8, y: 5 },
+        }).setOrigin(0.5, 1).setDepth(200);
+        this.scene.tweens.add({
+          targets: tip,
+          alpha: { from: 1, to: 0 },
+          y: tipY - 16,
+          duration: 400,
+          delay: 2100,
+          onComplete: () => tip.destroy(),
+        });
+      });
+
       yOff += PILL_H + GAP;
     }
 
@@ -177,7 +207,33 @@ export class SynergyManager {
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
-      yOff += (PILL_H - 4) + GAP;
+
+      const ecPillH = PILL_H - 4;
+      const ecZone = this.scene.add.zone(pillX, yOff, pillW, ecPillH)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(90);
+      this.tooltipZones.push(ecZone);
+      ecZone.once('pointerdown', () => {
+        const desc = ec.combo.desc;
+        const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
+        const tipY = yOff - 10;
+        const tip = this.scene.add.text(tipX, tipY, desc, {
+          fontFamily: 'sans-serif', fontSize: '11px', color: '#88ccff',
+          backgroundColor: '#001428',
+          padding: { x: 8, y: 5 },
+        }).setOrigin(0.5, 1).setDepth(200);
+        this.scene.tweens.add({
+          targets: tip,
+          alpha: { from: 1, to: 0 },
+          y: tipY - 16,
+          duration: 400,
+          delay: 2100,
+          onComplete: () => tip.destroy(),
+        });
+      });
+
+      yOff += ecPillH + GAP;
     }
   }
 }

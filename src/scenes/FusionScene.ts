@@ -5,6 +5,7 @@ import { type OwnedMonster } from '../data/barracks';
 import {
   HYBRID_DEFS, COMBINATION_TABLE,
   RARITY_STARS, RARITY_COLORS,
+  getBaseId,
 } from '../data/fusion';
 import { logger } from '../utils/logger';
 import {
@@ -116,6 +117,39 @@ export class FusionScene extends Phaser.Scene {
     c.add(codexBtn);
   }
 
+  // ─── Tab availability counts ──────────────────────────────────────────────
+
+  private computeTabCounts(): Record<TabId, number> {
+    const gs = loadGameState();
+    const monsters = gs.ownedMonsters;
+
+    // 진화: count base-type groups with >= 3 monsters
+    const baseCounts: Record<string, number> = {};
+    for (const m of monsters) {
+      const base = getBaseId(m.id);
+      baseCounts[base] = (baseCounts[base] ?? 0) + 1;
+    }
+    const evoCount = Object.values(baseCounts).filter(n => n >= 3).length;
+
+    // 흡수: need at least 2 monsters (1 target + 1 sacrifice)
+    const absorbCount = monsters.length >= 2 ? monsters.length - 1 : 0;
+
+    // 조합: need at least 2 monsters
+    const combineCount = monsters.length >= 2 ? 1 : 0;
+
+    // 각성: monsters with affinity >= 100, not yet awakened, and stones available
+    const stones = gs.awakeningStones ?? 0;
+    const awakenCount = stones >= 1
+      ? monsters.filter(m => {
+          const affinity = gs.monsterAffinity?.[m.id] ?? 0;
+          const awakened = gs.monsterAwakened?.[m.id] ?? false;
+          return affinity >= 100 && !awakened;
+        }).length
+      : 0;
+
+    return { '진화': evoCount, '흡수': absorbCount, '조합': combineCount, '각성': awakenCount };
+  }
+
   // ─── Tab bar ─────────────────────────────────────────────────────────────
 
   private drawTabBar(): void {
@@ -130,6 +164,7 @@ export class FusionScene extends Phaser.Scene {
     g.lineStyle(1, 0x00cc66, 0.2);
     g.lineBetween(0, HEADER_H + TAB_H, CANVAS_WIDTH, HEADER_H + TAB_H);
 
+    const counts = this.computeTabCounts();
     const tabW = CANVAS_WIDTH / TABS.length;
     TABS.forEach((tab, i) => {
       const cx = i * tabW + tabW / 2;
@@ -149,6 +184,19 @@ export class FusionScene extends Phaser.Scene {
         ul.lineStyle(2, TAB_ACCENT[tab], 1);
         ul.lineBetween(i * tabW + 6, HEADER_H + TAB_H - 1, (i + 1) * tabW - 6, HEADER_H + TAB_H - 1);
         this.tabUnderlines.push(ul);
+      }
+
+      // Badge: show count when > 0
+      const count = counts[tab];
+      if (count > 0) {
+        const bx = (i + 1) * tabW - 8;
+        const by = HEADER_H + 8;
+        const bg = this.add.graphics().setDepth(12);
+        bg.fillStyle(0xff2222, 1);
+        bg.fillCircle(bx, by, 7);
+        this.add.text(bx, by, count > 9 ? '9+' : String(count), {
+          fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
+        }).setOrigin(0.5).setDepth(13);
       }
     });
   }

@@ -45,7 +45,9 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
 
   // Card — taller to fit stats
   const cw     = 300;
-  const statsH = 60;
+  // Reserve 70px for stat row, plus 56px for materials section if any materials earned
+  const hasMaterials = Object.values(ctx.materialsEarnedThisRun ?? {}).some(q => q > 0);
+  const statsH = hasMaterials ? 126 : 60;
   const ch     = isFail ? 220 : 200 + statsH;
   const cx     = CANVAS_WIDTH  / 2 - cw / 2;
   const cy     = CANVAS_HEIGHT / 2 - ch / 2;
@@ -164,22 +166,66 @@ function buildSuccessContent(
   // Materials earned this wave
   const matEntries = Object.entries(ctx.materialsEarnedThisRun).filter(([, q]) => q > 0);
   if (matEntries.length > 0) {
-    const chipStartX = cx + 16;
-    const chipY      = statY + 66;
-    matEntries.slice(0, 4).forEach(([id, qty], mi) => {
-      const def   = MATERIAL_DEFS[id];
-      const chipT = scene.add.text(chipStartX + mi * 72, chipY,
-        `${def?.emoji ?? '?'} ×${qty}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#ddbb66',
-        backgroundColor: '#1a1200', padding: { x: 5, y: 2 },
-      }).setAlpha(0);
+    // Section divider + header
+    const matDivY = statY + 62;
+    const matDiv = scene.add.graphics().setAlpha(0);
+    matDiv.lineStyle(1, COLORS.TORCH_GOLD, 0.15);
+    matDiv.lineBetween(cx + 16, matDivY, cx + cw - 16, matDivY);
+    ov.add(matDiv);
+    scene.tweens.add({ targets: matDiv, alpha: 1, duration: 200, delay: 680 });
+
+    const matHeaderT = scene.add.text(cx + 16, matDivY + 6, '획득 재료', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#886644',
+    }).setAlpha(0);
+    ov.add(matHeaderT);
+    scene.tweens.add({ targets: matHeaderT, alpha: 1, duration: 200, delay: 690 });
+
+    // Material chips — show name + qty
+    const chipY = matDivY + 22;
+    const cols  = Math.min(matEntries.length, 3);
+    const chipW = (cw - 32) / cols;
+    matEntries.slice(0, 3).forEach(([id, qty], mi) => {
+      const def    = MATERIAL_DEFS[id];
+      const emoji  = def?.emoji ?? '?';
+      const name   = def?.name  ?? id;
+      const chipX  = cx + 16 + mi * chipW;
+
+      // Chip background
+      const chipBg = scene.add.graphics().setAlpha(0);
+      chipBg.fillStyle(0x1a1200, 0.9);
+      chipBg.fillRoundedRect(chipX, chipY, chipW - 4, 28, 4);
+      chipBg.lineStyle(1, COLORS.TORCH_GOLD, 0.2);
+      chipBg.strokeRoundedRect(chipX, chipY, chipW - 4, 28, 4);
+      ov.add(chipBg);
+      scene.tweens.add({ targets: chipBg, alpha: 1, duration: 180, delay: 710 + mi * 50 });
+
+      // Emoji + qty
+      const chipT = scene.add.text(chipX + (chipW - 4) / 2, chipY + 8, `${emoji} ×${qty}`, {
+        fontFamily: 'sans-serif', fontSize: '13px', color: '#ffcc66',
+      }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(chipT);
-      scene.tweens.add({ targets: chipT, alpha: 1, duration: 180, delay: 700 + mi * 60 });
+      scene.tweens.add({ targets: chipT, alpha: 1, duration: 180, delay: 720 + mi * 50 });
+
+      // Material name below
+      const nameT = scene.add.text(chipX + (chipW - 4) / 2, chipY + 18, name.length > 6 ? name.slice(0, 6) + '…' : name, {
+        fontFamily: 'sans-serif', fontSize: '8px', color: '#886644',
+      }).setOrigin(0.5, 0).setAlpha(0);
+      ov.add(nameT);
+      scene.tweens.add({ targets: nameT, alpha: 1, duration: 180, delay: 730 + mi * 50 });
     });
+
+    // If more than 3, show "+N more" hint
+    if (matEntries.length > 3) {
+      const moreT = scene.add.text(cx + cw - 16, chipY + 10, `+${matEntries.length - 3}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
+      }).setOrigin(1, 0).setAlpha(0);
+      ov.add(moreT);
+      scene.tweens.add({ targets: moreT, alpha: 1, duration: 180, delay: 780 });
+    }
   }
 
   const wave     = ctx.wave;
-  const btnDelay = matEntries.length > 0 ? 760 + matEntries.length * 60 : 700;
+  const btnDelay = matEntries.length > 0 ? 800 + Math.min(matEntries.length, 3) * 50 : 700;
 
   const btnT = scene.add.text(CANVAS_WIDTH / 2, cy + ch - 40,
     `다음 침략 준비 (${wave + 1}/${ctx.maxWave})`, {
