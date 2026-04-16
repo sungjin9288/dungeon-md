@@ -279,6 +279,19 @@ export class AncestralWisdomScene extends Phaser.Scene {
       container.add(dotG);
     }
 
+    // Cost badge — shown below the node for non-maxed branches
+    if (!isMaxed) {
+      const nextCost = branch.costPerTier[tier];
+      if (nextCost > 0) {
+        const costBadge = this.add.text(0, NODE_R + 12, `💠${nextCost}`, {
+          fontFamily: 'sans-serif',
+          fontSize: '10px',
+          color: '#88aacc',
+        }).setOrigin(0.5);
+        container.add(costBadge);
+      }
+    }
+
     // Re-add zone on top
     const zone = this.add.zone(0, 0, NODE_R * 2 + 10, NODE_R * 2 + 10).setInteractive({ useHandCursor: true });
     container.add(zone);

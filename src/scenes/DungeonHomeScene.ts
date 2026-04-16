@@ -477,6 +477,22 @@ export class DungeonHomeScene extends Phaser.Scene {
         g.lineBetween(i * tabW, BOT_Y + 6, i * tabW, CANVAS_HEIGHT - 6);
       }
 
+      // Badge indicators — red circle at top-right of icon
+      const showBadge = (
+        (key === 'barracks' && this.gs.ownedMonsters.some(m => (m.skillPoints ?? 0) > 0)) ||
+        (key === 'forge'    && (this.gs.awakeningStones ?? 0) > 0)
+      );
+      if (showBadge) {
+        const bx = tx + 12;
+        const by = BOT_Y + 8;
+        const badgeG = this.add.graphics().setDepth(61);
+        badgeG.fillStyle(0xff2222, 1);
+        badgeG.fillCircle(bx, by, 5);
+        this.add.text(bx, by, '!', {
+          fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
+        }).setOrigin(0.5).setDepth(62);
+      }
+
       if (!isActive) {
         iconTxt.setInteractive();
         iconTxt.on('pointerdown', () => {
