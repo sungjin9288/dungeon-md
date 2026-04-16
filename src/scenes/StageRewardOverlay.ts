@@ -11,6 +11,8 @@ const CHAPTER_NAMES: Record<number, string> = {
   4: '달빛 숲', 5: '심해 궁전', 6: '마왕의 탑', 7: '천계',
 };
 
+const PROGRESS_KEY = 'dungeonStageProgress';
+
 export class StageRewardOverlay extends Phaser.Scene {
   constructor() { super({ key: 'StageRewardOverlay' }); }
 
@@ -31,7 +33,18 @@ export class StageRewardOverlay extends Phaser.Scene {
     const estimatedGems = cfg.bossWave ? 5 : 2;
     const isBoss = cfg.bossWave ?? false;
 
-    const cw = 280, ch2 = 220;
+    // Load stage progress
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    const progress: Array<{ unlocked?: boolean; bestStars?: number; bestHpPercent?: number }> =
+      raw ? JSON.parse(raw) : [];
+    const prog = progress[idx] ?? {};
+    const bestStars  = prog.bestStars    ?? 0;
+    const bestHpPct  = prog.bestHpPercent ?? null;
+    const isCleared  = bestStars > 0;
+
+    const cw = 280;
+    const baseCh2 = 220;
+    const ch2 = isCleared ? baseCh2 + 44 : baseCh2;
     const cx = CANVAS_WIDTH / 2 - cw / 2;
     const cy = CANVAS_HEIGHT / 2 - ch2 / 2;
 
@@ -84,12 +97,42 @@ export class StageRewardOverlay extends Phaser.Scene {
       this.add.text(cx + cw - 24, ry, value, { fontFamily: 'sans-serif', fontSize: '11px', color }).setOrigin(1, 0);
     });
 
+    // Previous clear record section
+    if (isCleared) {
+      const recY = cy + ch2 - 38 - 44 - 8;
+
+      // Thin divider
+      const rdiv = this.add.graphics();
+      rdiv.lineStyle(1, COLORS.TORCH_GOLD, 0.15);
+      rdiv.lineBetween(cx + 16, recY, cx + cw - 16, recY);
+
+      // Record label
+      this.add.text(cx + 16, recY + 6, '이전 기록', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
+      });
+
+      // Stars
+      const starStr = '★'.repeat(bestStars) + '☆'.repeat(3 - bestStars);
+      this.add.text(cx + cw - 16, recY + 6, starStr, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#ffcc44',
+      }).setOrigin(1, 0);
+
+      // HP bar if available
+      if (bestHpPct !== null) {
+        const hpColor = bestHpPct >= 80 ? '#44ff88' : bestHpPct >= 40 ? '#ffcc44' : '#ff6644';
+        this.add.text(cx + cw / 2, recY + 22, `❤ ${bestHpPct}% HP 잔존`, {
+          fontFamily: 'sans-serif', fontSize: '10px', color: hpColor,
+        }).setOrigin(0.5);
+      }
+    }
+
     // Start button
     const btnY = cy + ch2 - 38;
+    const btnLabel = isCleared ? '🔄  재도전' : '⚔️  시작';
     const startBg = this.add.graphics();
     startBg.fillStyle(0x8b0000, 1);
     startBg.fillRoundedRect(cx + 20, btnY, cw - 40, 28, 6);
-    this.add.text(CANVAS_WIDTH / 2, btnY + 14, '⚔️  시작', {
+    this.add.text(CANVAS_WIDTH / 2, btnY + 14, btnLabel, {
       fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold', color: '#f0e6c8',
     }).setOrigin(0.5);
 

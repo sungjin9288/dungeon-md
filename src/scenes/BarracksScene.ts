@@ -369,6 +369,25 @@ export class BarracksScene extends Phaser.Scene {
       this.contentContainer.add(dt);
     }
 
+    // ATK quick-stat badge — bottom-right corner
+    const atkBadge = this.add.text(x + CARD_W - 4, y + CARD_H - 4, `⚔${atk}`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#cc8844',
+    }).setOrigin(1, 1);
+    this.contentContainer.add(atkBadge);
+
+    // SP quick-stat badge — top-right corner (red circle, only when unspent SP > 0)
+    const sp = m.skillPoints ?? 0;
+    if (sp > 0) {
+      const spBadgeBg = this.add.graphics();
+      spBadgeBg.fillStyle(0xdd2222, 1);
+      spBadgeBg.fillCircle(x + CARD_W - 5, y + 5, 7);
+      this.contentContainer.add(spBadgeBg);
+      const spBadgeT = this.add.text(x + CARD_W - 5, y + 5, String(sp > 9 ? '9+' : sp), {
+        fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
+      }).setOrigin(0.5);
+      this.contentContainer.add(spBadgeT);
+    }
+
     // Tap zone
     const zone = this.add.zone(x + CARD_W / 2, y + CARD_H / 2, CARD_W, CARD_H).setInteractive();
     zone.on('pointerdown', () => this.showMonsterDetail(m));

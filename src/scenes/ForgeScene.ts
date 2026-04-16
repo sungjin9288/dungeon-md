@@ -570,6 +570,15 @@ export class ForgeScene extends Phaser.Scene {
       });
     }
 
+    // Capture material return summary before mutating state
+    const materialsReturned: Record<string, number> = {};
+    if (bp) {
+      Object.entries(bp.materials).forEach(([id, qty]) => {
+        const ret = Math.floor(qty * 0.5);
+        if (ret > 0) materialsReturned[id] = ret;
+      });
+    }
+
     gs.craftedEquipment.splice(idx, 1);
     saveGameState(gs);
 
@@ -578,5 +587,33 @@ export class ForgeScene extends Phaser.Scene {
     this.selectedEqIdx = null;
     this.drawHeader();
     this.renderContent();
+
+    // Show success toast with returned materials
+    const parts = Object.entries(materialsReturned)
+      .map(([id, qty]) => {
+        const def = MATERIAL_DEFS[id];
+        return `${def?.emoji ?? '?'}×${qty}`;
+      });
+    const matStr = parts.length > 0 ? parts.join('  ') : '';
+    this.showToast(`✅ 분해 완료!  ${matStr}`, '#88ff88');
+  }
+
+  private showToast(msg: string, color = '#ffcc44'): void {
+    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 100, msg, {
+      fontFamily: 'sans-serif', fontSize: '13px', color,
+      backgroundColor: '#1a1200', padding: { x: 12, y: 6 },
+    }).setOrigin(0.5).setDepth(200).setAlpha(0);
+
+    this.tweens.add({
+      targets: t, alpha: 1, y: CANVAS_HEIGHT - 120,
+      duration: 200, ease: 'Power2.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: t, alpha: 0, y: CANVAS_HEIGHT - 140,
+          duration: 300, delay: 1500,
+          onComplete: () => t.destroy(),
+        });
+      },
+    });
   }
 }
