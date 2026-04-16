@@ -259,6 +259,32 @@ export class AchievementScene extends Phaser.Scene {
       bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 6);
     }
 
+    // Pulsing glow ring + "NEW" badge for claimable cards
+    if (canClaim) {
+      const glowRing = this.add.graphics();
+      glowRing.lineStyle(3, 0x44ff88, 0.6);
+      glowRing.strokeRoundedRect(x - 2, y - 2, CARD_W + 4, CARD_H + 4, 9);
+      this.tweens.add({
+        targets: glowRing,
+        alpha: { from: 0.25, to: 0.85 },
+        duration: 750,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+
+      const badgeBg = this.add.graphics();
+      badgeBg.fillStyle(0x22aa44, 1);
+      badgeBg.fillRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 3);
+
+      const badgeLabel = this.add.text(x + CARD_W - 17, y, 'NEW', {
+        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold',
+        color: '#ffffff',
+      }).setOrigin(0.5);
+
+      this.listContainer.add([glowRing, badgeBg, badgeLabel]);
+    }
+
     // Icon
     const iconTxt = this.add.text(x + 20, y + CARD_H / 2, icon, {
       fontFamily: 'sans-serif', fontSize: '22px',

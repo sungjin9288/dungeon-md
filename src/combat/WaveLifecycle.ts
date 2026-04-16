@@ -97,17 +97,18 @@ export function showEndlessResult(
   const crystalsBase = Math.floor(wave / 5);
   const milestone    = (wave >= 100 ? 10 : 0) + (wave >= 50 ? 5 : 0) + (wave >= 20 ? 2 : 0);
   const crystals     = Math.round((crystalsBase + milestone) * crystalEarnMult);
-  const isNewRecord  = wave > (gs.endlessHighScore ?? 0);
+  const previousBest = gs.endlessHighScore ?? 0;
+  const isNewRecord  = wave > previousBest;
 
   gs.soulCrystals     = (gs.soulCrystals    ?? 0) + crystals;
-  gs.endlessHighScore = Math.max(gs.endlessHighScore ?? 0, wave);
+  gs.endlessHighScore = Math.max(previousBest, wave);
   gs.totalKills       = gs.totalKills      ?? 0;
   gs.totalGoldEarned  = gs.totalGoldEarned ?? 0;
   saveGameState(gs);
 
   scene.registry.set('endlessResult', {
     wave, kills: killsThisRun, goldEarned: goldEarnedThisRun,
-    crystalsEarned: crystals, isNewRecord,
+    crystalsEarned: crystals, isNewRecord, previousBest,
   });
 
   scene.scene.stop('UIScene');

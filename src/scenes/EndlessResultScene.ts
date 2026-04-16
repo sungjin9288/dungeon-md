@@ -9,11 +9,12 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 // Crystal formula: base = floor(wave/5) + milestone bonuses, scaled by crystalEarnMult.
 
 interface EndlessResult {
-  wave:          number;
-  kills:         number;
-  goldEarned:    number;
+  wave:           number;
+  kills:          number;
+  goldEarned:     number;
   crystalsEarned: number;
-  isNewRecord:   boolean;
+  isNewRecord:    boolean;
+  previousBest:   number;
 }
 
 export class EndlessResultScene extends Phaser.Scene {
@@ -60,7 +61,7 @@ export class EndlessResultScene extends Phaser.Scene {
   // ─── Stone tablet ──────────────────────────────────────────────────────────
 
   private drawTablet(result: EndlessResult): void {
-    const tw = 300, th = 400;
+    const tw = 300, th = 440;
     const tx = (CANVAS_WIDTH - tw) / 2;
     const ty = 80;
 
@@ -113,6 +114,26 @@ export class EndlessResultScene extends Phaser.Scene {
     this.add.text(cx, rowY + 215, `(웨이브÷5 + 마일스톤 보너스 × 선조의 지혜)`, {
       fontFamily: 'sans-serif', fontSize: '9px', color: '#7a5090',
     }).setOrigin(0.5);
+
+    // Previous best comparison
+    if (result.previousBest > 0) {
+      const compY = rowY + 240;
+      const delta = result.wave - result.previousBest;
+      const deltaText = delta > 0
+        ? `▲ ${delta}웨이브 신기록!`
+        : delta === 0
+        ? `= 이전 기록 타이`
+        : `▼ ${Math.abs(delta)}웨이브 (이전: ${result.previousBest}파)`;
+      const deltaColor = delta > 0 ? '#44ff88' : delta === 0 ? '#ffcc44' : '#ff6666';
+
+      this.add.text(cx, compY, `이전 최고: ${result.previousBest}파`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#886644',
+      }).setOrigin(0.5);
+
+      this.add.text(cx, compY + 18, deltaText, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: deltaColor,
+      }).setOrigin(0.5);
+    }
   }
 
   private drawStat(cx: number, y: number, label: string, value: string, valueColor: string): void {
@@ -129,7 +150,7 @@ export class EndlessResultScene extends Phaser.Scene {
 
   private drawButtons(): void {
     const cx  = CANVAS_WIDTH / 2;
-    const by  = 520;
+    const by  = 548;
     const bw  = 130, bh = 44;
 
     // [다시 도전] — retry endless

@@ -76,12 +76,14 @@ export class CodexScene extends Phaser.Scene {
   private contentCtr!:   Phaser.GameObjects.Container;
   private expandedTribes: Set<TribeId> = new Set(['dokkaebi']); // first open by default
   private gs = loadGameState();
+  private showOwnedOnly  = false;
 
   constructor() { super({ key: 'CodexScene' }); }
 
   create(): void {
     this.gs = loadGameState();
     this.scrollY = 0;
+    this.showOwnedOnly = this.registry.get('codexOwnedFilter') ?? false;
 
     this.drawBackground();
     this.drawHeader();
@@ -137,12 +139,39 @@ export class CodexScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(10);
 
     // global progress bar
-    const bx = PAD, by = 72, bw = CANVAS_WIDTH - PAD * 2, bh = 8;
+    const bx = PAD, by = 72, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 8;
     const barBg = this.add.graphics().setDepth(10);
     barBg.fillStyle(COLORS.STONE_MID, 1);
     barBg.fillRoundedRect(bx, by, bw, bh, 4);
     barBg.fillStyle(COLORS.TORCH_GOLD, 1);
     barBg.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 4);
+
+    // Filter toggle chip (top-right, aligned with progress bar)
+    const chipX = CANVAS_WIDTH - PAD - 64;
+    const chipY = 66;
+    const chipW = 60;
+    const chipH = 22;
+    const toggleBg = this.add.graphics().setDepth(10);
+    const drawToggle = () => {
+      toggleBg.clear();
+      toggleBg.fillStyle(this.showOwnedOnly ? 0x226622 : 0x222222, 1);
+      toggleBg.fillRoundedRect(chipX, chipY, chipW, chipH, 4);
+      toggleBg.lineStyle(1, this.showOwnedOnly ? 0x44aa44 : 0x444444, 0.8);
+      toggleBg.strokeRoundedRect(chipX, chipY, chipW, chipH, 4);
+    };
+    drawToggle();
+
+    this.add.text(chipX + chipW / 2, chipY + chipH / 2,
+      this.showOwnedOnly ? '✓ 소유' : '전체',
+      { fontFamily: 'sans-serif', fontSize: '11px', color: '#cccccc' },
+    ).setOrigin(0.5).setDepth(10);
+
+    this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, chipH)
+      .setInteractive({ useHandCursor: true }).setDepth(11)
+      .on('pointerdown', () => {
+        this.registry.set('codexOwnedFilter', !this.showOwnedOnly);
+        this.scene.restart();
+      });
   }
 
   // ─── Content ───────────────────────────────────────────────────────────────
@@ -160,11 +189,17 @@ export class CodexScene extends Phaser.Scene {
     let cursorY = 8;
 
     TRIBE_META.forEach(tribe => {
-      const tribeMonsters = (Object.values(MONSTER_DEFS)).filter(
+      const allTribeMonsters = (Object.values(MONSTER_DEFS)).filter(
         m => m.tribe === tribe.id,
       );
-      const tribeOwned = tribeMonsters.filter(m => this.isOwned(m.id)).length;
-      const tribeTotal = tribeMonsters.length;
+      // In owned-only mode, hide tribes with no owned monsters
+      if (this.showOwnedOnly && !allTribeMonsters.some(m => this.isOwned(m.id))) return;
+
+      const tribeMonsters = this.showOwnedOnly
+        ? allTribeMonsters.filter(m => this.isOwned(m.id))
+        : allTribeMonsters;
+      const tribeOwned = allTribeMonsters.filter(m => this.isOwned(m.id)).length;
+      const tribeTotal = allTribeMonsters.length;
       const isExpanded = this.expandedTribes.has(tribe.id);
 
       // Section header row
