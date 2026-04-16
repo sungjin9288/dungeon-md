@@ -6,6 +6,7 @@ import type { InvaderType } from '../data/invaders';
 import { MONSTER_DEFS } from '../data/monsters';
 import { getMonsterAtk, ACTIVE_SKILLS } from '../data/barracks';
 import { MONSTER_EMOJI, MONSTER_NAME } from '../data/monsterDisplay';
+import { TRIBE_SYNERGIES } from '../data/synergy';
 
 // Map invasion invader type names → DungeonScene InvaderType
 const INVASION_TYPE_MAP: Record<string, InvaderType> = {
@@ -134,37 +135,50 @@ export class PreBattleScene extends Phaser.Scene {
 
           const ov = this.add.container(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
             .setName('monInfoOv').setDepth(200);
+          const equippedIds = (mon.equippedSkills ?? []).slice(0, 2);
+          const skillExtraH = equippedIds.length === 0 ? 0 : equippedIds.length === 1 ? 14 : 28;
+          const popH = 200 + skillExtraH;
           const ovBg = this.add.graphics();
           ovBg.fillStyle(0x0f0a04, 0.96);
-          ovBg.fillRoundedRect(-130, -100, 260, 200, 8);
+          ovBg.fillRoundedRect(-130, -popH / 2, 260, popH, 8);
           ovBg.lineStyle(1.5, 0xc8921a, 0.85);
-          ovBg.strokeRoundedRect(-130, -100, 260, 200, 8);
+          ovBg.strokeRoundedRect(-130, -popH / 2, 260, popH, 8);
           ov.add(ovBg);
 
-          ov.add(this.add.text(0, -80, `${MONSTER_EMOJI[mon.id] ?? '👾'}  ${MONSTER_NAME[mon.id] ?? mon.id}`, {
+          const topY = -popH / 2 + 20;
+          ov.add(this.add.text(0, topY, `${MONSTER_EMOJI[mon.id] ?? '👾'}  ${MONSTER_NAME[mon.id] ?? mon.id}`, {
             fontFamily: 'Georgia, serif', fontSize: '14px', color: '#f0e6c8', fontStyle: 'bold',
           }).setOrigin(0.5));
-          ov.add(this.add.text(0, -52, `Lv.${mon.level}  |  ATK ${atk}`, {
+          ov.add(this.add.text(0, topY + 28, `Lv.${mon.level}  |  ATK ${atk}`, {
             fontFamily: 'sans-serif', fontSize: '12px', color: '#c8921a',
           }).setOrigin(0.5));
           if (monDef) {
-            ov.add(this.add.text(0, -28, `종족: ${monDef.tribe ?? '없음'}  |  유형: ${monDef.type}`, {
+            ov.add(this.add.text(0, topY + 52, `종족: ${monDef.tribe ?? '없음'}  |  유형: ${monDef.type}`, {
               fontFamily: 'sans-serif', fontSize: '10px', color: '#886644',
             }).setOrigin(0.5));
           }
-          const skillId = mon.equippedSkills?.[0];
-          if (skillId) {
+          let skillY = topY + 74;
+          equippedIds.forEach(skillId => {
             const sk = ACTIVE_SKILLS.find(s => s.id === skillId);
-            ov.add(this.add.text(0, -6, `스킬: ${sk?.icon ?? ''} ${sk?.name ?? skillId}`, {
+            if (!sk) return;
+            ov.add(this.add.text(0, skillY, `${sk.icon ?? '⚡'} ${sk.name}  (쿨 ${sk.cooldown}s)`, {
               fontFamily: 'sans-serif', fontSize: '10px', color: '#88aaff',
             }).setOrigin(0.5));
-          }
+            skillY += 15;
+            if (sk.desc) {
+              ov.add(this.add.text(0, skillY, sk.desc, {
+                fontFamily: 'sans-serif', fontSize: '9px', color: '#556699',
+                wordWrap: { width: 230 },
+              }).setOrigin(0.5));
+              skillY += 14;
+            }
+          });
           const rarityLabels = ['일반', '고급', '희귀', '영웅', '전설'];
           const rarity = mon.rarity ?? 0;
-          ov.add(this.add.text(0, 16, `희귀도: ${rarityLabels[rarity] ?? '일반'}`, {
+          ov.add(this.add.text(0, skillY + 6, `희귀도: ${rarityLabels[rarity] ?? '일반'}`, {
             fontFamily: 'sans-serif', fontSize: '10px', color: rarity >= 3 ? '#ffcc44' : '#886644',
           }).setOrigin(0.5));
-          ov.add(this.add.text(0, 76, '탭하여 닫기', {
+          ov.add(this.add.text(0, popH / 2 - 14, '탭하여 닫기', {
             fontFamily: 'sans-serif', fontSize: '9px', color: '#443322',
           }).setOrigin(0.5));
 
@@ -204,6 +218,50 @@ export class PreBattleScene extends Phaser.Scene {
         const chip = this.add.text(chipX, synY, label, {
           fontFamily: 'sans-serif', fontSize: '10px', color: '#ffdd88',
           backgroundColor: '#2a1800', padding: { x: 8, y: 4 },
+        });
+        chip.setInteractive({ useHandCursor: true });
+        chip.on('pointerdown', () => {
+          this.children.getByName('synTooltip')?.destroy();
+
+          const syn = TRIBE_SYNERGIES.find(s => s.tribe === tribe);
+          if (!syn) return;
+
+          const activeTier = [...syn.tiers].reverse().find(t => t.count <= count);
+          const nextTiers  = syn.tiers.filter(t => t.count > count);
+
+          const lines: string[] = [];
+          if (activeTier) {
+            lines.push(`✨ ${activeTier.name} (×${activeTier.count})`);
+            lines.push(activeTier.desc);
+          }
+          if (nextTiers.length > 0) lines.push('──────────────');
+          nextTiers.forEach(t => lines.push(`ⓘ ×${t.count}: ${t.name} — ${t.desc}`));
+
+          const popH = 24 + lines.length * 18 + 10;
+          const popW = 240;
+          const ov = this.add.container(CANVAS_WIDTH / 2, synY - 10)
+            .setName('synTooltip').setDepth(200);
+
+          const bg = this.add.graphics();
+          bg.fillStyle(0x1a1000, 0.97);
+          bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
+          bg.lineStyle(1, 0xcc9900, 0.7);
+          bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
+          ov.add(bg);
+
+          lines.forEach((line, i) => {
+            const color = i === 0 ? '#ffdd88' : line.startsWith('ⓘ') ? '#886644' : '#ddccaa';
+            const fs = i === 0 ? '12px' : '10px';
+            ov.add(this.add.text(0, -popH + 14 + i * 18, line, {
+              fontFamily: 'sans-serif', fontSize: fs, color,
+            }).setOrigin(0.5, 0));
+          });
+
+          this.tweens.add({ targets: ov, alpha: { from: 0, to: 1 }, duration: 150 });
+
+          const closeZone = this.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+            .setOrigin(0).setInteractive().setDepth(199);
+          closeZone.once('pointerdown', () => { ov.destroy(); closeZone.destroy(); });
         });
         chipX += chip.width + 8;
       });

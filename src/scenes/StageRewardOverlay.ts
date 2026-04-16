@@ -2,6 +2,14 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7 } from '../data/stages';
+
+const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7];
+
+const CHAPTER_NAMES: Record<number, string> = {
+  1: '버려진 던전', 2: '독사의 늪', 3: '화염 산맥',
+  4: '달빛 숲', 5: '심해 궁전', 6: '마왕의 탑', 7: '천계',
+};
 
 export class StageRewardOverlay extends Phaser.Scene {
   constructor() { super({ key: 'StageRewardOverlay' }); }
@@ -15,15 +23,21 @@ export class StageRewardOverlay extends Phaser.Scene {
     const idx = this.registry.get('_rewardPreviewIdx') as number ?? 0;
     const cfg = STAGE_CONFIGS[idx];
     const ch = cfg.chapter ?? 1;
-    const waveCount = 10;
-    let estimatedGold = 0;
-    for (let w = 1; w <= waveCount; w++) estimatedGold += 50 + w * 10 + (ch - 1) * 40;
+    const stageDef = ALL_STAGES.find(s => s.id === cfg.stageNumber);
+    const waveCount = stageDef?.waves.length ?? 10;
+    const estimatedGold = stageDef
+      ? stageDef.waves.reduce((sum, w) => sum + (w.clearReward ?? 80), 0) + 200
+      : (() => { let g = 0; for (let w = 1; w <= waveCount; w++) g += 50 + w * 10 + (ch - 1) * 40; return g; })();
     const estimatedGems = cfg.bossWave ? 5 : 2;
     const isBoss = cfg.bossWave ?? false;
 
-    const cw = 280, ch2 = 200;
+    const cw = 280, ch2 = 220;
     const cx = CANVAS_WIDTH / 2 - cw / 2;
     const cy = CANVAS_HEIGHT / 2 - ch2 / 2;
+
+    // Difficulty badge
+    const diffLabel = isBoss ? '🔴 보스전' : ch <= 2 ? '🟢 입문' : ch <= 4 ? '🟡 보통' : '🔴 어려움';
+    const diffColor = isBoss ? '#ff4444' : ch <= 2 ? '#44cc66' : ch <= 4 ? '#ffcc44' : '#ff6644';
 
     // Dim
     const dim = this.add.graphics();
@@ -37,15 +51,25 @@ export class StageRewardOverlay extends Phaser.Scene {
     card.lineStyle(2, COLORS.TORCH_GOLD, 0.85);
     card.strokeRoundedRect(cx, cy, cw, ch2, 10);
 
+    // Difficulty badge (top-right)
+    this.add.text(cx + cw - 14, cy + 12, diffLabel, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: diffColor,
+    }).setOrigin(1, 0);
+
     // Title
     this.add.text(CANVAS_WIDTH / 2, cy + 20, `⚔️ 스테이지 ${cfg.stageNumber}`, {
       fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
     }).setOrigin(0.5);
 
+    // Chapter subtitle
+    this.add.text(CANVAS_WIDTH / 2, cy + 34, CHAPTER_NAMES[ch] ?? `챕터 ${ch}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
+    }).setOrigin(0.5);
+
     // Divider
     const dg = this.add.graphics();
     dg.lineStyle(1, COLORS.TORCH_GOLD, 0.2);
-    dg.lineBetween(cx + 16, cy + 38, cx + cw - 16, cy + 38);
+    dg.lineBetween(cx + 16, cy + 54, cx + cw - 16, cy + 54);
 
     // Reward rows
     const rows = [
@@ -55,7 +79,7 @@ export class StageRewardOverlay extends Phaser.Scene {
       { label: '보스',      value: isBoss ? '있음 👹' : '없음',                       color: isBoss ? '#ff6655' : '#666666' },
     ];
     rows.forEach(({ label, value, color }, i) => {
-      const ry = cy + 54 + i * 24;
+      const ry = cy + 70 + i * 24;
       this.add.text(cx + 24, ry, label, { fontFamily: 'sans-serif', fontSize: '11px', color: '#886644' });
       this.add.text(cx + cw - 24, ry, value, { fontFamily: 'sans-serif', fontSize: '11px', color }).setOrigin(1, 0);
     });
