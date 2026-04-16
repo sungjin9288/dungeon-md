@@ -1,18 +1,15 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { loadGameState, saveGameState, type SummonRarity, type SummonRecord } from '../data/wisdom';
-import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
+import { loadGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
-import { defaultOwnedMonster } from '../data/barracks';
 import { audioManager } from '../audio/AudioManager';
-import { getActiveBanner, getBannerTimeLeft, applyBannerBoost, type SeasonBanner } from '../data/banners';
-import { logger } from '../utils/logger';
+import { getActiveBanner, type SeasonBanner } from '../data/banners';
 import {
   type SummonType, type SummonTypeDef, SUMMON_TYPE_DEFS,
-  RARITY_RATES, RARITIES, RARITY_STARS, RARITY_CSS,
-  RARITY_KO, SC_COMP, RARITY_POOLS, rollRarity,
+  RARITY_RATES, RARITIES, RARITY_STARS, RARITY_CSS, RARITY_KO,
 } from '../data/summonPools';
-import { playSinglePullAnimation, playMultiPullAnimation } from '../ui/SummonAnimations';
+import { buildBannerCard } from '../ui/SummonBannerCard';
+import { executePull as runPull } from '../ui/SummonPullLogic';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -216,108 +213,7 @@ export class SummonScene extends Phaser.Scene {
   }
 
   private buildBannerCard(banner: SeasonBanner, topY: number): void {
-    const c     = this.summonTabContainer;
-    const BANER_H = 92;
-    const BW    = CANVAS_WIDTH - 22;  // full-width minus margins
-    const BX    = 11;                  // left edge
-
-    // ── Panel background ──────────────────────────────────────────
-    const bg = this.add.graphics();
-    bg.fillStyle(banner.bgColor, 1);
-    bg.fillRoundedRect(BX, topY, BW, BANER_H, 10);
-    c.add(bg);
-
-    // ── Pulsing border (animated via time event) ──────────────────
-    const borderG = this.add.graphics();
-    c.add(borderG);
-    let pulseT = 0;
-    this.time.addEvent({
-      delay: 33, repeat: -1,
-      callback: () => {
-        if (!borderG.active) return;
-        pulseT += 0.05;
-        const alpha = 0.55 + 0.45 * Math.sin(pulseT * 2.5);
-        const glow  = 0.18 + 0.18 * Math.sin(pulseT * 1.8);
-        borderG.clear();
-        // Outer glow
-        borderG.lineStyle(4, banner.borderColor, glow);
-        borderG.strokeRoundedRect(BX - 1, topY - 1, BW + 2, BANER_H + 2, 11);
-        // Main border
-        borderG.lineStyle(1.5, banner.borderColor, alpha);
-        borderG.strokeRoundedRect(BX, topY, BW, BANER_H, 10);
-        // Inner highlight
-        borderG.lineStyle(1, banner.glowColor, glow * 0.5);
-        borderG.lineBetween(BX + 12, topY + 1, BX + BW - 12, topY + 1);
-      },
-    });
-
-    // ── Season badge (top-left) ───────────────────────────────────
-    const badgeBg = this.add.graphics();
-    badgeBg.fillStyle(banner.borderColor, 0.25);
-    badgeBg.fillRoundedRect(BX + 8, topY + 7, 70, 16, 8);
-    c.add(badgeBg);
-    c.add(this.add.text(BX + 43, topY + 15, banner.subname, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: banner.accentCss,
-    }).setOrigin(0.5));
-
-    // ── Banner name ───────────────────────────────────────────────
-    c.add(this.add.text(BX + 16, topY + 30, banner.name, {
-      fontFamily: 'Georgia, serif', fontSize: '14px',
-      color: banner.accentCss, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-
-    // ── Description ───────────────────────────────────────────────
-    c.add(this.add.text(BX + 16, topY + 50, banner.description, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#bbbbbb',
-    }).setOrigin(0, 0.5));
-
-    // ── Countdown (bottom-left) ───────────────────────────────────
-    const timeText = this.add.text(BX + 16, topY + BANER_H - 12, getBannerTimeLeft(banner), {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#888888',
-    }).setOrigin(0, 0.5);
-    c.add(timeText);
-    // Live update countdown
-    this.time.addEvent({
-      delay: 60_000, repeat: -1,
-      callback: () => {
-        if (timeText.active) timeText.setText(getBannerTimeLeft(banner));
-      },
-    });
-
-    // ── Featured monster emojis (right side) ─────────────────────
-    const shown = banner.featuredMonsters.slice(0, 4);
-    const emojiStartX = CANVAS_WIDTH - 16 - shown.length * 34;
-    shown.forEach((mId, idx) => {
-      const def  = MONSTER_DEFS[mId as keyof typeof MONSTER_DEFS];
-      const em   = def?.emoji ?? '👾';
-      const ex   = emojiStartX + idx * 34;
-      const ey   = topY + BANER_H / 2;
-
-      // Glow circle under emoji
-      const eg = this.add.graphics();
-      eg.fillStyle(banner.glowColor, 0.12);
-      eg.fillCircle(ex + 14, ey, 16);
-      c.add(eg);
-
-      c.add(this.add.text(ex + 14, ey, em, {
-        fontFamily: 'sans-serif', fontSize: '22px',
-      }).setOrigin(0.5));
-    });
-    if (banner.featuredMonsters.length > 4) {
-      c.add(this.add.text(CANVAS_WIDTH - 14, topY + BANER_H / 2, `+${banner.featuredMonsters.length - 4}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#888888',
-      }).setOrigin(1, 0.5));
-    }
-
-    // ── Rate boost badge ──────────────────────────────────────────
-    const boostPct = Math.round(banner.rateMultiplier * 100);
-    const boostBg  = this.add.graphics();
-    boostBg.fillStyle(banner.borderColor, 0.3);
-    boostBg.fillRoundedRect(BX + BW - 72, topY + 6, 62, 18, 9);
-    c.add(boostBg);
-    c.add(this.add.text(BX + BW - 41, topY + 15, `피처드 ${boostPct}%↑`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: banner.accentCss, fontStyle: 'bold',
-    }).setOrigin(0.5));
+    buildBannerCard(this, this.summonTabContainer, banner, topY);
   }
 
   private buildSummonCard(def: SummonTypeDef, cx: number, cardTop: number): void {
@@ -662,146 +558,11 @@ export class SummonScene extends Phaser.Scene {
   // ─── Execute pull ────────────────────────────────────────────────────────────
 
   private executePull(type: SummonType, count: number): void {
-    const gs = loadGameState();
-
-    // ── Currency check ────────────────────────────────────────────
-    const def = SUMMON_TYPE_DEFS.find(d => d.id === type)!;
-    if (type === 'friendship') {
-      const today = new Date().toISOString().slice(0, 10);
-      if (gs.lastFriendSummon === today) {
-        this.showToast('오늘의 무료 소환을 이미 사용했습니다');
-        return;
-      }
-    } else {
-      const cost = count === 1 ? def.cost1 : (def.cost10 ?? def.cost1 * count);
-      if (def.currency === 'gems') {
-        if (gs.gems < cost) { this.showToast(`💎 부족 (${gs.gems}/${cost})`); return; }
-        gs.gems -= cost;
-      } else if (def.currency === 'soul') {
-        if (gs.soulCrystals < cost) { this.showToast(`💠 부족 (${gs.soulCrystals}/${cost})`); return; }
-        gs.soulCrystals -= cost;
-      }
-    }
-
-    // ── Unlock-gated pool helper ──────────────────────────────────
-    // Filter each rarity pool to monsters whose unlockStage <= player's highest cleared stage.
-    const highestCleared = (gs.stageProgress ?? []).reduce(
-      (max: number, p: { bestStars?: number }, idx: number) => (p?.bestStars ?? 0) > 0 ? idx + 1 : max, 0,
+    runPull(
+      { scene: this, activeBanner: this.activeBanner, showToast: (msg) => this.showToast(msg) },
+      type,
+      count,
     );
-    const getPool = (rarity: SummonRarity): MonsterId[] => {
-      const base = RARITY_POOLS[rarity];
-      if (highestCleared <= 0) return base;
-      return base.filter(id => {
-        const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS];
-        return !def || (def.unlockStage ?? 1) <= highestCleared;
-      });
-    };
-
-    // ── Roll results ──────────────────────────────────────────────
-    const results: Array<{
-      monsterId: MonsterId;
-      rarity:    SummonRarity;
-      rarityIdx: number;
-      isNew:     boolean;
-      scComp:    number;
-      ceilingHit: boolean;
-    }> = [];
-
-    if (!gs.summonPity) {
-      gs.summonPity = { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } };
-    }
-
-    for (let i = 0; i < count; i++) {
-      let rarityIdx: number;
-      let ceilingHit = false;
-
-      // Pity check
-      if ((type === 'normal' || type === 'special') && gs.summonPity[type]) {
-        gs.summonPity[type].count++;
-        if (gs.summonPity[type].count >= gs.summonPity[type].guaranteed) {
-          rarityIdx    = type === 'normal' ? 3 : 4; // epic / legendary
-          ceilingHit   = true;
-          gs.summonPity[type].count = 0;
-        } else {
-          rarityIdx = rollRarity(RARITY_RATES[type]);
-        }
-      } else {
-        rarityIdx = rollRarity(RARITY_RATES[type]);
-      }
-
-      const rarity = RARITIES[rarityIdx];
-      const pool   = getPool(rarity);
-
-      // Soul summon: prefer unowned
-      let monsterId: MonsterId;
-      if (type === 'soul') {
-        const ownedIds = new Set(gs.ownedMonsters.map(m => m.id));
-        const unowned = pool.filter(id => !ownedIds.has(id));
-        const pick    = unowned.length > 0 ? unowned : pool;
-        monsterId = pick[Math.floor(Math.random() * pick.length)] as MonsterId;
-      } else if (
-        this.activeBanner &&
-        (this.activeBanner.validSummonTypes as string[]).includes(type) &&
-        !ceilingHit
-      ) {
-        // ── Banner boost: bias towards featured monsters ───────────
-        monsterId = applyBannerBoost(this.activeBanner, rarity, pool) as MonsterId;
-      } else {
-        monsterId = pool[Math.floor(Math.random() * pool.length)] as MonsterId;
-      }
-
-      const alreadyOwned = gs.ownedMonsters.some(m => m.id === monsterId);
-      let scComp = 0;
-
-      if (!alreadyOwned) {
-        gs.ownedMonsters.push(defaultOwnedMonster(monsterId));
-      } else {
-        scComp = SC_COMP[rarityIdx];
-        gs.soulCrystals += scComp;
-      }
-
-      // Friendship summon: mark used today
-      if (type === 'friendship') {
-        gs.lastFriendSummon = new Date().toISOString().slice(0, 10);
-      }
-
-      const record: SummonRecord = {
-        type, monsterId, rarity, isNew: !alreadyOwned,
-        timestamp: Date.now(), scCompensation: scComp || undefined,
-        ceilingHit: ceilingHit || undefined,
-      };
-      if (!gs.summonHistory) gs.summonHistory = [];
-      gs.summonHistory.push(record);
-
-      results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit });
-
-      const logRarity = RARITY_KO[rarityIdx];
-      logger.debug(
-        `[SUMMON] type:${type} rarity:${rarity}(${logRarity}) monster:${monsterId}` +
-        ` new:${!alreadyOwned}` +
-        (ceilingHit ? ' 천장달성!' : '') +
-        ((type === 'normal' || type === 'special')
-          ? ` pity:${gs.summonPity[type as 'normal' | 'special'].count}/${gs.summonPity[type as 'normal' | 'special'].guaranteed}`
-          : '') +
-        (!alreadyOwned ? '' : ` compensation:+${scComp}💠 totalSC:${gs.soulCrystals}`)
-      );
-    }
-
-    updateQuestObjective(gs, 'summon', count);
-    tickSubQuestProgress(gs, 'summon', count);
-    saveGameState(gs);
-
-    // ── SFX ───────────────────────────────────────────────────────
-    const hasLegendary = results.some(r => r.rarity === 'legendary');
-    audioManager.playSfx(hasLegendary ? 'summon_legendary' : 'summon_pull');
-
-    // ── Trigger animation ─────────────────────────────────────────
-    const onAnimComplete = () => this.scene.restart();
-    if (count === 1) {
-      playSinglePullAnimation(this, results[0], onAnimComplete);
-    } else {
-      playMultiPullAnimation(this, results, onAnimComplete);
-    }
   }
 
   // ─── Animation delegates ────────────────────────────────────────────────────
