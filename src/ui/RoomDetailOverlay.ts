@@ -251,19 +251,21 @@ export function openRoomDetail(
     upgBtn.on('pointerout',  () => upgBtn.setColor('#c8921a'));
     upgBtn.on('pointerdown', () => {
       if (gs.homeGold < upgCost) return;
-      gs.homeGold  -= upgCost;
-      slot.roomLevel    += 1;
-      slot.maxHp         = nextHp;
-      slot.hp            = nextHp;
-      const cap2 = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-      while (slot.monsterIds.length < cap2.monsters) slot.monsterIds.push(undefined);
-      while (slot.trapIds.length    < cap2.traps)    slot.trapIds.push(undefined);
-      updateQuestObjective(gs, 'upgrade_room');
-      tickSubQuestProgress(gs, 'upgrade_room');
-      saveGameState(gs);
-      logger.debug(`[ROOM UPGRADE] slot ${slotIdx}: Lv.${slot.roomLevel - 1}→Lv.${slot.roomLevel}  HP: ${slot.maxHp - 100}→${slot.maxHp}, cooldown bonus: ${cdBonus}`);
-      closeRoomDetail(state, cb);
-      setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, cellX, cellY), 250);
+      showRoomUpgradeConfirm(scene, upgCost, slot.roomLevel, newCap, () => {
+        gs.homeGold  -= upgCost;
+        slot.roomLevel    += 1;
+        slot.maxHp         = nextHp;
+        slot.hp            = nextHp;
+        const cap2 = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+        while (slot.monsterIds.length < cap2.monsters) slot.monsterIds.push(undefined);
+        while (slot.trapIds.length    < cap2.traps)    slot.trapIds.push(undefined);
+        updateQuestObjective(gs, 'upgrade_room');
+        tickSubQuestProgress(gs, 'upgrade_room');
+        saveGameState(gs);
+        logger.debug(`[ROOM UPGRADE] slot ${slotIdx}: Lv.${slot.roomLevel - 1}→Lv.${slot.roomLevel}  HP: ${slot.maxHp - 100}→${slot.maxHp}, cooldown bonus: ${cdBonus}`);
+        closeRoomDetail(state, cb);
+        setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, cellX, cellY), 250);
+      });
     });
     c.add(upgBtn);
   } else if (slot.roomLevel < 5 && slot.roomLevel >= maxRoomLv) {
@@ -586,6 +588,63 @@ function buildTrapSection(
   return secH;
 }
 
+
+// ─── Room Upgrade Confirm Dialog ─────────────────────────────────────────────
+
+function showRoomUpgradeConfirm(
+  scene: Phaser.Scene,
+  cost: number,
+  currentLevel: number,
+  newCap: { monsters: number; traps: number },
+  onConfirm: () => void,
+): void {
+  const OW = 280, OH = 170;
+  const OX = (CANVAS_WIDTH  - OW) / 2;
+  const OY = (CANVAS_HEIGHT - OH) / 2;
+
+  const ov = scene.add.container(0, 0).setDepth(200).setAlpha(0);
+
+  const dim = scene.add.graphics();
+  dim.fillStyle(0x000000, 0.6);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ov.add(dim);
+
+  const bg = scene.add.graphics();
+  bg.fillStyle(0x1e1206, 1);
+  bg.fillRoundedRect(OX, OY, OW, OH, 8);
+  bg.lineStyle(2, 0xc8921a, 0.9);
+  bg.strokeRoundedRect(OX, OY, OW, OH, 8);
+  ov.add(bg);
+
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 26, '⬆️ 방 업그레이드', {
+    fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold', color: '#c8921a',
+  }).setOrigin(0.5));
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 52, `Lv.${currentLevel} → Lv.${currentLevel + 1}`, {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f0e6c8',
+  }).setOrigin(0.5));
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 70, `비용: 💰 ${cost} 골드`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#ffcc44',
+  }).setOrigin(0.5));
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 90, `몬스터 ${newCap.monsters}슬롯 / 함정 ${newCap.traps}슬롯`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#a07040',
+  }).setOrigin(0.5));
+
+  const confirmBtn = scene.add.text(CANVAS_WIDTH / 2 - 50, OY + OH - 28, '업그레이드', {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c8921a',
+    backgroundColor: '#2a1400', padding: { x: 16, y: 7 },
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  confirmBtn.on('pointerdown', () => { ov.destroy(true); onConfirm(); });
+  ov.add(confirmBtn);
+
+  const cancelBtn = scene.add.text(CANVAS_WIDTH / 2 + 50, OY + OH - 28, '취소', {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#664422',
+    backgroundColor: '#111111', padding: { x: 16, y: 7 },
+  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  cancelBtn.on('pointerdown', () => ov.destroy(true));
+  ov.add(cancelBtn);
+
+  scene.tweens.add({ targets: ov, alpha: 1, duration: 160, ease: 'Quad.easeOut' });
+}
 
 // ─── Detail Button Helper ─────────────────────────────────────────────────────
 

@@ -89,32 +89,30 @@ export function openQuestLog(
   if (state.questLogOpen) return;
   state.questLogOpen = true;
   state.questLogContainer?.destroy();
-  state.questLogContainer = buildQuestLogContainer(scene, state, gs);
-  // Slide in with setInterval (reliable at 15fps preview, unlike Phaser tweens)
-  let x = CANVAS_WIDTH;
-  const step = Math.ceil(CANVAS_WIDTH / 7);
-  const ti = setInterval(() => {
-    x = Math.max(0, x - step);
-    state.questLogContainer?.setX(x);
-    if (x <= 0) clearInterval(ti);
-  }, 30);
+  const container = buildQuestLogContainer(scene, state, gs);
+  state.questLogContainer = container;
+  container.setX(CANVAS_WIDTH);
+  scene.tweens.add({
+    targets: container, x: 0,
+    duration: 240, ease: 'Quad.easeOut',
+  });
 }
 
-export function closeQuestLog(state: QuestLogState): void {
+export function closeQuestLog(state: QuestLogState, scene?: Phaser.Scene): void {
   if (!state.questLogOpen) return;
   state.questLogOpen = false;
   const container = state.questLogContainer;
   state.questLogContainer = undefined;
-  let x = container?.x ?? 0;
-  const step = Math.ceil(CANVAS_WIDTH / 7);
-  const ti = setInterval(() => {
-    x = Math.min(CANVAS_WIDTH, x + step);
-    container?.setX(x);
-    if (x >= CANVAS_WIDTH) {
-      clearInterval(ti);
-      container?.destroy();
-    }
-  }, 30);
+  if (!container) return;
+  if (scene) {
+    scene.tweens.add({
+      targets: container, x: CANVAS_WIDTH,
+      duration: 200, ease: 'Quad.easeIn',
+      onComplete: () => container.destroy(true),
+    });
+  } else {
+    container.destroy(true);
+  }
 }
 
 function buildQuestLogContainer(
@@ -148,7 +146,7 @@ function buildQuestLogContainer(
   const closeBtn = scene.add.text(CANVAS_WIDTH - 14, 12, '✕', {
     fontFamily: 'sans-serif', fontSize: '16px', color: '#664422',
   }).setOrigin(1, 0).setInteractive();
-  closeBtn.on('pointerdown', () => closeQuestLog(state));
+  closeBtn.on('pointerdown', () => closeQuestLog(state, scene));
   c.add(closeBtn);
 
   let y = 56;
@@ -158,7 +156,7 @@ function buildQuestLogContainer(
 
   // Tap dim bg behind to close
   bg.setInteractive();
-  bg.on('pointerdown', () => closeQuestLog(state));
+  bg.on('pointerdown', () => closeQuestLog(state, scene));
 
   return c;
 }
