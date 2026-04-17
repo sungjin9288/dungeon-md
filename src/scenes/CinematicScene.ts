@@ -46,7 +46,7 @@ export class CinematicScene extends Phaser.Scene {
   // Typewriter state
   private fullText    = '';
   private shownChars  = 0;
-  private typeTimer?: ReturnType<typeof setInterval>;
+  private typeTimer?: Phaser.Time.TimerEvent;
   private isTyping    = false;
 
   constructor() { super({ key: 'CinematicScene' }); }
@@ -89,7 +89,7 @@ export class CinematicScene extends Phaser.Scene {
 
     // Slide panel up
     this.tweens.add({ targets: this.panel, y: 0, duration: 400, ease: 'Power2.easeOut' });
-    setTimeout(() => this.showLine(0), 450);
+    this.time.delayedCall(450, () => this.showLine(0));
 
     // Tap on panel to advance
     const tapZone = this.add.zone(
@@ -238,17 +238,20 @@ export class CinematicScene extends Phaser.Scene {
     this.isTyping   = true;
     this.dialogText.setText('');
 
-    if (this.typeTimer !== undefined) { clearInterval(this.typeTimer); this.typeTimer = undefined; }
-    this.typeTimer = setInterval(() => {
-      this.shownChars++;
-      this.dialogText.setText(this.fullText.slice(0, this.shownChars));
-      if (this.shownChars >= this.fullText.length) {
-        clearInterval(this.typeTimer!);
-        this.typeTimer = undefined;
-        this.isTyping  = false;
-        this.onTypeComplete(line);
-      }
-    }, CHAR_MS);
+    this.typeTimer?.remove(false);
+    this.typeTimer = this.time.addEvent({
+      delay: CHAR_MS,
+      repeat: this.fullText.length - 1,
+      callback: () => {
+        this.shownChars++;
+        this.dialogText.setText(this.fullText.slice(0, this.shownChars));
+        if (this.shownChars >= this.fullText.length) {
+          this.typeTimer = undefined;
+          this.isTyping  = false;
+          this.onTypeComplete(line);
+        }
+      },
+    });
   }
 
   private onTypeComplete(line: DialogueLine): void {
@@ -264,7 +267,7 @@ export class CinematicScene extends Phaser.Scene {
     });
 
     if (line.pause && line.pause > 0) {
-      setTimeout(() => this.advance(), line.pause);
+      this.time.delayedCall(line.pause, () => this.advance());
     }
   }
 
@@ -272,7 +275,8 @@ export class CinematicScene extends Phaser.Scene {
 
   private onTap(): void {
     if (this.isTyping) {
-      if (this.typeTimer !== undefined) { clearInterval(this.typeTimer); this.typeTimer = undefined; }
+      this.typeTimer?.remove(false);
+      this.typeTimer = undefined;
       this.isTyping = false;
       this.shownChars = this.fullText.length;
       this.dialogText.setText(this.fullText);
@@ -304,7 +308,8 @@ export class CinematicScene extends Phaser.Scene {
   // ─── Finish ──────────────────────────────────────────────────────────────────
 
   private finish(): void {
-    if (this.typeTimer !== undefined) { clearInterval(this.typeTimer); this.typeTimer = undefined; }
+    this.typeTimer?.remove(false);
+    this.typeTimer = undefined;
     this.pulseTween?.stop();
     this.tweens.add({
       targets: this.panel,

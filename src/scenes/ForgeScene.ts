@@ -337,33 +337,34 @@ export class ForgeScene extends Phaser.Scene {
     }).setOrigin(0.5);
     c.add(statusT);
 
-    // Use setInterval for reliability at low fps
+    // Hammer bounce: 6 strikes at 280ms each (3 up/down cycles)
     let strikes = 0;
     const baseY = cy - 50;
-    const interval = setInterval(() => {
-      strikes++;
-      // Hammer bounce: alternate up/down
-      hammerT.setY(strikes % 2 === 1 ? baseY - 18 : baseY);
-      if (strikes >= 6) {
-        clearInterval(interval);
-        statusT.setText('제작 완료!');
-        statusT.setStyle({ color: '#44ff88' });
-        // Sparks
-        for (let i = 0; i < 4; i++) {
-          const s = this.add.text(
-            cx + (Math.random() - 0.5) * 70,
-            cy - 60,
-            '✨', { fontFamily: 'sans-serif', fontSize: '13px' }
-          ).setAlpha(1);
-          c.add(s);
+    this.time.addEvent({
+      delay: 280,
+      repeat: 5,
+      callback: () => {
+        strikes++;
+        hammerT.setY(strikes % 2 === 1 ? baseY - 18 : baseY);
+        if (strikes >= 6) {
+          statusT.setText('제작 완료!');
+          statusT.setStyle({ color: '#44ff88' });
+          for (let i = 0; i < 4; i++) {
+            const s = this.add.text(
+              cx + (Math.random() - 0.5) * 70,
+              cy - 60,
+              '✨', { fontFamily: 'sans-serif', fontSize: '13px' }
+            ).setAlpha(1);
+            c.add(s);
+          }
+          this.time.delayedCall(600, () => {
+            c.destroy();
+            onComplete();
+            this.showCraftCompleteCard(bp);
+          });
         }
-        this.time.delayedCall(600, () => {
-          c.destroy();
-          onComplete();
-          this.showCraftCompleteCard(bp);
-        });
-      }
-    }, 280);
+      },
+    });
   }
 
   private showCraftCompleteCard(bp: BlueprintDef): void {
