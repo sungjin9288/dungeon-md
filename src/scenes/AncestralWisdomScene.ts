@@ -444,7 +444,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       if (canAfford) {
         const zone = this.add.zone(cx, btnY + btnH / 2, btnW, btnH)
           .setInteractive({ useHandCursor: true });
-        zone.on('pointerdown', () => this.performUpgrade(branch));
+        zone.on('pointerdown', () => this.showUpgradeConfirm(branch, cost));
         this.addToPanel(zone);
       }
     } else {
@@ -466,6 +466,57 @@ export class AncestralWisdomScene extends Phaser.Scene {
       duration: 220,
       ease: 'Power2.easeIn',
     });
+  }
+
+  // ─── Upgrade confirm dialog ───────────────────────────────────────────────────
+
+  private showUpgradeConfirm(branch: BranchDef, cost: number): void {
+    const OW = 290, OH = 170;
+    const OX = (CANVAS_WIDTH  - OW) / 2;
+    const OY = (CANVAS_HEIGHT - OH) / 2;
+
+    const ov = this.add.container(0, 0).setDepth(120).setAlpha(0);
+
+    const dim = this.add.graphics();
+    dim.fillStyle(0x000000, 0.65);
+    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ov.add(dim);
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0d0800, 1);
+    bg.fillRoundedRect(OX, OY, OW, OH, 8);
+    bg.lineStyle(2, COLORS.TORCH_GOLD, 0.85);
+    bg.strokeRoundedRect(OX, OY, OW, OH, 8);
+    ov.add(bg);
+
+    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 28, `${branch.icon} ${branch.name} 업그레이드`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
+    }).setOrigin(0.5));
+    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 56, `💎 ${cost} 영혼 수정이 소모됩니다.`, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b080',
+    }).setOrigin(0.5));
+    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 76, `보유: 💎 ${this.state.soulCrystals}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#886644',
+    }).setOrigin(0.5));
+
+    const confirmBtn = this.add.text(CANVAS_WIDTH / 2 - 52, OY + OH - 30, '확인', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
+      backgroundColor: '#2a1400', padding: { x: 20, y: 7 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    confirmBtn.on('pointerdown', () => {
+      ov.destroy(true);
+      this.performUpgrade(branch);
+    });
+    ov.add(confirmBtn);
+
+    const cancelBtn = this.add.text(CANVAS_WIDTH / 2 + 52, OY + OH - 30, '취소', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#666666',
+      backgroundColor: '#111111', padding: { x: 20, y: 7 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    cancelBtn.on('pointerdown', () => ov.destroy(true));
+    ov.add(cancelBtn);
+
+    this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
   }
 
   // ─── Upgrade logic ────────────────────────────────────────────────────────────

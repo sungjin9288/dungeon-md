@@ -126,6 +126,7 @@ export class UIScene extends Phaser.Scene {
       this.speedBtn.setText(this.currentSpeed + 'x');
       this.speedBtn.setColor(this.currentSpeed === 2 ? '#ffcc44' : CSS.PARCHMENT_MUTED);
       this.registry.set('battleSpeed', this.currentSpeed);
+      this.showSpeedToast(this.currentSpeed);
     });
 
     // ── Pause button (right of wave pill) ────────────────
@@ -332,6 +333,26 @@ export class UIScene extends Phaser.Scene {
       } else {
         this.remainingText?.setText('');
       }
+    });
+  }
+
+  private showSpeedToast(speed: 1 | 2): void {
+    const toast = this.add.text(CANVAS_WIDTH / 2, 120,
+      speed === 2 ? '⚡ 2× 배속 적용' : '▶ 1× 일반 속도', {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: speed === 2 ? '#ffcc44' : CSS.PARCHMENT,
+        backgroundColor: '#000000cc', padding: { x: 14, y: 6 },
+      }).setOrigin(0.5).setDepth(200).setAlpha(0);
+    this.tweens.add({
+      targets: toast, alpha: 1, duration: 150, ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.time.delayedCall(800, () => {
+          this.tweens.add({
+            targets: toast, alpha: 0, duration: 300,
+            onComplete: () => toast.destroy(),
+          });
+        });
+      },
     });
   }
 }

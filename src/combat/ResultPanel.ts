@@ -324,7 +324,7 @@ function buildFailContent(
     }] : []),
     { label: '광고 보기 (부활)',  action: () => revive(ctx, 0) },
     { label: '💎 5보석으로 부활', action: () => revive(ctx, 5) },
-    { label: '처음부터',          action: () => resetStage(ctx) },
+    { label: '처음부터',          action: () => confirmReset(ctx, ov) },
   ];
 
   options.forEach(({ label, action }, i) => {
@@ -360,6 +360,58 @@ export function revive(ctx: ResultFlowContext, gemCost: number): void {
   ctx.setWaveEndChecked(false);
   ctx.setWave(ctx.wave - 1); // pre-decrement so startWave's ++ lands on the same wave
   ctx.startWave();
+}
+
+// ─── confirmReset ─────────────────────────────────────────────────────────────
+
+function confirmReset(ctx: ResultFlowContext, failOv: Phaser.GameObjects.Container): void {
+  const scene = ctx.scene;
+  const OW = 280, OH = 160;
+  const OX = (CANVAS_WIDTH  - OW) / 2;
+  const OY = (CANVAS_HEIGHT - OH) / 2;
+
+  const ov = scene.add.container(0, 0).setDepth(90).setAlpha(0);
+
+  const dim = scene.add.graphics();
+  dim.fillStyle(0x000000, 0.6);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ov.add(dim);
+
+  const bg = scene.add.graphics();
+  bg.fillStyle(0x0d0005, 1);
+  bg.fillRoundedRect(OX, OY, OW, OH, 8);
+  bg.lineStyle(2, 0xaa2222, 0.9);
+  bg.strokeRoundedRect(OX, OY, OW, OH, 8);
+  ov.add(bg);
+
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 30, '⚠ 처음부터?', {
+    fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: '#cc4444',
+  }).setOrigin(0.5));
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 60, '진행 상황이 초기화됩니다.\n획득한 골드가 사라집니다.', {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#c8a0a0',
+    align: 'center',
+  }).setOrigin(0.5));
+
+  const confirmBtn = scene.add.text(CANVAS_WIDTH / 2 - 50, OY + OH - 30, '초기화', {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#cc4444',
+    backgroundColor: '#2a0000', padding: { x: 18, y: 7 },
+  }).setOrigin(0.5).setInteractive();
+  confirmBtn.on('pointerdown', () => {
+    ov.destroy(true);
+    failOv.destroy(true);
+    ctx.setResultOverlay(undefined);
+    resetStage(ctx);
+  });
+  ov.add(confirmBtn);
+
+  const cancelBtn = scene.add.text(CANVAS_WIDTH / 2 + 50, OY + OH - 30, '취소', {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#666666',
+    backgroundColor: '#111111', padding: { x: 18, y: 7 },
+  }).setOrigin(0.5).setInteractive();
+  cancelBtn.on('pointerdown', () => ov.destroy(true));
+  ov.add(cancelBtn);
+
+  scene.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
 }
 
 // ─── resetStage ───────────────────────────────────────────────────────────────
