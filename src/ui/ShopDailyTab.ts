@@ -48,12 +48,24 @@ export function buildEquipmentTab(ctx: ShopDailyTabContext): void {
   }).setOrigin(0.5).setDepth(6);
   contentCtr.add(titleT);
 
-  const msUntilReset = 86_400_000 - (Date.now() % 86_400_000);
-  const hh = Math.floor(msUntilReset / 3_600_000);
-  const mm = Math.floor((msUntilReset % 3_600_000) / 60_000);
-  contentCtr.add(scene.add.text(CANVAS_WIDTH / 2, 124, `🕐 ${hh}시간 ${mm}분 후 재입고`, {
+  contentCtr.add(scene.add.text(CANVAS_WIDTH - 16, 104, `💠 ${gs.soulCrystals}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
+  }).setOrigin(1, 0.5).setDepth(6));
+
+  let eqSecs = Math.floor((86_400_000 - (Date.now() % 86_400_000)) / 1000);
+  const fmtEq = (s: number) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return `🕐 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')} 후 재입고`;
+  };
+  const eqCd = scene.add.text(CANVAS_WIDTH / 2, 124, fmtEq(eqSecs), {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#666688',
-  }).setOrigin(0.5).setDepth(6));
+  }).setOrigin(0.5).setDepth(6);
+  contentCtr.add(eqCd);
+  const eqTick = scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
+    eqSecs = Math.max(0, eqSecs - 1);
+    if (eqCd.active) eqCd.setText(fmtEq(eqSecs));
+  }});
+  eqCd.on('destroy', () => eqTick.remove());
 
   equipment.forEach((eq, i) => {
     const owned = gs.ownedEquipment.includes(eq.id);
@@ -86,6 +98,25 @@ export function buildSkillTab(ctx: ShopDailyTabContext): void {
   }).setOrigin(0.5).setDepth(6);
   contentCtr.add(titleT);
 
+  contentCtr.add(scene.add.text(CANVAS_WIDTH - 16, 104, `💠 ${gs.soulCrystals}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
+  }).setOrigin(1, 0.5).setDepth(6));
+
+  let skSecs = Math.floor((86_400_000 - (Date.now() % 86_400_000)) / 1000);
+  const fmtSk = (s: number) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return `🕐 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')} 후 재입고`;
+  };
+  const skCd = scene.add.text(CANVAS_WIDTH / 2, 124, fmtSk(skSecs), {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#666688',
+  }).setOrigin(0.5).setDepth(6);
+  contentCtr.add(skCd);
+  const skTick = scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
+    skSecs = Math.max(0, skSecs - 1);
+    if (skCd.active) skCd.setText(fmtSk(skSecs));
+  }});
+  skCd.on('destroy', () => skTick.remove());
+
   skills.forEach((sk, i) => {
     const owned = gs.ownedActiveSkills.includes(sk.id);
     drawItemCard(
@@ -111,7 +142,7 @@ function drawItemCard(
   ctx: ShopDailyTabContext,
   cx: number, cy: number,
   icon: string, name: string, desc: string,
-  goldCost: number, gemCost: number,
+  _goldCost: number, gemCost: number,
   owned: boolean, _type: 'equip' | 'skill',
   onBuy: () => void,
 ): void {
@@ -143,21 +174,21 @@ function drawItemCard(
       fontFamily: 'sans-serif', fontSize: '10px', color: '#66cc66',
     }).setOrigin(1, 0.5).setDepth(7));
   } else {
-    contentCtr.add(scene.add.text(cx - w / 2 + 46, cy + 18, `💰${goldCost}  💎${gemCost}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#ccaa44',
+    contentCtr.add(scene.add.text(cx - w / 2 + 46, cy + 18, `💠 ${gemCost}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#44ffcc',
     }).setDepth(7));
 
     const btnW = 72, btnH = 26;
     const btnX = cx + w / 2 - btnW - 8;
     const btnBg = scene.add.graphics().setDepth(7);
-    btnBg.fillStyle(0x220044, 1);
+    btnBg.fillStyle(0x003030, 1);
     btnBg.fillRoundedRect(btnX, cy - btnH / 2, btnW, btnH, 6);
-    btnBg.lineStyle(1, 0xaa44ff, 0.8);
+    btnBg.lineStyle(1, 0x44cccc, 0.8);
     btnBg.strokeRoundedRect(btnX, cy - btnH / 2, btnW, btnH, 6);
     contentCtr.add(btnBg);
 
-    contentCtr.add(scene.add.text(btnX + btnW / 2, cy, `💎 ${gemCost}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#cc88ff',
+    contentCtr.add(scene.add.text(btnX + btnW / 2, cy, `💠 ${gemCost}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
     }).setOrigin(0.5).setDepth(8));
 
     const zone = scene.add.zone(btnX + btnW / 2, cy, btnW, btnH)

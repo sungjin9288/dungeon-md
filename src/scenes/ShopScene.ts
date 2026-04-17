@@ -54,9 +54,12 @@ export class ShopScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(10);
 
     const gs = loadGameState();
-    this.gemsText = this.add.text(CANVAS_WIDTH / 2, 50, `💎 ${gs.gems} 젬`, {
+    this.gemsText = this.add.text(CANVAS_WIDTH / 2 - 10, 50, `💎 ${gs.gems}`, {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#88aaff',
-    }).setOrigin(0.5).setDepth(10);
+    }).setOrigin(1, 0.5).setDepth(10);
+    this.add.text(CANVAS_WIDTH / 2 + 10, 50, `💠 ${gs.soulCrystals}`, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#44ffcc',
+    }).setOrigin(0, 0.5).setDepth(10);
 
     const msUntilReset = 86_400_000 - (Date.now() % 86_400_000);
     const h = Math.floor(msUntilReset / 3_600_000);
