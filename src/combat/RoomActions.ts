@@ -126,7 +126,7 @@ export function placeRoom(ctx: RoomActionsContext, row: number, col: number, typ
   const ownedHybrid = Object.values(HYBRID_DEFS)
     .some(h => h.roomTypes.includes(type as string) && loadGameState().ownedMonsters.some(m => m.id === h.id));
   if (available.length > 0 || ownedHybrid) {
-    window.setTimeout(() => ctx.openMonsterPanel(row, col, type, ctx.unlockedStage), 200);
+    ctx.scene.time.delayedCall(200, () => ctx.openMonsterPanel(row, col, type, ctx.unlockedStage));
   }
 }
 

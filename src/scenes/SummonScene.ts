@@ -574,7 +574,7 @@ export class SummonScene extends Phaser.Scene {
     const today = new Date().toISOString().slice(0, 10);
     if (gs.lastFriendSummon !== today) {
       // Brief toast reminder
-      wait(1200, () => {
+      this.time.delayedCall(1200, () => {
         if (this.scene.isActive()) {
           this.showToast('🤝 오늘의 무료 소환이 준비됐습니다!');
         }
@@ -593,4 +593,3 @@ export class SummonScene extends Phaser.Scene {
   }
 }
 
-function wait(ms: number, cb: () => void): void { window.setTimeout(cb, ms); }
