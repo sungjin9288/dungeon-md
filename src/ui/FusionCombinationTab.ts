@@ -15,7 +15,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   type FusionTabContext, TAB_ACCENT,
   drawMonsterSlot, openMonsterPicker,
-  showFusionAnimation, showResultToast,
+  showFusionAnimation, showResultToast, showConfirmDialog,
 } from './FusionTabs';
 
 export interface CombinationState {
@@ -122,7 +122,7 @@ export function buildCombinationTab(
 
   const allReady = bothFilled && gs.soulCrystals >= 100;
   const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 28,
-    allReady ? '🧪 조합 시도 (-💎 100)' : bothFilled ? '💎 부족 (100 필요)' : '조건 미충족', {
+    allReady ? '🧪 조합 시도 (-💠 100)' : bothFilled ? '💠 부족 (100 필요)' : '조건 미충족', {
       fontFamily: 'Georgia, serif', fontSize: '14px',
       color: allReady ? '#4488cc' : '#2a3a55', fontStyle: 'bold',
       backgroundColor: allReady ? '#001433' : '#000810',
@@ -130,7 +130,19 @@ export function buildCombinationTab(
     }).setOrigin(0.5);
   if (allReady) btn.setInteractive().on('pointerdown', () => {
     ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
-    executeCombination(ctx, state);
+    const [slotA, slotB] = state.combineSlots;
+    if (!slotA || !slotB) return;
+    const knownId = COMBINATION_TABLE[combinationKey(slotA.id, slotB.id)];
+    const known   = knownId ? HYBRID_DEFS[knownId] : undefined;
+    showConfirmDialog(
+      ctx,
+      known ? '🧪 조합을 실행하시겠습니까?' : '⚠️ 미지의 조합',
+      known
+        ? `${known.emoji} ${known.name} 생성\n💠 100 소모됩니다.`
+        : '결과를 알 수 없습니다\n💠 100 소모 (실패 가능)',
+      known ? '#4488cc' : '#885533',
+      () => executeCombination(ctx, state),
+    );
   });
   c.add(btn);
 }

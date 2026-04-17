@@ -108,14 +108,17 @@ export function buildAwakeningTab(
 }
 
 function confirmAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
-  const name = getMonsterDisplayName(monster.id);
+  const name    = getMonsterDisplayName(monster.id);
+  const stoneGs = loadGameState();
+  const passive = AWAKENED_PASSIVES[getBaseId(monster.id)];
+
   const ov = ctx.scene.add.container(0, 0).setDepth(80);
   const dim = ctx.scene.add.graphics();
   dim.fillStyle(0x000000, 0.75);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ov.add(dim);
 
-  const PW = 300, PH = 180;
+  const PW = 300, PH = passive ? 220 : 198;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
   const pg = ctx.scene.add.graphics();
   pg.fillStyle(0x0d000d, 1);
@@ -128,13 +131,23 @@ function confirmAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
     fontFamily: 'Georgia, serif', fontSize: '17px', color: '#cc44cc', fontStyle: 'bold',
   }).setOrigin(0.5));
   ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 60,
-    `각성을 실행하면 각성석 1개가\n소모됩니다. 계속하시겠습니까?`, {
+    `각성석 1개가 소모됩니다. 계속하시겠습니까?`, {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b0c8',
-      align: 'center', lineSpacing: 6,
+      align: 'center',
     }).setOrigin(0.5));
-  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 95, `▶ ${name}`, {
+  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 84, `▶ ${name}`, {
     fontFamily: 'Georgia, serif', fontSize: '12px', color: '#884488',
   }).setOrigin(0.5));
+  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 104, `🪨 보유 각성석: ${stoneGs.awakeningStones ?? 0}개`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#664466',
+  }).setOrigin(0.5));
+
+  if (passive) {
+    ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 126, `✨ ${passive.desc}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#cc44cc',
+      align: 'center', wordWrap: { width: PW - 32 },
+    }).setOrigin(0.5));
+  }
 
   const confirmBtn = ctx.scene.add.text(CANVAS_WIDTH / 2 - 52, PY + PH - 36, '확인', {
     fontFamily: 'Georgia, serif', fontSize: '14px', color: '#cc44cc',
