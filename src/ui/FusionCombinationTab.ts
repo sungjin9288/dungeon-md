@@ -66,7 +66,7 @@ export function buildCombinationTab(
   // Crystal cost
   const gs = loadGameState();
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY + slotH + 14,
-    `💎 보유 수정: ${gs.soulCrystals} / 필요: 100`, {
+    `💠 보유 수정: ${gs.soulCrystals} / 필요: 100`, {
       fontFamily: 'sans-serif', fontSize: '11px',
       color: gs.soulCrystals >= 100 ? '#4488cc' : '#aa2222',
     }).setOrigin(0.5));

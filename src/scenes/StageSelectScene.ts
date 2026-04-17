@@ -358,7 +358,7 @@ export class StageSelectScene extends Phaser.Scene {
     bg.lineStyle(2, 0x7a30c8, 0.85);
     bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
 
-    this.add.text(CANVAS_WIDTH / 2, btnY + btnH / 2, `⛩ 선조의 지혜  💎${crystals}`, {
+    this.add.text(CANVAS_WIDTH / 2, btnY + btnH / 2, `⛩ 선조의 지혜  💠${crystals}`, {
       fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
       color: '#c070ff',
     }).setOrigin(0.5);

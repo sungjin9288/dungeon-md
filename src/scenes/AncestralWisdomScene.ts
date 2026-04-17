@@ -116,7 +116,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     crystalBg.lineStyle(1, COLORS.MAGIC_GLOW, 0.6);
     crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 6);
 
-    this.crystalText = this.add.text(CANVAS_WIDTH / 2, 62, `💎 ${this.state.soulCrystals} 영혼 수정`, {
+    this.crystalText = this.add.text(CANVAS_WIDTH / 2, 62, `💠 ${this.state.soulCrystals} 영혼 수정`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: '#c070ff',
     }).setOrigin(0.5).setDepth(12);
 
@@ -420,7 +420,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       // Cost line
       const cost      = branch.costPerTier[tier];
       const canAfford = this.state.soulCrystals >= cost;
-      const costT = this.add.text(cx, 154, `업그레이드 비용: 💎 ${cost}`, {
+      const costT = this.add.text(cx, 154, `업그레이드 비용: 💠 ${cost}`, {
         fontFamily: 'sans-serif', fontSize: '13px',
         color: canAfford ? CSS.TORCH_AMBER : '#aa4444',
       }).setOrigin(0.5, 0);
@@ -492,10 +492,10 @@ export class AncestralWisdomScene extends Phaser.Scene {
     ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 28, `${branch.icon} ${branch.name} 업그레이드`, {
       fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
     }).setOrigin(0.5));
-    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 56, `💎 ${cost} 영혼 수정이 소모됩니다.`, {
+    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 56, `💠 ${cost} 영혼 수정이 소모됩니다.`, {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b080',
     }).setOrigin(0.5));
-    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 76, `보유: 💎 ${this.state.soulCrystals}`, {
+    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 76, `보유: 💠 ${this.state.soulCrystals}`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: '#886644',
     }).setOrigin(0.5));
 
@@ -533,8 +533,8 @@ export class AncestralWisdomScene extends Phaser.Scene {
     saveGameState(this.state);
 
     // Update crystal display + cost deduction float + pop
-    this.crystalText.setText(`💎 ${this.state.soulCrystals} 영혼 수정`);
-    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${cost}💎`, {
+    this.crystalText.setText(`💠 ${this.state.soulCrystals} 영혼 수정`);
+    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${cost}💠`, {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
       color: '#aa88ff', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(250).setAlpha(0);

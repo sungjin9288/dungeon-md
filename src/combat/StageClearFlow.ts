@@ -136,7 +136,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     });
   }
 
-  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💎`, {
+  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💠`, {
     fontFamily: 'sans-serif', fontSize: '14px', color: '#88aaff',
   }).setOrigin(0.5).setAlpha(0);
   ov.add(crystalT);

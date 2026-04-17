@@ -108,7 +108,7 @@ export class EndlessResultScene extends Phaser.Scene {
     this.drawStat(cx, rowY,       '⚔ 도달 웨이브',  String(result.wave),          CSS.PARCHMENT);
     this.drawStat(cx, rowY + 56,  '💀 처치 수',      result.kills.toLocaleString(), CSS.PARCHMENT);
     this.drawStat(cx, rowY + 112, '🪙 획득 골드',    result.goldEarned.toLocaleString(), '#f0d060');
-    this.drawStat(cx, rowY + 168, '💎 획득 수정',    String(result.crystalsEarned), '#cc88ff');
+    this.drawStat(cx, rowY + 168, '💠 획득 수정',    String(result.crystalsEarned), '#cc88ff');
 
     // Crystal formula hint
     this.add.text(cx, rowY + 215, `(웨이브÷5 + 마일스톤 보너스 × 선조의 지혜)`, {

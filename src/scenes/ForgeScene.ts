@@ -236,7 +236,7 @@ export class ForgeScene extends Phaser.Scene {
 
       if (canCraft) {
         const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH).setInteractive();
-        zone.on('pointerdown', () => this.executeCraft(bpId));
+        zone.on('pointerdown', () => this.confirmCraft(bpId));
         c.add(zone);
       }
 
@@ -494,6 +494,67 @@ export class ForgeScene extends Phaser.Scene {
 
       oy += rowH;
     });
+  }
+
+  private confirmCraft(bpId: string): void {
+    const gs = loadGameState();
+    const bp = BLUEPRINT_DEFS[bpId];
+    if (!bp || !this.canCraft(bp, gs.materials ?? {})) return;
+
+    const matStr = Object.entries(bp.materials)
+      .map(([id, qty]) => {
+        const def = MATERIAL_DEFS[id];
+        return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${qty}`;
+      }).join('\n');
+
+    const ov = this.add.container(0, 0).setDepth(50);
+    const dim = this.add.graphics();
+    dim.fillStyle(0x000000, 0.72);
+    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ov.add(dim);
+
+    const pw = 280, ph = 190 + Object.keys(bp.materials).length * 16;
+    const cx = CANVAS_WIDTH / 2, cy = CANVAS_HEIGHT / 2;
+    const box = this.add.graphics();
+    box.fillStyle(0x140a00, 1);
+    box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
+    box.lineStyle(2, 0xffaa44, 0.9);
+    box.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
+    ov.add(box);
+
+    ov.add(this.add.text(cx, cy - ph / 2 + 22, '⚒️ 제작 확인', {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ffaa44', fontStyle: 'bold',
+    }).setOrigin(0.5));
+    ov.add(this.add.text(cx, cy - ph / 2 + 48, `${bp.resultEmoji} ${bp.name}`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: RARITY_COLORS[bp.rarity] ?? '#ffaa44',
+    }).setOrigin(0.5));
+    ov.add(this.add.text(cx, cy - ph / 2 + 68, bp.statDesc, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8844',
+    }).setOrigin(0.5));
+    ov.add(this.add.text(cx, cy - ph / 2 + 90, `소모 재료:\n${matStr}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#c8b080',
+      align: 'center', lineSpacing: 3,
+    }).setOrigin(0.5, 0));
+
+    const cancelBtn = this.add.text(cx - 56, cy + ph / 2 - 26, '취소', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: '#886633',
+      backgroundColor: '#1a0a00', padding: { x: 18, y: 8 },
+    }).setOrigin(0.5).setInteractive();
+    cancelBtn.on('pointerdown', () => ov.destroy());
+    ov.add(cancelBtn);
+
+    const craftBtn = this.add.text(cx + 56, cy + ph / 2 - 26, '제작', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: '#ffaa44',
+      backgroundColor: '#2a1000', padding: { x: 18, y: 8 },
+    }).setOrigin(0.5).setInteractive();
+    craftBtn.on('pointerdown', () => {
+      ov.destroy();
+      this.executeCraft(bpId);
+    });
+    ov.add(craftBtn);
+
+    ov.setAlpha(0);
+    this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
   }
 
   private confirmDismantle(idx: number, eq: { id: string; name: string; emoji: string; rarity: number; type: string; stats: Record<string, number> }): void {
