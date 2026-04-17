@@ -83,7 +83,7 @@ export class BarracksScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(10);
 
     // Back button
-    this.buildBtn(24, 24, '← 뒤로', 0x2d2416, () => this.scene.start('StageSelectScene'));
+    this.buildBtn(24, 24, '← 뒤로', 0x2d2416, () => this.scene.start('DungeonHomeScene'));
   }
 
   // ─── Sort chips ───────────────────────────────────────────────────────────────

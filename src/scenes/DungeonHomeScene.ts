@@ -10,6 +10,7 @@ import {
   type MainQuest,
 } from '../data/quests';
 import { STARTER_BLUEPRINTS } from '../data/fusion';
+import { ACHIEVEMENT_DEFS } from '../data/achievements';
 import { audioManager } from '../audio/AudioManager';
 import { TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE } from '../ui/TutorialOverlay';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
@@ -457,6 +458,13 @@ export class DungeonHomeScene extends Phaser.Scene {
     ];
     const tabW = CANVAS_WIDTH / tabs.length;
 
+    // Pre-compute badge conditions once outside the loop
+    const today = new Date().toISOString().slice(0, 10);
+    const hasUnclaimedAchievement = ACHIEVEMENT_DEFS.some(d => {
+      const entry = this.gs.achievements?.[d.id];
+      return entry?.unlocked && !entry.rewardClaimed;
+    });
+
     tabs.forEach(({ icon, label, key }, i) => {
       const tx       = i * tabW + tabW / 2;
       const isActive = key === 'home';
@@ -482,7 +490,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       // Badge indicators — red circle at top-right of icon
       const showBadge = (
         (key === 'barracks' && this.gs.ownedMonsters.some(m => (m.skillPoints ?? 0) > 0)) ||
-        (key === 'forge'    && (this.gs.awakeningStones ?? 0) > 0)
+        (key === 'forge'    && (this.gs.awakeningStones ?? 0) > 0) ||
+        (key === 'summon'   && this.gs.lastFriendSummon !== today) ||
+        (key === 'battle'   && hasUnclaimedAchievement)
       );
       if (showBadge) {
         const bx = tx + 12;
