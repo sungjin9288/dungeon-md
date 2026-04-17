@@ -207,20 +207,15 @@ export function openMonsterPicker(
     c.add(zone);
   });
 
-  let y = CANVAS_HEIGHT;
-  const ti = setInterval(() => {
-    y = Math.max(targetY, y - 40);
-    c.setY(y);
-    if (y <= targetY) clearInterval(ti);
-  }, 28);
+  c.setY(CANVAS_HEIGHT);
+  ctx.scene.tweens.add({ targets: c, y: targetY, duration: 320, ease: 'Quad.easeOut' });
 
   function slideDown(): void {
-    let sy = c.y;
-    const td = setInterval(() => {
-      sy = Math.min(CANVAS_HEIGHT, sy + 40);
-      c.setY(sy);
-      if (sy >= CANVAS_HEIGHT) { clearInterval(td); c.destroy(true); }
-    }, 28);
+    ctx.scene.tweens.add({
+      targets: c, y: CANVAS_HEIGHT,
+      duration: 260, ease: 'Quad.easeIn',
+      onComplete: () => c.destroy(true),
+    });
   }
 }
 

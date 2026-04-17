@@ -58,17 +58,14 @@ export function showZoneAPulse(
   gridRows: number,
   slotPadY: number,
 ): void {
-  const overlay = scene.add.graphics().setDepth(15);
-  let count = 0;
-  const ti = setInterval(() => {
-    count++;
-    overlay.clear();
-    if (count % 2 === 1) {
-      overlay.fillStyle(0xff0000, 0.22);
-      overlay.fillRect(0, gridStartY, CANVAS_WIDTH, gridRows * (SLOT_H + slotPadY));
-    }
-    if (count >= 6) { clearInterval(ti); overlay.destroy(); }
-  }, 450);
+  const overlay = scene.add.graphics().setDepth(15).setAlpha(0);
+  overlay.fillStyle(0xff0000, 1);
+  overlay.fillRect(0, gridStartY, CANVAS_WIDTH, gridRows * (SLOT_H + slotPadY));
+  scene.tweens.add({
+    targets: overlay, alpha: 0.22,
+    duration: 450, yoyo: true, repeat: 2, ease: 'Linear',
+    onComplete: () => overlay.destroy(),
+  });
 }
 
 // ─── Banner ──────────────────────────────────────────────────────────────────
@@ -115,12 +112,8 @@ export function showInvasionBanner(
   state.alertBanner = c;
 
   // Slide down
-  let y = -110;
-  const ti = setInterval(() => {
-    y = Math.min(0, y + 18);
-    c.setY(y);
-    if (y >= 0) clearInterval(ti);
-  }, 28);
+  c.setY(-110);
+  scene.tweens.add({ targets: c, y: 0, duration: 200, ease: 'Quad.easeOut' });
 }
 
 // ─── Dismiss ─────────────────────────────────────────────────────────────────
@@ -132,16 +125,11 @@ export function dismissBanner(
   const banner = state.alertBanner;
   if (!banner) return;
   state.alertBanner = undefined;
-  let y = banner.y;
-  const ti = setInterval(() => {
-    y = Math.max(-110, y - 18);
-    banner.setY(y);
-    if (y <= -110) {
-      clearInterval(ti);
-      banner.destroy();
-      showReminderIcon(scene, state);
-    }
-  }, 28);
+  scene.tweens.add({
+    targets: banner, y: -110,
+    duration: 200, ease: 'Quad.easeIn',
+    onComplete: () => { banner.destroy(); showReminderIcon(scene, state); },
+  });
 }
 
 // ─── Reminder icon ───────────────────────────────────────────────────────────
