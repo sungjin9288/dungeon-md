@@ -208,6 +208,7 @@ export function buildQuestBanner(
   gs: GameState,
   theme: DungeonTheme,
   topH: number,
+  onTap?: () => void,
 ): void {
   const quest = getQuest(gs.activeMainQuestId);
   if (!quest) return;
@@ -235,10 +236,22 @@ export function buildQuestBanner(
     bg.fillRoundedRect(barX, bY + 7, Math.round(barW * pct), 7, 2);
   }
 
+  // Show objective action text (more actionable than quest title)
+  const objDesc = obj?.description ?? quest.title;
   scene.add.text(barX + barW + 6, bY + 11,
-    `📜 ${quest.title}  ${cur}/${tgt}`,
+    `📜 ${objDesc}  ${cur}/${tgt}`,
     { fontFamily: 'sans-serif', fontSize: '10px', color: t.textSecondary },
   ).setOrigin(0, 0.5).setDepth(5);
+
+  // Tap hint arrow (right edge)
+  if (onTap) {
+    scene.add.text(CANVAS_WIDTH - 8, bY + 11, '›', {
+      fontFamily: 'sans-serif', fontSize: '12px', color: t.textAccent,
+    }).setOrigin(1, 0.5).setDepth(5);
+    scene.add.zone(0, bY, CANVAS_WIDTH, bH)
+      .setOrigin(0, 0).setInteractive({ useHandCursor: true }).setDepth(6)
+      .on('pointerdown', onTap);
+  }
 }
 
 // ─── Stats bar ────────────────────────────────────────────────────────────────

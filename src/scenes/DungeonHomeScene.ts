@@ -20,6 +20,7 @@ import { logger } from '../utils/logger';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
   showQuestCompleteOverlay,
+  openQuestLog,
   type QuestLogState,
 } from '../ui/QuestLogPanel';
 import { buildDailyContentPanel, showChallengePanel } from '../ui/DailyContentPanel';
@@ -112,7 +113,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     );
     this.currencyTexts = topBarRefs.currencyTexts;
 
-    buildQuestBanner(this, this.gs, this.theme, TOP_H);
+    buildQuestBanner(this, this.gs, this.theme, TOP_H,
+      () => openQuestLog(this, this.questLogState, this.gs));
     this.buildDungeonGrid();
     buildStatsBar(this, this.gs, this.theme, BOT_Y);
     this.buildBottomNav();

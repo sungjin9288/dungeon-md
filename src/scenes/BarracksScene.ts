@@ -388,6 +388,19 @@ export class BarracksScene extends Phaser.Scene {
       this.contentContainer.add(spBadgeT);
     }
 
+    // SP upgrade hint — pulsing chip when unspent skill points exist
+    if (sp > 0) {
+      const spHint = this.add.text(x + CARD_W / 2, y + CARD_H - 24, `⬆ SP ×${sp} 사용가능`, {
+        fontFamily: 'sans-serif', fontSize: '8px', color: '#cc88ff',
+        backgroundColor: '#1a0028', padding: { x: 4, y: 2 },
+      }).setOrigin(0.5);
+      this.tweens.add({
+        targets: spHint, alpha: { from: 0.45, to: 1.0 },
+        duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this.contentContainer.add(spHint);
+    }
+
     // Tap zone
     const zone = this.add.zone(x + CARD_W / 2, y + CARD_H / 2, CARD_W, CARD_H).setInteractive();
     zone.on('pointerdown', () => this.showMonsterDetail(m));
