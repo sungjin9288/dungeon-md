@@ -23,8 +23,8 @@ export interface SummonResult {
 const CX       = CANVAS_WIDTH / 2;
 const PORTAL_CY = 130;
 
-function wait(ms: number, cb: () => void): void {
-  window.setTimeout(cb, ms);
+function wait(scene: Phaser.Scene, ms: number, cb: () => void): void {
+  scene.time.delayedCall(ms, cb);
 }
 
 // ─── Single pull animation ──────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export function playSinglePullAnimation(
 
   scene.input.enabled = false;
   let canSkip = false;
-  wait(1500, () => { canSkip = true; });
+  wait(scene, 1500, () => { canSkip = true; });
 
   // Tap to skip after 1.5s
   const skipZone = scene.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0).setInteractive().setDepth(200);
@@ -83,7 +83,7 @@ export function playSinglePullAnimation(
   });
 
   // ── Phase 2: Portal opens (0.8-1.8s) ──
-  wait(800, () => {
+  wait(scene,800, () => {
     chargeTimer.destroy();
     chargeG.clear();
 
@@ -107,7 +107,7 @@ export function playSinglePullAnimation(
     }
 
     // ── Phase 3: Result reveal (1.8s) ──
-    wait(1000, () => {
+    wait(scene, 1000, () => {
       darkOverlay.clear();
       darkOverlay.fillStyle(0x000000, 0.88);
       darkOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -175,12 +175,12 @@ export function playSinglePullAnimation(
       }
 
       // Stars pop in
-      wait(100, () => {
+      wait(scene, 100, () => {
         const starsStr = RARITY_STARS[result.rarityIdx];
         const chars    = starsStr.split('');
         let delay = 0;
         chars.forEach((_, idx) => {
-          wait(delay, () => {
+          wait(scene, delay, () => {
             const st = scene.add.text(CX - (chars.length - 1) * 12 + idx * 24, panY + 144, chars[idx], {
               fontFamily: 'sans-serif', fontSize: '16px',
             }).setOrigin(0.5).setDepth(98).setAlpha(0).setScale(0);
@@ -192,7 +192,7 @@ export function playSinglePullAnimation(
       });
 
       // Name
-      wait(200, () => {
+      wait(scene,200, () => {
         const nameT = scene.add.text(CX, panY + 170, def.name, {
           fontFamily: 'Georgia, serif', fontSize: '22px', color: rCss,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
@@ -207,7 +207,7 @@ export function playSinglePullAnimation(
       });
 
       // New / dupe badge
-      wait(400, () => {
+      wait(scene,400, () => {
         const badgeText = result.isNew
           ? '✨ 새 몬스터 획득!'
           : `🔄 중복 +${result.scComp}💠`;
@@ -222,7 +222,7 @@ export function playSinglePullAnimation(
       });
 
       // Action buttons: [ 다시 소환 ] [ 확인 ✓ ]
-      wait(800, () => {
+      wait(scene,800, () => {
         scene.input.enabled = true;
 
         const againT = scene.add.text(CX - 58, panY + 278, '다시 소환', {
@@ -267,7 +267,7 @@ export function playMultiPullAnimation(
 
   // Skip after 3s
   let canSkip = false;
-  wait(3000, () => { canSkip = true; });
+  wait(scene,3000, () => { canSkip = true; });
   const skipZone = scene.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0).setInteractive().setDepth(200);
 
   const finalize = () => {
@@ -301,7 +301,7 @@ export function playMultiPullAnimation(
   });
 
   // ── Phase 2: Sequential reveals (1-4s) ──
-  wait(1000, () => {
+  wait(scene, 1000, () => {
     chargeTimer.destroy();
     darkG.clear();
     darkG.fillStyle(0x000000, 0.92);
@@ -332,7 +332,7 @@ export function playMultiPullAnimation(
         const i     = idx;
         idx++;
 
-        wait(delay, () => {
+        wait(scene, delay, () => {
           if (!scene.scene.isActive()) return;
 
           const cc = scene.add.container(cx, cy).setDepth(96);
@@ -349,16 +349,15 @@ export function playMultiPullAnimation(
 
           // Flash before flip for Rare+
           if (result.rarityIdx >= 2) {
-            const fG = scene.add.graphics().setDepth(102);
+            const fG = scene.add.graphics().setDepth(102).setAlpha(0.7);
             fG.fillStyle(rColor, 1);
             fG.fillCircle(cx, cy, 18);
             ov.add(fG);
-            let fAlpha = 0.7;
-            const fTick = setInterval(() => {
-              fAlpha -= 0.07;
-              if (fAlpha <= 0 || !fG.active) { clearInterval(fTick); if (fG.active) fG.destroy(); return; }
-              fG.clear(); fG.fillStyle(rColor, fAlpha); fG.fillCircle(cx, cy, 18);
-            }, 16);
+            scene.tweens.add({
+              targets: fG, alpha: 0,
+              duration: 160, ease: 'Linear',
+              onComplete: () => { if (fG.active) fG.destroy(); },
+            });
           }
 
           // Emoji
@@ -398,24 +397,16 @@ export function playMultiPullAnimation(
 
           // Flip in animation
           cc.setScale(0, 1);
-          let flipProgress = 0;
-          const flipTick = setInterval(() => {
-            flipProgress = Math.min(1, flipProgress + 0.08);
-            const overshoot = 1.5;
-            const t = flipProgress;
-            const eased = t < 0.5
-              ? 2 * t * t
-              : 1 - Math.pow(-2 * t + 2, 2) / 2 + (t > 0.85 ? (t - 0.85) * overshoot : 0);
-            const s2 = Math.min(1, Math.max(0, eased));
-            if (cc.active) cc.setScale(s2, 1);
-            if (flipProgress >= 1) { clearInterval(flipTick); if (cc.active) cc.setScale(1, 1); }
-          }, 16);
+          scene.tweens.add({
+            targets: cc, scaleX: 1,
+            duration: 210, ease: 'Back.easeOut',
+          });
         });
       }
     }
 
     // ── Phase 3: Highlight best (4s) ──
-    wait(3000, () => {
+    wait(scene,3000, () => {
       if (!scene.scene.isActive()) return;
       const bestIdx = results.reduce((best, r, i) =>
         r.rarityIdx > results[best].rarityIdx ? i : best, 0);
@@ -423,19 +414,9 @@ export function playMultiPullAnimation(
       cardContainers.forEach((cc, i) => {
         if (!cc?.active) return;
         if (i !== bestIdx) {
-          let dimAlpha = 1;
-          const dimTick = setInterval(() => {
-            dimAlpha = Math.max(0.3, dimAlpha - 0.035);
-            if (cc.active) cc.setAlpha(dimAlpha);
-            if (dimAlpha <= 0.3) clearInterval(dimTick);
-          }, 16);
+          scene.tweens.add({ targets: cc, alpha: 0.3, duration: 320, ease: 'Linear' });
         } else {
-          let sc = 1;
-          const scTick = setInterval(() => {
-            sc = Math.min(1.35, sc + 0.025);
-            if (cc.active) cc.setScale(sc, sc);
-            if (sc >= 1.35) clearInterval(scTick);
-          }, 16);
+          scene.tweens.add({ targets: cc, scaleX: 1.35, scaleY: 1.35, duration: 220, ease: 'Quad.easeOut' });
         }
       });
 
@@ -451,7 +432,7 @@ export function playMultiPullAnimation(
       }
 
       // ── Phase 4: Summary buttons (6s) ──
-      wait(2000, () => {
+      wait(scene,2000, () => {
         if (!scene.scene.isActive()) return;
         // Restore all cards
         cardContainers.forEach(cc => {
