@@ -39,6 +39,8 @@ export interface RoomDetailState {
   monsterPickerContainer: Phaser.GameObjects.Container | null;
   roomDetailCellX: number;
   roomDetailCellY: number;
+  /** Set by openRoomDetail; used by closeRoomDetail for tween access. */
+  scene: Phaser.Scene | null;
 }
 
 export function createRoomDetailState(): RoomDetailState {
@@ -48,6 +50,7 @@ export function createRoomDetailState(): RoomDetailState {
     monsterPickerContainer: null,
     roomDetailCellX: 0,
     roomDetailCellY: 0,
+    scene: null,
   };
 }
 
@@ -71,6 +74,7 @@ export function openRoomDetail(
 ): void {
   if (state.roomDetailContainer) return;
 
+  state.scene = scene;
   const gs = cb.getGameState();
 
   // Store cell position for reopen after upgrade/assignment
@@ -311,20 +315,12 @@ export function openRoomDetail(
   const startY      = cellY + SLOT_H / 2 - CH / 2;
   c.setPosition(CW / 2 + startX, CH / 2 + startY).setScale(startScaleX, startScaleY);
 
-  const STEPS = 15;
-  let step = 0;
-  const iv = setInterval(() => {
-    step++;
-    const prog    = step / STEPS;
-    const ease = prog < 0.5 ? 2 * prog * prog : -1 + (4 - 2 * prog) * prog;
-    c.setAlpha(ease)
-     .setScale(startScaleX + (1 - startScaleX) * ease, startScaleY + (1 - startScaleY) * ease)
-     .setPosition(CW / 2 + startX * (1 - ease), CH / 2 + startY * (1 - ease));
-    if (step >= STEPS) {
-      clearInterval(iv);
-      c.setScale(1).setPosition(CW / 2, CH / 2).setAlpha(1);
-    }
-  }, 20);
+  c.setAlpha(0);
+  scene.tweens.add({
+    targets: c,
+    alpha: 1, scaleX: 1, scaleY: 1, x: CW / 2, y: CH / 2,
+    duration: 300, ease: 'Quad.easeInOut',
+  });
 }
 
 
@@ -340,18 +336,18 @@ export function closeRoomDetail(
   const c = state.roomDetailContainer;
   state.roomDetailContainer = null;
 
-  const STEPS = 10;
-  let step = 0;
-  const iv = setInterval(() => {
-    step++;
-    const prog = step / STEPS;
-    c.setAlpha(1 - prog).setScale(1 - prog * 0.3);
-    if (step >= STEPS) {
-      clearInterval(iv);
-      c.destroy();
-      cb.rebuildDungeonSlots();
-    }
-  }, 20);
+  const tweenScene = state.scene;
+  if (tweenScene) {
+    tweenScene.tweens.add({
+      targets: c,
+      alpha: 0, scaleX: 0.7, scaleY: 0.7,
+      duration: 200, ease: 'Linear',
+      onComplete: () => { c.destroy(); cb.rebuildDungeonSlots(); },
+    });
+  } else {
+    c.destroy();
+    cb.rebuildDungeonSlots();
+  }
 }
 
 

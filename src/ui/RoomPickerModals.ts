@@ -118,7 +118,7 @@ export function showTrapPicker(
         state.trapPickerContainer?.destroy();
         state.trapPickerContainer = null;
         nav.closeRoomDetail(state, cb);
-        setTimeout(() => nav.openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);
+        scene.time.delayedCall(250, () => nav.openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY));
       });
       c.add(pickBtn);
     }
@@ -127,16 +127,8 @@ export function showTrapPicker(
 
   // Slide up animation
   const targetY = CH - modalH;
-  const startY  = CH;
-  const STEPS   = 12;
-  let step = 0;
-  const iv = setInterval(() => {
-    step++;
-    const prog = step / STEPS;
-    const ease = 1 - Math.pow(1 - prog, 2);
-    c.setPosition(0, startY + (targetY - startY) * ease);
-    if (step >= STEPS) { clearInterval(iv); c.setPosition(0, targetY); }
-  }, 16);
+  c.setPosition(0, CH);
+  scene.tweens.add({ targets: c, y: targetY, duration: 220, ease: 'Quad.easeOut' });
 }
 
 
@@ -236,7 +228,7 @@ export function showMonsterPicker(
         state.monsterPickerContainer?.destroy();
         state.monsterPickerContainer = null;
         nav.closeRoomDetail(state, cb);
-        setTimeout(() => nav.openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);
+        scene.time.delayedCall(250, () => nav.openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY));
       });
       c.add(pickBtn);
     }
@@ -245,13 +237,6 @@ export function showMonsterPicker(
 
   // Slide up
   const targetY = CH - modalH;
-  const STEPS   = 12;
-  let step = 0;
-  const iv = setInterval(() => {
-    step++;
-    const prog = step / STEPS;
-    const ease = 1 - Math.pow(1 - prog, 2);
-    c.setPosition(0, CH + (targetY - CH) * ease);
-    if (step >= STEPS) { clearInterval(iv); c.setPosition(0, targetY); }
-  }, 16);
+  c.setPosition(0, CH);
+  scene.tweens.add({ targets: c, y: targetY, duration: 220, ease: 'Quad.easeOut' });
 }
