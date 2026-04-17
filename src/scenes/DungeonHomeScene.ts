@@ -136,7 +136,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const chapterComplete = this.registry.get('chapterComplete') as boolean | undefined;
     if (chapterComplete) {
       this.registry.remove('chapterComplete');
-      setTimeout(() => showChapterCompleteOverlay(this), 800);
+      this.time.delayedCall(800, () => showChapterCompleteOverlay(this));
     }
 
     this.cameras.main.fadeIn(250, 0, 0, 0);
@@ -244,7 +244,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       saveGameState(this.gs);
       const afterReturn = () => {
         if (didLevelUp) {
-          setTimeout(() => showDmLevelUpOverlay(this, this.gs.dmLevel), 200);
+          this.time.delayedCall(200, () => showDmLevelUpOverlay(this, this.gs.dmLevel));
         } else if (update?.questDone) {
           const done = completeAndAdvance(this.gs);
           saveGameState(this.gs);
@@ -254,23 +254,23 @@ export class DungeonHomeScene extends Phaser.Scene {
       if (update?.questDone && !didLevelUp) {
         const done = completeAndAdvance(this.gs);
         saveGameState(this.gs);
-        setTimeout(() => {
+        this.time.delayedCall(400, () => {
           showBattleReturnOverlay(this, result, () => {
             if (done) this.handleQuestComplete(done);
           });
-        }, 400);
+        });
       } else {
-        setTimeout(() => showBattleReturnOverlay(this, result, afterReturn), 400);
+        this.time.delayedCall(400, () => showBattleReturnOverlay(this, result, afterReturn));
       }
     } else {
       saveGameState(this.gs);
-      setTimeout(() => showBattleDefeatOverlay(
+      this.time.delayedCall(400, () => showBattleDefeatOverlay(
         this,
         () => showInvasionBanner(
           this, this.invasionState,
           () => goToPreBattle(this, this.gs, this.invasionState),
         ),
-      ), 400);
+      ));
     }
   }
 

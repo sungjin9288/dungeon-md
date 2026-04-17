@@ -357,11 +357,11 @@ export class ForgeScene extends Phaser.Scene {
           ).setAlpha(1);
           c.add(s);
         }
-        setTimeout(() => {
+        this.time.delayedCall(600, () => {
           c.destroy();
           onComplete();
           this.showCraftCompleteCard(bp);
-        }, 600);
+        });
       }
     }, 280);
   }
