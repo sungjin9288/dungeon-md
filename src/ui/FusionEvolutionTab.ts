@@ -14,7 +14,7 @@ import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   type FusionTabContext, TAB_ACCENT,
-  drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast,
+  drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast, showConfirmDialog,
 } from './FusionTabs';
 
 export interface EvolutionState {
@@ -108,7 +108,13 @@ export function buildEvolutionTab(
       });
       execBtn.on('pointerdown', () => {
         ctx.scene.tweens.add({ targets: execBtn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
-        executeEvolution(ctx, state);
+        showConfirmDialog(
+          ctx,
+          '✨ 진화를 실행하시겠습니까?',
+          `${getMonsterDisplayName(state.evoSlots[0]!.id)} ×3 → ${evolvedName}\n재료 몬스터가 사라집니다.`,
+          '#44cc66',
+          () => executeEvolution(ctx, state),
+        );
       });
       c.add(execBtn);
     }

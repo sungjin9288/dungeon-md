@@ -224,6 +224,59 @@ export function openMonsterPicker(
   }
 }
 
+// ─── Confirmation dialog ─────────────────────────────────────────────────
+
+export function showConfirmDialog(
+  ctx: FusionTabContext,
+  title: string,
+  detail: string,
+  accentCss: string,
+  onConfirm: () => void,
+): void {
+  const PW = 260, PH = 164;
+  const PX = (CANVAS_WIDTH - PW) / 2;
+  const PY = (CANVAS_HEIGHT - PH) / 2;
+  const ov = ctx.scene.add.container(0, 0).setDepth(75);
+
+  const dim = ctx.scene.add.graphics();
+  dim.fillStyle(0x000000, 0.78);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ov.add(dim);
+
+  const bg = ctx.scene.add.graphics();
+  bg.fillStyle(0x080e0a, 1);
+  bg.fillRoundedRect(PX, PY, PW, PH, 10);
+  bg.lineStyle(1.5, 0x334433, 0.85);
+  bg.strokeRoundedRect(PX, PY, PW, PH, 10);
+  ov.add(bg);
+
+  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 26, title, {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: accentCss, fontStyle: 'bold',
+  }).setOrigin(0.5));
+
+  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 58, detail, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#998877',
+    align: 'center', wordWrap: { width: PW - 32 },
+  }).setOrigin(0.5));
+
+  const cancelBtn = ctx.scene.add.text(CANVAS_WIDTH / 2 - 56, PY + PH - 28, '취소', {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#777777',
+    backgroundColor: '#111111', padding: { x: 20, y: 8 },
+  }).setOrigin(0.5).setInteractive();
+  cancelBtn.on('pointerdown', () => ov.destroy(true));
+  ov.add(cancelBtn);
+
+  const confirmBtn = ctx.scene.add.text(CANVAS_WIDTH / 2 + 56, PY + PH - 28, '확인', {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: accentCss, fontStyle: 'bold',
+    backgroundColor: '#111111', padding: { x: 20, y: 8 },
+  }).setOrigin(0.5).setInteractive();
+  confirmBtn.on('pointerdown', () => { ov.destroy(true); onConfirm(); });
+  ov.add(confirmBtn);
+
+  ov.setAlpha(0);
+  ctx.scene.tweens.add({ targets: ov, alpha: 1, duration: 160 });
+}
+
 // ─── Tab re-exports (barrel) ──────────────────────────────────────────────
 // FusionScene.ts imports these without knowing the individual tab modules.
 

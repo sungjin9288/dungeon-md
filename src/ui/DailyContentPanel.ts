@@ -51,11 +51,23 @@ export function buildDailyContentPanel(
     fontFamily: 'sans-serif', fontSize: '16px',
   }).setOrigin(0.5).setDepth(11);
 
-  // Rule sub-label (small, inside button)
+  // Rule sub-label / done countdown (small, inside button)
   if (!dailyDone) {
     scene.add.text(btnX + 24, btnY + 27, ruleLabel.text, {
       fontFamily: 'sans-serif', fontSize: '11px', color: ruleLabel.color,
     }).setOrigin(0.5).setDepth(11);
+  } else {
+    const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
+    let secs = Math.max(0, Math.floor((midnight.getTime() - Date.now()) / 1000));
+    const cdT = scene.add.text(btnX + 24, btnY + 27, '', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aa44',
+    }).setOrigin(0.5).setDepth(11);
+    const fmtHms = (s: number) =>
+      `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    cdT.setText(fmtHms(secs));
+    scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
+      secs = Math.max(0, secs - 1); cdT.setText(fmtHms(secs));
+    }});
   }
 
   scene.add.text(btnX + 24, btnY + 38, '일일', {
@@ -94,12 +106,30 @@ export function buildDailyContentPanel(
     fontFamily: 'sans-serif', fontSize: '16px',
   }).setOrigin(0.5).setDepth(11);
 
-  // Boss name sub-label
+  // Boss name sub-label / done countdown
   if (!weeklyDone) {
     const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
     scene.add.text(btnX + 24, weekBtnY + 27, bossShort, {
       fontFamily: 'sans-serif', fontSize: '11px', color: '#cc99ff',
     }).setOrigin(0.5).setDepth(11);
+  } else {
+    const now2 = new Date();
+    const nextMon = new Date(now2);
+    const daysUntil = ((1 - now2.getDay() + 7) % 7) || 7;
+    nextMon.setDate(now2.getDate() + daysUntil); nextMon.setHours(0, 0, 0, 0);
+    let wSecs = Math.max(0, Math.floor((nextMon.getTime() - now2.getTime()) / 1000));
+    const wCdT = scene.add.text(btnX + 24, weekBtnY + 27, '', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aa44',
+    }).setOrigin(0.5).setDepth(11);
+    const fmtDhm = (s: number) => {
+      const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+      return d > 0 ? `${d}일 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+                   : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    };
+    wCdT.setText(fmtDhm(wSecs));
+    scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
+      wSecs = Math.max(0, wSecs - 1); wCdT.setText(fmtDhm(wSecs));
+    }});
   }
 
   scene.add.text(btnX + 24, weekBtnY + 38, '주간', {

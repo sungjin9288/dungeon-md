@@ -13,7 +13,7 @@ import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   type FusionTabContext,
-  drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast,
+  drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast, showConfirmDialog,
 } from './FusionTabs';
 
 export interface AbsorptionState {
@@ -150,7 +150,13 @@ export function buildAbsorptionTab(
   }).setOrigin(0.5);
   if (canExec) btn.setInteractive().on('pointerdown', () => {
     ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
-    executeAbsorption(ctx, state);
+    showConfirmDialog(
+      ctx,
+      '🍴 흡수를 실행하시겠습니까?',
+      `희생 ${state.absorbSacrifices.length}마리 소멸\n되돌릴 수 없습니다.`,
+      '#cc8844',
+      () => executeAbsorption(ctx, state),
+    );
   });
   c.add(btn);
 
