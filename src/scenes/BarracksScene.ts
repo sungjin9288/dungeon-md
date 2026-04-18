@@ -330,18 +330,6 @@ export class BarracksScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.contentContainer.add(eqT);
 
-    // SP badge
-    if (m.skillPoints > 0) {
-      const spBg = this.add.graphics();
-      spBg.fillStyle(0x8800cc, 1);
-      spBg.fillCircle(x + 18, y + 18, 10);
-      this.contentContainer.add(spBg);
-      const spT = this.add.text(x + 18, y + 18, `${m.skillPoints}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
-      }).setOrigin(0.5);
-      this.contentContainer.add(spT);
-    }
-
     // No-skill warning badge — orange "!" dot top-left
     if (m.equippedSkills.length === 0) {
       const nb = this.add.graphics();
@@ -453,11 +441,12 @@ export class BarracksScene extends Phaser.Scene {
     navBg.lineStyle(1, COLORS.TORCH_GOLD, 0.4);
     navBg.lineBetween(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, CANVAS_HEIGHT - 72);
 
-    const btnW = (CANVAS_WIDTH - 24) / 4;
+    const btnW = (CANVAS_WIDTH - 28) / 5;
     const btnDefs = [
       { label: '⚔️ 막사',  active: true,  action: () => { /* already here */ } },
       { label: '📖 도감',  active: false, action: () => { this.registry.set('previousScene', 'BarracksScene'); this.scene.start('CodexScene'); } },
       { label: '✨ 소환',  active: false, action: () => this.scene.start('SummonScene') },
+      { label: '🛒 스킬',  active: false, action: () => this.showSkillShop() },
       { label: '🏪 상점',  active: false, action: () => this.scene.start('ShopScene') },
     ];
 
