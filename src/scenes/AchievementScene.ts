@@ -291,13 +291,13 @@ export class AchievementScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(unlocked ? 1 : 0.35);
 
     // Name
-    this.add.text(x + 42, y + 13, name, {
+    const nameT = this.add.text(x + 42, y + 13, name, {
       fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold',
       color: canClaim ? '#88ff88' : unlocked ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
     }).setOrigin(0, 0.5);
 
     // Description
-    this.add.text(x + 42, y + 29, desc, {
+    const descT = this.add.text(x + 42, y + 29, desc, {
       fontFamily: 'sans-serif', fontSize: '9px',
       color: unlocked ? CSS.PARCHMENT : '#5a4020',
       wordWrap: { width: CARD_W - 130 },
@@ -308,7 +308,7 @@ export class AchievementScene extends Phaser.Scene {
     if (reward.gems)         rewardParts.push(`💎${reward.gems}`);
     if (reward.soulCrystals) rewardParts.push(`💠${reward.soulCrystals}`);
     const rewardStr = rewardParts.join(' ');
-    this.add.text(x + CARD_W - 8, y + 13, rewardStr, {
+    const rewardT = this.add.text(x + CARD_W - 8, y + 13, rewardStr, {
       fontFamily: 'sans-serif', fontSize: '9px',
       color: canClaim ? '#88ff88' : rewardClaimed ? '#445544' : CSS.PARCHMENT_MUTED,
     }).setOrigin(1, 0.5);
@@ -327,7 +327,7 @@ export class AchievementScene extends Phaser.Scene {
     pfill.fillRoundedRect(pbx, pby, pbw * pct, 6, 3);
 
     const progressTxt = unlocked ? '완료!' : `${current} / ${target}`;
-    this.add.text(x + 42 + pbw + 4, y + CARD_H - 13, progressTxt, {
+    const progressT = this.add.text(x + 42 + pbw + 4, y + CARD_H - 13, progressTxt, {
       fontFamily: 'sans-serif', fontSize: '9px',
       color: unlocked ? CSS.TORCH_AMBER : '#5a4020',
     }).setOrigin(0, 0.5);
@@ -343,35 +343,41 @@ export class AchievementScene extends Phaser.Scene {
       btnBg.fillRoundedRect(bx, by, btnW, btnH, 5);
       btnBg.lineStyle(1.5, 0x44dd44, 0.9);
       btnBg.strokeRoundedRect(bx, by, btnW, btnH, 5);
-      this.add.text(bx + btnW / 2, by + btnH / 2, '수령', {
+      const claimT = this.add.text(bx + btnW / 2, by + btnH / 2, '수령', {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
         color: '#88ff88',
       }).setOrigin(0.5);
       const zone = this.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH).setInteractive();
       zone.on('pointerdown', () => this.claimReward(def.id, reward));
-      this.listContainer.add([btnBg, zone]);
+      this.listContainer.add([btnBg, claimT, zone]);
     } else if (rewardClaimed) {
-      this.add.text(x + CARD_W - 10, y + CARD_H - 13, '✓ 수령', {
+      const claimedT = this.add.text(x + CARD_W - 10, y + CARD_H - 13, '✓ 수령', {
         fontFamily: 'sans-serif', fontSize: '9px', color: '#445544',
       }).setOrigin(1, 0.5);
+      this.listContainer.add([claimedT]);
     }
 
-    this.listContainer.add([bg, iconTxt, pbg2, pfill]);
+    this.listContainer.add([bg, iconTxt, nameT, descT, rewardT, pbg2, pfill, progressT]);
   }
 
   private claimReward(achievementId: string, reward: AchievementDef['reward']): void {
     const gs = loadGameState();
-    if (!gs.achievements) gs.achievements = {};
-    const entry = gs.achievements[achievementId];
+    const entry = gs.achievements?.[achievementId];
     if (!entry?.unlocked || entry.rewardClaimed) return;
 
-    entry.rewardClaimed = true;
-    if (reward.gems)         gs.gems         = (gs.gems ?? 0) + reward.gems;
-    if (reward.soulCrystals) gs.soulCrystals = (gs.soulCrystals ?? 0) + reward.soulCrystals;
-    saveGameState(gs);
+    const updated = {
+      ...gs,
+      gems:         (gs.gems         ?? 0) + (reward.gems         ?? 0),
+      soulCrystals: (gs.soulCrystals ?? 0) + (reward.soulCrystals ?? 0),
+      achievements: {
+        ...gs.achievements,
+        [achievementId]: { ...entry, rewardClaimed: true },
+      },
+    };
+    saveGameState(updated);
 
     // Rebuild list to reflect claimed state
-    this.gameState = gs;
+    this.gameState = updated;
     this.buildList();
 
     // Toast feedback
