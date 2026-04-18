@@ -412,10 +412,11 @@ function drawMiniQuestSection(
 
   const challenges = getDailyChallenges();
   const today      = getTodayString();
-  // Reset stale challenge data if date changed
+  // Reset stale challenge data if date changed, and persist immediately
   if (gs.dailyChallengeDate !== today) {
     gs.dailyChallenges    = {};
     gs.dailyChallengeDate = today;
+    saveGameState(gs);
   }
   const CARD_H = 16 + challenges.length * 26 + 20;
 
