@@ -223,6 +223,13 @@ export function showMonsterDetailPanel(
   }).setOrigin(0.5);
   ov.add(closeT);
 
+  // Entry animation
+  ov.setAlpha(0).setScale(0.92);
+  scene.tweens.add({
+    targets: ov, alpha: 1, scaleX: 1, scaleY: 1,
+    duration: 250, ease: 'Back.easeOut',
+  });
+
   return ov;
 }
 
@@ -545,7 +552,14 @@ export function showSkillShopPanel(
       }).setOrigin(0.5).setInteractive();
       buyBtn.on('pointerdown', () => {
         const gs2 = loadGameState();
-        // Purchase with gold (simplified)
+        if (gs2.homeGold < sk.goldCost) {
+          buyBtn.setText('💰 골드 부족!').setColor('#ff4444');
+          scene.time.delayedCall(1200, () => {
+            if (buyBtn.active) buyBtn.setText(`💰${sk.goldCost} / 💎${sk.gemCost}`).setColor(CSS.TORCH_AMBER);
+          });
+          return;
+        }
+        gs2.homeGold -= sk.goldCost;
         gs2.ownedActiveSkills.push(sk.id);
         saveGameState(gs2);
         ov.destroy();
@@ -561,6 +575,13 @@ export function showSkillShopPanel(
   }).setOrigin(0.5).setInteractive();
   closeT.on('pointerdown', () => { ov.destroy(); onClose(); });
   ov.add(closeT);
+
+  // Entry animation — slide up from bottom
+  ov.setY(CANVAS_HEIGHT).setAlpha(0);
+  scene.tweens.add({
+    targets: ov, y: 0, alpha: 1,
+    duration: 280, ease: 'Quad.easeOut',
+  });
 
   return ov;
 }

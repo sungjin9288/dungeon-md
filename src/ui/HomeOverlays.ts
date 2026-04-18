@@ -446,6 +446,12 @@ export function showBattleDefeatOverlay(
   }).setOrigin(0.5).setInteractive();
   btn.on('pointerdown', () => { c.destroy(true); onRetry(); });
   c.add(btn);
+
+  c.setAlpha(0).setScale(0.88);
+  scene.tweens.add({
+    targets: c, alpha: 1, scaleX: 1, scaleY: 1,
+    duration: 220, ease: 'Back.easeOut',
+  });
 }
 
 // ─── Chapter-complete overlay ─────────────────────────────────────────────────
