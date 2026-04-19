@@ -97,6 +97,15 @@ export const CHAPTER_PLAQUE_THEMES: PlaqueTheme[] = [
     clearedBg: 0x2a2000, clearedBorder: 0xffd700, clearedLabelColor: '#ffd700',
     starColor: '#ffd700', bossEmoji: '🌟', showHpBar: false,
   },
+  // [6] Ch8 — primordial abyss (void indigo)
+  {
+    lockedBg: 0x04020e, lockedBorder: 0x1a0a3a, lockedLabelColor: '#2a1050',
+    unclearedBg: 0x0a0520, unclearedBorder: 0x6622cc,
+    unclearedHoverBg: 0x120830, unclearedHoverBorder: 0x9944ff,
+    unclearedLabelColor: '#cc88ff', unclearedStarColor: '#440088',
+    clearedBg: 0x120830, clearedBorder: 0x9944ff, clearedLabelColor: '#cc88ff',
+    starColor: '#aa44ff', bossEmoji: '🌑', showHpBar: false,
+  },
 ];
 
 // ── ChapterSectionData ────────────────────────────────────────────────────────
@@ -206,6 +215,18 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     lockedDivColor: 0x2a1a00, lockedLabelColor: '#4a3a00',
     bannerBg: 0x0a0800, bannerBorder: 0x3a2a00,
     lockedMsgColor: '#cc9900', lockedNameColor: '#4a3a00',
+  },
+  // Ch8
+  {
+    num: 8, name: '원초의 심연', stageCount: 8,
+    unlockIdx: 71, unlockMsg: '⛓ 스테이지 72를 클리어하면 열립니다',
+    startIdx: 72,
+    divY: 1340, labelY: 1330, progressBarY: 1345, bannerY: 1348, gridStartY: 1350,
+    cols: 4, rows: 2, bw: 66, bh: 62, gapX: 10, gapY: 10,
+    activeDivColor: 0x9944ff, activeTextColor: '#cc88ff',
+    lockedDivColor: 0x1a0a3a, lockedLabelColor: '#2a1050',
+    bannerBg: 0x04020e, bannerBorder: 0x1a0a3a,
+    lockedMsgColor: '#6622cc', lockedNameColor: '#2a1050',
   },
 ];
 

@@ -604,7 +604,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'story_complete',
     name: '던전의 수호자',
-    description: '모든 7개 챕터(72 스테이지)를 클리어하세요.',
+    description: 'Chapter 1~7 스토리(72 스테이지)를 완주하세요.',
     icon: '👑',
     category: 'mastery',
     target: 1,
