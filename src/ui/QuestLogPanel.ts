@@ -210,11 +210,19 @@ function drawMainQuestCard(
   cg.fillCircle(PAD + CARD_W - 12, y + 14, 5);
   c.add(cg);
 
-  // Quest ID + title
-  c.add(scene.add.text(PAD + 10, y + 8, `[${quest.id}]`, {
+  // Chapter badge + quest ID
+  const chBadgeBg = scene.add.graphics();
+  chBadgeBg.fillStyle(0x5a3a00, 1);
+  chBadgeBg.fillRoundedRect(PAD + 10, y + 8, 38, 16, 3);
+  c.add(chBadgeBg);
+  c.add(scene.add.text(PAD + 29, y + 16, `CH.${quest.chapter}`, {
+    fontFamily: 'sans-serif', fontSize: '9px', color: '#ffc844', fontStyle: 'bold',
+  }).setOrigin(0.5));
+
+  c.add(scene.add.text(PAD + 54, y + 8, `[${quest.id}]`, {
     fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
   }));
-  c.add(scene.add.text(PAD + 58, y + 8, quest.title, {
+  c.add(scene.add.text(PAD + 96, y + 8, quest.title, {
     fontFamily: 'Georgia, serif', fontSize: '13px',
     color: '#f0e6c8', fontStyle: 'bold',
   }));
@@ -232,25 +240,33 @@ function drawMainQuestCard(
 
   // Objectives
   let oy = y + 54;
-  quest.objectives.forEach(obj => {
-    const cur   = prog?.objectives[obj.id] ?? 0;
-    const pct   = Math.min(cur / obj.target, 1);
-    const BAR_W = 90;
+  quest.objectives.forEach((obj, oi) => {
+    const cur    = prog?.objectives[obj.id] ?? 0;
+    const pct    = Math.min(cur / obj.target, 1);
+    const BAR_W  = 90;
+    const barBx  = CANVAS_WIDTH - PAD - BAR_W - 10;
 
     c.add(scene.add.text(PAD + 10, oy, `▸ ${obj.description}`, {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#c8b090',
     }));
 
-    const bg2 = scene.add.graphics();
-    bg2.fillStyle(0x0a0600, 1);
-    bg2.fillRoundedRect(CANVAS_WIDTH - PAD - BAR_W - 10, oy, BAR_W, 11, 2);
+    // Track
+    const track2 = scene.add.graphics();
+    track2.fillStyle(0x0a0600, 1);
+    track2.fillRoundedRect(barBx, oy, BAR_W, 11, 2);
+    track2.lineStyle(0.5, 0x664400, 0.6);
+    track2.strokeRoundedRect(barBx, oy, BAR_W, 11, 2);
+    c.add(track2);
+
+    // Animated fill
     if (pct > 0) {
-      bg2.fillStyle(0xc8921a, 1);
-      bg2.fillRoundedRect(CANVAS_WIDTH - PAD - BAR_W - 10, oy, Math.floor(BAR_W * pct), 11, 2);
+      const fill2 = scene.add.rectangle(barBx, oy, 2, 11, 0xc8921a).setOrigin(0, 0);
+      c.add(fill2);
+      scene.tweens.add({
+        targets: fill2, displayWidth: BAR_W * pct,
+        duration: 420, ease: 'Power2.Out', delay: 80 + oi * 120,
+      });
     }
-    bg2.lineStyle(0.5, 0x664400, 0.6);
-    bg2.strokeRoundedRect(CANVAS_WIDTH - PAD - BAR_W - 10, oy, BAR_W, 11, 2);
-    c.add(bg2);
 
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 6, oy + 5, `${cur}/${obj.target}`, {
       fontFamily: 'sans-serif', fontSize: '8px', color: '#806040',
@@ -335,19 +351,25 @@ function drawSubQuestSection(
       fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
     }));
 
-    // Progress bar
+    // Progress bar — track
     const bx = PAD + 10;
     const by = y + 40;
-    const barBg = scene.add.graphics();
-    barBg.fillStyle(0x0a0600, 1);
-    barBg.fillRoundedRect(bx, by, BAR_W, 10, 2);
+    const trackSq = scene.add.graphics();
+    trackSq.fillStyle(0x0a0600, 1);
+    trackSq.fillRoundedRect(bx, by, BAR_W, 10, 2);
+    trackSq.lineStyle(0.5, 0x664400, 0.6);
+    trackSq.strokeRoundedRect(bx, by, BAR_W, 10, 2);
+    c.add(trackSq);
+
+    // Animated fill
     if (pct > 0) {
-      barBg.fillStyle(done ? 0xffcc00 : 0xc8921a, 1);
-      barBg.fillRoundedRect(bx, by, Math.floor(BAR_W * pct), 10, 2);
+      const fillSq = scene.add.rectangle(bx, by, 2, 10, done ? 0xffcc00 : 0xc8921a).setOrigin(0, 0);
+      c.add(fillSq);
+      scene.tweens.add({
+        targets: fillSq, displayWidth: BAR_W * pct,
+        duration: 400, ease: 'Power2.Out', delay: 100 + sqIds.indexOf(sqId) * 120,
+      });
     }
-    barBg.lineStyle(0.5, 0x664400, 0.6);
-    barBg.strokeRoundedRect(bx, by, BAR_W, 10, 2);
-    c.add(barBg);
 
     // Progress text
     c.add(scene.add.text(bx + BAR_W + 6, by + 5, `${prog}/${sq.objective.target}`, {
@@ -380,10 +402,25 @@ function drawSubQuestSection(
         const [newGs, claimed] = claimSubQuest(freshGs, sqId);
         if (!claimed) return;
         saveGameState(newGs);
-        // Rebuild quest log with updated state
-        state.questLogContainer?.destroy();
-        state.questLogContainer = undefined;
-        state.questLogContainer = buildQuestLogContainer(scene, state, newGs);
+
+        // Brief "✨ 수령!" toast before rebuilding
+        const toast = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 수령 완료!', {
+          fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffcc44', fontStyle: 'bold',
+          backgroundColor: '#1a0f00', padding: { x: 20, y: 10 },
+        }).setOrigin(0.5).setDepth(200).setAlpha(0);
+        scene.tweens.add({
+          targets: toast, alpha: 1, y: CANVAS_HEIGHT / 2 - 30,
+          duration: 200, ease: 'Power2.Out',
+          onComplete: () => scene.tweens.add({
+            targets: toast, alpha: 0, duration: 300, delay: 500,
+            onComplete: () => {
+              toast.destroy();
+              state.questLogContainer?.destroy();
+              state.questLogContainer = undefined;
+              state.questLogContainer = buildQuestLogContainer(scene, state, newGs);
+            },
+          }),
+        });
       });
       c.add(btnTxt);
     }
