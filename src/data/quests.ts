@@ -198,6 +198,41 @@ export const SUB_QUEST_POOL: SubQuest[] = [
   { id: 'SQ-015', icon: '👑', title: '신황제 격파',
     objective: { type: 'complete_stage', target: 72, description: '스테이지 72 클리어' },
     reward: { dmXP: 500, soulCrystals: 300 } },
+  // ── assign_monster ──
+  { id: 'SQ-016', icon: '🦎', title: '수호자 배치',
+    objective: { type: 'assign_monster', target: 1, description: '몬스터 1마리 배치' },
+    reward: { dmXP: 20, gold: 80 } },
+  { id: 'SQ-017', icon: '🐉', title: '수호대 완성',
+    objective: { type: 'assign_monster', target: 3, description: '몬스터 3마리 배치' },
+    reward: { dmXP: 60, gold: 200 } },
+  // ── feed_monster ──
+  { id: 'SQ-018', icon: '🍖', title: '첫 식사',
+    objective: { type: 'feed_monster', target: 1, description: '몬스터에게 먹이 1회' },
+    reward: { dmXP: 25, gold: 100 } },
+  { id: 'SQ-019', icon: '🍗', title: '영양 공급',
+    objective: { type: 'feed_monster', target: 3, description: '몬스터에게 먹이 3회' },
+    reward: { dmXP: 60, soulCrystals: 30 } },
+  { id: 'SQ-020', icon: '🥩', title: '집중 훈련식',
+    objective: { type: 'feed_monster', target: 5, description: '몬스터에게 먹이 5회' },
+    reward: { dmXP: 100, soulCrystals: 60 } },
+  // ── summon extras ──
+  { id: 'SQ-021', icon: '🌀', title: '소환 집중',
+    objective: { type: 'summon', target: 3, description: '소환 3회 실행' },
+    reward: { dmXP: 80, gold: 250 } },
+  { id: 'SQ-022', icon: '💫', title: '다중 소환',
+    objective: { type: 'summon', target: 5, description: '소환 5회 실행' },
+    reward: { dmXP: 120, soulCrystals: 50 } },
+  // ── complete_stage extras ──
+  { id: 'SQ-023', icon: '🗺️', title: '중반 탐험',
+    objective: { type: 'complete_stage', target: 20, description: '스테이지 20 클리어' },
+    reward: { dmXP: 80, gold: 300 } },
+  { id: 'SQ-024', icon: '⚡', title: '후반 돌파',
+    objective: { type: 'complete_stage', target: 40, description: '스테이지 40 클리어' },
+    reward: { dmXP: 150, soulCrystals: 80 } },
+  // ── build_room extra ──
+  { id: 'SQ-025', icon: '🏯', title: '던전 확장',
+    objective: { type: 'build_room', target: 2, description: '방 2개 건설' },
+    reward: { dmXP: 60, gold: 220 } },
 ];
 
 // Legacy alias kept for compatibility
