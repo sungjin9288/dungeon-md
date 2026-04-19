@@ -168,6 +168,36 @@ export const SKIN_DATA: MonsterSkin[] = [
     particleColor: 0x440088,   attackEffectColor: 0x8800ff,
     idleVariant: 'special',    rarity: 'rare',    gemCost: 150, available: true,
   },
+
+  // ─── 퀘스트 해금 전용 스킨 (상점 미표시) ─────────────────────────────────────
+  {
+    id: 'eternal_crow',        monsterId: 'three_legged_crow',
+    name: '영원의 삼족오',     emoji: '🌟🐦',
+    particleColor: 0xffcc00,   attackEffectColor: 0xffee44,
+    idleVariant: 'special',    rarity: 'rare',    gemCost: 0,   available: true,
+    unlockVia: 'quest',        unlockRef: 'MQ-030',
+  },
+  {
+    id: 'divine_warrior',      monsterId: 'dokkaebi_warrior',
+    name: '천계 도깨비 전사', emoji: '👹✨',
+    particleColor: 0x88eeff,   attackEffectColor: 0x44ccff,
+    idleVariant: 'limited',    rarity: 'limited', gemCost: 0,   available: true,
+    unlockVia: 'quest',        unlockRef: 'MQ-034',
+  },
+  {
+    id: 'void_death',          monsterId: 'death_messenger',
+    name: '허공의 저승사자', emoji: '💀🌑',
+    particleColor: 0x220033,   attackEffectColor: 0x6600aa,
+    idleVariant: 'special',    rarity: 'rare',    gemCost: 0,   available: true,
+    unlockVia: 'quest',        unlockRef: 'MQ-039',
+  },
+  {
+    id: 'sage_primordial',     monsterId: 'sage',
+    name: '원초의 도인',       emoji: '🧙🌑',
+    particleColor: 0x440055,   attackEffectColor: 0x8800cc,
+    idleVariant: 'limited',    rarity: 'limited', gemCost: 0,   available: true,
+    unlockVia: 'quest',        unlockRef: 'MQ-044',
+  },
 ];
 
 /**

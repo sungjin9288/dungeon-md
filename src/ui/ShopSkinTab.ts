@@ -64,7 +64,11 @@ export function buildSkinTab(
     });
   });
 
-  const skins = SKIN_DATA.filter(s => skinFilter === 'all' || s.rarity === skinFilter);
+  // Quest-unlock skins are excluded from the shop — players receive them via quest rewards.
+  const skins = SKIN_DATA.filter(s =>
+    (!s.unlockVia || s.unlockVia === 'shop') &&
+    (skinFilter === 'all' || s.rarity === skinFilter),
+  );
   const COLS = 2;
   const CARD_W = (CANVAS_WIDTH - 24) / COLS;
   const CARD_H = 140;
@@ -174,14 +178,12 @@ function drawSkinCard(
     contentCtr.add(zone);
     zone.on('pointerdown', () => {
       const state = loadGameState();
-      if (!state.equippedSkins) state.equippedSkins = {};
-      if (equipped) {
-        delete state.equippedSkins[skin.monsterId];
-      } else {
-        state.equippedSkins[skin.monsterId] = skin.id;
-      }
-      saveGameState(state);
-      gemsText.setText(`💎 ${state.gems} 젬`);
+      const newEquippedSkins = equipped
+        ? Object.fromEntries(Object.entries(state.equippedSkins ?? {}).filter(([k]) => k !== skin.monsterId))
+        : { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id };
+      const updated = { ...state, equippedSkins: newEquippedSkins };
+      saveGameState(updated);
+      gemsText.setText(`💎 ${updated.gems} 젬`);
       ctx.refreshContent();
     });
 
@@ -240,14 +242,17 @@ function drawSkinCard(
         ctx.showToast('젬 부족!');
         return;
       }
-      state.gems -= skin.gemCost;
-      if (!state.ownedSkins) state.ownedSkins = {};
-      if (!state.ownedSkins[skin.monsterId]) state.ownedSkins[skin.monsterId] = [];
-      if (!state.ownedSkins[skin.monsterId].includes(skin.id)) {
-        state.ownedSkins[skin.monsterId].push(skin.id);
-      }
-      saveGameState(state);
-      gemsText.setText(`💎 ${state.gems} 젬`);
+      const prevOwned = state.ownedSkins?.[skin.monsterId] ?? [];
+      const updated = {
+        ...state,
+        gems: (state.gems ?? 0) - skin.gemCost,
+        ownedSkins: {
+          ...(state.ownedSkins ?? {}),
+          [skin.monsterId]: prevOwned.includes(skin.id) ? prevOwned : [...prevOwned, skin.id],
+        },
+      };
+      saveGameState(updated);
+      gemsText.setText(`💎 ${updated.gems} 젬`);
       ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
       ctx.showToast(`${skin.name} 구입 완료!`);
       ctx.refreshContent();
@@ -366,24 +371,28 @@ export function showPreviewModal(
   actZ.on('pointerdown', () => {
     const state = loadGameState();
     if (isOwned) {
-      if (!state.equippedSkins) state.equippedSkins = {};
-      state.equippedSkins[skin.monsterId] = skin.id;
-      saveGameState(state);
+      const updated = {
+        ...state,
+        equippedSkins: { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id },
+      };
+      saveGameState(updated);
       ov.destroy();
       ctx.refreshContent();
       ctx.showToast(`${skin.name} 장착!`);
     } else {
       if ((state.gems ?? 0) < skin.gemCost) { ctx.showToast('젬 부족!'); return; }
-      state.gems -= skin.gemCost;
-      if (!state.ownedSkins) state.ownedSkins = {};
-      if (!state.ownedSkins[skin.monsterId]) state.ownedSkins[skin.monsterId] = [];
-      if (!state.ownedSkins[skin.monsterId].includes(skin.id)) {
-        state.ownedSkins[skin.monsterId].push(skin.id);
-      }
-      state.equippedSkins = state.equippedSkins ?? {};
-      state.equippedSkins[skin.monsterId] = skin.id;
-      saveGameState(state);
-      gemsText.setText(`💎 ${state.gems} 젬`);
+      const prevOwned = state.ownedSkins?.[skin.monsterId] ?? [];
+      const updated = {
+        ...state,
+        gems: (state.gems ?? 0) - skin.gemCost,
+        ownedSkins: {
+          ...(state.ownedSkins ?? {}),
+          [skin.monsterId]: prevOwned.includes(skin.id) ? prevOwned : [...prevOwned, skin.id],
+        },
+        equippedSkins: { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id },
+      };
+      saveGameState(updated);
+      gemsText.setText(`💎 ${updated.gems} 젬`);
       ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
       ov.destroy();
       ctx.refreshContent();

@@ -17,6 +17,7 @@ export { MAIN_QUESTS } from './questData';
 
 import type { ObjectiveType, MainQuest, Reward } from './questData';
 import { MAIN_QUESTS } from './questData';
+import { SKIN_DATA } from '../data/monsters';
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
 
@@ -132,8 +133,37 @@ export function completeAndAdvance(
     activeMainQuestId: quest.nextQuestId ?? '',
   };
   const nextQuestId = quest.nextQuestId;
-  const finalGs = nextQuestId ? startQuest(partialGs, nextQuestId) : partialGs;
+  const advancedGs  = nextQuestId ? startQuest(partialGs, nextQuestId) : partialGs;
+  const finalGs     = grantQuestSkins(advancedGs);
   return [finalGs, { completedQuest: quest, nextQuestId: nextQuestId ?? null, unlocks }];
+}
+
+// ─── Quest-skin grant ─────────────────────────────────────────────────────────
+
+/**
+ * Check all quest-unlock skins and grant any whose linked quest is now completed.
+ * Pure function — returns updated GameState (or same reference if nothing changed).
+ */
+export function grantQuestSkins(gs: GameState): GameState {
+  const questSkins = SKIN_DATA.filter(s => s.unlockVia === 'quest' && s.unlockRef);
+  let ownedSkins = gs.ownedSkins ?? {};
+  let changed = false;
+
+  for (const skin of questSkins) {
+    const refId = skin.unlockRef!;
+    const prog  = gs.questProgress[refId];
+    if (!prog?.completed) continue;
+
+    const alreadyOwned = (ownedSkins[skin.monsterId] ?? []).includes(skin.id);
+    if (alreadyOwned) continue;
+
+    const prev = ownedSkins[skin.monsterId] ?? [];
+    ownedSkins = { ...ownedSkins, [skin.monsterId]: [...prev, skin.id] };
+    changed = true;
+    logger.debug(`[SKIN] Quest unlock: ${skin.id} granted (ref: ${refId})`);
+  }
+
+  return changed ? { ...gs, ownedSkins } : gs;
 }
 
 // ─── Sub quest system ─────────────────────────────────────────────────────────

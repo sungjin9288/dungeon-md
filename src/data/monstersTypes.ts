@@ -253,4 +253,8 @@ export interface MonsterSkin {
   gemCost:           number;
   season?:           'spring' | 'summer' | 'fall' | 'winter';
   available:         boolean;   // false = expired limited skin
+  /** How the skin is obtained. Defaults to 'shop' when absent. */
+  unlockVia?:        'shop' | 'quest';
+  /** Quest ID (e.g. 'MQ-034') that grants this skin on completion. */
+  unlockRef?:        string;
 }
