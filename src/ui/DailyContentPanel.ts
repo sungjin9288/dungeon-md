@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getDailyDungeon, getDailyChallenges, getWeeklyBoss, getTodayString, getThisWeekMonday } from '../data/daily';
-import { loadGameState } from '../data/wisdom';
+import { loadGameState, saveGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
 
 interface ShowChallengePanelFn {
@@ -178,9 +178,21 @@ export function buildDailyContentPanel(
     fontFamily: 'sans-serif', fontSize: '18px',
   }).setOrigin(0.5).setDepth(11);
 
-  scene.add.text(btnX + 24, chalBtnY + 34, `${completedCount}/3`, {
+  scene.add.text(btnX + 24, chalBtnY + 33, `${completedCount}/3`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: '#44cccc',
   }).setOrigin(0.5).setDepth(11);
+
+  // Mini dot indicators — one per challenge
+  const dotStates = challenges.map(c => gs.dailyChallenges[c.id]);
+  dotStates.forEach((st, di) => {
+    const completed  = st?.completed ?? false;
+    const inProgress = !completed && (st?.progress ?? 0) > 0;
+    const dotColor   = completed ? '#44ff88' : inProgress ? '#ffcc44' : '#336666';
+    const dotX = btnX + 12 + di * 14;
+    scene.add.text(dotX, chalBtnY + 44, '●', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: dotColor,
+    }).setDepth(11);
+  });
 
   const chalZone = scene.add.zone(btnX + 24, chalBtnY + 24, 48, 48)
     .setInteractive().setDepth(12);
@@ -193,10 +205,11 @@ export function buildDailyContentPanel(
 export function showChallengePanel(scene: Phaser.Scene): void {
   const gs = loadGameState();
   const today = getTodayString();
-  // Reset stale progress
+  // Reset stale progress and persist if date changed
+  let workGs = gs;
   if (gs.dailyChallengeDate !== today) {
-    gs.dailyChallenges    = {};
-    gs.dailyChallengeDate = today;
+    workGs = { ...gs, dailyChallenges: {}, dailyChallengeDate: today };
+    saveGameState(workGs);
   }
   const challenges = getDailyChallenges();
 
@@ -219,15 +232,33 @@ export function showChallengePanel(scene: Phaser.Scene): void {
   pg.strokeRoundedRect(PX, PY, PW, PH, 10);
   c.add(pg);
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '🎯  오늘의 도전 과제', {
-    fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cccc', fontStyle: 'bold',
-  }).setOrigin(0.5));
+  // ── Header: "all done" banner vs normal title ────────────────────────────
+  const allDone = challenges.every(
+    ch => workGs.dailyChallenges[ch.id]?.completed ?? false,
+  );
+  const totalGems = allDone
+    ? challenges.reduce((sum, ch) => sum + (ch.reward.gems ?? 0), 0)
+    : 0;
+
+  if (allDone) {
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 16, '🎉 모든 도전 완료!', {
+      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#44ffaa', fontStyle: 'bold',
+    }).setOrigin(0.5));
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 36, `오늘 총 +${totalGems} 💎 획득`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#aaffcc',
+    }).setOrigin(0.5));
+  } else {
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '🎯  오늘의 도전 과제', {
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cccc', fontStyle: 'bold',
+    }).setOrigin(0.5));
+  }
 
   challenges.forEach((ch, i) => {
-    const entry = gs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
-    const rowY = PY + 56 + i * 78;
+    const entry = workGs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
+    const rowY  = PY + 56 + i * 78;
+    const ratio = Math.min(entry.progress / ch.objective.target, 1);
 
-    // Row bg
+    // Row background
     const rbg = scene.add.graphics();
     rbg.fillStyle(entry.completed ? 0x0a2a1a : 0x0a1422, 0.8);
     rbg.fillRoundedRect(PX + 12, rowY, PW - 24, 68, 6);
@@ -238,8 +269,7 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     c.add(rbg);
 
     // Status icon + description
-    const icon = entry.completed ? '✅' : '🔲';
-    c.add(scene.add.text(PX + 26, rowY + 12, icon, {
+    c.add(scene.add.text(PX + 26, rowY + 12, entry.completed ? '✅' : '🔲', {
       fontFamily: 'sans-serif', fontSize: '14px',
     }));
     c.add(scene.add.text(PX + 48, rowY + 12, ch.description, {
@@ -247,27 +277,44 @@ export function showChallengePanel(scene: Phaser.Scene): void {
       color: entry.completed ? '#88eebb' : '#d0c8b0',
     }));
 
-    // Reward
+    // Reward badge
     c.add(scene.add.text(PX + PW - 24, rowY + 12, `+${ch.reward.gems ?? 0} 💎`, {
       fontFamily: 'sans-serif', fontSize: '10px',
       color: entry.completed ? '#aaffcc' : '#88aacc',
     }).setOrigin(1, 0));
 
-    // Progress bar
-    const barX = PX + 26, barY = rowY + 44, barW = PW - 52, barH = 8;
-    const prog = scene.add.graphics();
-    prog.fillStyle(0x1a2a3a, 1);
-    prog.fillRoundedRect(barX, barY, barW, barH, 4);
-    const ratio = Math.min(entry.progress / ch.objective.target, 1);
-    if (ratio > 0) {
-      prog.fillStyle(entry.completed ? 0x44cc88 : 0x44aacc, 1);
-      prog.fillRoundedRect(barX, barY, barW * ratio, barH, 4);
-    }
-    c.add(prog);
+    // Progress bar — track
+    const barX = PX + 26, barY = rowY + 44, barW = PW - 88, barH = 8;
+    const track = scene.add.graphics();
+    track.fillStyle(0x1a2a3a, 1);
+    track.fillRoundedRect(barX, barY, barW, barH, 4);
+    c.add(track);
 
-    c.add(scene.add.text(barX + barW + 6, barY - 1, `${entry.progress}/${ch.objective.target}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#88aacc',
-    }));
+    // Progress bar — animated fill rectangle
+    const fillColor = entry.completed ? 0x44cc88 : 0x44aacc;
+    const fill = scene.add.rectangle(barX, barY, 2, barH, fillColor).setOrigin(0, 0);
+    c.add(fill);
+    if (ratio > 0) {
+      scene.tweens.add({
+        targets: fill,
+        displayWidth: barW * ratio,
+        duration: 480,
+        ease: 'Power2.Out',
+        delay: 120 + i * 150,
+      });
+    }
+
+    // Progress text: count + percentage
+    const pct = Math.floor(ratio * 100);
+    c.add(scene.add.text(barX + barW + 8, barY - 1,
+      `${entry.progress}/${ch.objective.target}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#88aacc',
+      }));
+    c.add(scene.add.text(barX + barW + 8, barY + 10,
+      entry.completed ? '완료' : `${pct}%`, {
+        fontFamily: 'sans-serif', fontSize: '9px',
+        color: entry.completed ? '#44ffaa' : '#667788',
+      }));
   });
 
   const closeBtn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 26, '닫기', {
