@@ -159,10 +159,12 @@ export interface WeeklyBoss {
 }
 
 const WEEKLY_BOSS_POOL: Array<{ name: string; bossType: InvaderType; hp: number }> = [
-  { name: '용왕의 분노',     bossType: 'dragon_king',          hp: 50000 },
-  { name: '여우 여왕의 귀환', bossType: 'fox_queen',           hp: 40000 },
-  { name: '삼신 파괴자',     bossType: 'three_god_destroyer',  hp: 80000 },
-  { name: '죽음의 사절',     bossType: 'death_emissary',       hp: 45000 },
+  { name: '용왕의 분노',       bossType: 'dragon_king',          hp: 50000 },
+  { name: '여우 여왕의 귀환',   bossType: 'fox_queen',            hp: 40000 },
+  { name: '삼신 파괴자',       bossType: 'three_god_destroyer',   hp: 80000 },
+  { name: '죽음의 사절',       bossType: 'death_emissary',        hp: 45000 },
+  { name: '영원의 황제 강림',   bossType: 'eternal_emperor',       hp: 70000 },
+  { name: '신황제의 시련',      bossType: 'god_emperor',           hp: 120000 },
 ];
 
 export function getWeeklyBoss(): WeeklyBoss {
@@ -197,46 +199,26 @@ export interface DailyChallenge {
 }
 
 const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
-  {
-    description: '침략자 50마리 처치',
-    objective: { type: 'kill_count', target: 50 },
-    reward: { gems: 20 },
-  },
-  {
-    description: 'HP 손실 없이 웨이브 3개 클리어',
-    objective: { type: 'no_damage', target: 3 },
-    reward: { gems: 30 },
-  },
-  {
-    description: '액티브 스킬 3회 사용',
-    objective: { type: 'skill_use', target: 3 },
-    reward: { gems: 15 },
-  },
-  {
-    description: '액티브 스킬 5회 사용',
-    objective: { type: 'skill_use', target: 5 },
-    reward: { gems: 25 },
-  },
-  {
-    description: '웨이브 5개 클리어',
-    objective: { type: 'wave_clear', target: 5 },
-    reward: { gems: 20 },
-  },
-  {
-    description: '웨이브 10개 클리어',
-    objective: { type: 'wave_clear', target: 10 },
-    reward: { gems: 25 },
-  },
-  {
-    description: '침략자 100마리 처치',
-    objective: { type: 'kill_count', target: 100 },
-    reward: { gems: 35 },
-  },
-  {
-    description: '침략자 15마리 처치',
-    objective: { type: 'kill_count', target: 15 },
-    reward: { gems: 10 },
-  },
+  // ── kill_count ──────────────────────────────────────────────────────────────
+  { description: '침략자 15마리 처치',  objective: { type: 'kill_count', target: 15  }, reward: { gems: 10 } },
+  { description: '침략자 30마리 처치',  objective: { type: 'kill_count', target: 30  }, reward: { gems: 15 } },
+  { description: '침략자 50마리 처치',  objective: { type: 'kill_count', target: 50  }, reward: { gems: 20 } },
+  { description: '침략자 75마리 처치',  objective: { type: 'kill_count', target: 75  }, reward: { gems: 25 } },
+  { description: '침략자 100마리 처치', objective: { type: 'kill_count', target: 100 }, reward: { gems: 35 } },
+  { description: '침략자 200마리 처치', objective: { type: 'kill_count', target: 200 }, reward: { gems: 55 } },
+  // ── wave_clear ──────────────────────────────────────────────────────────────
+  { description: '웨이브 3개 클리어',   objective: { type: 'wave_clear', target: 3  }, reward: { gems: 15 } },
+  { description: '웨이브 5개 클리어',   objective: { type: 'wave_clear', target: 5  }, reward: { gems: 20 } },
+  { description: '웨이브 10개 클리어',  objective: { type: 'wave_clear', target: 10 }, reward: { gems: 25 } },
+  { description: '웨이브 15개 클리어',  objective: { type: 'wave_clear', target: 15 }, reward: { gems: 40 } },
+  // ── no_damage ───────────────────────────────────────────────────────────────
+  { description: 'HP 손실 없이 웨이브 1개 클리어', objective: { type: 'no_damage', target: 1 }, reward: { gems: 15 } },
+  { description: 'HP 손실 없이 웨이브 3개 클리어', objective: { type: 'no_damage', target: 3 }, reward: { gems: 30 } },
+  { description: 'HP 손실 없이 웨이브 5개 클리어', objective: { type: 'no_damage', target: 5 }, reward: { gems: 50 } },
+  // ── skill_use ───────────────────────────────────────────────────────────────
+  { description: '액티브 스킬 3회 사용',  objective: { type: 'skill_use', target: 3  }, reward: { gems: 15 } },
+  { description: '액티브 스킬 5회 사용',  objective: { type: 'skill_use', target: 5  }, reward: { gems: 25 } },
+  { description: '액티브 스킬 10회 사용', objective: { type: 'skill_use', target: 10 }, reward: { gems: 40 } },
 ];
 
 export function getDailyChallenges(): DailyChallenge[] {
