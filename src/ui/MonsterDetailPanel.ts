@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS, CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type OwnedMonster } from '../data/wisdom';
-import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
+import { updateQuestObjective, tickSubQuestProgress, getQuest } from '../data/quests';
 import { MONSTER_DEFS, getSkinForMonster, getSkinsForMonster, type MonsterId } from '../data/monsters';
 import {
   SKILL_TREES, ACTIVE_SKILLS, EQUIPMENT_DEFS,
@@ -487,6 +487,44 @@ function buildSkinSlot(
       fontFamily: 'sans-serif', fontSize: '10px', color: '#555588',
     }).setOrigin(0.5));
   }
+
+  // ── Locked quest-unlock skins ─────────────────────────────────────────────
+  const lockedQuestSkins = getSkinsForMonster(typeId).filter(
+    s => s.unlockVia === 'quest' && !(gs.ownedSkins?.[typeId] ?? []).includes(s.id),
+  );
+  if (lockedQuestSkins.length === 0) return;
+
+  const lockLabelY = y + (owned.length > 0 ? 60 : 44);
+  ov.add(scene.add.text(x, lockLabelY, '🔒 퀘스트 해금 스킨', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#775599',
+  }));
+
+  const chipW = 96, chipH = 36, chipGap = 8;
+  lockedQuestSkins.forEach((skin, i) => {
+    const cx = x + i * (chipW + chipGap);
+    const cy = lockLabelY + 16;
+
+    const chipBg = scene.add.graphics();
+    chipBg.fillStyle(0x110022, 1);
+    chipBg.fillRoundedRect(cx, cy, chipW, chipH, 6);
+    chipBg.lineStyle(1, 0x442266, 0.8);
+    chipBg.strokeRoundedRect(cx, cy, chipW, chipH, 6);
+    ov.add(chipBg);
+
+    ov.add(scene.add.text(cx + 8, cy + chipH / 2, skin.emoji, {
+      fontFamily: 'sans-serif', fontSize: '18px',
+    }).setOrigin(0, 0.5));
+
+    const questTitle = skin.unlockRef
+      ? (getQuest(skin.unlockRef)?.title ?? skin.unlockRef)
+      : '???';
+    ov.add(scene.add.text(cx + 34, cy + 6, skin.name, {
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: '#aa88cc',
+    }));
+    ov.add(scene.add.text(cx + 34, cy + 20, `📜 ${questTitle}`, {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#775588',
+    }));
+  });
 }
 
 // ─── Skill Shop Overlay ───────────────────────────────────────────────────────
