@@ -10,7 +10,7 @@ import { type StageProgressEntry } from './wisdom';
 
 export type StageProgress = StageProgressEntry;
 
-export const TOTAL_STAGES = 72;
+export const TOTAL_STAGES = 80;
 
 // ─── Per-stage boot config ────────────────────────────────────────────────────
 // Minimal configs used to launch DungeonScene (slots, chapter, bossWave flag).
@@ -95,6 +95,15 @@ export const STAGE_CONFIGS = [
   { stageNumber: 70, slots: 16, unlockedStage: 70, chapter: 7 },
   { stageNumber: 71, slots: 16, unlockedStage: 70, chapter: 7 },
   { stageNumber: 72, slots: 16, unlockedStage: 70, chapter: 7, bossWave: true },
+  // ── Chapter 8: 원초의 심연 ──
+  { stageNumber: 73, slots: 17, unlockedStage: 73, chapter: 8 },
+  { stageNumber: 74, slots: 17, unlockedStage: 74, chapter: 8 },
+  { stageNumber: 75, slots: 17, unlockedStage: 75, chapter: 8 },
+  { stageNumber: 76, slots: 18, unlockedStage: 76, chapter: 8 },
+  { stageNumber: 77, slots: 18, unlockedStage: 77, chapter: 8 },
+  { stageNumber: 78, slots: 18, unlockedStage: 78, chapter: 8 },
+  { stageNumber: 79, slots: 18, unlockedStage: 79, chapter: 8 },
+  { stageNumber: 80, slots: 18, unlockedStage: 79, chapter: 8, bossWave: true },
 ];
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
@@ -147,6 +156,8 @@ export function recordClear(stageIndex: number, stars: number, hpPercent?: numbe
   if (stageIndex === 51 && prog[52]) prog[52].unlocked = true;
   // Clearing Stage 62 (index 61) also unlocks Stage 63 (index 62) — Ch7 gate
   if (stageIndex === 61 && prog[62]) prog[62].unlocked = true;
+  // Clearing Stage 72 (index 71) also unlocks Stage 73 (index 72) — Ch8 gate
+  if (stageIndex === 71 && prog[72]) prog[72].unlocked = true;
   saveProgress(prog);
   return prog;
 }
