@@ -17,6 +17,8 @@ export interface InvasionUIState {
   alertBanner?: Phaser.GameObjects.Container;
   reminderIcon?: Phaser.GameObjects.Text;
   invasionShownAt: number;
+  /** Cached gs for use when the reminder icon is tapped after the initial banner. */
+  cachedGs?: GameState;
 }
 
 export function createInvasionUIState(): InvasionUIState {
@@ -46,8 +48,9 @@ export function checkForInvasion(
   if (current > 0) return; // already fought
 
   state.invasionConfig = quest.invasionOnComplete;
+  state.cachedGs = gs;
   showZoneAPulse(scene, gridStartY, gridRows, slotPadY);
-  setTimeout(() => showInvasionBanner(scene, state, () => goToPreBattle(scene, gs, state)), 1500);
+  scene.time.delayedCall(1500, () => showInvasionBanner(scene, state, () => goToPreBattle(scene, gs, state)));
 }
 
 // ─── Zone A pulse ────────────────────────────────────────────────────────────
@@ -92,8 +95,12 @@ export function showInvasionBanner(
   c.add(scene.add.text(18, 10, '⚠️  침략 발생!', {
     fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ff7755', fontStyle: 'bold',
   }));
-  c.add(scene.add.text(18, 36, `${cfg.name}이(가) 쳐들어온다!`, {
+  c.add(scene.add.text(18, 34, `${cfg.name}이(가) 쳐들어온다!`, {
     fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f0c8a0',
+  }));
+  const waveCount = cfg.waves.length;
+  c.add(scene.add.text(18, 52, `🌊 총 ${waveCount} 웨이브`, {
+    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc8844',
   }));
 
   const prepBtn = scene.add.text(CANVAS_WIDTH - 16, 60, '방어 준비 →', {
@@ -166,7 +173,8 @@ export function showReminderIcon(
     timerEvent.remove();
     state.reminderIcon?.destroy();
     state.reminderIcon = undefined;
-    showInvasionBanner(scene, state, () => goToPreBattle(scene, scene.registry.get('_invasionGs') as GameState, state));
+    if (!state.cachedGs) return;
+    showInvasionBanner(scene, state, () => goToPreBattle(scene, state.cachedGs!, state));
   });
   scene.tweens.add({
     targets: state.reminderIcon, alpha: { from: 0.55, to: 1.0 },

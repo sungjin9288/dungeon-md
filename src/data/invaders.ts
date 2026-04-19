@@ -35,7 +35,12 @@ export type InvaderType =
   | 'sky_titan'
   | 'radiant_seraph'
   | 'celestial_dragon'
-  | 'god_emperor';
+  | 'god_emperor'
+  // ─── Chapter 8 ───
+  | 'void_soldier'
+  | 'abyss_berserker'
+  | 'primordial_guard'
+  | 'primordial_titan';
 
 export type InvaderBehavior =
   | 'VOID_PHASE'         // immune to traps for 5s after spawn (purple aura)
@@ -62,7 +67,10 @@ export type InvaderBehavior =
   | 'SHADOW_REALM'        // phases out (immune + invisible) for 2s every 8s
   | 'EMPEROR_PHASE'       // 4-phase final boss (100%→70%→40%→15%)
   // ─── Chapter 7 ───
-  | 'GOD_EMPEROR_PHASE';  // 5-phase god boss (100%→80%→60%→40%→20%)
+  | 'GOD_EMPEROR_PHASE'   // 5-phase god boss (100%→80%→60%→40%→20%)
+  // ─── Chapter 8 ───
+  | 'VOID_SURGE'          // enters void-phase instantly; re-activates every 10s
+  | 'PRIMORDIAL_PHASE';   // 6-phase origin boss (100%→85%→70%→50%→30%→10%)
 
 export interface InvaderDef {
   type:          InvaderType;
@@ -285,5 +293,27 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
     type: 'god_emperor', koreanName: '신황제 (최종 보스)', chapter: 7,
     hp: 10000, speed: 22, reward: 4000, damage: 1400,
     color: 0xffd700, radius: 40, behavior: 'GOD_EMPEROR_PHASE', isBoss: true,
+  },
+
+  // ─── Chapter 8 ────────────────────────────────────────────────────────────
+  void_soldier: {
+    type: 'void_soldier', koreanName: '공허 병사', chapter: 8,
+    hp: 700, speed: 65, reward: 90, damage: 120,
+    color: 0x220044, radius: 14, behavior: 'VOID_SURGE',
+  },
+  abyss_berserker: {
+    type: 'abyss_berserker', koreanName: '심연 광전사', chapter: 8,
+    hp: 950, speed: 78, reward: 105, damage: 145,
+    color: 0x3a0060, radius: 15, behavior: 'BERSERKER_RAGE',
+  },
+  primordial_guard: {
+    type: 'primordial_guard', koreanName: '원초 수문장', chapter: 8,
+    hp: 2200, speed: 28, reward: 145, damage: 240,
+    color: 0x1a0035, radius: 20, behavior: 'IRON_BODY',
+  },
+  primordial_titan: {
+    type: 'primordial_titan', koreanName: '원초신 (최종 보스)', chapter: 8,
+    hp: 14000, speed: 18, reward: 6000, damage: 2000,
+    color: 0x660099, radius: 46, behavior: 'PRIMORDIAL_PHASE', isBoss: true,
   },
 };
