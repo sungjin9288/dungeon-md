@@ -99,21 +99,23 @@ export function showTrapPicker(
         backgroundColor: '#2a1806', padding: { x: 10, y: 6 },
       }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
       pickBtn.on('pointerdown', () => {
-        if (gs.homeGold < trap.cost) {
+        const freshGs = cb.getGameState();
+        if (freshGs.homeGold < trap.cost) {
           logger.debug(`[TRAP] not enough gold (need ${trap.cost}g)`);
           return;
         }
         // Refund existing trap if replacing
-        const sl = gs.dungeonSlots[slotIdx]!;
-        const existingId = sl.trapIds?.[trapSlotIdx];
-        if (existingId) {
-          const old = TRAP_DEFS.find(t => t.id === existingId);
-          if (old) { gs.homeGold += Math.floor(old.cost * 0.5); }
-        }
-        gs.homeGold -= trap.cost;
-        if (!Array.isArray(sl.trapIds)) sl.trapIds = [];
-        sl.trapIds[trapSlotIdx] = trap.id;
-        saveGameState(gs);
+        const freshSlot = freshGs.dungeonSlots?.[slotIdx];
+        if (!freshSlot) return;
+        const existingId = freshSlot.trapIds?.[trapSlotIdx];
+        const refund = existingId
+          ? Math.floor((TRAP_DEFS.find(t => t.id === existingId)?.cost ?? 0) * 0.5)
+          : 0;
+        const newTrapIds = [...(freshSlot.trapIds ?? [])];
+        newTrapIds[trapSlotIdx] = trap.id;
+        const newSlots = [...(freshGs.dungeonSlots ?? [])];
+        newSlots[slotIdx] = { ...freshSlot, trapIds: newTrapIds };
+        saveGameState({ ...freshGs, homeGold: freshGs.homeGold + refund - trap.cost, dungeonSlots: newSlots });
         logger.debug(`[TRAP] slot ${slotIdx}[${trapSlotIdx}]: ${trap.id} installed, cost: ${trap.cost}g`);
         state.trapPickerContainer?.destroy();
         state.trapPickerContainer = null;
@@ -208,22 +210,35 @@ export function showMonsterPicker(
         backgroundColor: '#2a1806', padding: { x: 6, y: 3 },
       }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
       pickBtn.on('pointerdown', () => {
-        // Remove this monster from any other slot it was in
-        gs.dungeonSlots?.forEach(s => {
-          if (!s?.monsterIds) return;
-          const idx = s.monsterIds.indexOf(om.id);
-          if (idx !== -1) s.monsterIds[idx] = undefined;
+        const freshGs = cb.getGameState();
+        const prevSlots = freshGs.dungeonSlots ?? [];
+
+        // Remove this monster from any other slot (immutably)
+        const clearedSlots = prevSlots.map(s => {
+          if (!s) return s;
+          const idx = (s.monsterIds ?? []).indexOf(om.id);
+          if (idx === -1) return s;
+          const ids = [...(s.monsterIds ?? [])];
+          ids[idx] = undefined;
+          return { ...s, monsterIds: ids };
         });
-        if (!gs.dungeonSlots[slotIdx]) {
-          const cap = getRoomSlotCapacity(1);
-          gs.dungeonSlots[slotIdx] = {
-            monsterIds: Array(cap.monsters).fill(undefined),
-            trapIds:    Array(cap.traps).fill(undefined),
-            roomLevel: 1, hp: 200, maxHp: 200,
-          };
-        }
-        gs.dungeonSlots[slotIdx]!.monsterIds[monsterSlotIdx] = om.id;
-        saveGameState(gs);
+
+        // Build updated target slot
+        const cap = getRoomSlotCapacity(1);
+        const base = clearedSlots[slotIdx] ?? {
+          monsterIds: Array<string | undefined>(cap.monsters).fill(undefined),
+          trapIds:    Array<string | undefined>(cap.traps).fill(undefined),
+          roomLevel: 1 as const, hp: 200, maxHp: 200,
+        };
+        const newMonsterIds = [...(base.monsterIds ?? [])];
+        newMonsterIds[monsterSlotIdx] = om.id;
+        const updatedSlot = { ...base, monsterIds: newMonsterIds };
+        const finalSlots = [
+          ...clearedSlots.slice(0, slotIdx),
+          updatedSlot,
+          ...clearedSlots.slice(slotIdx + 1),
+        ];
+        saveGameState({ ...freshGs, dungeonSlots: finalSlots });
         logger.debug(`[ROOM] slot ${slotIdx}[${monsterSlotIdx}]: ${mDef.name} (${om.id}) assigned`);
         state.monsterPickerContainer?.destroy();
         state.monsterPickerContainer = null;

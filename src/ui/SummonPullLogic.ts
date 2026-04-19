@@ -41,6 +41,11 @@ export interface PullContext {
 export function executePull(ctx: PullContext, type: SummonType, count: number): void {
   const gs = loadGameState();
 
+  // ── Local accumulators (avoid mutating gs directly) ───────────
+  let newGems         = gs.gems;
+  let newSoulCrystals = gs.soulCrystals;
+  let lastFriendSummon = gs.lastFriendSummon;
+
   // ── Currency check ────────────────────────────────────────────
   const def = SUMMON_TYPE_DEFS.find(d => d.id === type)!;
   if (type === 'friendship') {
@@ -53,10 +58,10 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
     const cost = count === 1 ? def.cost1 : (def.cost10 ?? def.cost1 * count);
     if (def.currency === 'gems') {
       if (gs.gems < cost) { ctx.showToast(`💎 부족 (${gs.gems}/${cost})`); return; }
-      gs.gems -= cost;
+      newGems -= cost;
     } else if (def.currency === 'soul') {
       if (gs.soulCrystals < cost) { ctx.showToast(`💠 부족 (${gs.soulCrystals}/${cost})`); return; }
-      gs.soulCrystals -= cost;
+      newSoulCrystals -= cost;
     }
   }
 
@@ -77,21 +82,24 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
   // ── Roll results ──────────────────────────────────────────────
   const results: PullResult[] = [];
 
-  if (!gs.summonPity) {
-    gs.summonPity = { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } };
-  }
+  // Local mutable copies for loop accumulation
+  const pity = gs.summonPity
+    ? { normal: { ...gs.summonPity.normal }, special: { ...gs.summonPity.special } }
+    : { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } };
+  const newMonsters = [...gs.ownedMonsters];
+  const newHistory  = [...(gs.summonHistory ?? [])];
 
   for (let i = 0; i < count; i++) {
     let rarityIdx: number;
     let ceilingHit = false;
 
     // Pity check
-    if ((type === 'normal' || type === 'special') && gs.summonPity[type]) {
-      gs.summonPity[type].count++;
-      if (gs.summonPity[type].count >= gs.summonPity[type].guaranteed) {
+    if ((type === 'normal' || type === 'special') && pity[type]) {
+      pity[type].count++;
+      if (pity[type].count >= pity[type].guaranteed) {
         rarityIdx  = type === 'normal' ? 3 : 4; // epic / legendary
         ceilingHit = true;
-        gs.summonPity[type].count = 0;
+        pity[type].count = 0;
       } else {
         rarityIdx = rollRarity(RARITY_RATES[type]);
       }
@@ -105,7 +113,7 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
     // Soul summon: prefer unowned
     let monsterId: MonsterId;
     if (type === 'soul') {
-      const ownedIds = new Set(gs.ownedMonsters.map(m => m.id));
+      const ownedIds = new Set(newMonsters.map(m => m.id));
       const unowned  = pool.filter(id => !ownedIds.has(id));
       const pick     = unowned.length > 0 ? unowned : pool;
       monsterId = pick[Math.floor(Math.random() * pick.length)] as MonsterId;
@@ -120,19 +128,19 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
       monsterId = pool[Math.floor(Math.random() * pool.length)] as MonsterId;
     }
 
-    const alreadyOwned = gs.ownedMonsters.some(m => m.id === monsterId);
+    const alreadyOwned = newMonsters.some(m => m.id === monsterId);
     let scComp = 0;
 
     if (!alreadyOwned) {
-      gs.ownedMonsters.push(defaultOwnedMonster(monsterId));
+      newMonsters.push(defaultOwnedMonster(monsterId));
     } else {
       scComp = SC_COMP[rarityIdx];
-      gs.soulCrystals += scComp;
+      newSoulCrystals += scComp;
     }
 
     // Friendship summon: mark used today
     if (type === 'friendship') {
-      gs.lastFriendSummon = new Date().toISOString().slice(0, 10);
+      lastFriendSummon = new Date().toISOString().slice(0, 10);
     }
 
     const record: SummonRecord = {
@@ -140,8 +148,7 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
       timestamp: Date.now(), scCompensation: scComp || undefined,
       ceilingHit: ceilingHit || undefined,
     };
-    if (!gs.summonHistory) gs.summonHistory = [];
-    gs.summonHistory.push(record);
+    newHistory.push(record);
 
     results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit });
 
@@ -151,15 +158,23 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
       ` new:${!alreadyOwned}` +
       (ceilingHit ? ' 천장달성!' : '') +
       ((type === 'normal' || type === 'special')
-        ? ` pity:${gs.summonPity[type as 'normal' | 'special'].count}/${gs.summonPity[type as 'normal' | 'special'].guaranteed}`
+        ? ` pity:${pity[type as 'normal' | 'special'].count}/${pity[type as 'normal' | 'special'].guaranteed}`
         : '') +
-      (!alreadyOwned ? '' : ` compensation:+${scComp}💠 totalSC:${gs.soulCrystals}`)
+      (!alreadyOwned ? '' : ` compensation:+${scComp}💠 totalSC:${newSoulCrystals}`)
     );
   }
 
-  updateQuestObjective(gs, 'summon', count);
-  tickSubQuestProgress(gs, 'summon', count);
-  saveGameState(gs);
+  const updated = {
+    ...gs,
+    gems:          newGems,
+    soulCrystals:  newSoulCrystals,
+    summonPity:    pity,
+    ownedMonsters: newMonsters,
+    summonHistory: newHistory,
+    lastFriendSummon,
+  };
+  updateQuestObjective(updated, 'summon', count);
+  saveGameState(tickSubQuestProgress(updated, 'summon', count));
 
   // ── SFX ───────────────────────────────────────────────────────
   const hasLegendary = results.some(r => r.rarity === 'legendary');

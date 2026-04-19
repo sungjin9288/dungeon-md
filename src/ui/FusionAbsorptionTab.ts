@@ -174,24 +174,37 @@ function executeAbsorption(ctx: FusionTabContext, state: AbsorptionState): void 
   let totalXP = 0;
   let sameTypeCount = 0;
 
+  // Count how many times each sacrifice id should be removed
+  const removalCounts = new Map<string, number>();
   for (const sac of state.absorbSacrifices) {
     const r = sac.rarity ?? getMonsterRarity(sac.id);
     totalXP += RARITY_XP_VALUES[r] ?? 30;
     if (getBaseId(sac.id) === getBaseId(target.id)) sameTypeCount++;
-    const idx = gs.ownedMonsters.findIndex(m => m.id === sac.id && m !== target);
-    if (idx >= 0) gs.ownedMonsters.splice(idx, 1);
+    removalCounts.set(sac.id, (removalCounts.get(sac.id) ?? 0) + 1);
   }
 
-  const tgt = gs.ownedMonsters.find(m => m.id === target.id);
-  if (tgt) {
-    addXp(tgt, totalXP);
-    const newStacks = Math.min((tgt.absorptionStacks ?? 0) + sameTypeCount, 10);
-    tgt.absorptionStacks = newStacks;
-    logger.debug(`[ABSORB] ${target.id}: +${totalXP} XP, stacks: ${newStacks}/10 (+5% ATK per stack)`);
-  }
+  // Filter out sacrificed monsters (immutably)
+  const withoutSacrifices = gs.ownedMonsters.filter(m => {
+    const n = removalCounts.get(m.id) ?? 0;
+    if (n > 0) { removalCounts.set(m.id, n - 1); return false; }
+    return true;
+  });
 
-  updateQuestObjective(gs, 'fuse_monsters'); tickSubQuestProgress(gs, 'fuse_monsters');
-  saveGameState(gs);
+  // Apply XP and stacks to a copy of the target
+  const freshTarget = gs.ownedMonsters.find(m => m.id === target.id);
+  if (!freshTarget) return;
+  const targetCopy = { ...freshTarget };
+  addXp(targetCopy, totalXP);
+  const newStacks = Math.min((targetCopy.absorptionStacks ?? 0) + sameTypeCount, 10);
+  logger.debug(`[ABSORB] ${target.id}: +${totalXP} XP, stacks: ${newStacks}/10 (+5% ATK per stack)`);
+
+  const newMonsters = withoutSacrifices.map(m =>
+    m.id === target.id ? { ...targetCopy, absorptionStacks: newStacks } : m,
+  );
+
+  const updated = { ...gs, ownedMonsters: newMonsters };
+  updateQuestObjective(updated, 'fuse_monsters');
+  saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
 
   state.setAbsorbSacrifices([]);
   state.setAbsorbTarget(null);

@@ -65,10 +65,9 @@ export class CinematicScene extends Phaser.Scene {
 
     // Mark as seen
     const gs = loadGameState();
-    if (!gs.cinematicSeen) gs.cinematicSeen = [];
-    if (!gs.cinematicSeen.includes(data.cinematicId)) {
-      gs.cinematicSeen.push(data.cinematicId);
-      saveGameState(gs);
+    const prevSeen = gs.cinematicSeen ?? [];
+    if (!prevSeen.includes(data.cinematicId)) {
+      saveGameState({ ...gs, cinematicSeen: [...prevSeen, data.cinematicId] });
     }
 
     // Dim overlay — 40% so dungeon is visible behind

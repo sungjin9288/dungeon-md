@@ -27,12 +27,13 @@ export function applyRoomSlotDamage(
 export function saveRoomHpsToGameState(slots: DungeonSlot[]): void {
   if (slots.length === 0) return;
   const gs = loadGameState();
-  gs.dungeonSlots = gs.dungeonSlots ?? [];
-  for (let i = 0; i < slots.length; i++) {
+  const prevSlots = gs.dungeonSlots ?? [];
+  const len = Math.max(prevSlots.length, slots.length);
+  const newSlots: DungeonSlot[] = Array.from({ length: len }, (_, i) => {
     const slot = slots[i];
-    if (!slot) continue;
-    if (!gs.dungeonSlots[i]) gs.dungeonSlots[i] = slot;
-    else { gs.dungeonSlots[i].hp = slot.hp; gs.dungeonSlots[i].maxHp = slot.maxHp; }
-  }
-  saveGameState(gs);
+    if (!slot) return prevSlots[i];
+    const existing = prevSlots[i];
+    return existing ? { ...existing, hp: slot.hp, maxHp: slot.maxHp } : slot;
+  });
+  saveGameState({ ...gs, dungeonSlots: newSlots });
 }

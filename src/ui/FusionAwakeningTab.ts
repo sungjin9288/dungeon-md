@@ -171,16 +171,17 @@ function executeAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
   const gs = loadGameState();
   if ((gs.awakeningStones ?? 0) < 1) return;
 
-  gs.awakeningStones = (gs.awakeningStones ?? 0) - 1;
-  gs.monsterAwakened[monster.id] = true;
-
-  const tgt = gs.ownedMonsters.find(m => m.id === monster.id);
-  if (tgt) {
-    tgt.absorptionStacks = (tgt.absorptionStacks ?? 0) + 3;
-  }
-
-  saveGameState(gs);
-  logger.debug(`[AWAKEN] ${monster.id} awakened! Stones remaining: ${gs.awakeningStones}`);
+  const newMonsters = gs.ownedMonsters.map(m =>
+    m.id === monster.id ? { ...m, absorptionStacks: (m.absorptionStacks ?? 0) + 3 } : m,
+  );
+  const updated = {
+    ...gs,
+    awakeningStones: (gs.awakeningStones ?? 0) - 1,
+    monsterAwakened: { ...(gs.monsterAwakened ?? {}), [monster.id]: true },
+    ownedMonsters: newMonsters,
+  };
+  saveGameState(updated);
+  logger.debug(`[AWAKEN] ${monster.id} awakened! Stones remaining: ${updated.awakeningStones}`);
 
   showFusionAnimation(ctx, '각성', () => {
     ctx.refreshTab();

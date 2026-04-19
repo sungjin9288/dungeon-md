@@ -81,27 +81,34 @@ export function openRoomDetail(
   state.roomDetailCellX = cellX;
   state.roomDetailCellY = cellY;
 
-  gs.dungeonSlots = gs.dungeonSlots ?? [];
-  if (!gs.dungeonSlots[slotIdx]) {
-    const cap = getRoomSlotCapacity(1);
-    gs.dungeonSlots[slotIdx] = {
-      monsterIds: Array(cap.monsters).fill(undefined),
-      trapIds:    Array(cap.traps).fill(undefined),
+  const prevSlots  = gs.dungeonSlots ?? [];
+  let currentGs    = gs;
+  if (!prevSlots[slotIdx]) {
+    const cap        = getRoomSlotCapacity(1);
+    const newSlot: DungeonSlot = {
+      monsterIds: Array<string | undefined>(cap.monsters).fill(undefined),
+      trapIds:    Array<string | undefined>(cap.traps).fill(undefined),
       roomLevel: 1, hp: 200, maxHp: 200,
     };
-    updateQuestObjective(gs, 'build_room');
-    tickSubQuestProgress(gs, 'build_room');
-    saveGameState(gs);
+    const newSlots  = [...prevSlots];
+    newSlots[slotIdx] = newSlot;
+    currentGs = { ...gs, dungeonSlots: newSlots };
+    updateQuestObjective(currentGs, 'build_room');
+    currentGs = tickSubQuestProgress(currentGs, 'build_room');
+    saveGameState(currentGs);
   }
-  // Ensure arrays are sized to current capacity (handles upgrades)
-  const slot: DungeonSlot = gs.dungeonSlots[slotIdx];
-  {
-    const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-    if (!Array.isArray(slot.monsterIds)) slot.monsterIds = Array(cap.monsters).fill(undefined);
-    if (!Array.isArray(slot.trapIds))    slot.trapIds    = Array(cap.traps).fill(undefined);
-    while (slot.monsterIds.length < cap.monsters) slot.monsterIds.push(undefined);
-    while (slot.trapIds.length    < cap.traps)    slot.trapIds.push(undefined);
-  }
+  // Build a normalized UI copy of the slot (correct array sizes, no gs mutation)
+  const rawSlot: DungeonSlot = (currentGs.dungeonSlots ?? [])[slotIdx];
+  const slotCap = getRoomSlotCapacity(rawSlot.roomLevel, rawSlot.roomType);
+  const slot: DungeonSlot = {
+    ...rawSlot,
+    monsterIds: Array.from({ length: slotCap.monsters }, (_, i) =>
+      Array.isArray(rawSlot.monsterIds) ? rawSlot.monsterIds[i] : undefined,
+    ),
+    trapIds: Array.from({ length: slotCap.traps }, (_, i) =>
+      Array.isArray(rawSlot.trapIds) ? rawSlot.trapIds[i] : undefined,
+    ),
+  };
   logger.debug(`[ROOM] Opening detail for slot ${slotIdx} Lv.${slot.roomLevel}`);
 
   const CW = CANVAS_WIDTH, CH = CANVAS_HEIGHT;
@@ -225,10 +232,13 @@ export function openRoomDetail(
       repairBtn.on('pointerover', () => repairBtn.setColor('#bbff66'));
       repairBtn.on('pointerout',  () => repairBtn.setColor('#88cc44'));
       repairBtn.on('pointerdown', () => {
-        gs.homeGold -= repairCost;
-        slot.hp = slot.maxHp;
-        saveGameState(gs);
-        logger.debug(`[REPAIR] slot ${slotIdx}: restored to ${slot.maxHp} HP (cost ${repairCost}g)`);
+        const freshGs    = cb.getGameState();
+        const freshSlots = [...(freshGs.dungeonSlots ?? [])];
+        const freshSlot  = freshSlots[slotIdx];
+        if (!freshSlot) return;
+        freshSlots[slotIdx] = { ...freshSlot, hp: freshSlot.maxHp };
+        saveGameState({ ...freshGs, homeGold: freshGs.homeGold - repairCost, dungeonSlots: freshSlots });
+        logger.debug(`[REPAIR] slot ${slotIdx}: restored to ${freshSlot.maxHp} HP (cost ${repairCost}g)`);
         closeRoomDetail(state, cb);
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, cellX, cellY), 150);
       });
@@ -254,19 +264,21 @@ export function openRoomDetail(
     upgBtn.on('pointerover', () => upgBtn.setColor('#ffe080'));
     upgBtn.on('pointerout',  () => upgBtn.setColor('#c8921a'));
     upgBtn.on('pointerdown', () => {
-      if (gs.homeGold < upgCost) return;
+      if (cb.getGameState().homeGold < upgCost) return;
       showRoomUpgradeConfirm(scene, upgCost, slot.roomLevel, newCap, () => {
-        gs.homeGold  -= upgCost;
-        slot.roomLevel    += 1;
-        slot.maxHp         = nextHp;
-        slot.hp            = nextHp;
-        const cap2 = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-        while (slot.monsterIds.length < cap2.monsters) slot.monsterIds.push(undefined);
-        while (slot.trapIds.length    < cap2.traps)    slot.trapIds.push(undefined);
-        updateQuestObjective(gs, 'upgrade_room');
-        tickSubQuestProgress(gs, 'upgrade_room');
-        saveGameState(gs);
-        logger.debug(`[ROOM UPGRADE] slot ${slotIdx}: Lv.${slot.roomLevel - 1}→Lv.${slot.roomLevel}  HP: ${slot.maxHp - 100}→${slot.maxHp}, cooldown bonus: ${cdBonus}`);
+        const freshGs    = cb.getGameState();
+        const freshSlots = [...(freshGs.dungeonSlots ?? [])];
+        const freshSlot  = freshSlots[slotIdx];
+        if (!freshSlot) return;
+        const newLevel      = freshSlot.roomLevel + 1;
+        const cap2          = getRoomSlotCapacity(newLevel, freshSlot.roomType);
+        const newMonsterIds = Array.from({ length: cap2.monsters }, (_: unknown, i: number) => freshSlot.monsterIds?.[i]);
+        const newTrapIds    = Array.from({ length: cap2.traps    }, (_: unknown, i: number) => freshSlot.trapIds?.[i]);
+        freshSlots[slotIdx] = { ...freshSlot, roomLevel: newLevel, maxHp: nextHp, hp: nextHp, monsterIds: newMonsterIds, trapIds: newTrapIds };
+        const upgGs = { ...freshGs, homeGold: freshGs.homeGold - upgCost, dungeonSlots: freshSlots };
+        updateQuestObjective(upgGs, 'upgrade_room');
+        saveGameState(tickSubQuestProgress(upgGs, 'upgrade_room'));
+        logger.debug(`[ROOM UPGRADE] slot ${slotIdx}: Lv.${freshSlot.roomLevel}→Lv.${newLevel}  HP: ${freshSlot.maxHp}→${nextHp}, cooldown bonus: ${cdBonus}`);
         closeRoomDetail(state, cb);
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, cellX, cellY), 250);
       });
@@ -364,7 +376,6 @@ function buildRoomTypeStrip(
   secX: number, secW: number, secY: number,
   reopen: () => void,
 ): number {
-  const gs = _cb.getGameState();
   const stripH = 60;
   const bg = scene.add.graphics();
   bg.fillStyle(0x130c04, 0.95);
@@ -392,12 +403,16 @@ function buildRoomTypeStrip(
     const zone = scene.add.zone(bx + btnW / 2, secY + stripH / 2, btnW - 2, stripH - 8)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => {
-      slot.roomType = td.id as RoomSlotType;
-      // Resize arrays to new capacity
-      const newCap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-      while (slot.monsterIds.length < newCap.monsters) slot.monsterIds.push(undefined);
-      while (slot.trapIds.length    < newCap.traps)    slot.trapIds.push(undefined);
-      saveGameState(gs);
+      const freshGs    = _cb.getGameState();
+      const freshSlots = [...(freshGs.dungeonSlots ?? [])];
+      const freshSlot  = freshSlots[_slotIdx];
+      if (!freshSlot) return;
+      const newRoomType   = td.id as RoomSlotType;
+      const newCap        = getRoomSlotCapacity(freshSlot.roomLevel, newRoomType);
+      const newMonsterIds = Array.from({ length: newCap.monsters }, (_: unknown, i: number) => freshSlot.monsterIds?.[i]);
+      const newTrapIds    = Array.from({ length: newCap.traps    }, (_: unknown, i: number) => freshSlot.trapIds?.[i]);
+      freshSlots[_slotIdx] = { ...freshSlot, roomType: newRoomType, monsterIds: newMonsterIds, trapIds: newTrapIds };
+      saveGameState({ ...freshGs, dungeonSlots: freshSlots });
       reopen();
     });
     c.add(zone);
@@ -477,8 +492,14 @@ function buildMonsterSection(
         showMonsterPicker(scene, state, theme, cb, nav, slotIdx, mi);
       });
       makeDetailBtn(scene, c, secX + secW - 56, rowY + rowH / 2, '제거', () => {
-        slot.monsterIds[mi] = undefined;
-        saveGameState(gs);
+        const freshGs       = cb.getGameState();
+        const freshSlots    = [...(freshGs.dungeonSlots ?? [])];
+        const freshSlot     = freshSlots[slotIdx];
+        if (!freshSlot) return;
+        const newMonsterIds = [...(freshSlot.monsterIds ?? [])];
+        newMonsterIds[mi]   = undefined;
+        freshSlots[slotIdx] = { ...freshSlot, monsterIds: newMonsterIds };
+        saveGameState({ ...freshGs, dungeonSlots: freshSlots });
         closeRoomDetail(state, cb);
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);
       });
@@ -512,7 +533,6 @@ function buildTrapSection(
   slotIdx: number,
   secX: number, secW: number, secY: number,
 ): number {
-  const gs = cb.getGameState();
   const cap  = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
   const rowH = 80;
   const secH = 36 + cap.traps * rowH;
@@ -560,10 +580,15 @@ function buildTrapSection(
         showTrapPicker(scene, state, theme, cb, nav, slotIdx, ti);
       });
       makeDetailBtn(scene, c, secX + secW - 56, rowY + rowH / 2, '제거', () => {
-        slot.trapIds[ti] = undefined;
-        const refund = Math.floor(trap.cost * 0.5);
-        gs.homeGold += refund;
-        saveGameState(gs);
+        const freshGs    = cb.getGameState();
+        const freshSlots = [...(freshGs.dungeonSlots ?? [])];
+        const freshSlot  = freshSlots[slotIdx];
+        if (!freshSlot) return;
+        const refund     = Math.floor(trap.cost * 0.5);
+        const newTrapIds = [...(freshSlot.trapIds ?? [])];
+        newTrapIds[ti]   = undefined;
+        freshSlots[slotIdx] = { ...freshSlot, trapIds: newTrapIds };
+        saveGameState({ ...freshGs, homeGold: freshGs.homeGold + refund, dungeonSlots: freshSlots });
         logger.debug(`[TRAP] slot ${slotIdx}[${ti}] removed, refund: ${refund}g`);
         closeRoomDetail(state, cb);
         setTimeout(() => openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY), 250);

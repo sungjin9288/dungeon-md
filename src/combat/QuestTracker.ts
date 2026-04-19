@@ -4,7 +4,7 @@
  * Handles achievement unlocking, quest objective ticking, and toast notifications.
  */
 import Phaser from 'phaser';
-import { loadGameState, saveGameState } from '../data/wisdom';
+import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
 import { checkAchievements, ACHIEVEMENT_DEFS, type AchievementContext } from '../data/achievements';
 import { updateQuestObjective, tickSubQuestProgress, completeAndAdvance } from '../data/quests';
 import { addXp } from '../data/barracks';
@@ -46,11 +46,11 @@ export function checkAchievementsAndToast(
   if (newlyUnlocked.length === 0) return;
 
   // Persist unlocks
-  gs.achievements = gs.achievements ?? {};
+  const newAchievements = { ...(gs.achievements ?? {}) };
   newlyUnlocked.forEach(id => {
-    gs.achievements[id] = { unlocked: true, current: 0, unlockedAt: Date.now() };
+    newAchievements[id] = { unlocked: true, current: 0, unlockedAt: Date.now() };
   });
-  saveGameState(gs);
+  saveGameState({ ...gs, achievements: newAchievements });
 
   // Show toasts in sequence
   newlyUnlocked.forEach((id, i) => {
@@ -67,13 +67,15 @@ export function tickQuestAndNotify(
   gs: ReturnType<typeof loadGameState>,
   type: Parameters<typeof updateQuestObjective>[1],
   amount = 1,
-): void {
+): GameState {
   const update = updateQuestObjective(gs, type, amount);
-  tickSubQuestProgress(gs, type, amount);
+  const gs1    = tickSubQuestProgress(gs, type, amount);
   if (update?.questDone) {
-    completeAndAdvance(gs);
+    const [gs2] = completeAndAdvance(gs1);
     ctx.scene.time.delayedCall(600, () => showQuestCompleteToast(ctx));
+    return gs2;
   }
+  return gs1;
 }
 
 // ─── showQuestCompleteToast ────────────────────────────────────────────────
@@ -177,10 +179,8 @@ export function trackConsecutiveDays(): void {
   if (gs.lastPlayDate === today) return;   // already tracked today
 
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  gs.consecutiveDays = (gs.lastPlayDate === yesterday)
-    ? (gs.consecutiveDays ?? 0) + 1
-    : 1;
-  gs.lastPlayDate = today;
-  saveGameState(gs);
-  logger.debug(`[STREAK] day ${gs.consecutiveDays} (last: ${gs.lastPlayDate})`);
+  const newDays = gs.lastPlayDate === yesterday ? (gs.consecutiveDays ?? 0) + 1 : 1;
+  const updated = { ...gs, consecutiveDays: newDays, lastPlayDate: today };
+  saveGameState(updated);
+  logger.debug(`[STREAK] day ${updated.consecutiveDays} (last: ${updated.lastPlayDate})`);
 }

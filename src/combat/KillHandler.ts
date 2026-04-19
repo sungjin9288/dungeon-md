@@ -120,13 +120,14 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
 
   // ── Persistence & achievements ──────────────────────────────────────────────
   const gs = loadGameState();
-  gs.totalKills      = (gs.totalKills      ?? 0) + 1;
-  gs.totalGoldEarned = (gs.totalGoldEarned ?? 0) + inv.def.reward;
-  gs.bossesKilled    = gs.bossesKilled ?? [];
-  gs.bossesKilled.push(inv.def.type);
-  tickDailyChallenge(gs, 'kill_count');
-  saveGameState(gs);
-  ctx.checkAchievementsAndToast(gs);
+  const updatedGs = {
+    ...gs,
+    totalKills:      (gs.totalKills      ?? 0) + 1,
+    totalGoldEarned: (gs.totalGoldEarned ?? 0) + inv.def.reward,
+    bossesKilled:    [...(gs.bossesKilled ?? []), inv.def.type],
+  };
+  saveGameState(tickDailyChallenge(updatedGs, 'kill_count'));
+  ctx.checkAchievementsAndToast(updatedGs);
 
   // ── Boss split (knight → 4 peasants) ───────────────────────────────────────
   if (inv.def.type === 'knight' && ctx.wave === ctx.maxWave && !ctx.isEndless && !inv.def.isMiniBoss) {

@@ -127,7 +127,7 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     this.checkBattleReturn();  // must run before initQuests so rewards applied first
     this.initQuests();
-    assignSubQuests(this.gs);
+    this.gs = assignSubQuests(this.gs);
     saveGameState(this.gs);
 
     const pendingUnlock = this.registry.get('pendingUnlock') as string | undefined;
@@ -157,7 +157,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.time.delayedCall(700, () => {
       if (!this.tutorialOverlay) {
         this.tutorialOverlay = new TutorialOverlay(this, (completedStage) => {
-          this.gs.tutorialStage = completedStage;
+          this.gs = { ...this.gs, tutorialStage: completedStage };
           saveGameState(this.gs);
           if (completedStage < TUTORIAL_DONE) {
             const nextStep = TUTORIAL_STEPS.find(s => s.stage === completedStage);
@@ -175,7 +175,7 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   private initQuests(): void {
     if (!this.gs.activeMainQuestId) {
-      startQuest(this.gs, 'MQ-001');
+      this.gs = startQuest(this.gs, 'MQ-001');
       saveGameState(this.gs);
     }
     checkForInvasion(
@@ -196,28 +196,36 @@ export class DungeonHomeScene extends Phaser.Scene {
     const prevGold    = this.gs.homeGold;
     const prevCrystal = this.gs.soulCrystals;
     const prevGems    = this.gs.gems;
-    this.gs.homeGold      += result.goldEarned;
-    this.gs.dmXP          += result.dmXP;
 
-    // DM level-up loop
-    const prevDmLevel = this.gs.dmLevel;
-    while (this.gs.dmXP >= xpForLevel(this.gs.dmLevel)) {
-      this.gs.dmXP    -= xpForLevel(this.gs.dmLevel);
-      this.gs.dmLevel += 1;
+    // DM level-up: compute new xp/level without mutation
+    let newDmXP    = this.gs.dmXP + result.dmXP;
+    let newDmLevel = this.gs.dmLevel;
+    while (newDmXP >= xpForLevel(newDmLevel)) {
+      newDmXP    -= xpForLevel(newDmLevel);
+      newDmLevel += 1;
     }
-    const didLevelUp = this.gs.dmLevel > prevDmLevel;
-    this.gs.totalGoldEarned = (this.gs.totalGoldEarned ?? 0) + result.goldEarned;
-    updateQuestObjective(this.gs, 'collect_gold', result.goldEarned);
-    tickSubQuestProgress(this.gs, 'collect_gold', result.goldEarned);
-    updateQuestObjective(this.gs, 'reach_dm_level');
-    tickSubQuestProgress(this.gs, 'reach_dm_level');
+    const didLevelUp = newDmLevel > this.gs.dmLevel;
 
+    // Materials: build new record before merging
+    const newMaterials = { ...(this.gs.materials ?? {}) };
     if (result.materialsEarned) {
-      this.gs.materials = this.gs.materials ?? {};
       Object.entries(result.materialsEarned).forEach(([id, qty]) => {
-        this.gs.materials[id] = (this.gs.materials[id] ?? 0) + qty;
+        newMaterials[id] = (newMaterials[id] ?? 0) + qty;
       });
     }
+
+    this.gs = {
+      ...this.gs,
+      homeGold:        this.gs.homeGold + result.goldEarned,
+      dmXP:            newDmXP,
+      dmLevel:         newDmLevel,
+      totalGoldEarned: (this.gs.totalGoldEarned ?? 0) + result.goldEarned,
+      materials:       newMaterials,
+    };
+    updateQuestObjective(this.gs, 'collect_gold', result.goldEarned);
+    this.gs = tickSubQuestProgress(this.gs, 'collect_gold', result.goldEarned);
+    updateQuestObjective(this.gs, 'reach_dm_level');
+    this.gs = tickSubQuestProgress(this.gs, 'reach_dm_level');
 
     // Animate changed currency displays
     const newVals = [this.gs.homeGold, this.gs.soulCrystals, this.gs.gems];
@@ -240,19 +248,21 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     if (result.won) {
       const update = updateQuestObjective(this.gs, 'defend_invasion');
-      tickSubQuestProgress(this.gs, 'defend_invasion');
+      this.gs = tickSubQuestProgress(this.gs, 'defend_invasion');
       saveGameState(this.gs);
       const afterReturn = () => {
         if (didLevelUp) {
           this.time.delayedCall(200, () => showDmLevelUpOverlay(this, this.gs.dmLevel));
         } else if (update?.questDone) {
-          const done = completeAndAdvance(this.gs);
+          const [newGs, done] = completeAndAdvance(this.gs);
+          this.gs = newGs;
           saveGameState(this.gs);
           if (done) this.handleQuestComplete(done);
         }
       };
       if (update?.questDone && !didLevelUp) {
-        const done = completeAndAdvance(this.gs);
+        const [newGs2, done] = completeAndAdvance(this.gs);
+        this.gs = newGs2;
         saveGameState(this.gs);
         this.time.delayedCall(400, () => {
           showBattleReturnOverlay(this, result, () => {
@@ -286,35 +296,32 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (isChapterEnd) this.registry.set('chapterComplete', true);
 
     if (result.completedQuest.id === 'MQ-007') {
-      this.gs.blueprints = this.gs.blueprints ?? [];
-      STARTER_BLUEPRINTS.forEach(bp => {
-        if (!this.gs.blueprints.includes(bp)) {
-          this.gs.blueprints.push(bp);
-          logger.debug(`[FORGE] Blueprint unlocked: ${bp}`);
-        }
-      });
+      const prevBps = this.gs.blueprints ?? [];
+      const toAdd   = STARTER_BLUEPRINTS.filter(bp => !prevBps.includes(bp));
+      toAdd.forEach(bp => logger.debug(`[FORGE] Blueprint unlocked: ${bp}`));
+      this.gs = { ...this.gs, blueprints: [...prevBps, ...toAdd] };
       saveGameState(this.gs);
     }
 
     if (result.completedQuest.id === 'MQ-010') {
-      this.gs.awakeningStones = (this.gs.awakeningStones ?? 0) + 1;
+      this.gs = { ...this.gs, awakeningStones: (this.gs.awakeningStones ?? 0) + 1 };
       saveGameState(this.gs);
       logger.debug(`[AWAKEN] +1 awakening stone (total: ${this.gs.awakeningStones})`);
     }
 
     if (result.completedQuest.id === 'MQ-015') {
-      this.gs.blueprints = this.gs.blueprints ?? [];
-      if (!this.gs.blueprints.includes('bp_ore_plate')) {
-        this.gs.blueprints.push('bp_ore_plate');
+      const prevBps = this.gs.blueprints ?? [];
+      if (!prevBps.includes('bp_ore_plate')) {
+        this.gs = { ...this.gs, blueprints: [...prevBps, 'bp_ore_plate'] };
         logger.debug('[FORGE] Blueprint unlocked: bp_ore_plate');
       }
       saveGameState(this.gs);
     }
 
     if (result.completedQuest.id === 'MQ-020') {
-      this.gs.blueprints = this.gs.blueprints ?? [];
-      if (!this.gs.blueprints.includes('bp_arcane_core')) {
-        this.gs.blueprints.push('bp_arcane_core');
+      const prevBps = this.gs.blueprints ?? [];
+      if (!prevBps.includes('bp_arcane_core')) {
+        this.gs = { ...this.gs, blueprints: [...prevBps, 'bp_arcane_core'] };
         logger.debug('[FORGE] Blueprint unlocked: bp_arcane_core');
       }
       saveGameState(this.gs);

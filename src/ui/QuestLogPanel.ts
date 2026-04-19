@@ -9,7 +9,7 @@ import {
   type MainQuest,
 } from '../data/quests';
 import { getDailyChallenges, getTodayString } from '../data/daily';
-import { type GameState, saveGameState } from '../data/wisdom';
+import { type GameState, loadGameState, saveGameState } from '../data/wisdom';
 
 // ─── Quest complete overlay ─────────────────────────────────────────────────
 
@@ -376,13 +376,14 @@ function drawSubQuestSection(
         fontFamily: 'Georgia, serif', fontSize: '9px', color: '#fff9e0', fontStyle: 'bold',
       }).setOrigin(0.5).setInteractive();
       btnTxt.on('pointerdown', () => {
-        const claimed = claimSubQuest(gs, sqId);
+        const freshGs = loadGameState();
+        const [newGs, claimed] = claimSubQuest(freshGs, sqId);
         if (!claimed) return;
-        saveGameState(gs);
-        // Rebuild quest log
+        saveGameState(newGs);
+        // Rebuild quest log with updated state
         state.questLogContainer?.destroy();
         state.questLogContainer = undefined;
-        state.questLogContainer = buildQuestLogContainer(scene, state, gs);
+        state.questLogContainer = buildQuestLogContainer(scene, state, newGs);
       });
       c.add(btnTxt);
     }
@@ -413,10 +414,10 @@ function drawMiniQuestSection(
   const challenges = getDailyChallenges();
   const today      = getTodayString();
   // Reset stale challenge data if date changed, and persist immediately
+  let workGs = gs;
   if (gs.dailyChallengeDate !== today) {
-    gs.dailyChallenges    = {};
-    gs.dailyChallengeDate = today;
-    saveGameState(gs);
+    workGs = { ...gs, dailyChallenges: {}, dailyChallengeDate: today };
+    saveGameState(workGs);
   }
   const CARD_H = 16 + challenges.length * 26 + 20;
 
@@ -430,7 +431,7 @@ function drawMiniQuestSection(
   let dy = y + 10;
   let allDone = true;
   challenges.forEach(ch => {
-    const chState = gs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
+    const chState = workGs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
     const done    = chState.completed;
     const prog    = Math.min(chState.progress, ch.objective.target);
     if (!done) allDone = false;
@@ -448,7 +449,7 @@ function drawMiniQuestSection(
   });
 
   // Summary footer
-  const completedCount = challenges.filter(ch => (gs.dailyChallenges[ch.id]?.completed ?? false)).length;
+  const completedCount = challenges.filter(ch => (workGs.dailyChallenges[ch.id]?.completed ?? false)).length;
   c.add(scene.add.text(PAD + 10, dy + 2, `${completedCount}/${challenges.length} 완료`, {
     fontFamily: 'sans-serif', fontSize: '9px',
     color: allDone ? '#44cc88' : '#5a3c1c',

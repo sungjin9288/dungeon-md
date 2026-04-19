@@ -181,8 +181,7 @@ export function showMonsterDetailPanel(
       m.level = gs3.ownedMonsters[idx3].level;
     }
     updateQuestObjective(gs3, 'feed_monster');
-    tickSubQuestProgress(gs3, 'feed_monster');
-    saveGameState(gs3);
+    saveGameState(tickSubQuestProgress(gs3, 'feed_monster'));
 
     const didLevelUp = m.level > oldLevel;
     if (didLevelUp) {
@@ -297,16 +296,21 @@ function buildSkillTreeSection(
       if (!spent && prereqMet && canAfford) {
         const zone = scene.add.zone(nx, ny + 30, 80, 60).setInteractive();
         zone.on('pointerdown', () => {
-          m.spentSkills[node.id] = 1;
-          m.skillPoints -= node.cost;
-          // Persist
-          const gs = loadGameState();
+          const updatedM: OwnedMonster = {
+            ...m,
+            spentSkills: { ...m.spentSkills, [node.id]: 1 },
+            skillPoints: m.skillPoints - node.cost,
+          };
+          const gs  = loadGameState();
           const idx = gs.ownedMonsters.findIndex(om => om.id === m.id);
-          if (idx >= 0) gs.ownedMonsters[idx] = m;
-          saveGameState(gs);
-          // Refresh detail
+          saveGameState({
+            ...gs,
+            ownedMonsters: idx >= 0
+              ? gs.ownedMonsters.map((om, i) => i === idx ? updatedM : om)
+              : gs.ownedMonsters,
+          });
           ov.destroy();
-          onRefresh(m);
+          onRefresh(updatedM);
         });
         ov.add(zone);
       }
@@ -351,13 +355,17 @@ function buildEquipmentSlot(
       padding: { x: 4, y: 2 },
     }).setOrigin(0, 0.5).setInteractive();
     btn.on('pointerdown', () => {
-      m.equipment = eId;
+      const updatedM: OwnedMonster = { ...m, equipment: eId };
       const gs2 = loadGameState();
       const idx = gs2.ownedMonsters.findIndex(om => om.id === m.id);
-      if (idx >= 0) gs2.ownedMonsters[idx] = m;
-      saveGameState(gs2);
+      saveGameState({
+        ...gs2,
+        ownedMonsters: idx >= 0
+          ? gs2.ownedMonsters.map((om, i) => i === idx ? updatedM : om)
+          : gs2.ownedMonsters,
+      });
       ov.destroy();
-      onRefresh(m);
+      onRefresh(updatedM);
     });
     ov.add(btn);
     btnX += 32;
@@ -399,14 +407,20 @@ function buildEquippedSkillSlots(
     const zone  = scene.add.zone(sx + (w / 2 - 4) / 2, y + 25, w / 2 - 4, 50).setInteractive();
     zone.on('pointerdown', () => {
       if (!owned.length) return;
-      const nextIdx = skId ? (owned.indexOf(skId) + 1) % owned.length : 0;
-      m.equippedSkills[si] = owned[nextIdx];
+      const nextIdx  = skId ? (owned.indexOf(skId) + 1) % owned.length : 0;
+      const newSkills = [...(m.equippedSkills ?? [])];
+      newSkills[si]   = owned[nextIdx];
+      const updatedM: OwnedMonster = { ...m, equippedSkills: newSkills };
       const gs2 = loadGameState();
       const idx = gs2.ownedMonsters.findIndex(om => om.id === m.id);
-      if (idx >= 0) gs2.ownedMonsters[idx] = m;
-      saveGameState(gs2);
+      saveGameState({
+        ...gs2,
+        ownedMonsters: idx >= 0
+          ? gs2.ownedMonsters.map((om, i) => i === idx ? updatedM : om)
+          : gs2.ownedMonsters,
+      });
       ov.destroy();
-      onRefresh(m);
+      onRefresh(updatedM);
     });
     ov.add(zone);
   });
@@ -458,13 +472,10 @@ function buildSkinSlot(
     const zone = scene.add.zone(bx + optW / 2, y + 26, optW, 52).setInteractive();
     zone.on('pointerdown', () => {
       const state = loadGameState();
-      if (!state.equippedSkins) state.equippedSkins = {};
-      if (skin) {
-        state.equippedSkins[typeId] = skin.id;
-      } else {
-        delete state.equippedSkins[typeId];
-      }
-      saveGameState(state);
+      const newEquippedSkins = skin
+        ? { ...(state.equippedSkins ?? {}), [typeId]: skin.id }
+        : Object.fromEntries(Object.entries(state.equippedSkins ?? {}).filter(([k]) => k !== typeId));
+      saveGameState({ ...state, equippedSkins: newEquippedSkins });
       ov.destroy();
       onRefresh(m);
     });
@@ -559,9 +570,12 @@ export function showSkillShopPanel(
           });
           return;
         }
-        gs2.homeGold -= sk.goldCost;
-        gs2.ownedActiveSkills.push(sk.id);
-        saveGameState(gs2);
+        const prevSkills = gs2.ownedActiveSkills ?? [];
+        saveGameState({
+          ...gs2,
+          homeGold:          gs2.homeGold - sk.goldCost,
+          ownedActiveSkills: [...prevSkills, sk.id],
+        });
         ov.destroy();
         onReshop();
       });

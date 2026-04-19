@@ -148,14 +148,12 @@ function executeEvolution(ctx: FusionTabContext, state: EvolutionState): void {
   const gs = loadGameState();
   const maxLevel = Math.max(...state.evoSlots.map(s => s?.level ?? 1));
 
-  const slotIds = state.evoSlots.map(s => s?.id);
-  let removed = 0;
-  for (let i = gs.ownedMonsters.length - 1; i >= 0 && removed < 3; i--) {
-    if (gs.ownedMonsters[i].id === slotIds[removed] || gs.ownedMonsters[i].id === slot0.id) {
-      gs.ownedMonsters.splice(i, 1);
-      removed++;
-    }
-  }
+  // Remove exactly 3 monsters of slot0's type (immutable filter approach)
+  let toRemove = 3;
+  const trimmed = gs.ownedMonsters.filter(m => {
+    if (toRemove > 0 && m.id === slot0.id) { toRemove--; return false; }
+    return true;
+  });
 
   const evolved: OwnedMonster = {
     id: tier.resultId, level: maxLevel, xp: 0,
@@ -164,10 +162,9 @@ function executeEvolution(ctx: FusionTabContext, state: EvolutionState): void {
     equippedSkills: [], equipment: null,
     rarity: tier.rarity, absorptionStacks: 0,
   };
-  gs.ownedMonsters.push(evolved);
-
-  updateQuestObjective(gs, 'fuse_monsters'); tickSubQuestProgress(gs, 'fuse_monsters');
-  saveGameState(gs);
+  const updated = { ...gs, ownedMonsters: [...trimmed, evolved] };
+  updateQuestObjective(updated, 'fuse_monsters');
+  saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
 
   const evolvedAtk = getMonsterBaseDamage(tier.resultId);
   const baseAtk    = getMonsterBaseDamage(slot0.id);

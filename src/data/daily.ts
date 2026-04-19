@@ -262,36 +262,34 @@ export function tickDailyChallenge(
   type: DailyChallenge['objective']['type'],
   amount = 1,
   filter?: string,
-): string[] {
+): GameState {
   const today = getTodayString();
   // Reset if it's a new day
-  if (gs.dailyChallengeDate !== today) {
-    gs.dailyChallenges    = {};
-    gs.dailyChallengeDate = today;
-  }
+  const prevChallenges = gs.dailyChallengeDate !== today ? {} : { ...(gs.dailyChallenges ?? {}) };
 
   const challenges = getDailyChallenges();
-  const justCompleted: string[] = [];
+  const updatedChallenges = { ...prevChallenges };
+  let newGems = gs.gems ?? 0;
 
   for (const ch of challenges) {
     if (ch.objective.type !== type) continue;
     if (filter !== undefined && ch.objective.filter !== filter) continue;
 
-    const entry = gs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
-    if (entry.completed) continue;
+    const prev = prevChallenges[ch.id] ?? { completed: false, progress: 0 };
+    if (prev.completed) continue;
 
-    entry.progress = Math.min(entry.progress + amount, ch.objective.target);
-    gs.dailyChallenges[ch.id] = entry;
-
-    if (entry.progress >= ch.objective.target) {
-      entry.completed = true;
-      justCompleted.push(ch.id);
-      // Grant gem rewards automatically
-      if (ch.reward.gems) gs.gems = (gs.gems ?? 0) + ch.reward.gems;
-    }
+    const newProgress  = Math.min(prev.progress + amount, ch.objective.target);
+    const newCompleted = newProgress >= ch.objective.target;
+    if (newCompleted && ch.reward.gems) newGems += ch.reward.gems;
+    updatedChallenges[ch.id] = { completed: newCompleted, progress: newProgress };
   }
 
-  return justCompleted;
+  return {
+    ...gs,
+    gems:               newGems,
+    dailyChallenges:    updatedChallenges,
+    dailyChallengeDate: today,
+  };
 }
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────

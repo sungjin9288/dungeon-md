@@ -74,7 +74,7 @@ export interface ResultFlowContext {
   showFloatText: (x: number, y: number, text: string, color: string) => void;
   showEndlessResult: () => void;
   checkAchievementsAndToast: (gs: ReturnType<typeof loadGameState>) => void;
-  tickQuestAndNotify: (gs: ReturnType<typeof loadGameState>, type: string) => void;
+  tickQuestAndNotify: (gs: ReturnType<typeof loadGameState>, type: string) => ReturnType<typeof loadGameState>;
 
   // Mutators — update ctx properties and registry together
   setDungeonHp: (hp: number) => void;

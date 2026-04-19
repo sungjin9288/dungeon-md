@@ -153,7 +153,6 @@ function executeCombination(ctx: FusionTabContext, state: CombinationState): voi
 
   const gs = loadGameState();
   if (gs.soulCrystals < 100) return;
-  gs.soulCrystals -= 100;
 
   const key      = combinationKey(slotA.id, slotB.id);
   const hybridId = COMBINATION_TABLE[key];
@@ -161,10 +160,8 @@ function executeCombination(ctx: FusionTabContext, state: CombinationState): voi
   if (hybridId) {
     const hybrid = HYBRID_DEFS[hybridId];
     const isNew  = !(gs.discoveredCombinations ?? []).includes(hybridId);
-    if (isNew) {
-      gs.discoveredCombinations = [...(gs.discoveredCombinations ?? []), hybridId];
-      logger.debug(`[COMBINATION] NEW DISCOVERY: ${hybridId} — ${hybrid.name}`);
-    }
+
+    if (isNew) logger.debug(`[COMBINATION] NEW DISCOVERY: ${hybridId} — ${hybrid.name}`);
 
     const avgLevel = Math.round((slotA.level + slotB.level) / 2);
     const newMonster = {
@@ -172,9 +169,14 @@ function executeCombination(ctx: FusionTabContext, state: CombinationState): voi
       skillPoints: 0, spentSkills: {}, equippedSkills: [], equipment: null,
       rarity: hybrid.rarity, absorptionStacks: 0,
     };
-    gs.ownedMonsters.push(newMonster);
-    updateQuestObjective(gs, 'fuse_monsters'); tickSubQuestProgress(gs, 'fuse_monsters');
-    saveGameState(gs);
+    const updated = {
+      ...gs,
+      soulCrystals: gs.soulCrystals - 100,
+      ownedMonsters: [...gs.ownedMonsters, newMonster],
+      ...(isNew ? { discoveredCombinations: [...(gs.discoveredCombinations ?? []), hybridId] } : {}),
+    };
+    updateQuestObjective(updated, 'fuse_monsters');
+    saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
 
     state.setCombineSlots([null, null]);
     showFusionAnimation(ctx, '조합', () => {
@@ -188,7 +190,7 @@ function executeCombination(ctx: FusionTabContext, state: CombinationState): voi
     });
   } else {
     logger.debug(`[COMBINATION] FAILED: ${key} — no known recipe`);
-    saveGameState(gs);
+    saveGameState({ ...gs, soulCrystals: gs.soulCrystals - 100 });
     state.setCombineSlots([null, null]);
 
     // Fail animation (smoke)

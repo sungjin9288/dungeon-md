@@ -100,11 +100,11 @@ export function showEndlessResult(
   const previousBest = gs.endlessHighScore ?? 0;
   const isNewRecord  = wave > previousBest;
 
-  gs.soulCrystals     = (gs.soulCrystals    ?? 0) + crystals;
-  gs.endlessHighScore = Math.max(previousBest, wave);
-  gs.totalKills       = gs.totalKills      ?? 0;
-  gs.totalGoldEarned  = gs.totalGoldEarned ?? 0;
-  saveGameState(gs);
+  saveGameState({
+    ...gs,
+    soulCrystals:     (gs.soulCrystals    ?? 0) + crystals,
+    endlessHighScore: Math.max(previousBest, wave),
+  });
 
   scene.registry.set('endlessResult', {
     wave, kills: killsThisRun, goldEarned: goldEarnedThisRun,
@@ -172,9 +172,8 @@ export function checkWaveEnd(ctx: CheckWaveEndContext): void {
     const noDmg = ctx.dungeonHp >= ctx.waveStartDungeonHp;
     ctx.consecutiveNoDmgWaves = noDmg ? ctx.consecutiveNoDmgWaves + 1 : 0;
     {
-      const gs_dc = loadGameState();
-      tickDailyChallenge(gs_dc, 'wave_clear');
-      if (noDmg) tickDailyChallenge(gs_dc, 'no_damage');
+      let gs_dc = tickDailyChallenge(loadGameState(), 'wave_clear');
+      if (noDmg) gs_dc = tickDailyChallenge(gs_dc, 'no_damage');
       saveGameState(gs_dc);
     }
 

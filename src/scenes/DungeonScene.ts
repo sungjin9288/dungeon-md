@@ -487,9 +487,7 @@ export class DungeonScene extends Phaser.Scene {
   activateSkill(skillId: string, room: Room): void {
     audioManager.playSfx('skill_activate');
     // Track skill_use daily challenge
-    const gs_skill = loadGameState();
-    tickDailyChallenge(gs_skill, 'skill_use');
-    saveGameState(gs_skill);
+    saveGameState(tickDailyChallenge(loadGameState(), 'skill_use'));
 
     activateSkillEffect(skillId, buildActiveSkillContext(this, room));
   }
@@ -745,8 +743,8 @@ export class DungeonScene extends Phaser.Scene {
     _checkAchievementsAndToast(buildQuestTrackerCtx(this), gs);
   }
 
-  tickQuestAndNotify(gs: ReturnType<typeof loadGameState>, type: Parameters<typeof updateQuestObjective>[1], amount = 1): void {
-    _tickQuestAndNotify(buildQuestTrackerCtx(this), gs, type, amount);
+  tickQuestAndNotify(gs: ReturnType<typeof loadGameState>, type: Parameters<typeof updateQuestObjective>[1], amount = 1): ReturnType<typeof loadGameState> {
+    return _tickQuestAndNotify(buildQuestTrackerCtx(this), gs, type, amount);
   }
 
   private trackConsecutiveDays(): void {

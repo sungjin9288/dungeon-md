@@ -515,33 +515,40 @@ export function getQuest(id: string): MainQuest | undefined {
   return MAIN_QUESTS.find(q => q.id === id);
 }
 
-export function startQuest(gs: GameState, questId: string): void {
+export function startQuest(gs: GameState, questId: string): GameState {
   const quest = getQuest(questId);
-  if (!quest) return;
-  gs.activeMainQuestId = questId;
-  if (!gs.questProgress[questId]) {
-    const objectives: Record<string, number> = {};
-    quest.objectives.forEach(o => { objectives[o.id] = 0; });
-    gs.questProgress[questId] = { objectives, completed: false };
-  }
+  if (!quest) return gs;
+
+  const existingProg = gs.questProgress[questId];
+  const objectives: Record<string, number> = existingProg
+    ? { ...existingProg.objectives }
+    : Object.fromEntries(quest.objectives.map(o => [o.id, 0]));
+
   // Auto-satisfy objectives already met by current game state
-  const prog = gs.questProgress[questId];
   quest.objectives.forEach(o => {
-    const cur = prog.objectives[o.id] ?? 0;
+    const cur = objectives[o.id] ?? 0;
     if (o.type === 'reach_dm_level' && gs.dmLevel >= o.target && cur < o.target) {
-      prog.objectives[o.id] = o.target;
+      objectives[o.id] = o.target;
       logger.debug(`[OBJECTIVE] reach_dm_level: ${o.target}/${o.target} (auto-met at Lv.${gs.dmLevel})`);
     }
     if (o.type === 'collect_gold' && (gs.totalGoldEarned ?? 0) >= o.target && cur < o.target) {
-      prog.objectives[o.id] = o.target;
+      objectives[o.id] = o.target;
       logger.debug(`[OBJECTIVE] collect_gold: ${o.target}/${o.target} (auto-met)`);
     }
   });
+
+  const newProg = existingProg
+    ? { ...existingProg, objectives }
+    : { objectives, completed: false as const };
+
   logger.debug(`[QUEST] ${questId} started: ${quest.title}`);
-  quest.objectives.forEach(o => {
-    const cur = prog.objectives[o.id] ?? 0;
-    logger.debug(`[OBJECTIVE] ${o.type}: ${cur}/${o.target}`);
-  });
+  quest.objectives.forEach(o => logger.debug(`[OBJECTIVE] ${o.type}: ${objectives[o.id] ?? 0}/${o.target}`));
+
+  return {
+    ...gs,
+    activeMainQuestId: questId,
+    questProgress: { ...gs.questProgress, [questId]: newProg },
+  };
 }
 
 export interface ObjectiveUpdate {
@@ -579,50 +586,45 @@ export function updateQuestObjective(
 
 export function completeAndAdvance(
   gs: GameState,
-): { completedQuest: MainQuest; nextQuestId: string | null; unlocks: string[] } | null {
+): [GameState, { completedQuest: MainQuest; nextQuestId: string | null; unlocks: string[] } | null] {
   const questId = gs.activeMainQuestId;
   const quest   = getQuest(questId);
   const prog    = gs.questProgress[questId];
-  if (!quest || !prog) return null;
+  if (!quest || !prog) return [gs, null];
 
-  prog.completed   = true;
-  prog.completedAt = Date.now();
-  logger.debug(`[QUEST] ${questId} COMPLETE — rewards granted`);
-
-  // Award rewards
-  const r       = quest.reward;
+  const r        = quest.reward;
   const xpGained = r.dmXP;
-  if (r.gold)         gs.homeGold     += r.gold;
-  if (r.gems)         gs.gems         += r.gems;
-  if (r.soulCrystals) gs.soulCrystals += r.soulCrystals;
-  gs.dmXP += xpGained;
 
-  // DM level-up loop
-  let threshold = gs.dmLevel * 100;
-  while (gs.dmXP >= threshold) {
-    gs.dmXP    -= threshold;
-    gs.dmLevel += 1;
-    threshold   = gs.dmLevel * 100;
-    logger.debug(`[QUEST] DM Level Up! Now Lv.${gs.dmLevel}`);
+  let newGold    = (gs.homeGold     ?? 0) + (r.gold         ?? 0);
+  let newGems    = (gs.gems         ?? 0) + (r.gems         ?? 0);
+  let newSC      = (gs.soulCrystals ?? 0) + (r.soulCrystals ?? 0);
+  let newDmXP    = (gs.dmXP         ?? 0) + xpGained;
+  let newDmLevel = gs.dmLevel;
+  let threshold  = newDmLevel * 100;
+  while (newDmXP >= threshold) {
+    newDmXP -= threshold; newDmLevel += 1; threshold = newDmLevel * 100;
+    logger.debug(`[QUEST] DM Level Up! Now Lv.${newDmLevel}`);
   }
-  logger.debug(`[DM XP] +${xpGained}, total: ${gs.dmXP}, level: ${gs.dmLevel}`);
+  logger.debug(`[QUEST] ${questId} COMPLETE — rewards granted`);
+  logger.debug(`[DM XP] +${xpGained}, total: ${newDmXP}, level: ${newDmLevel}`);
 
-  // Award feature unlocks
-  const unlocks: string[] = r.unlocks ?? [];
+  const unlocks     = r.unlocks ?? [] as string[];
+  const newFeatures = [...gs.unlockedFeatures];
   unlocks.forEach(u => {
-    if (!gs.unlockedFeatures.includes(u)) {
-      gs.unlockedFeatures.push(u);
-      logger.debug(`[UNLOCK] ${u}`);
-    }
+    if (!newFeatures.includes(u)) { newFeatures.push(u); logger.debug(`[UNLOCK] ${u}`); }
   });
 
+  const partialGs: GameState = {
+    ...gs,
+    homeGold: newGold, gems: newGems, soulCrystals: newSC,
+    dmXP: newDmXP, dmLevel: newDmLevel,
+    unlockedFeatures: newFeatures,
+    questProgress:    { ...gs.questProgress, [questId]: { ...prog, completed: true, completedAt: Date.now() } },
+    activeMainQuestId: quest.nextQuestId ?? '',
+  };
   const nextQuestId = quest.nextQuestId;
-  if (nextQuestId) {
-    startQuest(gs, nextQuestId);
-  } else {
-    gs.activeMainQuestId = '';
-  }
-  return { completedQuest: quest, nextQuestId, unlocks };
+  const finalGs = nextQuestId ? startQuest(partialGs, nextQuestId) : partialGs;
+  return [finalGs, { completedQuest: quest, nextQuestId: nextQuestId ?? null, unlocks }];
 }
 
 // ─── Sub quest system ─────────────────────────────────────────────────────────
@@ -701,22 +703,23 @@ export function getSubQuestById(id: string): SubQuest | undefined {
 const MAX_ACTIVE_SUB_QUESTS = 2;
 
 /** Fill empty sub-quest slots with random picks from the pool (skip already active/completed). */
-export function assignSubQuests(gs: GameState): void {
-  gs.activeSubQuestIds  = gs.activeSubQuestIds  ?? [];
-  gs.subQuestProgress   = gs.subQuestProgress   ?? {};
-  gs.completedSubQuestIds = gs.completedSubQuestIds ?? [];
+export function assignSubQuests(gs: GameState): GameState {
+  const activeIds  = [...(gs.activeSubQuestIds  ?? [])];
+  const progress   = { ...(gs.subQuestProgress  ?? {}) };
+  const completed  = gs.completedSubQuestIds ?? [];
 
   const available = SUB_QUEST_POOL.filter(sq =>
-    !gs.activeSubQuestIds.includes(sq.id) &&
-    !gs.completedSubQuestIds.includes(sq.id),
+    !activeIds.includes(sq.id) && !completed.includes(sq.id),
   );
 
-  while (gs.activeSubQuestIds.length < MAX_ACTIVE_SUB_QUESTS && available.length > 0) {
+  while (activeIds.length < MAX_ACTIVE_SUB_QUESTS && available.length > 0) {
     const idx = Math.floor(Math.random() * available.length);
     const sq  = available.splice(idx, 1)[0];
-    gs.activeSubQuestIds.push(sq.id);
-    gs.subQuestProgress[sq.id] = gs.subQuestProgress[sq.id] ?? 0;
+    activeIds.push(sq.id);
+    progress[sq.id] = progress[sq.id] ?? 0;
   }
+
+  return { ...gs, activeSubQuestIds: activeIds, subQuestProgress: progress, completedSubQuestIds: completed };
 }
 
 /** Increment progress for all active sub-quests matching the given objective type. */
@@ -724,50 +727,63 @@ export function tickSubQuestProgress(
   gs: GameState,
   type: ObjectiveType,
   amount = 1,
-): string[] {
-  gs.activeSubQuestIds  = gs.activeSubQuestIds  ?? [];
-  gs.subQuestProgress   = gs.subQuestProgress   ?? {};
-  const justCompleted: string[] = [];
+): GameState {
+  const activeIds = gs.activeSubQuestIds ?? [];
+  const prevProg  = gs.subQuestProgress  ?? {};
+  const newProg   = { ...prevProg };
 
-  for (const sqId of gs.activeSubQuestIds) {
+  for (const sqId of activeIds) {
     const sq = getSubQuestById(sqId);
     if (!sq || sq.objective.type !== type) continue;
-    const prev = gs.subQuestProgress[sqId] ?? 0;
+    const prev = prevProg[sqId] ?? 0;
     if (prev >= sq.objective.target) continue;
-    gs.subQuestProgress[sqId] = Math.min(prev + amount, sq.objective.target);
-    if (gs.subQuestProgress[sqId] >= sq.objective.target) {
-      justCompleted.push(sqId);
-    }
+    newProg[sqId] = Math.min(prev + amount, sq.objective.target);
   }
-  return justCompleted;
+  return { ...gs, activeSubQuestIds: activeIds, subQuestProgress: newProg };
 }
 
 /** Claim a completed sub-quest: grant rewards and remove from active list. */
-export function claimSubQuest(gs: GameState, sqId: string): SubQuest | null {
-  gs.activeSubQuestIds    = gs.activeSubQuestIds    ?? [];
-  gs.completedSubQuestIds = gs.completedSubQuestIds ?? [];
+export function claimSubQuest(gs: GameState, sqId: string): [GameState, SubQuest | null] {
+  const activeIds    = gs.activeSubQuestIds    ?? [];
+  const completedIds = gs.completedSubQuestIds ?? [];
+  const progress     = gs.subQuestProgress     ?? {};
 
   const sq  = getSubQuestById(sqId);
-  const idx = gs.activeSubQuestIds.indexOf(sqId);
-  if (!sq || idx === -1) return null;
+  const idx = activeIds.indexOf(sqId);
+  if (!sq || idx === -1) return [gs, null];
 
-  // Grant rewards
-  if (sq.reward.gold)         gs.homeGold     = (gs.homeGold     ?? 0) + sq.reward.gold;
-  if (sq.reward.gems)         gs.gems         = (gs.gems         ?? 0) + sq.reward.gems;
-  if (sq.reward.soulCrystals) gs.soulCrystals = (gs.soulCrystals ?? 0) + sq.reward.soulCrystals;
+  // Accumulate rewards
+  let newGold    = gs.homeGold     ?? 0;
+  let newGems    = gs.gems         ?? 0;
+  let newSC      = gs.soulCrystals ?? 0;
+  let newDmXP    = gs.dmXP         ?? 0;
+  let newDmLevel = gs.dmLevel;
+
+  if (sq.reward.gold)         newGold   += sq.reward.gold;
+  if (sq.reward.gems)         newGems   += sq.reward.gems;
+  if (sq.reward.soulCrystals) newSC     += sq.reward.soulCrystals;
   if (sq.reward.dmXP) {
-    gs.dmXP = (gs.dmXP ?? 0) + sq.reward.dmXP;
-    const threshold = gs.dmLevel * 100;
-    if (gs.dmXP >= threshold) { gs.dmXP -= threshold; gs.dmLevel++; }
+    newDmXP += sq.reward.dmXP;
+    const threshold = newDmLevel * 100;
+    if (newDmXP >= threshold) { newDmXP -= threshold; newDmLevel++; }
   }
 
-  // Move from active → completed
-  gs.activeSubQuestIds.splice(idx, 1);
-  if (!gs.completedSubQuestIds.includes(sqId)) gs.completedSubQuestIds.push(sqId);
-  delete gs.subQuestProgress[sqId];
+  // Move active → completed, remove progress entry
+  const newActiveIds  = activeIds.filter((_, i) => i !== idx);
+  const newCompleted  = completedIds.includes(sqId) ? completedIds : [...completedIds, sqId];
+  const newProgress   = Object.fromEntries(Object.entries(progress).filter(([k]) => k !== sqId));
 
-  // Immediately fill the slot back up
-  assignSubQuests(gs);
+  const partialGs: GameState = {
+    ...gs,
+    homeGold:             newGold,
+    gems:                 newGems,
+    soulCrystals:         newSC,
+    dmXP:                 newDmXP,
+    dmLevel:              newDmLevel,
+    activeSubQuestIds:    newActiveIds,
+    completedSubQuestIds: newCompleted,
+    subQuestProgress:     newProgress,
+  };
 
-  return sq;
+  return [assignSubQuests(partialGs), sq];
 }
