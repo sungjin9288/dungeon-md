@@ -42,8 +42,9 @@ export interface AchievementContext {
   ownedMonsterCount: number;
   ownedSkinCount:   number;
   totalFusions:     number;
-  completedTribes:  number;       // tribes with 100% codex
-  totalSummons:     number;
+  completedTribes:   number;       // tribes with 100% codex
+  totalSummons:      number;
+  questSkinsOwned:   number;       // skins unlocked via quest completion
 }
 
 export const ACHIEVEMENT_DEFS: AchievementDef[] = [
@@ -691,6 +692,60 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     target: 5,
     reward: { gems: 150, soulCrystals: 50 },
     getProgress: ctx => Object.values(ctx.wisdomTree).filter(v => v >= 5).length,
+  },
+
+  // ── Chapter 8: 원초의 심연 ─────────────────────────────────────────────────
+  {
+    id: 'ch8_first',
+    name: '심연 탐험가',
+    description: 'Chapter 8 — 원초의 심연 첫 스테이지(73)를 클리어하세요.',
+    icon: '🌑',
+    category: 'growth',
+    target: 1,
+    reward: { gems: 80, soulCrystals: 30 },
+    getProgress: ctx => (ctx.stageProgress[72]?.bestStars > 0 ? 1 : 0),
+  },
+  {
+    id: 'ch8_clear',
+    name: '원초의 정복자',
+    description: '심연왕을 쓰러뜨리고 원초의 심연을 정복하세요 (스테이지 80 클리어).',
+    icon: '🔮',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 800, soulCrystals: 300 },
+    getProgress: ctx => (ctx.stageProgress[79]?.bestStars > 0 ? 1 : 0),
+  },
+  {
+    id: 'ch8_3star',
+    name: '심연의 달인',
+    description: '원초의 심연 최종 스테이지(80)에서 별 3개를 획득하세요.',
+    icon: '💫',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 300, soulCrystals: 80 },
+    getProgress: ctx => (ctx.stageProgress[79]?.bestStars >= 3 ? 1 : 0),
+  },
+
+  // ── Quest Skin Collection ──────────────────────────────────────────────────
+  {
+    id: 'quest_skin_first',
+    name: '전설의 첫 걸음',
+    description: '퀘스트를 클리어해 스킨을 처음으로 해금하세요.',
+    icon: '🎁',
+    category: 'growth',
+    target: 1,
+    reward: { gems: 50 },
+    getProgress: ctx => Math.min(1, ctx.questSkinsOwned),
+  },
+  {
+    id: 'quest_skin_collector',
+    name: '전설 스킨 수집가',
+    description: '퀘스트 해금 스킨을 3종 이상 획득하세요.',
+    icon: '🎨',
+    category: 'mastery',
+    target: 3,
+    reward: { gems: 200, soulCrystals: 100 },
+    getProgress: ctx => ctx.questSkinsOwned,
   },
 ];
 

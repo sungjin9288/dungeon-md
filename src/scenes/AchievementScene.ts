@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState, saveGameState } from '../data/wisdom';
+import { SKIN_DATA } from '../data/monsters';
 import {
   ACHIEVEMENT_DEFS,
   type AchievementCategory,
@@ -82,6 +83,10 @@ export class AchievementScene extends Phaser.Scene {
       totalFusions:      gs.totalFusions     ?? 0,
       completedTribes:   gs.completedTribes  ?? 0,
       totalSummons:      (gs.summonHistory ?? []).length,
+      questSkinsOwned:   SKIN_DATA
+        .filter(s => s.unlockVia === 'quest')
+        .filter(s => (gs.ownedSkins?.[s.monsterId] ?? []).includes(s.id))
+        .length,
     };
   }
 

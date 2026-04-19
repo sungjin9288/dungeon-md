@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
 import { checkAchievements, ACHIEVEMENT_DEFS, type AchievementContext } from '../data/achievements';
+import { SKIN_DATA } from '../data/monsters';
 import { updateQuestObjective, tickSubQuestProgress, completeAndAdvance } from '../data/quests';
 import { addXp } from '../data/barracks';
 import { CANVAS_WIDTH } from '../constants/layout';
@@ -40,6 +41,10 @@ export function checkAchievementsAndToast(
     totalFusions:      gs.totalFusions     ?? 0,
     completedTribes:   gs.completedTribes  ?? 0,
     totalSummons:      (gs.summonHistory ?? []).length,
+    questSkinsOwned:   SKIN_DATA
+      .filter(s => s.unlockVia === 'quest')
+      .filter(s => (gs.ownedSkins?.[s.monsterId] ?? []).includes(s.id))
+      .length,
   };
 
   const newlyUnlocked = checkAchievements(achCtx, gs.achievements ?? {});
