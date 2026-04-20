@@ -303,7 +303,8 @@ export class PreBattleScene extends Phaser.Scene {
       wave:        w.waveNumber,
       clearReward: 120,
       invaders:    w.invaders.map(inv => ({
-        type:       (INVASION_TYPE_MAP[inv.type] ?? 'peasant') as InvaderType,
+        // Use explicit mapping first; if missing, pass through as-is (Ch8+ types match InvaderType directly)
+        type:       (INVASION_TYPE_MAP[inv.type] ?? inv.type) as InvaderType,
         count:      inv.count,
         spawnDelay: 2200,
       })),

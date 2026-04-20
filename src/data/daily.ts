@@ -70,25 +70,47 @@ const DAILY_RULES: Array<{ rule: DailyRule; name: string; elementRestrict?: Elem
   { rule: 'boss_rush',        name: '보스 연전' },
 ];
 
+// Tiered pools: daily dungeon rotates across a wider variety of enemy types
+const INVADER_POOL_LIGHT: InvaderType[] = [
+  'peasant', 'soldier', 'shaman', 'berserker', 'shadow_ninja', 'siege_soldier',
+];
+const INVADER_POOL_MID: InvaderType[] = [
+  'soldier', 'knight', 'berserker', 'holy_paladin', 'trap_breaker',
+  'undying_knight', 'venom_dancer', 'scarecrow_mage',
+];
+const INVADER_POOL_HEAVY: InvaderType[] = [
+  'knight', 'iron_golem', 'mercenary_captain', 'void_assassin',
+  'mirror_knight', 'shadow_wraith', 'celestial_knight', 'divine_archer',
+];
+const BOSS_POOL: InvaderType[] = [
+  'fox_queen', 'dragon_king', 'death_emissary',
+  'three_god_destroyer', 'eternal_emperor', 'god_emperor',
+];
+
 function generateDailyWaves(seed: number, rule: DailyRule): WaveSpec[] {
   const rand = seededRand(seed);
   const waves: WaveSpec[] = [];
 
-  const invaderPool: InvaderType[] = ['peasant', 'soldier', 'knight', 'shaman', 'berserker', 'shadow_ninja'];
+  // Pick a tier pool seeded per day for variety
+  const tierRoll = rand();
+  const invaderPool: InvaderType[] =
+    tierRoll < 0.35 ? INVADER_POOL_LIGHT :
+    tierRoll < 0.70 ? INVADER_POOL_MID  : INVADER_POOL_HEAVY;
 
   for (let w = 1; w <= 8; w++) {
     const count = Math.floor(4 + w * 1.5 + rand() * 3);
-    const typeIdx = Math.floor(rand() * invaderPool.length);
+    const typeIdx  = Math.floor(rand() * invaderPool.length);
     const type2Idx = Math.floor(rand() * invaderPool.length);
+    const delay    = Math.max(600, Math.floor(1800 - w * 100));
 
     const invaders: WaveSpec['invaders'] = [
-      { type: invaderPool[typeIdx], count: Math.ceil(count * 0.6), spawnDelay: Math.floor(1800 - w * 100) },
+      { type: invaderPool[typeIdx], count: Math.ceil(count * 0.6), spawnDelay: delay },
     ];
     if (w >= 3) {
       invaders.push({
         type: invaderPool[type2Idx],
         count: Math.floor(count * 0.4),
-        spawnDelay: Math.floor(1800 - w * 100),
+        spawnDelay: delay,
       });
     }
 
@@ -96,27 +118,31 @@ function generateDailyWaves(seed: number, rule: DailyRule): WaveSpec[] {
     waves.push({ wave: w, clearReward: reward, invaders });
   }
 
-  // Boss wave
+  // Boss wave — seeded selection from BOSS_POOL
+  const bossType = BOSS_POOL[Math.floor(rand() * BOSS_POOL.length)];
+  const midType  = invaderPool[Math.floor(rand() * invaderPool.length)];
+
   if (rule === 'boss_rush') {
+    const boss2Type = BOSS_POOL[Math.floor(rand() * BOSS_POOL.length)];
     waves.push({
-      wave: 9, clearReward: 300,
-      invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }],
+      wave: 9, clearReward: 350,
+      invaders: [{ type: bossType,  count: 1, spawnDelay: 3000, isBoss: true }],
     });
     waves.push({
-      wave: 10, clearReward: 500,
-      invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }],
+      wave: 10, clearReward: 600,
+      invaders: [{ type: boss2Type, count: 1, spawnDelay: 3000, isBoss: true }],
     });
   } else {
     waves.push({
-      wave: 9, clearReward: 200,
+      wave: 9, clearReward: 220,
       invaders: [
-        { type: 'knight', count: 4, spawnDelay: 1000 },
-        { type: 'shaman', count: 3, spawnDelay: 1000 },
+        { type: midType,   count: 5, spawnDelay: 1000 },
+        { type: bossType,  count: 1, spawnDelay: 3000 },
       ],
     });
     waves.push({
-      wave: 10, clearReward: 400,
-      invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }],
+      wave: 10, clearReward: 450,
+      invaders: [{ type: bossType, count: 1, spawnDelay: 3000, isBoss: true }],
     });
   }
 
