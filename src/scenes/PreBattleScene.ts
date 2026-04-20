@@ -17,12 +17,18 @@ const INVASION_TYPE_MAP: Record<string, InvaderType> = {
 };
 
 const ENEMY_EMOJI: Record<string, string> = {
-  peasant_soldier: '👤', shield_knight:  '🛡️',
-  shadow_thief:    '🗡️', field_medic:   '💊',
+  peasant_soldier: '👤', shield_knight:     '🛡️',
+  shadow_thief:    '🗡️', field_medic:      '💊',
+  // Chapter 8 invasion types
+  void_soldier:    '🌑', abyss_berserker:   '💜',
+  primordial_guard: '⛓️', primordial_titan: '🌌',
 };
 const ENEMY_NAME: Record<string, string> = {
-  peasant_soldier: '농민병사',  shield_knight: '방패기사',
-  shadow_thief:    '그림자도적', field_medic:   '야전 의무병',
+  peasant_soldier:  '농민병사',    shield_knight:     '방패기사',
+  shadow_thief:     '그림자도적',  field_medic:       '야전 의무병',
+  // Chapter 8 invasion types
+  void_soldier:     '공허 병사',   abyss_berserker:   '심연 광전사',
+  primordial_guard: '원초 수문장', primordial_titan:  '원초신',
 };
 
 export class PreBattleScene extends Phaser.Scene {

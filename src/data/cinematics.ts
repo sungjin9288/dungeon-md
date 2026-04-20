@@ -209,6 +209,34 @@ export const CINEMATICS: CinematicDef[] = [
     ],
   },
   {
+    id: 'ch8_opening',
+    lines: [
+      { speaker: '산신령', emoji: '⛩️', side: 'left',
+        text: '...심연의 저편. 모든 창조 이전의 공간이다.' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '뭔가 다르다... 이건 그냥 강한 게 아니야. 존재 자체가 위협이야.' },
+      { speaker: '산신령', emoji: '⛩️', side: 'left',
+        text: '원초신이 잠에서 깨어나고 있다. 천계도, 공허도 그 앞에선 먼지에 불과하다.' },
+      { speaker: '구미호', emoji: '🦊', side: 'right',
+        text: '...그래도 우리의 던전은 여기 있어요. 포기할 수 없잖아요?' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '맞아!! 원초신이든 뭐든—우리 던전은 절대 무너지지 않는다!!!', pause: 800 },
+    ],
+  },
+  {
+    id: 'primordial_titan_boss_intro',
+    lines: [
+      { speaker: '원초신', emoji: '🌑', side: 'left',
+        text: '...오랜 잠에서 깨어났다.' },
+      { speaker: '원초신', emoji: '🌑', side: 'left',
+        text: '천계, 공허, 저승, 삼신산... 모두 나의 꿈속에서 태어난 것들.' },
+      { speaker: '원초신', emoji: '🌑', side: 'left',
+        text: '그 피조물들을 이겼다고? 그렇다면... 창조주를 상대해 보아라.' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '창조주든 뭐든 관계없다!! 이 던전은 우리가 지킨다!!!', pause: 1000 },
+    ],
+  },
+  {
     id: 'game_complete',
     lines: [
       { speaker: '산신령',    emoji: '⛩️', side: 'left',
@@ -244,4 +272,6 @@ export const STAGE_CINEMATICS: Record<number, string> = {
   62: 'eternal_emperor_boss_intro',
   63: 'ch7_opening',
   72: 'god_emperor_boss_intro',
+  73: 'ch8_opening',
+  80: 'primordial_titan_boss_intro',
 };
