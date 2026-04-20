@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7 } from '../data/stages';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from '../data/stages';
 
-const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7];
+const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8];
 
 const CHAPTER_NAMES: Record<number, string> = {
   1: '버려진 던전', 2: '독사의 늪', 3: '화염 산맥',
-  4: '달빛 숲', 5: '심해 궁전', 6: '마왕의 탑', 7: '천계',
+  4: '달빛 숲', 5: '심해 궁전', 6: '마왕의 탑', 7: '천계', 8: '원초의 심연',
 };
 
 const PROGRESS_KEY = 'dungeonStageProgress';

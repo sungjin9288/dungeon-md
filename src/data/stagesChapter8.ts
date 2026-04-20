@@ -1,0 +1,146 @@
+import type { StageConfig } from './stagesChapter1';
+
+export const CHAPTER_8: StageConfig[] = [
+  // Stage 73 — 공허의 관문: void_soldier 등장
+  {
+    id: 73, chapter: 8, koreanName: '공허의 관문', gridCols: 4, startGold: 1700, dungeonHp: 8500,
+    waves: [
+      { wave: 1,  clearReward: 600,  invaders: [{ type: 'void_soldier',    count: 3, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 660,  invaders: [{ type: 'void_soldier',    count: 4, spawnDelay: 1400 }, { type: 'celestial_knight', count: 3, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 725,  invaders: [{ type: 'void_soldier',    count: 5, spawnDelay: 1400 }, { type: 'radiant_seraph',   count: 3, spawnDelay: 1300 }] },
+      { wave: 4,  clearReward: 800,  invaders: [{ type: 'void_soldier',    count: 5, spawnDelay: 1400 }, { type: 'divine_archer',    count: 4, spawnDelay: 1200 }] },
+      { wave: 5,  clearReward: 880,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'radiant_seraph',   count: 4, spawnDelay: 1300 }] },
+      { wave: 6,  clearReward: 965,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'celestial_knight', count: 5, spawnDelay: 1400 }] },
+      { wave: 7,  clearReward: 1060, invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'divine_archer',    count: 5, spawnDelay: 1200 }] },
+      { wave: 8,  clearReward: 1160, invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'radiant_seraph',   count: 5, spawnDelay: 1300 }, { type: 'celestial_knight', count: 4, spawnDelay: 1400 }] },
+      { wave: 9,  clearReward: 1265, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'radiant_seraph', count: 4, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 5500, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'radiant_seraph',   count: 6, spawnDelay: 1300 }, { type: 'divine_archer', count: 5, spawnDelay: 1200 }] },
+    ],
+  },
+  // Stage 74 — 심연의 전사들: abyss_berserker 등장
+  {
+    id: 74, chapter: 8, koreanName: '심연의 전사들', gridCols: 4, startGold: 1730, dungeonHp: 8700,
+    waves: [
+      { wave: 1,  clearReward: 620,  invaders: [{ type: 'abyss_berserker', count: 2, spawnDelay: 1300 }, { type: 'void_soldier',    count: 3, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 685,  invaders: [{ type: 'abyss_berserker', count: 3, spawnDelay: 1300 }, { type: 'void_soldier',    count: 4, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 755,  invaders: [{ type: 'void_soldier',    count: 5, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 3, spawnDelay: 1300 }] },
+      { wave: 4,  clearReward: 830,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
+      { wave: 5,  clearReward: 910,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'divine_archer', count: 3, spawnDelay: 1200 }] },
+      { wave: 6,  clearReward: 1000, invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 7,  clearReward: 1095, invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'radiant_seraph', count: 4, spawnDelay: 1300 }] },
+      { wave: 8,  clearReward: 1195, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }] },
+      { wave: 9,  clearReward: 1300, invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'divine_archer', count: 5, spawnDelay: 1200 }] },
+      { wave: 10, clearReward: 5700, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'radiant_seraph', count: 5, spawnDelay: 1300 }] },
+    ],
+  },
+  // Stage 75 — 원초의 기운: 복합 배치
+  {
+    id: 75, chapter: 8, koreanName: '원초의 기운', gridCols: 4, startGold: 1760, dungeonHp: 8900,
+    waves: [
+      { wave: 1,  clearReward: 640,  invaders: [{ type: 'void_soldier',    count: 5, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 3, spawnDelay: 1300 }] },
+      { wave: 2,  clearReward: 710,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 780,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
+      { wave: 4,  clearReward: 860,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 5,  clearReward: 945,  invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'radiant_seraph', count: 4, spawnDelay: 1300 }] },
+      { wave: 6,  clearReward: 1040, invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'divine_archer', count: 5, spawnDelay: 1200 }] },
+      { wave: 7,  clearReward: 1140, invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
+      { wave: 8,  clearReward: 1245, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'radiant_seraph', count: 5, spawnDelay: 1300 }] },
+      { wave: 9,  clearReward: 1355, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'divine_archer', count: 5, spawnDelay: 1200 }] },
+      { wave: 10, clearReward: 5900, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'radiant_seraph', count: 5, spawnDelay: 1300 }] },
+    ],
+  },
+  // Stage 76 — 허공의 성채: 고강도 혼합
+  {
+    id: 76, chapter: 8, koreanName: '허공의 성채', gridCols: 4, startGold: 1790, dungeonHp: 9100,
+    waves: [
+      { wave: 1,  clearReward: 660,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 730,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
+      { wave: 3,  clearReward: 805,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'divine_archer', count: 4, spawnDelay: 1200 }] },
+      { wave: 4,  clearReward: 885,  invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 5,  clearReward: 975,  invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'radiant_seraph', count: 5, spawnDelay: 1300 }] },
+      { wave: 6,  clearReward: 1070, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
+      { wave: 7,  clearReward: 1170, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'divine_archer', count: 5, spawnDelay: 1200 }] },
+      { wave: 8,  clearReward: 1275, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'radiant_seraph', count: 5, spawnDelay: 1300 }] },
+      { wave: 9,  clearReward: 1385, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'divine_archer', count: 6, spawnDelay: 1200 }] },
+      { wave: 10, clearReward: 6100, invaders: [{ type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'radiant_seraph', count: 6, spawnDelay: 1300 }] },
+    ],
+  },
+  // Stage 77 — 원초의 수문장: primordial_guard 등장
+  {
+    id: 77, chapter: 8, koreanName: '원초의 수문장', gridCols: 4, startGold: 1830, dungeonHp: 9400,
+    waves: [
+      { wave: 1,  clearReward: 680,  invaders: [{ type: 'primordial_guard', count: 1, spawnDelay: 2600 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 755,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'primordial_guard', count: 1, spawnDelay: 2600 }] },
+      { wave: 3,  clearReward: 835,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 4,  clearReward: 920,  invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
+      { wave: 5,  clearReward: 1010, invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier', count: 6, spawnDelay: 1400 }] },
+      { wave: 6,  clearReward: 1110, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
+      { wave: 7,  clearReward: 1215, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 8,  clearReward: 1325, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
+      { wave: 9,  clearReward: 1440, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier', count: 7, spawnDelay: 1400 }] },
+      { wave: 10, clearReward: 1555, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
+      { wave: 11, clearReward: 1675, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }] },
+      { wave: 12, clearReward: 6400, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
+    ],
+  },
+  // Stage 78 — 공허 군단: 전 Ch8 일반 유닛 혼합
+  {
+    id: 78, chapter: 8, koreanName: '공허 군단', gridCols: 4, startGold: 1870, dungeonHp: 9700,
+    waves: [
+      { wave: 1,  clearReward: 700,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
+      { wave: 2,  clearReward: 775,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 855,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'void_soldier', count: 5, spawnDelay: 1400 }] },
+      { wave: 4,  clearReward: 940,  invaders: [{ type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 5,  clearReward: 1035, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier', count: 6, spawnDelay: 1400 }] },
+      { wave: 6,  clearReward: 1135, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
+      { wave: 7,  clearReward: 1240, invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
+      { wave: 8,  clearReward: 1350, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }] },
+      { wave: 9,  clearReward: 1465, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'void_soldier', count: 7, spawnDelay: 1400 }] },
+      { wave: 10, clearReward: 1585, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'primordial_guard', count: 4, spawnDelay: 2600 }] },
+      { wave: 11, clearReward: 1710, invaders: [{ type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }] },
+      { wave: 12, clearReward: 6700, invaders: [{ type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }, { type: 'void_soldier', count: 8, spawnDelay: 1400 }] },
+    ],
+  },
+  // Stage 79 — 원초의 분노: 15웨이브 생존
+  {
+    id: 79, chapter: 8, koreanName: '원초의 분노', gridCols: 4, startGold: 1920, dungeonHp: 10200,
+    waves: [
+      { wave: 1,  clearReward: 720,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 800,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 885,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'void_soldier',    count: 7, spawnDelay: 1400 }] },
+      { wave: 4,  clearReward: 975,  invaders: [{ type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
+      { wave: 5,  clearReward: 1070, invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
+      { wave: 6,  clearReward: 1170, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }] },
+      { wave: 7,  clearReward: 1275, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'void_soldier', count: 7, spawnDelay: 1400 }] },
+      { wave: 8,  clearReward: 1385, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }] },
+      { wave: 9,  clearReward: 1500, invaders: [{ type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 1620, invaders: [{ type: 'abyss_berserker', count: 8, spawnDelay: 1300 }, { type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'primordial_guard', count: 4, spawnDelay: 2600 }] },
+      { wave: 11, clearReward: 1745, invaders: [{ type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }] },
+      { wave: 12, clearReward: 1875, invaders: [{ type: 'abyss_berserker', count: 8, spawnDelay: 1300 }, { type: 'primordial_guard', count: 5, spawnDelay: 2600 }] },
+      { wave: 13, clearReward: 2010, invaders: [{ type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }, { type: 'primordial_guard', count: 5, spawnDelay: 2600 }] },
+      { wave: 14, clearReward: 2150, invaders: [{ type: 'primordial_guard', count: 6, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 9, spawnDelay: 1300 }, { type: 'void_soldier', count: 8, spawnDelay: 1400 }] },
+      { wave: 15, clearReward: 7000, invaders: [{ type: 'primordial_guard', count: 6, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 9, spawnDelay: 1300 }, { type: 'void_soldier', count: 9, spawnDelay: 1400 }] },
+    ],
+  },
+  // Stage 80 — 원초신의 강림: 최종 보스 (primordial_titan)
+  {
+    id: 80, chapter: 8, koreanName: '원초신의 강림', gridCols: 4, startGold: 2000, dungeonHp: 11000,
+    waves: [
+      { wave: 1,  clearReward: 740,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 2,  clearReward: 820,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
+      { wave: 3,  clearReward: 905,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 4,  clearReward: 995,  invaders: [{ type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
+      { wave: 5,  clearReward: 1095, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
+      { wave: 6,  clearReward: 1200, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'void_soldier',    count: 8, spawnDelay: 1400 }] },
+      { wave: 7,  clearReward: 1310, invaders: [{ type: 'abyss_berserker', count: 7, spawnDelay: 1300 }, { type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'void_soldier', count: 7, spawnDelay: 1400 }] },
+      { wave: 8,  clearReward: 1425, invaders: [{ type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }] },
+      { wave: 9,  clearReward: 1545, invaders: [{ type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 1670, invaders: [{ type: 'abyss_berserker', count: 9, spawnDelay: 1300 }, { type: 'primordial_guard', count: 5, spawnDelay: 2600 }, { type: 'void_soldier', count: 9, spawnDelay: 1400 }] },
+      { wave: 11, clearReward: 1800, invaders: [{ type: 'primordial_guard', count: 6, spawnDelay: 2600 }, { type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 9, spawnDelay: 1300 }] },
+      { wave: 12, clearReward: 1935, invaders: [{ type: 'abyss_berserker', count: 9, spawnDelay: 1300 }, { type: 'primordial_guard', count: 6, spawnDelay: 2600 }] },
+      { wave: 13, clearReward: 2075, invaders: [{ type: 'primordial_guard', count: 6, spawnDelay: 2600 }, { type: 'void_soldier',    count: 9, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 9, spawnDelay: 1300 }] },
+      { wave: 14, clearReward: 2220, invaders: [{ type: 'primordial_guard', count: 6, spawnDelay: 2600, isBoss: true }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }, { type: 'void_soldier', count: 8, spawnDelay: 1400 }] },
+      { wave: 15, clearReward: 8000, invaders: [{ type: 'primordial_titan', count: 1, spawnDelay: 6000, isBoss: true }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
+    ],
+  },
+];
