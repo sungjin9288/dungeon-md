@@ -503,7 +503,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     objectives: [
       { id: 'O1', type: 'complete_stage', target: 72, current: 0, description: '스테이지 72 클리어' },
     ],
-    reward: { gold: 10000, dmXP: 2000, soulCrystals: 500 },
+    reward: { gold: 10000, dmXP: 2000, soulCrystals: 500, unlocks: ['heaven_title'] },
     nextQuestId: 'MQ-035',
   },
 

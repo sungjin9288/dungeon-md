@@ -263,6 +263,22 @@ export const SUB_QUEST_POOL: SubQuest[] = [
   { id: 'SQ-025', icon: '🏯', title: '던전 확장',
     objective: { type: 'build_room', target: 2, description: '방 2개 건설' },
     reward: { dmXP: 60, gold: 220 } },
+  // ── Chapter 8: 원초의 심연 ──────────────────────────────────────────────────
+  { id: 'SQ-026', icon: '🌑', title: '심연의 탐험',
+    objective: { type: 'complete_stage', target: 75, description: '스테이지 75 클리어' },
+    reward: { dmXP: 250, soulCrystals: 150 } },
+  { id: 'SQ-027', icon: '🔮', title: '원초신 격파',
+    objective: { type: 'complete_stage', target: 80, description: '스테이지 80 클리어' },
+    reward: { dmXP: 600, soulCrystals: 400, gems: 50 } },
+  { id: 'SQ-028', icon: '💜', title: '심연의 보물',
+    objective: { type: 'collect_gold', target: 20000, description: '골드 20,000 획득' },
+    reward: { dmXP: 200, gold: 5000 } },
+  { id: 'SQ-029', icon: '🌀', title: '심연 방어전',
+    objective: { type: 'defend_invasion', target: 8, description: '침략 8회 격퇴' },
+    reward: { dmXP: 220, soulCrystals: 180 } },
+  { id: 'SQ-030', icon: '⚡', title: '원초의 소환',
+    objective: { type: 'summon', target: 15, description: '소환 15회 실행' },
+    reward: { dmXP: 180, soulCrystals: 120 } },
 ];
 
 // Legacy alias kept for compatibility
