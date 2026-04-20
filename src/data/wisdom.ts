@@ -291,7 +291,7 @@ function defaultGameState(): GameState {
   return {
     soulCrystals:     0,
     wisdomTree:       tree,
-    stageProgress:    Array.from({ length: 72 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 })),
+    stageProgress:    Array.from({ length: 80 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 })),
     endlessHighScore: 0,
     totalKills:       0,
     totalGoldEarned:  0,
@@ -372,7 +372,7 @@ function migrateDungeonSlot(raw: Record<string, unknown>): DungeonSlot {
   return raw as unknown as DungeonSlot;
 }
 
-const TOTAL_STAGES = 62;
+const TOTAL_STAGES = 80;
 function migrateStageProgress(arr: GameState['stageProgress']): GameState['stageProgress'] {
   if (arr.length >= TOTAL_STAGES) return arr;
   return [

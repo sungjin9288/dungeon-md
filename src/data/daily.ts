@@ -165,6 +165,8 @@ const WEEKLY_BOSS_POOL: Array<{ name: string; bossType: InvaderType; hp: number 
   { name: '죽음의 사절',       bossType: 'death_emissary',        hp: 45000 },
   { name: '영원의 황제 강림',   bossType: 'eternal_emperor',       hp: 70000 },
   { name: '신황제의 시련',      bossType: 'god_emperor',           hp: 120000 },
+  { name: '천룡의 분노',        bossType: 'celestial_dragon',      hp:  80000 },
+  { name: '원초신의 강림',      bossType: 'primordial_titan',      hp: 180000 },
 ];
 
 export function getWeeklyBoss(): WeeklyBoss {
@@ -219,6 +221,22 @@ const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
   { description: '액티브 스킬 3회 사용',  objective: { type: 'skill_use', target: 3  }, reward: { gems: 15 } },
   { description: '액티브 스킬 5회 사용',  objective: { type: 'skill_use', target: 5  }, reward: { gems: 25 } },
   { description: '액티브 스킬 10회 사용', objective: { type: 'skill_use', target: 10 }, reward: { gems: 40 } },
+  // ── kill_count (고급) ────────────────────────────────────────────────────────
+  { description: '침략자 300마리 처치',   objective: { type: 'kill_count', target: 300 }, reward: { gems: 70 } },
+  { description: '침략자 500마리 처치',   objective: { type: 'kill_count', target: 500 }, reward: { gems: 100, xpBooks: 1 } },
+  // ── wave_clear (고급) ────────────────────────────────────────────────────────
+  { description: '웨이브 20개 클리어',  objective: { type: 'wave_clear', target: 20 }, reward: { gems: 55 } },
+  { description: '웨이브 30개 클리어',  objective: { type: 'wave_clear', target: 30 }, reward: { gems: 80, xpBooks: 1 } },
+  // ── no_damage (고급) ────────────────────────────────────────────────────────
+  { description: 'HP 손실 없이 웨이브 7개 클리어',  objective: { type: 'no_damage', target: 7  }, reward: { gems: 65, xpBooks: 1 } },
+  { description: 'HP 손실 없이 웨이브 10개 클리어', objective: { type: 'no_damage', target: 10 }, reward: { gems: 90, xpBooks: 2 } },
+  // ── tribe_only ───────────────────────────────────────────────────────────────
+  { description: '도깨비 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'dokkaebi' }, reward: { gems: 30 } },
+  { description: '구미호 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'gumiho'   }, reward: { gems: 30 } },
+  { description: '산신 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'sansin'   }, reward: { gems: 30 } },
+  // ── skill_use (고급) ────────────────────────────────────────────────────────
+  { description: '액티브 스킬 15회 사용', objective: { type: 'skill_use', target: 15 }, reward: { gems: 55 } },
+  { description: '액티브 스킬 25회 사용', objective: { type: 'skill_use', target: 25 }, reward: { gems: 75, xpBooks: 1 } },
 ];
 
 export function getDailyChallenges(): DailyChallenge[] {
