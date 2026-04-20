@@ -3,6 +3,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { SKIN_DATA, MONSTER_DEFS, type MonsterSkin } from '../data/monsters';
+import { getQuest } from '../data/quests';
 import { addPanelShadow, addInnerGlow } from './PanelDepth';
 
 export type SkinFilter = 'all' | 'normal' | 'rare' | 'limited';
@@ -87,6 +88,71 @@ export function buildSkinTab(
       fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
     }).setOrigin(0.5).setDepth(6);
     contentCtr.add(emptyT);
+  }
+
+  // ── Quest-unlock skin preview ──────────────────────────────────────────────
+  // Shown regardless of filter — helps players discover quest skins.
+  const questSkins = SKIN_DATA.filter(s => s.unlockVia === 'quest');
+  if (questSkins.length > 0) {
+    const rows   = Math.ceil(skins.length / COLS);
+    const sectY  = START_Y + rows * (CARD_H + 8) + 16;
+
+    const divG = scene.add.graphics();
+    divG.lineStyle(1, 0x333355, 0.5);
+    divG.lineBetween(8, sectY, CANVAS_WIDTH - 8, sectY);
+    contentCtr.add(divG);
+
+    contentCtr.add(scene.add.text(12, sectY + 8, '🔒 퀘스트 해금 스킨', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#9966bb',
+    }));
+
+    const CHIP_H = 52;
+    questSkins.forEach((skin, idx) => {
+      const col = idx % COLS;
+      const row = Math.floor(idx / COLS);
+      const cx  = 8 + col * (CARD_W + 8);
+      const cy  = sectY + 28 + row * (CHIP_H + 8);
+      const ownedList = gs.ownedSkins?.[skin.monsterId] ?? [];
+      const isOwned   = ownedList.includes(skin.id);
+      drawQuestSkinChip(scene, contentCtr, skin, cx, cy, CARD_W, CHIP_H, gs, isOwned);
+    });
+  }
+}
+
+function drawQuestSkinChip(
+  scene: Phaser.Scene,
+  contentCtr: Phaser.GameObjects.Container,
+  skin: MonsterSkin,
+  x: number, y: number, w: number, h: number,
+  _gs: ReturnType<typeof loadGameState>,
+  isOwned: boolean,
+): void {
+  const g = scene.add.graphics();
+  g.fillStyle(isOwned ? 0x0a1a08 : 0x110022, 1);
+  g.fillRoundedRect(x, y, w, h, 6);
+  g.lineStyle(1, isOwned ? 0x44aa44 : 0x553388, 0.75);
+  g.strokeRoundedRect(x, y, w, h, 6);
+  contentCtr.add(g);
+
+  contentCtr.add(scene.add.text(x + 12, y + h / 2, skin.emoji ?? '✨', {
+    fontFamily: 'sans-serif', fontSize: '20px',
+  }).setOrigin(0, 0.5));
+
+  contentCtr.add(scene.add.text(x + 42, y + 10, skin.name, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#bb99dd',
+  }));
+
+  if (isOwned) {
+    contentCtr.add(scene.add.text(x + 42, y + 28, '✅ 획득 완료', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#55cc55',
+    }));
+  } else {
+    const questTitle = skin.unlockRef
+      ? (getQuest(skin.unlockRef)?.title ?? skin.unlockRef)
+      : '???';
+    contentCtr.add(scene.add.text(x + 42, y + 28, `📜 ${questTitle}`, {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#886699',
+    }));
   }
 }
 
