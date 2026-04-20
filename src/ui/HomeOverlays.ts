@@ -13,6 +13,19 @@ import { openQuestLog, type QuestLogState } from './QuestLogPanel';
 import { openPrestigeModal, buildPrestigeBadge } from './PrestigeModal';
 import { openSimulationModal } from './SimulationModal';
 
+// ─── DM Title data ────────────────────────────────────────────────────────────
+// Maps unlockedFeatures key → display label + color.
+// Add new entries here as chapters / events are released.
+
+const DM_TITLE_MAP: Record<string, { label: string; color: string }> = {
+  abyss_title:   { label: '원초의 심연 정복자', color: '#cc88ff' },
+  heaven_title:  { label: '신계 정복자',         color: '#aaddff' },
+  volcano_title: { label: '화염 산맥의 영웅',     color: '#ff9944' },
+};
+
+/** Priority order — first match wins (highest prestige first). */
+const DM_TITLE_PRIORITY = ['abyss_title', 'heaven_title', 'volcano_title'] as const;
+
 // ─── Top-bar ─────────────────────────────────────────────────────────────────
 
 export interface TopBarRefs {
@@ -72,13 +85,22 @@ export function buildTopBar(
   buildHeaderTorch(scene, 14, topH - 14, t);
   buildHeaderTorch(scene, CANVAS_WIDTH - 14, topH - 14, t);
 
-  // DM level + XP bar
-  scene.add.text(66, 12, `던전 마스터  Lv.${gs.dmLevel}`, {
+  // DM level + title badge + XP bar
+  const earnedTitleKey = DM_TITLE_PRIORITY.find(k => gs.unlockedFeatures?.includes(k));
+  const nameLineY = earnedTitleKey ? 8 : 12;
+  const xpBarX = 66, xpBarY = earnedTitleKey ? 38 : 30, xpBarW = 150, xpBarH = 8;
+
+  scene.add.text(66, nameLineY, `던전 마스터  Lv.${gs.dmLevel}`, {
     fontFamily: 'Georgia, serif', fontSize: '13px',
     color: t.panelBorderCSS, fontStyle: 'bold',
   }).setDepth(6);
 
-  const xpBarX = 66, xpBarY = 30, xpBarW = 150, xpBarH = 8;
+  if (earnedTitleKey) {
+    const td = DM_TITLE_MAP[earnedTitleKey];
+    scene.add.text(66, nameLineY + 14, `✦ ${td.label}`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: td.color, fontStyle: 'italic',
+    }).setDepth(6);
+  }
   const xpPct  = Math.min(gs.dmXP / xpForLevel(gs.dmLevel), 1);
   g.fillStyle(t.stoneDark, 1);
   g.fillRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 3);
