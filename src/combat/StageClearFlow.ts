@@ -86,7 +86,9 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     weeklyBossHpDealt:     newWeeklyHpDealt,
     blueprints:            newBlueprints,
   };
-  const finalGs = ctx.tickQuestAndNotify(updated, 'complete_stage');
+  // Pass stageNum as amount so complete_stage objectives like target=73
+  // are satisfied immediately on clearing that specific stage.
+  const finalGs = ctx.tickQuestAndNotify(updated, 'complete_stage', stageNum ?? 1);
   saveGameState(finalGs);
 
   // Sync to StageSelectScene's own progress key

@@ -325,7 +325,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     showFloatText: (x, y, text, color) => _showFloatText(ds, x, y, text, color),
     showEndlessResult: () => ds.showEndlessResult(),
     checkAchievementsAndToast: (gs) => ds.checkAchievementsAndToast(gs),
-    tickQuestAndNotify: (gs, type) => ds.tickQuestAndNotify(gs, type as Parameters<typeof import('../data/quests').updateQuestObjective>[1]),
+    tickQuestAndNotify: (gs, type, amount) => ds.tickQuestAndNotify(gs, type as Parameters<typeof import('../data/quests').updateQuestObjective>[1], amount),
     setDungeonHp: (hp) => { ds.dungeonHp = hp; ds.registry.set('hp', hp); },
     setGold: (g) => { ds.gold = g; ds.registry.set('gold', g); },
     setGems: (g) => { ds.gems = g; ds.registry.set('gems', g); },
