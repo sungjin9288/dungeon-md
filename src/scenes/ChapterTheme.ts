@@ -22,6 +22,7 @@ export function applyChapterTheme(
     case 5: applyChapter5Theme(scene, effectiveCellSize); break;
     case 6: applyChapter6Theme(scene, effectiveCellSize); break;
     case 7: applyChapter7Theme(scene, effectiveCellSize); break;
+    case 8: applyChapter8Theme(scene, effectiveCellSize); break;
     // Chapter 1 has no overlay theme
   }
 }
@@ -257,4 +258,70 @@ function applyChapter7Theme(scene: Phaser.Scene, effectiveCellSize: number): voi
   });
 
   logger.debug('[CH7 THEME] celestial realm applied');
+}
+
+// ─── Ch8: Primordial Abyss ───────────────────────────────────────────────────
+
+function applyChapter8Theme(scene: Phaser.Scene, effectiveCellSize: number): void {
+  // Deep primordial void — near-total darkness with barely visible purple pulses
+  const voidDepth = scene.add.graphics().setDepth(5);
+  voidDepth.fillStyle(0x04020a, 1);
+  voidDepth.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  voidDepth.setAlpha(0.30);
+  scene.tweens.add({
+    targets: voidDepth,
+    alpha: { from: 0.22, to: 0.40 },
+    duration: 6000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+  });
+
+  // Slow void-pulse ring emanating from the center floor
+  const cs = effectiveCellSize;
+  const ringCx = CANVAS_WIDTH / 2;
+  const ringCy = GRID_Y + GRID_ROWS * cs * 0.6;
+  const ringGfx = scene.add.graphics().setDepth(6);
+  let ringR = 0;
+  scene.time.addEvent({
+    delay: 60,
+    repeat: -1,
+    callback: () => {
+      ringGfx.clear();
+      ringR = (ringR + 0.8) % 160;
+      const a = (1 - ringR / 160) * 0.12;
+      ringGfx.lineStyle(1.5, 0x6622cc, a);
+      ringGfx.strokeEllipse(ringCx, ringCy, ringR * 2.8, ringR * 1.2);
+    },
+  });
+
+  // Void tear particles — extremely dark, slow-drifting
+  scene.add.particles(CANVAS_WIDTH / 2, GRID_Y + GRID_ROWS * cs / 2, 'dust', {
+    x: { min: -CANVAS_WIDTH / 2, max: CANVAS_WIDTH / 2 },
+    y: { min: -GRID_ROWS * cs / 2, max: GRID_ROWS * cs / 2 },
+    speedX: { min: -3, max: 3 }, speedY: { min: -10, max: -2 },
+    alpha: { min: 0.06, max: 0.28 },
+    scale: { min: 0.12, max: 0.50 },
+    tint: [0x3300aa, 0x660099, 0x110022, 0x440066],
+    lifespan: { min: 6000, max: 12000 }, frequency: 320, quantity: 1,
+  }).setDepth(33);
+
+  // Primordial rift cracks along the floor edge
+  const bY = GRID_Y + GRID_ROWS * cs + 10;
+  const riftGfx = scene.add.graphics().setDepth(8);
+  const riftSegs = [
+    { x: 15, forks: [[0, 0], [18, -28], [32, -14], [44, -36]] },
+    { x: 120, forks: [[0, 0], [12, -22], [28, -10], [40, -30], [52, -18]] },
+    { x: 240, forks: [[0, 0], [14, -26], [30, -12], [46, -34]] },
+    { x: 320, forks: [[0, 0], [16, -20], [34, -8],  [48, -28]] },
+  ];
+  riftSegs.forEach(({ x, forks }) => {
+    riftGfx.lineStyle(1, 0x6622cc, 0.22);
+    for (let i = 1; i < forks.length; i++) {
+      const [ax, ay] = forks[i - 1];
+      const [bx, by] = forks[i];
+      riftGfx.lineBetween(x + ax, bY + ay, x + bx, bY + by);
+    }
+    riftGfx.lineStyle(1, 0x9944ff, 0.10);
+    riftGfx.lineBetween(x, bY, x + forks[forks.length - 1][0], bY + forks[forks.length - 1][1]);
+  });
+
+  logger.debug('[CH8 THEME] primordial abyss applied');
 }
