@@ -1,7 +1,7 @@
 /**
  * New Game+ / Prestige confirmation modal.
  *
- * Shows when the player has completed all 7 chapters and taps
+ * Shows when the player has completed all 8 chapters and taps
  * the prestige button in DungeonHomeScene settings.
  */
 

@@ -1,6 +1,6 @@
 // ─── StageClearFlow ───────────────────────────────────────────────────────────
 // Handles the animated stage-clear overlay after each chapter is beaten.
-// Full-game-clear (stageNumber 72) delegates immediately to GameCompleteFlow.
+// Full-game-clear (stageNumber 80) delegates immediately to GameCompleteFlow.
 
 import { audioManager } from '../audio/AudioManager';
 import { COLORS, CSS } from '../constants/colors';
@@ -120,9 +120,9 @@ export function showChapterClear(ctx: ResultFlowContext): void {
 
   const chLabel = `${ctx.stageChapter}장`;
 
-  // Game complete: stage 72 (final stage of Ch7)
+  // Game complete: stage 80 (final stage of Ch8 — primordial_titan)
   const stageCfgX = scene.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-  if (stageCfgX?.stageNumber === 72) {
+  if (stageCfgX?.stageNumber === 80) {
     scene.time.delayedCall(200, () => showGameComplete(ctx));
     return;
   }

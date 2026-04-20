@@ -1,5 +1,5 @@
 // ─── Game Complete Flow ───────────────────────────────────────────────────────
-// Handles the full-game-clear screen triggered when stageNumber 72 is beaten.
+// Handles the full-game-clear screen triggered when stageNumber 80 is beaten.
 // Extracted from StageClearFlow.ts so that the standard chapter-clear path
 // (showChapterClear) and the once-per-playthrough celebration screen live in
 // separate modules.
@@ -104,7 +104,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   ov.add(titleT);
   scene.tweens.add({ targets: titleT, alpha: 1, scaleX: 1, scaleY: 1, duration: 700, delay: 200, ease: 'Back.out' });
 
-  const subT = scene.add.text(cx, 172, '신황제를 쓰러뜨리고 7개 챕터를 완전 정복!', {
+  const subT = scene.add.text(cx, 172, '원초신을 쓰러뜨리고 8개 챕터를 완전 정복!', {
     fontFamily: 'sans-serif', fontSize: '12px', color: '#ffeeaa',
   }).setOrigin(0.5).setAlpha(0);
   ov.add(subT);
@@ -148,7 +148,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   scene.tweens.add({ targets: panelBg, alpha: 1, duration: 400, delay: 1700 });
 
   const stats: [string, string][] = [
-    ['클리어 스테이지',    `${totalStages} / 72`],
+    ['클리어 스테이지',    `${totalStages} / 80`],
     ['최종 던전 HP',       `${ctx.dungeonHp} / ${ctx.maxHp}`],
     ['보너스 영혼 결정체', `+${crystalBonus} 💠`],
     ['던전 마스터 레벨',   `${gs2.dmLevel ?? 1}`],
@@ -226,5 +226,5 @@ export function showGameComplete(ctx: ResultFlowContext): void {
     scene.scene.start('DungeonHomeScene');
   });
 
-  logger.debug(`[GAME COMPLETE] all 7 chapters cleared! +${crystalBonus} soul crystals`);
+  logger.debug(`[GAME COMPLETE] all 8 chapters cleared! +${crystalBonus} soul crystals`);
 }
