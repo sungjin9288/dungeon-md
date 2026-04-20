@@ -20,6 +20,7 @@ const T4: InvaderType[] = ['void_assassin_elite'];
 const T5: InvaderType[] = ['void_invader', 'undying_warrior'];
 const T6: InvaderType[] = ['mirror_knight', 'shadow_wraith', 'celestial_crusader', 'plague_herald', 'swarm_larva', 'void_colossus', 'titan_sentinel'];
 const T7: InvaderType[] = ['celestial_knight', 'divine_archer', 'heaven_general', 'sky_titan', 'radiant_seraph'];
+const T8: InvaderType[] = ['void_soldier', 'abyss_berserker', 'primordial_guard'];
 
 function buildPool(w: number): InvaderType[] {
   const pool: InvaderType[] = [...T1];
@@ -30,6 +31,7 @@ function buildPool(w: number): InvaderType[] {
   if (w >= 40) pool.push(...T5);
   if (w >= 50) pool.push(...T6);
   if (w >= 60) pool.push(...T7);
+  if (w >= 70) pool.push(...T8);
   return pool;
 }
 
@@ -105,12 +107,34 @@ export function buildEndlessSpawnQueue(
     queue.push({ def: makeScaledDef('radiant_seraph', { hp: Math.round(INVADER_DEFS['radiant_seraph'].hp * hpMult * 1.8), isMiniBoss: true }), delay: 1500 });
   }
 
+  // Wave 80: primordial_guard champion flanked by abyss_berserker pair
+  if (w === 80) {
+    queue.push({ def: makeScaledDef('abyss_berserker', { hp: Math.round(INVADER_DEFS['abyss_berserker'].hp * hpMult * 1.5), isMiniBoss: true }), delay: 0 });
+    queue.push({ def: makeScaledDef('primordial_guard', { hp: Math.round(INVADER_DEFS['primordial_guard'].hp * hpMult * 2.5), isMiniBoss: true }), delay: 2000 });
+    queue.push({ def: makeScaledDef('abyss_berserker', { hp: Math.round(INVADER_DEFS['abyss_berserker'].hp * hpMult * 1.5), isMiniBoss: true }), delay: 1500 });
+  }
+
+  // Wave 90: void_soldier surge + primordial_guard champion
+  if (w === 90) {
+    for (let i = 0; i < 3; i++) {
+      queue.push({ def: makeScaledDef('void_soldier', { hp: Math.round(INVADER_DEFS['void_soldier'].hp * hpMult * 1.2) }), delay: 800 });
+    }
+    queue.push({ def: makeScaledDef('primordial_guard', { hp: Math.round(INVADER_DEFS['primordial_guard'].hp * hpMult * 3), isMiniBoss: true }), delay: 2500 });
+  }
+
+  // Wave 100+: primordial_guard + void_soldier elite wave every 10 levels after 90
+  if (w > 90 && (w - 90) % 10 === 0) {
+    queue.push({ def: makeScaledDef('primordial_guard', { hp: Math.round(INVADER_DEFS['primordial_guard'].hp * hpMult * 2), isMiniBoss: true }), delay: 0 });
+    queue.push({ def: makeScaledDef('void_soldier',    { hp: Math.round(INVADER_DEFS['void_soldier'].hp    * hpMult * 1.5) }), delay: 1200 });
+    queue.push({ def: makeScaledDef('abyss_berserker', { hp: Math.round(INVADER_DEFS['abyss_berserker'].hp * hpMult * 1.5) }), delay: 1200 });
+  }
+
   // ── Standard fillers ───────────────────────────────────────────────────────
   // Weight selection toward newer (harder) types as wave increases.
   // Bias index: newer types in pool get higher probability with higher waves.
   for (let i = 0; i < baseCount; i++) {
     // Pick an index biased toward the upper end of the pool
-    const bias    = Math.min(1, (w - 1) / 70); // 0→1 over 70 waves
+    const bias    = Math.min(1, (w - 1) / 90); // 0→1 over 90 waves
     const raw     = Math.random();
     const biased  = Math.pow(raw, 1 - bias * 0.7); // skews toward higher indices
     const typeIdx = Math.floor(biased * pool.length);
