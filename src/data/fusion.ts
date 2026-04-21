@@ -362,6 +362,11 @@ export const DROP_TABLE: Record<string, Array<{ id: string; chance: number }>> =
   radiant_seraph:        [{ id: 'magic_dust',    chance: 0.32 }, { id: 'ice_crystal',   chance: 0.20 }],
   celestial_dragon:      [{ id: 'dok_fragment',  chance: 0.35 }, { id: 'soul_fragment', chance: 0.22 }],
   god_emperor:           [{ id: 'boss_essence',  chance: 0.40 }, { id: 'soul_fragment', chance: 0.25 }],
+  // ── Chapter 8 ─────────────────────────────────────────────────────────────
+  void_soldier:          [{ id: 'magic_dust',    chance: 0.28 }, { id: 'soul_fragment', chance: 0.15 }],
+  abyss_berserker:       [{ id: 'boss_essence',  chance: 0.25 }, { id: 'magic_dust',    chance: 0.18 }],
+  primordial_guard:      [{ id: 'boss_essence',  chance: 0.35 }, { id: 'soul_fragment', chance: 0.20 }],
+  primordial_titan:      [{ id: 'boss_essence',  chance: 0.60 }, { id: 'magic_dust',    chance: 0.40 }, { id: 'soul_fragment', chance: 0.30 }],
 };
 
 export function rollMaterialDrop(invaderType: string): string | null {
@@ -515,6 +520,28 @@ export const BLUEPRINT_DEFS: Record<string, BlueprintDef> = {
     stats: { roomHPBonus: 200, dmgReduction: 0.10 },
     materials: { common_ore: 5, iron_shard: 3 },
     resultId: 'eq_ore_plate', resultEmoji: '🪖',
+  },
+  // ─── Chapter 8 ────────────────────────────────────────────────────────────
+  bp_void_blade: {
+    id: 'bp_void_blade', name: '허공의 칼날', type: 'weapon', rarity: 4,
+    statDesc: 'ATK +60% · 스킬 쿨다운 -25%',
+    stats: { atkMultiplier: 0.60, skillCDReduction: 0.25 },
+    materials: { boss_essence: 4, magic_dust: 5, soul_fragment: 8 },
+    resultId: 'eq_void_blade', resultEmoji: '🌑',
+  },
+  bp_abyss_mail: {
+    id: 'bp_abyss_mail', name: '심연의 갑옷', type: 'armor', rarity: 4,
+    statDesc: '방 HP +800 · 피해 감소 +30%',
+    stats: { roomHPBonus: 800, dmgReduction: 0.30 },
+    materials: { boss_essence: 5, magic_dust: 4, dok_fragment: 6, soul_fragment: 8 },
+    resultId: 'eq_abyss_mail', resultEmoji: '🟣',
+  },
+  bp_primordial_gem: {
+    id: 'bp_primordial_gem', name: '원초의 보석', type: 'accessory', rarity: 5,
+    statDesc: '전체 ATK +80% · 영혼 결정체 수급 +30%',
+    stats: { atkMultiplier: 0.80, scEarnBonus: 0.30 },
+    materials: { boss_essence: 8, magic_dust: 8, soul_fragment: 12, ice_crystal: 6 },
+    resultId: 'eq_primordial_gem', resultEmoji: '💜',
   },
 };
 
