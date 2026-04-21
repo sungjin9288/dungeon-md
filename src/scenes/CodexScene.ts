@@ -4,6 +4,7 @@ import { COLORS, CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import type { OwnedMonster } from '../data/barracks';
 import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
+import { INVADER_DEFS } from '../data/invaders';
 import { generatePortrait } from '../art/PortraitGenerator';
 import { showCodexMonsterDetail } from '../ui/CodexMonsterDetail';
 
@@ -77,6 +78,7 @@ export class CodexScene extends Phaser.Scene {
   private expandedTribes: Set<TribeId> = new Set(['dokkaebi']); // first open by default
   private gs = loadGameState();
   private showOwnedOnly  = false;
+  private codexTab: 'monsters' | 'invaders' = 'monsters';
 
   constructor() { super({ key: 'CodexScene' }); }
 
@@ -84,6 +86,7 @@ export class CodexScene extends Phaser.Scene {
     this.gs = loadGameState();
     this.scrollY = 0;
     this.showOwnedOnly = this.registry.get('codexOwnedFilter') ?? false;
+    this.codexTab = this.registry.get('codexActiveTab') ?? 'monsters';
 
     this.drawBackground();
     this.drawHeader();
@@ -112,7 +115,7 @@ export class CodexScene extends Phaser.Scene {
   // ─── Header ────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    // back button
+    // ── Back button ──
     const backBg = this.add.graphics().setDepth(10);
     backBg.fillStyle(COLORS.STONE_MID, 1);
     backBg.fillRoundedRect(8, 10, 72, 32, 6);
@@ -122,56 +125,82 @@ export class CodexScene extends Phaser.Scene {
     this.add.zone(44, 26, 72, 32).setInteractive().setDepth(12)
       .on('pointerdown', () => this.scene.start((this.registry.get('previousScene') as string) ?? 'BarracksScene'));
 
-    // title
+    // ── Title ──
     this.add.text(CX, 26, '📖 도감', {
       fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold',
       color: CSS.TORCH_AMBER,
     }).setOrigin(0.5).setDepth(10);
 
-    // global completion
-    const allIds  = Object.keys(MONSTER_DEFS) as MonsterId[];
-    const total   = allIds.length;
-    const owned   = allIds.filter(id => this.isOwned(id)).length;
-    const pct     = Math.round((owned / total) * 100);
+    // ── Tab chips ──
+    const tabDefs: Array<{ key: 'monsters' | 'invaders'; label: string }> = [
+      { key: 'monsters', label: '🏰 수호자' },
+      { key: 'invaders', label: '👺 적군'   },
+    ];
+    const tabW = 88, tabH = 20, tabGap = 8;
+    const tabsX = CX - (tabDefs.length * tabW + (tabDefs.length - 1) * tabGap) / 2;
+    tabDefs.forEach(({ key, label }, i) => {
+      const tx = tabsX + i * (tabW + tabGap);
+      const ty = 44;
+      const active = this.codexTab === key;
+      const tabG = this.add.graphics().setDepth(10);
+      tabG.fillStyle(active ? 0x3a2800 : 0x181818, 1);
+      tabG.fillRoundedRect(tx, ty, tabW, tabH, 5);
+      tabG.lineStyle(1, active ? COLORS.TORCH_GOLD : 0x333333, active ? 0.9 : 0.5);
+      tabG.strokeRoundedRect(tx, ty, tabW, tabH, 5);
+      this.add.text(tx + tabW / 2, ty + tabH / 2, label, {
+        fontFamily: 'sans-serif', fontSize: '11px',
+        color: active ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+      }).setOrigin(0.5).setDepth(10);
+      this.add.zone(tx + tabW / 2, ty + tabH / 2, tabW, tabH)
+        .setInteractive({ useHandCursor: true }).setDepth(11)
+        .on('pointerdown', () => {
+          if (this.codexTab !== key) {
+            this.registry.set('codexActiveTab', key);
+            this.scene.restart();
+          }
+        });
+    });
 
-    this.add.text(CX, 55, `전체 도감: ${owned} / ${total}  (${pct}%)`, {
-      fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_DIM,
-    }).setOrigin(0.5).setDepth(10);
+    // ── Tab-specific stats row ──
+    if (this.codexTab === 'monsters') {
+      const allIds = Object.keys(MONSTER_DEFS) as MonsterId[];
+      const total  = allIds.length;
+      const owned  = allIds.filter(id => this.isOwned(id)).length;
+      const pct    = Math.round((owned / total) * 100);
+      this.add.text(CX - 36, 70, `전체 도감: ${owned} / ${total}  (${pct}%)`, {
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
+      }).setOrigin(0.5).setDepth(10);
 
-    // global progress bar
-    const bx = PAD, by = 72, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 8;
-    const barBg = this.add.graphics().setDepth(10);
-    barBg.fillStyle(COLORS.STONE_MID, 1);
-    barBg.fillRoundedRect(bx, by, bw, bh, 4);
-    barBg.fillStyle(COLORS.TORCH_GOLD, 1);
-    barBg.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 4);
+      const bx = PAD, by = 79, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 7;
+      const barBg = this.add.graphics().setDepth(10);
+      barBg.fillStyle(COLORS.STONE_MID, 1);
+      barBg.fillRoundedRect(bx, by, bw, bh, 3);
+      barBg.fillStyle(COLORS.TORCH_GOLD, 1);
+      barBg.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 3);
 
-    // Filter toggle chip (top-right, aligned with progress bar)
-    const chipX = CANVAS_WIDTH - PAD - 64;
-    const chipY = 66;
-    const chipW = 60;
-    const chipH = 22;
-    const toggleBg = this.add.graphics().setDepth(10);
-    const drawToggle = () => {
-      toggleBg.clear();
+      // Filter toggle chip
+      const chipX = CANVAS_WIDTH - PAD - 64, chipY = 68, chipW = 60, chipH = 20;
+      const toggleBg = this.add.graphics().setDepth(10);
       toggleBg.fillStyle(this.showOwnedOnly ? 0x226622 : 0x222222, 1);
       toggleBg.fillRoundedRect(chipX, chipY, chipW, chipH, 4);
       toggleBg.lineStyle(1, this.showOwnedOnly ? 0x44aa44 : 0x444444, 0.8);
       toggleBg.strokeRoundedRect(chipX, chipY, chipW, chipH, 4);
-    };
-    drawToggle();
-
-    this.add.text(chipX + chipW / 2, chipY + chipH / 2,
-      this.showOwnedOnly ? '✓ 소유' : '전체',
-      { fontFamily: 'sans-serif', fontSize: '11px', color: '#cccccc' },
-    ).setOrigin(0.5).setDepth(10);
-
-    this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, chipH)
-      .setInteractive({ useHandCursor: true }).setDepth(11)
-      .on('pointerdown', () => {
-        this.registry.set('codexOwnedFilter', !this.showOwnedOnly);
-        this.scene.restart();
-      });
+      this.add.text(chipX + chipW / 2, chipY + chipH / 2,
+        this.showOwnedOnly ? '✓ 소유' : '전체',
+        { fontFamily: 'sans-serif', fontSize: '11px', color: '#cccccc' },
+      ).setOrigin(0.5).setDepth(10);
+      this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, chipH)
+        .setInteractive({ useHandCursor: true }).setDepth(11)
+        .on('pointerdown', () => {
+          this.registry.set('codexOwnedFilter', !this.showOwnedOnly);
+          this.scene.restart();
+        });
+    } else {
+      const invTotal = Object.keys(INVADER_DEFS).length;
+      this.add.text(CX, 72, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
+        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
+      }).setOrigin(0.5).setDepth(10);
+    }
   }
 
   // ─── Content ───────────────────────────────────────────────────────────────
@@ -185,6 +214,11 @@ export class CodexScene extends Phaser.Scene {
     mask.fillStyle(0xffffff, 1);
     mask.fillRect(0, HDR_H, CANVAS_WIDTH, CANVAS_HEIGHT - HDR_H - BOT_H);
     this.contentCtr.setMask(mask.createGeometryMask());
+
+    if (this.codexTab === 'invaders') {
+      this.buildInvaderContent();
+      return;
+    }
 
     let cursorY = 8;
 
@@ -470,10 +504,9 @@ export class CodexScene extends Phaser.Scene {
     if (!rewardMonsterId) return;
 
     const gs = loadGameState();
-    if (!gs.codexRewardsClaimed) gs.codexRewardsClaimed = [];
-    if (gs.codexRewardsClaimed.includes(tribeId)) return;
+    const prevClaimed = gs.codexRewardsClaimed ?? [];
+    if (prevClaimed.includes(tribeId)) return;
 
-    // Add reward monster
     const mDef = MONSTER_DEFS[rewardMonsterId];
     if (!mDef) return;
 
@@ -488,14 +521,15 @@ export class CodexScene extends Phaser.Scene {
       absorptionStacks: 0,
     };
 
-    // Check not already owned
-    if (!gs.ownedMonsters.some(m => m.id === rewardMonsterId)) {
-      gs.ownedMonsters.push(newMonster);
-    }
-
-    gs.codexRewardsClaimed.push(tribeId);
-    gs.completedTribes = gs.codexRewardsClaimed.length;
-    saveGameState(gs);
+    const alreadyOwned = gs.ownedMonsters.some(m => m.id === rewardMonsterId);
+    const newClaimed   = [...prevClaimed, tribeId];
+    const updated = {
+      ...gs,
+      ownedMonsters:       alreadyOwned ? gs.ownedMonsters : [...gs.ownedMonsters, newMonster],
+      codexRewardsClaimed: newClaimed,
+      completedTribes:     newClaimed.length,
+    };
+    saveGameState(updated);
   }
 
   // ─── Scroll ────────────────────────────────────────────────────────────────
@@ -549,6 +583,104 @@ export class CodexScene extends Phaser.Scene {
         .setInteractive().setDepth(23);
       zone.on('pointerdown', action);
     });
+  }
+
+  // ─── Invader content ───────────────────────────────────────────────────────
+
+  private buildInvaderContent(): void {
+    const BEHAVIOR_SHORT: Partial<Record<string, string>> = {
+      VOID_PHASE:         '공허 면역',    REVIVE_ONCE:      '1회 부활',
+      BERSERKER_RAGE:     '격노(속도↑)',  STEALTH:          '투명화',
+      SIEGE_SHIELD:       '공성 방패',    DIVINE_WARD:      '마법 면역',
+      IRON_BODY:          '철갑(반감)',   RALLY_CRY:        '집결 고함',
+      TRAP_IMMUNITY:      '덫 무효',      FOX_QUEEN_PHASE:  '3단계 보스',
+      UNDYING_KNIGHT:     '마법 사망 불가', DECOY_CLONE:    '분신 소환',
+      POISON_TRAIL:       '독 흔적',      VOID_TELEPORT:    '순간 이동',
+      DRAGON_KING_PHASE:  '3단계 보스',   VOID_STEALTH_ELITE: '투명+이동',
+      STUN_IMMUNE:        '스턴 무효',    FIVE_PHASE:       '5단계 보스',
+      MIRROR_SHIELD:      '반사 방패',    SWARM:            '분열',
+      SHADOW_REALM:       '그림자 회피',  EMPEROR_PHASE:    '4단계 보스',
+      GOD_EMPEROR_PHASE:  '5단계 보스',   VOID_SURGE:       '공허 재활성',
+      PRIMORDIAL_PHASE:   '6단계 보스',
+    };
+
+    const CH_COLOR: Record<number, number> = {
+      1: 0x8b6040, 2: 0xcc2200, 3: 0x207040,
+      4: 0x5020a0, 5: 0x0060b0, 6: 0xc05000,
+      7: 0xc09000, 8: 0x7700cc,
+    };
+
+    // Group by chapter
+    const byChapter = new Map<number, (typeof INVADER_DEFS)[keyof typeof INVADER_DEFS][]>();
+    for (const def of Object.values(INVADER_DEFS)) {
+      const ch = def.chapter ?? 1;
+      if (!byChapter.has(ch)) byChapter.set(ch, []);
+      byChapter.get(ch)!.push(def);
+    }
+
+    let cursorY = 8;
+
+    for (const ch of [1, 2, 3, 4, 5, 6, 7, 8] as const) {
+      const defs = byChapter.get(ch);
+      if (!defs) continue;
+      const chColor = CH_COLOR[ch] ?? 0x888888;
+
+      // Chapter header
+      const hdrG = this.add.graphics();
+      this.contentCtr.add(hdrG);
+      hdrG.fillStyle(0x1a1008, 1);
+      hdrG.fillRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 6);
+      hdrG.lineStyle(1.5, chColor, 0.9);
+      hdrG.strokeRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 6);
+
+      const chLabel = this.add.text(PAD + 12, cursorY + 8, `Chapter ${ch}`, {
+        fontFamily: 'Georgia, serif', fontSize: '13px', fontStyle: 'bold',
+        color: Phaser.Display.Color.IntegerToColor(chColor).rgba,
+      }).setOrigin(0, 0);
+      this.contentCtr.add(chLabel);
+      const countLabel = this.add.text(CANVAS_WIDTH - PAD - 10, cursorY + 10, `${defs.length}종`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+      }).setOrigin(1, 0);
+      this.contentCtr.add(countLabel);
+      cursorY += 32;
+
+      // Invader rows
+      for (const def of defs) {
+        const rowH = 26;
+        const rowG = this.add.graphics();
+        this.contentCtr.add(rowG);
+        rowG.fillStyle(def.isBoss ? 0x1a0020 : 0x0e0c06, 1);
+        rowG.fillRoundedRect(PAD + 4, cursorY, CANVAS_WIDTH - PAD * 2 - 8, rowH, 4);
+        if (def.isBoss) {
+          rowG.lineStyle(1, chColor, 0.6);
+          rowG.strokeRoundedRect(PAD + 4, cursorY, CANVAS_WIDTH - PAD * 2 - 8, rowH, 4);
+        }
+
+        // Colored dot
+        rowG.fillStyle(def.color, 1);
+        rowG.fillCircle(PAD + 18, cursorY + rowH / 2, def.isBoss ? 6 : 4);
+
+        const nameColor = def.isBoss ? '#ffcc44' : CSS.PARCHMENT_DIM;
+        const bossTag   = def.isBoss ? ' 👑' : (def.isMiniBoss ? ' ⭐' : '');
+        const nameT = this.add.text(PAD + 28, cursorY + rowH / 2, `${def.koreanName}${bossTag}`, {
+          fontFamily: 'Georgia, serif', fontSize: '11px', color: nameColor,
+        }).setOrigin(0, 0.5);
+        this.contentCtr.add(nameT);
+
+        // Stats (right-aligned)
+        const behStr = def.behavior ? (BEHAVIOR_SHORT[def.behavior] ?? def.behavior) : '';
+        const statsStr = `HP ${def.hp}  ·  속${def.speed}  ·  피${def.damage}${behStr ? '  ·  ' + behStr : ''}`;
+        const statsT = this.add.text(CANVAS_WIDTH - PAD - 8, cursorY + rowH / 2, statsStr, {
+          fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+        }).setOrigin(1, 0.5);
+        this.contentCtr.add(statsT);
+
+        cursorY += rowH + 2;
+      }
+      cursorY += 8;
+    }
+
+    this.maxScrollY = Math.max(0, cursorY - (CANVAS_HEIGHT - HDR_H - BOT_H));
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
