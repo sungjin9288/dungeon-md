@@ -309,22 +309,26 @@ export class DungeonHomeScene extends Phaser.Scene {
       logger.debug(`[AWAKEN] +1 awakening stone (total: ${this.gs.awakeningStones})`);
     }
 
-    if (result.completedQuest.id === 'MQ-015') {
+    // ── Blueprint unlock rewards (Ch3 → Ch8) ──────────────────────────────────
+    // Map: quest ID → blueprint ID unlocked on completion.
+    const QUEST_BP_REWARDS: Record<string, string> = {
+      'MQ-015': 'bp_ore_plate',        // Ch3 — 광석 흉갑 (rarity 2)
+      'MQ-020': 'bp_arcane_core',      // Ch4 — 마법 핵심 (rarity 3)
+      'MQ-025': 'bp_guardian_crown',   // Ch5 — 수호자의 왕관 (rarity 4)
+      'MQ-030': 'bp_celestial_lance',  // Ch6 — 천상의 창 (rarity 3)
+      'MQ-034': 'bp_divine_aegis',     // Ch7 — 신성 방패 (rarity 4)
+      'MQ-038': 'bp_void_blade',       // Ch8 — 허공의 칼날 (rarity 4)
+      'MQ-041': 'bp_abyss_mail',       // Ch8 — 심연의 갑옷 (rarity 4)
+      'MQ-044': 'bp_primordial_gem',   // Ch8 — 원초의 보석 (rarity 5)
+    };
+    const bpUnlock = QUEST_BP_REWARDS[result.completedQuest.id];
+    if (bpUnlock) {
       const prevBps = this.gs.blueprints ?? [];
-      if (!prevBps.includes('bp_ore_plate')) {
-        this.gs = { ...this.gs, blueprints: [...prevBps, 'bp_ore_plate'] };
-        logger.debug('[FORGE] Blueprint unlocked: bp_ore_plate');
+      if (!prevBps.includes(bpUnlock)) {
+        this.gs = { ...this.gs, blueprints: [...prevBps, bpUnlock] };
+        logger.debug(`[FORGE] Blueprint unlocked: ${bpUnlock}`);
+        saveGameState(this.gs);
       }
-      saveGameState(this.gs);
-    }
-
-    if (result.completedQuest.id === 'MQ-020') {
-      const prevBps = this.gs.blueprints ?? [];
-      if (!prevBps.includes('bp_arcane_core')) {
-        this.gs = { ...this.gs, blueprints: [...prevBps, 'bp_arcane_core'] };
-        logger.debug('[FORGE] Blueprint unlocked: bp_arcane_core');
-      }
-      saveGameState(this.gs);
     }
 
     showQuestCompleteOverlay(this, result.completedQuest);
