@@ -31,6 +31,7 @@ const INVADER_EMOJI: Partial<Record<InvaderType, string>> = {
   void_assassin_elite: '👁', death_emissary: '💀', ghost_add: '👻',
   void_invader: '🌀', undying_warrior: '💀', three_god_destroyer: '⚡',
   mirror_knight: '🪞', shadow_wraith: '👤', celestial_crusader: '✝️',
+  swarm_larva: '🐛', swarm_spawn: '🐜', plague_herald: '☠️', titan_sentinel: '🪨',
   void_colossus: '🌑', eternal_emperor: '👑',
   celestial_knight: '🌟', divine_archer: '🏹', sky_titan: '⛅',
   radiant_seraph: '😇', heaven_general: '👑', celestial_dragon: '🐉', god_emperor: '👼',

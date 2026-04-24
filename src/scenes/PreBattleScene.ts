@@ -207,7 +207,8 @@ export class PreBattleScene extends Phaser.Scene {
     // ─ SYNERGY: Active tribe combos from first 3 monsters ──────────────────
     const TRIBE_KO: Record<string, string> = {
       dokkaebi: '도깨비', gumiho: '구미호', sansin: '산신',
-      sea: '해신', underworld: '저승', mask: '탈', moonlight: '달빛', dragon: '용',
+      sea: '해신', underworld: '저승', mask: '탈', moonlight: '달빛',
+      dragon: '용', celestial: '천상',
     };
     const tribeCount: Record<string, number> = {};
     gs.ownedMonsters.slice(0, SLOTS).forEach(m => {

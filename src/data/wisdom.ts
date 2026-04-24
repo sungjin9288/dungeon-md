@@ -115,7 +115,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     effect: '소환 시 영혼 결정 +{value}개',
     costPerTier: [10, 20, 35, 55, 80],
     getValue: (tier) => tier * 2,
-    position: { x: 195, y: 340 },
+    position: { x: 195, y: 280 },
   },
   {
     id: 'forgeEnhancer',
@@ -124,7 +124,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     effect: '제작 완료 시 영혼 결정 +{value}개',
     costPerTier: [10, 20, 35, 55, 80],
     getValue: (tier) => tier * 3,
-    position: { x: 195, y: 502 },
+    position: { x: 195, y: 564 },
   },
 ];
 
