@@ -4,7 +4,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7 } from '../data/stages';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from '../data/stages';
 import type { InvaderType } from '../data/invaders';
 import { addPanelShadow } from '../ui/PanelDepth';
 import {
@@ -34,12 +34,14 @@ const INVADER_EMOJI: Partial<Record<InvaderType, string>> = {
   void_colossus: '🌑', eternal_emperor: '👑',
   celestial_knight: '🌟', divine_archer: '🏹', sky_titan: '⛅',
   radiant_seraph: '😇', heaven_general: '👑', celestial_dragon: '🐉', god_emperor: '👼',
+  // Ch8 — 원초의 심연
+  void_soldier: '🌑', abyss_berserker: '🔥', primordial_guard: '💜', primordial_titan: '💫',
 };
 
-// Compute top-2 invader type emojis for each stage (index 0-71)
+// Compute top-2 invader type emojis for each stage (index 0-79)
 const ALL_STAGES = [
   ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4,
-  ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7,
+  ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8,
 ];
 
 const STAGE_ENEMY_ICONS: string[] = ALL_STAGES.map(cfg => {
@@ -63,7 +65,7 @@ export class StageSelectScene extends Phaser.Scene {
   private progress: StageProgress[] = [];
   private isDragging    = false;
   private dragStartY    = 0;
-  private maxScrollY    = 720;
+  private maxScrollY    = 820;
   private frontierIdx   = 0;
 
   constructor() { super({ key: 'StageSelectScene' }); }
