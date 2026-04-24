@@ -81,10 +81,12 @@ const INVADER_POOL_MID: InvaderType[] = [
 const INVADER_POOL_HEAVY: InvaderType[] = [
   'knight', 'iron_golem', 'mercenary_captain', 'void_assassin',
   'mirror_knight', 'shadow_wraith', 'celestial_knight', 'divine_archer',
+  'void_soldier', 'abyss_berserker', 'primordial_guard',
 ];
 const BOSS_POOL: InvaderType[] = [
   'fox_queen', 'dragon_king', 'death_emissary',
   'three_god_destroyer', 'eternal_emperor', 'god_emperor',
+  'primordial_titan',
 ];
 
 function generateDailyWaves(seed: number, rule: DailyRule): WaveSpec[] {
@@ -256,13 +258,31 @@ const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
   // ── no_damage (고급) ────────────────────────────────────────────────────────
   { description: 'HP 손실 없이 웨이브 7개 클리어',  objective: { type: 'no_damage', target: 7  }, reward: { gems: 65, xpBooks: 1 } },
   { description: 'HP 손실 없이 웨이브 10개 클리어', objective: { type: 'no_damage', target: 10 }, reward: { gems: 90, xpBooks: 2 } },
-  // ── tribe_only ───────────────────────────────────────────────────────────────
-  { description: '도깨비 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'dokkaebi' }, reward: { gems: 30 } },
-  { description: '구미호 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'gumiho'   }, reward: { gems: 30 } },
-  { description: '산신 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'sansin'   }, reward: { gems: 30 } },
-  // ── skill_use (고급) ────────────────────────────────────────────────────────
+  // ── tribe_only (기본) ────────────────────────────────────────────────────────
+  { description: '도깨비 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'dokkaebi'   }, reward: { gems: 30 } },
+  { description: '구미호 종족만으로 웨이브 3개 클리어', objective: { type: 'tribe_only', target: 3, filter: 'gumiho'     }, reward: { gems: 30 } },
+  { description: '산신 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'sansin'     }, reward: { gems: 30 } },
+  { description: '해신 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'sea'        }, reward: { gems: 30 } },
+  { description: '저승 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'underworld' }, reward: { gems: 30 } },
+  { description: '탈 종족만으로 웨이브 3개 클리어',   objective: { type: 'tribe_only', target: 3, filter: 'mask'       }, reward: { gems: 30 } },
+  { description: '달빛 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'moonlight'  }, reward: { gems: 30 } },
+  { description: '용족만으로 웨이브 3개 클리어',      objective: { type: 'tribe_only', target: 3, filter: 'dragon'     }, reward: { gems: 35 } },
+  { description: '천상 종족만으로 웨이브 3개 클리어',  objective: { type: 'tribe_only', target: 3, filter: 'celestial'  }, reward: { gems: 35 } },
+  // ── tribe_only (고급) ────────────────────────────────────────────────────────
+  { description: '도깨비 종족만으로 웨이브 5개 클리어', objective: { type: 'tribe_only', target: 5, filter: 'dokkaebi'  }, reward: { gems: 50 } },
+  { description: '구미호 종족만으로 웨이브 5개 클리어', objective: { type: 'tribe_only', target: 5, filter: 'gumiho'    }, reward: { gems: 50 } },
+  { description: '용족만으로 웨이브 5개 클리어',      objective: { type: 'tribe_only', target: 5, filter: 'dragon'    }, reward: { gems: 55 } },
+  { description: '천상 종족만으로 웨이브 5개 클리어',  objective: { type: 'tribe_only', target: 5, filter: 'celestial' }, reward: { gems: 55 } },
+  // ── skill_use (고급) ─────────────────────────────────────────────────────────
   { description: '액티브 스킬 15회 사용', objective: { type: 'skill_use', target: 15 }, reward: { gems: 55 } },
   { description: '액티브 스킬 25회 사용', objective: { type: 'skill_use', target: 25 }, reward: { gems: 75, xpBooks: 1 } },
+  { description: '액티브 스킬 40회 사용', objective: { type: 'skill_use', target: 40 }, reward: { gems: 90, xpBooks: 1 } },
+  { description: '액티브 스킬 60회 사용', objective: { type: 'skill_use', target: 60 }, reward: { gems: 120, xpBooks: 2 } },
+  // ── wave_clear (최고급) ───────────────────────────────────────────────────────
+  { description: '웨이브 40개 클리어', objective: { type: 'wave_clear', target: 40 }, reward: { gems: 100, xpBooks: 2 } },
+  { description: '웨이브 50개 클리어', objective: { type: 'wave_clear', target: 50 }, reward: { gems: 130, xpBooks: 3 } },
+  // ── kill_count (보완) ─────────────────────────────────────────────────────────
+  { description: '침략자 150마리 처치', objective: { type: 'kill_count', target: 150 }, reward: { gems: 45 } },
 ];
 
 export function getDailyChallenges(): DailyChallenge[] {
