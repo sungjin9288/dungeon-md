@@ -34,8 +34,8 @@ beforeEach(() => {
 // ─── Branch definitions ──────────────────────────────────────────────────────
 
 describe('BRANCH_DEFS', () => {
-  it('defines exactly 10 branches', () => {
-    expect(BRANCH_DEFS).toHaveLength(10);
+  it('defines exactly 12 branches', () => {
+    expect(BRANCH_DEFS).toHaveLength(12);
   });
 
   it('has unique ids', () => {

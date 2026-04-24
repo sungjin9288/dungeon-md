@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { loadGameState, saveGameState } from '../data/wisdom';
+import { loadGameState, saveGameState, getWisdomBonuses } from '../data/wisdom';
 import {
   BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, RARITY_NAMES,
   type BlueprintDef,
@@ -262,11 +262,17 @@ export class ForgeScene extends Phaser.Scene {
     if (!bp) return;
     if (!this.canCraft(bp, gs.materials ?? {})) return;
 
-    // Deduct materials + per-material float feedback
-    const matsBefore = { ...gs.materials };
+    const matsBefore = { ...(gs.materials ?? {}) };
     const matEntries = Object.entries(bp.materials);
+
+    // Build new materials map (immutable)
+    const newMaterials = { ...matsBefore };
+    matEntries.forEach(([id, qty]) => {
+      newMaterials[id] = Math.max(0, (newMaterials[id] ?? 0) - qty);
+    });
+
+    // Float feedback per material
     matEntries.forEach(([id, qty], i) => {
-      gs.materials[id] = Math.max(0, (gs.materials[id] ?? 0) - qty);
       const emoji  = MATERIAL_DEFS[id]?.emoji ?? '?';
       const baseX  = CANVAS_WIDTH / 2 - ((matEntries.length - 1) * 32) / 2 + i * 32;
       const floatT = this.add.text(baseX, 120, `-${qty}${emoji}`, {
@@ -280,22 +286,20 @@ export class ForgeScene extends Phaser.Scene {
       });
     });
 
-    // Create equipment entry
-    gs.craftedEquipment = gs.craftedEquipment ?? [];
-    gs.craftedEquipment.push({
-      id:    bp.resultId,
-      name:  bp.name,
-      type:  bp.type,
-      rarity: bp.rarity,
-      emoji: bp.resultEmoji,
-      stats: bp.stats,
-    });
+    const forgeCrystalBonus = getWisdomBonuses(gs).forgeBonusCrystal;
+    const updated = {
+      ...gs,
+      materials: newMaterials,
+      soulCrystals: gs.soulCrystals + forgeCrystalBonus,
+      craftedEquipment: [
+        ...(gs.craftedEquipment ?? []),
+        { id: bp.resultId, name: bp.name, type: bp.type, rarity: bp.rarity, emoji: bp.resultEmoji, stats: bp.stats },
+      ],
+    };
+    saveGameState(updated);
 
-    saveGameState(gs);
-
-    // Log
-    const matLog = Object.entries(bp.materials)
-      .map(([id]) => `${id}: ${matsBefore[id] ?? 0}→${gs.materials[id]}`)
+    const matLog = matEntries
+      .map(([id]) => `${id}: ${matsBefore[id] ?? 0}→${newMaterials[id]}`)
       .join(', ');
     logger.debug(`[FORGE] ${bp.resultId} crafted ${matLog}`);
 
@@ -611,38 +615,38 @@ export class ForgeScene extends Phaser.Scene {
       this.executeDismantle(idx, bp);
     });
     ov.add(confirmBtn);
+
+    ov.setAlpha(0);
+    this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
   }
 
   private executeDismantle(idx: number, bp: BlueprintDef | undefined): void {
     const gs = loadGameState();
-    gs.craftedEquipment = gs.craftedEquipment ?? [];
+    const craftedEquipment = gs.craftedEquipment ?? [];
 
-    if (idx < 0 || idx >= gs.craftedEquipment.length) return;
-    const eq = gs.craftedEquipment[idx];
+    if (idx < 0 || idx >= craftedEquipment.length) return;
+    const eq = craftedEquipment[idx];
 
-    // Return 50% materials
+    // Build returned-materials map and new materials map (immutable)
+    const materialsReturned: Record<string, number> = {};
+    const newMaterials = { ...(gs.materials ?? {}) };
     if (bp) {
-      gs.materials = gs.materials ?? {};
       Object.entries(bp.materials).forEach(([id, qty]) => {
         const ret = Math.floor(qty * 0.5);
         if (ret > 0) {
-          gs.materials[id] = (gs.materials[id] ?? 0) + ret;
+          materialsReturned[id] = ret;
+          newMaterials[id] = (newMaterials[id] ?? 0) + ret;
           logger.debug(`[FORGE] dismantle return ${id}: +${ret}`);
         }
       });
     }
 
-    // Capture material return summary before mutating state
-    const materialsReturned: Record<string, number> = {};
-    if (bp) {
-      Object.entries(bp.materials).forEach(([id, qty]) => {
-        const ret = Math.floor(qty * 0.5);
-        if (ret > 0) materialsReturned[id] = ret;
-      });
-    }
-
-    gs.craftedEquipment.splice(idx, 1);
-    saveGameState(gs);
+    const updated = {
+      ...gs,
+      materials: newMaterials,
+      craftedEquipment: craftedEquipment.filter((_, i) => i !== idx),
+    };
+    saveGameState(updated);
 
     logger.debug(`[FORGE] ${eq.id} dismantled`);
 
@@ -650,12 +654,8 @@ export class ForgeScene extends Phaser.Scene {
     this.drawHeader();
     this.renderContent();
 
-    // Show success toast with returned materials
     const parts = Object.entries(materialsReturned)
-      .map(([id, qty]) => {
-        const def = MATERIAL_DEFS[id];
-        return `${def?.emoji ?? '?'}×${qty}`;
-      });
+      .map(([id, qty]) => `${MATERIAL_DEFS[id]?.emoji ?? '?'}×${qty}`);
     const matStr = parts.length > 0 ? parts.join('  ') : '';
     this.showToast(`✅ 분해 완료!  ${matStr}`, '#88ff88');
   }

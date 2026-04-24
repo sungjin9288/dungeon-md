@@ -107,6 +107,25 @@ export const BRANCH_DEFS: BranchDef[] = [
     getValue: (tier) => tier * 50,
     position: { x: 195, y: 760 },
   },
+  // ─── Chapter 8 — 심연 분기 ──────────────────────────────────────────────────
+  {
+    id: 'soulHarvest',
+    name: '영혼 수확',
+    icon: '🌑',
+    effect: '소환 시 영혼 결정 +{value}개',
+    costPerTier: [10, 20, 35, 55, 80],
+    getValue: (tier) => tier * 2,
+    position: { x: 195, y: 340 },
+  },
+  {
+    id: 'forgeEnhancer',
+    name: '심연의 단조',
+    icon: '⚗️',
+    effect: '제작 완료 시 영혼 결정 +{value}개',
+    costPerTier: [10, 20, 35, 55, 80],
+    getValue: (tier) => tier * 3,
+    position: { x: 195, y: 502 },
+  },
 ];
 
 // ─── Game state ───────────────────────────────────────────────────────────────
@@ -474,8 +493,10 @@ export interface WisdomBonuses {
   crystalEarnMult:    number;   // multiplier on soul crystal drops
   monsterDmgMult:     number;   // multiplier on incoming monster damage
   monsterAtkMult:     number;   // multiplier on monster attack damage (>= 1)
-  crystalPerWave:     number;   // flat soul crystals earned on each wave clear
-  fortressHp:         number;   // extra HP added at dungeon start
+  crystalPerWave:        number;   // flat soul crystals earned on each wave clear
+  fortressHp:            number;   // extra HP added at dungeon start
+  summonBonusCrystal:    number;   // flat crystals added per summon pull
+  forgeBonusCrystal:     number;   // flat crystals added on each craft completion
 }
 
 export function getWisdomBonuses(state: GameState): WisdomBonuses {
@@ -489,8 +510,10 @@ export function getWisdomBonuses(state: GameState): WisdomBonuses {
     crystalEarnMult:   1 + BRANCH_DEFS[5].getValue(t['crystalResonance'] ?? 0) / 100,
     monsterDmgMult:    1 - BRANCH_DEFS[6].getValue(t['guardianBlessing'] ?? 0) / 100,
     monsterAtkMult:    1 + BRANCH_DEFS[7].getValue(t['eliteTrainer']   ?? 0) / 100,
-    crystalPerWave:        BRANCH_DEFS[8].getValue(t['celestialBlood'] ?? 0),
+    crystalPerWave:        BRANCH_DEFS[8].getValue(t['celestialBlood']  ?? 0),
     fortressHp:            BRANCH_DEFS[9].getValue(t['dungeonFortress'] ?? 0),
+    summonBonusCrystal:    BRANCH_DEFS[10].getValue(t['soulHarvest']    ?? 0),
+    forgeBonusCrystal:     BRANCH_DEFS[11].getValue(t['forgeEnhancer']  ?? 0),
   };
 }
 

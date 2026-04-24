@@ -3,7 +3,7 @@
  * Extracted from SummonScene.executePull (~664-805).
  */
 
-import { loadGameState, saveGameState, type SummonRarity, type SummonRecord } from '../data/wisdom';
+import { loadGameState, saveGameState, getWisdomBonuses, type SummonRarity, type SummonRecord } from '../data/wisdom';
 import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { defaultOwnedMonster } from '../data/barracks';
@@ -163,6 +163,10 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
       (!alreadyOwned ? '' : ` compensation:+${scComp}💠 totalSC:${newSoulCrystals}`)
     );
   }
+
+  // Wisdom: soul harvest bonus (flat crystals per pull)
+  const wisdomBonus = getWisdomBonuses(gs).summonBonusCrystal;
+  if (wisdomBonus > 0) newSoulCrystals += wisdomBonus * count;
 
   const updated = {
     ...gs,
