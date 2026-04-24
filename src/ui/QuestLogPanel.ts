@@ -74,6 +74,111 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
   });
 }
 
+// ─── Game-complete overlay (MQ-044 only) ────────────────────────────────────
+
+export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
+  const c = scene.add.container(0, 0).setDepth(80);
+
+  // Dim — deeper than usual for drama
+  const dim = scene.add.graphics();
+  dim.fillStyle(0x000000, 0.88);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  dim.setInteractive();
+  c.add(dim);
+
+  // Panel — deep purple cosmic theme
+  const PW = 320, PH = 380;
+  const PX = (CANVAS_WIDTH - PW) / 2;
+  const PY = (CANVAS_HEIGHT - PH) / 2;
+  const pg = scene.add.graphics();
+  pg.fillStyle(0x0d0020, 1);
+  pg.fillRoundedRect(PX, PY, PW, PH, 10);
+  pg.lineStyle(2, 0x9940ff, 1);
+  pg.strokeRoundedRect(PX, PY, PW, PH, 10);
+  // Inner glow border
+  pg.lineStyle(1, 0xcc77ff, 0.4);
+  pg.strokeRoundedRect(PX + 4, PY + 4, PW - 8, PH - 8, 8);
+  c.add(pg);
+
+  // Top cosmic decoration
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '🌑  ✦  🌑', {
+    fontFamily: 'Georgia, serif', fontSize: '20px', color: '#cc77ff',
+  }).setOrigin(0.5));
+
+  // Main title
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 54, '원초의 심연 정복!', {
+    fontFamily: 'Georgia, serif', fontSize: '24px',
+    color: '#e8aaff', fontStyle: 'bold',
+  }).setOrigin(0.5));
+
+  // Quest subtitle
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 86, quest.title, {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#b890d0',
+  }).setOrigin(0.5));
+
+  // Divider
+  const div = scene.add.graphics();
+  div.lineStyle(1, 0x6622aa, 0.7);
+  div.moveTo(PX + 24, PY + 104);
+  div.lineTo(PX + PW - 24, PY + 104);
+  div.strokePath();
+  c.add(div);
+
+  // Rewards
+  const lines: string[] = [];
+  if (quest.reward.gold)          lines.push(`💰  +${quest.reward.gold} 골드`);
+  if (quest.reward.soulCrystals)  lines.push(`💠  +${quest.reward.soulCrystals} 수정`);
+  if (quest.reward.dmXP)          lines.push(`✨  +${quest.reward.dmXP} XP`);
+  if (quest.reward.monsters?.length)  lines.push(`👹  ${quest.reward.monsters[0]} 획득`);
+  if (quest.reward.unlocks?.length) {
+    quest.reward.unlocks.forEach(u => lines.push(`🔓  ${u} 해금`));
+  }
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 118, lines.join('\n'), {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8a0e0',
+    align: 'center', lineSpacing: 8,
+  }).setOrigin(0.5, 0));
+
+  // Title badge
+  const badgeY = PY + 260;
+  const badgeBg = scene.add.graphics();
+  badgeBg.fillStyle(0x2a0044, 1);
+  badgeBg.fillRoundedRect(PX + 20, badgeY - 14, PW - 40, 32, 6);
+  badgeBg.lineStyle(1, 0x9940ff, 0.8);
+  badgeBg.strokeRoundedRect(PX + 20, badgeY - 14, PW - 40, 32, 6);
+  c.add(badgeBg);
+  c.add(scene.add.text(CANVAS_WIDTH / 2, badgeY + 2, '✦ 원초의 심연 정복자 ✦', {
+    fontFamily: 'Georgia, serif', fontSize: '13px',
+    color: '#cc77ff', fontStyle: 'bold',
+  }).setOrigin(0.5));
+
+  // Congratulation message
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 305, '모든 챕터를 완료하셨습니다!', {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#9970bb',
+  }).setOrigin(0.5));
+
+  // Confirm button — cosmic purple
+  const btn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 36, '✦ 확인 ✦', {
+    fontFamily: 'Georgia, serif', fontSize: '15px',
+    color: '#e8aaff', fontStyle: 'bold',
+    backgroundColor: '#2a0044', padding: { x: 36, y: 10 },
+  }).setOrigin(0.5).setInteractive();
+  const dismiss = () => { c.destroy(true); scene.scene.restart(); };
+  btn.on('pointerdown', dismiss);
+  c.add(btn);
+
+  // Entrance animation — scale up with glow pulse
+  c.setScale(0.8).setAlpha(0);
+  scene.tweens.add({
+    targets: c, scaleX: 1, scaleY: 1, alpha: 1,
+    duration: 320, ease: 'Back.easeOut',
+  });
+  scene.tweens.add({
+    targets: btn, alpha: 0.6, yoyo: true, repeat: -1,
+    duration: 900, ease: 'Sine.easeInOut', delay: 500,
+  });
+}
+
 // ─── Quest log panel state & methods ────────────────────────────────────────
 
 export interface QuestLogState {

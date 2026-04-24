@@ -21,6 +21,7 @@ import { logger } from '../utils/logger';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
   showQuestCompleteOverlay,
+  showGameCompleteOverlay,
   openQuestLog,
   type QuestLogState,
 } from '../ui/QuestLogPanel';
@@ -331,7 +332,11 @@ export class DungeonHomeScene extends Phaser.Scene {
       }
     }
 
-    showQuestCompleteOverlay(this, result.completedQuest);
+    if (result.completedQuest.id === 'MQ-044') {
+      showGameCompleteOverlay(this, result.completedQuest);
+    } else {
+      showQuestCompleteOverlay(this, result.completedQuest);
+    }
   }
 
   // ─── Room Detail Overlay (delegated to RoomDetailOverlay.ts) ─────────────────
