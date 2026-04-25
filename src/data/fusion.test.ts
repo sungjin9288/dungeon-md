@@ -1,0 +1,419 @@
+import { describe, it, expect } from 'vitest';
+import {
+  RARITY_NAMES,
+  RARITY_STARS,
+  RARITY_COLORS,
+  RARITY_XP_VALUES,
+  getBaseId,
+  getMonsterRarity,
+  getMonsterEmoji,
+  getMonsterDisplayName,
+  getMonsterBaseDamage,
+  getNextEvolution,
+  HYBRID_DEFS,
+  COMBINATION_TABLE,
+  combinationKey,
+  MATERIAL_DEFS,
+  BLUEPRINT_DEFS,
+  STARTER_BLUEPRINTS,
+  rollMaterialDrop,
+} from './fusion';
+
+// ─── Rarity constants ─────────────────────────────────────────────────────────
+
+describe('RARITY constants', () => {
+  it('RARITY_NAMES has exactly 5 entries', () => {
+    expect(RARITY_NAMES).toHaveLength(5);
+  });
+
+  it('RARITY_STARS, RARITY_COLORS, RARITY_XP_VALUES all have 5 entries', () => {
+    expect(RARITY_STARS).toHaveLength(5);
+    expect(RARITY_COLORS).toHaveLength(5);
+    expect(RARITY_XP_VALUES).toHaveLength(5);
+  });
+
+  it('RARITY_XP_VALUES are strictly increasing', () => {
+    for (let i = 1; i < RARITY_XP_VALUES.length; i++) {
+      expect(RARITY_XP_VALUES[i]).toBeGreaterThan(RARITY_XP_VALUES[i - 1]);
+    }
+  });
+
+  it('RARITY_COLORS are hex strings', () => {
+    for (const color of RARITY_COLORS) {
+      expect(color).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+  });
+});
+
+// ─── getBaseId ────────────────────────────────────────────────────────────────
+
+describe('getBaseId', () => {
+  it('strips _unc suffix', () => {
+    expect(getBaseId('dokkaebi_warrior_unc')).toBe('dokkaebi_warrior');
+  });
+
+  it('strips _rare suffix', () => {
+    expect(getBaseId('gumiho_guardian_rare')).toBe('gumiho_guardian');
+  });
+
+  it('strips _epic suffix', () => {
+    expect(getBaseId('white_tiger_epic')).toBe('white_tiger');
+  });
+
+  it('strips _leg suffix', () => {
+    expect(getBaseId('frost_spirit_leg')).toBe('frost_spirit');
+  });
+
+  it('returns the id unchanged when no rarity suffix', () => {
+    expect(getBaseId('dokkaebi_warrior')).toBe('dokkaebi_warrior');
+  });
+
+  it('does not strip other suffixes (e.g., _guardian)', () => {
+    expect(getBaseId('gumiho_guardian')).toBe('gumiho_guardian');
+  });
+});
+
+// ─── getMonsterRarity ─────────────────────────────────────────────────────────
+
+describe('getMonsterRarity', () => {
+  it('returns 0 for base ids with no suffix', () => {
+    expect(getMonsterRarity('dokkaebi_warrior')).toBe(0);
+  });
+
+  it('returns 1 for _unc', () => {
+    expect(getMonsterRarity('dokkaebi_warrior_unc')).toBe(1);
+  });
+
+  it('returns 2 for _rare', () => {
+    expect(getMonsterRarity('gumiho_guardian_rare')).toBe(2);
+  });
+
+  it('returns 3 for _epic', () => {
+    expect(getMonsterRarity('white_tiger_epic')).toBe(3);
+  });
+
+  it('returns 4 for _leg', () => {
+    expect(getMonsterRarity('frost_spirit_leg')).toBe(4);
+  });
+
+  it('hybrid ids without suffix return 0', () => {
+    expect(getMonsterRarity('fox_warrior')).toBe(0);
+  });
+});
+
+// ─── getMonsterEmoji ──────────────────────────────────────────────────────────
+
+describe('getMonsterEmoji', () => {
+  it('returns the emoji for a known base id', () => {
+    expect(getMonsterEmoji('dokkaebi_warrior')).toBe('👹');
+  });
+
+  it('strips rarity suffix before lookup', () => {
+    expect(getMonsterEmoji('dokkaebi_warrior_leg')).toBe('👹');
+  });
+
+  it('returns the emoji for a hybrid id', () => {
+    expect(getMonsterEmoji('fox_warrior')).toBe('🦊⚔️');
+  });
+
+  it('returns "❓" for an unknown id', () => {
+    expect(getMonsterEmoji('totally_unknown_monster')).toBe('❓');
+  });
+});
+
+// ─── getMonsterDisplayName ────────────────────────────────────────────────────
+
+describe('getMonsterDisplayName', () => {
+  it('returns the base name for rarity 0', () => {
+    expect(getMonsterDisplayName('dokkaebi_warrior')).toBe('도깨비 전사');
+  });
+
+  it('prepends "강화 " for rarity 1 (_unc)', () => {
+    expect(getMonsterDisplayName('dokkaebi_warrior_unc')).toBe('강화 도깨비 전사');
+  });
+
+  it('prepends "정예 " for rarity 2 (_rare)', () => {
+    expect(getMonsterDisplayName('fire_dokkaebi_rare')).toBe('정예 화염 도깨비');
+  });
+
+  it('prepends "영웅 " for rarity 3 (_epic)', () => {
+    expect(getMonsterDisplayName('white_tiger_epic')).toBe('영웅 백호');
+  });
+
+  it('prepends "전설 " for rarity 4 (_leg)', () => {
+    expect(getMonsterDisplayName('sea_god_spear_leg')).toBe('전설 해신의 창');
+  });
+
+  it('returns hybrid name for hybrid id', () => {
+    expect(getMonsterDisplayName('fox_warrior')).toBe('여우 전사');
+  });
+});
+
+// ─── getMonsterBaseDamage ─────────────────────────────────────────────────────
+
+describe('getMonsterBaseDamage', () => {
+  it('returns the raw base damage at rarity 0', () => {
+    // dokkaebi_warrior baseDamage = 20
+    expect(getMonsterBaseDamage('dokkaebi_warrior')).toBe(20);
+  });
+
+  it('applies 1.30× for rarity 1 (_unc)', () => {
+    // 20 × 1.30^1 = 26
+    expect(getMonsterBaseDamage('dokkaebi_warrior_unc')).toBe(26);
+  });
+
+  it('applies 1.30^2 for rarity 2 (_rare)', () => {
+    // 20 × 1.69 ≈ 33.8 → rounded 34
+    expect(getMonsterBaseDamage('dokkaebi_warrior_rare')).toBe(34);
+  });
+
+  it('damage strictly increases with rarity', () => {
+    const dmg0 = getMonsterBaseDamage('gumiho_guardian');
+    const dmg1 = getMonsterBaseDamage('gumiho_guardian_unc');
+    const dmg2 = getMonsterBaseDamage('gumiho_guardian_rare');
+    const dmg3 = getMonsterBaseDamage('gumiho_guardian_epic');
+    const dmg4 = getMonsterBaseDamage('gumiho_guardian_leg');
+    expect(dmg1).toBeGreaterThan(dmg0);
+    expect(dmg2).toBeGreaterThan(dmg1);
+    expect(dmg3).toBeGreaterThan(dmg2);
+    expect(dmg4).toBeGreaterThan(dmg3);
+  });
+
+  it('returns a rounded integer', () => {
+    const dmg = getMonsterBaseDamage('white_tiger_unc');
+    expect(Number.isInteger(dmg)).toBe(true);
+  });
+
+  it('returns hybrid baseDamage for a hybrid id', () => {
+    expect(getMonsterBaseDamage('fox_warrior')).toBe(26);
+  });
+});
+
+// ─── getNextEvolution ─────────────────────────────────────────────────────────
+
+describe('getNextEvolution', () => {
+  it('returns tier 1 (resultId *_unc) for rarity-0 base', () => {
+    const ev = getNextEvolution('dokkaebi_warrior');
+    expect(ev).not.toBeNull();
+    expect(ev!.resultId).toBe('dokkaebi_warrior_unc');
+    expect(ev!.rarity).toBe(1);
+  });
+
+  it('returns tier 2 (_rare) for rarity 1 (_unc)', () => {
+    const ev = getNextEvolution('dokkaebi_warrior_unc');
+    expect(ev!.resultId).toBe('dokkaebi_warrior_rare');
+  });
+
+  it('returns tier 3 (_epic) for rarity 2 (_rare)', () => {
+    const ev = getNextEvolution('gumiho_guardian_rare');
+    expect(ev!.resultId).toBe('gumiho_guardian_epic');
+  });
+
+  it('returns tier 4 (_leg) for rarity 3 (_epic)', () => {
+    const ev = getNextEvolution('white_tiger_epic');
+    expect(ev!.resultId).toBe('white_tiger_leg');
+  });
+
+  it('returns null at rarity 4 (_leg) — already max', () => {
+    expect(getNextEvolution('white_tiger_leg')).toBeNull();
+  });
+
+  it('returns null for a hybrid id (not evolvable)', () => {
+    expect(getNextEvolution('fox_warrior')).toBeNull();
+  });
+
+  it('atkMult is always > 1', () => {
+    const ev = getNextEvolution('dokkaebi_warrior');
+    expect(ev!.atkMult).toBeGreaterThan(1);
+  });
+});
+
+// ─── combinationKey ───────────────────────────────────────────────────────────
+
+describe('combinationKey', () => {
+  it('sorts alphabetically and joins with "+"', () => {
+    expect(combinationKey('gumiho_guardian', 'dokkaebi_warrior')).toBe(
+      'dokkaebi_warrior+gumiho_guardian',
+    );
+  });
+
+  it('is commutative (a,b) === (b,a)', () => {
+    const ab = combinationKey('fire_dokkaebi', 'frost_spirit');
+    const ba = combinationKey('frost_spirit', 'fire_dokkaebi');
+    expect(ab).toBe(ba);
+  });
+
+  it('strips rarity suffixes before sorting', () => {
+    // _unc versions should resolve to the same key as base
+    expect(combinationKey('dokkaebi_warrior_unc', 'gumiho_guardian_rare')).toBe(
+      'dokkaebi_warrior+gumiho_guardian',
+    );
+  });
+});
+
+// ─── HYBRID_DEFS data integrity ───────────────────────────────────────────────
+
+describe('HYBRID_DEFS', () => {
+  const entries = Object.entries(HYBRID_DEFS);
+
+  it('contains at least 20 hybrid monsters', () => {
+    expect(entries.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it('every entry key matches the id field', () => {
+    for (const [key, def] of entries) {
+      expect(def.id, `key "${key}" id mismatch`).toBe(key);
+    }
+  });
+
+  it('every hybrid has a non-empty name, emoji, and passiveDesc', () => {
+    for (const def of Object.values(HYBRID_DEFS)) {
+      expect(def.name.length,        `${def.id} name`).toBeGreaterThan(0);
+      expect(def.emoji.length,       `${def.id} emoji`).toBeGreaterThan(0);
+      expect(def.passiveDesc.length, `${def.id} passiveDesc`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every rarity is 2, 3, or 4', () => {
+    const validRarities = new Set([2, 3, 4]);
+    for (const def of Object.values(HYBRID_DEFS)) {
+      expect(validRarities.has(def.rarity), `${def.id} rarity ${def.rarity}`).toBe(true);
+    }
+  });
+
+  it('every hybrid has at least one roomType', () => {
+    for (const def of Object.values(HYBRID_DEFS)) {
+      expect(def.roomTypes.length, `${def.id} roomTypes`).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── COMBINATION_TABLE integrity ─────────────────────────────────────────────
+
+describe('COMBINATION_TABLE', () => {
+  it('every result id exists in HYBRID_DEFS', () => {
+    for (const [combo, resultId] of Object.entries(COMBINATION_TABLE)) {
+      expect(HYBRID_DEFS[resultId], `combo "${combo}" → "${resultId}" not in HYBRID_DEFS`).toBeDefined();
+    }
+  });
+
+  it('dokkaebi_warrior + gumiho_guardian → fox_warrior', () => {
+    const key = combinationKey('dokkaebi_warrior', 'gumiho_guardian');
+    expect(COMBINATION_TABLE[key]).toBe('fox_warrior');
+  });
+
+  it('fire_dokkaebi + frost_spirit → storm_spirit', () => {
+    const key = combinationKey('fire_dokkaebi', 'frost_spirit');
+    expect(COMBINATION_TABLE[key]).toBe('storm_spirit');
+  });
+
+  it('contains at least 10 entries', () => {
+    expect(Object.keys(COMBINATION_TABLE).length).toBeGreaterThanOrEqual(10);
+  });
+});
+
+// ─── MATERIAL_DEFS data integrity ─────────────────────────────────────────────
+
+describe('MATERIAL_DEFS', () => {
+  it('contains at least 10 materials', () => {
+    expect(Object.keys(MATERIAL_DEFS).length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('every key matches the id field', () => {
+    for (const [key, def] of Object.entries(MATERIAL_DEFS)) {
+      expect(def.id, key).toBe(key);
+    }
+  });
+
+  it('every material has a non-empty name and emoji', () => {
+    for (const def of Object.values(MATERIAL_DEFS)) {
+      expect(def.name.length,  `${def.id} name`).toBeGreaterThan(0);
+      expect(def.emoji.length, `${def.id} emoji`).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── BLUEPRINT_DEFS data integrity ────────────────────────────────────────────
+
+describe('BLUEPRINT_DEFS', () => {
+  const defs = Object.values(BLUEPRINT_DEFS);
+
+  it('contains at least 10 blueprints', () => {
+    expect(defs.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('every key matches the id field', () => {
+    for (const [key, def] of Object.entries(BLUEPRINT_DEFS)) {
+      expect(def.id, key).toBe(key);
+    }
+  });
+
+  it('every type is weapon, armor, or accessory', () => {
+    const valid = new Set(['weapon', 'armor', 'accessory']);
+    for (const def of defs) {
+      expect(valid.has(def.type), `${def.id} type "${def.type}"`).toBe(true);
+    }
+  });
+
+  it('every rarity is between 1 and 5', () => {
+    for (const def of defs) {
+      expect(def.rarity, `${def.id} rarity`).toBeGreaterThanOrEqual(1);
+      expect(def.rarity, `${def.id} rarity`).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it('every blueprint requires at least one material', () => {
+    for (const def of defs) {
+      expect(Object.keys(def.materials).length, `${def.id} materials`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every material reference exists in MATERIAL_DEFS', () => {
+    for (const def of defs) {
+      for (const matId of Object.keys(def.materials)) {
+        expect(MATERIAL_DEFS[matId], `${def.id} mat "${matId}"`).toBeDefined();
+      }
+    }
+  });
+
+  it('bp_dokkaebi_club is a rarity-1 weapon', () => {
+    expect(BLUEPRINT_DEFS['bp_dokkaebi_club'].type).toBe('weapon');
+    expect(BLUEPRINT_DEFS['bp_dokkaebi_club'].rarity).toBe(1);
+  });
+
+  it('STARTER_BLUEPRINTS reference known blueprint ids', () => {
+    for (const id of STARTER_BLUEPRINTS) {
+      expect(BLUEPRINT_DEFS[id], `starter "${id}"`).toBeDefined();
+    }
+  });
+});
+
+// ─── rollMaterialDrop ─────────────────────────────────────────────────────────
+
+describe('rollMaterialDrop', () => {
+  it('returns null for an unknown invader type', () => {
+    expect(rollMaterialDrop('nonexistent_monster')).toBeNull();
+  });
+
+  it('returns a string or null for a known invader type', () => {
+    // Run 20 trials — result must always be a known material id or null
+    for (let i = 0; i < 20; i++) {
+      const result = rollMaterialDrop('knight');
+      if (result !== null) {
+        expect(MATERIAL_DEFS[result], `unknown material "${result}"`).toBeDefined();
+      }
+    }
+  });
+
+  it('primordial_titan has a 60% chance on boss_essence — should drop often', () => {
+    // Run 200 trials — expect at least 1 boss_essence drop (extremely unlikely to fail)
+    let bossEssenceDropped = false;
+    for (let i = 0; i < 200; i++) {
+      if (rollMaterialDrop('primordial_titan') === 'boss_essence') {
+        bossEssenceDropped = true;
+        break;
+      }
+    }
+    expect(bossEssenceDropped).toBe(true);
+  });
+});
