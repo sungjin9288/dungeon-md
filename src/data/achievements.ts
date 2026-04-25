@@ -726,6 +726,31 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     getProgress: ctx => (ctx.stageProgress[79]?.bestStars >= 3 ? 1 : 0),
   },
 
+  // ── 지혜의 나무 ───────────────────────────────────────────────────────────────
+  {
+    id: 'wisdom_ch8',
+    name: '심연의 지혜',
+    description: 'Ch8 지혜의 나무 가지 — 영혼 수확과 심연의 단조를 모두 해금하세요.',
+    icon: '🌑',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 150, soulCrystals: 60 },
+    getProgress: ctx =>
+      ((ctx.wisdomTree['soulHarvest'] ?? 0) >= 1 &&
+       (ctx.wisdomTree['forgeEnhancer'] ?? 0) >= 1) ? 1 : 0,
+  },
+  {
+    id: 'wisdom_master',
+    name: '지혜의 달인',
+    description: '지혜의 나무 투자 티어 합산 25 이상을 달성하세요.',
+    icon: '🌳',
+    category: 'mastery',
+    target: 25,
+    reward: { gems: 250, soulCrystals: 100 },
+    getProgress: ctx =>
+      Object.values(ctx.wisdomTree).reduce((sum, v) => sum + v, 0),
+  },
+
   // ── Quest Skin Collection ──────────────────────────────────────────────────
   {
     id: 'quest_skin_first',
