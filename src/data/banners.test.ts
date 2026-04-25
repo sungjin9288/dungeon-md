@@ -6,6 +6,7 @@ import {
   applyBannerBoost,
 } from './banners';
 import type { SeasonBanner } from './banners';
+import type { MonsterId } from './monsters';
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ describe('getBannerTimeLeft', () => {
 // ─── applyBannerBoost ─────────────────────────────────────────────────────────
 
 describe('applyBannerBoost', () => {
-  const epicPool = ['gumiho_guardian', 'white_tiger', 'death_messenger', 'fire_dokkaebi'];
+  const epicPool: MonsterId[] = ['gumiho_guardian', 'white_tiger', 'death_messenger', 'fire_dokkaebi'] as MonsterId[];
 
   it('returns a monster from pool when rarity does not match boostedRarity', () => {
     const result = applyBannerBoost(SAMPLE_BANNER, 'rare', epicPool);
@@ -187,7 +188,7 @@ describe('applyBannerBoost', () => {
   });
 
   it('falls back to full pool when no featured monsters are in pool', () => {
-    const noFeaturedPool = ['death_messenger', 'fire_dokkaebi'];
+    const noFeaturedPool: MonsterId[] = ['death_messenger', 'fire_dokkaebi'] as MonsterId[];
     const result = applyBannerBoost(SAMPLE_BANNER, 'epic', noFeaturedPool);
     expect(noFeaturedPool).toContain(result);
   });

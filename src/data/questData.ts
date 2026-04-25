@@ -644,6 +644,73 @@ export const MAIN_QUESTS: MainQuest[] = [
     ],
     reward: { gold: 50000, dmXP: 10000, soulCrystals: 1000, gems: 500,
               unlocks: ['abyss_title', 'primordial_skin'] },
+    nextQuestId: 'EQ-001',
+  },
+
+  // ── 에필로그 퀘스트 체인 (EQ-001 ~ EQ-005) ──────────────────────────────────
+  // 심연 정복 이후의 포스트게임 목표. MQ-044 완료 직후 자동 시작.
+
+  {
+    id: 'EQ-001', chapter: 8, autoTrigger: true,
+    title: '심연의 메아리',
+    npcSpeaker: '원초신', npcEmoji: '🌑',
+    description: '심연은 정복됐지만 메아리는 아직 울린다.\n소환의 힘을 키우고 더 많은 골드를 쌓아라.\n전설은 이제부터가 시작이다.',
+    objectives: [
+      { id: 'O1', type: 'summon',       target: 20,      current: 0, description: '소환 20회 실행' },
+      { id: 'O2', type: 'collect_gold', target: 300000,  current: 0, description: '골드 300,000 누적 획득' },
+    ],
+    reward: { gold: 30000, dmXP: 5000, soulCrystals: 600, gems: 200 },
+    nextQuestId: 'EQ-002',
+  },
+  {
+    id: 'EQ-002', chapter: 8, autoTrigger: true,
+    title: '합성의 달인',
+    npcSpeaker: '원초신', npcEmoji: '🌑',
+    description: '강함은 힘의 융합에서 비롯된다.\n몬스터를 합성하여 더욱 강한 전력을 갖추고\n던전 마스터로서의 역량을 증명하라.',
+    objectives: [
+      { id: 'O1', type: 'fuse_monsters',  target: 15, current: 0, description: '몬스터 합성 15회' },
+      { id: 'O2', type: 'reach_dm_level', target: 20, current: 0, description: '던전 마스터 Lv.20 달성' },
+    ],
+    reward: { gold: 40000, dmXP: 6000, soulCrystals: 800, gems: 300 },
+    nextQuestId: 'EQ-003',
+  },
+  {
+    id: 'EQ-003', chapter: 8, autoTrigger: true,
+    title: '끝없는 소환',
+    npcSpeaker: '원초신', npcEmoji: '🌑',
+    description: '원초의 힘이 세상에 퍼지기 시작했다.\n소환의 의식을 반복하여 전설급 전력을 완성하고\n부를 축적하여 진정한 던전의 주인임을 보여라.',
+    objectives: [
+      { id: 'O1', type: 'summon',       target: 60,      current: 0, description: '소환 60회 실행' },
+      { id: 'O2', type: 'collect_gold', target: 500000,  current: 0, description: '골드 500,000 누적 획득' },
+    ],
+    reward: { gold: 50000, dmXP: 7000, soulCrystals: 1000, gems: 400,
+              unlocks: ['eternal_guardian_skin'] },
+    nextQuestId: 'EQ-004',
+  },
+  {
+    id: 'EQ-004', chapter: 8, autoTrigger: true,
+    title: '성장의 증거',
+    npcSpeaker: '원초신', npcEmoji: '🌑',
+    description: '던전은 네 힘을 기억한다.\n합성을 거듭하여 군대를 완성하고\n전설의 경지에 오른 던전 마스터임을 증명하라.',
+    objectives: [
+      { id: 'O1', type: 'fuse_monsters',  target: 30, current: 0, description: '몬스터 합성 30회' },
+      { id: 'O2', type: 'reach_dm_level', target: 25, current: 0, description: '던전 마스터 Lv.25 달성' },
+    ],
+    reward: { gold: 80000, dmXP: 10000, soulCrystals: 1500, gems: 600 },
+    nextQuestId: 'EQ-005',
+  },
+  {
+    id: 'EQ-005', chapter: 8, autoTrigger: true,
+    title: '전설의 던전 마스터',
+    npcSpeaker: '원초신', npcEmoji: '🌑',
+    description: '태초의 심연부터 천계까지—\n네가 걸어온 모든 길이 전설로 남는다.\n소환과 부의 정점에 서서 진정한 마스터임을 완성하라.',
+    objectives: [
+      { id: 'O1', type: 'summon',         target: 100,     current: 0, description: '소환 100회 실행' },
+      { id: 'O2', type: 'collect_gold',   target: 1000000, current: 0, description: '골드 1,000,000 누적 획득' },
+      { id: 'O3', type: 'reach_dm_level', target: 30,      current: 0, description: '던전 마스터 Lv.30 달성' },
+    ],
+    reward: { gold: 200000, dmXP: 20000, soulCrystals: 3000, gems: 1000,
+              unlocks: ['legend_title', 'master_aura_skin'] },
     nextQuestId: null,
   },
 ];
