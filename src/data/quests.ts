@@ -279,6 +279,25 @@ export const SUB_QUEST_POOL: SubQuest[] = [
   { id: 'SQ-030', icon: '⚡', title: '원초의 소환',
     objective: { type: 'summon', target: 15, description: '소환 15회 실행' },
     reward: { dmXP: 180, soulCrystals: 120 } },
+  // ── 에필로그 / 포스트게임 서브 퀘스트 ─────────────────────────────────────────
+  { id: 'SQ-031', icon: '🌌', title: '심연의 소환사',
+    objective: { type: 'summon', target: 20, description: '소환 20회 실행' },
+    reward: { dmXP: 250, soulCrystals: 160 } },
+  { id: 'SQ-032', icon: '🧬', title: '전설 합성',
+    objective: { type: 'fuse_monsters', target: 8, description: '몬스터 합성 8회' },
+    reward: { dmXP: 200, soulCrystals: 180, gold: 2000 } },
+  { id: 'SQ-033', icon: '💰', title: '황금 산맥',
+    objective: { type: 'collect_gold', target: 50000, description: '골드 50,000 획득' },
+    reward: { dmXP: 300, gold: 8000 } },
+  { id: 'SQ-034', icon: '🔰', title: '무한 방어',
+    objective: { type: 'defend_invasion', target: 12, description: '침략 12회 격퇴' },
+    reward: { dmXP: 280, soulCrystals: 200, gold: 3000 } },
+  { id: 'SQ-035', icon: '🌀', title: '대량 소환',
+    objective: { type: 'summon', target: 30, description: '소환 30회 실행' },
+    reward: { dmXP: 350, soulCrystals: 220, gems: 30 } },
+  { id: 'SQ-036', icon: '⚗️', title: '극한 합성',
+    objective: { type: 'fuse_monsters', target: 15, description: '몬스터 합성 15회' },
+    reward: { dmXP: 400, soulCrystals: 280, gems: 40 } },
 ];
 
 // Legacy alias kept for compatibility
