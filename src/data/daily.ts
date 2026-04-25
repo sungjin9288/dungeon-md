@@ -283,6 +283,27 @@ const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
   { description: '웨이브 50개 클리어', objective: { type: 'wave_clear', target: 50 }, reward: { gems: 130, xpBooks: 3 } },
   // ── kill_count (보완) ─────────────────────────────────────────────────────────
   { description: '침략자 150마리 처치', objective: { type: 'kill_count', target: 150 }, reward: { gems: 45 } },
+
+  // ── 엔드게임 추가 — kill_count ────────────────────────────────────────────────
+  { description: '침략자 750마리 처치',  objective: { type: 'kill_count', target: 750  }, reward: { gems: 85,  xpBooks: 1 } },
+  { description: '침략자 1000마리 처치', objective: { type: 'kill_count', target: 1000 }, reward: { gems: 120, xpBooks: 2 } },
+
+  // ── 엔드게임 추가 — wave_clear ───────────────────────────────────────────────
+  { description: '웨이브 60개 클리어', objective: { type: 'wave_clear', target: 60 }, reward: { gems: 150, xpBooks: 3 } },
+  { description: '웨이브 70개 클리어', objective: { type: 'wave_clear', target: 70 }, reward: { gems: 180, xpBooks: 4 } },
+
+  // ── 엔드게임 추가 — skill_use ────────────────────────────────────────────────
+  { description: '액티브 스킬 80회 사용',  objective: { type: 'skill_use', target: 80  }, reward: { gems: 100, xpBooks: 2 } },
+  { description: '액티브 스킬 100회 사용', objective: { type: 'skill_use', target: 100 }, reward: { gems: 130, xpBooks: 3 } },
+
+  // ── 엔드게임 추가 — tribe_only (웨이브 7개 목표) ──────────────────────────────
+  { description: '해신 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'sea'        }, reward: { gems: 70, xpBooks: 1 } },
+  { description: '저승 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'underworld' }, reward: { gems: 70, xpBooks: 1 } },
+  { description: '달빛 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'moonlight'  }, reward: { gems: 70, xpBooks: 1 } },
+  { description: '산신 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'sansin'     }, reward: { gems: 70, xpBooks: 1 } },
+  { description: '용족만으로 웨이브 7개 클리어',       objective: { type: 'tribe_only', target: 7, filter: 'dragon'     }, reward: { gems: 75, xpBooks: 1 } },
+  { description: '천상 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'celestial'  }, reward: { gems: 75, xpBooks: 1 } },
+  { description: '탈 종족만으로 웨이브 7개 클리어',    objective: { type: 'tribe_only', target: 7, filter: 'mask'       }, reward: { gems: 70, xpBooks: 1 } },
 ];
 
 export function getDailyChallenges(): DailyChallenge[] {
