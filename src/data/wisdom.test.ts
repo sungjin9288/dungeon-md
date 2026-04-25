@@ -369,6 +369,92 @@ describe('getWisdomBonuses', () => {
     expect(bonuses.monsterDmgMult).toBeCloseTo(0.75); // 1 - 5*5/100
   });
 
+  it('applies swiftVictory tier 3 → waveRewardMult 1.3', () => {
+    const state = loadGameState();
+    state.wisdomTree['swiftVictory'] = 3;
+    const b = getWisdomBonuses(state);
+    expect(b.waveRewardMult).toBeCloseTo(1.3); // 1 + 3*10/100
+  });
+
+  it('applies ancestorsWisdom tier 4 → extraSlots 4', () => {
+    const state = loadGameState();
+    state.wisdomTree['ancestorsWisdom'] = 4;
+    const b = getWisdomBonuses(state);
+    expect(b.extraSlots).toBe(4);
+  });
+
+  it('applies crystalResonance tier 2 → crystalEarnMult 1.4', () => {
+    const state = loadGameState();
+    state.wisdomTree['crystalResonance'] = 2;
+    const b = getWisdomBonuses(state);
+    expect(b.crystalEarnMult).toBeCloseTo(1.4); // 1 + 2*20/100
+  });
+
+  it('applies eliteTrainer tier 3 → monsterAtkMult 1.09', () => {
+    const state = loadGameState();
+    state.wisdomTree['eliteTrainer'] = 3;
+    const b = getWisdomBonuses(state);
+    expect(b.monsterAtkMult).toBeCloseTo(1.09); // 1 + 3*3/100
+  });
+
+  it('applies celestialBlood tier 4 → crystalPerWave 4', () => {
+    const state = loadGameState();
+    state.wisdomTree['celestialBlood'] = 4;
+    const b = getWisdomBonuses(state);
+    expect(b.crystalPerWave).toBe(4); // tier * 1
+  });
+
+  // ── Ch8 branches ─────────────────────────────────────────────────────────────
+
+  it('soulHarvest tier 0 → summonBonusCrystal 0', () => {
+    const state = loadGameState();
+    const b = getWisdomBonuses(state);
+    expect(b.summonBonusCrystal).toBe(0);
+  });
+
+  it('soulHarvest tier 3 → summonBonusCrystal 6', () => {
+    const state = loadGameState();
+    state.wisdomTree['soulHarvest'] = 3;
+    const b = getWisdomBonuses(state);
+    expect(b.summonBonusCrystal).toBe(6); // 3 * 2
+  });
+
+  it('soulHarvest tier 5 → summonBonusCrystal 10 (max)', () => {
+    const state = loadGameState();
+    state.wisdomTree['soulHarvest'] = 5;
+    const b = getWisdomBonuses(state);
+    expect(b.summonBonusCrystal).toBe(10); // 5 * 2
+  });
+
+  it('forgeEnhancer tier 0 → forgeBonusCrystal 0', () => {
+    const state = loadGameState();
+    const b = getWisdomBonuses(state);
+    expect(b.forgeBonusCrystal).toBe(0);
+  });
+
+  it('forgeEnhancer tier 2 → forgeBonusCrystal 6', () => {
+    const state = loadGameState();
+    state.wisdomTree['forgeEnhancer'] = 2;
+    const b = getWisdomBonuses(state);
+    expect(b.forgeBonusCrystal).toBe(6); // 2 * 3
+  });
+
+  it('forgeEnhancer tier 5 → forgeBonusCrystal 15 (max)', () => {
+    const state = loadGameState();
+    state.wisdomTree['forgeEnhancer'] = 5;
+    const b = getWisdomBonuses(state);
+    expect(b.forgeBonusCrystal).toBe(15); // 5 * 3
+  });
+
+  it('Ch8 both branches tier 4 each → independent values', () => {
+    const state = loadGameState();
+    state.wisdomTree['soulHarvest']  = 4;
+    state.wisdomTree['forgeEnhancer'] = 4;
+    const b = getWisdomBonuses(state);
+    expect(b.summonBonusCrystal).toBe(8);   // 4 * 2
+    expect(b.forgeBonusCrystal).toBe(12);   // 4 * 3
+  });
+
   it('applies multiple bonuses independently', () => {
     const state = loadGameState();
     state.wisdomTree['goldHands']       = 2;
