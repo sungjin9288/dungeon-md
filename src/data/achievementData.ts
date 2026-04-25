@@ -303,11 +303,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'all_3star',
     name: '완벽한 정복자',
-    description: '모든 62개 스테이지를 별 3개로 클리어하세요.',
+    description: '모든 80개 스테이지를 별 3개로 클리어하세요.',
     icon: '🌠',
     category: 'build',
-    target: 62,
-    reward: { gems: 200 },
+    target: 80,
+    reward: { gems: 400, soulCrystals: 100 },
     getProgress: ctx => ctx.stageProgress.filter(s => s.bestStars === 3).length,
   },
 
@@ -407,11 +407,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'all_wisdom',
     name: '선조의 완성',
-    description: '모든 선조의 지혜 분기를 최소 1단계 업그레이드하세요.',
+    description: '12개 지혜의 나무 분기 모두를 최소 1단계 업그레이드하세요.',
     icon: '🌿',
     category: 'mastery',
-    target: 7,
-    reward: { gems: 30 },
+    target: 12,
+    reward: { gems: 60, soulCrystals: 20 },
     getProgress: ctx => Object.values(ctx.wisdomTree).filter(t => t >= 1).length,
   },
   {

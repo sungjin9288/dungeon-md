@@ -40,7 +40,7 @@ BootScene
   → (재실행)  DungeonHomeScene
 
 DungeonHomeScene          홈 허브. 퀘스트·침략 확인, 설정 오버레이, 세이브 관리
-  → StageSelectScene      챕터별 스테이지 선택 (62개, 6챕터)
+  → StageSelectScene      챕터별 스테이지 선택 (80개, 8챕터)
   → PreBattleScene        덱 편성 → DungeonScene
   → SummonScene           소환 (일반/특수/영혼/우정)
   → ShopScene             상점
@@ -51,7 +51,7 @@ DungeonHomeScene          홈 허브. 퀘스트·침략 확인, 설정 오버레
   → CodexScene            도감
   → AchievementScene      업적
 
-DungeonScene              실전 배틀 (4597줄, 메인 게임 루프)
+DungeonScene              실전 배틀 (786줄, 전투 로직은 src/combat/ 분산)
   + UIScene               배틀 HUD 오버레이 (scene.launch로 병행)
 
 CinematicScene            컷씬 (cinematics.ts 데이터 기반)
@@ -72,7 +72,7 @@ EndlessResultScene        엔드리스 결과
 - **`getUnlockedSlots(dmLevel)`** — DM레벨 → 방 슬롯 수
 
 ### `src/scenes/StageSelectScene.ts`
-- **`STAGE_CONFIGS[62]`** — stageNumber 1–62, slots, chapter, bossWave
+- **`STAGE_CONFIGS[80]`** — stageNumber 1–80, slots, chapter, bossWave (Ch1–Ch8)
 - **`loadProgress() / saveProgress() / recordClear()`** — localStorage 키 `dungeonStageProgress`
 - `StageProgress` = `StageProgressEntry` (wisdom.ts 타입 재사용)
 
@@ -97,16 +97,15 @@ const hasInlineWaves = !stageConfig?.stageNumber; // true → 침략 배틀
 const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침략 귀환
 ```
 
-### 중요 메서드 위치 (대략적 라인)
-| 메서드 | 역할 |
-|--------|------|
-| `placeRoom()` ~839 | 방 설치 |
-| `upgradeRoom()` ~949 | 방 업그레이드 |
-| `assignMonster()` ~925 | 몬스터 배치 |
-| `activateSkill()` ~714 | 스킬 발동 |
-| `showChapterClear()` ~2834 | 스테이지 클리어 처리 |
-| `triggerWaveFail()` ~2554 | 웨이브 실패 처리 |
-| `shutdown()` ~274 | 씬 종료 정리 |
+### 전투 로직 위치 (src/combat/ 분산)
+| 모듈 | 역할 |
+|------|------|
+| `RoomActions.ts` | `placeRoom`, `assignMonster`, `upgradeRoom` |
+| `ActiveSkills.ts` | `activateSkillEffect` |
+| `StageClearFlow.ts` | `showChapterClear` |
+| `ResultFlow.ts` | `triggerWaveFail`, `showWaveClear` |
+| `WaveEvents.ts` | `tryShowWaveEvent`, `applyWaveEvent` |
+| `DungeonScene.ts ~316` | `shutdown()` — 씬 종료 정리 |
 
 ### 주의사항
 - `scene.start(X)`는 현재 씬을 stop하지 않음 → DungeonScene.create()에서 명시적으로 `DungeonHomeScene` stop
@@ -120,9 +119,9 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 | 키 | 파일 | 내용 |
 |----|------|------|
 | `dungeonGameState` | wisdom.ts | 전체 게임 상태 (골드·XP·퀘스트·몬스터 등) |
-| `dungeonStageProgress` | StageSelectScene.ts | 62개 스테이지 별/HP% |
+| `dungeonStageProgress` | StageSelectScene.ts | 80개 스테이지 별/HP% |
 
-둘은 독립적. `DungeonScene.showChapterClear()`에서 둘 다 업데이트.
+둘은 독립적. `StageClearFlow.showChapterClear()`에서 둘 다 업데이트.
 
 ---
 
