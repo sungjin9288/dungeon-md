@@ -3,7 +3,9 @@
  * Deterministic seeded selection ensures same result on replay.
  */
 
-export type WaveEventType = 'merchant' | 'supply' | 'curse' | 'rally' | 'fog';
+export type WaveEventType =
+  | 'merchant' | 'supply' | 'curse' | 'rally' | 'fog'
+  | 'void_storm' | 'ancient_blessing' | 'crimson_curse';
 
 export interface WaveEventDef {
   type:        WaveEventType;
@@ -48,6 +50,28 @@ export const WAVE_EVENTS: WaveEventDef[] = [
     icon: '🌫️',
     description: '침략자 속도 -15%',
     color: '#8899bb',
+  },
+  // ── New variety events ──────────────────────────────────────────────────
+  {
+    type: 'void_storm',
+    name: '허공의 폭풍',
+    icon: '🌀',
+    description: '침략자 속도 +25% · 보상 골드 ×1.8',
+    color: '#7744dd',
+  },
+  {
+    type: 'ancient_blessing',
+    name: '고대의 축복',
+    icon: '✨',
+    description: '모든 몬스터 ATK +20% · 던전 HP 10% 회복',
+    color: '#44bbff',
+  },
+  {
+    type: 'crimson_curse',
+    name: '붉은 저주',
+    icon: '🩸',
+    description: '침략자 HP +50% · 보상 ×3',
+    color: '#dd2244',
   },
 ];
 

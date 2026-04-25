@@ -143,6 +143,21 @@ export function applyWaveEvent(ctx: WaveEventContext, evt: WaveEventDef): void {
       ctx.waveFogOverlay.fillStyle(0x556677, 0.25);
       ctx.waveFogOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       break;
+    case 'void_storm':
+      ctx.waveSpdMult  = 1.25;
+      ctx.waveGoldMult = 1.8;
+      break;
+    case 'ancient_blessing': {
+      ctx.waveAtkMult = 1.20;
+      const moonHealUp = ctx.synergyHasMoonlightHealUp ? 1.20 : 1;
+      ctx.dungeonHp = Math.min(ctx.maxHp, ctx.dungeonHp + Math.ceil(ctx.maxHp * 0.10 * moonHealUp));
+      ctx.setRegistryHp(ctx.dungeonHp);
+      break;
+    }
+    case 'crimson_curse':
+      ctx.waveHpMult   = 1.5;
+      ctx.waveGoldMult = 3.0;
+      break;
   }
   logger.debug(`[EVENT] ${evt.name} applied: gold×${ctx.waveGoldMult} hp×${ctx.waveHpMult} atk×${ctx.waveAtkMult} spd×${ctx.waveSpdMult}`);
 }
