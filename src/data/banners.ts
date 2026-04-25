@@ -148,6 +148,29 @@ export const SEASON_BANNERS: SeasonBanner[] = [
     endDate:          '2026-05-31',
   },
 
+  // ── Ch8 원초의 심연 기념 배너 (2027-02-01 ~ 2027-03-31) ────────────────────────
+  {
+    id:               'ch8_abyss_2027',
+    name:             '원초의 심연 배너',
+    subname:          '🌑 Ch8 정복 기념 한정 배너',
+    icon:             '🌑',
+    description:      '원초의 심연을 정복한 영웅들을 위해! 전설급 전사 등장률 대폭 상승!',
+    season:           'special',
+    bgColor:          0x03000a,
+    borderColor:      0x9940ff,
+    glowColor:        0xcc77ff,
+    accentCss:        '#cc77ff',
+    featuredMonsters: [
+      'god_realm_general', 'blue_dragon_archmage', 'sea_dragon_lord',
+      'abyss_mage', 'ghost_king', 'black_dragon_assassin',
+    ],
+    boostedRarity:    'legendary',
+    rateMultiplier:   0.70,
+    validSummonTypes: ['special', 'soul'],
+    startDate:        '2027-02-01',
+    endDate:          '2027-03-31',
+  },
+
   // ── 용족 특별 배너 (2026-05-01 ~ 2026-05-31) ─────────────────────────────────
   {
     id:               'special_dragon_2026',
