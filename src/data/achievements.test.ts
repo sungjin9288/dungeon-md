@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ACHIEVEMENT_DEFS,
+  EPILOGUE_ACHIEVEMENT_DEFS,
   getAchievementDef,
   checkAchievements,
   type AchievementContext,
@@ -177,8 +178,11 @@ describe('checkAchievements', () => {
     expect(result).toContain('slayer_1000');
   });
 
-  it('returned ids are all valid achievement ids', () => {
-    const allIds = new Set(ACHIEVEMENT_DEFS.map(a => a.id));
+  it('returned ids are all valid achievement ids (base + epilogue)', () => {
+    const allIds = new Set([
+      ...ACHIEVEMENT_DEFS.map(a => a.id),
+      ...EPILOGUE_ACHIEVEMENT_DEFS.map(a => a.id),
+    ]);
     const ctx    = makeCtx({ totalKills: 9999, totalGoldEarned: 9999 });
     const result = checkAchievements(ctx, {});
     for (const id of result) {
@@ -336,5 +340,169 @@ describe('getProgress — growth', () => {
     expect(def.target).toBe(3);
     expect(def.getProgress(makeCtx({ questSkinsOwned: 2 }))).toBe(2);
     expect(def.getProgress(makeCtx({ questSkinsOwned: 3 }))).toBe(3);
+  });
+});
+
+// ─── EPILOGUE_ACHIEVEMENT_DEFS data integrity ─────────────────────────────────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS', () => {
+  it('contains exactly 5 epilogue achievements', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS).toHaveLength(5);
+  });
+
+  it('has unique ids (no overlap with base defs)', () => {
+    const baseIds    = new Set(ACHIEVEMENT_DEFS.map(a => a.id));
+    const epilogueIds = EPILOGUE_ACHIEVEMENT_DEFS.map(a => a.id);
+    // No duplicates within the epilogue list
+    expect(new Set(epilogueIds).size).toBe(epilogueIds.length);
+    // No overlap with base
+    for (const id of epilogueIds) {
+      expect(baseIds.has(id), `epilogue id "${id}" must not exist in base defs`).toBe(false);
+    }
+  });
+
+  it('every epilogue def has a non-empty name, description, and icon', () => {
+    for (const a of EPILOGUE_ACHIEVEMENT_DEFS) {
+      expect(a.name.length,        `${a.id} name`).toBeGreaterThan(0);
+      expect(a.description.length, `${a.id} description`).toBeGreaterThan(0);
+      expect(a.icon.length,        `${a.id} icon`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every epilogue target is a positive number', () => {
+    for (const a of EPILOGUE_ACHIEVEMENT_DEFS) {
+      expect(a.target, `${a.id} target`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every epilogue reward has at least one non-zero field', () => {
+    for (const a of EPILOGUE_ACHIEVEMENT_DEFS) {
+      const { gems, soulCrystals } = a.reward;
+      const hasReward = (gems !== undefined && gems > 0) ||
+                        (soulCrystals !== undefined && soulCrystals > 0);
+      expect(hasReward, `${a.id} reward`).toBe(true);
+    }
+  });
+
+  it('getProgress returns a non-negative number for every epilogue def', () => {
+    for (const a of EPILOGUE_ACHIEVEMENT_DEFS) {
+      const val = a.getProgress(emptyCtx);
+      expect(typeof val, `${a.id} getProgress type`).toBe('number');
+      expect(val, `${a.id} getProgress >= 0`).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ─── getAchievementDef — epilogue lookup ──────────────────────────────────────
+
+describe('getAchievementDef — epilogue', () => {
+  it('finds gold_1000000 (epilogue) by id', () => {
+    const def = getAchievementDef('gold_1000000');
+    expect(def).toBeDefined();
+    expect(def!.category).toBe('economy');
+    expect(def!.target).toBe(1_000_000);
+  });
+
+  it('finds fusion_30 (epilogue) by id', () => {
+    const def = getAchievementDef('fusion_30');
+    expect(def).toBeDefined();
+    expect(def!.target).toBe(30);
+  });
+
+  it('finds fusion_50 (epilogue) by id', () => {
+    const def = getAchievementDef('fusion_50');
+    expect(def).toBeDefined();
+    expect(def!.target).toBe(50);
+  });
+
+  it('finds dm_lv25 (epilogue) by id', () => {
+    const def = getAchievementDef('dm_lv25');
+    expect(def).toBeDefined();
+    expect(def!.category).toBe('growth');
+    expect(def!.target).toBe(25);
+  });
+
+  it('finds dm_lv30 (epilogue) by id', () => {
+    const def = getAchievementDef('dm_lv30');
+    expect(def).toBeDefined();
+    expect(def!.target).toBe(30);
+  });
+});
+
+// ─── getProgress — epilogue spot-checks ───────────────────────────────────────
+
+describe('getProgress — epilogue economy', () => {
+  it('gold_1000000: reports totalGoldEarned', () => {
+    const def = getAchievementDef('gold_1000000')!;
+    expect(def.getProgress(makeCtx({ totalGoldEarned: 500_000 }))).toBe(500_000);
+    expect(def.getProgress(makeCtx({ totalGoldEarned: 1_000_000 }))).toBe(1_000_000);
+  });
+});
+
+describe('getProgress — epilogue collection (fusions)', () => {
+  it('fusion_30: reports totalFusions', () => {
+    const def = getAchievementDef('fusion_30')!;
+    expect(def.getProgress(makeCtx({ totalFusions: 15 }))).toBe(15);
+    expect(def.getProgress(makeCtx({ totalFusions: 30 }))).toBe(30);
+  });
+
+  it('fusion_50: reports totalFusions', () => {
+    const def = getAchievementDef('fusion_50')!;
+    expect(def.getProgress(makeCtx({ totalFusions: 50 }))).toBe(50);
+  });
+});
+
+describe('getProgress — epilogue growth (DM level)', () => {
+  it('dm_lv25: reports dmLevel', () => {
+    const def = getAchievementDef('dm_lv25')!;
+    expect(def.getProgress(makeCtx({ dmLevel: 20 }))).toBe(20);
+    expect(def.getProgress(makeCtx({ dmLevel: 25 }))).toBe(25);
+  });
+
+  it('dm_lv30: reports dmLevel', () => {
+    const def = getAchievementDef('dm_lv30')!;
+    expect(def.getProgress(makeCtx({ dmLevel: 30 }))).toBe(30);
+  });
+});
+
+// ─── checkAchievements — epilogue unlock ─────────────────────────────────────
+
+describe('checkAchievements — epilogue unlock', () => {
+  it('unlocks gold_1000000 when totalGoldEarned reaches 1,000,000', () => {
+    const ctx    = makeCtx({ totalGoldEarned: 1_000_000 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('gold_1000000');
+  });
+
+  it('does not unlock gold_1000000 below target', () => {
+    const ctx    = makeCtx({ totalGoldEarned: 999_999 });
+    const result = checkAchievements(ctx, {});
+    expect(result).not.toContain('gold_1000000');
+  });
+
+  it('unlocks fusion_30 when totalFusions reaches 30', () => {
+    const ctx    = makeCtx({ totalFusions: 30 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('fusion_30');
+  });
+
+  it('unlocks both fusion_30 and fusion_50 at 50 fusions', () => {
+    const ctx    = makeCtx({ totalFusions: 50 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('fusion_30');
+    expect(result).toContain('fusion_50');
+  });
+
+  it('unlocks dm_lv25 when dmLevel reaches 25', () => {
+    const ctx    = makeCtx({ dmLevel: 25 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('dm_lv25');
+  });
+
+  it('unlocks dm_lv30 but not dm_lv25 when dm_lv25 is already unlocked', () => {
+    const ctx    = makeCtx({ dmLevel: 30 });
+    const result = checkAchievements(ctx, { dm_lv25: { unlocked: true } });
+    expect(result).toContain('dm_lv30');
+    expect(result).not.toContain('dm_lv25');
   });
 });
