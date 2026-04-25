@@ -440,3 +440,150 @@ describe('claimSubQuest', () => {
     expect(newGs.soulCrystals).toBe(scBefore + 40);
   });
 });
+
+// ─── Epilogue quest chain (EQ-001 ~ EQ-005) ──────────────────────────────────
+
+describe('EQ chain — data integrity', () => {
+  const EQ_IDS = ['EQ-001', 'EQ-002', 'EQ-003', 'EQ-004', 'EQ-005'];
+
+  it('all 5 epilogue quests exist in MAIN_QUESTS', () => {
+    for (const id of EQ_IDS) {
+      expect(getQuest(id), `${id} must exist`).toBeDefined();
+    }
+  });
+
+  it('all EQ quests are chapter 8', () => {
+    for (const id of EQ_IDS) {
+      expect(getQuest(id)!.chapter, `${id} chapter`).toBe(8);
+    }
+  });
+
+  it('all EQ quests have autoTrigger: true', () => {
+    for (const id of EQ_IDS) {
+      expect((getQuest(id) as { autoTrigger?: boolean }).autoTrigger, `${id} autoTrigger`).toBe(true);
+    }
+  });
+
+  it('MQ-044 nextQuestId points to EQ-001 (chain entry)', () => {
+    expect(getQuest('MQ-044')!.nextQuestId).toBe('EQ-001');
+  });
+
+  it('chain order is EQ-001 → EQ-002 → EQ-003 → EQ-004 → EQ-005 → null', () => {
+    const chain = ['EQ-001', 'EQ-002', 'EQ-003', 'EQ-004', 'EQ-005', null] as const;
+    for (let i = 0; i < chain.length - 1; i++) {
+      const q = getQuest(chain[i] as string)!;
+      expect(q.nextQuestId, `${chain[i]} nextQuestId`).toBe(chain[i + 1]);
+    }
+  });
+
+  it('EQ-003 reward includes eternal_guardian_skin unlock', () => {
+    const q = getQuest('EQ-003')!;
+    expect(q.reward.unlocks).toContain('eternal_guardian_skin');
+  });
+
+  it('EQ-005 reward includes legend_title and master_aura_skin unlocks', () => {
+    const q = getQuest('EQ-005')!;
+    expect(q.reward.unlocks).toContain('legend_title');
+    expect(q.reward.unlocks).toContain('master_aura_skin');
+  });
+
+  it('EQ-005 has 3 objectives (summon + collect_gold + reach_dm_level)', () => {
+    const q = getQuest('EQ-005')!;
+    expect(q.objectives).toHaveLength(3);
+    const types = q.objectives.map(o => o.type);
+    expect(types).toContain('summon');
+    expect(types).toContain('collect_gold');
+    expect(types).toContain('reach_dm_level');
+  });
+
+  it('all EQ quest rewards have gems and soulCrystals', () => {
+    for (const id of EQ_IDS) {
+      const r = getQuest(id)!.reward;
+      expect(r.gems,         `${id} gems`).toBeGreaterThan(0);
+      expect(r.soulCrystals, `${id} soulCrystals`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('EQ chain — updateQuestObjective with fuse_monsters', () => {
+  let gs: GameState;
+
+  beforeEach(() => {
+    gs = freshGameState();
+    gs = { ...gs, dmLevel: 1 }; // prevent reach_dm_level auto-satisfaction
+    gs = startQuest(gs, 'EQ-002'); // fuse_monsters(15) + reach_dm_level(20)
+  });
+
+  it('increments fuse_monsters objective', () => {
+    const result = updateQuestObjective(gs, 'fuse_monsters', 1);
+    expect(result).not.toBeNull();
+    expect(result!.current).toBe(1);
+    expect(result!.questDone).toBe(false);
+  });
+
+  it('fuse_monsters does not affect reach_dm_level objective', () => {
+    // Increment by 1 — O1 (fuse_monsters) advances, but O2 (reach_dm_level) stays 0
+    const result = updateQuestObjective(gs, 'fuse_monsters', 1);
+    expect(result).not.toBeNull();
+    // questDone is false because O2 (reach_dm_level) is still pending
+    expect(result!.questDone).toBe(false);
+  });
+
+  it('quest is done only after both objectives are met', () => {
+    updateQuestObjective(gs, 'fuse_monsters', 15); // O1 maxed
+    const done = updateQuestObjective(gs, 'reach_dm_level', 20); // O2 maxed
+    expect(done!.questDone).toBe(true);
+  });
+});
+
+describe('EQ chain — completeAndAdvance awards unlocks', () => {
+  let gs: GameState;
+
+  it('EQ-003 completion grants eternal_guardian_skin in unlockedFeatures', () => {
+    gs = freshGameState();
+    gs = startQuest(gs, 'EQ-003');
+    // Satisfy both objectives
+    updateQuestObjective(gs, 'summon', 60);
+    updateQuestObjective(gs, 'collect_gold', 500000);
+    // Mark as completed manually so completeAndAdvance can fire
+    gs = {
+      ...gs,
+      questProgress: {
+        ...gs.questProgress,
+        'EQ-003': { objectives: { O1: 60, O2: 500000 }, completed: false },
+      },
+    };
+    const [newGs] = completeAndAdvance(gs);
+    expect(newGs.unlockedFeatures).toContain('eternal_guardian_skin');
+  });
+
+  it('EQ-005 completion grants legend_title and master_aura_skin', () => {
+    gs = freshGameState();
+    gs = startQuest(gs, 'EQ-005');
+    gs = {
+      ...gs,
+      questProgress: {
+        ...gs.questProgress,
+        'EQ-005': { objectives: { O1: 100, O2: 1000000, O3: 30 }, completed: false },
+      },
+    };
+    const [newGs] = completeAndAdvance(gs);
+    expect(newGs.unlockedFeatures).toContain('legend_title');
+    expect(newGs.unlockedFeatures).toContain('master_aura_skin');
+  });
+
+  it('EQ-005 completion sets activeMainQuestId to empty string (terminal quest)', () => {
+    gs = freshGameState();
+    gs = startQuest(gs, 'EQ-005');
+    gs = {
+      ...gs,
+      questProgress: {
+        ...gs.questProgress,
+        'EQ-005': { objectives: { O1: 100, O2: 1000000, O3: 30 }, completed: false },
+      },
+    };
+    const [newGs] = completeAndAdvance(gs);
+    // completeAndAdvance sets activeMainQuestId to '' (not null) when nextQuestId is null
+    expect(newGs.activeMainQuestId).toBe('');
+  });
+});
