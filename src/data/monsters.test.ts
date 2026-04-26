@@ -370,3 +370,72 @@ describe('TRIBE_TOTALS', () => {
     }
   });
 });
+
+// ─── Ch7 monsters — celestial tribe ──────────────────────────────────────────
+
+describe('Ch7 monsters — celestial tribe', () => {
+  const CH7_IDS = [
+    'celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior',
+    'divine_healer', 'starlight_knight', 'celestial_sage', 'god_realm_general',
+  ];
+
+  it('all 8 Ch7 monsters exist in MONSTER_DEFS', () => {
+    for (const id of CH7_IDS) {
+      expect(MONSTER_DEFS[id as keyof typeof MONSTER_DEFS], `missing ${id}`).toBeDefined();
+    }
+  });
+
+  it('every Ch7 monster belongs to the celestial tribe', () => {
+    for (const id of CH7_IDS) {
+      const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as MonsterDef;
+      expect(def.tribe, `${id} tribe`).toBe('celestial');
+    }
+  });
+
+  it('every Ch7 monster has chapter = 7', () => {
+    for (const id of CH7_IDS) {
+      const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as MonsterDef;
+      expect(def.chapter, `${id} chapter`).toBe(7);
+    }
+  });
+
+  it('Ch7 unlockStages are in the range 63–72 (Ch7 gate area)', () => {
+    for (const id of CH7_IDS) {
+      const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as MonsterDef;
+      expect(def.unlockStage, `${id} unlockStage`).toBeGreaterThanOrEqual(63);
+      expect(def.unlockStage, `${id} unlockStage`).toBeLessThanOrEqual(72);
+    }
+  });
+
+  it('god_realm_general is legendary (rarityTier L)', () => {
+    const def = MONSTER_DEFS['god_realm_general'] as MonsterDef;
+    expect(def.rarityTier).toBe('L');
+  });
+
+  it('divine_healer is a support monster (baseDamage = 0)', () => {
+    const def = MONSTER_DEFS['divine_healer'] as MonsterDef;
+    expect(def.baseDamage).toBe(0);
+    expect(def.attackCooldown).toBe(0);
+  });
+
+  it('celestial_guardian has DIVINE_TERRITORY passive', () => {
+    const def = MONSTER_DEFS['celestial_guardian'] as MonsterDef;
+    expect(def.passive).toBe('DIVINE_TERRITORY');
+  });
+
+  it('god_realm_general has highest baseDamage among Ch7 monsters', () => {
+    const maxDmg = Math.max(
+      ...CH7_IDS.map(id => (MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as MonsterDef).baseDamage),
+    );
+    const general = MONSTER_DEFS['god_realm_general'] as MonsterDef;
+    expect(general.baseDamage).toBe(maxDmg);
+  });
+
+  it('getMonstersForTribe("celestial") returns all 8 Ch7 monsters (at stage 80)', () => {
+    const celestials = getMonstersForTribe('celestial');
+    const celestialIds = celestials.map(m => m.id);
+    for (const id of CH7_IDS) {
+      expect(celestialIds, `${id} in celestial tribe`).toContain(id);
+    }
+  });
+});

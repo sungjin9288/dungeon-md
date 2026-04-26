@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MONSTER_EMOJI, MONSTER_NAME } from './monsterDisplay';
+import { MONSTER_DEFS, SKIN_DATA } from './monsters';
 
 // ─── MONSTER_EMOJI data integrity ─────────────────────────────────────────────
 
@@ -98,5 +99,85 @@ describe('MONSTER_EMOJI / MONSTER_NAME cross-map consistency', () => {
       expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
       expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
     }
+  });
+
+  it('all Ch3 monsters appear in both maps', () => {
+    const ch3 = ['death_messenger', 'thunder_hero', 'ghost_hunter',
+                  'mask_dancer', 'venom_warrior'];
+    for (const id of ch3) {
+      expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
+      expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
+    }
+  });
+
+  it('all Ch4 monsters appear in both maps', () => {
+    const ch4 = ['celestial_dancer', 'three_legged_crow', 'great_serpent', 'moon_rabbit_sage'];
+    for (const id of ch4) {
+      expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
+      expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
+    }
+  });
+
+  it('all 8 Ch6 tribe complete/leader monsters appear in both maps', () => {
+    const ch6leaders = [
+      'dokkaebi_god_king',    // 도깨비족
+      'gumiho_demon',         // 구미호족
+      'mountain_god_complete',// 산신족
+      'sea_god_complete',     // 해신족
+      'underworld_complete',  // 저승족
+      'mask_complete',        // 탈족
+      'moonlight_complete',   // 달빛족
+      'five_dragon_complete', // 용족
+    ];
+    for (const id of ch6leaders) {
+      expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
+      expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
+    }
+  });
+});
+
+// ─── Cross-validation against MONSTER_DEFS ────────────────────────────────────
+
+describe('MONSTER_EMOJI × MONSTER_DEFS — no orphan entries', () => {
+  it('every MONSTER_EMOJI key exists in MONSTER_DEFS', () => {
+    for (const id of Object.keys(MONSTER_EMOJI)) {
+      expect(
+        MONSTER_DEFS[id as keyof typeof MONSTER_DEFS],
+        `MONSTER_EMOJI key "${id}" not found in MONSTER_DEFS`,
+      ).toBeDefined();
+    }
+  });
+});
+
+describe('MONSTER_NAME × MONSTER_DEFS — no orphan entries', () => {
+  it('every MONSTER_NAME key exists in MONSTER_DEFS', () => {
+    for (const id of Object.keys(MONSTER_NAME)) {
+      expect(
+        MONSTER_DEFS[id as keyof typeof MONSTER_DEFS],
+        `MONSTER_NAME key "${id}" not found in MONSTER_DEFS`,
+      ).toBeDefined();
+    }
+  });
+});
+
+// ─── SKIN_DATA × MONSTER_DEFS — monsterId integrity ─────────────────────────
+
+describe('SKIN_DATA × MONSTER_DEFS — monsterId cross-validation', () => {
+  it('every skin.monsterId references a valid MONSTER_DEFS key', () => {
+    for (const skin of SKIN_DATA) {
+      expect(
+        MONSTER_DEFS[skin.monsterId as keyof typeof MONSTER_DEFS],
+        `SKIN_DATA skin "${skin.id}" references unknown monsterId "${skin.monsterId}"`,
+      ).toBeDefined();
+    }
+  });
+
+  it('every skin.id is unique', () => {
+    const ids = SKIN_DATA.map(s => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('SKIN_DATA contains at least 15 skins', () => {
+    expect(SKIN_DATA.length).toBeGreaterThanOrEqual(15);
   });
 });
