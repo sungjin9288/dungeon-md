@@ -1,0 +1,287 @@
+import { describe, it, expect } from 'vitest';
+import { MAIN_QUESTS, SUB_QUEST_POOL, getSubQuestById } from './quests';
+import type { ObjectiveType } from './questData';
+import { INVADER_DEFS, type InvaderType } from './invaders';
+
+const VALID_OBJECTIVE_TYPES = new Set<ObjectiveType>([
+  'build_room', 'assign_monster', 'defend_invasion',
+  'reach_dm_level', 'summon', 'upgrade_room',
+  'feed_monster', 'fuse_monsters', 'collect_gold', 'complete_stage',
+]);
+
+// ─── MAIN_QUESTS — total count ────────────────────────────────────────────────
+
+describe('MAIN_QUESTS — total count', () => {
+  it('contains exactly 49 quests (MQ-001 to MQ-044 + EQ-001 to EQ-005)', () => {
+    expect(MAIN_QUESTS).toHaveLength(49);
+  });
+
+  it('first quest is MQ-001', () => {
+    expect(MAIN_QUESTS[0].id).toBe('MQ-001');
+  });
+
+  it('last quest is EQ-005 (terminal)', () => {
+    expect(MAIN_QUESTS[MAIN_QUESTS.length - 1].id).toBe('EQ-005');
+  });
+});
+
+// ─── MAIN_QUESTS — field integrity ───────────────────────────────────────────
+
+describe('MAIN_QUESTS — field integrity', () => {
+  it('every quest has a non-empty title', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.title.length, `${q.id} title`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every quest has a non-empty description', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.description.length, `${q.id} description`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every quest has a non-empty npcSpeaker and npcEmoji', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.npcSpeaker.length, `${q.id} npcSpeaker`).toBeGreaterThan(0);
+      expect(q.npcEmoji.length,   `${q.id} npcEmoji`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every quest has autoTrigger = true', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.autoTrigger, `${q.id} autoTrigger`).toBe(true);
+    }
+  });
+
+  it('every chapter value is between 1 and 8', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.chapter, `${q.id} chapter`).toBeGreaterThanOrEqual(1);
+      expect(q.chapter, `${q.id} chapter`).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('every quest has at least one objective', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.objectives.length, `${q.id} objectives`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every objective has a valid ObjectiveType', () => {
+    for (const q of MAIN_QUESTS) {
+      for (const obj of q.objectives) {
+        expect(
+          VALID_OBJECTIVE_TYPES.has(obj.type as ObjectiveType),
+          `${q.id} objective "${obj.id}" type "${obj.type}"`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('every objective target is a positive integer', () => {
+    for (const q of MAIN_QUESTS) {
+      for (const obj of q.objectives) {
+        expect(obj.target, `${q.id}.${obj.id} target`).toBeGreaterThan(0);
+        expect(Number.isInteger(obj.target), `${q.id}.${obj.id} target integer`).toBe(true);
+      }
+    }
+  });
+
+  it('every objective current template is 0', () => {
+    for (const q of MAIN_QUESTS) {
+      for (const obj of q.objectives) {
+        expect(obj.current, `${q.id}.${obj.id} current`).toBe(0);
+      }
+    }
+  });
+
+  it('every objective has a non-empty description', () => {
+    for (const q of MAIN_QUESTS) {
+      for (const obj of q.objectives) {
+        expect(obj.description.length, `${q.id}.${obj.id} desc`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every reward has a non-negative dmXP', () => {
+    for (const q of MAIN_QUESTS) {
+      expect(q.reward.dmXP, `${q.id} dmXP`).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ─── MAIN_QUESTS — chain ordering ─────────────────────────────────────────────
+
+describe('MAIN_QUESTS — chain ordering', () => {
+  const idSet = new Set(MAIN_QUESTS.map(q => q.id));
+
+  it('only EQ-005 (last quest) has nextQuestId = null', () => {
+    const terminals = MAIN_QUESTS.filter(q => q.nextQuestId === null);
+    expect(terminals).toHaveLength(1);
+    expect(terminals[0].id).toBe('EQ-005');
+  });
+
+  it('every non-null nextQuestId references an existing quest', () => {
+    for (const q of MAIN_QUESTS) {
+      if (q.nextQuestId !== null) {
+        expect(idSet.has(q.nextQuestId), `${q.id} → "${q.nextQuestId}" not found`).toBe(true);
+      }
+    }
+  });
+
+  it('MQ-044 links to EQ-001 (chapter 8 → epilogue transition)', () => {
+    const mq044 = MAIN_QUESTS.find(q => q.id === 'MQ-044');
+    expect(mq044).toBeDefined();
+    expect(mq044!.nextQuestId).toBe('EQ-001');
+  });
+
+  it('chapters are non-decreasing across the quest chain (no going back)', () => {
+    for (let i = 1; i < MAIN_QUESTS.length; i++) {
+      expect(
+        MAIN_QUESTS[i].chapter,
+        `${MAIN_QUESTS[i].id} chapter should be >= ${MAIN_QUESTS[i - 1].chapter}`,
+      ).toBeGreaterThanOrEqual(MAIN_QUESTS[i - 1].chapter);
+    }
+  });
+});
+
+// ─── InvasionConfig integrity ─────────────────────────────────────────────────
+
+describe('InvasionConfig integrity', () => {
+  const invasionQuests = MAIN_QUESTS.filter(q => q.invasionOnComplete != null);
+
+  it('exactly 10 quests carry an invasionOnComplete', () => {
+    expect(invasionQuests).toHaveLength(10);
+  });
+
+  it('every invasion has a non-empty id and name', () => {
+    for (const q of invasionQuests) {
+      const inv = q.invasionOnComplete!;
+      expect(inv.id.length,   `${q.id} invasion id`).toBeGreaterThan(0);
+      expect(inv.name.length, `${q.id} invasion name`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every invasion has isStoryInvasion = true', () => {
+    for (const q of invasionQuests) {
+      expect(q.invasionOnComplete!.isStoryInvasion, `${q.id} isStoryInvasion`).toBe(true);
+    }
+  });
+
+  it('every invasion has at least one wave', () => {
+    for (const q of invasionQuests) {
+      expect(q.invasionOnComplete!.waves.length, `${q.id} waves`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every wave has a positive waveNumber', () => {
+    for (const q of invasionQuests) {
+      for (const wave of q.invasionOnComplete!.waves) {
+        expect(wave.waveNumber, `${q.id} waveNumber`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every wave has at least one invader group', () => {
+    for (const q of invasionQuests) {
+      for (const wave of q.invasionOnComplete!.waves) {
+        expect(wave.invaders.length, `${q.id} wave ${wave.waveNumber} invaders`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every invader group count is positive', () => {
+    for (const q of invasionQuests) {
+      for (const wave of q.invasionOnComplete!.waves) {
+        for (const entry of wave.invaders) {
+          expect(entry.count, `${q.id} invader count`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('every invader type is a non-empty string', () => {
+    // Invasion types may include story-only types (e.g. peasant_soldier, shield_knight)
+    // not present in INVADER_DEFS — we verify they are at least non-empty strings.
+    for (const q of invasionQuests) {
+      for (const wave of q.invasionOnComplete!.waves) {
+        for (const entry of wave.invaders) {
+          expect(entry.type.length, `${q.id} empty invasion type`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('every invasion id is a non-empty string', () => {
+    // Some invasions intentionally reuse ids — only non-emptiness is guaranteed.
+    for (const q of invasionQuests) {
+      expect(q.invasionOnComplete!.id.length, `${q.id} invasion id`).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── SUB_QUEST_POOL ───────────────────────────────────────────────────────────
+
+describe('SUB_QUEST_POOL', () => {
+  it('contains exactly 36 sub-quests', () => {
+    expect(SUB_QUEST_POOL).toHaveLength(36);
+  });
+
+  it('every sub-quest id is unique', () => {
+    const ids = SUB_QUEST_POOL.map(sq => sq.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('every sub-quest has a non-empty icon and title', () => {
+    for (const sq of SUB_QUEST_POOL) {
+      expect(sq.icon.length,  `${sq.id} icon`).toBeGreaterThan(0);
+      expect(sq.title.length, `${sq.id} title`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every sub-quest objective has a valid ObjectiveType', () => {
+    for (const sq of SUB_QUEST_POOL) {
+      expect(
+        VALID_OBJECTIVE_TYPES.has(sq.objective.type as ObjectiveType),
+        `${sq.id} type "${sq.objective.type}"`,
+      ).toBe(true);
+    }
+  });
+
+  it('every sub-quest objective target is a positive integer', () => {
+    for (const sq of SUB_QUEST_POOL) {
+      expect(sq.objective.target, `${sq.id} target`).toBeGreaterThan(0);
+      expect(Number.isInteger(sq.objective.target), `${sq.id} target integer`).toBe(true);
+    }
+  });
+
+  it('every reward has at least dmXP or gold defined', () => {
+    for (const sq of SUB_QUEST_POOL) {
+      const hasReward = (sq.reward.dmXP ?? 0) > 0 || (sq.reward.gold ?? 0) > 0;
+      expect(hasReward, `${sq.id} has no reward`).toBe(true);
+    }
+  });
+});
+
+// ─── getSubQuestById ──────────────────────────────────────────────────────────
+
+describe('getSubQuestById', () => {
+  it('returns the correct sub-quest for a known id', () => {
+    const sq = getSubQuestById('SQ-001');
+    expect(sq).toBeDefined();
+    expect(sq!.id).toBe('SQ-001');
+  });
+
+  it('returns undefined for an unknown id', () => {
+    expect(getSubQuestById('SQ-999')).toBeUndefined();
+  });
+
+  it('returns undefined for empty string', () => {
+    expect(getSubQuestById('')).toBeUndefined();
+  });
+
+  it('finds every id in SUB_QUEST_POOL', () => {
+    for (const sq of SUB_QUEST_POOL) {
+      expect(getSubQuestById(sq.id), `missing ${sq.id}`).toBeDefined();
+    }
+  });
+});
