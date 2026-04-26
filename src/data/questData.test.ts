@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MAIN_QUESTS, SUB_QUEST_POOL, getSubQuestById } from './quests';
 import type { ObjectiveType } from './questData';
-import { INVADER_DEFS, type InvaderType } from './invaders';
 
 const VALID_OBJECTIVE_TYPES = new Set<ObjectiveType>([
   'build_room', 'assign_monster', 'defend_invasion',
