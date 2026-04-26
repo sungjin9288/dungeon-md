@@ -1,0 +1,165 @@
+import { describe, it, expect } from 'vitest';
+import { darken, lighten, computeLayout } from './invaderShapeHelpers';
+
+// ─── darken ───────────────────────────────────────────────────────────────────
+
+describe('darken', () => {
+  it('returns 0 for black input regardless of amount', () => {
+    expect(darken(0x000000, 0.5)).toBe(0x000000);
+  });
+
+  it('scales each channel by the given amount (default 0.4)', () => {
+    // 0xffffff → each channel = 255 * 0.4 = 102 = 0x66
+    const result = darken(0xffffff);
+    const r = (result >> 16) & 0xff;
+    const g = (result >> 8)  & 0xff;
+    const b =  result        & 0xff;
+    expect(r).toBe(Math.floor(255 * 0.4));
+    expect(g).toBe(Math.floor(255 * 0.4));
+    expect(b).toBe(Math.floor(255 * 0.4));
+  });
+
+  it('applies amount=0.5 correctly', () => {
+    // 0xff0000 → r=127 (floor(255*0.5)), g=0, b=0
+    const result = darken(0xff0000, 0.5);
+    expect((result >> 16) & 0xff).toBe(Math.floor(255 * 0.5));
+    expect((result >> 8)  & 0xff).toBe(0);
+    expect( result        & 0xff).toBe(0);
+  });
+
+  it('only affects the non-zero channels', () => {
+    // Pure green 0x00ff00 darkened by 0.5
+    const result = darken(0x00ff00, 0.5);
+    expect((result >> 16) & 0xff).toBe(0);
+    expect((result >> 8)  & 0xff).toBe(Math.floor(255 * 0.5));
+    expect( result        & 0xff).toBe(0);
+  });
+
+  it('returns a value with R, G, B channels all < original (for white)', () => {
+    const white = 0xffffff;
+    const result = darken(white, 0.8);
+    const r = (result >> 16) & 0xff;
+    const g = (result >> 8)  & 0xff;
+    const b =  result        & 0xff;
+    expect(r).toBeLessThan(255);
+    expect(g).toBeLessThan(255);
+    expect(b).toBeLessThan(255);
+  });
+
+  it('amount=1.0 preserves original color', () => {
+    expect(darken(0x123456, 1.0)).toBe(0x123456);
+  });
+
+  it('returns integer (no floating point channels)', () => {
+    const result = darken(0xabcdef, 0.3);
+    expect(Number.isInteger(result)).toBe(true);
+  });
+});
+
+// ─── lighten ──────────────────────────────────────────────────────────────────
+
+describe('lighten', () => {
+  it('adds amt to each channel (default 60)', () => {
+    // 0x000000 → each channel = min(255, 0+60) = 60
+    const result = lighten(0x000000);
+    const r = (result >> 16) & 0xff;
+    const g = (result >> 8)  & 0xff;
+    const b =  result        & 0xff;
+    expect(r).toBe(60);
+    expect(g).toBe(60);
+    expect(b).toBe(60);
+  });
+
+  it('clamps each channel at 255', () => {
+    // Near-max: 0xf0f0f0 (240 per channel) + 60 → clamped to 255
+    const result = lighten(0xf0f0f0, 60);
+    expect((result >> 16) & 0xff).toBe(255);
+    expect((result >> 8)  & 0xff).toBe(255);
+    expect( result        & 0xff).toBe(255);
+  });
+
+  it('white + any amount stays white', () => {
+    expect(lighten(0xffffff, 100)).toBe(0xffffff);
+  });
+
+  it('only affects channels that need lightening', () => {
+    // 0xff0000 (r=255, g=0, b=0) + 30
+    const result = lighten(0xff0000, 30);
+    expect((result >> 16) & 0xff).toBe(255); // clamped
+    expect((result >> 8)  & 0xff).toBe(30);
+    expect( result        & 0xff).toBe(30);
+  });
+
+  it('result is always >= input color per channel', () => {
+    const c = 0x804020;
+    const result = lighten(c, 40);
+    const rIn  = (c >> 16) & 0xff;
+    const gIn  = (c >> 8)  & 0xff;
+    const bIn  =  c        & 0xff;
+    expect((result >> 16) & 0xff).toBeGreaterThanOrEqual(rIn);
+    expect((result >> 8)  & 0xff).toBeGreaterThanOrEqual(gIn);
+    expect( result        & 0xff).toBeGreaterThanOrEqual(bIn);
+  });
+
+  it('returns an integer', () => {
+    expect(Number.isInteger(lighten(0x123456, 20))).toBe(true);
+  });
+});
+
+// ─── computeLayout ────────────────────────────────────────────────────────────
+
+describe('computeLayout', () => {
+  const R = 40;
+  const COLOR = 0xff4400;
+  const layout = computeLayout(R, COLOR);
+
+  it('cx equals radius (canvas is square: width = height = 2r)', () => {
+    expect(layout.cx).toBe(R);
+  });
+
+  it('cy equals radius', () => {
+    expect(layout.cy).toBe(R);
+  });
+
+  it('fill equals the provided color', () => {
+    expect(layout.fill).toBe(COLOR);
+  });
+
+  it('hi (highlight) is lighter than fill', () => {
+    // hi uses lighten(fill, 55)
+    const hiR = (layout.hi >> 16) & 0xff;
+    const fiR = (COLOR   >> 16) & 0xff;
+    expect(hiR).toBeGreaterThanOrEqual(fiR);
+  });
+
+  it('dk (dark) is darker than fill', () => {
+    // dk uses darken(fill, 0.55)
+    const dkR = (layout.dk >> 16) & 0xff;
+    const fiR = (COLOR    >> 16) & 0xff;
+    expect(dkR).toBeLessThanOrEqual(fiR);
+  });
+
+  it('hr (head radius) is ~42% of r', () => {
+    expect(layout.hr).toBeCloseTo(R * 0.42, 5);
+  });
+
+  it('body origin (by) is below head centre (hy)', () => {
+    expect(layout.by).toBeGreaterThan(layout.hy);
+  });
+
+  it('bw (body width) is a positive fraction of r', () => {
+    expect(layout.bw).toBeGreaterThan(0);
+    expect(layout.bw).toBeLessThan(R);
+  });
+
+  it('bh (body height) is a positive fraction of r', () => {
+    expect(layout.bh).toBeGreaterThan(0);
+    expect(layout.bh).toBeLessThan(R);
+  });
+
+  it('scales proportionally with radius (double r → double all lengths)', () => {
+    const l2 = computeLayout(R * 2, COLOR);
+    expect(l2.hr).toBeCloseTo(layout.hr * 2, 5);
+    expect(l2.bw).toBeCloseTo(layout.bw * 2, 5);
+  });
+});
