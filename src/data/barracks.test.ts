@@ -3,12 +3,14 @@ import {
   xpToNextLevel,
   addXp,
   getMonsterAtk,
+  SKILL_TREES,
   ACTIVE_SKILLS,
   EQUIPMENT_DEFS,
   getEquipmentStats,
   defaultOwnedMonster,
   STARTER_ROSTER,
   type OwnedMonster,
+  type SkillNode,
 } from './barracks';
 
 // ─── xpToNextLevel ────────────────────────────────────────────────────────────
@@ -275,5 +277,156 @@ describe('STARTER_ROSTER', () => {
 
   it('contains dokkaebi_warrior', () => {
     expect(STARTER_ROSTER).toContain('dokkaebi_warrior');
+  });
+});
+
+// ─── SKILL_TREES ─────────────────────────────────────────────────────────────
+
+describe('SKILL_TREES — count', () => {
+  const entries = Object.entries(SKILL_TREES);
+
+  it('has at least 80 skill trees', () => {
+    expect(entries.length).toBeGreaterThanOrEqual(80);
+  });
+
+  it('includes custom trees for all 9 Ch1–Ch5 tribe leaders', () => {
+    const expected = [
+      'dokkaebi_warrior', 'gumiho_guardian', 'white_tiger',
+      'death_messenger', 'thunder_hero', 'mask_dancer',
+      'celestial_dancer', 'mountain_god', 'sea_god_spear',
+    ];
+    for (const id of expected) {
+      expect(SKILL_TREES[id as keyof typeof SKILL_TREES], `missing tree for ${id}`).toBeDefined();
+    }
+  });
+
+  it('every key matches its tree.monsterId', () => {
+    for (const [key, tree] of entries) {
+      expect(tree!.monsterId, `${key} monsterId mismatch`).toBe(key);
+    }
+  });
+});
+
+describe('SKILL_TREES — branch names', () => {
+  const entries = Object.entries(SKILL_TREES);
+
+  it('every tree has branchNames with non-empty A, B, C', () => {
+    for (const [id, tree] of entries) {
+      expect(tree!.branchNames.A.length, `${id} branchNames.A`).toBeGreaterThan(0);
+      expect(tree!.branchNames.B.length, `${id} branchNames.B`).toBeGreaterThan(0);
+      expect(tree!.branchNames.C.length, `${id} branchNames.C`).toBeGreaterThan(0);
+    }
+  });
+
+  it('dokkaebi_warrior tree has branch names 전투, 방어, 지원', () => {
+    const tree = SKILL_TREES['dokkaebi_warrior']!;
+    expect(tree.branchNames.A).toBe('전투');
+    expect(tree.branchNames.B).toBe('방어');
+    expect(tree.branchNames.C).toBe('지원');
+  });
+});
+
+describe('SKILL_TREES — node structure', () => {
+  const entries = Object.entries(SKILL_TREES);
+
+  it('every tree has at least 9 nodes (3 branches × 3 tiers)', () => {
+    for (const [id, tree] of entries) {
+      expect(tree!.nodes.length, `${id} node count`).toBeGreaterThanOrEqual(9);
+    }
+  });
+
+  it('every node has a non-empty id, name, desc, and icon', () => {
+    for (const [mId, tree] of entries) {
+      for (const node of tree!.nodes) {
+        expect(node.id.length,   `${mId}/${node.id} id`).toBeGreaterThan(0);
+        expect(node.name.length, `${mId}/${node.id} name`).toBeGreaterThan(0);
+        expect(node.desc.length, `${mId}/${node.id} desc`).toBeGreaterThan(0);
+        expect(node.icon.length, `${mId}/${node.id} icon`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every node tier is 1, 2, or 3', () => {
+    for (const [mId, tree] of entries) {
+      for (const node of tree!.nodes) {
+        expect([1, 2, 3], `${mId}/${node.id} tier`).toContain(node.tier);
+      }
+    }
+  });
+
+  it('every node branch is A, B, or C', () => {
+    for (const [mId, tree] of entries) {
+      for (const node of tree!.nodes) {
+        expect(['A', 'B', 'C'], `${mId}/${node.id} branch`).toContain(node.branch);
+      }
+    }
+  });
+
+  it('every node cost is a positive integer', () => {
+    for (const [mId, tree] of entries) {
+      for (const node of tree!.nodes) {
+        expect(node.cost, `${mId}/${node.id} cost`).toBeGreaterThan(0);
+        expect(Number.isInteger(node.cost), `${mId}/${node.id} cost integer`).toBe(true);
+      }
+    }
+  });
+
+  it('every requires field references an existing node id in the same tree', () => {
+    for (const [mId, tree] of entries) {
+      const nodeIds = new Set(tree!.nodes.map((n: SkillNode) => n.id));
+      for (const node of tree!.nodes) {
+        if (node.requires) {
+          expect(
+            nodeIds.has(node.requires),
+            `${mId}/${node.id} requires "${node.requires}" which does not exist`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('tier-2 nodes require a tier-1 node (no skipping)', () => {
+    for (const [mId, tree] of entries) {
+      const nodeMap = new Map(tree!.nodes.map((n: SkillNode) => [n.id, n]));
+      for (const node of tree!.nodes) {
+        if (node.tier === 2 && node.requires) {
+          const prereq = nodeMap.get(node.requires)!;
+          expect(prereq?.tier, `${mId}/${node.id} tier-2 prereq tier`).toBe(1);
+        }
+      }
+    }
+  });
+
+  it('tier-3 nodes require a tier-2 node (no skipping)', () => {
+    for (const [mId, tree] of entries) {
+      const nodeMap = new Map(tree!.nodes.map((n: SkillNode) => [n.id, n]));
+      for (const node of tree!.nodes) {
+        if (node.tier === 3 && node.requires) {
+          const prereq = nodeMap.get(node.requires)!;
+          expect(prereq?.tier, `${mId}/${node.id} tier-3 prereq tier`).toBe(2);
+        }
+      }
+    }
+  });
+});
+
+describe('SKILL_TREES — dokkaebi_warrior spot-check', () => {
+  const tree = SKILL_TREES['dokkaebi_warrior']!;
+
+  it('A1 node is 강타 with ATK +15%', () => {
+    const a1 = tree.nodes.find(n => n.id === 'A1')!;
+    expect(a1).toBeDefined();
+    expect(a1.name).toBe('강타');
+    expect(a1.desc).toContain('ATK +15%');
+  });
+
+  it('A2 requires A1', () => {
+    const a2 = tree.nodes.find(n => n.id === 'A2')!;
+    expect(a2.requires).toBe('A1');
+  });
+
+  it('A3 requires A2', () => {
+    const a3 = tree.nodes.find(n => n.id === 'A3')!;
+    expect(a3.requires).toBe('A2');
   });
 });
