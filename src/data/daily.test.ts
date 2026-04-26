@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+  getDailyDungeon,
+  getWeeklyBoss,
   getDailyChallenges,
   tickDailyChallenge,
   getTodayString,
   getThisWeekMonday,
+  type DailyDungeon,
 } from './daily';
 import type { GameState } from './wisdom';
 
@@ -319,5 +322,189 @@ describe('getThisWeekMonday', () => {
     const diffDays = (today.getTime() - monday.getTime()) / 86_400_000;
     expect(diffDays).toBeGreaterThanOrEqual(0);
     expect(diffDays).toBeLessThan(7);
+  });
+});
+
+// ─── getDailyDungeon ──────────────────────────────────────────────────────────
+
+describe('getDailyDungeon — structure', () => {
+  const dungeon: DailyDungeon = getDailyDungeon();
+
+  it('returns an object with required fields', () => {
+    expect(dungeon.name).toBeDefined();
+    expect(dungeon.rule).toBeDefined();
+    expect(dungeon.modifiers).toBeDefined();
+    expect(dungeon.waves).toBeDefined();
+    expect(dungeon.rewards).toBeDefined();
+    expect(dungeon.dayIndex).toBeDefined();
+  });
+
+  it('rule is one of the 4 valid DailyRule values', () => {
+    const VALID_RULES = ['element_restrict', 'gold_rush', 'speed_run', 'boss_rush'];
+    expect(VALID_RULES).toContain(dungeon.rule);
+  });
+
+  it('name is a non-empty string', () => {
+    expect(dungeon.name.length).toBeGreaterThan(0);
+  });
+
+  it('dayIndex is a non-negative integer', () => {
+    expect(Number.isInteger(dungeon.dayIndex)).toBe(true);
+    expect(dungeon.dayIndex).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('getDailyDungeon — modifiers', () => {
+  const dungeon = getDailyDungeon();
+
+  it('invaderSpeedMult is a positive number', () => {
+    expect(dungeon.modifiers.invaderSpeedMult).toBeGreaterThan(0);
+  });
+
+  it('goldMult is a positive number', () => {
+    expect(dungeon.modifiers.goldMult).toBeGreaterThan(0);
+  });
+
+  it('speed_run rule → invaderSpeedMult = 1.5', () => {
+    if (dungeon.rule === 'speed_run') {
+      expect(dungeon.modifiers.invaderSpeedMult).toBe(1.5);
+    }
+  });
+
+  it('gold_rush rule → goldMult = 3.0', () => {
+    if (dungeon.rule === 'gold_rush') {
+      expect(dungeon.modifiers.goldMult).toBe(3.0);
+    }
+  });
+
+  it('non-speed_run rule → invaderSpeedMult = 1.0', () => {
+    if (dungeon.rule !== 'speed_run') {
+      expect(dungeon.modifiers.invaderSpeedMult).toBe(1.0);
+    }
+  });
+});
+
+describe('getDailyDungeon — waves', () => {
+  const dungeon = getDailyDungeon();
+
+  it('has exactly 10 waves', () => {
+    expect(dungeon.waves).toHaveLength(10);
+  });
+
+  it('wave numbers are 1–10 in order', () => {
+    dungeon.waves.forEach((w, i) => {
+      expect(w.wave).toBe(i + 1);
+    });
+  });
+
+  it('every wave has at least one invader group', () => {
+    for (const wave of dungeon.waves) {
+      expect(wave.invaders.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('every invader group count is positive', () => {
+    for (const wave of dungeon.waves) {
+      for (const inv of wave.invaders) {
+        expect(inv.count).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every clearReward is positive', () => {
+    for (const wave of dungeon.waves) {
+      expect(wave.clearReward, `wave ${wave.wave} clearReward`).toBeGreaterThan(0);
+    }
+  });
+
+  it('boss wave (wave 10) has isBoss = true on at least one invader', () => {
+    const bossWave = dungeon.waves.find(w => w.wave === 10)!;
+    expect(bossWave.invaders.some(inv => inv.isBoss === true)).toBe(true);
+  });
+
+  it('is deterministic — two calls on the same day produce identical waves', () => {
+    const d2 = getDailyDungeon();
+    expect(JSON.stringify(dungeon.waves)).toBe(JSON.stringify(d2.waves));
+  });
+});
+
+describe('getDailyDungeon — rewards', () => {
+  const dungeon = getDailyDungeon();
+
+  it('rewards.crystals is a positive integer', () => {
+    expect(dungeon.rewards.crystals).toBeGreaterThan(0);
+    expect(Number.isInteger(dungeon.rewards.crystals)).toBe(true);
+  });
+
+  it('rewards.materials is a non-empty array', () => {
+    expect(dungeon.rewards.materials.length).toBeGreaterThan(0);
+  });
+
+  it('boss_rush rule grants more crystals (100) than regular rules (50)', () => {
+    if (dungeon.rule === 'boss_rush') {
+      expect(dungeon.rewards.crystals).toBe(100);
+    } else {
+      expect(dungeon.rewards.crystals).toBe(50);
+    }
+  });
+});
+
+// ─── getWeeklyBoss ────────────────────────────────────────────────────────────
+
+describe('getWeeklyBoss — structure', () => {
+  const boss = getWeeklyBoss();
+
+  it('returns an object with required fields', () => {
+    expect(boss.name).toBeDefined();
+    expect(boss.bossType).toBeDefined();
+    expect(boss.totalHp).toBeDefined();
+    expect(boss.phases).toBeDefined();
+    expect(boss.rewards).toBeDefined();
+    expect(boss.weekIndex).toBeDefined();
+  });
+
+  it('name is a non-empty Korean string', () => {
+    expect(boss.name.length).toBeGreaterThan(0);
+  });
+
+  it('bossType is a non-empty string', () => {
+    expect(typeof boss.bossType).toBe('string');
+    expect(boss.bossType.length).toBeGreaterThan(0);
+  });
+
+  it('totalHp is a large positive integer (≥ 10000)', () => {
+    expect(boss.totalHp).toBeGreaterThanOrEqual(10_000);
+    expect(Number.isInteger(boss.totalHp)).toBe(true);
+  });
+
+  it('phases is exactly 5', () => {
+    expect(boss.phases).toBe(5);
+  });
+
+  it('weekIndex is a non-negative integer', () => {
+    expect(Number.isInteger(boss.weekIndex)).toBe(true);
+    expect(boss.weekIndex).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('getWeeklyBoss — rewards', () => {
+  const boss = getWeeklyBoss();
+
+  it('legendaryMaterial is boss_essence', () => {
+    expect(boss.rewards.legendaryMaterial).toBe('boss_essence');
+  });
+
+  it('skinShards is a positive integer', () => {
+    expect(boss.rewards.skinShards).toBeGreaterThan(0);
+    expect(Number.isInteger(boss.rewards.skinShards)).toBe(true);
+  });
+});
+
+describe('getWeeklyBoss — rotation', () => {
+  it('is deterministic — two calls in the same week return the same boss', () => {
+    const b1 = getWeeklyBoss();
+    const b2 = getWeeklyBoss();
+    expect(b1.bossType).toBe(b2.bossType);
+    expect(b1.weekIndex).toBe(b2.weekIndex);
   });
 });
