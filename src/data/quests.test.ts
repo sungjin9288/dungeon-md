@@ -11,6 +11,7 @@ import {
   completeAndAdvance,
   getQuest,
   getSubQuestById,
+  grantQuestSkins,
   startQuest,
   tickSubQuestProgress,
   updateQuestObjective,
@@ -585,5 +586,138 @@ describe('EQ chain — completeAndAdvance awards unlocks', () => {
     const [newGs] = completeAndAdvance(gs);
     // completeAndAdvance sets activeMainQuestId to '' (not null) when nextQuestId is null
     expect(newGs.activeMainQuestId).toBe('');
+  });
+});
+
+// ─── grantQuestSkins ──────────────────────────────────────────────────────────
+
+describe('grantQuestSkins — no-op cases', () => {
+  it('returns the same reference when no quest-gated skins are unlockable', () => {
+    const gs = freshGameState();
+    // No quests completed → nothing to grant
+    const result = grantQuestSkins(gs);
+    expect(result).toBe(gs); // same reference = unchanged
+  });
+
+  it('does not mutate the original state', () => {
+    const gs = freshGameState();
+    const before = JSON.stringify(gs);
+    grantQuestSkins(gs);
+    expect(JSON.stringify(gs)).toBe(before);
+  });
+
+  it('returns same reference when all eligible skins are already owned', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-030': { objectives: {}, completed: true },
+      },
+      ownedSkins: {
+        three_legged_crow: ['eternal_crow'], // already owned
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result).toBe(gs);
+  });
+});
+
+describe('grantQuestSkins — skin grants', () => {
+  it('grants eternal_crow when MQ-030 is completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-030': { objectives: {}, completed: true },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['three_legged_crow']).toContain('eternal_crow');
+  });
+
+  it('grants divine_warrior when MQ-034 is completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-034': { objectives: {}, completed: true },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['dokkaebi_warrior']).toContain('divine_warrior');
+  });
+
+  it('grants void_death when MQ-039 is completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-039': { objectives: {}, completed: true },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['death_messenger']).toContain('void_death');
+  });
+
+  it('grants sage_primordial when MQ-044 is completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-044': { objectives: {}, completed: true },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['sage']).toContain('sage_primordial');
+  });
+
+  it('grants multiple skins when multiple quests are completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-030': { objectives: {}, completed: true },
+        'MQ-034': { objectives: {}, completed: true },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['three_legged_crow']).toContain('eternal_crow');
+    expect(result.ownedSkins?.['dokkaebi_warrior']).toContain('divine_warrior');
+  });
+
+  it('does not duplicate a skin already owned for the same monster', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-034': { objectives: {}, completed: true },
+      },
+      ownedSkins: {
+        dokkaebi_warrior: ['divine_warrior'], // pre-existing
+      },
+    };
+    const result = grantQuestSkins(gs);
+    const skins = result.ownedSkins?.['dokkaebi_warrior'] ?? [];
+    expect(skins.filter(s => s === 'divine_warrior')).toHaveLength(1);
+  });
+
+  it('preserves existing owned skins for the same monster', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-034': { objectives: {}, completed: true },
+      },
+      ownedSkins: {
+        dokkaebi_warrior: ['some_other_skin'],
+      },
+    };
+    const result = grantQuestSkins(gs);
+    expect(result.ownedSkins?.['dokkaebi_warrior']).toContain('some_other_skin');
+    expect(result.ownedSkins?.['dokkaebi_warrior']).toContain('divine_warrior');
+  });
+
+  it('does not grant skin when quest is in progress but not completed', () => {
+    const gs: GameState = {
+      ...freshGameState(),
+      questProgress: {
+        'MQ-030': { objectives: { O1: 5 }, completed: false },
+      },
+    };
+    const result = grantQuestSkins(gs);
+    const skins = result.ownedSkins?.['three_legged_crow'] ?? [];
+    expect(skins).not.toContain('eternal_crow');
   });
 });
