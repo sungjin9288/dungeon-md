@@ -1,0 +1,303 @@
+import { describe, it, expect } from 'vitest';
+import {
+  CHAPTER_1,
+  CHAPTER_2,
+  CHAPTER_3,
+  CHAPTER_4,
+  CHAPTER_5,
+  CHAPTER_6,
+  CHAPTER_7,
+  CHAPTER_8,
+  type StageConfig,
+  type WaveSpec,
+} from './stages';
+import { TRAP_DEFS } from './traps';
+import { INVADER_DEFS, type InvaderType } from './invaders';
+
+const ALL_CHAPTERS = [
+  CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4,
+  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
+] as const;
+
+const ALL_STAGES: StageConfig[] = ALL_CHAPTERS.flat();
+
+// ─── Total stage count ────────────────────────────────────────────────────────
+
+describe('stages — total count', () => {
+  it('all chapters combined equal 80 stages', () => {
+    expect(ALL_STAGES.length).toBe(80);
+  });
+
+  it('CHAPTER_1 has 10 stages', () => {
+    expect(CHAPTER_1).toHaveLength(10);
+  });
+
+  it('CHAPTER_2 has 10 stages', () => {
+    expect(CHAPTER_2).toHaveLength(10);
+  });
+
+  it('CHAPTER_3 has 12 stages', () => {
+    expect(CHAPTER_3).toHaveLength(12);
+  });
+
+  it('CHAPTER_8 has 8 stages', () => {
+    expect(CHAPTER_8).toHaveLength(8);
+  });
+});
+
+// ─── StageConfig structural integrity ────────────────────────────────────────
+
+describe('StageConfig — structural integrity', () => {
+  it('every id is a positive integer', () => {
+    for (const s of ALL_STAGES) {
+      expect(Number.isInteger(s.id), `stage ${s.id} not integer`).toBe(true);
+      expect(s.id, `stage ${s.id}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('stage ids are unique across all chapters', () => {
+    const ids = ALL_STAGES.map(s => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('stage ids span exactly 1–80 with no gaps', () => {
+    const ids = ALL_STAGES.map(s => s.id).sort((a, b) => a - b);
+    for (let i = 0; i < ids.length; i++) {
+      expect(ids[i], `expected id ${i + 1}`).toBe(i + 1);
+    }
+  });
+
+  it('every stage has a chapter value 1–8', () => {
+    for (const s of ALL_STAGES) {
+      expect(s.chapter, `stage ${s.id} chapter`).toBeGreaterThanOrEqual(1);
+      expect(s.chapter, `stage ${s.id} chapter`).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('every stage has dungeonHp > 0', () => {
+    for (const s of ALL_STAGES) {
+      expect(s.dungeonHp, `stage ${s.id} dungeonHp`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every stage has startGold > 0', () => {
+    for (const s of ALL_STAGES) {
+      expect(s.startGold, `stage ${s.id} startGold`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every stage has at least one wave', () => {
+    for (const s of ALL_STAGES) {
+      expect(s.waves.length, `stage ${s.id} waves`).toBeGreaterThan(0);
+    }
+  });
+
+  it('koreanName, when present, is non-empty', () => {
+    for (const s of ALL_STAGES) {
+      if (s.koreanName !== undefined) {
+        expect(s.koreanName.length, `stage ${s.id} koreanName`).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+// ─── WaveSpec integrity ───────────────────────────────────────────────────────
+
+describe('WaveSpec — integrity', () => {
+  const allWaves: Array<{ stageId: number; wave: WaveSpec }> = ALL_STAGES.flatMap(s =>
+    s.waves.map(w => ({ stageId: s.id, wave: w })),
+  );
+
+  it('every wave has at least one invader group', () => {
+    for (const { stageId, wave } of allWaves) {
+      expect(wave.invaders.length, `stage ${stageId} a wave`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every invader group has count > 0', () => {
+    for (const { stageId, wave } of allWaves) {
+      for (const inv of wave.invaders) {
+        expect(inv.count, `stage ${stageId} invader count`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every invader group has spawnDelay >= 0', () => {
+    for (const { stageId, wave } of allWaves) {
+      for (const inv of wave.invaders) {
+        expect(inv.spawnDelay, `stage ${stageId} spawnDelay`).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it('every invader type is a known InvaderType', () => {
+    for (const { stageId, wave } of allWaves) {
+      for (const inv of wave.invaders) {
+        expect(
+          INVADER_DEFS[inv.type as InvaderType],
+          `stage ${stageId} unknown type "${inv.type}"`,
+        ).toBeDefined();
+      }
+    }
+  });
+
+  it('clearReward, when set, is a positive integer', () => {
+    for (const { stageId, wave } of allWaves) {
+      if (wave.clearReward !== undefined) {
+        expect(wave.clearReward, `stage ${stageId} clearReward`).toBeGreaterThan(0);
+        expect(Number.isInteger(wave.clearReward), `stage ${stageId} clearReward integer`).toBe(true);
+      }
+    }
+  });
+});
+
+// ─── Chapter-level constraints ────────────────────────────────────────────────
+
+describe('chapter-level constraints', () => {
+  it('all Ch1 stages have chapter = 1', () => {
+    for (const s of CHAPTER_1) {
+      expect(s.chapter).toBe(1);
+    }
+  });
+
+  it('all Ch8 stages have chapter = 8', () => {
+    for (const s of CHAPTER_8) {
+      expect(s.chapter).toBe(8);
+    }
+  });
+
+  it('Ch1 ids are 1–10', () => {
+    const ids = CHAPTER_1.map(s => s.id).sort((a, b) => a - b);
+    expect(ids[0]).toBe(1);
+    expect(ids[ids.length - 1]).toBe(10);
+  });
+
+  it('Ch8 ids are 73–80', () => {
+    const ids = CHAPTER_8.map(s => s.id).sort((a, b) => a - b);
+    expect(ids[0]).toBe(73);
+    expect(ids[ids.length - 1]).toBe(80);
+  });
+
+  it('dungeonHp increases from Ch1 to Ch8 (later chapters are harder)', () => {
+    const ch1AvgHp = CHAPTER_1.reduce((s, x) => s + x.dungeonHp, 0) / CHAPTER_1.length;
+    const ch8AvgHp = CHAPTER_8.reduce((s, x) => s + x.dungeonHp, 0) / CHAPTER_8.length;
+    expect(ch8AvgHp).toBeGreaterThan(ch1AvgHp);
+  });
+
+  it('startGold increases from Ch1 to Ch8', () => {
+    const ch1AvgGold = CHAPTER_1.reduce((s, x) => s + x.startGold, 0) / CHAPTER_1.length;
+    const ch8AvgGold = CHAPTER_8.reduce((s, x) => s + x.startGold, 0) / CHAPTER_8.length;
+    expect(ch8AvgGold).toBeGreaterThan(ch1AvgGold);
+  });
+
+  it('stage 10 (final Ch1) has a boss wave with isBoss=true', () => {
+    const stage10 = CHAPTER_1.find(s => s.id === 10)!;
+    const lastWave = stage10.waves[stage10.waves.length - 1];
+    expect(lastWave.invaders.some(inv => inv.isBoss === true)).toBe(true);
+  });
+
+  it('stage 80 (final Ch8) has a boss wave with isBoss=true', () => {
+    const stage80 = CHAPTER_8.find(s => s.id === 80)!;
+    const lastWave = stage80.waves[stage80.waves.length - 1];
+    expect(lastWave.invaders.some(inv => inv.isBoss === true)).toBe(true);
+  });
+
+  it('each chapter ends with a boss-tier invader (isBoss on spec or on invader def)', () => {
+    // Some chapters mark isBoss on the wave entry; others rely on the invader def's isBoss flag
+    for (const chapter of ALL_CHAPTERS) {
+      const lastStage = chapter[chapter.length - 1];
+      const lastWave  = lastStage.waves[lastStage.waves.length - 1];
+      const hasBoss = lastWave.invaders.some(inv => {
+        const specBoss = inv.isBoss === true;
+        const defBoss  = (INVADER_DEFS[inv.type as InvaderType] as { isBoss?: boolean })?.isBoss === true;
+        return specBoss || defBoss;
+      });
+      expect(hasBoss, `chapter ending stage ${lastStage.id} missing boss-tier invader`).toBe(true);
+    }
+  });
+
+  it('Ch2+ stages have gridCols defined (multi-column grid)', () => {
+    const laterChapters = [CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5,
+                           CHAPTER_6, CHAPTER_7, CHAPTER_8];
+    for (const chapter of laterChapters) {
+      for (const s of chapter) {
+        expect(s.gridCols, `stage ${s.id} gridCols`).toBeDefined();
+        expect(s.gridCols!, `stage ${s.id} gridCols value`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+});
+
+// ─── TRAP_DEFS — data integrity ───────────────────────────────────────────────
+
+describe('TRAP_DEFS', () => {
+  it('contains exactly 4 trap definitions', () => {
+    expect(TRAP_DEFS).toHaveLength(4);
+  });
+
+  it('every trap has a non-empty id', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.id.length, `${t.id} id`).toBeGreaterThan(0);
+    }
+  });
+
+  it('trap ids are unique', () => {
+    const ids = TRAP_DEFS.map(t => t.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('every trap has a non-empty emoji', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.emoji.length, `${t.id} emoji`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every trap has a non-empty name', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.name.length, `${t.id} name`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every trap has a non-empty desc', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.desc.length, `${t.id} desc`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every trap cost is positive', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.cost, `${t.id} cost`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every trap unlockLv is non-negative', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.unlockLv, `${t.id} unlockLv`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('spike_trap exists and has cost 50', () => {
+    const trap = TRAP_DEFS.find(t => t.id === 'spike_trap');
+    expect(trap).toBeDefined();
+    expect(trap!.cost).toBe(50);
+    expect(trap!.unlockLv).toBe(0);
+  });
+
+  it('stun_trap is the most expensive trap', () => {
+    const maxCost = Math.max(...TRAP_DEFS.map(t => t.cost));
+    const stunTrap = TRAP_DEFS.find(t => t.id === 'stun_trap');
+    expect(stunTrap!.cost).toBe(maxCost);
+  });
+
+  it('costs strictly increase from spike to stun (ascending by unlockLv)', () => {
+    // Traps are defined in order: spike(0) → slow(0) → poison(6) → stun(10)
+    // Costs should generally increase with power
+    const spikeC = TRAP_DEFS.find(t => t.id === 'spike_trap')!.cost;
+    const slowC  = TRAP_DEFS.find(t => t.id === 'slow_trap')!.cost;
+    const poisonC = TRAP_DEFS.find(t => t.id === 'poison_trap')!.cost;
+    const stunC  = TRAP_DEFS.find(t => t.id === 'stun_trap')!.cost;
+    expect(slowC).toBeGreaterThan(spikeC);
+    expect(poisonC).toBeGreaterThan(slowC);
+    expect(stunC).toBeGreaterThan(poisonC);
+  });
+});
