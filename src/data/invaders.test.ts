@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { INVADER_DEFS, type InvaderType } from './invaders';
+import {
+  CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4,
+  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
+} from './stages';
 
 const ALL_DEFS = Object.values(INVADER_DEFS);
+const ALL_STAGES = [
+  ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4,
+  ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8,
+];
 
 // ─── INVADER_DEFS data integrity ──────────────────────────────────────────────
 
@@ -144,5 +152,75 @@ describe('hp scaling trends across chapters', () => {
     expect(INVADER_DEFS['iron_golem'].reward).toBeGreaterThan(
       INVADER_DEFS['peasant'].reward,
     );
+  });
+});
+
+// ─── Ch7 invaders ─────────────────────────────────────────────────────────────
+
+describe('Ch7 invaders — chapter assignment', () => {
+  const CH7_TYPES: InvaderType[] = [
+    'celestial_knight', 'divine_archer', 'heaven_general',
+    'sky_titan', 'radiant_seraph', 'celestial_dragon', 'god_emperor',
+  ];
+
+  it('all 7 Ch7 types carry chapter: 7', () => {
+    for (const t of CH7_TYPES) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(7);
+    }
+  });
+
+  it('god_emperor is a full boss (isBoss: true)', () => {
+    expect(INVADER_DEFS['god_emperor'].isBoss).toBe(true);
+  });
+
+  it('celestial_dragon is a mini-boss (isMiniBoss: true)', () => {
+    expect((INVADER_DEFS['celestial_dragon'] as { isMiniBoss?: boolean }).isMiniBoss).toBe(true);
+  });
+
+  it('god_emperor has HP 10000', () => {
+    expect(INVADER_DEFS['god_emperor'].hp).toBe(10000);
+  });
+
+  it('sky_titan HP is higher than heaven_general (tank vs. officer)', () => {
+    expect(INVADER_DEFS['sky_titan'].hp).toBeGreaterThan(INVADER_DEFS['heaven_general'].hp);
+  });
+
+  it('god_emperor reward is the highest among Ch7 invaders', () => {
+    const maxReward = Math.max(...CH7_TYPES.map(t => INVADER_DEFS[t].reward));
+    expect(INVADER_DEFS['god_emperor'].reward).toBe(maxReward);
+  });
+
+  it('divine_archer is faster than sky_titan (ranged vs. tank)', () => {
+    expect(INVADER_DEFS['divine_archer'].speed).toBeGreaterThan(INVADER_DEFS['sky_titan'].speed);
+  });
+});
+
+// ─── Stages × INVADER_DEFS — cross-reference ──────────────────────────────────
+
+describe('stages × INVADER_DEFS — no orphan invader types', () => {
+  it('every invader type in stage wave data exists in INVADER_DEFS', () => {
+    for (const stage of ALL_STAGES) {
+      for (const wave of stage.waves) {
+        for (const inv of wave.invaders) {
+          expect(
+            INVADER_DEFS[inv.type as InvaderType],
+            `stage ${stage.id} wave ${wave.wave} references unknown invader type "${inv.type}"`,
+          ).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it('Ch8 stages only use Ch7–Ch8 invaders (chapter >= 7)', () => {
+    for (const stage of CHAPTER_8) {
+      for (const wave of stage.waves) {
+        for (const inv of wave.invaders) {
+          const def = INVADER_DEFS[inv.type as InvaderType];
+          if (def) {
+            expect(def.chapter, `stage ${stage.id} wave ${wave.wave} "${inv.type}" chapter`).toBeGreaterThanOrEqual(7);
+          }
+        }
+      }
+    }
   });
 });
