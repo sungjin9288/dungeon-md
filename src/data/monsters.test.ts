@@ -439,3 +439,114 @@ describe('Ch7 monsters — celestial tribe', () => {
     }
   });
 });
+
+// ─── MONSTER_DEFS — Ch2 spot checks ──────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch2 spot checks', () => {
+  it('gumiho_guardian is defined with chapter 2 and gumiho tribe', () => {
+    const def = MONSTER_DEFS['gumiho_guardian'];
+    expect(def).toBeDefined();
+    expect(def.chapter).toBe(2);
+    expect(def.tribe).toBe('gumiho');
+  });
+
+  it('frost_spirit has sansin tribe and frost element', () => {
+    const def = MONSTER_DEFS['frost_spirit'];
+    expect(def.chapter).toBe(2);
+    expect(def.tribe).toBe('sansin');
+    expect(def.element).toBe('frost');
+  });
+
+  it('iron_mask has mask tribe', () => {
+    expect(MONSTER_DEFS['iron_mask']?.tribe).toBe('mask');
+  });
+
+  it('sea_god_spear has sea tribe', () => {
+    expect(MONSTER_DEFS['sea_god_spear']?.tribe).toBe('sea');
+  });
+
+  it('all 6 Ch2 monsters have chapter = 2', () => {
+    const ch2Ids = ['gumiho_guardian', 'frost_spirit', 'white_tiger',
+                    'sea_god_spear', 'fox_shaman', 'iron_mask'];
+    for (const id of ch2Ids) {
+      expect(MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.chapter, id).toBe(2);
+    }
+  });
+});
+
+// ─── MONSTER_DEFS — Ch3 spot checks ──────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch3 spot checks', () => {
+  it('death_messenger has underworld tribe, chapter 3', () => {
+    const def = MONSTER_DEFS['death_messenger'];
+    expect(def.chapter).toBe(3);
+    expect(def.tribe).toBe('underworld');
+  });
+
+  it('mask_dancer has mask tribe', () => {
+    expect(MONSTER_DEFS['mask_dancer']?.tribe).toBe('mask');
+  });
+
+  it('ghost_hunter is epic (rarityTier E)', () => {
+    expect(MONSTER_DEFS['ghost_hunter']?.rarityTier).toBe('E');
+  });
+
+  it('all 5 Ch3 monsters have chapter = 3', () => {
+    const ch3Ids = ['death_messenger', 'thunder_hero', 'ghost_hunter', 'mask_dancer', 'venom_warrior'];
+    for (const id of ch3Ids) {
+      expect(MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.chapter, id).toBe(3);
+    }
+  });
+});
+
+// ─── MONSTER_DEFS — Ch4 spot checks ──────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch4 spot checks', () => {
+  it('celestial_dancer has moonlight tribe, chapter 4', () => {
+    const def = MONSTER_DEFS['celestial_dancer'];
+    expect(def.chapter).toBe(4);
+    expect(def.tribe).toBe('moonlight');
+  });
+
+  it('great_serpent has sea tribe', () => {
+    expect(MONSTER_DEFS['great_serpent']?.tribe).toBe('sea');
+  });
+
+  it('moon_rabbit_sage has sansin tribe and holy element', () => {
+    const def = MONSTER_DEFS['moon_rabbit_sage'];
+    expect(def.tribe).toBe('sansin');
+    expect(def.element).toBe('holy');
+  });
+
+  it('all 4 Ch4 monsters have chapter = 4', () => {
+    const ch4Ids = ['celestial_dancer', 'three_legged_crow', 'great_serpent', 'moon_rabbit_sage'];
+    for (const id of ch4Ids) {
+      expect(MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.chapter, id).toBe(4);
+    }
+  });
+});
+
+// ─── MONSTER_DEFS — Ch5 spot checks ──────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch5 spot checks', () => {
+  it('mountain_god is legendary (rarityTier L), chapter 5, dragon tribe', () => {
+    const def = MONSTER_DEFS['mountain_god'];
+    expect(def.chapter).toBe(5);
+    expect(def.tribe).toBe('dragon');
+    expect(def.rarityTier).toBe('L');
+  });
+
+  it('volcanic_warrior has sansin tribe and fire element', () => {
+    const def = MONSTER_DEFS['volcanic_warrior'];
+    expect(def.tribe).toBe('sansin');
+    expect(def.element).toBe('fire');
+  });
+
+  it('fox_spirit_elder is legendary (rarityTier L)', () => {
+    expect(MONSTER_DEFS['fox_spirit_elder']?.rarityTier).toBe('L');
+  });
+
+  it('storm_archer has moonlight tribe', () => {
+    expect(MONSTER_DEFS['storm_archer']?.tribe).toBe('moonlight');
+  });
+});
