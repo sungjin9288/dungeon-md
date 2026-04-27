@@ -189,3 +189,83 @@ describe('STAGE_CINEMATICS', () => {
     }
   });
 });
+
+// ─── CINEMATICS — ch3–ch7 chapter openings ───────────────────────────────────
+
+describe('CINEMATICS — ch3–ch7 chapter openings', () => {
+  for (const id of ['ch3_opening', 'ch4_opening', 'ch5_opening', 'ch6_opening', 'ch7_opening']) {
+    it(`${id} exists in CINEMATICS`, () => {
+      expect(ALL_IDS.has(id)).toBe(true);
+    });
+  }
+
+  it('ch3_opening features 용왕 and 산신령', () => {
+    const c = getCinematic('ch3_opening')!;
+    const speakers = c.lines.map(l => l.speaker);
+    expect(speakers).toContain('용왕');
+    expect(speakers).toContain('산신령');
+  });
+
+  it('ch4_opening features 저승사자', () => {
+    const c = getCinematic('ch4_opening')!;
+    expect(c.lines.some(l => l.speaker === '저승사자')).toBe(true);
+  });
+
+  it('ch7_opening features 천상 수호자', () => {
+    const c = getCinematic('ch7_opening')!;
+    expect(c.lines.some(l => l.speaker === '천상 수호자')).toBe(true);
+  });
+
+  it('ch6_opening features 구미호', () => {
+    const c = getCinematic('ch6_opening')!;
+    expect(c.lines.some(l => l.speaker === '구미호')).toBe(true);
+  });
+});
+
+// ─── CINEMATICS — boss intro spot-checks ─────────────────────────────────────
+
+describe('CINEMATICS — boss intro spot-checks', () => {
+  const BOSS_IDS = [
+    'dragon_king_boss_intro',
+    'death_emissary_boss_intro',
+    'god_emperor_boss_intro',
+    'final_boss_intro',
+    'eternal_emperor_boss_intro',
+  ];
+
+  it('all 5 boss intros exist in CINEMATICS', () => {
+    for (const id of BOSS_IDS) {
+      expect(ALL_IDS.has(id), `missing: ${id}`).toBe(true);
+    }
+  });
+
+  it('dragon_king_boss_intro features 용왕 and 도깨비 전사', () => {
+    const c = getCinematic('dragon_king_boss_intro')!;
+    const speakers = c.lines.map(l => l.speaker);
+    expect(speakers).toContain('용왕');
+    expect(speakers).toContain('도깨비 전사');
+  });
+
+  it('death_emissary_boss_intro features 저승왕 사자', () => {
+    const c = getCinematic('death_emissary_boss_intro')!;
+    expect(c.lines.some(l => l.speaker === '저승왕 사자')).toBe(true);
+  });
+
+  it('god_emperor_boss_intro features 천제', () => {
+    const c = getCinematic('god_emperor_boss_intro')!;
+    expect(c.lines.some(l => l.speaker === '천제')).toBe(true);
+  });
+
+  it('eternal_emperor_boss_intro features 영원의 황제', () => {
+    const c = getCinematic('eternal_emperor_boss_intro')!;
+    expect(c.lines.some(l => l.speaker === '영원의 황제')).toBe(true);
+  });
+
+  it('every boss intro has 도깨비 전사 as one of the speakers', () => {
+    for (const id of BOSS_IDS) {
+      const c = getCinematic(id)!;
+      const speakers = c.lines.map(l => l.speaker);
+      expect(speakers, `${id} missing 도깨비 전사`).toContain('도깨비 전사');
+    }
+  });
+});
