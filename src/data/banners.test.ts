@@ -7,6 +7,7 @@ import {
 } from './banners';
 import type { SeasonBanner } from './banners';
 import type { MonsterId } from './monsters';
+import { MONSTER_DEFS } from './monsters';
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -198,6 +199,50 @@ describe('applyBannerBoost', () => {
       const result = applyBannerBoost(SAMPLE_BANNER, 'epic', epicPool);
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── SEASON_BANNERS × MONSTER_DEFS — featuredMonsters cross-reference ─────────
+
+describe('SEASON_BANNERS × MONSTER_DEFS — no orphan featuredMonsters', () => {
+  it('every featuredMonsters id exists in MONSTER_DEFS', () => {
+    for (const banner of SEASON_BANNERS) {
+      for (const id of banner.featuredMonsters) {
+        expect(
+          MONSTER_DEFS[id as keyof typeof MONSTER_DEFS],
+          `Banner "${banner.id}" featuredMonster "${id}" not found in MONSTER_DEFS`,
+        ).toBeDefined();
+      }
+    }
+  });
+
+  it('spring_gumiho_2026 features gumiho tribe monsters', () => {
+    const banner = SEASON_BANNERS.find(b => b.id === 'spring_gumiho_2026')!;
+    expect(banner).toBeDefined();
+    // gumiho_guardian is a core Ch2 gumiho monster
+    expect(banner.featuredMonsters).toContain('gumiho_guardian');
+  });
+
+  it('ch7_celestial_2026 features all 8 celestial tribe monsters', () => {
+    const banner = SEASON_BANNERS.find(b => b.id === 'ch7_celestial_2026')!;
+    expect(banner).toBeDefined();
+    expect(banner.featuredMonsters).toHaveLength(8);
+    expect(banner.featuredMonsters).toContain('god_realm_general');
+    expect(banner.featuredMonsters).toContain('celestial_guardian');
+  });
+
+  it('special_dragon_2026 features dragon tribe monsters', () => {
+    const banner = SEASON_BANNERS.find(b => b.id === 'special_dragon_2026')!;
+    expect(banner).toBeDefined();
+    expect(banner.featuredMonsters).toContain('blue_dragon_archmage');
+  });
+
+  it('dates are valid ISO strings (YYYY-MM-DD) for every banner', () => {
+    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+    for (const banner of SEASON_BANNERS) {
+      expect(dateRe.test(banner.startDate), `${banner.id} startDate`).toBe(true);
+      expect(dateRe.test(banner.endDate),   `${banner.id} endDate`  ).toBe(true);
     }
   });
 });
