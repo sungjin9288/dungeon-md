@@ -611,6 +611,15 @@ export const EQUIPMENT_STATS: Record<string, EquipmentStats> = {
   eq_moonstone_pendant: { skillCdMult: 0.80 },
   eq_heavenly_blade:    { atkMult: 0.60 },
   eq_guardian_crown:    { roomHpBonus: 200, atkMult: 0.15 },
+  // Ch6 boss-weekly / Ch7 / Ch8 crafted items
+  eq_boss_amulet:      { skillCdMult: 0.80 },
+  eq_celestial_lance:  { atkMult: 0.45 },
+  eq_divine_aegis:     { roomHpBonus: 500 },
+  eq_arcane_core:      { atkMult: 0.30 },
+  eq_ore_plate:        { roomHpBonus: 200 },
+  eq_void_blade:       { atkMult: 0.60, skillCdMult: 0.75 },
+  eq_abyss_mail:       { roomHpBonus: 800 },
+  eq_primordial_gem:   { atkMult: 0.80, crystalMult: 0.30 },
 };
 
 export function getEquipmentStats(equipId: string | null): EquipmentStats {

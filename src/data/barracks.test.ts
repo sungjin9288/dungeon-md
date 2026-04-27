@@ -6,12 +6,14 @@ import {
   SKILL_TREES,
   ACTIVE_SKILLS,
   EQUIPMENT_DEFS,
+  EQUIPMENT_STATS,
   getEquipmentStats,
   defaultOwnedMonster,
   STARTER_ROSTER,
   type OwnedMonster,
   type SkillNode,
 } from './barracks';
+import { BLUEPRINT_DEFS } from './fusion';
 
 // ─── xpToNextLevel ────────────────────────────────────────────────────────────
 
@@ -428,5 +430,89 @@ describe('SKILL_TREES — dokkaebi_warrior spot-check', () => {
   it('A3 requires A2', () => {
     const a3 = tree.nodes.find(n => n.id === 'A3')!;
     expect(a3.requires).toBe('A2');
+  });
+});
+
+// ─── EQUIPMENT_STATS — data integrity ─────────────────────────────────────────
+
+describe('EQUIPMENT_STATS — structure', () => {
+  it('contains at least 23 entries (10 base + 13 original crafted)', () => {
+    expect(Object.keys(EQUIPMENT_STATS).length).toBeGreaterThanOrEqual(23);
+  });
+
+  it('every entry has at least one defined stat field', () => {
+    for (const [id, stats] of Object.entries(EQUIPMENT_STATS)) {
+      expect(
+        Object.keys(stats).length,
+        `EQUIPMENT_STATS["${id}"] has no stat fields`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('all atkMult values are between -0.20 and 0.90 (penalties allowed)', () => {
+    for (const [id, stats] of Object.entries(EQUIPMENT_STATS)) {
+      if (stats.atkMult !== undefined) {
+        expect(stats.atkMult, `${id} atkMult`).toBeGreaterThanOrEqual(-0.20);
+        expect(stats.atkMult, `${id} atkMult`).toBeLessThanOrEqual(0.90);
+      }
+    }
+  });
+
+  it('all roomHpBonus values are positive integers', () => {
+    for (const [id, stats] of Object.entries(EQUIPMENT_STATS)) {
+      if (stats.roomHpBonus !== undefined) {
+        expect(stats.roomHpBonus, `${id} roomHpBonus`).toBeGreaterThan(0);
+        expect(Number.isInteger(stats.roomHpBonus), `${id} roomHpBonus integer`).toBe(true);
+      }
+    }
+  });
+
+  it('all skillCdMult values are between 0.70 and 0.95', () => {
+    for (const [id, stats] of Object.entries(EQUIPMENT_STATS)) {
+      if (stats.skillCdMult !== undefined) {
+        expect(stats.skillCdMult, `${id} skillCdMult`).toBeGreaterThanOrEqual(0.70);
+        expect(stats.skillCdMult, `${id} skillCdMult`).toBeLessThanOrEqual(0.95);
+      }
+    }
+  });
+});
+
+describe('EQUIPMENT_STATS × BLUEPRINT_DEFS — cross-reference', () => {
+  it('every BLUEPRINT_DEFS resultId exists in EQUIPMENT_STATS', () => {
+    for (const [bpId, def] of Object.entries(BLUEPRINT_DEFS)) {
+      expect(
+        EQUIPMENT_STATS[def.resultId],
+        `Blueprint "${bpId}" resultId "${def.resultId}" not found in EQUIPMENT_STATS`,
+      ).toBeDefined();
+    }
+  });
+
+  it('crafted items (eq_*) in EQUIPMENT_STATS all have a blueprint', () => {
+    const blueprintResultIds = new Set(Object.values(BLUEPRINT_DEFS).map(d => d.resultId));
+    for (const id of Object.keys(EQUIPMENT_STATS)) {
+      if (id.startsWith('eq_')) {
+        expect(blueprintResultIds.has(id), `EQUIPMENT_STATS key "${id}" has no blueprint`).toBe(true);
+      }
+    }
+  });
+});
+
+describe('EQUIPMENT_STATS — spot-checks for Ch7/Ch8 items', () => {
+  it('eq_void_blade has atkMult 0.60 and skillCdMult 0.75', () => {
+    expect(EQUIPMENT_STATS['eq_void_blade']?.atkMult).toBeCloseTo(0.60);
+    expect(EQUIPMENT_STATS['eq_void_blade']?.skillCdMult).toBeCloseTo(0.75);
+  });
+
+  it('eq_abyss_mail has roomHpBonus 800', () => {
+    expect(EQUIPMENT_STATS['eq_abyss_mail']?.roomHpBonus).toBe(800);
+  });
+
+  it('eq_primordial_gem has atkMult 0.80 and crystalMult 0.30', () => {
+    expect(EQUIPMENT_STATS['eq_primordial_gem']?.atkMult).toBeCloseTo(0.80);
+    expect(EQUIPMENT_STATS['eq_primordial_gem']?.crystalMult).toBeCloseTo(0.30);
+  });
+
+  it('eq_divine_aegis has roomHpBonus 500', () => {
+    expect(EQUIPMENT_STATS['eq_divine_aegis']?.roomHpBonus).toBe(500);
   });
 });
