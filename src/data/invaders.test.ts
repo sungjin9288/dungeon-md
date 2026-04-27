@@ -155,6 +155,126 @@ describe('hp scaling trends across chapters', () => {
   });
 });
 
+// ─── Ch3 invaders ─────────────────────────────────────────────────────────────
+
+describe('Ch3 invaders — chapter assignment and spot-checks', () => {
+  const CH3_TYPES: InvaderType[] = [
+    'undying_knight', 'scarecrow_mage', 'venom_dancer', 'void_assassin', 'dragon_king',
+  ];
+
+  it('all 5 Ch3 types carry chapter: 3', () => {
+    for (const t of CH3_TYPES) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(3);
+    }
+  });
+
+  it('dragon_king is a mini-boss (isMiniBoss: true)', () => {
+    expect((INVADER_DEFS['dragon_king'] as { isMiniBoss?: boolean }).isMiniBoss).toBe(true);
+  });
+
+  it('void_assassin is the fastest Ch3 invader', () => {
+    const maxSpeed = Math.max(...CH3_TYPES.map(t => INVADER_DEFS[t].speed));
+    expect(INVADER_DEFS['void_assassin'].speed).toBe(maxSpeed);
+  });
+
+  it('undying_knight HP > scarecrow_mage HP (tank vs. mage)', () => {
+    expect(INVADER_DEFS['undying_knight'].hp).toBeGreaterThan(INVADER_DEFS['scarecrow_mage'].hp);
+  });
+});
+
+// ─── Ch4 invaders ─────────────────────────────────────────────────────────────
+
+describe('Ch4 invaders — chapter assignment and spot-checks', () => {
+  it('all 3 Ch4 types carry chapter: 4', () => {
+    const ch4: InvaderType[] = ['void_assassin_elite', 'death_emissary', 'ghost_add'];
+    for (const t of ch4) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(4);
+    }
+  });
+
+  it('death_emissary is a full boss (isBoss: true)', () => {
+    expect(INVADER_DEFS['death_emissary'].isBoss).toBe(true);
+  });
+
+  it('death_emissary HP (3000) > void_assassin_elite HP', () => {
+    expect(INVADER_DEFS['death_emissary'].hp).toBeGreaterThan(
+      INVADER_DEFS['void_assassin_elite'].hp,
+    );
+  });
+
+  it('ghost_add is the fastest Ch4 invader (speed 100)', () => {
+    expect(INVADER_DEFS['ghost_add'].speed).toBe(100);
+  });
+});
+
+// ─── Ch5 invaders ─────────────────────────────────────────────────────────────
+
+describe('Ch5 invaders — chapter assignment and spot-checks', () => {
+  it('all 3 Ch5 types carry chapter: 5', () => {
+    const ch5: InvaderType[] = ['void_invader', 'undying_warrior', 'three_god_destroyer'];
+    for (const t of ch5) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(5);
+    }
+  });
+
+  it('three_god_destroyer is a full boss (isBoss: true)', () => {
+    expect(INVADER_DEFS['three_god_destroyer'].isBoss).toBe(true);
+  });
+
+  it('three_god_destroyer HP (5000) > undying_warrior HP', () => {
+    expect(INVADER_DEFS['three_god_destroyer'].hp).toBeGreaterThan(
+      INVADER_DEFS['undying_warrior'].hp,
+    );
+  });
+
+  it('void_invader speed (100) ≥ undying_warrior speed', () => {
+    expect(INVADER_DEFS['void_invader'].speed).toBeGreaterThanOrEqual(
+      INVADER_DEFS['undying_warrior'].speed,
+    );
+  });
+});
+
+// ─── Ch6 invaders ─────────────────────────────────────────────────────────────
+
+describe('Ch6 invaders — chapter assignment and spot-checks', () => {
+  const CH6_TYPES: InvaderType[] = [
+    'mirror_knight', 'swarm_larva', 'swarm_spawn', 'shadow_wraith',
+    'celestial_crusader', 'void_colossus', 'plague_herald',
+    'titan_sentinel', 'eternal_emperor',
+  ];
+
+  it('all 9 Ch6 types carry chapter: 6', () => {
+    for (const t of CH6_TYPES) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(6);
+    }
+  });
+
+  it('eternal_emperor is a full boss (isBoss: true)', () => {
+    expect(INVADER_DEFS['eternal_emperor'].isBoss).toBe(true);
+  });
+
+  it('eternal_emperor has the highest HP among Ch6 invaders', () => {
+    const maxHp = Math.max(...CH6_TYPES.map(t => INVADER_DEFS[t].hp));
+    expect(INVADER_DEFS['eternal_emperor'].hp).toBe(maxHp);
+  });
+
+  it('eternal_emperor reward (2000) is highest among Ch6 invaders', () => {
+    const maxReward = Math.max(...CH6_TYPES.map(t => INVADER_DEFS[t].reward));
+    expect(INVADER_DEFS['eternal_emperor'].reward).toBe(maxReward);
+  });
+
+  it('titan_sentinel HP > mirror_knight HP (heavy tank vs. knight)', () => {
+    expect(INVADER_DEFS['titan_sentinel'].hp).toBeGreaterThan(
+      INVADER_DEFS['mirror_knight'].hp,
+    );
+  });
+
+  it('swarm_spawn is the fastest Ch6 invader', () => {
+    const maxSpeed = Math.max(...CH6_TYPES.map(t => INVADER_DEFS[t].speed));
+    expect(INVADER_DEFS['swarm_spawn'].speed).toBe(maxSpeed);
+  });
+});
+
 // ─── Ch7 invaders ─────────────────────────────────────────────────────────────
 
 describe('Ch7 invaders — chapter assignment', () => {
