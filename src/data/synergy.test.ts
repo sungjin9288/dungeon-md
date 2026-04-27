@@ -304,3 +304,153 @@ describe('getSynergySpdMult', () => {
     expect(getSynergySpdMult(synergies)).toBeCloseTo(0.90 * 0.85);
   });
 });
+
+// ─── TRIBE_SYNERGIES — tribe id enumeration ───────────────────────────────────
+
+describe('TRIBE_SYNERGIES — tribe id enumeration', () => {
+  const TRIBE_IDS = TRIBE_SYNERGIES.map(s => s.tribe);
+
+  it('contains exactly these 9 tribe ids', () => {
+    const expected = ['dokkaebi', 'gumiho', 'dragon', 'underworld', 'sansin', 'sea', 'mask', 'moonlight', 'celestial'];
+    for (const id of expected) {
+      expect(TRIBE_IDS, `missing tribe "${id}"`).toContain(id);
+    }
+    expect(TRIBE_IDS).toHaveLength(9);
+  });
+
+  it('dokkaebi is in the list', () => expect(TRIBE_IDS).toContain('dokkaebi'));
+  it('gumiho is in the list',   () => expect(TRIBE_IDS).toContain('gumiho'));
+  it('dragon is in the list',   () => expect(TRIBE_IDS).toContain('dragon'));
+  it('celestial is in the list',() => expect(TRIBE_IDS).toContain('celestial'));
+  it('moonlight is in the list',() => expect(TRIBE_IDS).toContain('moonlight'));
+});
+
+// ─── TRIBE_SYNERGIES — per-tribe effect spot-checks ──────────────────────────
+
+describe('TRIBE_SYNERGIES — per-tribe effect spot-checks', () => {
+  const get = (id: string) => TRIBE_SYNERGIES.find(s => s.tribe === id)!;
+
+  // ── dokkaebi ──────────────────────────────────────────────────────────────
+  it('dokkaebi tier-1 atkMult is 1.10', () => {
+    expect(get('dokkaebi').tiers[0].effect.atkMult).toBeCloseTo(1.10);
+  });
+  it('dokkaebi tier-3 atkMult is 1.40', () => {
+    expect(get('dokkaebi').tiers[2].effect.atkMult).toBeCloseTo(1.40);
+  });
+  it('dokkaebi tier-3 special is DOKKAEBI_STUN_ALL', () => {
+    expect(get('dokkaebi').tiers[2].effect.special).toBe('DOKKAEBI_STUN_ALL');
+  });
+
+  // ── gumiho ────────────────────────────────────────────────────────────────
+  it('gumiho tier-1 has no atkMult (charm-only)', () => {
+    expect(get('gumiho').tiers[0].effect.atkMult).toBeUndefined();
+  });
+  it('gumiho tier-2 has spdMult 0.90', () => {
+    expect(get('gumiho').tiers[1].effect.spdMult).toBeCloseTo(0.90);
+  });
+  it('gumiho tier-3 atkMult is 1.30', () => {
+    expect(get('gumiho').tiers[2].effect.atkMult).toBeCloseTo(1.30);
+  });
+  it('gumiho tier-3 special is GUMIHO_CLONE', () => {
+    expect(get('gumiho').tiers[2].effect.special).toBe('GUMIHO_CLONE');
+  });
+
+  // ── dragon ────────────────────────────────────────────────────────────────
+  it('dragon tier-3 atkMult is 1.40', () => {
+    expect(get('dragon').tiers[2].effect.atkMult).toBeCloseTo(1.40);
+  });
+  it('dragon tier-3 special is DRAGON_BREATH_AOE', () => {
+    expect(get('dragon').tiers[2].effect.special).toBe('DRAGON_BREATH_AOE');
+  });
+
+  // ── underworld ────────────────────────────────────────────────────────────
+  it('underworld tier-2 goldMult is 1.50', () => {
+    expect((get('underworld').tiers[1].effect as { goldMult?: number }).goldMult).toBeCloseTo(1.50);
+  });
+  it('underworld tier-3 atkMult is 1.35', () => {
+    expect(get('underworld').tiers[2].effect.atkMult).toBeCloseTo(1.35);
+  });
+
+  // ── sansin ────────────────────────────────────────────────────────────────
+  it('sansin tier-1 special is SANSIN_HEAL_15', () => {
+    expect(get('sansin').tiers[0].effect.special).toBe('SANSIN_HEAL_15');
+  });
+  it('sansin tier-3 atkMult is 1.30', () => {
+    expect(get('sansin').tiers[2].effect.atkMult).toBeCloseTo(1.30);
+  });
+
+  // ── sea ───────────────────────────────────────────────────────────────────
+  it('sea tier-2 spdMult is 0.85', () => {
+    expect(get('sea').tiers[1].effect.spdMult).toBeCloseTo(0.85);
+  });
+  it('sea tier-3 atkMult is 1.35 and special is SEA_TSUNAMI', () => {
+    const t3 = get('sea').tiers[2];
+    expect(t3.effect.atkMult).toBeCloseTo(1.35);
+    expect(t3.effect.special).toBe('SEA_TSUNAMI');
+  });
+
+  // ── mask ──────────────────────────────────────────────────────────────────
+  it('mask tier-2 has both atkMult 1.15 and spdMult 1.15', () => {
+    const t2 = get('mask').tiers[1];
+    expect(t2.effect.atkMult).toBeCloseTo(1.15);
+    expect(t2.effect.spdMult).toBeCloseTo(1.15);
+  });
+  it('mask tier-3 atkMult is 1.35', () => {
+    expect(get('mask').tiers[2].effect.atkMult).toBeCloseTo(1.35);
+  });
+
+  // ── moonlight ─────────────────────────────────────────────────────────────
+  it('moonlight tier-1 spdMult is 1.10', () => {
+    expect(get('moonlight').tiers[0].effect.spdMult).toBeCloseTo(1.10);
+  });
+  it('moonlight tier-2 spdMult is 1.20', () => {
+    expect(get('moonlight').tiers[1].effect.spdMult).toBeCloseTo(1.20);
+  });
+  it('moonlight tier-3 atkMult is 1.35', () => {
+    expect(get('moonlight').tiers[2].effect.atkMult).toBeCloseTo(1.35);
+  });
+
+  // ── celestial ─────────────────────────────────────────────────────────────
+  it('celestial tier-1 atkMult is 1.20', () => {
+    expect(get('celestial').tiers[0].effect.atkMult).toBeCloseTo(1.20);
+  });
+  it('celestial tier-2 atkMult is 1.35 and special is CELESTIAL_PIERCE', () => {
+    const t2 = get('celestial').tiers[1];
+    expect(t2.effect.atkMult).toBeCloseTo(1.35);
+    expect(t2.effect.special).toBe('CELESTIAL_PIERCE');
+  });
+  it('celestial tier-3 atkMult is 1.50 and special is CELESTIAL_DESCENT', () => {
+    const t3 = get('celestial').tiers[2];
+    expect(t3.effect.atkMult).toBeCloseTo(1.50);
+    expect(t3.effect.special).toBe('CELESTIAL_DESCENT');
+  });
+  it('celestial tier-1 atkMult (1.20) is the highest tier-1 atkMult across all tribes', () => {
+    const tier1AtkValues = TRIBE_SYNERGIES
+      .map(s => s.tiers[0].effect.atkMult ?? 1)
+      .filter(v => v > 1);
+    const maxTier1Atk = Math.max(...tier1AtkValues);
+    expect(get('celestial').tiers[0].effect.atkMult).toBeCloseTo(maxTier1Atk);
+  });
+});
+
+// ─── TRIBE_SYNERGIES — tier-3 coverage ───────────────────────────────────────
+
+describe('TRIBE_SYNERGIES — tier-3 always has atkMult or special', () => {
+  it('every tribe tier-3 has atkMult or special defined', () => {
+    for (const syn of TRIBE_SYNERGIES) {
+      const t3 = syn.tiers[2];
+      const hasEffect = t3.effect.atkMult !== undefined || t3.effect.special !== undefined;
+      expect(hasEffect, `${syn.tribe} tier-3 missing atkMult and special`).toBe(true);
+    }
+  });
+
+  it('all 9 tribes have their highest atkMult at tier-3', () => {
+    for (const syn of TRIBE_SYNERGIES) {
+      const t1atk = syn.tiers[0].effect.atkMult ?? 1;
+      const t2atk = syn.tiers[1].effect.atkMult ?? 1;
+      const t3atk = syn.tiers[2].effect.atkMult ?? 1;
+      expect(t3atk, `${syn.tribe} tier-3 atkMult not highest`).toBeGreaterThanOrEqual(t2atk);
+      expect(t3atk, `${syn.tribe} tier-3 atkMult not highest`).toBeGreaterThanOrEqual(t1atk);
+    }
+  });
+});
