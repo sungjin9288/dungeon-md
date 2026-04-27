@@ -301,3 +301,50 @@ describe('TRAP_DEFS', () => {
     expect(stunC).toBeGreaterThan(poisonC);
   });
 });
+
+// ─── koreanName completeness ──────────────────────────────────────────────────
+
+describe('ALL_STAGES — koreanName completeness', () => {
+  it('every stage has a defined, non-empty koreanName', () => {
+    for (const s of ALL_STAGES) {
+      expect(
+        s.koreanName,
+        `Stage ${s.id} (ch${s.chapter}) is missing koreanName`,
+      ).toBeDefined();
+      expect(
+        s.koreanName!.length,
+        `Stage ${s.id} koreanName is empty`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('Ch4 stages 33–42 all have koreanName', () => {
+    const ch4 = ALL_STAGES.filter(s => s.chapter === 4);
+    expect(ch4).toHaveLength(10);
+    for (const s of ch4) {
+      expect(s.koreanName, `Stage ${s.id} missing koreanName`).toBeDefined();
+    }
+  });
+
+  it('Ch5 stages 43–52 all have koreanName', () => {
+    const ch5 = ALL_STAGES.filter(s => s.chapter === 5);
+    expect(ch5).toHaveLength(10);
+    for (const s of ch5) {
+      expect(s.koreanName, `Stage ${s.id} missing koreanName`).toBeDefined();
+    }
+  });
+
+  it('spot-checks: specific Ch4/Ch5 koreanNames are correct', () => {
+    const s42 = ALL_STAGES.find(s => s.id === 42)!;
+    expect(s42.koreanName).toBe('저승왕 사자');
+    const s46 = ALL_STAGES.find(s => s.id === 46)!;
+    expect(s46.koreanName).toBe('공허의 침입자');
+    const s52 = ALL_STAGES.find(s => s.id === 52)!;
+    expect(s52.koreanName).toBe('삼신 파괴자');
+  });
+
+  it('koreanNames are unique across all 80 stages', () => {
+    const names = ALL_STAGES.map(s => s.koreanName!);
+    expect(new Set(names).size).toBe(names.length);
+  });
+});
