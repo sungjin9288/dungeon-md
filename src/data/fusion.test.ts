@@ -17,7 +17,9 @@ import {
   BLUEPRINT_DEFS,
   STARTER_BLUEPRINTS,
   rollMaterialDrop,
+  AWAKENED_PASSIVES,
 } from './fusion';
+import { MONSTER_DEFS } from './monsters';
 
 // ─── Rarity constants ─────────────────────────────────────────────────────────
 
@@ -415,5 +417,111 @@ describe('rollMaterialDrop', () => {
       }
     }
     expect(bossEssenceDropped).toBe(true);
+  });
+});
+
+// ─── AWAKENED_PASSIVES — data integrity ───────────────────────────────────────
+
+describe('AWAKENED_PASSIVES — structure', () => {
+  it('contains at least 29 entries (Ch1–Ch5)', () => {
+    expect(Object.keys(AWAKENED_PASSIVES).length).toBeGreaterThanOrEqual(29);
+  });
+
+  it('every entry has a non-empty desc string', () => {
+    for (const [id, passive] of Object.entries(AWAKENED_PASSIVES)) {
+      expect(typeof passive.desc, `${id} desc type`).toBe('string');
+      expect(passive.desc.length, `${id} desc length`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every key references a valid MONSTER_DEFS id', () => {
+    for (const id of Object.keys(AWAKENED_PASSIVES)) {
+      expect(
+        MONSTER_DEFS[id as keyof typeof MONSTER_DEFS],
+        `AWAKENED_PASSIVES key "${id}" not found in MONSTER_DEFS`,
+      ).toBeDefined();
+    }
+  });
+});
+
+describe('AWAKENED_PASSIVES — chapter coverage', () => {
+  const CH1_IDS = [
+    'dokkaebi_warrior', 'dokkaebi_junior', 'village_archer',
+    'gold_turtle', 'fire_dokkaebi', 'sage',
+  ];
+  const CH2_IDS = [
+    'gumiho_guardian', 'frost_spirit', 'white_tiger',
+    'sea_god_spear', 'fox_shaman', 'iron_mask',
+  ];
+  const CH3_IDS = [
+    'death_messenger', 'thunder_hero', 'ghost_hunter',
+    'mask_dancer', 'venom_warrior',
+  ];
+  const CH4_IDS = [
+    'celestial_dancer', 'three_legged_crow', 'great_serpent', 'moon_rabbit_sage',
+  ];
+  const CH5_IDS = [
+    'mountain_god', 'volcanic_warrior', 'storm_archer', 'abyss_mage',
+    'celestial_healer', 'mask_berserker', 'sea_dragon_lord', 'fox_spirit_elder',
+  ];
+
+  it('all Ch1 monsters have an awakened passive', () => {
+    for (const id of CH1_IDS) {
+      expect(AWAKENED_PASSIVES[id], `${id} missing awakened passive`).toBeDefined();
+    }
+  });
+
+  it('all Ch2 monsters have an awakened passive', () => {
+    for (const id of CH2_IDS) {
+      expect(AWAKENED_PASSIVES[id], `${id} missing awakened passive`).toBeDefined();
+    }
+  });
+
+  it('all Ch3 monsters have an awakened passive', () => {
+    for (const id of CH3_IDS) {
+      expect(AWAKENED_PASSIVES[id], `${id} missing awakened passive`).toBeDefined();
+    }
+  });
+
+  it('all Ch4 monsters have an awakened passive', () => {
+    for (const id of CH4_IDS) {
+      expect(AWAKENED_PASSIVES[id], `${id} missing awakened passive`).toBeDefined();
+    }
+  });
+
+  it('all Ch5 monsters have an awakened passive', () => {
+    for (const id of CH5_IDS) {
+      expect(AWAKENED_PASSIVES[id], `${id} missing awakened passive`).toBeDefined();
+    }
+  });
+});
+
+describe('AWAKENED_PASSIVES — spot-checks', () => {
+  it('dokkaebi_warrior passive desc mentions first-attack multiplier', () => {
+    expect(AWAKENED_PASSIVES['dokkaebi_warrior'].desc).toContain('3×');
+  });
+
+  it('gold_turtle passive desc references gold emoji', () => {
+    expect(AWAKENED_PASSIVES['gold_turtle'].desc).toContain('💰');
+  });
+
+  it('iron_mask passive desc references damage reduction', () => {
+    // 철벽 모드 (피해 -60%)
+    expect(AWAKENED_PASSIVES['iron_mask'].desc).toContain('60%');
+  });
+
+  it('mountain_god passive desc references ATK bonus', () => {
+    // 산신 영역: 인접 모든 방 ATK +30%
+    expect(AWAKENED_PASSIVES['mountain_god'].desc).toContain('ATK');
+  });
+
+  it('death_messenger passive desc mentions execution threshold increase', () => {
+    // 처형 임계치 20% → 30%로 상승
+    expect(AWAKENED_PASSIVES['death_messenger'].desc).toContain('30%');
+  });
+
+  it('each desc is unique (no two monsters share identical passive text)', () => {
+    const descs = Object.values(AWAKENED_PASSIVES).map(p => p.desc);
+    expect(new Set(descs).size).toBe(descs.length);
   });
 });
