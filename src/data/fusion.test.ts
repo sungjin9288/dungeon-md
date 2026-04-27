@@ -525,3 +525,28 @@ describe('AWAKENED_PASSIVES — spot-checks', () => {
     expect(new Set(descs).size).toBe(descs.length);
   });
 });
+
+// ─── COMBINATION_TABLE input ids × MONSTER_DEFS ───────────────────────────────
+
+describe('COMBINATION_TABLE × MONSTER_DEFS — input ids are valid', () => {
+  it('every monster id in combination keys exists in MONSTER_DEFS', () => {
+    for (const combo of Object.keys(COMBINATION_TABLE)) {
+      const [idA, idB] = combo.split('+');
+      expect(
+        MONSTER_DEFS[idA as keyof typeof MONSTER_DEFS],
+        `COMBINATION_TABLE key "${combo}" — left id "${idA}" not found in MONSTER_DEFS`,
+      ).toBeDefined();
+      expect(
+        MONSTER_DEFS[idB as keyof typeof MONSTER_DEFS],
+        `COMBINATION_TABLE key "${combo}" — right id "${idB}" not found in MONSTER_DEFS`,
+      ).toBeDefined();
+    }
+  });
+
+  it('combinationKey is commutative — same result regardless of argument order', () => {
+    expect(combinationKey('dokkaebi_warrior', 'gumiho_guardian'))
+      .toBe(combinationKey('gumiho_guardian', 'dokkaebi_warrior'));
+    expect(combinationKey('fire_dokkaebi', 'frost_spirit'))
+      .toBe(combinationKey('frost_spirit', 'fire_dokkaebi'));
+  });
+});

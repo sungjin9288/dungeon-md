@@ -12,6 +12,7 @@ import {
   rollRarity,
   type SummonType,
 } from './summonPools';
+import { MONSTER_DEFS } from './monsters';
 
 // ─── SUMMON_TYPE_DEFS data integrity ─────────────────────────────────────────
 
@@ -221,5 +222,38 @@ describe('rollRarity', () => {
     for (const c of counts) {
       expect(c).toBeGreaterThan(0);
     }
+  });
+});
+
+// ─── RARITY_POOLS × MONSTER_DEFS — cross-reference ────────────────────────────
+
+describe('RARITY_POOLS × MONSTER_DEFS — no orphan pool entries', () => {
+  it('every monster id in any rarity pool exists in MONSTER_DEFS', () => {
+    for (const [rarity, pool] of Object.entries(RARITY_POOLS)) {
+      for (const id of pool) {
+        expect(
+          MONSTER_DEFS[id as keyof typeof MONSTER_DEFS],
+          `RARITY_POOLS["${rarity}"] references unknown monsterId "${id}"`,
+        ).toBeDefined();
+      }
+    }
+  });
+
+  it('all 5 rarities have at least 1 pool member', () => {
+    for (const rarity of RARITIES) {
+      expect(
+        RARITY_POOLS[rarity].length,
+        `RARITY_POOLS["${rarity}"] is empty`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('legendary pool has at least 3 entries', () => {
+    expect(RARITY_POOLS['legendary'].length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('total monsters across all pools is at least 30', () => {
+    const total = Object.values(RARITY_POOLS).reduce((s, pool) => s + pool.length, 0);
+    expect(total).toBeGreaterThanOrEqual(30);
   });
 });
