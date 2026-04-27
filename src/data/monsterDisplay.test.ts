@@ -118,6 +118,28 @@ describe('MONSTER_EMOJI / MONSTER_NAME cross-map consistency', () => {
     }
   });
 
+  it('all 8 Ch5 monsters appear in both maps', () => {
+    const ch5 = [
+      'mountain_god', 'volcanic_warrior', 'storm_archer', 'abyss_mage',
+      'celestial_healer', 'mask_berserker', 'sea_dragon_lord', 'fox_spirit_elder',
+    ];
+    for (const id of ch5) {
+      expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
+      expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
+    }
+  });
+
+  it('all 8 Ch7 celestial monsters appear in both maps', () => {
+    const ch7 = [
+      'celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior',
+      'divine_healer', 'starlight_knight', 'celestial_sage', 'god_realm_general',
+    ];
+    for (const id of ch7) {
+      expect(MONSTER_EMOJI[id], `${id} emoji`).toBeDefined();
+      expect(MONSTER_NAME[id],  `${id} name`).toBeDefined();
+    }
+  });
+
   it('all 8 Ch6 tribe complete/leader monsters appear in both maps', () => {
     const ch6leaders = [
       'dokkaebi_god_king',    // 도깨비족
@@ -179,5 +201,40 @@ describe('SKIN_DATA × MONSTER_DEFS — monsterId cross-validation', () => {
 
   it('SKIN_DATA contains at least 15 skins', () => {
     expect(SKIN_DATA.length).toBeGreaterThanOrEqual(15);
+  });
+});
+
+// ─── Ch5 / Ch7 spot-checks ────────────────────────────────────────────────────
+
+describe('Ch5 new monsters — display map spot-checks', () => {
+  it('volcanic_warrior has emoji 🌋 and correct Korean name', () => {
+    expect(MONSTER_EMOJI['volcanic_warrior']).toBe('🌋');
+    expect(MONSTER_NAME['volcanic_warrior']).toBe('화산 전사');
+  });
+
+  it('fox_spirit_elder has emoji 🦊 and correct Korean name', () => {
+    expect(MONSTER_EMOJI['fox_spirit_elder']).toBe('🦊');
+    expect(MONSTER_NAME['fox_spirit_elder']).toBe('구미호 장로');
+  });
+
+  it('abyss_mage has emoji 🌀 and correct Korean name', () => {
+    expect(MONSTER_EMOJI['abyss_mage']).toBe('🌀');
+    expect(MONSTER_NAME['abyss_mage']).toBe('심연 마법사');
+  });
+});
+
+describe('Ch7 celestial monsters — display map spot-checks', () => {
+  it('god_realm_general has emoji 👑 and correct Korean name', () => {
+    expect(MONSTER_EMOJI['god_realm_general']).toBe('👑');
+    expect(MONSTER_NAME['god_realm_general']).toBe('신계 대장군');
+  });
+
+  it('solar_warrior has emoji ☀️ and correct Korean name', () => {
+    expect(MONSTER_EMOJI['solar_warrior']).toBe('☀️');
+    expect(MONSTER_NAME['solar_warrior']).toBe('태양 전사');
+  });
+
+  it('MONSTER_EMOJI now has at least 100 entries (Ch1–Ch7 full coverage)', () => {
+    expect(Object.keys(MONSTER_EMOJI).length).toBeGreaterThanOrEqual(100);
   });
 });

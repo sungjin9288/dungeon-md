@@ -1,5 +1,5 @@
 // ─── Monster Display Maps ─────────────────────────────────────────────────────
-// Centralised emoji and Korean name lookups for all monsters across Ch1–Ch6.
+// Centralised emoji and Korean name lookups for all monsters across Ch1–Ch7.
 // Used by DungeonHomeScene, PreBattleScene, and any future UI that needs
 // human-readable monster display without loading the full MonsterDef.
 
@@ -20,7 +20,15 @@ export const MONSTER_EMOJI: Record<string, string> = {
   celestial_dancer:    '🪭', three_legged_crow: '🐦',
   great_serpent:       '🐍', moon_rabbit_sage:  '🐇',
   // ── Ch5 ─────────────────────────────────────────────────────────────────
-  mountain_god:     '⛰️',
+  mountain_god:     '⛰️',  volcanic_warrior: '🌋',
+  storm_archer:     '🏹',  abyss_mage:       '🌀',
+  celestial_healer: '✨',  mask_berserker:   '🎭',
+  sea_dragon_lord:  '🐉',  fox_spirit_elder: '🦊',
+  // ── Ch7 천상족 ────────────────────────────────────────────────────────────
+  celestial_guardian: '⚔️', sky_archer:       '🏹',
+  heaven_mage:        '🌟', solar_warrior:    '☀️',
+  divine_healer:      '💖', starlight_knight: '🌙',
+  celestial_sage:     '🔮', god_realm_general:'👑',
   // ── Ch6 도깨비족 ──────────────────────────────────────────────────────────
   thunder_dokkaebi:      '⚡', ice_dokkaebi:        '❄️',
   healer_dokkaebi:       '💚', dokkaebi_captain:    '👹',
@@ -91,7 +99,15 @@ export const MONSTER_NAME: Record<string, string> = {
   celestial_dancer:    '천녀 무희', three_legged_crow: '삼족오',
   great_serpent:       '구렁이',    moon_rabbit_sage:  '월토 달인',
   // ── Ch5 ─────────────────────────────────────────────────────────────────
-  mountain_god:     '산신',
+  mountain_god:     '산신',       volcanic_warrior: '화산 전사',
+  storm_archer:     '폭풍 궁수',  abyss_mage:       '심연 마법사',
+  celestial_healer: '천상 치유사', mask_berserker:  '탈 광전사',
+  sea_dragon_lord:  '해룡왕',     fox_spirit_elder: '구미호 장로',
+  // ── Ch7 천상족 ────────────────────────────────────────────────────────────
+  celestial_guardian: '천상 수호자', sky_archer:       '창공 궁수',
+  heaven_mage:        '천계 마법사', solar_warrior:    '태양 전사',
+  divine_healer:      '신성 치유자', starlight_knight: '별빛 기사',
+  celestial_sage:     '천상 현인',  god_realm_general: '신계 대장군',
   // ── Ch6 도깨비족 ──────────────────────────────────────────────────────────
   thunder_dokkaebi:      '번개 도깨비',   ice_dokkaebi:        '얼음 도깨비',
   healer_dokkaebi:       '치유 도깨비',   dokkaebi_captain:    '도깨비 대장',
