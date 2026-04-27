@@ -17,9 +17,11 @@ import {
   BLUEPRINT_DEFS,
   STARTER_BLUEPRINTS,
   rollMaterialDrop,
+  DROP_TABLE,
   AWAKENED_PASSIVES,
 } from './fusion';
 import { MONSTER_DEFS } from './monsters';
+import { INVADER_DEFS, type InvaderType } from './invaders';
 
 // ─── Rarity constants ─────────────────────────────────────────────────────────
 
@@ -548,5 +550,115 @@ describe('COMBINATION_TABLE × MONSTER_DEFS — input ids are valid', () => {
       .toBe(combinationKey('gumiho_guardian', 'dokkaebi_warrior'));
     expect(combinationKey('fire_dokkaebi', 'frost_spirit'))
       .toBe(combinationKey('frost_spirit', 'fire_dokkaebi'));
+  });
+});
+
+// ─── DROP_TABLE — structure ───────────────────────────────────────────────────
+
+describe('DROP_TABLE — structure', () => {
+  it('contains at least 35 invader-type entries', () => {
+    expect(Object.keys(DROP_TABLE).length).toBeGreaterThanOrEqual(35);
+  });
+
+  it('every entry is a non-empty array', () => {
+    for (const [type, drops] of Object.entries(DROP_TABLE)) {
+      expect(drops.length, `${type} drops`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every drop has a non-empty id string and a chance > 0 and ≤ 1', () => {
+    for (const [type, drops] of Object.entries(DROP_TABLE)) {
+      for (const drop of drops) {
+        expect(drop.id.length, `${type} drop id`).toBeGreaterThan(0);
+        expect(drop.chance, `${type} drop chance`).toBeGreaterThan(0);
+        expect(drop.chance, `${type} drop chance`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('no single entry has more than 3 possible drops', () => {
+    for (const [type, drops] of Object.entries(DROP_TABLE)) {
+      expect(drops.length, `${type} has too many drops`).toBeLessThanOrEqual(3);
+    }
+  });
+});
+
+// ─── DROP_TABLE × MATERIAL_DEFS — no orphan drop ids ─────────────────────────
+
+describe('DROP_TABLE × MATERIAL_DEFS — no orphan material ids', () => {
+  it('every drop id referenced in DROP_TABLE exists in MATERIAL_DEFS', () => {
+    for (const [type, drops] of Object.entries(DROP_TABLE)) {
+      for (const drop of drops) {
+        expect(
+          MATERIAL_DEFS[drop.id],
+          `DROP_TABLE["${type}"] references unknown material "${drop.id}"`,
+        ).toBeDefined();
+      }
+    }
+  });
+});
+
+// ─── DROP_TABLE × INVADER_DEFS — stage invader types are valid ───────────────
+
+describe('DROP_TABLE × INVADER_DEFS — stage invader types are valid', () => {
+  // Quest-invasion-only types that intentionally don't appear in INVADER_DEFS
+  const QUEST_ONLY_TYPES = new Set([
+    'peasant_soldier', 'shield_knight', 'shadow_thief', 'field_medic',
+  ]);
+
+  it('every non-quest DROP_TABLE key exists in INVADER_DEFS', () => {
+    for (const type of Object.keys(DROP_TABLE)) {
+      if (QUEST_ONLY_TYPES.has(type)) continue;
+      expect(
+        INVADER_DEFS[type as InvaderType],
+        `DROP_TABLE key "${type}" not found in INVADER_DEFS`,
+      ).toBeDefined();
+    }
+  });
+
+  it('there are exactly 4 quest-only types in DROP_TABLE', () => {
+    const questKeys = Object.keys(DROP_TABLE).filter(k => QUEST_ONLY_TYPES.has(k));
+    expect(questKeys).toHaveLength(4);
+  });
+});
+
+// ─── DROP_TABLE — chapter spot-checks ────────────────────────────────────────
+
+describe('DROP_TABLE — chapter spot-checks', () => {
+  it('Ch1 peasant drops old_cloth', () => {
+    const drops = DROP_TABLE['peasant'];
+    const ids = drops.map(d => d.id);
+    expect(ids).toContain('old_cloth');
+  });
+
+  it('Ch5 three_god_destroyer drops dok_fragment and ice_crystal', () => {
+    const drops = DROP_TABLE['three_god_destroyer'];
+    const ids = drops.map(d => d.id);
+    expect(ids).toContain('dok_fragment');
+    expect(ids).toContain('ice_crystal');
+  });
+
+  it('Ch7 divine_archer drops magic_dust', () => {
+    const drops = DROP_TABLE['divine_archer'];
+    const ids = drops.map(d => d.id);
+    expect(ids).toContain('magic_dust');
+  });
+
+  it('Ch7 god_emperor drops boss_essence with highest chance (0.40)', () => {
+    const drops = DROP_TABLE['god_emperor'];
+    const bossEssence = drops.find(d => d.id === 'boss_essence');
+    expect(bossEssence).toBeDefined();
+    expect(bossEssence!.chance).toBe(0.40);
+  });
+
+  it('Ch8 primordial_titan has 3 drop entries (highest variety)', () => {
+    const drops = DROP_TABLE['primordial_titan'];
+    expect(drops).toHaveLength(3);
+  });
+
+  it('Ch8 primordial_titan boss_essence chance (0.60) > god_emperor (0.40)', () => {
+    const titanChance = DROP_TABLE['primordial_titan'].find(d => d.id === 'boss_essence')!.chance;
+    const emperorChance = DROP_TABLE['god_emperor'].find(d => d.id === 'boss_essence')!.chance;
+    expect(titanChance).toBeGreaterThan(emperorChance);
   });
 });
