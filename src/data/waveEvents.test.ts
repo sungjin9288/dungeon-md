@@ -57,6 +57,104 @@ describe('WAVE_EVENTS', () => {
   });
 });
 
+// ─── WAVE_EVENTS — per-event name and icon spot-checks ───────────────────────
+
+describe('WAVE_EVENTS — per-event name and icon spot-checks', () => {
+  const get = (t: string) => WAVE_EVENTS.find(e => e.type === t)!;
+
+  it('merchant name is "방랑 상인" and icon is 🏪', () => {
+    expect(get('merchant').name).toBe('방랑 상인');
+    expect(get('merchant').icon).toBe('🏪');
+  });
+
+  it('supply name is "보급품 도착" and icon is 📦', () => {
+    expect(get('supply').name).toBe('보급품 도착');
+    expect(get('supply').icon).toBe('📦');
+  });
+
+  it('curse name is "저주받은 침략" and icon is 💀', () => {
+    expect(get('curse').name).toBe('저주받은 침략');
+    expect(get('curse').icon).toBe('💀');
+  });
+
+  it('rally name is "몬스터 격려" and icon is 📯', () => {
+    expect(get('rally').name).toBe('몬스터 격려');
+    expect(get('rally').icon).toBe('📯');
+  });
+
+  it('fog name is "짙은 안개" and icon is 🌫️', () => {
+    expect(get('fog').name).toBe('짙은 안개');
+    expect(get('fog').icon).toBe('🌫️');
+  });
+
+  it('void_storm name is "허공의 폭풍" and icon is 🌀', () => {
+    expect(get('void_storm').name).toBe('허공의 폭풍');
+    expect(get('void_storm').icon).toBe('🌀');
+  });
+
+  it('ancient_blessing name is "고대의 축복" and icon is ✨', () => {
+    expect(get('ancient_blessing').name).toBe('고대의 축복');
+    expect(get('ancient_blessing').icon).toBe('✨');
+  });
+
+  it('crimson_curse name is "붉은 저주" and icon is 🩸', () => {
+    expect(get('crimson_curse').name).toBe('붉은 저주');
+    expect(get('crimson_curse').icon).toBe('🩸');
+  });
+});
+
+// ─── WAVE_EVENTS — colors and effect characterization ────────────────────────
+
+describe('WAVE_EVENTS — colors and effect characterization', () => {
+  it('every color is a CSS hex string starting with "#"', () => {
+    for (const e of WAVE_EVENTS) {
+      expect(e.color, `${e.type} color`).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+  });
+
+  it('merchant color is #ffcc44 (gold)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'merchant')!.color).toBe('#ffcc44');
+  });
+
+  it('crimson_curse color is #dd2244 (red)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'crimson_curse')!.color).toBe('#dd2244');
+  });
+
+  it('ancient_blessing color is #44bbff (light blue)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'ancient_blessing')!.color).toBe('#44bbff');
+  });
+
+  it('crimson_curse has the highest reward multiplier (×3)', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'crimson_curse')!;
+    expect(e.description).toContain('×3');
+  });
+
+  it('curse reward multiplier is ×2 (lower than crimson_curse ×3)', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'curse')!;
+    expect(e.description).toContain('×2');
+  });
+
+  it('fog description mentions speed reduction (침략자 속도 -)', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'fog')!;
+    expect(e.description).toMatch(/속도\s*-/);
+  });
+
+  it('supply description mentions HP recovery (던전 HP)', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'supply')!;
+    expect(e.description).toMatch(/HP/);
+  });
+
+  it('rally description mentions ATK boost percentage', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'rally')!;
+    expect(e.description).toMatch(/ATK\s*\+\d+%/);
+  });
+
+  it('all 8 colors are distinct', () => {
+    const colors = WAVE_EVENTS.map(e => e.color);
+    expect(new Set(colors).size).toBe(colors.length);
+  });
+});
+
 // ─── rollWaveEvent ────────────────────────────────────────────────────────────
 
 describe('rollWaveEvent', () => {
