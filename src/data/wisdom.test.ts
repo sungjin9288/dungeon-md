@@ -517,6 +517,47 @@ describe('BRANCH_DEFS — per-branch getValue formula', () => {
     expect(get('forgeEnhancer').costPerTier[4]).toBe(maxCost5);
     expect(maxCost5).toBe(80);
   });
+
+  it('masterCraft.getValue scales by 5 per tier (tier 3 → 15, tier 5 → 25)', () => {
+    expect(get('masterCraft').getValue(3)).toBe(15);
+    expect(get('masterCraft').getValue(5)).toBe(25);
+  });
+
+  it('swiftVictory.getValue scales by 10 per tier (tier 3 → 30, tier 5 → 50)', () => {
+    expect(get('swiftVictory').getValue(3)).toBe(30);
+    expect(get('swiftVictory').getValue(5)).toBe(50);
+  });
+
+  it('crystalResonance.getValue scales by 20 per tier (tier 3 → 60, tier 5 → 100)', () => {
+    expect(get('crystalResonance').getValue(3)).toBe(60);
+    expect(get('crystalResonance').getValue(5)).toBe(100);
+  });
+
+  it('guardianBlessing.getValue scales by 5 per tier (tier 3 → 15, tier 5 → 25)', () => {
+    expect(get('guardianBlessing').getValue(3)).toBe(15);
+    expect(get('guardianBlessing').getValue(5)).toBe(25);
+  });
+
+  it('eliteTrainer.getValue scales by 3 per tier (tier 3 → 9, tier 5 → 15)', () => {
+    expect(get('eliteTrainer').getValue(3)).toBe(9);
+    expect(get('eliteTrainer').getValue(5)).toBe(15);
+  });
+
+  it('soulHarvest.getValue scales by 2 per tier (tier 3 → 6, tier 5 → 10)', () => {
+    expect(get('soulHarvest').getValue(3)).toBe(6);
+    expect(get('soulHarvest').getValue(5)).toBe(10);
+  });
+
+  it('forgeEnhancer.getValue scales by 3 per tier (tier 3 → 9, tier 5 → 15)', () => {
+    expect(get('forgeEnhancer').getValue(3)).toBe(9);
+    expect(get('forgeEnhancer').getValue(5)).toBe(15);
+  });
+
+  it('every branch getValue(0) returns 0', () => {
+    for (const b of BRANCH_DEFS) {
+      expect(b.getValue(0), `${b.id} getValue(0)`).toBe(0);
+    }
+  });
 });
 
 describe('getWisdomBonuses — dungeonFortress branch', () => {
