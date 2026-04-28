@@ -404,3 +404,81 @@ describe('Ch4 monsters — display map exact values', () => {
     expect(MONSTER_NAME['moon_rabbit_sage']).toBe('월토 달인');
   });
 });
+
+// ─── Ch8 moonlight tribe — display map exact values ───────────────────────────
+
+describe('Ch8 moonlight tribe — display map exact values', () => {
+  it('moonlight_rabbit: emoji=🐇, name="달빛 토끼"', () => {
+    expect(MONSTER_EMOJI['moonlight_rabbit']).toBe('🐇');
+    expect(MONSTER_NAME['moonlight_rabbit']).toBe('달빛 토끼');
+  });
+
+  it('crescent_archer: emoji=🌙, name="초승달 궁수"', () => {
+    expect(MONSTER_EMOJI['crescent_archer']).toBe('🌙');
+    expect(MONSTER_NAME['crescent_archer']).toBe('초승달 궁수');
+  });
+
+  it('full_moon_sorcerer: emoji=🌕, name="보름달 술사"', () => {
+    expect(MONSTER_EMOJI['full_moon_sorcerer']).toBe('🌕');
+    expect(MONSTER_NAME['full_moon_sorcerer']).toBe('보름달 술사');
+  });
+
+  it('solar_eclipse_warrior: emoji=🌑, name="일식 전사"', () => {
+    expect(MONSTER_EMOJI['solar_eclipse_warrior']).toBe('🌑');
+    expect(MONSTER_NAME['solar_eclipse_warrior']).toBe('일식 전사');
+  });
+
+  it('lunar_eclipse_mage: emoji=🌒, name="월식 마법사"', () => {
+    expect(MONSTER_EMOJI['lunar_eclipse_mage']).toBe('🌒');
+    expect(MONSTER_NAME['lunar_eclipse_mage']).toBe('월식 마법사');
+  });
+
+  it('moonlight_complete: emoji=✨, name="달빛 완성체"', () => {
+    expect(MONSTER_EMOJI['moonlight_complete']).toBe('✨');
+    expect(MONSTER_NAME['moonlight_complete']).toBe('달빛 완성체');
+  });
+});
+
+// ─── Ch8 dragon tribe — display map exact values ──────────────────────────────
+
+describe('Ch8 dragon tribe — display map exact values', () => {
+  it('red_dragon_warrior: emoji=🔴, name="적룡 전사"', () => {
+    expect(MONSTER_EMOJI['red_dragon_warrior']).toBe('🔴');
+    expect(MONSTER_NAME['red_dragon_warrior']).toBe('적룡 전사');
+  });
+
+  it('blue_dragon_guardian: emoji=🔵, name="청룡 수호자"', () => {
+    expect(MONSTER_EMOJI['blue_dragon_guardian']).toBe('🔵');
+    expect(MONSTER_NAME['blue_dragon_guardian']).toBe('청룡 수호자');
+  });
+
+  it('gold_dragon_sage: emoji=🟡, name="황룡 현자"', () => {
+    expect(MONSTER_EMOJI['gold_dragon_sage']).toBe('🟡');
+    expect(MONSTER_NAME['gold_dragon_sage']).toBe('황룡 현자');
+  });
+
+  it('black_dragon_assassin: emoji=⚫, name="흑룡 암살자"', () => {
+    expect(MONSTER_EMOJI['black_dragon_assassin']).toBe('⚫');
+    expect(MONSTER_NAME['black_dragon_assassin']).toBe('흑룡 암살자');
+  });
+
+  it('white_dragon_healer: emoji=⚪, name="백룡 치유사"', () => {
+    expect(MONSTER_EMOJI['white_dragon_healer']).toBe('⚪');
+    expect(MONSTER_NAME['white_dragon_healer']).toBe('백룡 치유사');
+  });
+
+  it('banya_guardian: emoji=🔱, name="반야 수호자"', () => {
+    expect(MONSTER_EMOJI['banya_guardian']).toBe('🔱');
+    expect(MONSTER_NAME['banya_guardian']).toBe('반야 수호자');
+  });
+
+  it('dragon_avatar: emoji=🐉, name="용의 화신"', () => {
+    expect(MONSTER_EMOJI['dragon_avatar']).toBe('🐉');
+    expect(MONSTER_NAME['dragon_avatar']).toBe('용의 화신');
+  });
+
+  it('five_dragon_complete: emoji=🌟, name="오룡 완성체"', () => {
+    expect(MONSTER_EMOJI['five_dragon_complete']).toBe('🌟');
+    expect(MONSTER_NAME['five_dragon_complete']).toBe('오룡 완성체');
+  });
+});
