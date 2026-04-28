@@ -483,3 +483,85 @@ describe('stages — per-chapter final boss wave', () => {
     expect(hasBoss(s)).toBe(true);
   });
 });
+
+// ─── CHAPTER_8 — per-stage wave counts and final boss ────────────────────────
+
+describe('CHAPTER_8 — per-stage wave counts', () => {
+  const s = (id: number) => CHAPTER_8.find(st => st.id === id)!;
+
+  it('stages 73–76 each have exactly 10 waves', () => {
+    for (const id of [73, 74, 75, 76]) {
+      expect(s(id).waves.length, `stage ${id} wave count`).toBe(10);
+    }
+  });
+
+  it('stages 77 and 78 each have exactly 12 waves', () => {
+    expect(s(77).waves.length, 'stage 77').toBe(12);
+    expect(s(78).waves.length, 'stage 78').toBe(12);
+  });
+
+  it('stage 79 (survival) has exactly 15 waves', () => {
+    expect(s(79).waves.length).toBe(15);
+  });
+
+  it('stage 80 (final boss) has exactly 15 waves', () => {
+    expect(s(80).waves.length).toBe(15);
+  });
+
+  it('stage 80 is the hardest Ch8 stage by dungeonHp', () => {
+    const maxHp = Math.max(...CHAPTER_8.map(st => st.dungeonHp));
+    expect(s(80).dungeonHp).toBe(maxHp);
+    expect(s(80).dungeonHp).toBe(11000);
+  });
+
+  it('stage 80 has the highest startGold in Ch8 (= 2000)', () => {
+    const maxGold = Math.max(...CHAPTER_8.map(st => st.startGold));
+    expect(s(80).startGold).toBe(maxGold);
+    expect(s(80).startGold).toBe(2000);
+  });
+
+  it('stage 73 (first Ch8 stage) has no primordial_guard invaders', () => {
+    const allTypes = s(73).waves.flatMap(w => w.invaders.map(i => i.type));
+    expect(allTypes).not.toContain('primordial_guard');
+  });
+
+  it('stage 78 (first to use primordial_guard) has primordial_guard in its waves', () => {
+    const allTypes = s(78).waves.flatMap(w => w.invaders.map(i => i.type));
+    expect(allTypes).toContain('primordial_guard');
+  });
+});
+
+describe('CHAPTER_8 — primordial_titan final boss', () => {
+  const stage80 = CHAPTER_8.find(s => s.id === 80)!;
+  const finalWave = stage80.waves[stage80.waves.length - 1];
+
+  it('stage 80 final wave (wave 15) contains exactly one primordial_titan', () => {
+    const titans = finalWave.invaders.filter(i => i.type === 'primordial_titan');
+    expect(titans).toHaveLength(1);
+    expect(titans[0].count).toBe(1);
+  });
+
+  it('primordial_titan entry on wave 15 has isBoss = true', () => {
+    const titan = finalWave.invaders.find(i => i.type === 'primordial_titan')!;
+    expect(titan.isBoss).toBe(true);
+  });
+
+  it('primordial_titan is not present before wave 15 (only in final wave)', () => {
+    const nonFinalWaves = stage80.waves.slice(0, -1);
+    const titanInEarly = nonFinalWaves.flatMap(w => w.invaders).some(i => i.type === 'primordial_titan');
+    expect(titanInEarly).toBe(false);
+  });
+
+  it('stage 80 wave 15 clearReward = 8000 (highest in game)', () => {
+    const allRewards = ALL_STAGES.flatMap(st => st.waves.map(w => w.clearReward ?? 0));
+    const maxReward = Math.max(...allRewards);
+    expect(finalWave.clearReward).toBe(maxReward);
+    expect(finalWave.clearReward).toBe(8000);
+  });
+
+  it('stage 80 wave 14 has primordial_guard with isBoss = true (penultimate boss wave)', () => {
+    const wave14 = stage80.waves.find(w => w.wave === 14)!;
+    const bossGuard = wave14.invaders.find(i => i.type === 'primordial_guard' && i.isBoss === true);
+    expect(bossGuard).toBeDefined();
+  });
+});
