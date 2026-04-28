@@ -348,3 +348,138 @@ describe('ALL_STAGES — koreanName completeness', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 });
+
+// ─── stages — chapter counts Ch4–Ch7 ─────────────────────────────────────────
+
+describe('stages — chapter counts Ch4–Ch7', () => {
+  it('CHAPTER_4 has 10 stages', () => {
+    expect(CHAPTER_4).toHaveLength(10);
+  });
+
+  it('CHAPTER_5 has 10 stages', () => {
+    expect(CHAPTER_5).toHaveLength(10);
+  });
+
+  it('CHAPTER_6 has 10 stages', () => {
+    expect(CHAPTER_6).toHaveLength(10);
+  });
+
+  it('CHAPTER_7 has 10 stages', () => {
+    expect(CHAPTER_7).toHaveLength(10);
+  });
+
+  it('all Ch4 stages have chapter = 4', () => {
+    for (const s of CHAPTER_4) {
+      expect(s.chapter, `stage ${s.id}`).toBe(4);
+    }
+  });
+
+  it('all Ch5 stages have chapter = 5', () => {
+    for (const s of CHAPTER_5) {
+      expect(s.chapter, `stage ${s.id}`).toBe(5);
+    }
+  });
+
+  it('all Ch6 stages have chapter = 6', () => {
+    for (const s of CHAPTER_6) {
+      expect(s.chapter, `stage ${s.id}`).toBe(6);
+    }
+  });
+
+  it('all Ch7 stages have chapter = 7', () => {
+    for (const s of CHAPTER_7) {
+      expect(s.chapter, `stage ${s.id}`).toBe(7);
+    }
+  });
+});
+
+// ─── stages — chapter ID ranges ──────────────────────────────────────────────
+
+describe('stages — chapter ID ranges', () => {
+  const idsOf = (ch: StageConfig[]) => ch.map(s => s.id).sort((a, b) => a - b);
+
+  it('Ch2 ids are 11–20', () => {
+    const ids = idsOf(CHAPTER_2);
+    expect(ids[0]).toBe(11);
+    expect(ids[ids.length - 1]).toBe(20);
+    expect(ids).toHaveLength(10);
+  });
+
+  it('Ch3 ids are 21–32', () => {
+    const ids = idsOf(CHAPTER_3);
+    expect(ids[0]).toBe(21);
+    expect(ids[ids.length - 1]).toBe(32);
+    expect(ids).toHaveLength(12);
+  });
+
+  it('Ch4 ids are 33–42', () => {
+    const ids = idsOf(CHAPTER_4);
+    expect(ids[0]).toBe(33);
+    expect(ids[ids.length - 1]).toBe(42);
+    expect(ids).toHaveLength(10);
+  });
+
+  it('Ch5 ids are 43–52', () => {
+    const ids = idsOf(CHAPTER_5);
+    expect(ids[0]).toBe(43);
+    expect(ids[ids.length - 1]).toBe(52);
+    expect(ids).toHaveLength(10);
+  });
+
+  it('Ch6 ids are 53–62', () => {
+    const ids = idsOf(CHAPTER_6);
+    expect(ids[0]).toBe(53);
+    expect(ids[ids.length - 1]).toBe(62);
+    expect(ids).toHaveLength(10);
+  });
+
+  it('Ch7 ids are 63–72', () => {
+    const ids = idsOf(CHAPTER_7);
+    expect(ids[0]).toBe(63);
+    expect(ids[ids.length - 1]).toBe(72);
+    expect(ids).toHaveLength(10);
+  });
+});
+
+// ─── stages — per-chapter final boss wave ────────────────────────────────────
+
+describe('stages — per-chapter final boss wave', () => {
+  const hasBoss = (stage: StageConfig) =>
+    stage.waves.some(w =>
+      w.invaders.some(inv => {
+        if (inv.isBoss === true) return true;
+        const def = INVADER_DEFS[inv.type as InvaderType];
+        return def?.isBoss === true || (def as { isMiniBoss?: boolean })?.isMiniBoss === true;
+      }),
+    );
+
+  it('stage 20 (Ch2 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 20)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+
+  it('stage 32 (Ch3 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 32)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+
+  it('stage 42 (Ch4 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 42)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+
+  it('stage 52 (Ch5 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 52)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+
+  it('stage 62 (Ch6 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 62)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+
+  it('stage 72 (Ch7 final) has a boss wave', () => {
+    const s = ALL_STAGES.find(s => s.id === 72)!;
+    expect(hasBoss(s)).toBe(true);
+  });
+});
