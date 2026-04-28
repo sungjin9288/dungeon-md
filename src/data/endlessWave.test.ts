@@ -85,6 +85,18 @@ describe('buildEndlessSpawnQueue — pool expansion', () => {
     // milestone at wave 100 (w > 90 && (w-90)%10===0): +3 milestone entries
     expect(q.length).toBeLessThanOrEqual(25); // well under any runaway growth
   });
+
+  it('wave 5 base count is 6 fillers (min(5 + floor(5/5), 20) = 6)', () => {
+    // No milestone at wave 5 → exactly 6 entries
+    const q = buildEndlessSpawnQueue(5);
+    expect(q).toHaveLength(6);
+  });
+
+  it('wave 10 base count is 7 fillers + 1 milestone entry = 8 total', () => {
+    // baseCount = min(5 + floor(10/5), 20) = 7; milestone adds 1 soldier entry
+    const q = buildEndlessSpawnQueue(10);
+    expect(q).toHaveLength(8);
+  });
 });
 
 // ─── buildEndlessSpawnQueue — hp / speed scaling ─────────────────────────────
@@ -141,6 +153,16 @@ describe('buildEndlessSpawnQueue — milestone waves', () => {
     expect(q[0].def.type).toBe('knight');
     expect(q[0].def.isMiniBoss).toBe(true);
     expect(q[0].delay).toBe(0);
+  });
+
+  it('wave 25 adds an iron_golem champion (2× HP, isMiniBoss, delay=0)', () => {
+    const q = buildEndlessSpawnQueue(25);
+    const boss = q.find(e => e.def.type === 'iron_golem' && e.def.isMiniBoss);
+    expect(boss).toBeDefined();
+    expect(boss!.delay).toBe(0);
+    const base    = INVADER_DEFS['iron_golem'].hp;
+    const hpMult  = Math.pow(1.12, 24);
+    expect(boss!.def.hp).toBe(Math.round(base * hpMult * 2));
   });
 
   it('wave 30 adds two mini-boss void_assassins', () => {
@@ -248,6 +270,13 @@ describe('buildEndlessSpawnQueue — pool tier thresholds', () => {
     expect(q.some(e => e.def.type === 'iron_golem' && e.def.isMiniBoss)).toBe(true);
   });
 
+  // ── T4 threshold (wave 30) ────────────────────────────────────────────────
+
+  it('wave 29 never contains T4 types (void_assassin_elite excluded before wave 30)', () => {
+    const types = typesInQueue(29);
+    expect(types.has('void_assassin_elite'), 'wave 29 void_assassin_elite').toBe(false);
+  });
+
   // ── T3 threshold (wave 20) ────────────────────────────────────────────────
 
   it('wave 19 never contains T3 types (pool excludes them)', () => {
@@ -261,6 +290,23 @@ describe('buildEndlessSpawnQueue — pool tier thresholds', () => {
   it('wave 30 milestone confirms void_assassin (T3) is reachable after wave 20', () => {
     const q = buildEndlessSpawnQueue(30);
     expect(q.some(e => e.def.type === 'void_assassin' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  // ── T5 threshold (wave 40) ────────────────────────────────────────────────
+
+  it('wave 39 never contains T5 types (void_invader/undying_warrior excluded before wave 40)', () => {
+    const types = typesInQueue(39);
+    expect(types.has('void_invader'),     'wave 39 void_invader').toBe(false);
+    expect(types.has('undying_warrior'),  'wave 39 undying_warrior').toBe(false);
+  });
+
+  // ── T6 threshold (wave 50) ────────────────────────────────────────────────
+
+  it('wave 49 never contains T6 types (mirror_knight/void_colossus excluded before wave 50)', () => {
+    const types = typesInQueue(49);
+    expect(types.has('mirror_knight'),  'wave 49 mirror_knight').toBe(false);
+    expect(types.has('void_colossus'),  'wave 49 void_colossus').toBe(false);
+    expect(types.has('titan_sentinel'), 'wave 49 titan_sentinel').toBe(false);
   });
 
   // ── T7 threshold (wave 60) ────────────────────────────────────────────────
