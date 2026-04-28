@@ -153,6 +153,26 @@ describe('WAVE_EVENTS — colors and effect characterization', () => {
     const colors = WAVE_EVENTS.map(e => e.color);
     expect(new Set(colors).size).toBe(colors.length);
   });
+
+  it('supply color is #44cc88 (green)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'supply')!.color).toBe('#44cc88');
+  });
+
+  it('curse color is #cc44cc (purple)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'curse')!.color).toBe('#cc44cc');
+  });
+
+  it('rally color is #ff8844 (orange)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'rally')!.color).toBe('#ff8844');
+  });
+
+  it('fog color is #8899bb (blue-grey)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'fog')!.color).toBe('#8899bb');
+  });
+
+  it('void_storm color is #7744dd (deep purple)', () => {
+    expect(WAVE_EVENTS.find(e => e.type === 'void_storm')!.color).toBe('#7744dd');
+  });
 });
 
 // ─── rollWaveEvent ────────────────────────────────────────────────────────────
@@ -210,5 +230,32 @@ describe('rollWaveEvent', () => {
   it('returns null for wave < 2 regardless of maxWave', () => {
     expect(rollWaveEvent(0, 20, 5)).toBeNull();
     expect(rollWaveEvent(1, 20, 5)).toBeNull();
+  });
+
+  it('wave=2 (minimum eligible) returns an event for stageId=4', () => {
+    // seededHash(2, 4) % 100 < 30 → triggers; verified via npx tsx probe
+    const evt = rollWaveEvent(2, 10, 4);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('fog');
+  });
+
+  it('wave=maxWave-1 (one before boss) is eligible for events', () => {
+    // stageId=1: seededHash(9,1) % 100 < 30 → triggers
+    const evt = rollWaveEvent(9, 10, 1);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('fog');
+  });
+
+  it('all 8 event types are reachable across wave/stageId combinations', () => {
+    const seen = new Set<string>();
+    for (let wave = 2; wave < 20; wave++) {
+      for (let s = 0; s < 200; s++) {
+        const evt = rollWaveEvent(wave, 25, s);
+        if (evt) seen.add(evt.type);
+      }
+    }
+    for (const e of WAVE_EVENTS) {
+      expect(seen.has(e.type), `${e.type} never returned`).toBe(true);
+    }
   });
 });
