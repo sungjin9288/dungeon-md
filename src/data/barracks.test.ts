@@ -178,6 +178,116 @@ describe('ACTIVE_SKILLS', () => {
   });
 });
 
+// ─── ACTIVE_SKILLS — category counts ─────────────────────────────────────────
+
+describe('ACTIVE_SKILLS — category counts', () => {
+  const byCat = (cat: string) => ACTIVE_SKILLS.filter(s => s.category === cat);
+
+  it('has exactly 5 combat skills', () => {
+    expect(byCat('combat')).toHaveLength(5);
+  });
+
+  it('has exactly 3 defense skills', () => {
+    expect(byCat('defense')).toHaveLength(3);
+  });
+
+  it('has exactly 7 support skills', () => {
+    expect(byCat('support')).toHaveLength(7);
+  });
+
+  it('combat skill ids are fire_burst, ice_arrow, lightning, poison_cloud, heavy_strike', () => {
+    const ids = byCat('combat').map(s => s.id).sort();
+    expect(ids).toEqual(['fire_burst', 'heavy_strike', 'ice_arrow', 'lightning', 'poison_cloud'].sort());
+  });
+
+  it('defense skill ids are fortress, heal_room, shield', () => {
+    const ids = byCat('defense').map(s => s.id).sort();
+    expect(ids).toEqual(['fortress', 'heal_room', 'shield'].sort());
+  });
+});
+
+// ─── ACTIVE_SKILLS — per-skill spot-checks ───────────────────────────────────
+
+describe('ACTIVE_SKILLS — per-skill spot-checks', () => {
+  const get = (id: string) => ACTIVE_SKILLS.find(s => s.id === id)!;
+
+  it('heavy_strike has the shortest cooldown (8s)', () => {
+    const minCd = Math.min(...ACTIVE_SKILLS.map(s => s.cooldown));
+    expect(get('heavy_strike').cooldown).toBe(minCd);
+    expect(get('heavy_strike').cooldown).toBe(8);
+  });
+
+  it('gold_rush has the longest cooldown (60s)', () => {
+    const maxCd = Math.max(...ACTIVE_SKILLS.map(s => s.cooldown));
+    expect(get('gold_rush').cooldown).toBe(maxCd);
+    expect(get('gold_rush').cooldown).toBe(60);
+  });
+
+  it('fire_burst: combat, cooldown 20, goldCost 150', () => {
+    const sk = get('fire_burst');
+    expect(sk.category).toBe('combat');
+    expect(sk.cooldown).toBe(20);
+    expect(sk.goldCost).toBe(150);
+  });
+
+  it('ice_arrow: combat, cooldown 15', () => {
+    const sk = get('ice_arrow');
+    expect(sk.category).toBe('combat');
+    expect(sk.cooldown).toBe(15);
+  });
+
+  it('lightning: combat, cooldown 25, gemCost 35', () => {
+    const sk = get('lightning');
+    expect(sk.category).toBe('combat');
+    expect(sk.cooldown).toBe(25);
+    expect(sk.gemCost).toBe(35);
+  });
+
+  it('fortress: defense, cooldown 45 (longest defense cooldown)', () => {
+    const sk = get('fortress');
+    expect(sk.category).toBe('defense');
+    expect(sk.cooldown).toBe(45);
+  });
+
+  it('heal_room: defense, cooldown 20, goldCost 100', () => {
+    const sk = get('heal_room');
+    expect(sk.category).toBe('defense');
+    expect(sk.cooldown).toBe(20);
+    expect(sk.goldCost).toBe(100);
+  });
+
+  it('gold_rush: support, goldCost 250, gemCost 50', () => {
+    const sk = get('gold_rush');
+    expect(sk.category).toBe('support');
+    expect(sk.goldCost).toBe(250);
+    expect(sk.gemCost).toBe(50);
+  });
+
+  it('timestop: support, cooldown 50', () => {
+    const sk = get('timestop');
+    expect(sk.category).toBe('support');
+    expect(sk.cooldown).toBe(50);
+  });
+
+  it('rage: support, cooldown 30, goldCost 160', () => {
+    const sk = get('rage');
+    expect(sk.category).toBe('support');
+    expect(sk.cooldown).toBe(30);
+    expect(sk.goldCost).toBe(160);
+  });
+
+  it('gold_rush has the highest goldCost of all skills (250)', () => {
+    const maxGold = Math.max(...ACTIVE_SKILLS.map(s => s.goldCost));
+    expect(get('gold_rush').goldCost).toBe(maxGold);
+    expect(maxGold).toBe(250);
+  });
+
+  it('heavy_strike has the lowest goldCost of all skills (80)', () => {
+    const minGold = Math.min(...ACTIVE_SKILLS.map(s => s.goldCost));
+    expect(get('heavy_strike').goldCost).toBe(minGold);
+  });
+});
+
 // ─── EQUIPMENT_DEFS data integrity ───────────────────────────────────────────
 
 describe('EQUIPMENT_DEFS', () => {
