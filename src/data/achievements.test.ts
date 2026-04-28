@@ -506,3 +506,176 @@ describe('checkAchievements — epilogue unlock', () => {
     expect(result).not.toContain('dm_lv25');
   });
 });
+
+// ─── getProgress — build (extended) ──────────────────────────────────────────
+
+describe('getProgress — build (rooms built)', () => {
+  it('first_room: 0 with no rooms, 1 with one room', () => {
+    const def = getAchievementDef('first_room')!;
+    expect(def.getProgress(emptyCtx)).toBe(0);
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian'] }))).toBe(1);
+  });
+
+  it('rooms_50: counts total rooms built (not unique)', () => {
+    const def = getAchievementDef('rooms_50')!;
+    const rooms = Array.from({ length: 50 }, () => 'guardian');
+    expect(def.getProgress(makeCtx({ roomsBuilt: rooms }))).toBe(50);
+  });
+
+  it('rooms_200: target is 200', () => {
+    expect(getAchievementDef('rooms_200')!.target).toBe(200);
+  });
+
+  it('all_rooms: counts distinct room types (Set size)', () => {
+    const def = getAchievementDef('all_rooms')!;
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian', 'guardian', 'trap'] }))).toBe(2);
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian', 'trap', 'gold', 'tower', 'armory'] }))).toBe(5);
+  });
+
+  it('all_rooms: target is 5', () => {
+    expect(getAchievementDef('all_rooms')!.target).toBe(5);
+  });
+
+  it('void_builder: 0 without void_forge, 1 with it', () => {
+    const def = getAchievementDef('void_builder')!;
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian', 'trap'] }))).toBe(0);
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian', 'void_forge'] }))).toBe(1);
+  });
+
+  it('shrine_master: 0 without celestial_shrine, 1 with it', () => {
+    const def = getAchievementDef('shrine_master')!;
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['guardian'] }))).toBe(0);
+    expect(def.getProgress(makeCtx({ roomsBuilt: ['celestial_shrine'] }))).toBe(1);
+  });
+});
+
+describe('getProgress — build (stars & wisdom)', () => {
+  it('chapter1_3star: 0 when stage 1 not 3-starred', () => {
+    const def = getAchievementDef('chapter1_3star')!;
+    const prog = [{ unlocked: true, bestStars: 2 }];
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(0);
+  });
+
+  it('chapter1_3star: 1 when stageProgress[0].bestStars === 3', () => {
+    const def = getAchievementDef('chapter1_3star')!;
+    const prog = [{ unlocked: true, bestStars: 3 }];
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+  });
+
+  it('star_collector: clamped at 30, target is 30', () => {
+    const def = getAchievementDef('star_collector')!;
+    expect(def.target).toBe(30);
+    const all3 = Array.from({ length: 50 }, () => ({ unlocked: true, bestStars: 3 }));
+    expect(def.getProgress(makeCtx({ stageProgress: all3 }))).toBe(30);
+  });
+
+  it('ch7_3star: 0 when stage 72 (index 71) not 3-starred', () => {
+    const def = getAchievementDef('ch7_3star')!;
+    const prog = Array.from({ length: 72 }, (_, i) =>
+      ({ unlocked: true, bestStars: i === 71 ? 2 : 3 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(0);
+  });
+
+  it('ch7_3star: 1 when stageProgress[71].bestStars >= 3', () => {
+    const def = getAchievementDef('ch7_3star')!;
+    const prog = Array.from({ length: 72 }, () => ({ unlocked: true, bestStars: 3 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+  });
+
+  it('wisdom_tier3: counts wisdomTree entries with value >= 3', () => {
+    const def = getAchievementDef('wisdom_tier3')!;
+    expect(def.getProgress(makeCtx({ wisdomTree: { a: 2, b: 3, c: 5 } }))).toBe(2);
+  });
+
+  it('wisdom_maxed: counts wisdomTree entries with value >= 5', () => {
+    const def = getAchievementDef('wisdom_maxed')!;
+    expect(def.getProgress(makeCtx({ wisdomTree: { a: 5, b: 4, c: 5 } }))).toBe(2);
+  });
+
+  it('wisdom_elder: target is 5, counts entries >= 5', () => {
+    const def = getAchievementDef('wisdom_elder')!;
+    expect(def.target).toBe(5);
+    const tree = { a: 5, b: 5, c: 5, d: 5, e: 4, f: 5 };
+    expect(def.getProgress(makeCtx({ wisdomTree: tree }))).toBe(5);
+  });
+});
+
+// ─── getProgress — growth (extended) ─────────────────────────────────────────
+
+describe('getProgress — growth (dm level & summons)', () => {
+  it('dm_lv5: returns dmLevel directly', () => {
+    const def = getAchievementDef('dm_lv5')!;
+    expect(def.getProgress(makeCtx({ dmLevel: 3 }))).toBe(3);
+    expect(def.getProgress(makeCtx({ dmLevel: 5 }))).toBe(5);
+  });
+
+  it('dm_lv20: target is 20', () => {
+    expect(getAchievementDef('dm_lv20')!.target).toBe(20);
+  });
+
+  it('summon_10: returns totalSummons', () => {
+    const def = getAchievementDef('summon_10')!;
+    expect(def.getProgress(makeCtx({ totalSummons: 7 }))).toBe(7);
+  });
+
+  it('summon_100: target is 100', () => {
+    expect(getAchievementDef('summon_100')!.target).toBe(100);
+  });
+
+  it('ch7_first: 0 when stage 63 (index 62) not started', () => {
+    const def = getAchievementDef('ch7_first')!;
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('ch7_first: 1 when stageProgress[62].bestStars > 0', () => {
+    const def = getAchievementDef('ch7_first')!;
+    const prog = Array.from({ length: 63 }, () => ({ unlocked: true, bestStars: 1 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+  });
+
+  it('ch8_first: 1 when stageProgress[72].bestStars > 0', () => {
+    const def = getAchievementDef('ch8_first')!;
+    const prog = Array.from({ length: 73 }, () => ({ unlocked: true, bestStars: 1 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+  });
+});
+
+// ─── getProgress — combat (boss kills) ───────────────────────────────────────
+
+describe('getProgress — combat (boss kills)', () => {
+  it('boss_slayer: 0 with no knight kills', () => {
+    const def = getAchievementDef('boss_slayer')!;
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('boss_slayer: 1 when bossesKilled contains "knight"', () => {
+    const def = getAchievementDef('boss_slayer')!;
+    expect(def.getProgress(makeCtx({ bossesKilled: ['knight'] }))).toBe(1);
+  });
+
+  it('shaman_bane: counts shaman entries in bossesKilled', () => {
+    const def = getAchievementDef('shaman_bane')!;
+    const kills = Array.from({ length: 35 }, () => 'shaman');
+    expect(def.getProgress(makeCtx({ bossesKilled: kills }))).toBe(35);
+  });
+
+  it('shaman_bane: target is 50', () => {
+    expect(getAchievementDef('shaman_bane')!.target).toBe(50);
+  });
+
+  it('void_vanquisher: 1 when bossesKilled contains "void"', () => {
+    const def = getAchievementDef('void_vanquisher')!;
+    expect(def.getProgress(makeCtx({ bossesKilled: ['knight', 'void'] }))).toBe(1);
+    expect(def.getProgress(makeCtx({ bossesKilled: ['knight'] }))).toBe(0);
+  });
+
+  it('undying_slayer: 1 when bossesKilled contains "undying"', () => {
+    const def = getAchievementDef('undying_slayer')!;
+    expect(def.getProgress(makeCtx({ bossesKilled: ['undying'] }))).toBe(1);
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('slayer_5000: target is 5000', () => {
+    expect(getAchievementDef('slayer_5000')!.target).toBe(5000);
+  });
+});
