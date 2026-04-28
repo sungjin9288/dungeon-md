@@ -193,4 +193,85 @@ describe('simulateDungeon — recommendations', () => {
       expect(r.recommendation.length).toBeGreaterThan(0);
     }
   });
+
+  it('"현재 배치로 클리어 가능!" when strong setup with no invader waves', () => {
+    // 0 waves → hp unchanged (winPct=100), dps >= 8 from 4 slots → 클리어 가능
+    const strongSlots = Array.from({ length: 4 }, () =>
+      makeSlot(['dokkaebi_warrior', 'gumiho_guardian']),
+    );
+    const r = simulateDungeon(strongSlots, [], [], 1000);
+    expect(r.recommendation).toContain('클리어 가능');
+  });
+});
+
+// ─── simulateDungeon — WaveSimResult fields ───────────────────────────────────
+
+describe('simulateDungeon — WaveSimResult fields', () => {
+  it('invaderHpSum is positive for a wave with invaders', () => {
+    const r = simulateDungeon([], [], [makeWave('peasant', 3)], 1000);
+    expect(r.waveResults[0].invaderHpSum).toBeGreaterThan(0);
+  });
+
+  it('hpLost is non-negative for every wave', () => {
+    const r = simulateDungeon([], [], [makeWave('knight', 3), makeWave('peasant', 2)], 1000);
+    for (const wr of r.waveResults) {
+      expect(wr.hpLost, `wave ${wr.waveNum} hpLost`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('damageDealt is non-negative and at most invaderHpSum', () => {
+    const r = simulateDungeon([], [], [makeWave('peasant', 5)], 1000);
+    const wr = r.waveResults[0];
+    expect(wr.damageDealt).toBeGreaterThanOrEqual(0);
+    expect(wr.damageDealt).toBeLessThanOrEqual(wr.invaderHpSum + 0.01);
+  });
+
+  it('invaderCount matches the count of peasants in the wave', () => {
+    const r = simulateDungeon([], [], [makeWave('peasant', 7)], 1000);
+    expect(r.waveResults[0].invaderCount).toBe(7);
+  });
+
+  it('invaderCount equals the sum across all groups in a mixed wave', () => {
+    const mixedWave: WaveSpec = {
+      invaders: [
+        { type: 'peasant', count: 3, spawnDelay: 0 },
+        { type: 'soldier', count: 2, spawnDelay: 1000 },
+      ],
+    };
+    const r = simulateDungeon([], [], [mixedWave], 1000);
+    expect(r.waveResults[0].invaderCount).toBe(5);
+  });
+});
+
+// ─── simulateDungeon — winPct edge cases ─────────────────────────────────────
+
+describe('simulateDungeon — winPct edge cases', () => {
+  it('winPct = 100 when no waves are simulated', () => {
+    const r = simulateDungeon([makeSlot(['dokkaebi_warrior'])], [], [], 1000);
+    expect(r.winPct).toBe(100);
+  });
+
+  it('winPct = 0 when dungeon hp is fully depleted', () => {
+    // 0 DPS, many heavy knights, small startHp
+    const r = simulateDungeon([], [], [makeWave('knight', 20)], 1);
+    expect(r.finalHp).toBe(0);
+    expect(r.winPct).toBe(0);
+  });
+
+  it('stronger DPS yields higher winPct (relative comparison)', () => {
+    const weakR  = simulateDungeon([], [],                           [makeWave('peasant', 5)], 1000);
+    const strongR = simulateDungeon(
+      Array.from({ length: 6 }, () => makeSlot(['dokkaebi_warrior', 'gumiho_guardian'])),
+      [],
+      [makeWave('peasant', 5)],
+      1000,
+    );
+    expect(strongR.winPct).toBeGreaterThanOrEqual(weakR.winPct);
+  });
+
+  it('finalHp decreases across multiple damaging waves', () => {
+    // No DPS — all invaders survive, each dealing damage
+    const r = simulateDungeon([], [], [makeWave('peasant', 1), makeWave('peasant', 1)], 10000);
+    expect(r.finalHp).toBeLessThan(10000);
+  });
 });
