@@ -163,6 +163,24 @@ describe('getBannerTimeLeft', () => {
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });
+
+  it('shows hours+minutes string when < 24 hours remain', () => {
+    // Construct "now" as 5.5 hours before the computed end timestamp — timezone-safe.
+    const end = new Date('2026-01-31T23:59:59');
+    const now = new Date(end.getTime() - 5.5 * 3600 * 1000);
+    const result = getBannerTimeLeft(SAMPLE_BANNER, now);
+    expect(result).toMatch(/\d+시간.*분 남음/);
+    expect(result).not.toContain('일');
+  });
+
+  it('shows minutes-only string when < 1 hour remains', () => {
+    const end = new Date('2026-01-31T23:59:59');
+    const now = new Date(end.getTime() - 30 * 60 * 1000); // 30 min before end
+    const result = getBannerTimeLeft(SAMPLE_BANNER, now);
+    expect(result).toMatch(/^\d+분 남음$/);
+    expect(result).not.toContain('시간');
+    expect(result).not.toContain('일');
+  });
 });
 
 // ─── applyBannerBoost ─────────────────────────────────────────────────────────
@@ -331,5 +349,27 @@ describe('SEASON_BANNERS — per-banner spot-checks', () => {
     expect(b.season).toBe('special');
     expect(b.boostedRarity).toBe('epic');
     expect(b.rateMultiplier).toBeCloseTo(0.65);
+  });
+
+  it('special_dragon_2026: season=special, boostedRarity=epic, rateMultiplier=0.65', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'special_dragon_2026')!;
+    expect(b).toBeDefined();
+    expect(b.season).toBe('special');
+    expect(b.boostedRarity).toBe('epic');
+    expect(b.rateMultiplier).toBeCloseTo(0.65);
+  });
+
+  it('special_dragon_2026: startDate=2026-05-01, endDate=2026-05-31, validSummonTypes=[special]', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'special_dragon_2026')!;
+    expect(b.startDate).toBe('2026-05-01');
+    expect(b.endDate).toBe('2026-05-31');
+    expect(b.validSummonTypes).toEqual(['special']);
+  });
+
+  it('special_dragon_2026 features all 6 dragon tribe monsters', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'special_dragon_2026')!;
+    expect(b.featuredMonsters).toHaveLength(6);
+    expect(b.featuredMonsters).toContain('red_dragon_warrior');
+    expect(b.featuredMonsters).toContain('blue_dragon_archmage');
   });
 });
