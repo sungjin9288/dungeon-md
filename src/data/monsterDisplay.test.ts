@@ -283,3 +283,124 @@ describe('Ch7 celestial monsters — display map spot-checks', () => {
     expect(Object.keys(MONSTER_EMOJI).length).toBeGreaterThanOrEqual(100);
   });
 });
+
+// ─── Ch1 display map exact values ────────────────────────────────────────────
+
+describe('Ch1 monsters — display map exact values', () => {
+  it('dokkaebi_warrior: emoji=👹, name="도깨비 전사"', () => {
+    expect(MONSTER_EMOJI['dokkaebi_warrior']).toBe('👹');
+    expect(MONSTER_NAME['dokkaebi_warrior']).toBe('도깨비 전사');
+  });
+
+  it('dokkaebi_junior: emoji=👺, name="막내 도깨비"', () => {
+    expect(MONSTER_EMOJI['dokkaebi_junior']).toBe('👺');
+    expect(MONSTER_NAME['dokkaebi_junior']).toBe('막내 도깨비');
+  });
+
+  it('village_archer: emoji=🏹, name="마을 궁수"', () => {
+    expect(MONSTER_EMOJI['village_archer']).toBe('🏹');
+    expect(MONSTER_NAME['village_archer']).toBe('마을 궁수');
+  });
+
+  it('gold_turtle: emoji=🐢, name="황금 거북"', () => {
+    expect(MONSTER_EMOJI['gold_turtle']).toBe('🐢');
+    expect(MONSTER_NAME['gold_turtle']).toBe('황금 거북');
+  });
+
+  it('fire_dokkaebi: emoji=🔥, name="화염 도깨비"', () => {
+    expect(MONSTER_EMOJI['fire_dokkaebi']).toBe('🔥');
+    expect(MONSTER_NAME['fire_dokkaebi']).toBe('화염 도깨비');
+  });
+
+  it('sage: emoji=🧙, name="신선 도인"', () => {
+    expect(MONSTER_EMOJI['sage']).toBe('🧙');
+    expect(MONSTER_NAME['sage']).toBe('신선 도인');
+  });
+});
+
+// ─── Ch2 display map exact values ────────────────────────────────────────────
+
+describe('Ch2 monsters — display map exact values', () => {
+  it('gumiho_guardian: emoji=🦊, name="구미호 수호자"', () => {
+    expect(MONSTER_EMOJI['gumiho_guardian']).toBe('🦊');
+    expect(MONSTER_NAME['gumiho_guardian']).toBe('구미호 수호자');
+  });
+
+  it('white_tiger: emoji=🐯, name="백호 검사"', () => {
+    expect(MONSTER_EMOJI['white_tiger']).toBe('🐯');
+    expect(MONSTER_NAME['white_tiger']).toBe('백호 검사');
+  });
+
+  it('frost_spirit: emoji=❄️, name="빙결 산령"', () => {
+    expect(MONSTER_EMOJI['frost_spirit']).toBe('❄️');
+    expect(MONSTER_NAME['frost_spirit']).toBe('빙결 산령');
+  });
+
+  it('fox_shaman: emoji=🪬, name="여우 무당"', () => {
+    expect(MONSTER_EMOJI['fox_shaman']).toBe('🪬');
+    expect(MONSTER_NAME['fox_shaman']).toBe('여우 무당');
+  });
+
+  it('sea_god_spear: emoji=🔱, name="해신 창병"', () => {
+    expect(MONSTER_EMOJI['sea_god_spear']).toBe('🔱');
+    expect(MONSTER_NAME['sea_god_spear']).toBe('해신 창병');
+  });
+
+  it('iron_mask: emoji=🎭, name="철갑 탈"', () => {
+    expect(MONSTER_EMOJI['iron_mask']).toBe('🎭');
+    expect(MONSTER_NAME['iron_mask']).toBe('철갑 탈');
+  });
+});
+
+// ─── Ch3 display map exact values ────────────────────────────────────────────
+
+describe('Ch3 monsters — display map exact values', () => {
+  it('death_messenger: emoji=💀, name="저승사자"', () => {
+    expect(MONSTER_EMOJI['death_messenger']).toBe('💀');
+    expect(MONSTER_NAME['death_messenger']).toBe('저승사자');
+  });
+
+  it('thunder_hero: emoji=⚡, name="벼락 용사"', () => {
+    expect(MONSTER_EMOJI['thunder_hero']).toBe('⚡');
+    expect(MONSTER_NAME['thunder_hero']).toBe('벼락 용사');
+  });
+
+  it('ghost_hunter: emoji=👻, name="귀신 포수"', () => {
+    expect(MONSTER_EMOJI['ghost_hunter']).toBe('👻');
+    expect(MONSTER_NAME['ghost_hunter']).toBe('귀신 포수');
+  });
+
+  it('mask_dancer: emoji=🎪, name="탈 춤꾼"', () => {
+    expect(MONSTER_EMOJI['mask_dancer']).toBe('🎪');
+    expect(MONSTER_NAME['mask_dancer']).toBe('탈 춤꾼');
+  });
+
+  it('venom_warrior: emoji=🐍, name="독사 무사"', () => {
+    expect(MONSTER_EMOJI['venom_warrior']).toBe('🐍');
+    expect(MONSTER_NAME['venom_warrior']).toBe('독사 무사');
+  });
+});
+
+// ─── Ch4 display map exact values ────────────────────────────────────────────
+
+describe('Ch4 monsters — display map exact values', () => {
+  it('celestial_dancer: emoji=🪭, name="천녀 무희"', () => {
+    expect(MONSTER_EMOJI['celestial_dancer']).toBe('🪭');
+    expect(MONSTER_NAME['celestial_dancer']).toBe('천녀 무희');
+  });
+
+  it('three_legged_crow: emoji=🐦, name="삼족오"', () => {
+    expect(MONSTER_EMOJI['three_legged_crow']).toBe('🐦');
+    expect(MONSTER_NAME['three_legged_crow']).toBe('삼족오');
+  });
+
+  it('great_serpent: emoji=🐍, name="구렁이"', () => {
+    expect(MONSTER_EMOJI['great_serpent']).toBe('🐍');
+    expect(MONSTER_NAME['great_serpent']).toBe('구렁이');
+  });
+
+  it('moon_rabbit_sage: emoji=🐇, name="월토 달인"', () => {
+    expect(MONSTER_EMOJI['moon_rabbit_sage']).toBe('🐇');
+    expect(MONSTER_NAME['moon_rabbit_sage']).toBe('월토 달인');
+  });
+});
