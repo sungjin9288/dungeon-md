@@ -550,3 +550,68 @@ describe('MONSTER_DEFS — Ch5 spot checks', () => {
     expect(MONSTER_DEFS['storm_archer']?.tribe).toBe('moonlight');
   });
 });
+
+// ─── MONSTER_DEFS — Ch6 chapter assignment ────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch6 chapter assignment', () => {
+  it('all 8 Ch6 tribe champions carry chapter = 6', () => {
+    const ch6Champions = [
+      'dokkaebi_king', 'gumiho_queen', 'bear_god', 'sea_general',
+      'ghost_king', 'great_mask_god', 'galaxy_warrior', 'blue_dragon_archmage',
+    ];
+    for (const id of ch6Champions) {
+      expect(MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.chapter, id).toBe(6);
+    }
+  });
+
+  it('Ch6 dokkaebi expansion: thunder_dokkaebi has dokkaebi tribe and lightning element', () => {
+    const def = MONSTER_DEFS['thunder_dokkaebi'];
+    expect(def).toBeDefined();
+    expect(def.tribe).toBe('dokkaebi');
+    expect(def.element).toBe('lightning');
+    expect(def.chapter).toBe(6);
+  });
+
+  it('dokkaebi_god_king is legendary (rarityTier L) and chapter 6', () => {
+    const def = MONSTER_DEFS['dokkaebi_god_king'];
+    expect(def?.rarityTier).toBe('L');
+    expect(def?.chapter).toBe(6);
+  });
+
+  it('Ch6 sansin expansion: mountain_spirit is legendary sansin with chapter 6', () => {
+    const def = MONSTER_DEFS['mountain_spirit'];
+    expect(def?.tribe).toBe('sansin');
+    expect(def?.rarityTier).toBe('L');
+    expect(def?.chapter).toBe(6);
+  });
+
+  it('Ch6 sea expansion: sea_witch has sea tribe and dark element', () => {
+    const def = MONSTER_DEFS['sea_witch'];
+    expect(def?.tribe).toBe('sea');
+    expect(def?.element).toBe('dark');
+    expect(def?.chapter).toBe(6);
+  });
+
+  it('Ch6 moonlight expansion: galaxy_warrior has moonlight tribe and frost element', () => {
+    const def = MONSTER_DEFS['galaxy_warrior'];
+    expect(def?.tribe).toBe('moonlight');
+    expect(def?.element).toBe('frost');
+  });
+
+  it('Ch6 dragon expansion: red_dragon_warrior has dragon tribe and fire element', () => {
+    const def = MONSTER_DEFS['red_dragon_warrior'];
+    expect(def?.tribe).toBe('dragon');
+    expect(def?.element).toBe('fire');
+    expect(def?.chapter).toBe(6);
+  });
+
+  it('getMonstersForTribe("dokkaebi") includes thunder_dokkaebi', () => {
+    const result = getMonstersForTribe('dokkaebi');
+    expect(result.some(m => m.id === 'thunder_dokkaebi')).toBe(true);
+  });
+
+  it('getMonstersForTribe("moonlight") includes galaxy_warrior', () => {
+    const result = getMonstersForTribe('moonlight');
+    expect(result.some(m => m.id === 'galaxy_warrior')).toBe(true);
+  });
+});
