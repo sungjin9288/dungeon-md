@@ -114,6 +114,24 @@ describe('CINEMATICS — chapter coverage', () => {
   it('ch8_opening is present', () => {
     expect(ALL_IDS.has('ch8_opening')).toBe(true);
   });
+
+  it('stage5_mid features 도깨비 전사 and 산신령 (3 lines)', () => {
+    const c = getCinematic('stage5_mid')!;
+    expect(c).toBeDefined();
+    expect(c.lines).toHaveLength(3);
+    const speakers = c.lines.map(l => l.speaker);
+    expect(speakers).toContain('도깨비 전사');
+    expect(speakers).toContain('산신령');
+  });
+
+  it('ch1_clear features 산신령 and 구미호 (4 lines)', () => {
+    const c = getCinematic('ch1_clear')!;
+    expect(c).toBeDefined();
+    expect(c.lines).toHaveLength(4);
+    const speakers = c.lines.map(l => l.speaker);
+    expect(speakers).toContain('산신령');
+    expect(speakers).toContain('구미호');
+  });
 });
 
 // ─── getCinematic ─────────────────────────────────────────────────────────────
@@ -188,6 +206,22 @@ describe('STAGE_CINEMATICS', () => {
       expect(n).toBeLessThanOrEqual(80);
     }
   });
+
+  it('stage 5 maps to stage5_mid', () => {
+    expect(STAGE_CINEMATICS[5]).toBe('stage5_mid');
+  });
+
+  it('stage 32 maps to dragon_king_boss_intro', () => {
+    expect(STAGE_CINEMATICS[32]).toBe('dragon_king_boss_intro');
+  });
+
+  it('stage 52 maps to final_boss_intro', () => {
+    expect(STAGE_CINEMATICS[52]).toBe('final_boss_intro');
+  });
+
+  it('stage 62 maps to eternal_emperor_boss_intro', () => {
+    expect(STAGE_CINEMATICS[62]).toBe('eternal_emperor_boss_intro');
+  });
 });
 
 // ─── CINEMATICS — ch3–ch7 chapter openings ───────────────────────────────────
@@ -259,6 +293,11 @@ describe('CINEMATICS — boss intro spot-checks', () => {
   it('eternal_emperor_boss_intro features 영원의 황제', () => {
     const c = getCinematic('eternal_emperor_boss_intro')!;
     expect(c.lines.some(l => l.speaker === '영원의 황제')).toBe(true);
+  });
+
+  it('final_boss_intro features 삼신 파괴자', () => {
+    const c = getCinematic('final_boss_intro')!;
+    expect(c.lines.some(l => l.speaker === '삼신 파괴자')).toBe(true);
   });
 
   it('every boss intro has 도깨비 전사 as one of the speakers', () => {
