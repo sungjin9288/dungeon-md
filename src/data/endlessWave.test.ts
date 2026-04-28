@@ -219,3 +219,110 @@ describe('buildEndlessSpawnQueue — milestone waves', () => {
     }
   });
 });
+
+// ─── buildEndlessSpawnQueue — pool tier thresholds ────────────────────────────
+//
+// Pool expansion is deterministic: buildPool(w) never includes T(n) types
+// before the threshold wave.  Negative tests below are therefore guaranteed
+// regardless of the random filler selection.
+//
+// Positive (type IS present) tests rely on milestone injections that hard-code
+// specific T2/T7/T8 types, making them equally deterministic.
+
+describe('buildEndlessSpawnQueue — pool tier thresholds', () => {
+  const typesInQueue = (wave: number): Set<string> =>
+    new Set(buildEndlessSpawnQueue(wave).map(e => e.def.type));
+
+  // ── T2 threshold (wave 10) ────────────────────────────────────────────────
+
+  it('wave 9 never contains T2 types (pool excludes them)', () => {
+    const types = typesInQueue(9);
+    expect(types.has('berserker'),  'wave 9 berserker').toBe(false);
+    expect(types.has('iron_golem'), 'wave 9 iron_golem').toBe(false);
+    expect(types.has('trap_breaker'), 'wave 9 trap_breaker').toBe(false);
+  });
+
+  // Positive: wave 25 milestone hard-injects iron_golem (T2) — deterministic
+  it('wave 25 milestone confirms iron_golem (T2) is reachable after wave 10', () => {
+    const q = buildEndlessSpawnQueue(25);
+    expect(q.some(e => e.def.type === 'iron_golem' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  // ── T3 threshold (wave 20) ────────────────────────────────────────────────
+
+  it('wave 19 never contains T3 types (pool excludes them)', () => {
+    const types = typesInQueue(19);
+    expect(types.has('undying_knight'), 'wave 19 undying_knight').toBe(false);
+    expect(types.has('void_assassin'),  'wave 19 void_assassin').toBe(false);
+    expect(types.has('scarecrow_mage'), 'wave 19 scarecrow_mage').toBe(false);
+  });
+
+  // Positive: wave 30 milestone hard-injects void_assassin (T3) — deterministic
+  it('wave 30 milestone confirms void_assassin (T3) is reachable after wave 20', () => {
+    const q = buildEndlessSpawnQueue(30);
+    expect(q.some(e => e.def.type === 'void_assassin' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  // ── T7 threshold (wave 60) ────────────────────────────────────────────────
+
+  it('wave 59 never contains T7 types (pool excludes them)', () => {
+    const types = typesInQueue(59);
+    expect(types.has('celestial_knight'), 'wave 59 celestial_knight').toBe(false);
+    expect(types.has('sky_titan'),        'wave 59 sky_titan').toBe(false);
+    expect(types.has('radiant_seraph'),   'wave 59 radiant_seraph').toBe(false);
+  });
+
+  // Positive: wave 70 milestone hard-injects sky_titan + radiant_seraph (T7) — deterministic
+  it('wave 70 milestone confirms sky_titan and radiant_seraph (T7) reachable after wave 60', () => {
+    const q = buildEndlessSpawnQueue(70);
+    expect(q.some(e => e.def.type === 'sky_titan'      && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.type === 'radiant_seraph' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  // ── T8 threshold (wave 70) ────────────────────────────────────────────────
+
+  it('wave 69 never contains T8 types (pool excludes them)', () => {
+    const types = typesInQueue(69);
+    expect(types.has('void_soldier'),     'wave 69 void_soldier').toBe(false);
+    expect(types.has('abyss_berserker'),  'wave 69 abyss_berserker').toBe(false);
+    expect(types.has('primordial_guard'), 'wave 69 primordial_guard').toBe(false);
+  });
+
+  // Positive: wave 80 milestone hard-injects abyss_berserker + primordial_guard (T8) — deterministic
+  it('wave 80 milestone confirms abyss_berserker and primordial_guard (T8) reachable after wave 70', () => {
+    const q = buildEndlessSpawnQueue(80);
+    expect(q.some(e => e.def.type === 'abyss_berserker'  && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  // ── Speed and reward scaling formulas ─────────────────────────────────────
+  //
+  // Wave 1: speedMult = 1.03^0 = 1 → every entry's speed equals its base speed.
+  // This is deterministic: all entries are T1 fillers, Math.round(x * 1) = x.
+
+  it('wave 1 queue entries have speed equal to their base speed (no scaling)', () => {
+    const q = buildEndlessSpawnQueue(1);
+    for (const entry of q) {
+      const base = INVADER_DEFS[entry.def.type as InvaderType].speed;
+      expect(entry.def.speed, `wave 1 ${entry.def.type} speed`).toBe(base);
+    }
+  });
+
+  // Wave 10 milestone soldier (delay=2000) is deterministic — speed and reward both scaled.
+
+  it('wave 10 milestone soldier speed = Math.round(base × 1.03^9)', () => {
+    const q = buildEndlessSpawnQueue(10);
+    const soldier = q.find(e => e.def.type === 'soldier' && e.delay === 2000);
+    expect(soldier).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['soldier'].speed * Math.pow(1.03, 9));
+    expect(soldier!.def.speed).toBe(expected);
+  });
+
+  it('wave 10 milestone soldier reward = Math.round(base × 1.08^9)', () => {
+    const q = buildEndlessSpawnQueue(10);
+    const soldier = q.find(e => e.def.type === 'soldier' && e.delay === 2000);
+    expect(soldier).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['soldier'].reward * Math.pow(1.08, 9));
+    expect(soldier!.def.reward).toBe(expected);
+  });
+});
