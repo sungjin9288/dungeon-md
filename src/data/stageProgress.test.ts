@@ -73,6 +73,43 @@ describe('STAGE_CONFIGS', () => {
       expect(cfg.stageNumber - 1).toBe(i);
     });
   });
+
+  it('stage 1 has 3 slots (smallest) and stage 80 has 18 slots (largest)', () => {
+    expect(STAGE_CONFIGS[0].slots).toBe(3);
+    expect(STAGE_CONFIGS[79].slots).toBe(18);
+  });
+});
+
+// ─── STAGE_CONFIGS — chapter layout ──────────────────────────────────────────
+
+describe('STAGE_CONFIGS — chapter layout', () => {
+  it('Ch1 spans stages 1–10 (10 stages)', () => {
+    const ch1 = STAGE_CONFIGS.filter(s => s.chapter === 1);
+    expect(ch1).toHaveLength(10);
+    expect(ch1[0].stageNumber).toBe(1);
+    expect(ch1[ch1.length - 1].stageNumber).toBe(10);
+  });
+
+  it('Ch3 has 12 stages (stages 21–32)', () => {
+    const ch3 = STAGE_CONFIGS.filter(s => s.chapter === 3);
+    expect(ch3).toHaveLength(12);
+    expect(ch3[0].stageNumber).toBe(21);
+    expect(ch3[ch3.length - 1].stageNumber).toBe(32);
+  });
+
+  it('Ch8 has 8 stages (stages 73–80)', () => {
+    const ch8 = STAGE_CONFIGS.filter(s => s.chapter === 8);
+    expect(ch8).toHaveLength(8);
+    expect(ch8[0].stageNumber).toBe(73);
+    expect(ch8[ch8.length - 1].stageNumber).toBe(80);
+  });
+
+  it('every chapter from 1 to 8 is represented', () => {
+    const chapters = new Set(STAGE_CONFIGS.map(s => s.chapter));
+    for (let ch = 1; ch <= 8; ch++) {
+      expect(chapters.has(ch), `chapter ${ch} missing`).toBe(true);
+    }
+  });
 });
 
 // ─── loadProgress ─────────────────────────────────────────────────────────────
@@ -125,6 +162,27 @@ describe('loadProgress', () => {
     expect(loaded[4].unlocked).toBe(true);
     expect(loaded[4].bestStars).toBe(3);
     expect(loaded[5].unlocked).toBe(false);
+  });
+
+  it('falls back to default 80-entry state on corrupt JSON', () => {
+    localStorage.setItem('dungeonStageProgress', 'not-valid-json{{{');
+    const prog = loadProgress();
+    expect(prog).toHaveLength(TOTAL_STAGES);
+    expect(prog[0].unlocked).toBe(true);   // stage 1 still unlocked
+    expect(prog[1].unlocked).toBe(false);  // rest locked
+  });
+
+  it('saveProgress round-trip — exact values survive save/load', () => {
+    const data = Array.from({ length: TOTAL_STAGES }, (_, i) => ({
+      unlocked: i === 0,
+      bestStars: i === 0 ? 2 : 0,
+      ...(i === 0 ? { bestHpPercent: 88 } : {}),
+    }));
+    saveProgress(data);
+    const loaded = loadProgress();
+    expect(loaded[0].bestStars).toBe(2);
+    expect(loaded[0].bestHpPercent).toBe(88);
+    expect(loaded[1].bestStars).toBe(0);
   });
 });
 
@@ -217,5 +275,14 @@ describe('recordClear', () => {
     const loaded = loadProgress();
     expect(loaded[3].bestStars).toBe(3);
     expect(loaded[3].bestHpPercent).toBe(75);
+  });
+
+  it('out-of-range stageIndex returns progress unchanged without throwing', () => {
+    const before = loadProgress();
+    expect(() => recordClear(999, 3)).not.toThrow();
+    expect(() => recordClear(-1, 3)).not.toThrow();
+    const after = loadProgress();
+    // Progress should not change since guards return early
+    expect(after[0].bestStars).toBe(before[0].bestStars);
   });
 });
