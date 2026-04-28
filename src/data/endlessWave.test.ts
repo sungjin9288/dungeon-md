@@ -169,6 +169,29 @@ describe('buildEndlessSpawnQueue — milestone waves', () => {
     }
   });
 
+  it('wave 40 adds a void_assassin_elite mini-boss', () => {
+    const q = buildEndlessSpawnQueue(40);
+    expect(q.some(e => e.def.type === 'void_assassin_elite' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  it('wave 60 has a void_colossus and a titan_sentinel mini-boss pair', () => {
+    const q = buildEndlessSpawnQueue(60);
+    expect(q.some(e => e.def.type === 'void_colossus'  && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.type === 'titan_sentinel' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  it('wave 70 has a sky_titan and a radiant_seraph elite pair', () => {
+    const q = buildEndlessSpawnQueue(70);
+    expect(q.some(e => e.def.type === 'sky_titan'      && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.type === 'radiant_seraph' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  it('wave 90 has a primordial_guard champion and at least one void_soldier', () => {
+    const q = buildEndlessSpawnQueue(90);
+    expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.type === 'void_soldier')).toBe(true);
+  });
+
   it('post-90 milestone fires every 10 waves (wave 100 has a primordial_guard)', () => {
     // (100 - 90) % 10 === 0 → milestone fires
     const q = buildEndlessSpawnQueue(100);
@@ -179,5 +202,20 @@ describe('buildEndlessSpawnQueue — milestone waves', () => {
     // (101 - 90) % 10 === 1 ≠ 0 → no milestone
     const q = buildEndlessSpawnQueue(101);
     expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(false);
+  });
+
+  it('wave 110 fires the post-90 milestone (wave 110 has primordial_guard)', () => {
+    // (110 - 90) % 10 === 0 → milestone fires
+    const q = buildEndlessSpawnQueue(110);
+    expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  it('waves 20–90 (all mini-boss milestones) each add at least one isMiniBoss entry', () => {
+    // Wave 10 only adds an elite soldier (no isMiniBoss flag); 20+ all use isMiniBoss
+    const milestones = [20, 25, 30, 40, 50, 60, 70, 80, 90];
+    for (const w of milestones) {
+      const q = buildEndlessSpawnQueue(w);
+      expect(q.some(e => e.def.isMiniBoss === true), `wave ${w} has no isMiniBoss`).toBe(true);
+    }
   });
 });
