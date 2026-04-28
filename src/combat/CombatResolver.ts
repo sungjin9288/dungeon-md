@@ -79,9 +79,11 @@ export function findTarget(
   rowRange:       number,
   now:            number,
 ): Invader | null {
-  let target: Invader | null = null;
-  let bestDist = Infinity;
   const isSunDive = mDef?.passive === 'SUN_DIVE';
+  let target: Invader | null = null;
+  // Normal mode: minimise distance → start high.
+  // SUN_DIVE mode: maximise pathProgress → start low.
+  let bestDist = isSunDive ? -Infinity : Infinity;
 
   for (const inv of activeInvaders) {
     if (!inv.active) continue;
