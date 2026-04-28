@@ -116,6 +116,20 @@ describe('hasTribeMasteryFor', () => {
     grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general' }); // tribe = dokkaebi
     expect(hasTribeMasteryFor(grid, 'gumiho')).toBe(false);
   });
+
+  it('returns true when TRIBE_MASTERY monster is one of several monsters in the grid', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_warrior' }); // no TRIBE_MASTERY
+    grid[0][1] = makeRoom({ monsterSlot: 'dokkaebi_general' }); // TRIBE_MASTERY, dokkaebi
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
+  });
+
+  it('returns true for gumiho_goddess (TRIBE_MASTERY, tribe=gumiho)', () => {
+    const grid = emptyGrid();
+    grid[1][2] = makeRoom({ monsterSlot: 'gumiho_goddess' });
+    expect(hasTribeMasteryFor(grid, 'gumiho')).toBe(true);
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(false); // different tribe
+  });
 });
 
 // ─── hasSeasonalBoon ──────────────────────────────────────────────────────────
@@ -193,6 +207,14 @@ describe('isScrollBurstActive', () => {
     grid[0][0] = makeRoom({ type: 'guardian', scrollBurstActiveUntil: NOW + 500 });
     expect(isScrollBurstActive(grid, COLS, 0, 1, NOW)).toBe(false);
   });
+
+  it('returns true when one of two scroll_libraries is active (expired one ignored)', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: 100 });      // expired
+    grid[0][2] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 500 }); // active
+    // querying (0,1): distance to (0,2) = 1 ≤ 3 → true
+    expect(isScrollBurstActive(grid, COLS, 0, 1, NOW)).toBe(true);
+  });
 });
 
 // ─── getInvaderRow ────────────────────────────────────────────────────────────
@@ -221,5 +243,23 @@ describe('getInvaderRow', () => {
   it('maps y close to row-0 centre (within 0.7×cellSize) to row 0', () => {
     const closeY = ROW_Y[0] + Math.floor(CELL_SIZE * 0.6); // within band
     expect(getInvaderRow(CELL_SIZE, { y: closeY })).toBe(0);
+  });
+
+  it('accepts y at the exact upper boundary of row-0 band (distance = 0.7×cellSize)', () => {
+    // Math.abs(y - rowY) <= 0.7×cellSize → exactly at boundary should return 0
+    const boundaryY = ROW_Y[0] - CELL_SIZE * 0.7;
+    expect(getInvaderRow(CELL_SIZE, { y: boundaryY })).toBe(0);
+  });
+
+  it('returns -1 for y past the last row band', () => {
+    const pastLastRow = ROW_Y[2] + CELL_SIZE * 0.7 + 1;
+    expect(getInvaderRow(CELL_SIZE, { y: pastLastRow })).toBe(-1);
+  });
+
+  it('maps y close to row-2 centre (exclusive to row-2 band) to row 2', () => {
+    // Row-1 upper bound = ROW_Y[1] + 0.7×C = 295+77 = 372.
+    // Use ROW_Y[2] + 0.5×C = 460, which is inside row-2 band and outside row-1 band.
+    const closeY = ROW_Y[2] + Math.floor(CELL_SIZE * 0.5);
+    expect(getInvaderRow(CELL_SIZE, { y: closeY })).toBe(2);
   });
 });
