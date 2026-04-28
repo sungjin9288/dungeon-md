@@ -482,6 +482,72 @@ describe('getPrestigeDmgMult', () => {
   });
 });
 
+describe('BRANCH_DEFS — per-branch getValue formula', () => {
+  const get = (id: string) => BRANCH_DEFS.find(b => b.id === id)!;
+
+  it('goldHands.getValue scales by 50 per tier (tier 3 → 150)', () => {
+    expect(get('goldHands').getValue(3)).toBe(150);
+    expect(get('goldHands').getValue(5)).toBe(250);
+  });
+
+  it('ironWalls.getValue scales by 20 per tier (tier 5 → 100)', () => {
+    expect(get('ironWalls').getValue(5)).toBe(100);
+  });
+
+  it('dungeonFortress.getValue scales by 50 per tier (tier 3 → 150)', () => {
+    expect(get('dungeonFortress').getValue(3)).toBe(150);
+    expect(get('dungeonFortress').getValue(5)).toBe(250);
+  });
+
+  it('ancestorsWisdom.getValue equals tier (1:1 mapping)', () => {
+    for (let t = 0; t <= 5; t++) {
+      expect(get('ancestorsWisdom').getValue(t)).toBe(t);
+    }
+  });
+
+  it('celestialBlood.getValue equals tier (1:1 mapping)', () => {
+    for (let t = 0; t <= 5; t++) {
+      expect(get('celestialBlood').getValue(t)).toBe(t);
+    }
+  });
+
+  it('Ch8 branches (soulHarvest, forgeEnhancer) have tier-5 cost 80 — highest of all', () => {
+    const maxCost5 = Math.max(...BRANCH_DEFS.map(b => b.costPerTier[4]));
+    expect(get('soulHarvest').costPerTier[4]).toBe(maxCost5);
+    expect(get('forgeEnhancer').costPerTier[4]).toBe(maxCost5);
+    expect(maxCost5).toBe(80);
+  });
+});
+
+describe('getWisdomBonuses — dungeonFortress branch', () => {
+  it('dungeonFortress tier 0 → fortressHp = 0', () => {
+    const state = loadGameState();
+    const b = getWisdomBonuses(state);
+    expect(b.fortressHp).toBe(0);
+  });
+
+  it('dungeonFortress tier 3 → fortressHp = 150', () => {
+    const state = loadGameState();
+    state.wisdomTree['dungeonFortress'] = 3;
+    expect(getWisdomBonuses(state).fortressHp).toBe(150);
+  });
+
+  it('dungeonFortress tier 5 → fortressHp = 250 (max)', () => {
+    const state = loadGameState();
+    state.wisdomTree['dungeonFortress'] = 5;
+    expect(getWisdomBonuses(state).fortressHp).toBe(250);
+  });
+
+  it('dungeonFortress is independent from ironWalls (both stack)', () => {
+    const state = loadGameState();
+    state.wisdomTree['ironWalls']       = 5; // +100 dungeonMaxHpBonus
+    state.wisdomTree['dungeonFortress'] = 5; // +250 fortressHp
+    const b = getWisdomBonuses(state);
+    expect(b.dungeonMaxHpBonus).toBe(100);
+    expect(b.fortressHp).toBe(250);
+  });
+});
+
 describe('startPrestige', () => {
   it('increments prestigeLevel', () => {
     const state = loadGameState();
