@@ -162,4 +162,45 @@ describe('computeLayout', () => {
     expect(l2.hr).toBeCloseTo(layout.hr * 2, 5);
     expect(l2.bw).toBeCloseTo(layout.bw * 2, 5);
   });
+
+  it('r field equals the provided radius', () => {
+    expect(layout.r).toBe(R);
+  });
+
+  it('hx (head centre x) equals cx (canvas centre)', () => {
+    expect(layout.hx).toBe(layout.cx);
+  });
+
+  it('hy (head centre y) is above canvas centre (cy - r×0.22)', () => {
+    expect(layout.hy).toBeCloseTo(R - R * 0.22, 5);
+    expect(layout.hy).toBeLessThan(layout.cy);
+  });
+
+  it('bw equals r × 0.68 exactly', () => {
+    expect(layout.bw).toBeCloseTo(R * 0.68, 5);
+  });
+
+  it('bh equals r × 0.42 exactly', () => {
+    expect(layout.bh).toBeCloseTo(R * 0.42, 5);
+  });
+
+  it('by equals hy + hr + r×0.02 (body top sits just below head bottom)', () => {
+    expect(layout.by).toBeCloseTo(layout.hy + layout.hr + R * 0.02, 5);
+  });
+});
+
+// ─── darken / lighten — zero-amount edge cases ───────────────────────────────
+
+describe('darken — amount=0 edge case', () => {
+  it('amount=0 returns black (all channels zeroed)', () => {
+    expect(darken(0xffffff, 0)).toBe(0x000000);
+    expect(darken(0xff8040, 0)).toBe(0x000000);
+  });
+});
+
+describe('lighten — amount=0 edge case', () => {
+  it('amount=0 returns original color unchanged', () => {
+    expect(lighten(0x123456, 0)).toBe(0x123456);
+    expect(lighten(0x000000, 0)).toBe(0x000000);
+  });
 });
