@@ -615,3 +615,60 @@ describe('MONSTER_DEFS — Ch6 chapter assignment', () => {
     expect(result.some(m => m.id === 'galaxy_warrior')).toBe(true);
   });
 });
+
+// ─── Ch6 passive and stat spot-checks ────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch6 passive and stat spot-checks', () => {
+  it('blue_dragon_archmage is legendary (rarityTier = "L")', () => {
+    expect(MONSTER_DEFS['blue_dragon_archmage']?.rarityTier).toBe('L');
+  });
+
+  it('blue_dragon_archmage has CHAIN_LIGHTNING passive', () => {
+    expect(MONSTER_DEFS['blue_dragon_archmage']?.passive).toBe('CHAIN_LIGHTNING');
+  });
+
+  it('blue_dragon_archmage has the highest baseDamage among all 8 Ch6 tribe champions', () => {
+    const champions = [
+      'dokkaebi_king', 'gumiho_queen', 'bear_god', 'sea_general',
+      'ghost_king', 'great_mask_god', 'galaxy_warrior', 'blue_dragon_archmage',
+    ];
+    const archmage = MONSTER_DEFS['blue_dragon_archmage']!;
+    for (const id of champions.filter(c => c !== 'blue_dragon_archmage')) {
+      const def = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS];
+      expect(archmage.baseDamage, `archmage vs ${id}`).toBeGreaterThanOrEqual(def?.baseDamage ?? 0);
+    }
+    expect(archmage.baseDamage).toBe(58);
+  });
+
+  it('great_mask_god is a support monster with baseDamage = 0', () => {
+    const def = MONSTER_DEFS['great_mask_god'];
+    expect(def?.type).toBe('support');
+    expect(def?.baseDamage).toBe(0);
+  });
+
+  it('great_mask_god has KINGS_RALLY passive', () => {
+    expect(MONSTER_DEFS['great_mask_god']?.passive).toBe('KINGS_RALLY');
+  });
+
+  it('dokkaebi_king has KINGS_RALLY passive and epic rarity', () => {
+    const def = MONSTER_DEFS['dokkaebi_king'];
+    expect(def?.passive).toBe('KINGS_RALLY');
+    expect(def?.rarityTier).toBe('E');
+  });
+
+  it('gumiho_queen has FOX_CLONE passive', () => {
+    expect(MONSTER_DEFS['gumiho_queen']?.passive).toBe('FOX_CLONE');
+  });
+
+  it('ghost_king has PACK_CAPTAIN passive', () => {
+    expect(MONSTER_DEFS['ghost_king']?.passive).toBe('PACK_CAPTAIN');
+  });
+
+  it('galaxy_warrior has TEMPEST passive', () => {
+    expect(MONSTER_DEFS['galaxy_warrior']?.passive).toBe('TEMPEST');
+  });
+
+  it('spring_gumiho has SEASONAL_BOON passive', () => {
+    expect(MONSTER_DEFS['spring_gumiho']?.passive).toBe('SEASONAL_BOON');
+  });
+});
