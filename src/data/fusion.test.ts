@@ -662,3 +662,65 @@ describe('DROP_TABLE — chapter spot-checks', () => {
     expect(titanChance).toBeGreaterThan(emperorChance);
   });
 });
+
+// ─── MATERIAL_DEFS — per-material spot-checks ────────────────────────────────
+
+describe('MATERIAL_DEFS — per-material spot-checks', () => {
+  it('contains exactly 11 materials', () => {
+    expect(Object.keys(MATERIAL_DEFS)).toHaveLength(11);
+  });
+
+  it('boss_essence has emoji 💠', () => {
+    expect(MATERIAL_DEFS['boss_essence'].emoji).toBe('💠');
+  });
+
+  it('old_cloth has emoji 🟤 and name "낡은 천"', () => {
+    expect(MATERIAL_DEFS['old_cloth'].emoji).toBe('🟤');
+    expect(MATERIAL_DEFS['old_cloth'].name).toBe('낡은 천');
+  });
+
+  it('magic_dust has emoji ✨', () => {
+    expect(MATERIAL_DEFS['magic_dust'].emoji).toBe('✨');
+  });
+
+  it('boss_essence name is "보스 정수"', () => {
+    expect(MATERIAL_DEFS['boss_essence'].name).toBe('보스 정수');
+  });
+});
+
+// ─── HYBRID_DEFS — per-hybrid spot-checks ────────────────────────────────────
+
+describe('HYBRID_DEFS — per-hybrid spot-checks', () => {
+  const h = (id: string) => HYBRID_DEFS[id];
+
+  it('ice_dragon_lord has the highest baseDamage (36) of all hybrids', () => {
+    const maxDmg = Math.max(...Object.values(HYBRID_DEFS).map(d => d.baseDamage));
+    expect(h('ice_dragon_lord').baseDamage).toBe(maxDmg);
+    expect(h('ice_dragon_lord').baseDamage).toBe(36);
+  });
+
+  it('golden_dokkaebi has GOLD_KILL passive and gold roomType', () => {
+    expect(h('golden_dokkaebi').passive).toBe('GOLD_KILL');
+    expect(h('golden_dokkaebi').roomTypes).toContain('gold');
+  });
+
+  it('fairy is rarity 4 with roomType "any"', () => {
+    expect(h('fairy').rarity).toBe(4);
+    expect(h('fairy').roomTypes).toContain('any');
+  });
+
+  it('divine_oracle (Ch7 hybrid) has rarity 4 and celestial_shrine roomType', () => {
+    expect(h('divine_oracle').rarity).toBe(4);
+    expect(h('divine_oracle').roomTypes).toContain('celestial_shrine');
+  });
+
+  it('all rarity-4 hybrids have higher baseDamage than rarity-2 hybrids on average', () => {
+    const r2Avg = Object.values(HYBRID_DEFS)
+      .filter(d => d.rarity === 2)
+      .reduce((s, d) => s + d.baseDamage, 0) / Object.values(HYBRID_DEFS).filter(d => d.rarity === 2).length;
+    const r4Avg = Object.values(HYBRID_DEFS)
+      .filter(d => d.rarity === 4)
+      .reduce((s, d) => s + d.baseDamage, 0) / Object.values(HYBRID_DEFS).filter(d => d.rarity === 4).length;
+    expect(r4Avg).toBeGreaterThan(r2Avg);
+  });
+});
