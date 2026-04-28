@@ -80,6 +80,20 @@ describe('layout — grid', () => {
     expect(CELL_SIZE).toBeGreaterThan(0);
     expect(Number.isInteger(CELL_SIZE)).toBe(true);
   });
+
+  it('GRID_COLS = 3 and GRID_ROWS = 3', () => {
+    expect(GRID_COLS).toBe(3);
+    expect(GRID_ROWS).toBe(3);
+  });
+
+  it('GRID_X = 30 and GRID_Y = 130 (exact layout origin)', () => {
+    expect(GRID_X).toBe(30);
+    expect(GRID_Y).toBe(130);
+  });
+
+  it('CELL_SIZE = 110 (exact cell size)', () => {
+    expect(CELL_SIZE).toBe(110);
+  });
 });
 
 // ─── layout — TORCH_POSITIONS ─────────────────────────────────────────────────
@@ -179,6 +193,14 @@ describe('layout — overlay constants', () => {
   it('FOG_HEIGHT is positive', () => {
     expect(FOG_HEIGHT).toBeGreaterThan(0);
   });
+
+  it('TOP_BAR_HEIGHT = 110 (exact)', () => {
+    expect(TOP_BAR_HEIGHT).toBe(110);
+  });
+
+  it('FOG_HEIGHT = 160 (exact)', () => {
+    expect(FOG_HEIGHT).toBe(160);
+  });
 });
 
 // ─── colors — COLORS (hex palette) ───────────────────────────────────────────
@@ -271,5 +293,13 @@ describe('CSS', () => {
   it('no two CSS colour names map to the same string', () => {
     const values = Object.values(CSS);
     expect(new Set(values).size).toBe(values.length);
+  });
+
+  it('every CSS value encodes the same number as the matching COLORS key', () => {
+    for (const [key, cssHex] of Object.entries(CSS)) {
+      const fromCss    = parseInt((cssHex as string).slice(1), 16);
+      const fromColors = (COLORS as Record<string, number>)[key];
+      expect(fromCss, `CSS.${key} vs COLORS.${key}`).toBe(fromColors);
+    }
   });
 });
