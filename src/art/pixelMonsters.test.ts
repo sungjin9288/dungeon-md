@@ -11,6 +11,7 @@ import {
   HEADS,
   BODIES,
   ACCESSORIES,
+  OVERLAYS,
 } from './SilhouetteData';
 import type { TribeId } from '../data/monsters';
 
@@ -234,5 +235,136 @@ describe('MONSTER_RECIPES', () => {
     const recipe = MONSTER_RECIPES['village_archer'];
     expect(recipe).toBeDefined();
     expect(recipe!.accessory).toBe('bow');
+  });
+});
+
+// ─── HEADS part table ─────────────────────────────────────────────────────────
+
+describe('HEADS part table', () => {
+  it('contains all 18 head variants', () => {
+    expect(Object.keys(HEADS).length).toBe(18);
+  });
+
+  it('every head grid is exactly 8 rows × 24 cols', () => {
+    for (const [id, grid] of Object.entries(HEADS)) {
+      expect(grid.length, `${id} row count`).toBe(8);
+      for (let r = 0; r < grid.length; r++) {
+        expect(grid[r].length, `${id} row[${r}] col count`).toBe(24);
+      }
+    }
+  });
+
+  it('every head pixel value is in [0, 5]', () => {
+    for (const [id, grid] of Object.entries(HEADS)) {
+      for (const row of grid) {
+        for (const v of row) {
+          expect(v, `${id} bad pixel ${v}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${id} bad pixel ${v}`).toBeLessThanOrEqual(5);
+        }
+      }
+    }
+  });
+
+  it('each head has at least one non-zero pixel (not blank)', () => {
+    for (const [id, grid] of Object.entries(HEADS)) {
+      const hasPixels = grid.some(row => row.some(v => v > 0));
+      expect(hasPixels, `${id} is completely blank`).toBe(true);
+    }
+  });
+});
+
+// ─── BODIES part table ────────────────────────────────────────────────────────
+
+describe('BODIES part table', () => {
+  it('contains all 10 body variants', () => {
+    expect(Object.keys(BODIES).length).toBe(10);
+  });
+
+  it('every body grid is exactly 24 rows × 24 cols', () => {
+    for (const [id, grid] of Object.entries(BODIES)) {
+      expect(grid.length, `${id} row count`).toBe(24);
+      for (let r = 0; r < grid.length; r++) {
+        expect(grid[r].length, `${id} row[${r}] col count`).toBe(24);
+      }
+    }
+  });
+
+  it('every body pixel value is in [0, 5]', () => {
+    for (const [id, grid] of Object.entries(BODIES)) {
+      for (const row of grid) {
+        for (const v of row) {
+          expect(v, `${id} bad pixel ${v}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${id} bad pixel ${v}`).toBeLessThanOrEqual(5);
+        }
+      }
+    }
+  });
+
+  it('each body has at least one non-zero pixel', () => {
+    for (const [id, grid] of Object.entries(BODIES)) {
+      const hasPixels = grid.some(row => row.some(v => v > 0));
+      expect(hasPixels, `${id} is completely blank`).toBe(true);
+    }
+  });
+});
+
+// ─── ACCESSORIES part table ───────────────────────────────────────────────────
+
+describe('ACCESSORIES part table', () => {
+  it('contains all 15 accessory variants', () => {
+    expect(Object.keys(ACCESSORIES).length).toBe(15);
+  });
+
+  it('every accessory grid is exactly 24 rows × 24 cols', () => {
+    for (const [id, grid] of Object.entries(ACCESSORIES)) {
+      expect(grid.length, `${id} row count`).toBe(24);
+      for (let r = 0; r < grid.length; r++) {
+        expect(grid[r].length, `${id} row[${r}] col count`).toBe(24);
+      }
+    }
+  });
+
+  it('each accessory has at least one non-zero pixel', () => {
+    for (const [id, grid] of Object.entries(ACCESSORIES)) {
+      const hasPixels = grid.some(row => row.some(v => v > 0));
+      expect(hasPixels, `${id} is completely blank`).toBe(true);
+    }
+  });
+});
+
+// ─── OVERLAYS ─────────────────────────────────────────────────────────────────
+
+describe('OVERLAYS', () => {
+  const BLANK_24: number[][] = Array.from({ length: 24 }, () => Array(24).fill(2));
+
+  it('contains all 8 overlay functions', () => {
+    expect(Object.keys(OVERLAYS).length).toBe(8);
+  });
+
+  it('every overlay returns a 24×24 grid', () => {
+    for (const [id, fn] of Object.entries(OVERLAYS)) {
+      const result = fn(BLANK_24.map(r => [...r]));
+      expect(result.length, `${id} row count`).toBe(24);
+      expect(result[0].length, `${id} col count`).toBe(24);
+    }
+  });
+
+  it('every overlay output contains only valid pixel values [0, 5]', () => {
+    for (const [id, fn] of Object.entries(OVERLAYS)) {
+      const result = fn(BLANK_24.map(r => [...r]));
+      for (const row of result) {
+        for (const v of row) {
+          expect(v, `${id} bad pixel ${v}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${id} bad pixel ${v}`).toBeLessThanOrEqual(5);
+        }
+      }
+    }
+  });
+
+  it('fire_dokkaebi recipe (fire_aura overlay) produces non-zero pixels', () => {
+    const recipe = MONSTER_RECIPES['fire_dokkaebi']!;
+    const result = composeSilhouette(recipe);
+    const nonZero = result.flat().filter(v => v > 0).length;
+    expect(nonZero).toBeGreaterThan(0);
   });
 });
