@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { applyRoomSlotDamage } from './RoomDurability';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { applyRoomSlotDamage, saveRoomHpsToGameState } from './RoomDurability';
+import { loadGameState, saveGameState } from '../data/wisdom';
 import type { DungeonSlot } from '../data/wisdom';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,5 +98,77 @@ describe('applyRoomSlotDamage', () => {
     const slot = makeSlot(100);
     applyRoomSlotDamage([slot], 5.0); // 5× damage
     expect(slot.hp).toBe(0);
+  });
+});
+
+// ─── saveRoomHpsToGameState ───────────────────────────────────────────────────
+
+describe('saveRoomHpsToGameState', () => {
+  beforeEach(() => localStorage.clear());
+
+  function makeSlotFull(hp: number, maxHp = hp, extras: Partial<DungeonSlot> = {}): DungeonSlot {
+    return { monsterIds: [], trapIds: [], roomLevel: 1, hp, maxHp, ...extras };
+  }
+
+  it('no-ops when slots array is empty (localStorage untouched)', () => {
+    saveRoomHpsToGameState([]);
+    expect(localStorage.getItem('dungeonGameState')).toBeNull();
+  });
+
+  it('writes hp and maxHp to the first dungeonSlot in game state', () => {
+    const slot = makeSlotFull(80, 100);
+    saveRoomHpsToGameState([slot]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(80);
+    expect(saved.dungeonSlots[0].maxHp).toBe(100);
+  });
+
+  it('merges with existing game state slot — preserves monsterIds and roomLevel', () => {
+    // Pre-populate game state
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100, { monsterIds: ['fire_dokkaebi'], roomLevel: 3 })],
+    });
+    saveRoomHpsToGameState([makeSlotFull(55, 100)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(55);
+    expect(saved.dungeonSlots[0].maxHp).toBe(100);
+    expect(saved.dungeonSlots[0].monsterIds).toContain('fire_dokkaebi'); // preserved
+    expect(saved.dungeonSlots[0].roomLevel).toBe(3);                     // preserved
+  });
+
+  it('extends dungeonSlots when new slots array is longer than existing', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100)],
+    });
+    saveRoomHpsToGameState([makeSlotFull(80, 100), makeSlotFull(50, 200)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots).toHaveLength(2);
+    expect(saved.dungeonSlots[0].hp).toBe(80);
+    expect(saved.dungeonSlots[1].hp).toBe(50);
+    expect(saved.dungeonSlots[1].maxHp).toBe(200);
+  });
+
+  it('preserves extra existing slots when new slots array is shorter', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100), makeSlotFull(90, 150)],
+    });
+    saveRoomHpsToGameState([makeSlotFull(70, 100)]); // only update slot 0
+    const saved = loadGameState();
+    expect(saved.dungeonSlots).toHaveLength(2);
+    expect(saved.dungeonSlots[0].hp).toBe(70);
+    expect(saved.dungeonSlots[1].hp).toBe(90); // untouched
+    expect(saved.dungeonSlots[1].maxHp).toBe(150);
+  });
+
+  it('updates all slots in a multi-slot call', () => {
+    const slots = [makeSlotFull(90, 100), makeSlotFull(40, 200)];
+    saveRoomHpsToGameState(slots);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(90);
+    expect(saved.dungeonSlots[1].hp).toBe(40);
+    expect(saved.dungeonSlots[1].maxHp).toBe(200);
   });
 });
