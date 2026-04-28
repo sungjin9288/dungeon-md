@@ -401,3 +401,77 @@ describe('stages × INVADER_DEFS — no orphan invader types', () => {
     }
   });
 });
+
+// ─── InvaderDef — behavior field spot-checks ──────────────────────────────────
+
+describe('INVADER_DEFS — behavior spot-checks', () => {
+  it('Ch1 core invaders (peasant/soldier/knight/shaman) have no behavior', () => {
+    for (const t of ['peasant', 'soldier', 'knight', 'shaman'] as InvaderType[]) {
+      expect(INVADER_DEFS[t].behavior, t).toBeUndefined();
+    }
+  });
+
+  it('void has VOID_PHASE behavior', () => {
+    expect(INVADER_DEFS['void'].behavior).toBe('VOID_PHASE');
+  });
+
+  it('undying has REVIVE_ONCE behavior', () => {
+    expect(INVADER_DEFS['undying'].behavior).toBe('REVIVE_ONCE');
+  });
+
+  it('Ch2: berserker → BERSERKER_RAGE, shadow_ninja → STEALTH', () => {
+    expect(INVADER_DEFS['berserker'].behavior).toBe('BERSERKER_RAGE');
+    expect(INVADER_DEFS['shadow_ninja'].behavior).toBe('STEALTH');
+  });
+
+  it('Ch2: iron_golem → IRON_BODY, trap_breaker → TRAP_IMMUNITY', () => {
+    expect(INVADER_DEFS['iron_golem'].behavior).toBe('IRON_BODY');
+    expect(INVADER_DEFS['trap_breaker'].behavior).toBe('TRAP_IMMUNITY');
+  });
+
+  it('Ch3: void_assassin → VOID_TELEPORT, undying_knight → UNDYING_KNIGHT', () => {
+    expect(INVADER_DEFS['void_assassin'].behavior).toBe('VOID_TELEPORT');
+    expect(INVADER_DEFS['undying_knight'].behavior).toBe('UNDYING_KNIGHT');
+  });
+
+  it('Ch4: death_emissary → STUN_IMMUNE (boss behavior)', () => {
+    expect(INVADER_DEFS['death_emissary'].behavior).toBe('STUN_IMMUNE');
+    expect(INVADER_DEFS['death_emissary'].isBoss).toBe(true);
+  });
+
+  it('Ch5: three_god_destroyer → FIVE_PHASE (boss)', () => {
+    expect(INVADER_DEFS['three_god_destroyer'].behavior).toBe('FIVE_PHASE');
+    expect(INVADER_DEFS['three_god_destroyer'].isBoss).toBe(true);
+  });
+
+  it('Ch6: eternal_emperor → EMPEROR_PHASE (boss)', () => {
+    expect(INVADER_DEFS['eternal_emperor'].behavior).toBe('EMPEROR_PHASE');
+    expect(INVADER_DEFS['eternal_emperor'].isBoss).toBe(true);
+  });
+
+  it('Ch7: god_emperor → GOD_EMPEROR_PHASE (boss)', () => {
+    expect(INVADER_DEFS['god_emperor'].behavior).toBe('GOD_EMPEROR_PHASE');
+    expect(INVADER_DEFS['god_emperor'].isBoss).toBe(true);
+  });
+
+  it('Ch8: primordial_titan → PRIMORDIAL_PHASE (final boss)', () => {
+    expect(INVADER_DEFS['primordial_titan'].behavior).toBe('PRIMORDIAL_PHASE');
+    expect(INVADER_DEFS['primordial_titan'].isBoss).toBe(true);
+  });
+
+  it('Ch8: void_soldier → VOID_SURGE', () => {
+    expect(INVADER_DEFS['void_soldier'].behavior).toBe('VOID_SURGE');
+  });
+
+  it('multi-phase boss behaviors (excl. VOID_PHASE) belong to boss or mini-boss invaders', () => {
+    // VOID_PHASE is a regular invader mechanic, not a boss pattern
+    for (const def of Object.values(INVADER_DEFS)) {
+      if (def.behavior?.endsWith('_PHASE') && def.behavior !== 'VOID_PHASE') {
+        expect(
+          def.isBoss || def.isMiniBoss,
+          `${def.type} has ${def.behavior} but is not boss/mini-boss`,
+        ).toBe(true);
+      }
+    }
+  });
+});
