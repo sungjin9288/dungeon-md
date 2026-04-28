@@ -121,3 +121,101 @@ describe('getActiveTheme', () => {
     expect(CELESTIAL_THEME.id).toBe('celestial_realm');
   });
 });
+
+// ─── ALL_THEMES — property constraints ───────────────────────────────────────
+
+describe('ALL_THEMES — property constraints', () => {
+  it('ALL_THEMES order is cave, ice_cave, lava_cave, void_throne, celestial_realm', () => {
+    expect(ALL_THEMES.map(t => t.id)).toEqual([
+      'cave', 'ice_cave', 'lava_cave', 'void_throne', 'celestial_realm',
+    ]);
+  });
+
+  it('bgGridAlpha is within (0, 1) for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.bgGridAlpha, `${t.id} bgGridAlpha`).toBeGreaterThan(0);
+      expect(t.bgGridAlpha, `${t.id} bgGridAlpha`).toBeLessThan(1);
+    }
+  });
+
+  it('panelBorderCSS is a CSS hex string (#rrggbb) for every theme', () => {
+    const cssHex = /^#[0-9a-fA-F]{6}$/;
+    for (const t of ALL_THEMES) {
+      expect(cssHex.test(t.panelBorderCSS), `${t.id} panelBorderCSS="${t.panelBorderCSS}"`).toBe(true);
+    }
+  });
+
+  it('every theme name is non-empty and different from its id', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.name.length, `${t.id} name is empty`).toBeGreaterThan(0);
+      expect(t.name, `${t.id} name equals id`).not.toBe(t.id);
+    }
+  });
+
+  it('particleGravity is non-zero for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.particleGravity, `${t.id} particleGravity is 0`).not.toBe(0);
+    }
+  });
+
+  it('cave and ice_cave have positive particleGravity (falling particles)', () => {
+    expect(CAVE_THEME.particleGravity).toBeGreaterThan(0);
+    expect(ICE_CAVE_THEME.particleGravity).toBeGreaterThan(0);
+  });
+
+  it('lava_cave, void_throne, celestial_realm have negative particleGravity (rising particles)', () => {
+    expect(LAVA_CAVE_THEME.particleGravity).toBeLessThan(0);
+    expect(VOID_THRONE_THEME.particleGravity).toBeLessThan(0);
+    expect(CELESTIAL_THEME.particleGravity).toBeLessThan(0);
+  });
+
+  it('celestial_realm has the lowest bgGridAlpha (most transparent grid)', () => {
+    const minAlpha = Math.min(...ALL_THEMES.map(t => t.bgGridAlpha));
+    expect(CELESTIAL_THEME.bgGridAlpha).toBe(minAlpha);
+  });
+
+  it('ice_cave has the highest bgGridAlpha (most visible grid)', () => {
+    const maxAlpha = Math.max(...ALL_THEMES.map(t => t.bgGridAlpha));
+    expect(ICE_CAVE_THEME.bgGridAlpha).toBe(maxAlpha);
+  });
+});
+
+// ─── Per-theme spot-checks ────────────────────────────────────────────────────
+
+describe('Per-theme spot-checks', () => {
+  it('cave: particleGravity=120, bgGridAlpha=0.45, panelBorderCSS=#3a8890', () => {
+    expect(CAVE_THEME.particleGravity).toBe(120);
+    expect(CAVE_THEME.bgGridAlpha).toBe(0.45);
+    expect(CAVE_THEME.panelBorderCSS).toBe('#3a8890');
+  });
+
+  it('ice_cave: particleGravity=40, bgGridAlpha=0.55, panelBorderCSS=#6ab4d8', () => {
+    expect(ICE_CAVE_THEME.particleGravity).toBe(40);
+    expect(ICE_CAVE_THEME.bgGridAlpha).toBe(0.55);
+    expect(ICE_CAVE_THEME.panelBorderCSS).toBe('#6ab4d8');
+  });
+
+  it('lava_cave: particleGravity=-60 (rising), bgGridAlpha=0.4, panelBorderCSS=#dd5500', () => {
+    expect(LAVA_CAVE_THEME.particleGravity).toBe(-60);
+    expect(LAVA_CAVE_THEME.bgGridAlpha).toBe(0.4);
+    expect(LAVA_CAVE_THEME.panelBorderCSS).toBe('#dd5500');
+  });
+
+  it('void_throne: particleGravity=-10 (rising), bgGridAlpha=0.35, panelBorderCSS=#8844cc', () => {
+    expect(VOID_THRONE_THEME.particleGravity).toBe(-10);
+    expect(VOID_THRONE_THEME.bgGridAlpha).toBe(0.35);
+    expect(VOID_THRONE_THEME.panelBorderCSS).toBe('#8844cc');
+  });
+
+  it('celestial_realm: particleGravity=-14 (rising), bgGridAlpha=0.28, panelBorderCSS=#ffd700', () => {
+    expect(CELESTIAL_THEME.particleGravity).toBe(-14);
+    expect(CELESTIAL_THEME.bgGridAlpha).toBe(0.28);
+    expect(CELESTIAL_THEME.panelBorderCSS).toBe('#ffd700');
+  });
+
+  it('celestial_realm has 4 particleTints (most of any theme)', () => {
+    const maxTints = Math.max(...ALL_THEMES.map(t => t.particleTint.length));
+    expect(CELESTIAL_THEME.particleTint).toHaveLength(maxTints);
+    expect(CELESTIAL_THEME.particleTint).toHaveLength(4);
+  });
+});
