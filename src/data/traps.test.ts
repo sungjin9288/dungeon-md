@@ -150,3 +150,25 @@ describe('TRAP_DEFS — per-trap spot-checks', () => {
     expect(get('stun_trap').name).toBe('감전 덫');
   });
 });
+
+// ─── TRAP_DEFS — per-trap desc spot-checks ────────────────────────────────────
+
+describe('TRAP_DEFS — per-trap desc spot-checks', () => {
+  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
+
+  it('spike_trap desc encodes 20 damage on entry', () => {
+    expect(get('spike_trap').desc).toBe('진입 시 20 피해');
+  });
+
+  it('slow_trap desc encodes -40% speed for 2 seconds', () => {
+    expect(get('slow_trap').desc).toBe('이동속도 -40%, 2초');
+  });
+
+  it('poison_trap desc encodes 8 damage per second for 4 seconds', () => {
+    expect(get('poison_trap').desc).toBe('8 피해/초, 4초');
+  });
+
+  it('stun_trap desc encodes 1-second stun', () => {
+    expect(get('stun_trap').desc).toBe('기절 1초');
+  });
+});

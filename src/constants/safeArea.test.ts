@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getGameSafeArea } from './safeArea';
+import { getGameSafeArea, MIN_SAFE_TOP, MIN_SAFE_BOTTOM } from './safeArea';
 
 // happy-dom provides getComputedStyle; we can inject CSS custom properties
 // via document.documentElement.style.setProperty.
@@ -94,5 +94,30 @@ describe('getGameSafeArea — scale math', () => {
   it('displayScale=1 default parameter behaves same as explicit 1', () => {
     setCssSafeArea(20, 10);
     expect(getGameSafeArea()).toStrictEqual(getGameSafeArea(1));
+  });
+
+  it('negative displayScale falls back to 1 (same as zero)', () => {
+    setCssSafeArea(20, 10);
+    expect(getGameSafeArea(-1)).toStrictEqual(getGameSafeArea(1));
+    expect(getGameSafeArea(-5)).toStrictEqual(getGameSafeArea(1));
+  });
+
+  it('large displayScale scales insets down proportionally', () => {
+    setCssSafeArea(100, 50);
+    const sa = getGameSafeArea(10);
+    expect(sa.top).toBe(10);    // ceil(100/10) = 10
+    expect(sa.bottom).toBe(5);  // ceil(50/10) = 5
+  });
+});
+
+// ─── MIN_SAFE_TOP / MIN_SAFE_BOTTOM constants ─────────────────────────────────
+
+describe('MIN_SAFE_TOP / MIN_SAFE_BOTTOM constants', () => {
+  it('MIN_SAFE_TOP is 0', () => {
+    expect(MIN_SAFE_TOP).toBe(0);
+  });
+
+  it('MIN_SAFE_BOTTOM is 0', () => {
+    expect(MIN_SAFE_BOTTOM).toBe(0);
   });
 });
