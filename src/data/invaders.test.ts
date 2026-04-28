@@ -315,6 +315,63 @@ describe('Ch7 invaders — chapter assignment', () => {
   });
 });
 
+// ─── Ch8 invaders — chapter assignment and spot-checks ───────────────────────
+
+describe('Ch8 invaders — chapter assignment and spot-checks', () => {
+  const CH8_TYPES: InvaderType[] = [
+    'void_soldier', 'abyss_berserker', 'primordial_guard', 'primordial_titan',
+  ];
+
+  it('all 4 Ch8 types carry chapter: 8', () => {
+    for (const t of CH8_TYPES) {
+      expect(INVADER_DEFS[t].chapter, t).toBe(8);
+    }
+  });
+
+  it('primordial_titan is the final boss (isBoss: true)', () => {
+    expect(INVADER_DEFS['primordial_titan'].isBoss).toBe(true);
+  });
+
+  it('primordial_titan has HP 14000', () => {
+    expect(INVADER_DEFS['primordial_titan'].hp).toBe(14000);
+  });
+
+  it('primordial_titan reward (6000) is the highest among Ch8 invaders', () => {
+    const maxReward = Math.max(...CH8_TYPES.map(t => INVADER_DEFS[t].reward));
+    expect(INVADER_DEFS['primordial_titan'].reward).toBe(maxReward);
+    expect(maxReward).toBe(6000);
+  });
+
+  it('primordial_titan is the slowest Ch8 invader (speed 18)', () => {
+    const minSpeed = Math.min(...CH8_TYPES.map(t => INVADER_DEFS[t].speed));
+    expect(INVADER_DEFS['primordial_titan'].speed).toBe(minSpeed);
+    expect(minSpeed).toBe(18);
+  });
+
+  it('abyss_berserker is faster than void_soldier (78 > 65)', () => {
+    expect(INVADER_DEFS['abyss_berserker'].speed).toBeGreaterThan(
+      INVADER_DEFS['void_soldier'].speed,
+    );
+  });
+
+  it('primordial_guard HP (2200) > abyss_berserker HP (950) — tank vs berserker', () => {
+    expect(INVADER_DEFS['primordial_guard'].hp).toBeGreaterThan(
+      INVADER_DEFS['abyss_berserker'].hp,
+    );
+  });
+
+  it('primordial_guard damage > void_soldier damage (heavy tank hits harder)', () => {
+    expect(INVADER_DEFS['primordial_guard'].damage).toBeGreaterThan(
+      INVADER_DEFS['void_soldier'].damage,
+    );
+  });
+
+  it('regular Ch8 invaders (void_soldier, abyss_berserker) are not flagged as boss', () => {
+    expect(INVADER_DEFS['void_soldier'].isBoss  ?? false).toBe(false);
+    expect(INVADER_DEFS['abyss_berserker'].isBoss ?? false).toBe(false);
+  });
+});
+
 // ─── Stages × INVADER_DEFS — cross-reference ──────────────────────────────────
 
 describe('stages × INVADER_DEFS — no orphan invader types', () => {
