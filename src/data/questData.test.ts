@@ -284,3 +284,85 @@ describe('getSubQuestById', () => {
     }
   });
 });
+
+// ─── MAIN_QUESTS — per-chapter counts ────────────────────────────────────────
+
+describe('MAIN_QUESTS — per-chapter counts', () => {
+  const byChapter = (ch: number) => MAIN_QUESTS.filter(q => q.chapter === ch);
+
+  it('Ch1 has exactly 10 quests (MQ-001 to MQ-010)', () => {
+    expect(byChapter(1)).toHaveLength(10);
+  });
+
+  it('Ch2 has exactly 3 quests (MQ-011 to MQ-013)', () => {
+    expect(byChapter(2)).toHaveLength(3);
+  });
+
+  it('Ch3 has exactly 3 quests (MQ-014 to MQ-016)', () => {
+    expect(byChapter(3)).toHaveLength(3);
+  });
+
+  it('Ch4 has exactly 6 quests (MQ-017 to MQ-022)', () => {
+    expect(byChapter(4)).toHaveLength(6);
+  });
+
+  it('Ch5 has exactly 3 quests (MQ-023 to MQ-025)', () => {
+    expect(byChapter(5)).toHaveLength(3);
+  });
+
+  it('Ch6 has exactly 5 quests (MQ-026 to MQ-030)', () => {
+    expect(byChapter(6)).toHaveLength(5);
+  });
+
+  it('Ch7 has exactly 4 quests (MQ-031 to MQ-034)', () => {
+    expect(byChapter(7)).toHaveLength(4);
+  });
+
+  it('Ch8 has exactly 15 quests (MQ-035–MQ-044 + EQ-001–EQ-005)', () => {
+    expect(byChapter(8)).toHaveLength(15);
+  });
+
+  it('Ch1 + Ch4 + Ch8 are the three largest chapter blocks', () => {
+    const counts = [1, 2, 3, 4, 5, 6, 7, 8].map(ch => byChapter(ch).length);
+    const top3 = [...counts].sort((a, b) => b - a).slice(0, 3);
+    expect(top3).toContain(byChapter(1).length); // 10
+    expect(top3).toContain(byChapter(4).length); // 6
+    expect(top3).toContain(byChapter(8).length); // 15
+  });
+});
+
+// ─── MAIN_QUESTS — chapter boundary spot-checks ──────────────────────────────
+
+describe('MAIN_QUESTS — chapter boundary spot-checks', () => {
+  const get = (id: string) => MAIN_QUESTS.find(q => q.id === id)!;
+
+  it('MQ-010 is the last Ch1 quest and links to MQ-011', () => {
+    const q = get('MQ-010');
+    expect(q.chapter).toBe(1);
+    expect(q.nextQuestId).toBe('MQ-011');
+  });
+
+  it('MQ-011 is the first Ch2 quest', () => {
+    expect(get('MQ-011').chapter).toBe(2);
+  });
+
+  it('MQ-013 (last Ch2) links to MQ-014 (first Ch3)', () => {
+    expect(get('MQ-013').nextQuestId).toBe('MQ-014');
+    expect(get('MQ-014').chapter).toBe(3);
+  });
+
+  it('MQ-030 is the last Ch6 quest and links to MQ-031', () => {
+    const q = get('MQ-030');
+    expect(q.chapter).toBe(6);
+    expect(q.nextQuestId).toBe('MQ-031');
+  });
+
+  it('MQ-031 is the first Ch7 quest', () => {
+    expect(get('MQ-031').chapter).toBe(7);
+  });
+
+  it('MQ-034 (last Ch7) links to MQ-035 (first Ch8 MQ)', () => {
+    expect(get('MQ-034').nextQuestId).toBe('MQ-035');
+    expect(get('MQ-035').chapter).toBe(8);
+  });
+});
