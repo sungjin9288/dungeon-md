@@ -257,3 +257,106 @@ describe('RARITY_POOLS × MONSTER_DEFS — no orphan pool entries', () => {
     expect(total).toBeGreaterThanOrEqual(30);
   });
 });
+
+// ─── SUMMON_TYPE_DEFS — per-type spot-checks ─────────────────────────────────
+
+describe('SUMMON_TYPE_DEFS — per-type spot-checks', () => {
+  const get = (id: SummonType) => SUMMON_TYPE_DEFS.find(d => d.id === id)!;
+
+  it('normal: cost1=30, cost10=250, currency=gems, hasPity=true', () => {
+    const d = get('normal');
+    expect(d.cost1).toBe(30);
+    expect(d.cost10).toBe(250);
+    expect(d.currency).toBe('gems');
+    expect(d.hasPity).toBe(true);
+  });
+
+  it('special: cost1=50, cost10=450, currency=gems, hasPity=true', () => {
+    const d = get('special');
+    expect(d.cost1).toBe(50);
+    expect(d.cost10).toBe(450);
+    expect(d.currency).toBe('gems');
+    expect(d.hasPity).toBe(true);
+  });
+
+  it('soul: cost1=50, cost10=null, currency=soul, hasPity=false', () => {
+    const d = get('soul');
+    expect(d.cost1).toBe(50);
+    expect(d.cost10).toBeNull();
+    expect(d.currency).toBe('soul');
+    expect(d.hasPity).toBe(false);
+  });
+
+  it('friendship: cost1=0, cost10=null, currency=fp, hasPity=false', () => {
+    const d = get('friendship');
+    expect(d.cost1).toBe(0);
+    expect(d.cost10).toBeNull();
+    expect(d.currency).toBe('fp');
+    expect(d.hasPity).toBe(false);
+  });
+
+  it('special is more expensive than normal (cost1 and cost10)', () => {
+    expect(get('special').cost1).toBeGreaterThan(get('normal').cost1);
+    expect(get('special').cost10!).toBeGreaterThan(get('normal').cost10!);
+  });
+});
+
+// ─── RARITY_RATES — per-type rate spot-checks ────────────────────────────────
+
+describe('RARITY_RATES — per-type rate spot-checks', () => {
+  it('normal legendary rate is 1.5%', () => {
+    expect(RARITY_RATES['normal'][4]).toBeCloseTo(1.5);
+  });
+
+  it('special legendary rate is 6% (4× normal)', () => {
+    expect(RARITY_RATES['special'][4]).toBeCloseTo(6);
+    expect(RARITY_RATES['special'][4]).toBeGreaterThan(RARITY_RATES['normal'][4]);
+  });
+
+  it('soul rates equal special rates (same high-tier pool)', () => {
+    for (let i = 0; i < 5; i++) {
+      expect(RARITY_RATES['soul'][i]).toBeCloseTo(RARITY_RATES['special'][i]);
+    }
+  });
+
+  it('normal common rate is 50%', () => {
+    expect(RARITY_RATES['normal'][0]).toBeCloseTo(50);
+  });
+
+  it('special has 0% common rate (no common pulls)', () => {
+    expect(RARITY_RATES['special'][0]).toBe(0);
+  });
+
+  it('friendship common rate (55) > normal common rate (50)', () => {
+    expect(RARITY_RATES['friendship'][0]).toBeGreaterThan(RARITY_RATES['normal'][0]);
+  });
+});
+
+// ─── SC_COMP and RARITY_KO spot-checks ───────────────────────────────────────
+
+describe('SC_COMP and RARITY_KO spot-checks', () => {
+  it('SC_COMP values are [5, 15, 40, 100, 300]', () => {
+    expect(SC_COMP).toEqual([5, 15, 40, 100, 300]);
+  });
+
+  it('legendary SC_COMP (300) is 60× common (5)', () => {
+    expect(SC_COMP[4] / SC_COMP[0]).toBe(60);
+  });
+
+  it('RARITY_KO names are 일반/고급/희귀/에픽/전설', () => {
+    expect(RARITY_KO).toEqual(['일반', '고급', '희귀', '에픽', '전설']);
+  });
+
+  it('RARITY_CSS[0] is #aaaaaa (grey for common)', () => {
+    expect(RARITY_CSS[0]).toBe('#aaaaaa');
+  });
+
+  it('RARITY_CSS[4] is #ff8844 (orange for legendary)', () => {
+    expect(RARITY_CSS[4]).toBe('#ff8844');
+  });
+
+  it('RARITY_STARS[4] has 5 star characters', () => {
+    const stars = RARITY_STARS[4].match(/⭐/g) ?? [];
+    expect(stars.length).toBe(5);
+  });
+});
