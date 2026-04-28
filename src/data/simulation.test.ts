@@ -71,6 +71,22 @@ describe('calcDungeonDps', () => {
     const slot = makeSlot(['completely_unknown_xyz']);
     expect(calcDungeonDps([slot], [])).toBe(0);
   });
+
+  it('spike_trap contributes exactly 5 DPS', () => {
+    expect(calcDungeonDps([makeSlot([], ['spike_trap'])], [])).toBe(5);
+  });
+
+  it('slow_trap contributes exactly 4 DPS', () => {
+    expect(calcDungeonDps([makeSlot([], ['slow_trap'])], [])).toBe(4);
+  });
+
+  it('poison_trap contributes exactly 8 DPS', () => {
+    expect(calcDungeonDps([makeSlot([], ['poison_trap'])], [])).toBe(8);
+  });
+
+  it('stun_trap contributes exactly 6 DPS', () => {
+    expect(calcDungeonDps([makeSlot([], ['stun_trap'])], [])).toBe(6);
+  });
 });
 
 // ─── simulateDungeon — structure ─────────────────────────────────────────────
@@ -156,6 +172,15 @@ describe('simulateDungeon — difficulty labels', () => {
     const r = simulateDungeon([], [], [makeWave('peasant', 3)], 1000);
     expect(r.waveResults[0].survived).toBe(3);
   });
+
+  it('hard difficulty when medium DPS partially damages knights (ratio ≈ 0.73)', () => {
+    // dokkaebi_warrior(12 DPS) + slow_trap(4 DPS) = 16 DPS
+    // knight: hp=350, speed=40 → travelSec=16 → damage=256 < 350 → survives
+    // ratio = 256/350 ≈ 0.731 → hard (0.55 ≤ r < 0.80)
+    const slot = makeSlot(['dokkaebi_warrior'], ['slow_trap']);
+    const r = simulateDungeon([slot], [], [makeWave('knight', 1)], 1000);
+    expect(r.waveResults[0].difficulty).toBe('hard');
+  });
 });
 
 // ─── simulateDungeon — recommendation strings ────────────────────────────────
@@ -201,6 +226,31 @@ describe('simulateDungeon — recommendations', () => {
     );
     const r = simulateDungeon(strongSlots, [], [], 1000);
     expect(r.recommendation).toContain('클리어 가능');
+  });
+
+  it('"{N}웨이브가 취약" when one wave causes > 25% startHp damage', () => {
+    // dokkaebi_warrior DPS=12, knight hp=350, damage=200
+    // travelSec=16 → damagePerInvader=192 < 350 → 2 knights survive → hpLost=400
+    // startHp=500 → 25% = 125, 400 > 125 → worstWave recommendation
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const r = simulateDungeon([slot], [], [makeWave('knight', 2)], 500);
+    expect(r.finalHp).toBeGreaterThan(0);  // not fully depleted
+    expect(r.recommendation).toContain('웨이브가 취약');
+    expect(r.recommendation).toContain('강화 권장');
+  });
+
+  it('"업그레이드로 생존율을 높이세요" when moderate damage spread across waves', () => {
+    // dokkaebi_warrior DPS=12; 2 waves each with 1 surviving knight (hpLost=200 each)
+    // totalHpLost=400, winPct=round(600/1000*100)=60 < 80
+    // worstHpLost per wave = 200 <= 1000*0.25=250 → no "취약" branch
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const r = simulateDungeon(
+      [slot], [],
+      [makeWave('knight', 1), makeWave('knight', 1)],
+      1000,
+    );
+    expect(r.finalHp).toBeGreaterThan(0);
+    expect(r.recommendation).toBe('업그레이드로 생존율을 높이세요');
   });
 });
 
@@ -273,5 +323,16 @@ describe('simulateDungeon — winPct edge cases', () => {
     // No DPS — all invaders survive, each dealing damage
     const r = simulateDungeon([], [], [makeWave('peasant', 1), makeWave('peasant', 1)], 10000);
     expect(r.finalHp).toBeLessThan(10000);
+  });
+
+  it('worstWave = 0 when no waves are simulated', () => {
+    const r = simulateDungeon([], [], [], 1000);
+    expect(r.worstWave).toBe(0);
+  });
+
+  it('worstWave identifies the 1-indexed wave with most HP lost', () => {
+    // Wave 1: 1 peasant survives (hpLost=50), Wave 2: 3 peasants survive (hpLost=150)
+    const r = simulateDungeon([], [], [makeWave('peasant', 1), makeWave('peasant', 3)], 10000);
+    expect(r.worstWave).toBe(2); // wave 2 caused more damage
   });
 });
