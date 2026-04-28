@@ -246,3 +246,90 @@ describe('SEASON_BANNERS × MONSTER_DEFS — no orphan featuredMonsters', () => 
     }
   });
 });
+
+// ─── SEASON_BANNERS — season and rarity coverage ──────────────────────────────
+
+describe('SEASON_BANNERS — season and rarity coverage', () => {
+  const seasons = new Set(SEASON_BANNERS.map(b => b.season));
+
+  it('spring season is represented', () => expect(seasons.has('spring')).toBe(true));
+  it('summer season is represented', () => expect(seasons.has('summer')).toBe(true));
+  it('fall season is represented',   () => expect(seasons.has('fall')).toBe(true));
+  it('winter season is represented', () => expect(seasons.has('winter')).toBe(true));
+  it('special season is represented',() => expect(seasons.has('special')).toBe(true));
+
+  it('every boostedRarity is rare, epic, or legendary', () => {
+    const valid = new Set<string>(['rare', 'epic', 'legendary']);
+    for (const b of SEASON_BANNERS) {
+      expect(valid.has(b.boostedRarity), `${b.id} boostedRarity "${b.boostedRarity}"`).toBe(true);
+    }
+  });
+
+  it('every validSummonType entry is a known summon type', () => {
+    const valid = new Set<string>(['normal', 'special', 'soul', 'friendship']);
+    for (const b of SEASON_BANNERS) {
+      for (const t of b.validSummonTypes) {
+        expect(valid.has(t), `${b.id} validSummonType "${t}"`).toBe(true);
+      }
+    }
+  });
+
+  it('accentCss is a non-empty string for every banner', () => {
+    for (const b of SEASON_BANNERS) {
+      expect(b.accentCss.length, `${b.id} accentCss`).toBeGreaterThan(0);
+    }
+  });
+
+  it('ch8_abyss_2027 has the highest rateMultiplier (0.70)', () => {
+    const max = Math.max(...SEASON_BANNERS.map(b => b.rateMultiplier));
+    const b = SEASON_BANNERS.find(b => b.id === 'ch8_abyss_2027')!;
+    expect(b.rateMultiplier).toBeCloseTo(max);
+    expect(b.rateMultiplier).toBeCloseTo(0.70);
+  });
+});
+
+// ─── SEASON_BANNERS — per-banner spot-checks ─────────────────────────────────
+
+describe('SEASON_BANNERS — per-banner spot-checks', () => {
+  it('summer_sea_2026: season=summer, boostedRarity=epic, features sea monsters', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'summer_sea_2026')!;
+    expect(b).toBeDefined();
+    expect(b.season).toBe('summer');
+    expect(b.boostedRarity).toBe('epic');
+    expect(b.featuredMonsters.length).toBeGreaterThan(0);
+  });
+
+  it('fall_underworld_2026: season=fall, boostedRarity=epic', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'fall_underworld_2026')!;
+    expect(b).toBeDefined();
+    expect(b.season).toBe('fall');
+    expect(b.boostedRarity).toBe('epic');
+  });
+
+  it('winter_mountain_2026: season=winter, boostedRarity=legendary, rateMultiplier=0.60', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'winter_mountain_2026')!;
+    expect(b).toBeDefined();
+    expect(b.season).toBe('winter');
+    expect(b.boostedRarity).toBe('legendary');
+    expect(b.rateMultiplier).toBeCloseTo(0.60);
+  });
+
+  it('late_fall_moonlight_2026: season=fall, features moonlight tribe', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'late_fall_moonlight_2026')!;
+    expect(b).toBeDefined();
+    expect(b.season).toBe('fall');
+  });
+
+  it('spring_gumiho_2026: startDate=2026-03-01, rateMultiplier=0.55', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'spring_gumiho_2026')!;
+    expect(b.startDate).toBe('2026-03-01');
+    expect(b.rateMultiplier).toBeCloseTo(0.55);
+  });
+
+  it('ch7_celestial_2026: season=special, boostedRarity=epic, rateMultiplier=0.65', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'ch7_celestial_2026')!;
+    expect(b.season).toBe('special');
+    expect(b.boostedRarity).toBe('epic');
+    expect(b.rateMultiplier).toBeCloseTo(0.65);
+  });
+});
