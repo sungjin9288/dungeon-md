@@ -283,3 +283,117 @@ describe('getRoomStructuralHp', () => {
     );
   });
 });
+
+// ─── ROOM_DEFS — per-room type spot-checks ───────────────────────────────────
+
+describe('ROOM_DEFS — per-room type spot-checks', () => {
+  const r = (t: RoomType) => ROOM_DEFS[t];
+
+  // ── Ch1 rooms ─────────────────────────────────────────────────────────────
+  it('guardian: cost=100, baseHp=200, no chapter', () => {
+    expect(r('guardian').cost).toBe(100);
+    expect(r('guardian').baseHp).toBe(200);
+    expect((r('guardian') as { chapter?: number }).chapter).toBeUndefined();
+  });
+
+  it('trap: cost=80, baseHp=100, no chapter', () => {
+    expect(r('trap').cost).toBe(80);
+    expect(r('trap').baseHp).toBe(100);
+    expect((r('trap') as { chapter?: number }).chapter).toBeUndefined();
+  });
+
+  it('gold: goldPerSec=10, cost=120, no chapter', () => {
+    expect(r('gold').goldPerSec).toBe(10);
+    expect(r('gold').cost).toBe(120);
+    expect((r('gold') as { chapter?: number }).chapter).toBeUndefined();
+  });
+
+  it('tower: cost=130, baseHp=150, no chapter', () => {
+    expect(r('tower').cost).toBe(130);
+    expect(r('tower').baseHp).toBe(150);
+  });
+
+  // ── Ch2 rooms ─────────────────────────────────────────────────────────────
+  it('scroll_library: chapter=2, cost=120, baseHp=160', () => {
+    expect((r('scroll_library') as { chapter?: number }).chapter).toBe(2);
+    expect(r('scroll_library').cost).toBe(120);
+    expect(r('scroll_library').baseHp).toBe(160);
+  });
+
+  it('trap_corridor: chapter=2, cost=110, baseHp=130', () => {
+    expect((r('trap_corridor') as { chapter?: number }).chapter).toBe(2);
+    expect(r('trap_corridor').cost).toBe(110);
+  });
+
+  // ── Ch3 rooms ─────────────────────────────────────────────────────────────
+  it('armory: chapter=3, isPassive=true, cost=90', () => {
+    expect((r('armory') as { chapter?: number }).chapter).toBe(3);
+    expect((r('armory') as { isPassive?: boolean }).isPassive).toBe(true);
+    expect(r('armory').cost).toBe(90);
+  });
+
+  it('medicine_hall: chapter=3, healRate=2, cost=100', () => {
+    expect((r('medicine_hall') as { chapter?: number }).chapter).toBe(3);
+    expect((r('medicine_hall') as { healRate?: number }).healRate).toBe(2);
+    expect(r('medicine_hall').cost).toBe(100);
+  });
+
+  // ── Ch4 rooms ─────────────────────────────────────────────────────────────
+  it('spirit_altar: chapter=4, cost=150, baseHp=160', () => {
+    expect((r('spirit_altar') as { chapter?: number }).chapter).toBe(4);
+    expect(r('spirit_altar').cost).toBe(150);
+    expect(r('spirit_altar').baseHp).toBe(160);
+  });
+
+  it('dragons_lair: chapter=4, cost=200 (most expensive), baseHp=300 (highest)', () => {
+    expect((r('dragons_lair') as { chapter?: number }).chapter).toBe(4);
+    expect(r('dragons_lair').cost).toBe(200);
+    expect(r('dragons_lair').baseHp).toBe(300);
+  });
+
+  // ── Ch5/Ch6 rooms ─────────────────────────────────────────────────────────
+  it('celestial_shrine: chapter=5, cost=160', () => {
+    expect((r('celestial_shrine') as { chapter?: number }).chapter).toBe(5);
+    expect(r('celestial_shrine').cost).toBe(160);
+  });
+
+  it('void_forge: chapter=6, cost=190, baseHp=220', () => {
+    expect((r('void_forge') as { chapter?: number }).chapter).toBe(6);
+    expect(r('void_forge').cost).toBe(190);
+    expect(r('void_forge').baseHp).toBe(220);
+  });
+});
+
+// ─── ROOM_DEFS — cost and HP ordering ────────────────────────────────────────
+
+describe('ROOM_DEFS — cost and HP ordering', () => {
+  const allRooms = Object.values(ROOM_DEFS);
+
+  it('trap (cost 80) is the cheapest room', () => {
+    const minCost = Math.min(...allRooms.map(r => r.cost));
+    expect(ROOM_DEFS['trap'].cost).toBe(minCost);
+  });
+
+  it('dragons_lair (cost 200) is the most expensive room', () => {
+    const maxCost = Math.max(...allRooms.map(r => r.cost));
+    expect(ROOM_DEFS['dragons_lair'].cost).toBe(maxCost);
+  });
+
+  it('trap (baseHp 100) has the lowest structural HP', () => {
+    const minHp = Math.min(...allRooms.map(r => r.baseHp));
+    expect(ROOM_DEFS['trap'].baseHp).toBe(minHp);
+  });
+
+  it('dragons_lair (baseHp 300) has the highest structural HP', () => {
+    const maxHp = Math.max(...allRooms.map(r => r.baseHp));
+    expect(ROOM_DEFS['dragons_lair'].baseHp).toBe(maxHp);
+  });
+
+  it('later-chapter rooms cost more on average than Ch1 rooms', () => {
+    const ch1Avg = (['guardian', 'trap', 'gold', 'tower'] as RoomType[])
+      .reduce((s, t) => s + ROOM_DEFS[t].cost, 0) / 4;
+    const laterAvg = (['spirit_altar', 'dragons_lair', 'celestial_shrine', 'void_forge'] as RoomType[])
+      .reduce((s, t) => s + ROOM_DEFS[t].cost, 0) / 4;
+    expect(laterAvg).toBeGreaterThan(ch1Avg);
+  });
+});
