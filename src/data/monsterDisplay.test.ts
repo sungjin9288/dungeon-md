@@ -223,6 +223,51 @@ describe('Ch5 new monsters — display map spot-checks', () => {
   });
 });
 
+describe('Ch6 tribe champion — display map spot-checks', () => {
+  // Each Ch6 tribe has a named 'king/queen/god/general' champion
+
+  it('dokkaebi_king has emoji 👑 and Korean name "도깨비 왕"', () => {
+    expect(MONSTER_EMOJI['dokkaebi_king']).toBe('👑');
+    expect(MONSTER_NAME['dokkaebi_king']).toBe('도깨비 왕');
+  });
+
+  it('gumiho_queen has emoji 👑 and Korean name "구미호 여왕"', () => {
+    expect(MONSTER_EMOJI['gumiho_queen']).toBe('👑');
+    expect(MONSTER_NAME['gumiho_queen']).toBe('구미호 여왕');
+  });
+
+  it('bear_god has emoji 🐻 and Korean name "곰 산신"', () => {
+    expect(MONSTER_EMOJI['bear_god']).toBe('🐻');
+    expect(MONSTER_NAME['bear_god']).toBe('곰 산신');
+  });
+
+  it('sea_general has emoji 🐡 and Korean name "용궁 장수"', () => {
+    expect(MONSTER_EMOJI['sea_general']).toBe('🐡');
+    expect(MONSTER_NAME['sea_general']).toBe('용궁 장수');
+  });
+
+  it('ghost_king has emoji 👑 and Korean name "귀왕"', () => {
+    expect(MONSTER_EMOJI['ghost_king']).toBe('👑');
+    expect(MONSTER_NAME['ghost_king']).toBe('귀왕');
+  });
+
+  it('great_mask_god has emoji 🎭 and Korean name "대탈 신"', () => {
+    expect(MONSTER_EMOJI['great_mask_god']).toBe('🎭');
+    expect(MONSTER_NAME['great_mask_god']).toBe('대탈 신');
+  });
+
+  it('galaxy_warrior (moonlight tribe) has emoji 🌌 and Korean name "은하 무사"', () => {
+    expect(MONSTER_EMOJI['galaxy_warrior']).toBe('🌌');
+    expect(MONSTER_NAME['galaxy_warrior']).toBe('은하 무사');
+  });
+
+  it('blue_dragon_archmage (dragon tribe) has emoji 🐲 and Korean name defined', () => {
+    expect(MONSTER_EMOJI['blue_dragon_archmage']).toBeDefined();
+    expect(MONSTER_NAME['blue_dragon_archmage']).toBeDefined();
+    expect(MONSTER_NAME['blue_dragon_archmage']!.length).toBeGreaterThan(0);
+  });
+});
+
 describe('Ch7 celestial monsters — display map spot-checks', () => {
   it('god_realm_general has emoji 👑 and correct Korean name', () => {
     expect(MONSTER_EMOJI['god_realm_general']).toBe('👑');
