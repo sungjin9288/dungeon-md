@@ -219,3 +219,57 @@ describe('Per-theme spot-checks', () => {
     expect(CELESTIAL_THEME.particleTint).toHaveLength(4);
   });
 });
+
+// ─── ALL_THEMES — text colors and stone ordering ──────────────────────────────
+
+describe('ALL_THEMES — text colors and stone ordering', () => {
+  const cssHex = /^#[0-9a-fA-F]{6}$/;
+
+  it('textPrimary is a valid 6-digit CSS hex color for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.textPrimary, `${t.id} textPrimary`).toMatch(cssHex);
+    }
+  });
+
+  it('textSecondary is a valid 6-digit CSS hex color for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.textSecondary, `${t.id} textSecondary`).toMatch(cssHex);
+    }
+  });
+
+  it('textAccent is a valid 6-digit CSS hex color for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.textAccent, `${t.id} textAccent`).toMatch(cssHex);
+    }
+  });
+
+  it('stoneDark < stoneMid < stoneLight for every theme (brightness increases)', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.stoneDark,  `${t.id} stoneDark<stoneMid`).toBeLessThan(t.stoneMid);
+      expect(t.stoneMid,   `${t.id} stoneMid<stoneLight`).toBeLessThan(t.stoneLight);
+    }
+  });
+
+  it('glowAlpha > 0 for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.glowAlpha, `${t.id} glowAlpha`).toBeGreaterThan(0);
+    }
+  });
+
+  it('panelBorder (hex number) encodes the same color as panelBorderCSS (CSS string)', () => {
+    for (const t of ALL_THEMES) {
+      const fromCss = parseInt(t.panelBorderCSS.slice(1), 16);
+      expect(fromCss, `${t.id} panelBorder vs panelBorderCSS`).toBe(t.panelBorder);
+    }
+  });
+
+  it('void_throne textPrimary and textAccent are both gold (#d4af37)', () => {
+    expect(VOID_THRONE_THEME.textPrimary).toBe('#d4af37');
+    expect(VOID_THRONE_THEME.textAccent).toBe('#d4af37');
+  });
+
+  it('celestial_realm textPrimary matches its panelBorderCSS (both gold #ffd700)', () => {
+    expect(CELESTIAL_THEME.textPrimary).toBe('#ffd700');
+    expect(CELESTIAL_THEME.panelBorderCSS).toBe('#ffd700');
+  });
+});
