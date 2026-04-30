@@ -508,3 +508,62 @@ describe('getWeeklyBoss — rotation', () => {
     expect(b1.weekIndex).toBe(b2.weekIndex);
   });
 });
+
+describe('getWeeklyBoss — totalHp and pool bounds', () => {
+  const boss = getWeeklyBoss();
+
+  it('totalHp is at least 40000 (minimum pool entry)', () => {
+    expect(boss.totalHp).toBeGreaterThanOrEqual(40_000);
+  });
+
+  it('totalHp is at most 180000 (maximum pool entry)', () => {
+    expect(boss.totalHp).toBeLessThanOrEqual(180_000);
+  });
+
+  it('weekIndex % 8 is in range [0, 7] (pool has 8 entries)', () => {
+    expect(boss.weekIndex % 8).toBeGreaterThanOrEqual(0);
+    expect(boss.weekIndex % 8).toBeLessThanOrEqual(7);
+  });
+
+  it('skinShards is exactly 5', () => {
+    expect(boss.rewards.skinShards).toBe(5);
+  });
+
+  it('bossType contains only lowercase letters and underscores', () => {
+    expect(boss.bossType).toMatch(/^[a-z_]+$/);
+  });
+});
+
+// ─── getDailyDungeon — elementRestrict and materials ─────────────────────────
+
+describe('getDailyDungeon — elementRestrict field', () => {
+  const dungeon = getDailyDungeon();
+
+  it('rewards.materials is always ["common_ore", "magic_dust"]', () => {
+    expect(dungeon.rewards.materials).toEqual(['common_ore', 'magic_dust']);
+  });
+
+  it('elementRestrict is either a string or undefined — never null', () => {
+    const v = dungeon.elementRestrict;
+    expect(v === undefined || typeof v === 'string').toBe(true);
+  });
+
+  it('when rule is element_restrict, elementRestrict is a valid element', () => {
+    const VALID = new Set(['fire', 'frost', 'lightning', 'dark', 'holy']);
+    if (dungeon.rule === 'element_restrict') {
+      expect(dungeon.elementRestrict).toBeDefined();
+      expect(VALID.has(dungeon.elementRestrict as string)).toBe(true);
+    }
+  });
+
+  it('when rule is not element_restrict, elementRestrict is undefined', () => {
+    if (dungeon.rule !== 'element_restrict') {
+      expect(dungeon.elementRestrict).toBeUndefined();
+    }
+  });
+
+  it('rule is one of the 4 valid types (element_restrict, gold_rush, speed_run, boss_rush)', () => {
+    const VALID_RULES = ['element_restrict', 'gold_rush', 'speed_run', 'boss_rush'];
+    expect(VALID_RULES).toContain(dungeon.rule);
+  });
+});
