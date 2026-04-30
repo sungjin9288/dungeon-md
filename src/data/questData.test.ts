@@ -365,4 +365,47 @@ describe('MAIN_QUESTS — chapter boundary spot-checks', () => {
     expect(get('MQ-034').nextQuestId).toBe('MQ-035');
     expect(get('MQ-035').chapter).toBe(8);
   });
+
+  it('MQ-016 (last Ch3) links to MQ-017 (first Ch4)', () => {
+    expect(get('MQ-016').nextQuestId).toBe('MQ-017');
+    expect(get('MQ-017').chapter).toBe(4);
+  });
+
+  it('MQ-022 (last Ch4) links to MQ-023 (first Ch5)', () => {
+    expect(get('MQ-022').nextQuestId).toBe('MQ-023');
+    expect(get('MQ-023').chapter).toBe(5);
+  });
+
+  it('MQ-025 (last Ch5) links to MQ-026 (first Ch6)', () => {
+    expect(get('MQ-025').nextQuestId).toBe('MQ-026');
+    expect(get('MQ-026').chapter).toBe(6);
+  });
+});
+
+// ─── MAIN_QUESTS — chain start and terminal ───────────────────────────────────
+
+describe('MAIN_QUESTS — chain start and terminal', () => {
+  it('MQ-001 is the very first quest (chapter=1, links to MQ-002)', () => {
+    const q = MAIN_QUESTS[0];
+    expect(q.id).toBe('MQ-001');
+    expect(q.chapter).toBe(1);
+    expect(q.nextQuestId).toBe('MQ-002');
+  });
+
+  it('EQ-005 is the terminal quest (chapter=8, nextQuestId=null)', () => {
+    const q = MAIN_QUESTS[MAIN_QUESTS.length - 1];
+    expect(q.id).toBe('EQ-005');
+    expect(q.chapter).toBe(8);
+    expect(q.nextQuestId).toBeNull();
+  });
+
+  it('exactly one quest has nextQuestId=null (the terminal)', () => {
+    const terminals = MAIN_QUESTS.filter(q => q.nextQuestId === null);
+    expect(terminals).toHaveLength(1);
+    expect(terminals[0].id).toBe('EQ-005');
+  });
+
+  it('MQ-001 title is non-empty', () => {
+    expect(MAIN_QUESTS[0].title.length).toBeGreaterThan(0);
+  });
 });
