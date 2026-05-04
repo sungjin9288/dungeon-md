@@ -121,3 +121,60 @@ describe('MIN_SAFE_TOP / MIN_SAFE_BOTTOM constants', () => {
     expect(MIN_SAFE_BOTTOM).toBe(0);
   });
 });
+
+// ─── getGameSafeArea — additional edge cases ──────────────────────────────────
+
+describe('getGameSafeArea — additional edge cases', () => {
+  beforeEach(() => clearCssSafeArea());
+
+  it('fractional displayScale=0.5 doubles the insets (scales up)', () => {
+    setCssSafeArea(44, 34);
+    const sa = getGameSafeArea(0.5);
+    expect(sa.top).toBe(88);     // ceil(44 / 0.5) = 88
+    expect(sa.bottom).toBe(68);  // ceil(34 / 0.5) = 68
+  });
+
+  it('displayScale=3 with non-divisible value uses Math.ceil', () => {
+    setCssSafeArea(10, 10);
+    const sa = getGameSafeArea(3);
+    expect(sa.top).toBe(4);     // ceil(10 / 3) = ceil(3.333) = 4
+    expect(sa.bottom).toBe(4);
+  });
+
+  it('all four fields (including left and right) are non-negative integers', () => {
+    setCssSafeArea(44, 34, 16, 9);
+    const sa = getGameSafeArea(1);
+    for (const key of ['top', 'bottom', 'left', 'right'] as const) {
+      expect(sa[key], `${key} not integer`).toBeGreaterThanOrEqual(0);
+      expect(Number.isInteger(sa[key]), `${key} not integer`).toBe(true);
+    }
+  });
+
+  it('returned object has exactly the four keys: top, bottom, left, right', () => {
+    const sa = getGameSafeArea(1);
+    expect(Object.keys(sa).sort()).toStrictEqual(['bottom', 'left', 'right', 'top']);
+  });
+
+  it('two calls with the same scale return deeply equal results (idempotent)', () => {
+    setCssSafeArea(44, 34, 16, 8);
+    const a = getGameSafeArea(2);
+    const b = getGameSafeArea(2);
+    expect(a).toStrictEqual(b);
+  });
+
+  it('all four asymmetric insets scale independently', () => {
+    setCssSafeArea(40, 30, 20, 10);
+    const sa = getGameSafeArea(2);
+    expect(sa.top).toBe(20);    // ceil(40/2)
+    expect(sa.bottom).toBe(15); // ceil(30/2)
+    expect(sa.left).toBe(10);   // ceil(20/2)
+    expect(sa.right).toBe(5);   // ceil(10/2)
+  });
+
+  it('left and right are 0 when only top/bottom CSS vars are set', () => {
+    setCssSafeArea(20, 10); // left/right default to 0 in helper
+    const sa = getGameSafeArea(1);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(0);
+  });
+});
