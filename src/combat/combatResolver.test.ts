@@ -162,3 +162,60 @@ describe('findTarget — void phase boundary', () => {
     expect(findTarget([inv], makeRoom('trap'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
   });
 });
+
+// ─── findTarget — row range boundary ─────────────────────────────────────────
+
+describe('findTarget — row range boundary', () => {
+  it('includes an invader at exactly rowRange distance (condition is strictly >)', () => {
+    const inv = makeInvader({ x: ROOM_X, y: CENTER_Y + ROW_RANGE }); // diff == ROW_RANGE
+    expect(findTarget([inv], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('excludes an invader one pixel beyond rowRange', () => {
+    const inv = makeInvader({ x: ROOM_X, y: CENTER_Y + ROW_RANGE + 1 });
+    expect(findTarget([inv], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('returns null when all invaders are outside rowRange', () => {
+    const a = makeInvader({ x: 60, y: CENTER_Y + ROW_RANGE + 5 });
+    const b = makeInvader({ x: 70, y: CENTER_Y - ROW_RANGE - 5 });
+    expect(findTarget([a, b], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('picks the one valid invader among several out-of-range', () => {
+    const oor1 = makeInvader({ x: 60, y: CENTER_Y + ROW_RANGE + 10 });
+    const ok   = makeInvader({ x: 80, y: CENTER_Y });
+    const oor2 = makeInvader({ x: 60, y: CENTER_Y - ROW_RANGE - 10 });
+    expect(findTarget([oor1, ok, oor2], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(ok);
+  });
+});
+
+// ─── findTarget — SUN_DIVE edge cases ────────────────────────────────────────
+
+describe('findTarget — SUN_DIVE edge cases', () => {
+  const sunDive: CombatMonsterDef = {
+    baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500,
+  };
+
+  it('still skips damage-immune non-stunned invaders with SUN_DIVE', () => {
+    const inv = makeInvader({ isDamageImmune: true, isStunned: false, pathProgress: 0.99 });
+    expect(findTarget([inv], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('targets damage-immune invader if it is also stunned (SUN_DIVE)', () => {
+    const inv = makeInvader({ isDamageImmune: true, isStunned: true, pathProgress: 0.99 });
+    expect(findTarget([inv], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('treats undefined pathTween as progress=0 (still selectable)', () => {
+    // makeInvader with no pathProgress leaves pathTween undefined
+    const inv = makeInvader({ x: 60, y: CENTER_Y }); // pathTween undefined
+    expect(findTarget([inv], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('prefers defined progress over undefined (0 default)', () => {
+    const noTween = makeInvader({ x: 60, y: CENTER_Y });           // prog = 0
+    const hasTween = makeInvader({ x: 200, y: CENTER_Y, pathProgress: 0.5 }); // prog = 0.5
+    expect(findTarget([noTween, hasTween], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(hasTween);
+  });
+});
