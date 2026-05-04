@@ -192,4 +192,42 @@ describe('checkAchievements — epilogue unlock', () => {
     expect(result).toContain('dm_lv30');
     expect(result).not.toContain('dm_lv25');
   });
+
+  it('unlocks both dm_lv25 and dm_lv30 when neither is already unlocked at level 30', () => {
+    const ctx    = makeCtx({ dmLevel: 30 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('dm_lv25');
+    expect(result).toContain('dm_lv30');
+  });
+
+  it('does not re-unlock gold_1000000 when already unlocked', () => {
+    const ctx    = makeCtx({ totalGoldEarned: 2_000_000 });
+    const result = checkAchievements(ctx, { gold_1000000: { unlocked: true } });
+    expect(result).not.toContain('gold_1000000');
+  });
+
+  it('does not unlock fusion_30 at 29 fusions (one below target)', () => {
+    const ctx    = makeCtx({ totalFusions: 29 });
+    const result = checkAchievements(ctx, {});
+    expect(result).not.toContain('fusion_30');
+  });
+
+  it('only returns fusion_50 when fusion_30 is already unlocked at 50 fusions', () => {
+    const ctx    = makeCtx({ totalFusions: 50 });
+    const result = checkAchievements(ctx, { fusion_30: { unlocked: true } });
+    expect(result).toContain('fusion_50');
+    expect(result).not.toContain('fusion_30');
+  });
+
+  it('gold_1000000 reward is 300 gems and 100 soulCrystals', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'gold_1000000')!;
+    expect(def.reward.gems).toBe(300);
+    expect(def.reward.soulCrystals).toBe(100);
+  });
+
+  it('dm_lv30 reward is 200 gems and 100 soulCrystals', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'dm_lv30')!;
+    expect(def.reward.gems).toBe(200);
+    expect(def.reward.soulCrystals).toBe(100);
+  });
 });
