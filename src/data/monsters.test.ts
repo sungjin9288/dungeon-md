@@ -672,3 +672,62 @@ describe('MONSTER_DEFS — Ch6 passive and stat spot-checks', () => {
     expect(MONSTER_DEFS['spring_gumiho']?.passive).toBe('SEASONAL_BOON');
   });
 });
+
+// ─── Ch7 passive and stat spot-checks ────────────────────────────────────────
+
+describe('MONSTER_DEFS — Ch7 passive and stat spot-checks', () => {
+  it('sky_archer has PINNING_SHOT passive and is rare (rarityTier R)', () => {
+    const def = MONSTER_DEFS['sky_archer'];
+    expect(def?.passive).toBe('PINNING_SHOT');
+    expect(def?.rarityTier).toBe('R');
+  });
+
+  it('heaven_mage has CHAIN_LIGHTNING passive and lightning element', () => {
+    const def = MONSTER_DEFS['heaven_mage'];
+    expect(def?.passive).toBe('CHAIN_LIGHTNING');
+    expect(def?.element).toBe('lightning');
+  });
+
+  it('solar_warrior is epic (rarityTier E) with EMBER_TRAIL passive and fire element', () => {
+    const def = MONSTER_DEFS['solar_warrior'];
+    expect(def?.rarityTier).toBe('E');
+    expect(def?.passive).toBe('EMBER_TRAIL');
+    expect(def?.element).toBe('fire');
+  });
+
+  it('starlight_knight is epic (rarityTier E) with DUAL_STRIKE passive', () => {
+    const def = MONSTER_DEFS['starlight_knight'];
+    expect(def?.rarityTier).toBe('E');
+    expect(def?.passive).toBe('DUAL_STRIKE');
+  });
+
+  it('starlight_knight (baseDamage 70) has highest baseDamage among non-legendary Ch7 monsters', () => {
+    const nonLeg = ['celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior',
+      'divine_healer', 'starlight_knight', 'celestial_sage'];
+    const maxDmg = Math.max(
+      ...nonLeg.map(id => (MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as any)?.baseDamage ?? 0),
+    );
+    expect((MONSTER_DEFS['starlight_knight'] as any)?.baseDamage).toBe(maxDmg);
+    expect(maxDmg).toBe(70);
+  });
+
+  it('celestial_sage has SPECTRAL_BOLT passive and holy element', () => {
+    const def = MONSTER_DEFS['celestial_sage'];
+    expect(def?.passive).toBe('SPECTRAL_BOLT');
+    expect(def?.element).toBe('holy');
+  });
+
+  it('god_realm_general shares PACK_CAPTAIN passive with ghost_king (both faction leaders)', () => {
+    expect(MONSTER_DEFS['god_realm_general']?.passive).toBe('PACK_CAPTAIN');
+    expect(MONSTER_DEFS['ghost_king']?.passive).toBe('PACK_CAPTAIN');
+  });
+
+  it('majority of Ch7 monsters have holy element (≥ 4 of 8)', () => {
+    const CH7_IDS = ['celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior',
+      'divine_healer', 'starlight_knight', 'celestial_sage', 'god_realm_general'];
+    const holyCount = CH7_IDS.filter(
+      id => (MONSTER_DEFS[id as keyof typeof MONSTER_DEFS] as any)?.element === 'holy',
+    ).length;
+    expect(holyCount).toBeGreaterThanOrEqual(4);
+  });
+});
