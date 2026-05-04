@@ -204,3 +204,49 @@ describe('lighten — amount=0 edge case', () => {
     expect(lighten(0x000000, 0)).toBe(0x000000);
   });
 });
+
+// ─── darken — additional channel isolation ────────────────────────────────────
+
+describe('darken — channel isolation', () => {
+  it('pure blue 0x0000ff × 0.5 → only blue channel halved → 0x00007f', () => {
+    // R=0, G=0, B=floor(255×0.5)=127=0x7f
+    expect(darken(0x0000ff, 0.5)).toBe(0x00007f);
+  });
+
+  it('gray 0x888888 × 0.5 → all channels equal floor(136×0.5)=68 → 0x444444', () => {
+    expect(darken(0x888888, 0.5)).toBe(0x444444);
+  });
+
+  it('darken composed: darken(lighten(x)) is darker than original', () => {
+    const lit = lighten(0x606060, 40);   // 0x888888
+    const dk  = darken(lit, 0.5);        // 0x444444
+    expect(dk).toBeLessThan(0x606060);
+  });
+});
+
+// ─── lighten — partial clamping ───────────────────────────────────────────────
+
+describe('lighten — partial clamping', () => {
+  it('clamps only channels that exceed 255 (0xf0f000 + 20)', () => {
+    // R=min(255,0xf0+20)=255, G=min(255,0xf0+20)=255, B=min(255,0+20)=20
+    expect(lighten(0xf0f000, 20)).toBe(0xffff14);
+  });
+
+  it('pure red 0xff0000 + 10: red clamps, green and blue each become 10', () => {
+    expect(lighten(0xff0000, 10)).toBe(0xff0a0a);
+  });
+});
+
+// ─── computeLayout — hi / dk formula cross-check ─────────────────────────────
+
+describe('computeLayout — hi/dk formula cross-check', () => {
+  it('hi === lighten(fill, 55)', () => {
+    const layout = computeLayout(60, 0x44aaff);
+    expect(layout.hi).toBe(lighten(0x44aaff, 55));
+  });
+
+  it('dk === darken(fill, 0.55)', () => {
+    const layout = computeLayout(60, 0x44aaff);
+    expect(layout.dk).toBe(darken(0x44aaff, 0.55));
+  });
+});
