@@ -482,3 +482,66 @@ describe('Ch8 dragon tribe — display map exact values', () => {
     expect(MONSTER_NAME['five_dragon_complete']).toBe('오룡 완성체');
   });
 });
+
+// ─── Ch5 monsters — remaining exact values ───────────────────────────────────
+
+describe('Ch5 monsters — display map remaining exact values', () => {
+  it('mountain_god: emoji=⛰️, name="산신"', () => {
+    expect(MONSTER_EMOJI['mountain_god']).toBe('⛰️');
+    expect(MONSTER_NAME['mountain_god']).toBe('산신');
+  });
+
+  it('storm_archer: emoji=🏹, name="폭풍 궁수"', () => {
+    expect(MONSTER_EMOJI['storm_archer']).toBe('🏹');
+    expect(MONSTER_NAME['storm_archer']).toBe('폭풍 궁수');
+  });
+
+  it('celestial_healer: emoji=✨, name="천상 치유사"', () => {
+    expect(MONSTER_EMOJI['celestial_healer']).toBe('✨');
+    expect(MONSTER_NAME['celestial_healer']).toBe('천상 치유사');
+  });
+
+  it('mask_berserker: emoji=🎭, name="탈 광전사"', () => {
+    expect(MONSTER_EMOJI['mask_berserker']).toBe('🎭');
+    expect(MONSTER_NAME['mask_berserker']).toBe('탈 광전사');
+  });
+
+  it('sea_dragon_lord: emoji=🐉, name="해룡왕"', () => {
+    expect(MONSTER_EMOJI['sea_dragon_lord']).toBe('🐉');
+    expect(MONSTER_NAME['sea_dragon_lord']).toBe('해룡왕');
+  });
+});
+
+// ─── Ch7 celestial monsters — exact values ───────────────────────────────────
+
+describe('Ch7 celestial monsters — display map exact values', () => {
+  it('celestial_guardian: emoji=⚔️, name="천상 수호자"', () => {
+    expect(MONSTER_EMOJI['celestial_guardian']).toBe('⚔️');
+    expect(MONSTER_NAME['celestial_guardian']).toBe('천상 수호자');
+  });
+
+  it('sky_archer: emoji=🏹, name="창공 궁수"', () => {
+    expect(MONSTER_EMOJI['sky_archer']).toBe('🏹');
+    expect(MONSTER_NAME['sky_archer']).toBe('창공 궁수');
+  });
+
+  it('heaven_mage: emoji=🌟, name="천계 마법사"', () => {
+    expect(MONSTER_EMOJI['heaven_mage']).toBe('🌟');
+    expect(MONSTER_NAME['heaven_mage']).toBe('천계 마법사');
+  });
+
+  it('divine_healer: emoji=💖, name="신성 치유자"', () => {
+    expect(MONSTER_EMOJI['divine_healer']).toBe('💖');
+    expect(MONSTER_NAME['divine_healer']).toBe('신성 치유자');
+  });
+
+  it('starlight_knight: emoji=🌙, name="별빛 기사"', () => {
+    expect(MONSTER_EMOJI['starlight_knight']).toBe('🌙');
+    expect(MONSTER_NAME['starlight_knight']).toBe('별빛 기사');
+  });
+
+  it('celestial_sage: emoji=🔮, name="천상 현인"', () => {
+    expect(MONSTER_EMOJI['celestial_sage']).toBe('🔮');
+    expect(MONSTER_NAME['celestial_sage']).toBe('천상 현인');
+  });
+});
