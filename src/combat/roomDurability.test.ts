@@ -171,4 +171,43 @@ describe('saveRoomHpsToGameState', () => {
     expect(saved.dungeonSlots[1].hp).toBe(40);
     expect(saved.dungeonSlots[1].maxHp).toBe(200);
   });
+
+  it('null entry in new slots preserves the existing slot at that index', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100), makeSlotFull(80, 200)],
+    });
+    // Pass null at index 0 — existing slot 0 should be kept intact
+    saveRoomHpsToGameState([null as unknown as DungeonSlot, makeSlotFull(50, 200)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(100);  // unchanged
+    expect(saved.dungeonSlots[1].hp).toBe(50);   // updated
+  });
+
+  it('preserves trapIds on merge (not just monsterIds and roomLevel)', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100, { trapIds: ['spike_trap', 'slow_trap'] })],
+    });
+    saveRoomHpsToGameState([makeSlotFull(60, 100)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].trapIds).toContain('spike_trap');
+    expect(saved.dungeonSlots[0].trapIds).toContain('slow_trap');
+  });
+
+  it('second call is cumulative — reads the previously saved hp', () => {
+    saveRoomHpsToGameState([makeSlotFull(80, 100)]);
+    // Simulate a second damage event: save with hp=50
+    saveRoomHpsToGameState([makeSlotFull(50, 100)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(50); // reflects second call, not first
+  });
+
+  it('brand-new slot with no existing entry is stored as-is', () => {
+    // No pre-existing dungeonSlots → new slot stored without spread merge
+    saveRoomHpsToGameState([makeSlotFull(70, 120)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(70);
+    expect(saved.dungeonSlots[0].maxHp).toBe(120);
+  });
 });
