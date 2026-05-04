@@ -303,3 +303,69 @@ describe('CSS', () => {
     }
   });
 });
+
+// ─── layout — INVADER_WAYPOINTS exact coordinates ────────────────────────────
+
+describe('layout — INVADER_WAYPOINTS exact coordinates', () => {
+  it('waypoint[0] is the off-screen-right entry {x:410, y:185}', () => {
+    expect(INVADER_WAYPOINTS[0]).toStrictEqual({ x: 410, y: 185 });
+  });
+
+  it('waypoint[1] is the grid right edge on row 0 {x:360, y:185}', () => {
+    expect(INVADER_WAYPOINTS[1]).toStrictEqual({ x: 360, y: 185 });
+  });
+
+  it('waypoint[2] is the grid left edge on row 0 {x:30, y:185}', () => {
+    expect(INVADER_WAYPOINTS[2]).toStrictEqual({ x: 30, y: 185 });
+  });
+
+  it('waypoint[3] is the left-side pivot to row 1 {x:30, y:295}', () => {
+    expect(INVADER_WAYPOINTS[3]).toStrictEqual({ x: 30, y: 295 });
+  });
+
+  it('waypoint[4] is the grid right edge on row 1 {x:360, y:295}', () => {
+    expect(INVADER_WAYPOINTS[4]).toStrictEqual({ x: 360, y: 295 });
+  });
+
+  it('waypoint[5] is the right-side pivot to row 2 {x:360, y:405}', () => {
+    expect(INVADER_WAYPOINTS[5]).toStrictEqual({ x: 360, y: 405 });
+  });
+
+  it('waypoint[6] is the grid left edge on row 2 {x:30, y:405}', () => {
+    expect(INVADER_WAYPOINTS[6]).toStrictEqual({ x: 30, y: 405 });
+  });
+
+  it('waypoint[7] is the off-screen-left exit {x:-20, y:405}', () => {
+    expect(INVADER_WAYPOINTS[7]).toStrictEqual({ x: -20, y: 405 });
+  });
+
+  it('row 0 y-center (185) equals GRID_Y + 0*CELL_SIZE + CELL_SIZE/2', () => {
+    const row0Y = GRID_Y + 0 * CELL_SIZE + CELL_SIZE / 2;
+    expect(INVADER_WAYPOINTS[1].y).toBe(row0Y);
+    expect(INVADER_WAYPOINTS[2].y).toBe(row0Y);
+  });
+
+  it('row 1 y-center (295) equals GRID_Y + 1*CELL_SIZE + CELL_SIZE/2', () => {
+    const row1Y = GRID_Y + 1 * CELL_SIZE + CELL_SIZE / 2;
+    expect(INVADER_WAYPOINTS[3].y).toBe(row1Y);
+    expect(INVADER_WAYPOINTS[4].y).toBe(row1Y);
+  });
+
+  it('row 2 y-center (405) equals GRID_Y + 2*CELL_SIZE + CELL_SIZE/2', () => {
+    const row2Y = GRID_Y + 2 * CELL_SIZE + CELL_SIZE / 2;
+    expect(INVADER_WAYPOINTS[5].y).toBe(row2Y);
+    expect(INVADER_WAYPOINTS[6].y).toBe(row2Y);
+  });
+
+  it('row 0 traverses right-to-left (wp[1].x > wp[2].x)', () => {
+    expect(INVADER_WAYPOINTS[1].x).toBeGreaterThan(INVADER_WAYPOINTS[2].x);
+  });
+
+  it('row 1 traverses left-to-right (wp[3].x < wp[4].x)', () => {
+    expect(INVADER_WAYPOINTS[3].x).toBeLessThan(INVADER_WAYPOINTS[4].x);
+  });
+
+  it('row 2 traverses right-to-left (wp[5].x > wp[6].x)', () => {
+    expect(INVADER_WAYPOINTS[5].x).toBeGreaterThan(INVADER_WAYPOINTS[6].x);
+  });
+});
