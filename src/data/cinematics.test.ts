@@ -308,3 +308,68 @@ describe('CINEMATICS — boss intro spot-checks', () => {
     }
   });
 });
+
+// ─── STAGE_CINEMATICS — remaining chapter and boss mappings ──────────────────
+
+describe('STAGE_CINEMATICS — remaining chapter and boss mappings', () => {
+  it('stage 11 maps to ch2_opening', () => {
+    expect(STAGE_CINEMATICS[11]).toBe('ch2_opening');
+  });
+
+  it('stage 21 maps to ch3_opening', () => {
+    expect(STAGE_CINEMATICS[21]).toBe('ch3_opening');
+  });
+
+  it('stage 33 maps to ch4_opening', () => {
+    expect(STAGE_CINEMATICS[33]).toBe('ch4_opening');
+  });
+
+  it('stage 42 maps to death_emissary_boss_intro', () => {
+    expect(STAGE_CINEMATICS[42]).toBe('death_emissary_boss_intro');
+  });
+
+  it('stage 43 maps to ch5_opening', () => {
+    expect(STAGE_CINEMATICS[43]).toBe('ch5_opening');
+  });
+
+  it('stage 53 maps to ch6_opening', () => {
+    expect(STAGE_CINEMATICS[53]).toBe('ch6_opening');
+  });
+
+  it('stage 63 maps to ch7_opening', () => {
+    expect(STAGE_CINEMATICS[63]).toBe('ch7_opening');
+  });
+
+  it('stage 72 maps to god_emperor_boss_intro', () => {
+    expect(STAGE_CINEMATICS[72]).toBe('god_emperor_boss_intro');
+  });
+
+  it('stage 73 maps to ch8_opening', () => {
+    expect(STAGE_CINEMATICS[73]).toBe('ch8_opening');
+  });
+});
+
+// ─── CINEMATICS — stage20 boss intro and Ch8 cinematic spot-checks ───────────
+
+describe('CINEMATICS — stage20 and Ch8 cinematic spot-checks', () => {
+  it('stage20_boss_intro features 구미호 여왕 (3 lines)', () => {
+    const c = getCinematic('stage20_boss_intro')!;
+    expect(c).toBeDefined();
+    expect(c.lines).toHaveLength(3);
+    expect(c.lines.some(l => l.speaker === '구미호 여왕')).toBe(true);
+  });
+
+  it('primordial_titan_boss_intro features 원초신 as the main speaker', () => {
+    const c = getCinematic('primordial_titan_boss_intro')!;
+    expect(c.lines.some(l => l.speaker === '원초신')).toBe(true);
+    expect(c.lines.some(l => l.speaker === '도깨비 전사')).toBe(true);
+  });
+
+  it('ch8_opening features 산신령 and 구미호 (5 lines)', () => {
+    const c = getCinematic('ch8_opening')!;
+    expect(c).toBeDefined();
+    expect(c.lines).toHaveLength(5);
+    expect(c.lines.some(l => l.speaker === '산신령')).toBe(true);
+    expect(c.lines.some(l => l.speaker === '구미호')).toBe(true);
+  });
+});
