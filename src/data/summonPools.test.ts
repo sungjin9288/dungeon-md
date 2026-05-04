@@ -360,3 +360,81 @@ describe('SC_COMP and RARITY_KO spot-checks', () => {
     expect(stars.length).toBe(5);
   });
 });
+
+// ─── RARITY_COLORS — numeric hex spot-checks ─────────────────────────────────
+
+describe('RARITY_COLORS — numeric hex spot-checks', () => {
+  it('has exactly 5 entries (one per rarity)', () => {
+    expect(RARITY_COLORS).toHaveLength(5);
+  });
+
+  it('every value is a positive integer (valid 24-bit hex)', () => {
+    for (const c of RARITY_COLORS) {
+      expect(Number.isInteger(c), `${c} not integer`).toBe(true);
+      expect(c).toBeGreaterThan(0);
+    }
+  });
+
+  it('RARITY_COLORS[i] matches parseInt(RARITY_CSS[i].slice(1), 16) for all 5 rarities', () => {
+    for (let i = 0; i < 5; i++) {
+      const fromCss = parseInt(RARITY_CSS[i].slice(1), 16);
+      expect(fromCss, `index ${i}: RARITY_COLORS vs RARITY_CSS`).toBe(RARITY_COLORS[i]);
+    }
+  });
+
+  it('RARITY_COLORS[1] is 0x44aaff (blue — uncommon)', () => {
+    expect(RARITY_COLORS[1]).toBe(0x44aaff);
+  });
+
+  it('RARITY_COLORS[2] is 0xffdd44 (yellow — rare)', () => {
+    expect(RARITY_COLORS[2]).toBe(0xffdd44);
+  });
+
+  it('RARITY_COLORS[3] is 0xcc44ff (purple — epic)', () => {
+    expect(RARITY_COLORS[3]).toBe(0xcc44ff);
+  });
+
+  it('all 5 numeric colours are distinct', () => {
+    expect(new Set(RARITY_COLORS).size).toBe(5);
+  });
+});
+
+// ─── RARITY_CSS / RARITY_STARS — remaining index spot-checks ─────────────────
+
+describe('RARITY_CSS / RARITY_STARS — remaining index spot-checks', () => {
+  it('RARITY_CSS[1] is #44aaff (blue for uncommon)', () => {
+    expect(RARITY_CSS[1]).toBe('#44aaff');
+  });
+
+  it('RARITY_CSS[2] is #ffdd44 (yellow for rare)', () => {
+    expect(RARITY_CSS[2]).toBe('#ffdd44');
+  });
+
+  it('RARITY_CSS[3] is #cc44ff (purple for epic)', () => {
+    expect(RARITY_CSS[3]).toBe('#cc44ff');
+  });
+
+  it('RARITY_STARS[0] is "⭐" (1 star — common)', () => {
+    expect(RARITY_STARS[0]).toBe('⭐');
+  });
+
+  it('RARITY_STARS[1] is "⭐⭐" (2 stars — uncommon)', () => {
+    expect(RARITY_STARS[1]).toBe('⭐⭐');
+  });
+
+  it('RARITY_STARS[2] is "⭐⭐⭐" (3 stars — rare)', () => {
+    expect(RARITY_STARS[2]).toBe('⭐⭐⭐');
+  });
+
+  it('RARITY_STARS[3] is "⭐⭐⭐⭐" (4 stars — epic)', () => {
+    expect(RARITY_STARS[3]).toBe('⭐⭐⭐⭐');
+  });
+
+  it('star count strictly increases with rarity index', () => {
+    for (let i = 1; i < 5; i++) {
+      const prev = (RARITY_STARS[i - 1].match(/⭐/g) ?? []).length;
+      const curr = (RARITY_STARS[i].match(/⭐/g) ?? []).length;
+      expect(curr, `index ${i} star count`).toBeGreaterThan(prev);
+    }
+  });
+});
