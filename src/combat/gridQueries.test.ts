@@ -262,4 +262,46 @@ describe('getInvaderRow', () => {
     const closeY = ROW_Y[2] + Math.floor(CELL_SIZE * 0.5);
     expect(getInvaderRow(CELL_SIZE, { y: closeY })).toBe(2);
   });
+
+  it('returns -1 for y one pixel above the upper boundary of row-0 band', () => {
+    // Upper boundary = ROW_Y[0] - 0.7×CELL_SIZE = 185 - 77 = 108
+    // One pixel above = 107 → |107-185|=78 > 77 → outside all bands
+    const justAbove = ROW_Y[0] - CELL_SIZE * 0.7 - 1;
+    expect(getInvaderRow(CELL_SIZE, { y: justAbove })).toBe(-1);
+  });
+
+  it('y in the overlap zone [218,262] resolves to row 0 (first-match wins)', () => {
+    // Row-0 band [108,262] and Row-1 band [218,372] overlap at [218,262].
+    // Loop iterates r=0 first → row 0 wins.
+    const overlapY = 240; // inside both bands
+    expect(getInvaderRow(CELL_SIZE, { y: overlapY })).toBe(0);
+  });
+
+  it('works correctly with a custom effectiveCellSize (80px)', () => {
+    // Row-0 centre = GRID_Y + 0*80 + 40 = 170
+    const cs = 80;
+    const row0Centre = GRID_Y + 0 * cs + cs / 2;
+    expect(getInvaderRow(cs, { y: row0Centre })).toBe(0);
+    // y=0 is far above every band → -1
+    expect(getInvaderRow(cs, { y: 0 })).toBe(-1);
+  });
+});
+
+// ─── isScrollBurstActive — expiry boundary ────────────────────────────────────
+
+describe('isScrollBurstActive — expiry boundary', () => {
+  it('returns false when now === scrollBurstActiveUntil (strict less-than, not <=)', () => {
+    const NOW = 10_000;
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW } as Partial<RoomData>);
+    // now < activeUntil is false when equal → burst has just expired
+    expect(isScrollBurstActive(grid, 3, 0, 0, NOW)).toBe(false);
+  });
+
+  it('returns true when now is one ms before expiry (now < activeUntil)', () => {
+    const NOW = 10_000;
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 1 } as Partial<RoomData>);
+    expect(isScrollBurstActive(grid, 3, 0, 0, NOW)).toBe(true);
+  });
 });
