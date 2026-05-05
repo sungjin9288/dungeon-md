@@ -294,3 +294,43 @@ describe('rollWaveEvent', () => {
     expect(evt).toBe(supplyDef);
   });
 });
+
+// ─── WAVE_EVENTS — array order, key set, and description numeric pins ─────────
+
+describe('WAVE_EVENTS — array order, key set & description numeric pins', () => {
+  it('WAVE_EVENTS[0] is merchant (cheapest / first defined)', () => {
+    expect(WAVE_EVENTS[0].type).toBe('merchant');
+  });
+
+  it('WAVE_EVENTS[7] is crimson_curse (last defined)', () => {
+    expect(WAVE_EVENTS[7].type).toBe('crimson_curse');
+  });
+
+  it('every WaveEventDef has exactly the 5 expected keys', () => {
+    const expectedKeys = ['type', 'name', 'icon', 'description', 'color'].sort();
+    for (const e of WAVE_EVENTS) {
+      expect(Object.keys(e).sort(), `${e.type} keys`).toStrictEqual(expectedKeys);
+    }
+  });
+
+  it('merchant description contains the ×1.5 multiplier', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'merchant')!;
+    expect(e.description).toContain('×1.5');
+  });
+
+  it('void_storm description contains the ×1.8 gold multiplier', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'void_storm')!;
+    expect(e.description).toContain('×1.8');
+  });
+
+  it('supply description specifies exactly 15% HP recovery', () => {
+    const e = WAVE_EVENTS.find(e => e.type === 'supply')!;
+    expect(e.description).toContain('15%');
+  });
+
+  it('rollWaveEvent(2, 2, n) always returns null (wave=maxWave is boss wave)', () => {
+    for (let n = 0; n < 20; n++) {
+      expect(rollWaveEvent(2, 2, n), `stageId=${n}`).toBeNull();
+    }
+  });
+});
