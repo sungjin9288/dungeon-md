@@ -371,4 +371,64 @@ describe('buildEndlessSpawnQueue — pool tier thresholds', () => {
     const expected = Math.round(INVADER_DEFS['soldier'].reward * Math.pow(1.08, 9));
     expect(soldier!.def.reward).toBe(expected);
   });
+
+  it('wave 20 mini-boss knight HP = round(350 × 1.12^19 × 0.5) = 1507', () => {
+    const q = buildEndlessSpawnQueue(20);
+    const boss = q.find(e => e.def.type === 'knight' && e.def.isMiniBoss);
+    expect(boss).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['knight'].hp * Math.pow(1.12, 19) * 0.5);
+    expect(boss!.def.hp).toBe(expected);
+  });
+});
+
+// ─── buildEndlessSpawnQueue — additional edge cases ──────────────────────────
+
+describe('buildEndlessSpawnQueue — additional edge cases', () => {
+  it('wave 4 never contains T1_LATE types (void/undying excluded before wave 5)', () => {
+    for (let trial = 0; trial < 20; trial++) {
+      const q = buildEndlessSpawnQueue(4);
+      for (const e of q) {
+        expect(['void', 'undying'], `wave 4 should not spawn ${e.def.type}`).not.toContain(e.def.type);
+      }
+    }
+  });
+
+  it('wave 5 includes T1_LATE but still excludes T2 (berserker not in pool)', () => {
+    for (let trial = 0; trial < 20; trial++) {
+      const q = buildEndlessSpawnQueue(5);
+      for (const e of q) {
+        expect(e.def.type).not.toBe('berserker');
+      }
+    }
+  });
+
+  it('standard filler entries all have delay exactly 1200ms', () => {
+    // Wave 1 has no milestones, so every entry is a filler with delay=1200
+    const q = buildEndlessSpawnQueue(1);
+    for (const e of q) {
+      expect(e.delay).toBe(1200);
+    }
+  });
+
+  it('wave 100 total queue length = 3 milestone + 20 filler entries = 23', () => {
+    const q = buildEndlessSpawnQueue(100);
+    expect(q).toHaveLength(23);
+  });
+
+  it('wave 30 two void_assassin entries share the same def object reference', () => {
+    const q = buildEndlessSpawnQueue(30);
+    const assassins = q.filter(e => e.def.type === 'void_assassin' && e.def.isMiniBoss);
+    expect(assassins).toHaveLength(2);
+    expect(assassins[0].def).toBe(assassins[1].def); // same reference
+  });
+
+  it('wave 60 first milestone entry has delay=0 and second has delay=1500', () => {
+    const q = buildEndlessSpawnQueue(60);
+    const colossus = q.find(e => e.def.type === 'void_colossus');
+    const titan    = q.find(e => e.def.type === 'titan_sentinel');
+    expect(colossus).toBeDefined();
+    expect(titan).toBeDefined();
+    expect(colossus!.delay).toBe(0);
+    expect(titan!.delay).toBe(1500);
+  });
 });
