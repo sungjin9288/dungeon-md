@@ -332,3 +332,59 @@ describe('recordClear', () => {
     expect(after[0].bestStars).toBe(before[0].bestStars);
   });
 });
+
+// ─── STAGE_CONFIGS — structural invariants ────────────────────────────────────
+
+describe('STAGE_CONFIGS — structural invariants', () => {
+  it('unlockedStage <= stageNumber for every config entry', () => {
+    for (const cfg of STAGE_CONFIGS) {
+      expect(cfg.unlockedStage, `stage ${cfg.stageNumber} unlockedStage`).toBeLessThanOrEqual(cfg.stageNumber);
+    }
+  });
+
+  it('first stage of each chapter has unlockedStage === stageNumber (self-gate)', () => {
+    const firstByChapter: Record<number, number> = { 1: 1, 2: 11, 3: 21, 4: 33, 5: 43, 6: 53, 7: 63, 8: 73 };
+    for (const [ch, firstStage] of Object.entries(firstByChapter)) {
+      const cfg = STAGE_CONFIGS.find(c => c.chapter === +ch && c.stageNumber === firstStage)!;
+      expect(cfg.unlockedStage, `Ch${ch} first stage`).toBe(firstStage);
+    }
+  });
+
+  it('boss stage is always the last stage in its chapter', () => {
+    for (let ch = 1; ch <= 8; ch++) {
+      const chStages = STAGE_CONFIGS.filter(c => c.chapter === ch);
+      const lastStage = chStages[chStages.length - 1];
+      expect(lastStage.bossWave, `Ch${ch} last stage should be boss`).toBe(true);
+    }
+  });
+
+  it('recordClear(8) does NOT unlock Ch2 gate (index 10) — only index 9 triggers it', () => {
+    const prog = recordClear(8, 3); // clears stage 9
+    expect(prog[9].unlocked).toBe(true);   // next stage (index 9) unlocked
+    expect(prog[10].unlocked).toBe(false); // Ch2 gate NOT triggered
+  });
+
+  it('two consecutive clears progressively unlock the chain', () => {
+    recordClear(0, 3); // unlocks index 1
+    recordClear(1, 3); // unlocks index 2
+    const prog = loadProgress();
+    expect(prog[0].bestStars).toBe(3);
+    expect(prog[1].bestStars).toBe(3);
+    expect(prog[2].unlocked).toBe(true);
+  });
+
+  it('loadProgress with an exactly-80-entry save does not pad or trim', () => {
+    const full = Array.from({ length: 80 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 }));
+    saveProgress(full);
+    const loaded = loadProgress();
+    expect(loaded).toHaveLength(80);
+  });
+
+  it('recordClear return value matches a subsequent loadProgress() call', () => {
+    const returned = recordClear(0, 3, 90);
+    const loaded   = loadProgress();
+    expect(returned[0].bestStars).toBe(loaded[0].bestStars);
+    expect(returned[0].bestHpPercent).toBe(loaded[0].bestHpPercent);
+    expect(returned[1].unlocked).toBe(loaded[1].unlocked);
+  });
+});
