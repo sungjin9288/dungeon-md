@@ -135,6 +135,15 @@ describe('getActiveBanner', () => {
     const result = getActiveBanner(makeDate('2027-04-01'));
     expect(result?.id).not.toBe(isolated.id);
   });
+
+  it('returns null for a far-future date (2028-01-01) after all banners have ended', () => {
+    expect(getActiveBanner(makeDate('2028-01-01'))).toBeNull();
+  });
+
+  it('returns spring_gumiho_2026 specifically on 2026-03-15', () => {
+    const result = getActiveBanner(makeDate('2026-03-15'));
+    expect(result?.id).toBe('spring_gumiho_2026');
+  });
 });
 
 // ─── getBannerTimeLeft ────────────────────────────────────────────────────────
@@ -181,6 +190,19 @@ describe('getBannerTimeLeft', () => {
     expect(result).not.toContain('시간');
     expect(result).not.toContain('일');
   });
+
+  it('days format includes both 일 and 시간 components', () => {
+    // From Jan 20 with endDate Jan 31 → >24 hours left → "N일 M시간 남음"
+    const result = getBannerTimeLeft(SAMPLE_BANNER, makeDate('2026-01-20'));
+    expect(result).toMatch(/\d+일 \d+시간 남음/);
+  });
+
+  it('1 second before expiry returns "0분 남음"', () => {
+    const end = new Date('2026-01-31T23:59:59');
+    const now = new Date(end.getTime() - 1000); // 1 second before end
+    // totalSecs=1, days=0, hours=0, mins=0 → "0분 남음"
+    expect(getBannerTimeLeft(SAMPLE_BANNER, now)).toBe('0분 남음');
+  });
 });
 
 // ─── applyBannerBoost ─────────────────────────────────────────────────────────
@@ -217,6 +239,14 @@ describe('applyBannerBoost', () => {
       const result = applyBannerBoost(SAMPLE_BANNER, 'epic', epicPool);
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('rateMultiplier=1.0 always picks a featured monster', () => {
+    const alwaysFeatured: SeasonBanner = { ...SAMPLE_BANNER, rateMultiplier: 1.0 };
+    for (let i = 0; i < 30; i++) {
+      const result = applyBannerBoost(alwaysFeatured, 'epic', epicPool);
+      expect(alwaysFeatured.featuredMonsters).toContain(result);
     }
   });
 });
@@ -303,6 +333,21 @@ describe('SEASON_BANNERS — season and rarity coverage', () => {
     const b = SEASON_BANNERS.find(b => b.id === 'ch8_abyss_2027')!;
     expect(b.rateMultiplier).toBeCloseTo(max);
     expect(b.rateMultiplier).toBeCloseTo(0.70);
+  });
+
+  it('subname is a non-empty string for every banner', () => {
+    for (const b of SEASON_BANNERS) {
+      expect(typeof b.subname, `${b.id} subname type`).toBe('string');
+      expect(b.subname.length, `${b.id} subname`).toBeGreaterThan(0);
+    }
+  });
+
+  it('bgColor, borderColor, and glowColor are all positive numbers for every banner', () => {
+    for (const b of SEASON_BANNERS) {
+      expect(b.bgColor,     `${b.id} bgColor`    ).toBeGreaterThan(0);
+      expect(b.borderColor, `${b.id} borderColor`).toBeGreaterThan(0);
+      expect(b.glowColor,   `${b.id} glowColor`  ).toBeGreaterThan(0);
+    }
   });
 });
 
