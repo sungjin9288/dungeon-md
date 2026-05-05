@@ -375,3 +375,53 @@ describe('simulateDungeon — winPct edge cases', () => {
     expect(r.recommendation).toBe('몬스터를 더 배치하세요!'); // dps<8 fires first
   });
 });
+
+// ─── calcDungeonDps / simulateDungeon — additional edge cases ─────────────────
+
+describe('calcDungeonDps — additional edge cases', () => {
+  it('null slot in array is skipped gracefully (returns 0)', () => {
+    expect(calcDungeonDps([null as unknown as ReturnType<typeof makeSlot>], [])).toBe(0);
+  });
+
+  it('undefined monsterId entry in slot.monsterIds is skipped', () => {
+    // Slot with [undefined, 'dokkaebi_warrior'] should count only the valid monster
+    const mixedSlot = makeSlot([undefined as unknown as string, 'dokkaebi_warrior']);
+    const exactSlot = makeSlot(['dokkaebi_warrior']);
+    expect(calcDungeonDps([mixedSlot], [])).toBeCloseTo(calcDungeonDps([exactSlot], []), 5);
+  });
+
+  it('unknown trap id contributes 0 DPS (no entry in TRAP_EFFECTIVE_DPS)', () => {
+    expect(calcDungeonDps([makeSlot([], ['totally_unknown_trap_xyz'])], [])).toBe(0);
+  });
+});
+
+describe('simulateDungeon — additional invariants', () => {
+  it('SimResult.totalDps matches calcDungeonDps called with same inputs', () => {
+    const slot = makeSlot(['dokkaebi_warrior'], ['spike_trap']);
+    const owned = [{ id: 'dokkaebi_warrior', level: 3, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
+    const r = simulateDungeon([slot], owned, [makeWave('peasant', 2)], 1000);
+    expect(r.totalDps).toBeCloseTo(calcDungeonDps([slot], owned), 10);
+  });
+
+  it('winPct is always an integer (Math.round applied)', () => {
+    const r = simulateDungeon([makeSlot(['dokkaebi_warrior'])], [], [makeWave('knight', 1)], 1000);
+    expect(Number.isInteger(r.winPct)).toBe(true);
+  });
+
+  it('wave with empty invaders array → invaderCount=0 and hpLost=0', () => {
+    const emptyWave: WaveSpec = { invaders: [] };
+    const r = simulateDungeon([], [], [emptyWave], 1000);
+    expect(r.waveResults[0].invaderCount).toBe(0);
+    expect(r.waveResults[0].hpLost).toBe(0);
+  });
+
+  it('damageDealt === invaderHpSum when all invaders are killed by DPS', () => {
+    // Massively overpowered — all peasants killed
+    const slots = Array.from({ length: 8 }, () =>
+      makeSlot(['dokkaebi_warrior', 'gumiho_guardian', 'white_tiger']),
+    );
+    const r = simulateDungeon(slots, [], [makeWave('peasant', 1)], 1000);
+    expect(r.waveResults[0].survived).toBe(0);
+    expect(r.waveResults[0].damageDealt).toBeCloseTo(r.waveResults[0].invaderHpSum, 1);
+  });
+});
