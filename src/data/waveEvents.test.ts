@@ -258,4 +258,39 @@ describe('rollWaveEvent', () => {
       expect(seen.has(e.type), `${e.type} never returned`).toBe(true);
     }
   });
+
+  it('returns null in the 70% non-trigger case (wave=2, stageId=1, hash%100=51)', () => {
+    // seededHash(2,1) % 100 = 51 ≥ 30 → no event
+    expect(rollWaveEvent(2, 10, 1)).toBeNull();
+  });
+
+  it('returns supply for wave=3, stageId=5 (hash%100=1 → triggers, idx→supply)', () => {
+    const evt = rollWaveEvent(3, 10, 5);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('supply');
+  });
+
+  it('returns merchant for wave=5, stageId=1 (deterministic)', () => {
+    const evt = rollWaveEvent(5, 20, 1);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('merchant');
+  });
+
+  it('returns void_storm for wave=12, stageId=1 (deterministic)', () => {
+    const evt = rollWaveEvent(12, 20, 1);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('void_storm');
+  });
+
+  it('returns ancient_blessing for wave=4, stageId=2 (deterministic)', () => {
+    const evt = rollWaveEvent(4, 20, 2);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('ancient_blessing');
+  });
+
+  it('returned event is the same object reference as in WAVE_EVENTS (not a copy)', () => {
+    const evt = rollWaveEvent(3, 10, 5); // known to return supply
+    const supplyDef = WAVE_EVENTS.find(e => e.type === 'supply');
+    expect(evt).toBe(supplyDef);
+  });
 });
