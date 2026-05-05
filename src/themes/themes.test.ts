@@ -272,4 +272,48 @@ describe('ALL_THEMES — text colors and stone ordering', () => {
     expect(CELESTIAL_THEME.textPrimary).toBe('#ffd700');
     expect(CELESTIAL_THEME.panelBorderCSS).toBe('#ffd700');
   });
+
+  it('bgPrimary < bgSecondary for every theme (primary is darker)', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.bgPrimary, `${t.id} bgPrimary not < bgSecondary`).toBeLessThan(t.bgSecondary);
+    }
+  });
+
+  it('glowColor is non-zero for every theme (not black)', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.glowColor, `${t.id} glowColor is 0`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every decoration entry is a non-empty string', () => {
+    for (const t of ALL_THEMES) {
+      for (const d of t.decorations) {
+        expect(typeof d, `${t.id} decoration not string`).toBe('string');
+        expect((d as string).length, `${t.id} empty decoration`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('lava_cave has exactly 2 decorations (fewest of all themes)', () => {
+    expect(LAVA_CAVE_THEME.decorations).toHaveLength(2);
+    expect(LAVA_CAVE_THEME.decorations).toContain('stalagmites');
+    expect(LAVA_CAVE_THEME.decorations).toContain('torches');
+  });
+
+  it('cave is the only theme with water_drips decoration', () => {
+    expect(CAVE_THEME.decorations).toContain('water_drips');
+    for (const t of ALL_THEMES.filter(t => t.id !== 'cave')) {
+      expect(t.decorations, `${t.id} should not have water_drips`).not.toContain('water_drips');
+    }
+  });
+
+  it('void_throne glowColor matches textAccent (both 0xd4af37 gold)', () => {
+    const glowFromAccent = parseInt(VOID_THRONE_THEME.textAccent.slice(1), 16);
+    expect(VOID_THRONE_THEME.glowColor).toBe(glowFromAccent);
+  });
+
+  it('celestial_realm ambientColor matches textPrimary (both gold #ffd700)', () => {
+    const ambientFromText = parseInt(CELESTIAL_THEME.textPrimary.slice(1), 16);
+    expect(CELESTIAL_THEME.ambientColor).toBe(ambientFromText);
+  });
 });
