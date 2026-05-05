@@ -87,6 +87,25 @@ describe('calcDungeonDps', () => {
   it('stun_trap contributes exactly 6 DPS', () => {
     expect(calcDungeonDps([makeSlot([], ['stun_trap'])], [])).toBe(6);
   });
+
+  it('two traps in the same slot stack: spike_trap + stun_trap = 11 DPS', () => {
+    expect(calcDungeonDps([makeSlot([], ['spike_trap', 'stun_trap'])], [])).toBe(11);
+  });
+
+  it('prefix match resolves "dokkaebi_warrior_abc" to dokkaebi_warrior DPS', () => {
+    const prefixSlot = makeSlot(['dokkaebi_warrior_abc']);
+    const exactSlot  = makeSlot(['dokkaebi_warrior']);
+    // Both should produce the same DPS (prefix resolved to exact key)
+    expect(calcDungeonDps([prefixSlot], [])).toBeCloseTo(calcDungeonDps([exactSlot], []), 5);
+  });
+
+  it('level 5 monster contributes exactly 1.4× the DPS of level 1', () => {
+    const slot  = makeSlot(['dokkaebi_warrior']);
+    const owned = (level: number) => [{ id: 'dokkaebi_warrior', level, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
+    const dpsLv1 = calcDungeonDps([slot], owned(1));
+    const dpsLv5 = calcDungeonDps([slot], owned(5));
+    expect(dpsLv5).toBeCloseTo(dpsLv1 * 1.4, 5);
+  });
 });
 
 // ─── simulateDungeon — structure ─────────────────────────────────────────────
@@ -334,5 +353,25 @@ describe('simulateDungeon — winPct edge cases', () => {
     // Wave 1: 1 peasant survives (hpLost=50), Wave 2: 3 peasants survive (hpLost=150)
     const r = simulateDungeon([], [], [makeWave('peasant', 1), makeWave('peasant', 3)], 10000);
     expect(r.worstWave).toBe(2); // wave 2 caused more damage
+  });
+
+  it('worstWave tie: first wave wins (strict > not >= in tracking)', () => {
+    // Two identical waves — both deal equal hpLost → worstWave stays at wave 1
+    const r = simulateDungeon([], [], [makeWave('peasant', 2), makeWave('peasant', 2)], 10000);
+    expect(r.worstWave).toBe(1);
+  });
+
+  it('hpLost per wave equals def.damage × surviving invader count (not invHp)', () => {
+    // peasant: damage=50. DPS=0 → both peasants survive → hpLost = 2×50 = 100
+    const r = simulateDungeon([], [], [makeWave('peasant', 2)], 10000);
+    expect(r.waveResults[0].hpLost).toBe(100); // 2 × 50 damage, not 2 × 60 hp
+  });
+
+  it('recommendation priority: dps<8 takes precedence over hp=0', () => {
+    // DPS=0 (< 8) and hp will hit 0 from wave damage
+    // Expected: "몬스터를 더 배치하세요!" (not "방어 불충분")
+    const r = simulateDungeon([], [], [makeWave('knight', 50)], 1);
+    expect(r.finalHp).toBe(0);                             // hp does hit 0
+    expect(r.recommendation).toBe('몬스터를 더 배치하세요!'); // dps<8 fires first
   });
 });
