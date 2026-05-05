@@ -177,4 +177,46 @@ describe('getGameSafeArea — additional edge cases', () => {
     expect(sa.left).toBe(0);
     expect(sa.right).toBe(0);
   });
+
+  it('CSS vars explicitly set to 0 return all-zero SafeArea', () => {
+    setCssSafeArea(0, 0, 0, 0);
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(0);
+    expect(sa.bottom).toBe(0);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(0);
+  });
+
+  it('reads CSS vars fresh each call — no caching between calls', () => {
+    setCssSafeArea(20, 10);
+    const first = getGameSafeArea(1);
+    setCssSafeArea(60, 30);
+    const second = getGameSafeArea(1);
+    expect(first.top).toBe(20);
+    expect(second.top).toBe(60);  // reflects the updated var, not cached value
+  });
+
+  it('CSS vars cleared between calls → second call returns zeros', () => {
+    setCssSafeArea(44, 34);
+    getGameSafeArea(1); // prime with values
+    clearCssSafeArea();
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(0);
+    expect(sa.bottom).toBe(0);
+  });
+
+  it('displayScale=0.25 scales insets up by 4× (ceil(44/0.25)=176)', () => {
+    setCssSafeArea(44, 34);
+    const sa = getGameSafeArea(0.25);
+    expect(sa.top).toBe(176);    // ceil(44 / 0.25) = 176
+    expect(sa.bottom).toBe(136); // ceil(34 / 0.25) = 136
+  });
+
+  it('bottom and left channels are also ceiled for non-divisible values', () => {
+    // scale=2: ceil(33/2)=17 for both bottom and left
+    setCssSafeArea(0, 33, 33, 0);
+    const sa = getGameSafeArea(2);
+    expect(sa.bottom).toBe(17); // ceil(33/2) = ceil(16.5) = 17
+    expect(sa.left).toBe(17);   // same
+  });
 });
