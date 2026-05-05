@@ -110,6 +110,52 @@ describe('STAGE_CONFIGS — chapter layout', () => {
       expect(chapters.has(ch), `chapter ${ch} missing`).toBe(true);
     }
   });
+
+  it('Ch2 spans stages 11–20 (10 stages)', () => {
+    const ch2 = STAGE_CONFIGS.filter(s => s.chapter === 2);
+    expect(ch2).toHaveLength(10);
+    expect(ch2[0].stageNumber).toBe(11);
+    expect(ch2[ch2.length - 1].stageNumber).toBe(20);
+  });
+
+  it('Ch4 spans stages 33–42 (10 stages)', () => {
+    const ch4 = STAGE_CONFIGS.filter(s => s.chapter === 4);
+    expect(ch4).toHaveLength(10);
+    expect(ch4[0].stageNumber).toBe(33);
+    expect(ch4[ch4.length - 1].stageNumber).toBe(42);
+  });
+
+  it('Ch5 spans stages 43–52 (10 stages)', () => {
+    const ch5 = STAGE_CONFIGS.filter(s => s.chapter === 5);
+    expect(ch5).toHaveLength(10);
+    expect(ch5[0].stageNumber).toBe(43);
+    expect(ch5[ch5.length - 1].stageNumber).toBe(52);
+  });
+
+  it('Ch6 spans stages 53–62 (10 stages)', () => {
+    const ch6 = STAGE_CONFIGS.filter(s => s.chapter === 6);
+    expect(ch6).toHaveLength(10);
+    expect(ch6[0].stageNumber).toBe(53);
+    expect(ch6[ch6.length - 1].stageNumber).toBe(62);
+  });
+
+  it('Ch7 spans stages 63–72 (10 stages)', () => {
+    const ch7 = STAGE_CONFIGS.filter(s => s.chapter === 7);
+    expect(ch7).toHaveLength(10);
+    expect(ch7[0].stageNumber).toBe(63);
+    expect(ch7[ch7.length - 1].stageNumber).toBe(72);
+  });
+
+  it('stage 40 (Ch4 mid) has 12 slots', () => {
+    expect(STAGE_CONFIGS[39].stageNumber).toBe(40);
+    expect(STAGE_CONFIGS[39].slots).toBe(12);
+    expect(STAGE_CONFIGS[39].chapter).toBe(4);
+  });
+
+  it('total boss-wave stages equals exactly 8', () => {
+    const bosses = STAGE_CONFIGS.filter(s => s.bossWave === true);
+    expect(bosses).toHaveLength(8);
+  });
 });
 
 // ─── loadProgress ─────────────────────────────────────────────────────────────
