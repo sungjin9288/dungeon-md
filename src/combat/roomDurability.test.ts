@@ -99,6 +99,26 @@ describe('applyRoomSlotDamage', () => {
     applyRoomSlotDamage([slot], 5.0); // 5× damage
     expect(slot.hp).toBe(0);
   });
+
+  it('two sequential calls accumulate damage (second call uses updated hp)', () => {
+    const slot = makeSlot(100);
+    applyRoomSlotDamage([slot], 0.1); // 100 - ceil(10) = 90
+    applyRoomSlotDamage([slot], 0.1); // 90  - ceil(10) = 80
+    expect(slot.hp).toBe(80);
+  });
+
+  it('maxHp=1, fraction=0.5 → ceil(0.5)=1 damage → hp=0', () => {
+    const slot = makeSlot(1);
+    applyRoomSlotDamage([slot], 0.5);
+    expect(slot.hp).toBe(0);
+  });
+
+  it('tiny fraction 0.001 still deals 1 damage via ceil (maxHp=100)', () => {
+    // ceil(100 * 0.001) = ceil(0.1) = 1 → hp = 99
+    const slot = makeSlot(100);
+    applyRoomSlotDamage([slot], 0.001);
+    expect(slot.hp).toBe(99);
+  });
 });
 
 // ─── saveRoomHpsToGameState ───────────────────────────────────────────────────
@@ -209,5 +229,41 @@ describe('saveRoomHpsToGameState', () => {
     const saved = loadGameState();
     expect(saved.dungeonSlots[0].hp).toBe(70);
     expect(saved.dungeonSlots[0].maxHp).toBe(120);
+  });
+
+  it('hp=0 is persisted correctly (not treated as falsy/skipped)', () => {
+    saveRoomHpsToGameState([makeSlotFull(0, 100)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(0);
+    expect(saved.dungeonSlots[0].maxHp).toBe(100);
+  });
+
+  it('three fresh slots are all stored when there is no prior state', () => {
+    saveRoomHpsToGameState([
+      makeSlotFull(80, 100),
+      makeSlotFull(150, 200),
+      makeSlotFull(10, 50),
+    ]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots).toHaveLength(3);
+    expect(saved.dungeonSlots[2].hp).toBe(10);
+    expect(saved.dungeonSlots[2].maxHp).toBe(50);
+  });
+
+  it('middle slot=null with three existing slots preserves the middle slot', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [
+        makeSlotFull(100, 100, { monsterIds: ['fire_dokkaebi'] }),
+        makeSlotFull(90, 150, { trapIds: ['slow_trap'] }),
+        makeSlotFull(80, 200),
+      ],
+    });
+    saveRoomHpsToGameState([makeSlotFull(60, 100), null as unknown as DungeonSlot, makeSlotFull(40, 200)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[1].hp).toBe(90);         // untouched (null → prevSlots[1])
+    expect(saved.dungeonSlots[1].trapIds).toContain('slow_trap'); // metadata intact
+    expect(saved.dungeonSlots[0].hp).toBe(60);         // updated
+    expect(saved.dungeonSlots[2].hp).toBe(40);         // updated
   });
 });
