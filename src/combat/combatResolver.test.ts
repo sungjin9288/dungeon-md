@@ -190,6 +190,46 @@ describe('findTarget — row range boundary', () => {
   });
 });
 
+// ─── findTarget — trap_corridor symmetric skip ────────────────────────────────
+
+describe('findTarget — trap_corridor symmetric skip', () => {
+  it('skips trap-immune invader in trap_corridor (same rule as trap room)', () => {
+    const inv = makeInvader({ isTrapImmune: true, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('trap_corridor'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('stunned invader in void phase in trap room is still skipped (stun does NOT override void-phase)', () => {
+    // isDamageImmune stun-override applies only to the damage-immune check, not void phase
+    const inv = makeInvader({ isStunned: true, voidPhaseUntil: NOW + 5000, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('trap'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+});
+
+// ─── findTarget — tie-breaking ────────────────────────────────────────────────
+
+describe('findTarget — tie-breaking', () => {
+  it('normal mode: two invaders at equal hypot distance → first in array wins (strict <)', () => {
+    // Both at (ROOM_X, CENTER_Y) → distance = 0 for both; first wins because 0 is NOT < 0
+    const first  = makeInvader({ x: ROOM_X, y: CENTER_Y });
+    const second = makeInvader({ x: ROOM_X, y: CENTER_Y });
+    expect(findTarget([first, second], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(first);
+  });
+
+  it('SUN_DIVE: two invaders with equal pathProgress → first in array wins (strict >)', () => {
+    const sunDive: CombatMonsterDef = { baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500 };
+    const first  = makeInvader({ pathProgress: 0.5 });
+    const second = makeInvader({ pathProgress: 0.5 });
+    expect(findTarget([first, second], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(first);
+  });
+
+  it('SUN_DIVE: invisible invader with higher progress loses to non-invisible with lower progress', () => {
+    const sunDive: CombatMonsterDef = { baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500 };
+    const invisible = makeInvader({ isInvisible: true,  pathProgress: 0.99 }); // skipped
+    const visible   = makeInvader({ isInvisible: false, pathProgress: 0.1  }); // selected
+    expect(findTarget([invisible, visible], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(visible);
+  });
+});
+
 // ─── findTarget — SUN_DIVE edge cases ────────────────────────────────────────
 
 describe('findTarget — SUN_DIVE edge cases', () => {
@@ -217,5 +257,12 @@ describe('findTarget — SUN_DIVE edge cases', () => {
     const noTween = makeInvader({ x: 60, y: CENTER_Y });           // prog = 0
     const hasTween = makeInvader({ x: 200, y: CENTER_Y, pathProgress: 0.5 }); // prog = 0.5
     expect(findTarget([noTween, hasTween], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(hasTween);
+  });
+
+  it('all progress=0 → first active invader returned (0 > -Infinity on first pass)', () => {
+    const a = makeInvader({ pathProgress: 0.0 });
+    const b = makeInvader({ pathProgress: 0.0 });
+    const c = makeInvader({ pathProgress: 0.0 });
+    expect(findTarget([a, b, c], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(a);
   });
 });
