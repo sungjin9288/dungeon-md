@@ -89,6 +89,13 @@ describe('hasDivineTerritory', () => {
     for (const row of grid) row.fill(makeRoom({ monsterSlot: null }));
     expect(hasDivineTerritory(grid)).toBe(false);
   });
+
+  it('returns false for an invalid/unknown monsterSlot key (graceful undefined handling)', () => {
+    const grid = emptyGrid();
+    // MONSTER_DEFS['nonexistent'] is undefined → passive check is safely skipped
+    grid[0][0] = makeRoom({ monsterSlot: 'nonexistent_monster' as any });
+    expect(hasDivineTerritory(grid)).toBe(false);
+  });
 });
 
 // ─── hasTribeMasteryFor ───────────────────────────────────────────────────────
@@ -130,6 +137,11 @@ describe('hasTribeMasteryFor', () => {
     expect(hasTribeMasteryFor(grid, 'gumiho')).toBe(true);
     expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(false); // different tribe
   });
+
+  it('works on a 1×1 grid with the matching TRIBE_MASTERY monster', () => {
+    const grid = [[makeRoom({ monsterSlot: 'dokkaebi_general' })]];
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
+  });
 });
 
 // ─── hasSeasonalBoon ──────────────────────────────────────────────────────────
@@ -156,6 +168,13 @@ describe('hasSeasonalBoon', () => {
     const grid = emptyGrid();
     grid[2][1] = makeRoom({ monsterSlot: 'spring_gumiho' });
     expect(hasSeasonalBoon(grid)).toBe(true);
+  });
+
+  it('returns false when grid has two non-SEASONAL_BOON monsters', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_warrior' });
+    grid[1][2] = makeRoom({ monsterSlot: 'gumiho_guardian' });
+    expect(hasSeasonalBoon(grid)).toBe(false);
   });
 });
 
@@ -214,6 +233,15 @@ describe('isScrollBurstActive', () => {
     grid[0][2] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 500 }); // active
     // querying (0,1): distance to (0,2) = 1 ≤ 3 → true
     expect(isScrollBurstActive(grid, COLS, 0, 1, NOW)).toBe(true);
+  });
+
+  it('returns true when out-of-range active and in-range active both exist', () => {
+    // scroll at (0,0) is active but distance from (2,2) is |2|+|2|=4 → out of range
+    // scroll at (1,1) is active and distance from (2,2) is |1|+|1|=2 → in range → true
+    const bigGrid = emptyGrid(3, 5);
+    bigGrid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 500 }); // out of range
+    bigGrid[1][1] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 500 }); // in range
+    expect(isScrollBurstActive(bigGrid, 5, 2, 2, NOW)).toBe(true);
   });
 });
 
@@ -284,6 +312,24 @@ describe('getInvaderRow', () => {
     expect(getInvaderRow(cs, { y: row0Centre })).toBe(0);
     // y=0 is far above every band → -1
     expect(getInvaderRow(cs, { y: 0 })).toBe(-1);
+  });
+
+  it('exact lower boundary of row-0 (ROW_Y[0] + 0.7×CELL_SIZE) returns 0', () => {
+    // |ROW_Y[0] + 77 - ROW_Y[0]| = 77 = 0.7×110 ≤ 77 → row 0
+    const lowerBound = ROW_Y[0] + CELL_SIZE * 0.7; // 185+77=262
+    expect(getInvaderRow(CELL_SIZE, { y: lowerBound })).toBe(0);
+  });
+
+  it('one pixel past row-0 lower boundary falls into row-1 band', () => {
+    // 263: |263-185|=78 > 77 (not row-0); |263-295|=32 ≤ 77 → row 1
+    const justPast = ROW_Y[0] + CELL_SIZE * 0.7 + 1;
+    expect(getInvaderRow(CELL_SIZE, { y: justPast })).toBe(1);
+  });
+
+  it('exact lower boundary of row-2 (ROW_Y[2] + 0.7×CELL_SIZE) returns 2', () => {
+    // |ROW_Y[2] + 77 - ROW_Y[2]| = 77 ≤ 77 → row 2
+    const row2Lower = ROW_Y[2] + CELL_SIZE * 0.7; // 405+77=482
+    expect(getInvaderRow(CELL_SIZE, { y: row2Lower })).toBe(2);
   });
 });
 
