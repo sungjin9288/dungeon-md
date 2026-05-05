@@ -207,6 +207,13 @@ describe('lighten — amount=0 edge case', () => {
 
 // ─── darken — additional channel isolation ────────────────────────────────────
 
+describe('darken — default amount pin', () => {
+  it('darken(0x123456, 0.4) → 0x071422 (per-channel floor of ×0.4)', () => {
+    // R: floor(0x12=18 × 0.4)=7=0x07, G: floor(0x34=52 × 0.4)=20=0x14, B: floor(0x56=86 × 0.4)=34=0x22
+    expect(darken(0x123456, 0.4)).toBe(0x071422);
+  });
+});
+
 describe('darken — channel isolation', () => {
   it('pure blue 0x0000ff × 0.5 → only blue channel halved → 0x00007f', () => {
     // R=0, G=0, B=floor(255×0.5)=127=0x7f
@@ -225,6 +232,18 @@ describe('darken — channel isolation', () => {
 });
 
 // ─── lighten — partial clamping ───────────────────────────────────────────────
+
+describe('lighten — specific amount pins', () => {
+  it('black + 42 gives 0x2a2a2a (all channels equal the amount)', () => {
+    // 0x2a = 42
+    expect(lighten(0x000000, 42)).toBe(0x2a2a2a);
+  });
+
+  it('gray + 200 clamps all channels to white (0xffffff)', () => {
+    // 0x80=128, 128+200=328 → min(255,328)=255 per channel
+    expect(lighten(0x808080, 200)).toBe(0xffffff);
+  });
+});
 
 describe('lighten — partial clamping', () => {
   it('clamps only channels that exceed 255 (0xf0f000 + 20)', () => {
@@ -248,5 +267,35 @@ describe('computeLayout — hi/dk formula cross-check', () => {
   it('dk === darken(fill, 0.55)', () => {
     const layout = computeLayout(60, 0x44aaff);
     expect(layout.dk).toBe(darken(0x44aaff, 0.55));
+  });
+});
+
+// ─── computeLayout — additional invariants ────────────────────────────────────
+
+describe('computeLayout — additional invariants', () => {
+  const R = 40;
+  const COLOR = 0xff4400;
+  const layout = computeLayout(R, COLOR);
+
+  it('bh === hr (both equal r×0.42 — same formula)', () => {
+    expect(layout.bh).toBeCloseTo(layout.hr, 10);
+  });
+
+  it('hi !== fill and dk !== fill (both differ from base color)', () => {
+    expect(layout.hi).not.toBe(layout.fill);
+    expect(layout.dk).not.toBe(layout.fill);
+  });
+
+  it('hi > dk (highlight is always numerically greater than shadow)', () => {
+    expect(layout.hi).toBeGreaterThan(layout.dk);
+  });
+
+  it('radius=1 still scales all fields correctly (hr=0.42, bw=0.68, bh=0.42)', () => {
+    const tiny = computeLayout(1, 0x888888);
+    expect(tiny.hr).toBeCloseTo(0.42, 10);
+    expect(tiny.bw).toBeCloseTo(0.68, 10);
+    expect(tiny.bh).toBeCloseTo(0.42, 10);
+    expect(tiny.cx).toBe(1);
+    expect(tiny.r).toBe(1);
   });
 });
