@@ -118,11 +118,22 @@ describe('getAchievementDef — epilogue', () => {
 
 // ─── getProgress — epilogue spot-checks ───────────────────────────────────────
 
+describe('getAchievementDef — unknown id', () => {
+  it('returns undefined for an id not in base or epilogue defs', () => {
+    expect(getAchievementDef('nonexistent_achievement_xyz')).toBeUndefined();
+  });
+});
+
 describe('getProgress — epilogue economy', () => {
   it('gold_1000000: reports totalGoldEarned', () => {
     const def = getAchievementDef('gold_1000000')!;
     expect(def.getProgress(makeCtx({ totalGoldEarned: 500_000 }))).toBe(500_000);
     expect(def.getProgress(makeCtx({ totalGoldEarned: 1_000_000 }))).toBe(1_000_000);
+  });
+
+  it('gold_1000000: progress above target is returned as-is (no clamping)', () => {
+    const def = getAchievementDef('gold_1000000')!;
+    expect(def.getProgress(makeCtx({ totalGoldEarned: 2_000_000 }))).toBe(2_000_000);
   });
 });
 
@@ -229,5 +240,34 @@ describe('checkAchievements — epilogue unlock', () => {
     const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'dm_lv30')!;
     expect(def.reward.gems).toBe(200);
     expect(def.reward.soulCrystals).toBe(100);
+  });
+
+  it('fusion_30 reward is 60 gems and 30 soulCrystals', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'fusion_30')!;
+    expect(def.reward.gems).toBe(60);
+    expect(def.reward.soulCrystals).toBe(30);
+  });
+
+  it('fusion_50 reward is 120 gems and 60 soulCrystals', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'fusion_50')!;
+    expect(def.reward.gems).toBe(120);
+    expect(def.reward.soulCrystals).toBe(60);
+  });
+
+  it('dm_lv25 reward is 100 gems and 50 soulCrystals', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'dm_lv25')!;
+    expect(def.reward.gems).toBe(100);
+    expect(def.reward.soulCrystals).toBe(50);
+  });
+
+  it('dm_lv25 at exactly level 24 (one below) is NOT unlocked', () => {
+    const ctx    = makeCtx({ dmLevel: 24 });
+    const result = checkAchievements(ctx, {});
+    expect(result).not.toContain('dm_lv25');
+  });
+
+  it('returns empty array when no achievements qualify (emptyCtx)', () => {
+    const result = checkAchievements(emptyCtx, {});
+    expect(result).toHaveLength(0);
   });
 });
