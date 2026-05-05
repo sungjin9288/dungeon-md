@@ -54,6 +54,14 @@ describe('TRIBE_PALETTES', () => {
     const serialized = Object.values(TRIBE_PALETTES).map(p => JSON.stringify(p));
     expect(new Set(serialized).size).toBe(serialized.length);
   });
+
+  it('dokkaebi primary color (index 2) is 0xcc3300 (bright red)', () => {
+    expect(TRIBE_PALETTES['dokkaebi'][2]).toBe(0xcc3300);
+  });
+
+  it('celestial primary color (index 2) is 0xffd700 (gold)', () => {
+    expect(TRIBE_PALETTES['celestial'][2]).toBe(0xffd700);
+  });
 });
 
 // ─── getRarityPalette ─────────────────────────────────────────────────────────
@@ -109,6 +117,16 @@ describe('getRarityPalette', () => {
       expect(b, `channel ${i} B`).toBeLessThanOrEqual(255);
     }
   });
+
+  it('U rarity (shift=15) applies exact channel delta to slot 1: 0x4a0000 → 0x590f0f', () => {
+    // R: 0x4a=74 +15=89=0x59, G: 0+15=15=0x0f, B: 0+15=15=0x0f
+    expect(getRarityPalette(BASE, 'U')[1]).toBe(0x590f0f);
+  });
+
+  it('R rarity (shift=30) applies exact channel delta to slot 1: 0x4a0000 → 0x681e1e', () => {
+    // R: 74+30=104=0x68, G: 0+30=30=0x1e, B: 0+30=30=0x1e
+    expect(getRarityPalette(BASE, 'R')[1]).toBe(0x681e1e);
+  });
 });
 
 // ─── getMonsterSpriteData ─────────────────────────────────────────────────────
@@ -161,6 +179,12 @@ describe('getMonsterSpriteData', () => {
   it('works without optional tribe/type/rarity arguments', () => {
     expect(() => getMonsterSpriteData('gold_turtle')).not.toThrow();
   });
+
+  it('no-tribe fallback uses gray NO_TRIBE_PALETTE (slot 1 = 0x333333)', () => {
+    // When tribe is omitted and rarity is C (shift=0) the NO_TRIBE_PALETTE is returned as-is
+    const data = getMonsterSpriteData('gold_turtle'); // valid MonsterId, no tribe passed
+    expect(data.palette[1]).toBe(0x333333);
+  });
 });
 
 // ─── composeSilhouette ────────────────────────────────────────────────────────
@@ -198,6 +222,19 @@ describe('composeSilhouette', () => {
     const g1 = composeSilhouette({ head: 'horned',   body: 'melee_slim' });
     const g2 = composeSilhouette({ head: 'fox_ears', body: 'magic_robe' });
     expect(JSON.stringify(g1)).not.toBe(JSON.stringify(g2));
+  });
+
+  it('fire_aura overlay changes pixels compared to same recipe without overlay', () => {
+    const without = composeSilhouette({ head: 'horned', body: 'magic_robe' });
+    const withOverlay = composeSilhouette({ head: 'horned', body: 'magic_robe', overlay: 'fire_aura' });
+    expect(JSON.stringify(withOverlay)).not.toBe(JSON.stringify(without));
+  });
+
+  it('overlay variant is independently cached — different cache key from base recipe', () => {
+    const base  = composeSilhouette({ head: 'skull', body: 'melee_heavy' });
+    const overlaid = composeSilhouette({ head: 'skull', body: 'melee_heavy', overlay: 'scales' });
+    // Not the same reference despite sharing head+body
+    expect(overlaid).not.toBe(base);
   });
 });
 
