@@ -172,3 +172,47 @@ describe('TRAP_DEFS — per-trap desc spot-checks', () => {
     expect(get('stun_trap').desc).toBe('기절 1초');
   });
 });
+
+// ─── TRAP_DEFS — array ordering & derived stats ───────────────────────────────
+
+describe('TRAP_DEFS — array ordering & derived stats', () => {
+  it('TRAP_DEFS[0] is spike_trap (cheapest first)', () => {
+    expect(TRAP_DEFS[0].id).toBe('spike_trap');
+  });
+
+  it('TRAP_DEFS[3] is stun_trap (most expensive last)', () => {
+    expect(TRAP_DEFS[3].id).toBe('stun_trap');
+  });
+
+  it('array is sorted by cost ascending (each entry ≤ next)', () => {
+    for (let i = 1; i < TRAP_DEFS.length; i++) {
+      expect(TRAP_DEFS[i].cost, `index ${i} cost ≥ index ${i - 1}`)
+        .toBeGreaterThanOrEqual(TRAP_DEFS[i - 1].cost);
+    }
+  });
+
+  it('exactly 2 traps are available from the start (unlockLv === 0)', () => {
+    const free = TRAP_DEFS.filter(t => t.unlockLv === 0);
+    expect(free).toHaveLength(2);
+  });
+
+  it('sum of all trap costs is 450', () => {
+    const total = TRAP_DEFS.reduce((acc, t) => acc + t.cost, 0);
+    expect(total).toBe(450); // 50 + 80 + 120 + 200
+  });
+
+  it('every TrapDef has exactly the six expected keys', () => {
+    const expectedKeys = ['id', 'emoji', 'name', 'cost', 'desc', 'unlockLv'].sort();
+    for (const t of TRAP_DEFS) {
+      expect(Object.keys(t).sort(), `${t.id} keys`).toStrictEqual(expectedKeys);
+    }
+  });
+
+  it('every locked trap (unlockLv > 0) costs more than every free trap (unlockLv === 0)', () => {
+    const freeCosts   = TRAP_DEFS.filter(t => t.unlockLv === 0).map(t => t.cost);
+    const lockedCosts = TRAP_DEFS.filter(t => t.unlockLv >  0).map(t => t.cost);
+    const maxFree   = Math.max(...freeCosts);
+    const minLocked = Math.min(...lockedCosts);
+    expect(minLocked).toBeGreaterThan(maxFree);
+  });
+});
