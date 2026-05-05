@@ -317,3 +317,55 @@ describe('ALL_THEMES — text colors and stone ordering', () => {
     expect(CELESTIAL_THEME.ambientColor).toBe(ambientFromText);
   });
 });
+
+// ─── ALL_THEMES — slot, ambient, and decoration cross-checks ──────────────────
+
+describe('ALL_THEMES — slot, ambient & decoration cross-checks', () => {
+  it('ALL_THEMES[0] is the same reference as CAVE_THEME', () => {
+    expect(ALL_THEMES[0]).toBe(CAVE_THEME);
+  });
+
+  it('slotLocked < slotFill for every theme (locked overlay is darker)', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.slotLocked, `${t.id} slotLocked < slotFill`).toBeLessThan(t.slotFill);
+    }
+  });
+
+  it('ambientColor is non-zero for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.ambientColor, `${t.id} ambientColor is 0`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every particleTint entry is within valid hex range [0, 0xffffff]', () => {
+    for (const t of ALL_THEMES) {
+      for (const tint of t.particleTint) {
+        expect(tint, `${t.id} tint out of range`).toBeGreaterThanOrEqual(0);
+        expect(tint, `${t.id} tint out of range`).toBeLessThanOrEqual(0xffffff);
+      }
+    }
+  });
+
+  it('getActiveTheme returns the same reference on repeated calls (idempotent)', () => {
+    expect(getActiveTheme('lava_cave')).toBe(getActiveTheme('lava_cave'));
+    expect(getActiveTheme()).toBe(getActiveTheme('cave'));
+  });
+
+  it('crystals decoration is shared by ice_cave, void_throne, and celestial_realm', () => {
+    expect(ICE_CAVE_THEME.decorations).toContain('crystals');
+    expect(VOID_THRONE_THEME.decorations).toContain('crystals');
+    expect(CELESTIAL_THEME.decorations).toContain('crystals');
+    expect(CAVE_THEME.decorations).not.toContain('crystals');
+    expect(LAVA_CAVE_THEME.decorations).not.toContain('crystals');
+  });
+
+  it('lava_cave is the only theme without stalactites decoration', () => {
+    for (const t of ALL_THEMES) {
+      if (t.id === 'lava_cave') {
+        expect(t.decorations, 'lava_cave should not have stalactites').not.toContain('stalactites');
+      } else {
+        expect(t.decorations, `${t.id} should have stalactites`).toContain('stalactites');
+      }
+    }
+  });
+});
