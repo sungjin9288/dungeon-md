@@ -307,13 +307,13 @@ describe('saveRoomHpsToGameState — preserves unrelated game state fields', () 
     return { monsterIds: [], trapIds: [], roomLevel: 1, hp, maxHp };
   }
 
-  it('gold and xp in GameState are unchanged after saving room HPs', () => {
+  it('homeGold and dmXP in GameState are unchanged after saving room HPs', () => {
     const base = loadGameState();
-    saveGameState({ ...base, gold: 9999, xp: 12345 });
+    saveGameState({ ...base, homeGold: 9999, dmXP: 12345 });
     saveRoomHpsToGameState([makeSlotFull(50, 100)]);
     const saved = loadGameState();
-    expect(saved.gold).toBe(9999);
-    expect(saved.xp).toBe(12345);
+    expect(saved.homeGold).toBe(9999);
+    expect(saved.dmXP).toBe(12345);
   });
 
   it('saving identical hp as existing does not corrupt the slot', () => {
