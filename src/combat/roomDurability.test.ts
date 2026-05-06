@@ -267,3 +267,75 @@ describe('saveRoomHpsToGameState', () => {
     expect(saved.dungeonSlots[2].hp).toBe(40);         // updated
   });
 });
+
+// ─── applyRoomSlotDamage — additional edge cases ──────────────────────────────
+
+describe('applyRoomSlotDamage — additional edge cases', () => {
+  it('maxHp=0 slot: ceil(0 × fraction)=0 damage, hp stays at 0', () => {
+    const slot = makeSlot(0, 0);
+    applyRoomSlotDamage([slot], 0.5);
+    expect(slot.hp).toBe(0);
+  });
+
+  it('fraction=0.333 on maxHp=100: ceil(33.3)=34 damage → hp=66', () => {
+    const slot = makeSlot(100);
+    applyRoomSlotDamage([slot], 0.333);
+    expect(slot.hp).toBe(66); // 100 - ceil(100 * 0.333) = 100 - 34 = 66
+  });
+
+  it('5-slot array: all slots are processed independently', () => {
+    const slots = [100, 80, 60, 40, 20].map(hp => makeSlot(hp));
+    applyRoomSlotDamage(slots, 0.5);
+    expect(slots[0].hp).toBe(50); // 100 - ceil(50) = 50
+    expect(slots[2].hp).toBe(30); // 60  - ceil(30) = 30
+    expect(slots[4].hp).toBe(10); // 20  - ceil(10) = 10
+  });
+
+  it('undefined entry in slots array is skipped gracefully', () => {
+    const slot = makeSlot(100);
+    applyRoomSlotDamage([slot, undefined as unknown as DungeonSlot], 0.25);
+    expect(slot.hp).toBe(75); // 100 - ceil(25) = 75; undefined entry skipped
+  });
+});
+
+// ─── saveRoomHpsToGameState — preserves non-slot game state ──────────────────
+
+describe('saveRoomHpsToGameState — preserves unrelated game state fields', () => {
+  beforeEach(() => localStorage.clear());
+
+  function makeSlotFull(hp: number, maxHp = hp): DungeonSlot {
+    return { monsterIds: [], trapIds: [], roomLevel: 1, hp, maxHp };
+  }
+
+  it('gold and xp in GameState are unchanged after saving room HPs', () => {
+    const base = loadGameState();
+    saveGameState({ ...base, gold: 9999, xp: 12345 });
+    saveRoomHpsToGameState([makeSlotFull(50, 100)]);
+    const saved = loadGameState();
+    expect(saved.gold).toBe(9999);
+    expect(saved.xp).toBe(12345);
+  });
+
+  it('saving identical hp as existing does not corrupt the slot', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(80, 100)],
+    });
+    saveRoomHpsToGameState([makeSlotFull(80, 100)]); // same values
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(80);
+    expect(saved.dungeonSlots[0].maxHp).toBe(100);
+  });
+
+  it('writing a slot at index 1 does not change slot at index 0', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100), makeSlotFull(90, 150)],
+    });
+    // Pass null for index 0 → index 0 unchanged; only index 1 updated
+    saveRoomHpsToGameState([null as unknown as DungeonSlot, makeSlotFull(40, 150)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(100); // untouched
+    expect(saved.dungeonSlots[1].hp).toBe(40);  // updated
+  });
+});
