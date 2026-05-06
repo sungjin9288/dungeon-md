@@ -351,3 +351,54 @@ describe('isScrollBurstActive — expiry boundary', () => {
     expect(isScrollBurstActive(grid, 3, 0, 0, NOW)).toBe(true);
   });
 });
+
+// ─── Additional edge-case coverage ───────────────────────────────────────────
+
+describe('hasDivineTerritory — 1×1 grid', () => {
+  it('returns true on a 1×1 grid containing mountain_god', () => {
+    const grid = [[makeRoom({ monsterSlot: 'mountain_god' })]];
+    expect(hasDivineTerritory(grid)).toBe(true);
+  });
+});
+
+describe('hasTribeMasteryFor — graceful unknown monsterSlot', () => {
+  it('returns false for an unknown/invalid monsterSlot (MONSTER_DEFS lookup is undefined)', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ monsterSlot: 'totally_unknown_monster_xyz' as any });
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(false);
+  });
+});
+
+describe('hasSeasonalBoon — additional cases', () => {
+  it('returns true on a 1×1 grid containing spring_gumiho', () => {
+    const grid = [[makeRoom({ monsterSlot: 'spring_gumiho' })]];
+    expect(hasSeasonalBoon(grid)).toBe(true);
+  });
+
+  it('returns false for an unknown/invalid monsterSlot (graceful undefined handling)', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ monsterSlot: 'totally_unknown_monster_xyz' as any });
+    expect(hasSeasonalBoon(grid)).toBe(false);
+  });
+});
+
+describe('getInvaderRow — additional edge cases', () => {
+  it('returns -1 for negative y (far above all row bands)', () => {
+    expect(getInvaderRow(CELL_SIZE, { y: -100 })).toBe(-1);
+  });
+
+  it('y = GRID_Y (130) falls within row-0 band (|130-185|=55 ≤ 77) → row 0', () => {
+    // GRID_Y=130, row0 centre=185, half-band=77 → 130 is inside row-0
+    expect(getInvaderRow(CELL_SIZE, { y: GRID_Y })).toBe(0);
+  });
+});
+
+describe('isScrollBurstActive — null cell handling', () => {
+  it('does not crash and returns false when grid contains null cells during scan', () => {
+    const grid = emptyGrid(3, 3); // all null
+    // Introduce a mix of null and a non-scroll room
+    grid[1][1] = makeRoom({ type: 'guardian' });
+    expect(() => isScrollBurstActive(grid, 3, 0, 0, 5000)).not.toThrow();
+    expect(isScrollBurstActive(grid, 3, 0, 0, 5000)).toBe(false);
+  });
+});
