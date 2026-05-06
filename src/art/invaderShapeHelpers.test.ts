@@ -299,3 +299,50 @@ describe('computeLayout — additional invariants', () => {
     expect(tiny.r).toBe(1);
   });
 });
+
+// ─── computeLayout — key count & additional pins ──────────────────────────────
+
+describe('computeLayout — key count & additional pins', () => {
+  it('result has exactly 13 keys (r, cx, cy, fill, hi, dk, hr, hx, hy, bw, bh, by)', () => {
+    const expected = ['r','cx','cy','fill','hi','dk','hr','hx','hy','bw','bh','by'].sort();
+    expect(Object.keys(computeLayout(40, 0xff4400)).sort()).toStrictEqual(expected);
+  });
+
+  it('by > cy (body origin is below canvas centre)', () => {
+    const l = computeLayout(40, 0xff4400);
+    expect(l.by).toBeGreaterThan(l.cy);
+  });
+
+  it('radius=20 layout fields are exactly half of radius=40 (proportional scaling)', () => {
+    const l20 = computeLayout(20, 0xff4400);
+    const l40 = computeLayout(40, 0xff4400);
+    expect(l20.hr).toBeCloseTo(l40.hr / 2, 10);
+    expect(l20.bw).toBeCloseTo(l40.bw / 2, 10);
+    expect(l20.hy).toBeCloseTo(l40.hy / 2, 10);
+  });
+});
+
+// ─── darken / lighten — additional exact-value pins ──────────────────────────
+
+describe('darken — 0xffffff × 0.55 pin', () => {
+  it('darken(0xffffff, 0.55) → 0x8c8c8c (floor(255×0.55)=140=0x8c per channel)', () => {
+    // R: floor(255*0.55)=140=0x8c, G: same, B: same
+    expect(darken(0xffffff, 0.55)).toBe(0x8c8c8c);
+  });
+
+  it('darken(0x102030, 0.5) → 0x081018 (mixed channels halved)', () => {
+    // R: floor(0x10=16 × 0.5)=8=0x08, G: floor(0x20=32 × 0.5)=16=0x10, B: floor(0x30=48 × 0.5)=24=0x18
+    expect(darken(0x102030, 0.5)).toBe(0x081018);
+  });
+});
+
+describe('lighten — exact-value pins', () => {
+  it('lighten(0x000000, 55) → 0x373737 (all channels = 55 = 0x37)', () => {
+    expect(lighten(0x000000, 55)).toBe(0x373737);
+  });
+
+  it('lighten(0x101010, 60) → 0x4c4c4c (default 60 on non-zero color)', () => {
+    // R: min(255, 16+60)=76=0x4c per channel
+    expect(lighten(0x101010, 60)).toBe(0x4c4c4c);
+  });
+});
