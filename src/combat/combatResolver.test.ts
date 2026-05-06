@@ -266,3 +266,50 @@ describe('findTarget — SUN_DIVE edge cases', () => {
     expect(findTarget([a, b, c], makeRoom(), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(a);
   });
 });
+
+// ─── findTarget — non-trap rooms ignore void phase & trap immunity ────────────
+
+describe('findTarget — non-trap rooms ignore void-phase and trap immunity', () => {
+  it('celestial_shrine room: void-phased invader is still targetable', () => {
+    const inv = makeInvader({ voidPhaseUntil: NOW + 9000, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('celestial_shrine'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('scroll_library room: trap-immune invader is still targetable', () => {
+    const inv = makeInvader({ isTrapImmune: true, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('scroll_library'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('trap_corridor: non-trap-immune non-void-phased invader is valid target', () => {
+    const inv = makeInvader({ x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('trap_corridor'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+});
+
+// ─── findTarget — closest of 3+ invaders & stun-only behaviour ───────────────
+
+describe('findTarget — 3+ invader selection & stun-only state', () => {
+  it('returns the closest of three invaders at distinct distances', () => {
+    const near = makeInvader({ x: ROOM_X + 10,  y: CENTER_Y }); // dist=10
+    const mid  = makeInvader({ x: ROOM_X + 50,  y: CENTER_Y }); // dist=50
+    const far  = makeInvader({ x: ROOM_X + 200, y: CENTER_Y }); // dist=200
+    expect(findTarget([far, mid, near], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(near);
+  });
+
+  it('isStunned=true alone (not damage-immune) does not affect targeting', () => {
+    // stun is only relevant when isDamageImmune is also true
+    const inv = makeInvader({ isStunned: true, isDamageImmune: false, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('voidPhaseUntil one ms before now is targetable in trap room (just expired)', () => {
+    const inv = makeInvader({ voidPhaseUntil: NOW - 1, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('trap'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('SUN_DIVE still skips void-phased invaders in trap rooms (filters run before passive)', () => {
+    const sunDive: CombatMonsterDef = { baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500 };
+    const inv = makeInvader({ voidPhaseUntil: NOW + 9000, x: 60, y: CENTER_Y, pathProgress: 0.99 });
+    expect(findTarget([inv], makeRoom('trap'), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+});
