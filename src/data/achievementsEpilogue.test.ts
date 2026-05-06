@@ -335,3 +335,48 @@ describe('checkAchievements — all 5 epilogue simultaneously', () => {
     }
   });
 });
+
+// ─── EPILOGUE_ACHIEVEMENT_DEFS — middle-index pins & derived checks ───────────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS — middle-index pins & derived checks', () => {
+  it('EPILOGUE_ACHIEVEMENT_DEFS[1] is fusion_30', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS[1].id).toBe('fusion_30');
+  });
+
+  it('EPILOGUE_ACHIEVEMENT_DEFS[2] is fusion_50', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS[2].id).toBe('fusion_50');
+  });
+
+  it('EPILOGUE_ACHIEVEMENT_DEFS[3] is dm_lv25', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS[3].id).toBe('dm_lv25');
+  });
+
+  it('all 5 epilogue icons are distinct', () => {
+    const icons = EPILOGUE_ACHIEVEMENT_DEFS.map(a => a.icon);
+    expect(new Set(icons).size).toBe(5);
+  });
+
+  it('fusion_50.target > fusion_30.target and dm_lv30.target > dm_lv25.target (tiered)', () => {
+    const f30 = EPILOGUE_ACHIEVEMENT_DEFS.find(a => a.id === 'fusion_30')!;
+    const f50 = EPILOGUE_ACHIEVEMENT_DEFS.find(a => a.id === 'fusion_50')!;
+    const d25 = EPILOGUE_ACHIEVEMENT_DEFS.find(a => a.id === 'dm_lv25')!;
+    const d30 = EPILOGUE_ACHIEVEMENT_DEFS.find(a => a.id === 'dm_lv30')!;
+    expect(f50.target).toBeGreaterThan(f30.target);
+    expect(d30.target).toBeGreaterThan(d25.target);
+  });
+
+  it('fusion_30 and fusion_50 getProgress both return 0 at emptyCtx (totalFusions=0)', () => {
+    expect(getAchievementDef('fusion_30')!.getProgress(emptyCtx)).toBe(0);
+    expect(getAchievementDef('fusion_50')!.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('only gold_1000000 unlocks at 1M gold with default fusions and dmLevel', () => {
+    const ctx = makeCtx({ totalGoldEarned: 1_000_000 }); // totalFusions=0, dmLevel=1
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('gold_1000000');
+    expect(result).not.toContain('fusion_30');
+    expect(result).not.toContain('fusion_50');
+    expect(result).not.toContain('dm_lv25'); // dmLevel 1 < 25
+    expect(result).not.toContain('dm_lv30');
+  });
+});
