@@ -339,3 +339,73 @@ describe('saveRoomHpsToGameState — preserves unrelated game state fields', () 
     expect(saved.dungeonSlots[1].hp).toBe(40);  // updated
   });
 });
+
+// ─── applyRoomSlotDamage — minimal-maxHp pins ─────────────────────────────────
+
+describe('applyRoomSlotDamage — minimal-maxHp & integer-fraction pins', () => {
+  it('maxHp=1, fraction=0.001 → ceil(0.001)=1 → hp=0 (minimum possible damage)', () => {
+    const slot = makeSlot(1);
+    applyRoomSlotDamage([slot], 0.001);
+    expect(slot.hp).toBe(0); // ceil(1 * 0.001) = 1 → hp clamps to 0
+  });
+
+  it('fraction=0.5 on even maxHp=100 → exact integer (no rounding) → hp=50', () => {
+    const slot = makeSlot(100);
+    applyRoomSlotDamage([slot], 0.5);
+    expect(slot.hp).toBe(50); // ceil(50.0) = 50 (already integer)
+  });
+
+  it('maxHp=999, fraction=0.001 → ceil(0.999)=1 → hp=998', () => {
+    const slot = makeSlot(999);
+    applyRoomSlotDamage([slot], 0.001);
+    expect(slot.hp).toBe(998); // ceil(999 * 0.001) = ceil(0.999) = 1
+  });
+});
+
+// ─── saveRoomHpsToGameState — roomLevel and equal-length cases ────────────────
+
+describe('saveRoomHpsToGameState — roomLevel preservation & equal-length update', () => {
+  beforeEach(() => localStorage.clear());
+
+  function makeSlotFull(hp: number, maxHp = hp, extras: Partial<DungeonSlot> = {}): DungeonSlot {
+    return { monsterIds: [], trapIds: [], roomLevel: 1, hp, maxHp, ...extras };
+  }
+
+  it('roomLevel from existing slot is preserved on merge (not overwritten by new slot)', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100, { roomLevel: 7 })],
+    });
+    saveRoomHpsToGameState([makeSlotFull(60, 100, { roomLevel: 1 })]); // new slot has roomLevel=1
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].roomLevel).toBe(7); // existing roomLevel preserved
+    expect(saved.dungeonSlots[0].hp).toBe(60);       // hp updated
+  });
+
+  it('equal-length update (prevSlots=2, slots=2): both updated, length stays 2', () => {
+    saveGameState({
+      ...loadGameState(),
+      dungeonSlots: [makeSlotFull(100, 100), makeSlotFull(200, 200)],
+    });
+    saveRoomHpsToGameState([makeSlotFull(70, 100), makeSlotFull(150, 200)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots).toHaveLength(2);
+    expect(saved.dungeonSlots[0].hp).toBe(70);
+    expect(saved.dungeonSlots[1].hp).toBe(150);
+  });
+
+  it('fully-healed slot (hp=maxHp) stored and loaded correctly', () => {
+    saveRoomHpsToGameState([makeSlotFull(200, 200)]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].hp).toBe(200);
+    expect(saved.dungeonSlots[0].maxHp).toBe(200);
+  });
+
+  it('new-slot path (no existing): roomLevel from new slot is preserved', () => {
+    // No prior dungeonSlots → existing=undefined → store new slot as-is
+    saveRoomHpsToGameState([makeSlotFull(50, 100, { roomLevel: 4 })]);
+    const saved = loadGameState();
+    expect(saved.dungeonSlots[0].roomLevel).toBe(4);
+    expect(saved.dungeonSlots[0].hp).toBe(50);
+  });
+});
