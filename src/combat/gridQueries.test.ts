@@ -402,3 +402,63 @@ describe('isScrollBurstActive — null cell handling', () => {
     expect(isScrollBurstActive(grid, 3, 0, 0, 5000)).toBe(false);
   });
 });
+
+// ─── isScrollBurstActive — distance boundary & zero activeUntil ──────────────
+
+describe('isScrollBurstActive — distance 4 and zero burst time', () => {
+  const NOW = 10_000;
+
+  it('Manhattan distance exactly 4 (just outside range) → false', () => {
+    // target at (0,0), scroll_library at (0,4) → distance=4 > 3 → false
+    // Grid must have GRID_ROWS=3 rows so the inner loop doesn't crash
+    const grid = emptyGrid(3, 5);
+    grid[0][4] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 5000 });
+    expect(isScrollBurstActive(grid, 5, 0, 0, NOW)).toBe(false);
+  });
+
+  it('scrollBurstActiveUntil=0 (default/unset) nearby scroll_library → false', () => {
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: 0 });
+    expect(isScrollBurstActive(grid, 3, 0, 1, NOW)).toBe(false); // 0 is not < NOW
+  });
+
+  it('all scroll_libraries expired → false (none active)', () => {
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW - 100 });
+    grid[1][1] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW - 1 });
+    expect(isScrollBurstActive(grid, 3, 0, 1, NOW)).toBe(false);
+  });
+});
+
+// ─── hasDivineTerritory / hasTribeMasteryFor / hasSeasonalBoon — extra cases ──
+
+describe('hasDivineTerritory — two mountain_gods', () => {
+  it('returns true when two mountain_gods are present (short-circuits on first)', () => {
+    const grid = emptyGrid(1, 2);
+    grid[0][0] = makeRoom({ monsterSlot: 'mountain_god' });
+    grid[0][1] = makeRoom({ monsterSlot: 'mountain_god' });
+    expect(hasDivineTerritory(grid)).toBe(true);
+  });
+});
+
+describe('hasTribeMasteryFor — dokkaebi_general (tribe=dokkaebi)', () => {
+  it('returns true for dokkaebi tribe when dokkaebi_general is in the grid', () => {
+    const grid = emptyGrid(1, 1);
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general' });
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
+  });
+
+  it('returns false for gumiho tribe when only dokkaebi_general (dokkaebi) is placed', () => {
+    const grid = emptyGrid(1, 1);
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general' });
+    expect(hasTribeMasteryFor(grid, 'gumiho')).toBe(false);
+  });
+});
+
+describe('hasSeasonalBoon — summer_gumiho', () => {
+  it('returns true when summer_gumiho (SEASONAL_BOON) is in the grid', () => {
+    const grid = emptyGrid(1, 1);
+    grid[0][0] = makeRoom({ monsterSlot: 'summer_gumiho' });
+    expect(hasSeasonalBoon(grid)).toBe(true);
+  });
+});
