@@ -369,3 +369,50 @@ describe('ALL_THEMES — slot, ambient & decoration cross-checks', () => {
     }
   });
 });
+
+// ─── ALL_THEMES — index pins, panelDark, slotBorder, decoration counts ────────
+
+describe('ALL_THEMES — index pins & additional field constraints', () => {
+  it('ALL_THEMES[4] is the same reference as CELESTIAL_THEME', () => {
+    expect(ALL_THEMES[4]).toBe(CELESTIAL_THEME);
+  });
+
+  it('panelDark is non-zero for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.panelDark, `${t.id} panelDark is 0`).toBeGreaterThan(0);
+    }
+  });
+
+  it('slotBorder is non-zero for every theme', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.slotBorder, `${t.id} slotBorder is 0`).toBeGreaterThan(0);
+    }
+  });
+
+  it('cave has exactly 3 decorations (stalactites, stalagmites, water_drips)', () => {
+    expect(CAVE_THEME.decorations).toHaveLength(3);
+    expect(CAVE_THEME.decorations).toContain('stalactites');
+    expect(CAVE_THEME.decorations).toContain('stalagmites');
+    expect(CAVE_THEME.decorations).toContain('water_drips');
+  });
+
+  it('ice_cave has exactly 3 decorations (stalactites, stalagmites, crystals)', () => {
+    expect(ICE_CAVE_THEME.decorations).toHaveLength(3);
+    expect(ICE_CAVE_THEME.decorations).toContain('stalactites');
+    expect(ICE_CAVE_THEME.decorations).toContain('stalagmites');
+    expect(ICE_CAVE_THEME.decorations).toContain('crystals');
+  });
+
+  it('void_throne has exactly 3 decorations (stalactites, crystals, torches)', () => {
+    expect(VOID_THRONE_THEME.decorations).toHaveLength(3);
+    expect(VOID_THRONE_THEME.decorations).toContain('stalactites');
+    expect(VOID_THRONE_THEME.decorations).toContain('crystals');
+    expect(VOID_THRONE_THEME.decorations).toContain('torches');
+  });
+
+  it('getActiveTheme(t.id) returns the same reference as each named export', () => {
+    expect(getActiveTheme('ice_cave')).toBe(ICE_CAVE_THEME);
+    expect(getActiveTheme('void_throne')).toBe(VOID_THRONE_THEME);
+    expect(getActiveTheme('celestial_realm')).toBe(CELESTIAL_THEME);
+  });
+});
