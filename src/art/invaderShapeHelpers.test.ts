@@ -346,3 +346,50 @@ describe('lighten — exact-value pins', () => {
     expect(lighten(0x101010, 60)).toBe(0x4c4c4c);
   });
 });
+
+// ─── darken — amount > 1 and additional exact pins ───────────────────────────
+
+describe('darken — amount > 1 & additional exact pins', () => {
+  it('darken(0x0000ff) default 0.4 → 0x000066 (pure blue, only B channel)', () => {
+    // R=0, G=0, B=floor(255*0.4)=102=0x66
+    expect(darken(0x0000ff)).toBe(0x000066);
+  });
+
+  it('darken(0x404040, 2.0) amount>1 scales channels up → 0x808080', () => {
+    // floor(64*2)=128=0x80 per channel
+    expect(darken(0x404040, 2.0)).toBe(0x808080);
+  });
+
+  it('darken(0x123456, 0.3) → 0x050f19 (mixed channels at 0.3)', () => {
+    // R: floor(18*0.3)=5=0x05, G: floor(52*0.3)=15=0x0f, B: floor(86*0.3)=25=0x19
+    expect(darken(0x123456, 0.3)).toBe(0x050f19);
+  });
+});
+
+// ─── lighten — additional edge pins ──────────────────────────────────────────
+
+describe('lighten — additional edge pins', () => {
+  it('lighten(0x000000, 255) → 0xffffff (max amount saturates all channels)', () => {
+    expect(lighten(0x000000, 255)).toBe(0xffffff);
+  });
+
+  it('lighten(0x010101, 1) → 0x020202 (minimal increment per channel)', () => {
+    expect(lighten(0x010101, 1)).toBe(0x020202);
+  });
+
+  it('lighten with negative amt subtracts: lighten(0x808080, -50) → 0x4e4e4e', () => {
+    // Math.min(255, 128 + (-50)) = Math.min(255, 78) = 78 = 0x4e per channel
+    expect(lighten(0x808080, -50)).toBe(0x4e4e4e);
+  });
+});
+
+// ─── computeLayout — fill = black ────────────────────────────────────────────
+
+describe('computeLayout — fill=black (color=0x000000)', () => {
+  it('fill=0 → dk=0 (darken black is still black) and hi=0x373737', () => {
+    const l = computeLayout(40, 0x000000);
+    expect(l.fill).toBe(0x000000);
+    expect(l.dk).toBe(0);             // darken(0, 0.55) = 0
+    expect(l.hi).toBe(0x373737);      // lighten(0, 55) = 0x373737
+  });
+});

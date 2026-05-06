@@ -425,3 +425,56 @@ describe('simulateDungeon — additional invariants', () => {
     expect(r.waveResults[0].damageDealt).toBeCloseTo(r.waveResults[0].invaderHpSum, 1);
   });
 });
+
+// ─── calcDungeonDps — trap combos & level pins ────────────────────────────────
+
+describe('calcDungeonDps — trap combos & level pins', () => {
+  it('all 4 traps in one slot sum to 23 DPS (spike=5, slow=4, poison=8, stun=6)', () => {
+    const allTraps = makeSlot([], ['spike_trap', 'slow_trap', 'poison_trap', 'stun_trap']);
+    expect(calcDungeonDps([allTraps], [])).toBe(23);
+  });
+
+  it('slot with hp=1 (barely alive) still contributes DPS (hp > 0 is the guard)', () => {
+    const slot = makeSlot(['dokkaebi_warrior'], [], 1);
+    expect(calcDungeonDps([slot], [])).toBeGreaterThan(0);
+  });
+
+  it('level=2 monster contributes exactly 1.1× level=1 DPS (10% per level)', () => {
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const lv2  = [{ id: 'dokkaebi_warrior', level: 2, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
+    const dpsLv1 = calcDungeonDps([slot], []);
+    const dpsLv2 = calcDungeonDps([slot], lv2);
+    expect(dpsLv2).toBeCloseTo(dpsLv1 * 1.1, 5);
+  });
+
+  it('level=1 owned record → same DPS as no record (mult = 1 + 0×0.1 = 1.0)', () => {
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const lv1  = [{ id: 'dokkaebi_warrior', level: 1, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
+    expect(calcDungeonDps([slot], lv1)).toBeCloseTo(calcDungeonDps([slot], []), 5);
+  });
+});
+
+// ─── simulateDungeon — unknown invader type & multi-wave worst ────────────────
+
+describe('simulateDungeon — unknown invader type & multi-wave tracking', () => {
+  it('unknown invader type in wave is gracefully skipped (invaderCount=0, hpLost=0)', () => {
+    const unknownWave: WaveSpec = { invaders: [{ type: 'unknown_xyz' as any, count: 5, spawnDelay: 0 }] };
+    const r = simulateDungeon([], [], [unknownWave], 1000);
+    expect(r.waveResults[0].invaderCount).toBe(0);
+    expect(r.waveResults[0].hpLost).toBe(0);
+  });
+
+  it('3-wave scenario: worstWave identifies the 3rd wave with most hpLost', () => {
+    // 0 DPS → all survive: wave1=1×50=50, wave2=1×50=50, wave3=3×50=150 → worstWave=3
+    const r = simulateDungeon([], [], [makeWave('peasant', 1), makeWave('peasant', 1), makeWave('peasant', 3)], 10000);
+    expect(r.worstWave).toBe(3);
+  });
+
+  it('recommendation "클리어 가능" when dps kills all invaders in a real wave', () => {
+    // dokkaebi_warrior (≈13.3 DPS) kills peasants → survived=0, winPct=100
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const r = simulateDungeon([slot], [], [makeWave('peasant', 1)], 1000);
+    expect(r.waveResults[0].survived).toBe(0);
+    expect(r.recommendation).toContain('클리어 가능');
+  });
+});
