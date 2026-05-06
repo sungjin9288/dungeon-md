@@ -388,3 +388,54 @@ describe('STAGE_CONFIGS — structural invariants', () => {
     expect(returned[1].unlocked).toBe(loaded[1].unlocked);
   });
 });
+
+// ─── STAGE_CONFIGS — index pins & shared-gate patterns ───────────────────────
+
+describe('STAGE_CONFIGS — index pins & shared-gate patterns', () => {
+  it('STAGE_CONFIGS[79] is stageNumber=80, bossWave=true, chapter=8 (final stage)', () => {
+    const cfg = STAGE_CONFIGS[79];
+    expect(cfg.stageNumber).toBe(80);
+    expect(cfg.bossWave).toBe(true);
+    expect(cfg.chapter).toBe(8);
+  });
+
+  it('STAGE_CONFIGS[4] (stage 5) has unlockedStage=4 — shares gate with stage 4', () => {
+    const cfg = STAGE_CONFIGS[4];
+    expect(cfg.stageNumber).toBe(5);
+    expect(cfg.unlockedStage).toBe(4);
+  });
+
+  it('stages 30, 31, 32 all share unlockedStage=29 (3-way group gate)', () => {
+    expect(STAGE_CONFIGS[29].unlockedStage).toBe(29); // stage 30 index=29
+    expect(STAGE_CONFIGS[30].unlockedStage).toBe(29); // stage 31 index=30
+    expect(STAGE_CONFIGS[31].unlockedStage).toBe(29); // stage 32 index=31
+  });
+
+  it('stage 33 (Ch4 first, index 32) has only 8 slots — slot count resets at chapter start', () => {
+    expect(STAGE_CONFIGS[32].stageNumber).toBe(33);
+    expect(STAGE_CONFIGS[32].slots).toBe(8);
+    expect(STAGE_CONFIGS[32].chapter).toBe(4);
+  });
+
+  it('recordClear(78, 3) unlocks index 79 (stage 80, penultimate → final)', () => {
+    localStorage.clear();
+    recordClear(78, 3);
+    const prog = loadProgress();
+    expect(prog[79].unlocked).toBe(true);
+  });
+
+  it('stages 50, 51, 52 all share unlockedStage=49 (Ch5 boss-group gate)', () => {
+    expect(STAGE_CONFIGS[49].unlockedStage).toBe(49); // stage 50 index=49
+    expect(STAGE_CONFIGS[50].unlockedStage).toBe(49); // stage 51 index=50
+    expect(STAGE_CONFIGS[51].unlockedStage).toBe(49); // stage 52 index=51
+  });
+
+  it('every loadProgress entry has boolean unlocked and numeric bestStars', () => {
+    localStorage.clear();
+    const prog = loadProgress();
+    for (const entry of prog) {
+      expect(typeof entry.unlocked,   'unlocked not boolean').toBe('boolean');
+      expect(typeof entry.bestStars,  'bestStars not number').toBe('number');
+    }
+  });
+});
