@@ -216,3 +216,45 @@ describe('TRAP_DEFS — array ordering & derived stats', () => {
     expect(minLocked).toBeGreaterThan(maxFree);
   });
 });
+
+// ─── TRAP_DEFS — middle-index pins ───────────────────────────────────────────
+
+describe('TRAP_DEFS — middle-index pins', () => {
+  it('TRAP_DEFS[1] is slow_trap', () => {
+    expect(TRAP_DEFS[1].id).toBe('slow_trap');
+  });
+
+  it('TRAP_DEFS[2] is poison_trap', () => {
+    expect(TRAP_DEFS[2].id).toBe('poison_trap');
+  });
+
+  it('find by unknown id returns undefined (lookup miss)', () => {
+    expect(TRAP_DEFS.find(t => t.id === 'nonexistent_trap')).toBeUndefined();
+  });
+});
+
+// ─── TRAP_DEFS — unlockLv derived stats & string patterns ────────────────────
+
+describe('TRAP_DEFS — unlockLv derived stats', () => {
+  it('maximum unlockLv across all traps is 10 (stun_trap)', () => {
+    const maxLv = Math.max(...TRAP_DEFS.map(t => t.unlockLv));
+    expect(maxLv).toBe(10);
+  });
+
+  it('sum of all unlockLv values is 16 (0 + 0 + 6 + 10)', () => {
+    const total = TRAP_DEFS.reduce((acc, t) => acc + t.unlockLv, 0);
+    expect(total).toBe(16);
+  });
+
+  it('all trap ids end with the "_trap" suffix', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.id.endsWith('_trap'), `${t.id} suffix`).toBe(true);
+    }
+  });
+
+  it('all trap names end with "덫" (Korean for trap)', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.name.endsWith('덫'), `${t.id} name`).toBe(true);
+    }
+  });
+});
