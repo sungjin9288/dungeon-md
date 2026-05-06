@@ -334,3 +334,41 @@ describe('WAVE_EVENTS — array order, key set & description numeric pins', () =
     }
   });
 });
+
+// ─── WAVE_EVENTS — middle-index pins ─────────────────────────────────────────
+
+describe('WAVE_EVENTS — middle-index pins', () => {
+  it('WAVE_EVENTS[1] is supply', () => {
+    expect(WAVE_EVENTS[1].type).toBe('supply');
+  });
+
+  it('WAVE_EVENTS[2] is curse', () => {
+    expect(WAVE_EVENTS[2].type).toBe('curse');
+  });
+
+  it('WAVE_EVENTS[5] is void_storm', () => {
+    expect(WAVE_EVENTS[5].type).toBe('void_storm');
+  });
+
+  it('WAVE_EVENTS[6] is ancient_blessing', () => {
+    expect(WAVE_EVENTS[6].type).toBe('ancient_blessing');
+  });
+});
+
+// ─── WAVE_EVENTS — description numeric pins ──────────────────────────────────
+
+describe('WAVE_EVENTS — description numeric pins (remaining events)', () => {
+  const get = (type: string) => WAVE_EVENTS.find(e => e.type === type)!;
+
+  it('curse description specifies exactly +30% HP boost', () => {
+    expect(get('curse').description).toContain('+30%');
+  });
+
+  it('rally description specifies exactly +25% ATK boost', () => {
+    expect(get('rally').description).toContain('+25%');
+  });
+
+  it('fog description specifies exactly -15% speed reduction', () => {
+    expect(get('fog').description).toContain('-15%');
+  });
+});
