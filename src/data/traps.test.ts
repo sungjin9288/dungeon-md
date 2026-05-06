@@ -258,3 +258,48 @@ describe('TRAP_DEFS — unlockLv derived stats', () => {
     }
   });
 });
+
+// ─── TRAP_DEFS — uniqueness & cross-field checks ──────────────────────────────
+
+describe('TRAP_DEFS — uniqueness & cross-field checks', () => {
+  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
+
+  it('all 4 emojis are distinct', () => {
+    const emojis = TRAP_DEFS.map(t => t.emoji);
+    expect(new Set(emojis).size).toBe(4);
+  });
+
+  it('all 4 desc strings are distinct', () => {
+    const descs = TRAP_DEFS.map(t => t.desc);
+    expect(new Set(descs).size).toBe(4);
+  });
+
+  it('all costs are multiples of 10', () => {
+    for (const t of TRAP_DEFS) {
+      expect(t.cost % 10, `${t.id} cost % 10`).toBe(0);
+    }
+  });
+
+  it('slow_trap.cost + poison_trap.cost === stun_trap.cost (80 + 120 = 200)', () => {
+    expect(get('slow_trap').cost + get('poison_trap').cost).toBe(get('stun_trap').cost);
+  });
+
+  it('exactly 1 trap has unlockLv === 10 (stun_trap)', () => {
+    const atMax = TRAP_DEFS.filter(t => t.unlockLv === 10);
+    expect(atMax).toHaveLength(1);
+    expect(atMax[0].id).toBe('stun_trap');
+  });
+
+  it('TRAP_DEFS is sorted by unlockLv ascending (0, 0, 6, 10)', () => {
+    for (let i = 1; i < TRAP_DEFS.length; i++) {
+      expect(TRAP_DEFS[i].unlockLv, `index ${i} unlockLv ≥ index ${i - 1}`)
+        .toBeGreaterThanOrEqual(TRAP_DEFS[i - 1].unlockLv);
+    }
+  });
+
+  it('cheapest trap (spike_trap, cost=50) is also the earliest-unlocked (unlockLv=0)', () => {
+    const cheapest = [...TRAP_DEFS].reduce((a, b) => a.cost < b.cost ? a : b);
+    expect(cheapest.unlockLv).toBe(0);
+    expect(cheapest.id).toBe('spike_trap');
+  });
+});
