@@ -220,3 +220,60 @@ describe('getGameSafeArea — additional edge cases', () => {
     expect(sa.left).toBe(17);   // same
   });
 });
+
+// ─── getGameSafeArea — non-integer scale & large values ──────────────────────
+
+describe('getGameSafeArea — non-integer scale & large insets', () => {
+  beforeEach(() => clearCssSafeArea());
+
+  it('displayScale=1.5 (non-integer) ceils correctly: ceil(44/1.5)=30', () => {
+    setCssSafeArea(44, 0);
+    const sa = getGameSafeArea(1.5);
+    expect(sa.top).toBe(30); // ceil(44 / 1.5) = ceil(29.33) = 30
+  });
+
+  it('displayScale=0.1 scales insets up by 10×: ceil(10/0.1)=100', () => {
+    setCssSafeArea(10, 20);
+    const sa = getGameSafeArea(0.1);
+    expect(sa.top).toBe(100);    // ceil(10 / 0.1) = 100
+    expect(sa.bottom).toBe(200); // ceil(20 / 0.1) = 200
+  });
+
+  it('all four insets set to the same value return equal fields', () => {
+    setCssSafeArea(30, 30, 30, 30);
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(sa.bottom);
+    expect(sa.bottom).toBe(sa.left);
+    expect(sa.left).toBe(sa.right);
+    expect(sa.top).toBe(30);
+  });
+
+  it('large inset (1000) with displayScale=4 → ceil(1000/4)=250', () => {
+    setCssSafeArea(1000, 800);
+    const sa = getGameSafeArea(4);
+    expect(sa.top).toBe(250);    // ceil(1000/4) = 250
+    expect(sa.bottom).toBe(200); // ceil(800/4) = 200
+  });
+
+  it('MIN_SAFE_TOP and MIN_SAFE_BOTTOM are both typeof number', () => {
+    expect(typeof MIN_SAFE_TOP).toBe('number');
+    expect(typeof MIN_SAFE_BOTTOM).toBe('number');
+  });
+
+  it('two calls to getGameSafeArea return different object references', () => {
+    setCssSafeArea(44, 34);
+    const a = getGameSafeArea(1);
+    const b = getGameSafeArea(1);
+    expect(a).not.toBe(b);        // different object references
+    expect(a).toStrictEqual(b);   // but same values
+  });
+
+  it('only top set: displayScale=2 → ceil(60/2)=30, others remain 0', () => {
+    setCssSafeArea(60, 0, 0, 0);
+    const sa = getGameSafeArea(2);
+    expect(sa.top).toBe(30);
+    expect(sa.bottom).toBe(0);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(0);
+  });
+});
