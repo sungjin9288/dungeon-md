@@ -405,3 +405,66 @@ describe('OVERLAYS', () => {
     expect(nonZero).toBeGreaterThan(0);
   });
 });
+
+// ─── ACCESSORIES — pixel range (gap fill) ────────────────────────────────────
+
+describe('ACCESSORIES — pixel range', () => {
+  it('every accessory pixel value is in [0, 5]', () => {
+    for (const [id, grid] of Object.entries(ACCESSORIES)) {
+      for (const row of grid) {
+        for (const v of row) {
+          expect(v, `${id} bad pixel ${v}`).toBeGreaterThanOrEqual(0);
+          expect(v, `${id} bad pixel ${v}`).toBeLessThanOrEqual(5);
+        }
+      }
+    }
+  });
+});
+
+// ─── Additional getRarityPalette & getMonsterSpriteData invariants ────────────
+
+describe('getRarityPalette — E rarity pin & additional invariants', () => {
+  const BASE: Palette = [0x000000, 0x4a0000, 0xcc3300, 0xff6600, 0xffaa44, 0x220000];
+
+  it('E rarity (shift=45) exact channel delta slot 1: 0x4a0000 → 0x772d2d', () => {
+    // R: 74+45=119=0x77, G: 0+45=45=0x2d, B: 0+45=45=0x2d
+    expect(getRarityPalette(BASE, 'E')[1]).toBe(0x772d2d);
+  });
+
+  it('rarity only changes the palette — silhouette is identical for C vs L', () => {
+    const common = getMonsterSpriteData('dokkaebi_warrior', 'dokkaebi', 'melee', 'C');
+    const legend = getMonsterSpriteData('dokkaebi_warrior', 'dokkaebi', 'melee', 'L');
+    expect(JSON.stringify(common.silhouette)).toBe(JSON.stringify(legend.silhouette));
+  });
+
+  it('getMonsterSpriteData with tribe=dokkaebi returns palette[2]=0xcc3300 (C rarity)', () => {
+    const data = getMonsterSpriteData('dokkaebi_warrior', 'dokkaebi', 'melee', 'C');
+    expect(data.palette[2]).toBe(0xcc3300);
+  });
+
+  it('all TRIBE_PALETTES slot values are valid hex colours (≤ 0xffffff)', () => {
+    for (const [tribe, palette] of Object.entries(TRIBE_PALETTES)) {
+      for (let i = 1; i < palette.length; i++) {
+        expect(palette[i], `${tribe}[${i}]`).toBeLessThanOrEqual(0xffffff);
+      }
+    }
+  });
+});
+
+describe('MONSTER_RECIPES — overlay validation', () => {
+  it('optional overlay, if set, references a valid OverlayId', () => {
+    const validOverlays = new Set(Object.keys(OVERLAYS));
+    for (const [id, recipe] of Object.entries(MONSTER_RECIPES)) {
+      if (recipe!.overlay) {
+        expect(
+          validOverlays.has(recipe!.overlay),
+          `${id} overlay "${recipe!.overlay}" not in OVERLAYS`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('MONSTER_RECIPES contains "dokkaebi_junior" as a key', () => {
+    expect(MONSTER_RECIPES['dokkaebi_junior']).toBeDefined();
+  });
+});
