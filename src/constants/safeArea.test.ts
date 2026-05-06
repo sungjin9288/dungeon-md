@@ -277,3 +277,63 @@ describe('getGameSafeArea — non-integer scale & large insets', () => {
     expect(sa.right).toBe(0);
   });
 });
+
+// ─── getGameSafeArea — remaining edge cases ───────────────────────────────────
+
+describe('getGameSafeArea — remaining edge cases', () => {
+  beforeEach(() => clearCssSafeArea());
+
+  it('displayScale=NaN falls back to 1 (NaN > 0 is false)', () => {
+    setCssSafeArea(20, 10);
+    const saNaN = getGameSafeArea(NaN);
+    const sa1   = getGameSafeArea(1);
+    expect(saNaN).toStrictEqual(sa1);
+  });
+
+  it('only right set: top/bottom/left=0, right=ceil(16/1)=16', () => {
+    setCssSafeArea(0, 0, 0, 16);
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(0);
+    expect(sa.bottom).toBe(0);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(16);
+  });
+
+  it('non-integer CSS var at scale=1 is ceiled: --sat=33.7 → top=34', () => {
+    document.documentElement.style.setProperty('--sat', '33.7');
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(34); // ceil(33.7) = 34
+  });
+
+  it('right channel ceiled for non-divisible: ceil(33/2)=17', () => {
+    setCssSafeArea(0, 0, 0, 33);
+    const sa = getGameSafeArea(2);
+    expect(sa.right).toBe(17); // ceil(33 / 2) = ceil(16.5) = 17
+  });
+
+  it('displayScale=Infinity → all insets become 0 (ceil(n/∞)=0)', () => {
+    setCssSafeArea(44, 34, 16, 8);
+    const sa = getGameSafeArea(Infinity);
+    expect(sa.top).toBe(0);
+    expect(sa.bottom).toBe(0);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(0);
+  });
+
+  it('only bottom set at scale=2: top=0, bottom=ceil(20/2)=10', () => {
+    setCssSafeArea(0, 20, 0, 0);
+    const sa = getGameSafeArea(2);
+    expect(sa.top).toBe(0);
+    expect(sa.bottom).toBe(10);
+    expect(sa.left).toBe(0);
+    expect(sa.right).toBe(0);
+  });
+
+  it('non-numeric CSS var ("abc") falls back to 0 via parseFloat+||0', () => {
+    document.documentElement.style.setProperty('--sat', 'abc');
+    document.documentElement.style.setProperty('--sab', 'xyz');
+    const sa = getGameSafeArea(1);
+    expect(sa.top).toBe(0);    // parseFloat('abc') = NaN → || 0
+    expect(sa.bottom).toBe(0); // parseFloat('xyz') = NaN → || 0
+  });
+});
