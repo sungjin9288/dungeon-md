@@ -271,3 +271,67 @@ describe('checkAchievements — epilogue unlock', () => {
     expect(result).toHaveLength(0);
   });
 });
+
+// ─── EPILOGUE_ACHIEVEMENT_DEFS — array index pins ────────────────────────────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS — array index pins', () => {
+  it('EPILOGUE_ACHIEVEMENT_DEFS[0] is gold_1000000 (first epilogue)', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS[0].id).toBe('gold_1000000');
+  });
+
+  it('EPILOGUE_ACHIEVEMENT_DEFS[4] is dm_lv30 (last epilogue)', () => {
+    expect(EPILOGUE_ACHIEVEMENT_DEFS[4].id).toBe('dm_lv30');
+  });
+
+  it('every epilogue def has a valid AchievementCategory', () => {
+    const valid = new Set(['combat', 'economy', 'build', 'endless', 'mastery', 'collection', 'growth']);
+    for (const a of EPILOGUE_ACHIEVEMENT_DEFS) {
+      expect(valid.has(a.category), `${a.id} category "${a.category}"`).toBe(true);
+    }
+  });
+});
+
+// ─── combined count & category cross-checks ──────────────────────────────────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS — combined count & cross-checks', () => {
+  it('ACHIEVEMENT_DEFS (70) + EPILOGUE_ACHIEVEMENT_DEFS (5) = 75 total', () => {
+    expect(ACHIEVEMENT_DEFS.length + EPILOGUE_ACHIEVEMENT_DEFS.length).toBe(75);
+  });
+
+  it('fusion_30 and fusion_50 both have category "collection"', () => {
+    expect(getAchievementDef('fusion_30')!.category).toBe('collection');
+    expect(getAchievementDef('fusion_50')!.category).toBe('collection');
+  });
+
+  it('dm_lv25 and dm_lv30 both have category "growth"', () => {
+    expect(getAchievementDef('dm_lv25')!.category).toBe('growth');
+    expect(getAchievementDef('dm_lv30')!.category).toBe('growth');
+  });
+});
+
+// ─── checkAchievements — all 5 epilogue simultaneously ───────────────────────
+
+describe('checkAchievements — all 5 epilogue simultaneously', () => {
+  it('returns all 5 epilogue ids when all thresholds met and none pre-unlocked', () => {
+    const ctx    = makeCtx({ totalGoldEarned: 1_000_000, totalFusions: 50, dmLevel: 30 });
+    const result = checkAchievements(ctx, {});
+    for (const id of ['gold_1000000', 'fusion_30', 'fusion_50', 'dm_lv25', 'dm_lv30']) {
+      expect(result).toContain(id);
+    }
+  });
+
+  it('returns no epilogue ids when all 5 are already unlocked', () => {
+    const ctx = makeCtx({ totalGoldEarned: 1_000_000, totalFusions: 50, dmLevel: 30 });
+    const already: Record<string, { unlocked: boolean }> = {
+      gold_1000000: { unlocked: true },
+      fusion_30:    { unlocked: true },
+      fusion_50:    { unlocked: true },
+      dm_lv25:      { unlocked: true },
+      dm_lv30:      { unlocked: true },
+    };
+    const result = checkAchievements(ctx, already);
+    for (const id of ['gold_1000000', 'fusion_30', 'fusion_50', 'dm_lv25', 'dm_lv30']) {
+      expect(result).not.toContain(id);
+    }
+  });
+});
