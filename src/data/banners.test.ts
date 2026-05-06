@@ -418,3 +418,46 @@ describe('SEASON_BANNERS — per-banner spot-checks', () => {
     expect(b.featuredMonsters).toContain('blue_dragon_archmage');
   });
 });
+
+// ─── SEASON_BANNERS — index pins, exact count & date spot-checks ──────────────
+
+describe('SEASON_BANNERS — index pins, exact count & date spot-checks', () => {
+  it('SEASON_BANNERS contains exactly 8 entries', () => {
+    expect(SEASON_BANNERS).toHaveLength(8);
+  });
+
+  it('SEASON_BANNERS[0].id is spring_gumiho_2026 (first entry)', () => {
+    expect(SEASON_BANNERS[0].id).toBe('spring_gumiho_2026');
+  });
+
+  it('getActiveBanner("2026-05-15") returns ch7_celestial_2026 (first-match wins over special_dragon_2026)', () => {
+    // ch7_celestial_2026 (index 5): 2026-04-06 ~ 2026-05-31  ← matched first
+    // special_dragon_2026 (index 7): 2026-05-01 ~ 2026-05-31  ← also active but later in array
+    const result = getActiveBanner(new Date('2026-05-15'));
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('ch7_celestial_2026');
+  });
+
+  it('winter_mountain_2026 startDate is 2026-12-01', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'winter_mountain_2026')!;
+    expect(b.startDate).toBe('2026-12-01');
+  });
+
+  it('getBannerTimeLeft with 25 h remaining returns "1일 1시간 남음"', () => {
+    const banner = SEASON_BANNERS[0]; // spring_gumiho_2026, endDate 2026-04-30
+    const end = new Date('2026-04-30T23:59:59');
+    const now = new Date(end.getTime() - 25 * 3600 * 1000);
+    expect(getBannerTimeLeft(banner, now)).toBe('1일 1시간 남음');
+  });
+
+  it('every banner id contains a 4-digit year', () => {
+    for (const b of SEASON_BANNERS) {
+      expect(b.id, `${b.id} has no 4-digit year`).toMatch(/\d{4}/);
+    }
+  });
+
+  it('late_fall_moonlight_2026 endDate is 2026-11-30', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'late_fall_moonlight_2026')!;
+    expect(b.endDate).toBe('2026-11-30');
+  });
+});
