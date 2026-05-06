@@ -432,3 +432,62 @@ describe('buildEndlessSpawnQueue — additional edge cases', () => {
     expect(titan!.delay).toBe(1500);
   });
 });
+
+// ─── buildEndlessSpawnQueue — milestone delays & queue lengths ────────────────
+
+describe('buildEndlessSpawnQueue — milestone delays & queue lengths', () => {
+  it('wave 70: sky_titan delay=0 and radiant_seraph delay=1500', () => {
+    const q = buildEndlessSpawnQueue(70);
+    const skyTitan = q.find(e => e.def.type === 'sky_titan');
+    const seraph   = q.find(e => e.def.type === 'radiant_seraph');
+    expect(skyTitan).toBeDefined();
+    expect(seraph).toBeDefined();
+    expect(skyTitan!.delay).toBe(0);
+    expect(seraph!.delay).toBe(1500);
+  });
+
+  it('wave 90 milestone loop injects exactly 3 void_soldier entries (delay=800)', () => {
+    const q = buildEndlessSpawnQueue(90);
+    // Milestone void_soldiers have delay=800; fillers use delay=1200
+    const milestoneVoidSoldiers = q.filter(e => e.def.type === 'void_soldier' && e.delay === 800);
+    expect(milestoneVoidSoldiers).toHaveLength(3);
+  });
+
+  it('wave 90 total queue length = 4 milestone + 20 filler = 24', () => {
+    // baseCount = min(5 + floor(90/5), 20) = min(23, 20) = 20 fillers
+    // milestone: 3 void_soldiers + 1 primordial_guard = 4
+    expect(buildEndlessSpawnQueue(90)).toHaveLength(24);
+  });
+
+  it('wave 20 total queue length = 1 milestone + 9 filler = 10', () => {
+    // baseCount = min(5 + floor(20/5), 20) = min(9, 20) = 9 fillers
+    // milestone: 1 knight mini-boss
+    expect(buildEndlessSpawnQueue(20)).toHaveLength(10);
+  });
+
+  it('wave 80 milestone order: abyss_berserker(delay=0), primordial_guard(delay=2000), abyss_berserker(delay=1500)', () => {
+    const q = buildEndlessSpawnQueue(80);
+    expect(q[0].def.type).toBe('abyss_berserker');
+    expect(q[0].delay).toBe(0);
+    expect(q[1].def.type).toBe('primordial_guard');
+    expect(q[1].delay).toBe(2000);
+    expect(q[2].def.type).toBe('abyss_berserker');
+    expect(q[2].delay).toBe(1500);
+  });
+
+  it('every entry def.speed is a positive integer at wave 10', () => {
+    const q = buildEndlessSpawnQueue(10);
+    for (const { def } of q) {
+      expect(def.speed, `${def.type} speed`).toBeGreaterThan(0);
+      expect(Number.isInteger(def.speed), `${def.type} speed integer`).toBe(true);
+    }
+  });
+
+  it('every entry def.reward is a positive integer at wave 25', () => {
+    const q = buildEndlessSpawnQueue(25);
+    for (const { def } of q) {
+      expect(def.reward, `${def.type} reward`).toBeGreaterThan(0);
+      expect(Number.isInteger(def.reward), `${def.type} reward integer`).toBe(true);
+    }
+  });
+});
