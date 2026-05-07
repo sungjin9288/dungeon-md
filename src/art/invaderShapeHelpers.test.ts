@@ -393,3 +393,57 @@ describe('computeLayout — fill=black (color=0x000000)', () => {
     expect(l.hi).toBe(0x373737);      // lighten(0, 55) = 0x373737
   });
 });
+
+// ─── darken — pure Red/Green channel isolation ───────────────────────────────
+
+describe('darken — pure Red/Green channel isolation', () => {
+  it('darken(0xff0000, 0.4) → 0x660000 (only R channel: floor(255×0.4)=102=0x66)', () => {
+    // G and B are 0, only R is scaled
+    expect(darken(0xff0000, 0.4)).toBe(0x660000);
+  });
+
+  it('darken(0x00ff00, 0.4) → 0x006600 (only G channel: floor(255×0.4)=102=0x66)', () => {
+    expect(darken(0x00ff00, 0.4)).toBe(0x006600);
+  });
+
+  it('darken(0x808080, 0.25) → 0x202020 (floor(128×0.25)=32=0x20 per channel)', () => {
+    expect(darken(0x808080, 0.25)).toBe(0x202020);
+  });
+});
+
+// ─── lighten — exact single-channel and partial-clamp pins ───────────────────
+
+describe('lighten — partial-clamp and minimal-increment pins', () => {
+  it('lighten(0x000000, 1) → 0x010101 (minimal +1 from black)', () => {
+    // all channels: min(255, 0+1) = 1 = 0x01
+    expect(lighten(0x000000, 1)).toBe(0x010101);
+  });
+
+  it('lighten(0x80ff80, 10) → 0x8aff8a (only G channel clamps, R/B add 10)', () => {
+    // R: min(255, 128+10)=138=0x8a, G: min(255, 255+10)=255=0xff, B: 0x8a
+    expect(lighten(0x80ff80, 10)).toBe(0x8aff8a);
+  });
+});
+
+// ─── computeLayout — fill = white ────────────────────────────────────────────
+
+describe('computeLayout — fill=white (color=0xffffff)', () => {
+  it('fill=white → hi=0xffffff (lighten white stays white) and dk=0x8c8c8c', () => {
+    const l = computeLayout(40, 0xffffff);
+    expect(l.fill).toBe(0xffffff);
+    // lighten(0xffffff, 55): all channels clamp to 255 → stays white
+    expect(l.hi).toBe(0xffffff);
+    // darken(0xffffff, 0.55): floor(255×0.55)=140=0x8c per channel
+    expect(l.dk).toBe(0x8c8c8c);
+  });
+
+  it('computeLayout(0, color) — r=0: all proportional fields equal 0', () => {
+    const l = computeLayout(0, 0x4477aa);
+    expect(l.r).toBe(0);
+    expect(l.hr).toBe(0);   // 0 × 0.42 = 0
+    expect(l.bw).toBe(0);   // 0 × 0.68 = 0
+    expect(l.bh).toBe(0);   // 0 × 0.42 = 0
+    expect(l.cx).toBe(0);
+    expect(l.cy).toBe(0);
+  });
+});
