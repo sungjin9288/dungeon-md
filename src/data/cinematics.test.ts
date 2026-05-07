@@ -373,3 +373,45 @@ describe('CINEMATICS — stage20 and Ch8 cinematic spot-checks', () => {
     expect(c.lines.some(l => l.speaker === '구미호')).toBe(true);
   });
 });
+
+// ─── CINEMATICS — exact counts, line counts & pause pins ─────────────────────
+
+describe('CINEMATICS — exact counts, line counts & pause pins', () => {
+  it('CINEMATICS contains exactly 19 entries', () => {
+    expect(CINEMATICS).toHaveLength(19);
+  });
+
+  it('STAGE_CINEMATICS contains exactly 15 stage mappings', () => {
+    expect(Object.keys(STAGE_CINEMATICS)).toHaveLength(15);
+  });
+
+  it('ch1_opening has exactly 5 lines', () => {
+    expect(getCinematic('ch1_opening')!.lines).toHaveLength(5);
+  });
+
+  it('ch2_opening has 3 lines and features both 구미호 and 도깨비 전사', () => {
+    const c = getCinematic('ch2_opening')!;
+    expect(c.lines).toHaveLength(3);
+    const speakers = c.lines.map(l => l.speaker);
+    expect(speakers).toContain('구미호');
+    expect(speakers).toContain('도깨비 전사');
+  });
+
+  it('ch5_opening has 3 lines and every line speaker is 산신령', () => {
+    const c = getCinematic('ch5_opening')!;
+    expect(c.lines).toHaveLength(3);
+    for (const line of c.lines) {
+      expect(line.speaker).toBe('산신령');
+    }
+  });
+
+  it('stage10_boss_intro has 2 lines and second line has pause=500', () => {
+    const c = getCinematic('stage10_boss_intro')!;
+    expect(c.lines).toHaveLength(2);
+    expect(c.lines[1].pause).toBe(500);
+  });
+
+  it('ch7_opening has exactly 4 lines', () => {
+    expect(getCinematic('ch7_opening')!.lines).toHaveLength(4);
+  });
+});
