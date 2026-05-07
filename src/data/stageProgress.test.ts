@@ -439,3 +439,47 @@ describe('STAGE_CONFIGS — index pins & shared-gate patterns', () => {
     }
   });
 });
+
+// ─── STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & slot pins ─────────────────────
+
+describe('STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & additional slot pins', () => {
+  it('stages 40, 41, 42 all share unlockedStage=40 (Ch4 boss-group gate)', () => {
+    expect(STAGE_CONFIGS[39].unlockedStage).toBe(40); // stage 40 index=39
+    expect(STAGE_CONFIGS[40].unlockedStage).toBe(40); // stage 41 index=40
+    expect(STAGE_CONFIGS[41].unlockedStage).toBe(40); // stage 42 index=41
+  });
+
+  it('stages 60, 61, 62 all share unlockedStage=60 (Ch6 boss-group gate)', () => {
+    expect(STAGE_CONFIGS[59].unlockedStage).toBe(60); // stage 60 index=59
+    expect(STAGE_CONFIGS[60].unlockedStage).toBe(60); // stage 61 index=60
+    expect(STAGE_CONFIGS[61].unlockedStage).toBe(60); // stage 62 index=61
+  });
+
+  it('stages 70, 71, 72 all share unlockedStage=70 (Ch7 boss-group gate)', () => {
+    expect(STAGE_CONFIGS[69].unlockedStage).toBe(70); // stage 70 index=69
+    expect(STAGE_CONFIGS[70].unlockedStage).toBe(70); // stage 71 index=70
+    expect(STAGE_CONFIGS[71].unlockedStage).toBe(70); // stage 72 index=71
+  });
+
+  it('stage 20 (Ch2 boss, index 19) has 16 slots', () => {
+    expect(STAGE_CONFIGS[19].slots).toBe(16);
+    expect(STAGE_CONFIGS[19].bossWave).toBe(true);
+  });
+
+  it('stage 73 (Ch8 first, index 72) has 17 slots', () => {
+    expect(STAGE_CONFIGS[72].slots).toBe(17);
+    expect(STAGE_CONFIGS[72].chapter).toBe(8);
+  });
+
+  it('recordClear with hpPercent=0 stores 0 as bestHpPercent', () => {
+    localStorage.clear();
+    recordClear(0, 2, 0);
+    const prog = loadProgress();
+    expect(prog[0].bestHpPercent).toBe(0);
+  });
+
+  it('stage 9 and stage 10 both have 9 slots (boss does not increase slot count)', () => {
+    expect(STAGE_CONFIGS[8].slots).toBe(9);  // stage 9 (index 8)
+    expect(STAGE_CONFIGS[9].slots).toBe(9);  // stage 10 boss (index 9)
+  });
+});
