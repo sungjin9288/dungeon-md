@@ -491,3 +491,55 @@ describe('buildEndlessSpawnQueue — milestone delays & queue lengths', () => {
     }
   });
 });
+
+// ─── buildEndlessSpawnQueue — queue-length pins & HP formula spot-checks ─────
+
+describe('buildEndlessSpawnQueue — queue-length pins & HP formula spot-checks', () => {
+  it('wave 25 total queue length = 11 (1 milestone + 10 fillers)', () => {
+    // baseCount = min(5 + floor(25/5), 20) = min(10, 20) = 10; + 1 iron_golem
+    expect(buildEndlessSpawnQueue(25)).toHaveLength(11);
+  });
+
+  it('wave 30 total queue length = 13 (2 milestones + 11 fillers)', () => {
+    // baseCount = min(5 + floor(30/5), 20) = min(11, 20) = 11; + 2 void_assassins
+    expect(buildEndlessSpawnQueue(30)).toHaveLength(13);
+  });
+
+  it('wave 40 total queue length = 14 (1 milestone + 13 fillers)', () => {
+    // baseCount = min(5 + floor(40/5), 20) = min(13, 20) = 13; + 1 void_assassin_elite
+    expect(buildEndlessSpawnQueue(40)).toHaveLength(14);
+  });
+
+  it('wave 80 total queue length = 23 (3 milestones + 20 fillers)', () => {
+    // baseCount = min(5 + floor(80/5), 20) = min(21, 20) = 20; + 3 milestone entries
+    expect(buildEndlessSpawnQueue(80)).toHaveLength(23);
+  });
+
+  it('wave 30 first void_assassin delay=0, second void_assassin delay=1200', () => {
+    const q = buildEndlessSpawnQueue(30);
+    const assassins = q.filter(e => e.def.type === 'void_assassin' && e.def.isMiniBoss);
+    expect(assassins[0].delay).toBe(0);
+    expect(assassins[1].delay).toBe(1200);
+  });
+
+  it('wave 40 void_assassin_elite HP = round(base × 1.12^39 × 1.8)', () => {
+    const q = buildEndlessSpawnQueue(40);
+    const boss = q.find(e => e.def.type === 'void_assassin_elite' && e.def.isMiniBoss);
+    expect(boss).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['void_assassin_elite'].hp * Math.pow(1.12, 39) * 1.8);
+    expect(boss!.def.hp).toBe(expected);
+  });
+
+  it('post-90 milestone (wave 100): primordial_guard delay=0, void_soldier+abyss_berserker delay=1200', () => {
+    const q = buildEndlessSpawnQueue(100);
+    const pg  = q.find(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss);
+    const vs  = q.find(e => e.def.type === 'void_soldier' && !e.def.isMiniBoss);
+    const ab  = q.find(e => e.def.type === 'abyss_berserker' && !e.def.isMiniBoss);
+    expect(pg).toBeDefined();
+    expect(pg!.delay).toBe(0);
+    expect(vs).toBeDefined();
+    expect(vs!.delay).toBe(1200);
+    expect(ab).toBeDefined();
+    expect(ab!.delay).toBe(1200);
+  });
+});
