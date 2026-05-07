@@ -462,3 +462,57 @@ describe('hasSeasonalBoon — summer_gumiho', () => {
     expect(hasSeasonalBoon(grid)).toBe(true);
   });
 });
+
+// ─── getInvaderRow — row-1 boundary pins & cs=80 ─────────────────────────────
+
+describe('getInvaderRow — row-1 boundary & isScrollBurstActive dist=2 coverage', () => {
+  const NOW = 8_000;
+
+  it('exact lower boundary of row-1 (ROW_Y[1] + 0.7×CELL_SIZE = 372) → row 1', () => {
+    // |372 - 295| = 77 ≤ 77 → row 1 (at boundary, included)
+    const row1Lower = ROW_Y[1] + CELL_SIZE * 0.7;
+    expect(getInvaderRow(CELL_SIZE, { y: row1Lower })).toBe(1);
+  });
+
+  it('one pixel past row-1 lower boundary (y=373) falls into row-2 band', () => {
+    // |373-295|=78 > 77 → not row-1; |373-405|=32 ≤ 77 → row 2
+    const justPast = ROW_Y[1] + CELL_SIZE * 0.7 + 1;
+    expect(getInvaderRow(CELL_SIZE, { y: justPast })).toBe(2);
+  });
+
+  it('row-1 centre with cs=80: GRID_Y+80+40=250 → row 1', () => {
+    const cs = 80;
+    const row1Centre = GRID_Y + 1 * cs + cs / 2; // 130+80+40=250
+    expect(getInvaderRow(cs, { y: row1Centre })).toBe(1);
+  });
+
+  it('isScrollBurstActive: diagonal dist=2 (scroll(0,0), query(1,1)) → true', () => {
+    // |1-0|+|1-0|=2 ≤ 3 → active
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 1000 });
+    expect(isScrollBurstActive(grid, 3, 1, 1, NOW)).toBe(true);
+  });
+
+  it('isScrollBurstActive: column-only dist=2 (scroll(0,0), query(0,2)) → true', () => {
+    // |0-0|+|2-0|=2 ≤ 3 → active
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 1000 });
+    expect(isScrollBurstActive(grid, 3, 0, 2, NOW)).toBe(true);
+  });
+
+  it('isScrollBurstActive: row-only dist=2 (scroll(0,0), query(2,0)) → true', () => {
+    // |2-0|+|0-0|=2 ≤ 3 → active
+    const grid = emptyGrid(3, 3);
+    grid[0][0] = makeRoom({ type: 'scroll_library', scrollBurstActiveUntil: NOW + 1000 });
+    expect(isScrollBurstActive(grid, 3, 2, 0, NOW)).toBe(true);
+  });
+
+  it('hasTribeMasteryFor: dokkaebi_general + gumiho_goddess → true for each tribe, false cross-tribe', () => {
+    const grid = emptyGrid(1, 2);
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general' }); // TRIBE_MASTERY, dokkaebi
+    grid[0][1] = makeRoom({ monsterSlot: 'gumiho_goddess' });   // TRIBE_MASTERY, gumiho
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
+    expect(hasTribeMasteryFor(grid, 'gumiho')).toBe(true);
+    expect(hasTribeMasteryFor(grid, 'sea')).toBe(false);
+  });
+});
