@@ -380,3 +380,54 @@ describe('EPILOGUE_ACHIEVEMENT_DEFS — middle-index pins & derived checks', () 
     expect(result).not.toContain('dm_lv30');
   });
 });
+
+// ─── EPILOGUE_ACHIEVEMENT_DEFS — exact target, name, icon & boundary pins ────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS — exact target, name, icon & boundary pins', () => {
+  const get = (id: string) => EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === id)!;
+
+  it('exact target pins: gold=1_000_000, fusion_30=30, fusion_50=50, dm_lv25=25, dm_lv30=30', () => {
+    expect(get('gold_1000000').target).toBe(1_000_000);
+    expect(get('fusion_30').target).toBe(30);
+    expect(get('fusion_50').target).toBe(50);
+    expect(get('dm_lv25').target).toBe(25);
+    expect(get('dm_lv30').target).toBe(30);
+  });
+
+  it('gold_1000000 is the only epilogue with category "economy"', () => {
+    expect(get('gold_1000000').category).toBe('economy');
+    const nonEconomy = EPILOGUE_ACHIEVEMENT_DEFS.filter(d => d.id !== 'gold_1000000');
+    for (const d of nonEconomy) {
+      expect(d.category).not.toBe('economy');
+    }
+  });
+
+  it('name pins: 황금의 전설, 합성의 달인, 정예 던전 마스터, 전설의 던전 마스터', () => {
+    expect(get('gold_1000000').name).toBe('황금의 전설');
+    expect(get('fusion_30').name).toBe('합성의 달인');
+    expect(get('dm_lv25').name).toBe('정예 던전 마스터');
+    expect(get('dm_lv30').name).toBe('전설의 던전 마스터');
+  });
+
+  it('icon pins: gold=💛, dm_lv25=🔰, dm_lv30=👑', () => {
+    expect(get('gold_1000000').icon).toBe('💛');
+    expect(get('dm_lv25').icon).toBe('🔰');
+    expect(get('dm_lv30').icon).toBe('👑');
+  });
+
+  it('dm_lv30 is NOT unlocked at exactly level 29 (one below threshold)', () => {
+    const ctx    = makeCtx({ dmLevel: 29 });
+    const result = checkAchievements(ctx, {});
+    expect(result).not.toContain('dm_lv30');
+    expect(result).toContain('dm_lv25'); // dm_lv25 (target=25) should still unlock
+  });
+
+  it('gold_1000000.getProgress at 500_000 returns 500_000 (halfway)', () => {
+    expect(get('gold_1000000').getProgress(makeCtx({ totalGoldEarned: 500_000 }))).toBe(500_000);
+  });
+
+  it('fusion_50.name is 합성의 극의 and icon is ⚗️', () => {
+    expect(get('fusion_50').name).toBe('합성의 극의');
+    expect(get('fusion_50').icon).toBe('⚗️');
+  });
+});
