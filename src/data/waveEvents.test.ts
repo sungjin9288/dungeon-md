@@ -372,3 +372,38 @@ describe('WAVE_EVENTS — description numeric pins (remaining events)', () => {
     expect(get('fog').description).toContain('-15%');
   });
 });
+
+// ─── WAVE_EVENTS — missing index pins & new-event numeric pins ───────────────
+
+describe('WAVE_EVENTS — index[3]/[4] pins & new-event description %', () => {
+  const get = (type: string) => WAVE_EVENTS.find(e => e.type === type)!;
+
+  it('WAVE_EVENTS[3].type is rally', () => {
+    expect(WAVE_EVENTS[3].type).toBe('rally');
+  });
+
+  it('WAVE_EVENTS[4].type is fog', () => {
+    expect(WAVE_EVENTS[4].type).toBe('fog');
+  });
+
+  it('crimson_curse description specifies +50% HP boost', () => {
+    expect(get('crimson_curse').description).toContain('+50%');
+  });
+
+  it('void_storm description specifies +25% speed boost', () => {
+    expect(get('void_storm').description).toContain('+25%');
+  });
+
+  it('ancient_blessing description specifies +20% ATK and 10% HP recovery', () => {
+    expect(get('ancient_blessing').description).toContain('+20%');
+    expect(get('ancient_blessing').description).toContain('10%');
+  });
+
+  it('void_storm description contains ×1.8 gold multiplier', () => {
+    expect(get('void_storm').description).toContain('×1.8');
+  });
+
+  it('rollWaveEvent(0, 10, 1) returns null (wave=0 is below minimum 2)', () => {
+    expect(rollWaveEvent(0, 10, 1)).toBeNull();
+  });
+});
