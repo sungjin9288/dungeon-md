@@ -416,3 +416,48 @@ describe('ALL_THEMES — index pins & additional field constraints', () => {
     expect(getActiveTheme('celestial_realm')).toBe(CELESTIAL_THEME);
   });
 });
+
+// ─── ALL_THEMES — remaining index pins, exact glowAlpha, particleTint counts ──
+
+describe('ALL_THEMES — glowAlpha, particleTint, textSecondary & index pins', () => {
+  it('ALL_THEMES[1] is the same reference as ICE_CAVE_THEME', () => {
+    expect(ALL_THEMES[1]).toBe(ICE_CAVE_THEME);
+  });
+
+  it('ALL_THEMES[2] is the same reference as LAVA_CAVE_THEME', () => {
+    expect(ALL_THEMES[2]).toBe(LAVA_CAVE_THEME);
+  });
+
+  it('ALL_THEMES[3] is the same reference as VOID_THRONE_THEME', () => {
+    expect(ALL_THEMES[3]).toBe(VOID_THRONE_THEME);
+  });
+
+  it('cave is the only theme where ambientColor === glowColor (both 0x2288aa)', () => {
+    expect(CAVE_THEME.ambientColor).toBe(CAVE_THEME.glowColor);
+    expect(CAVE_THEME.ambientColor).toBe(0x2288aa);
+    for (const t of ALL_THEMES.filter(t => t.id !== 'cave')) {
+      expect(t.ambientColor, `${t.id} ambientColor should ≠ glowColor`).not.toBe(t.glowColor);
+    }
+  });
+
+  it('glowAlpha exact values: cave=0.15, ice=0.20, lava=0.18, void=0.15, celestial=0.18', () => {
+    expect(CAVE_THEME.glowAlpha).toBe(0.15);
+    expect(ICE_CAVE_THEME.glowAlpha).toBe(0.20);
+    expect(LAVA_CAVE_THEME.glowAlpha).toBe(0.18);
+    expect(VOID_THRONE_THEME.glowAlpha).toBe(0.15);
+    expect(CELESTIAL_THEME.glowAlpha).toBe(0.18);
+  });
+
+  it('cave, ice_cave, lava_cave, void_throne each have exactly 3 particleTints', () => {
+    expect(CAVE_THEME.particleTint).toHaveLength(3);
+    expect(ICE_CAVE_THEME.particleTint).toHaveLength(3);
+    expect(LAVA_CAVE_THEME.particleTint).toHaveLength(3);
+    expect(VOID_THRONE_THEME.particleTint).toHaveLength(3);
+  });
+
+  it('textSecondary spot-checks: cave=#607080, lava=#805030, celestial=#7a8ecc', () => {
+    expect(CAVE_THEME.textSecondary).toBe('#607080');
+    expect(LAVA_CAVE_THEME.textSecondary).toBe('#805030');
+    expect(CELESTIAL_THEME.textSecondary).toBe('#7a8ecc');
+  });
+});
