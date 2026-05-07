@@ -409,3 +409,63 @@ describe('MAIN_QUESTS — chain start and terminal', () => {
     expect(MAIN_QUESTS[0].title.length).toBeGreaterThan(0);
   });
 });
+
+// ─── MAIN_QUESTS — reward spot-checks, multi-objective counts & escalation ───
+
+describe('MAIN_QUESTS — reward pins, objective counts & collect_gold escalation', () => {
+  const get = (id: string) => MAIN_QUESTS.find(q => q.id === id)!;
+  const goldTarget = (id: string) =>
+    get(id).objectives.find(o => o.type === 'collect_gold')!.target;
+
+  it('MQ-044 reward: gold=50000, dmXP=10000, unlocks includes "abyss_title"', () => {
+    const r = get('MQ-044').reward;
+    expect(r.gold).toBe(50000);
+    expect(r.dmXP).toBe(10000);
+    expect(r.unlocks).toContain('abyss_title');
+  });
+
+  it('EQ-005 has 3 objectives: summon(100), collect_gold(1000000), reach_dm_level(30)', () => {
+    const objs = get('EQ-005').objectives;
+    expect(objs).toHaveLength(3);
+    expect(objs.find(o => o.type === 'summon')!.target).toBe(100);
+    expect(objs.find(o => o.type === 'collect_gold')!.target).toBe(1000000);
+    expect(objs.find(o => o.type === 'reach_dm_level')!.target).toBe(30);
+  });
+
+  it('MQ-004 unlocks summon_altar and MQ-007 unlocks forge', () => {
+    expect(get('MQ-004').reward.unlocks).toContain('summon_altar');
+    expect(get('MQ-007').reward.unlocks).toContain('forge');
+  });
+
+  it('exactly 5 quests have 3 objectives (MQ-032, MQ-036, MQ-040, MQ-042, EQ-005)', () => {
+    const threeObj = MAIN_QUESTS.filter(q => q.objectives.length === 3);
+    expect(threeObj).toHaveLength(5);
+    const ids = threeObj.map(q => q.id);
+    expect(ids).toContain('MQ-032');
+    expect(ids).toContain('EQ-005');
+  });
+
+  it('collect_gold targets escalate: MQ-010(1000) < MQ-018(5000) < MQ-023(10000) < MQ-043(100000) < EQ-005(1000000)', () => {
+    expect(goldTarget('MQ-010')).toBe(1000);
+    expect(goldTarget('MQ-018')).toBe(5000);
+    expect(goldTarget('MQ-023')).toBe(10000);
+    expect(goldTarget('MQ-043')).toBe(100000);
+    expect(goldTarget('EQ-005')).toBe(1000000);
+  });
+
+  it('INV-006 is shared by exactly 2 invasion quests (MQ-019 and MQ-027)', () => {
+    const invasionQuests = MAIN_QUESTS.filter(q => q.invasionOnComplete != null);
+    const inv006 = invasionQuests.filter(q => q.invasionOnComplete!.id === 'INV-006');
+    expect(inv006).toHaveLength(2);
+    const ids = inv006.map(q => q.id);
+    expect(ids).toContain('MQ-019');
+    expect(ids).toContain('MQ-027');
+  });
+
+  it('MQ-032 is the only Ch7 quest with 3 objectives', () => {
+    const ch7 = MAIN_QUESTS.filter(q => q.chapter === 7);
+    const threeObj = ch7.filter(q => q.objectives.length === 3);
+    expect(threeObj).toHaveLength(1);
+    expect(threeObj[0].id).toBe('MQ-032');
+  });
+});
