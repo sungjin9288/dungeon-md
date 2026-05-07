@@ -468,3 +468,47 @@ describe('MONSTER_RECIPES — overlay validation', () => {
     expect(MONSTER_RECIPES['dokkaebi_junior']).toBeDefined();
   });
 });
+
+// ─── L-shift exact pins, tribe spot-checks & monsterType fallback paths ───────
+
+describe('getRarityPalette — L exact pins; tribe & silhouette fallback spot-checks', () => {
+  const BASE: Palette = [0x000000, 0x4a0000, 0xcc3300, 0xff6600, 0xffaa44, 0x220000];
+
+  it('L rarity (shift=60) slot 1: 0x4a0000 → 0x863c3c (R:74+60=134, G/B:0+60=60)', () => {
+    // R=0x4a=74 → 74+60=134=0x86; G=0 → 60=0x3c; B=0 → 60=0x3c
+    expect(getRarityPalette(BASE, 'L')[1]).toBe(0x863c3c);
+  });
+
+  it('L rarity (shift=60) slot 2: R channel clamps to 255 (0xcc=204+60→255=0xff)', () => {
+    // R=0xcc=204 → min(255,264)=255=0xff; G=0x33=51 → 111=0x6f; B=0 → 60=0x3c
+    expect(getRarityPalette(BASE, 'L')[2]).toBe(0xff6f3c);
+  });
+
+  it('gumiho palette[2]=0xffeedd (cream), dragon palette[2]=0x228844 (forest green)', () => {
+    expect(TRIBE_PALETTES['gumiho'][2]).toBe(0xffeedd);
+    expect(TRIBE_PALETTES['dragon'][2]).toBe(0x228844);
+  });
+
+  it('sea palette[2]=0x1060a0, moonlight palette[2]=0x4040a0', () => {
+    expect(TRIBE_PALETTES['sea'][2]).toBe(0x1060a0);
+    expect(TRIBE_PALETTES['moonlight'][2]).toBe(0x4040a0);
+  });
+
+  it('dokkaebi_warrior uses unique silhouette: row[1][8]=4 (horn pixel, absent in base MELEE)', () => {
+    // DOKKAEBI_WARRIOR row[1] = row(0,8, 4,1, ...) → col 8 = 4
+    const data = getMonsterSpriteData('dokkaebi_warrior', 'dokkaebi', 'melee');
+    expect(data.silhouette[1][8]).toBe(4);
+  });
+
+  it('unknown monsterId with monsterType="magic" falls back to MAGIC_SILHOUETTE: row[1][10]=4 (hat tip)', () => {
+    // MAGIC_SILHOUETTE row[1] = row(0,10, 4,1, 3,2, 4,1, 0,10) → col 10 = 4
+    const data = getMonsterSpriteData('unknown_xyz_abc' as any, undefined, 'magic');
+    expect(data.silhouette[1][10]).toBe(4);
+  });
+
+  it('unknown monsterId with monsterType="support" falls back to SUPPORT_SILHOUETTE: row[17][5]=4 (glow hand)', () => {
+    // SUPPORT_SILHOUETTE row[17] = row(0,5, 4,2, 0,10, 4,2, 0,5) → col 5 = 4
+    const data = getMonsterSpriteData('unknown_xyz_abc' as any, undefined, 'support');
+    expect(data.silhouette[17][5]).toBe(4);
+  });
+});
