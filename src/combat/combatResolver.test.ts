@@ -360,3 +360,56 @@ describe('findTarget — negative row-range boundary & extra skip combos', () =>
     expect(findTarget([a, b], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
   });
 });
+
+// ─── findTarget — non-SUN_DIVE passive, rowRange=0, bulk-invisible & more ─────
+
+describe('findTarget — non-SUN_DIVE passive, rowRange=0, bulk-invisible, SUN_DIVE combos', () => {
+  it('non-SUN_DIVE passive (FIRST_STRIKE_STUN) still uses distance-based targeting', () => {
+    const mDef: CombatMonsterDef = {
+      baseDamage: 50, passive: 'FIRST_STRIKE_STUN', range: 2, attackCooldown: 1200,
+    };
+    const near = makeInvader({ x: ROOM_X + 10, y: CENTER_Y });
+    const far  = makeInvader({ x: ROOM_X + 80, y: CENTER_Y });
+    // SUN_DIVE branch is not taken → normal distance logic → near wins
+    expect(findTarget([far, near], makeRoom(), mDef, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(near);
+  });
+
+  it('rowRange=0: invader at exactly CENTER_Y is in range (|0| > 0 is false → included)', () => {
+    const inv = makeInvader({ x: ROOM_X, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom(), null, ROOM_X, CENTER_Y, 0, NOW)).toBe(inv);
+  });
+
+  it('rowRange=0: invader 1 px above CENTER_Y is excluded (|1| > 0 is true)', () => {
+    const inv = makeInvader({ x: ROOM_X, y: CENTER_Y + 1 });
+    expect(findTarget([inv], makeRoom(), null, ROOM_X, CENTER_Y, 0, NOW)).toBeNull();
+  });
+
+  it('three all-invisible invaders in range → null', () => {
+    const a = makeInvader({ isInvisible: true, x: 60, y: CENTER_Y });
+    const b = makeInvader({ isInvisible: true, x: 70, y: CENTER_Y });
+    const c = makeInvader({ isInvisible: true, x: 80, y: CENTER_Y });
+    expect(findTarget([a, b, c], makeRoom(), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('SUN_DIVE: void-phased invader in trap_corridor is skipped (mirrors trap room)', () => {
+    const sunDive: CombatMonsterDef = {
+      baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500,
+    };
+    const inv = makeInvader({ voidPhaseUntil: NOW + 5000, pathProgress: 0.99, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('trap_corridor'), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBeNull();
+  });
+
+  it('SUN_DIVE: trap-immune invader in non-trap room (scroll_library) is included', () => {
+    const sunDive: CombatMonsterDef = {
+      baseDamage: 40, passive: 'SUN_DIVE', range: 3, attackCooldown: 1500,
+    };
+    const inv = makeInvader({ isTrapImmune: true, pathProgress: 0.7, x: 60, y: CENTER_Y });
+    expect(findTarget([inv], makeRoom('scroll_library'), sunDive, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+
+  it('voidPhaseUntil=0 (default, never set) in trap room → NOT skipped (10000 < 0 is false)', () => {
+    // Confirms that a fresh invader (voidPhaseUntil=0) is a valid target in a trap room
+    const inv = makeInvader({ x: 60, y: CENTER_Y }); // voidPhaseUntil defaults to 0
+    expect(findTarget([inv], makeRoom('trap'), null, ROOM_X, CENTER_Y, ROW_RANGE, NOW)).toBe(inv);
+  });
+});
