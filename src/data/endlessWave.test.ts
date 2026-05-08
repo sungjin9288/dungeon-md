@@ -543,3 +543,52 @@ describe('buildEndlessSpawnQueue — queue-length pins & HP formula spot-checks'
     expect(ab!.delay).toBe(1200);
   });
 });
+
+// ─── buildEndlessSpawnQueue — untested queue lengths & HP formula pins ────────
+
+describe('buildEndlessSpawnQueue — additional length pins & HP formulas', () => {
+  it('wave 9 total queue length = 6 (no milestone, baseCount = min(5+1,20) = 6)', () => {
+    // floor(9/5) = 1 → baseCount = 6; no milestone at wave 9
+    expect(buildEndlessSpawnQueue(9)).toHaveLength(6);
+  });
+
+  it('wave 50 total queue length = 16 (1 milestone + 15 fillers)', () => {
+    // baseCount = min(5 + floor(50/5), 20) = min(15, 20) = 15; +1 titan_sentinel
+    expect(buildEndlessSpawnQueue(50)).toHaveLength(16);
+  });
+
+  it('wave 60 total queue length = 19 (2 milestones + 17 fillers)', () => {
+    // baseCount = min(5 + floor(60/5), 20) = min(17, 20) = 17; +void_colossus + titan_sentinel
+    expect(buildEndlessSpawnQueue(60)).toHaveLength(19);
+  });
+
+  it('wave 70 total queue length = 21 (2 milestones + 19 fillers)', () => {
+    // baseCount = min(5 + floor(70/5), 20) = min(19, 20) = 19; +sky_titan + radiant_seraph
+    expect(buildEndlessSpawnQueue(70)).toHaveLength(21);
+  });
+
+  it('wave 50 titan_sentinel HP = round(base × 1.12^49 × 2)', () => {
+    const q    = buildEndlessSpawnQueue(50);
+    const boss = q.find(e => e.def.type === 'titan_sentinel' && e.def.isMiniBoss);
+    expect(boss).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['titan_sentinel'].hp * Math.pow(1.12, 49) * 2);
+    expect(boss!.def.hp).toBe(expected);
+  });
+
+  it('wave 90 primordial_guard HP = round(base × 1.12^89 × 3)', () => {
+    const q    = buildEndlessSpawnQueue(90);
+    const boss = q.find(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss);
+    expect(boss).toBeDefined();
+    const expected = Math.round(INVADER_DEFS['primordial_guard'].hp * Math.pow(1.12, 89) * 3);
+    expect(boss!.def.hp).toBe(expected);
+  });
+
+  it('wave 1 entries all have reward equal to their INVADER_DEFS base reward (no scaling)', () => {
+    // rwdMult at wave 1 = 1.08^0 = 1; Math.round(base * 1) = base
+    const q = buildEndlessSpawnQueue(1);
+    for (const entry of q) {
+      const base = INVADER_DEFS[entry.def.type as InvaderType].reward;
+      expect(entry.def.reward, `wave 1 ${entry.def.type} reward`).toBe(base);
+    }
+  });
+});
