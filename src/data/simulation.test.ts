@@ -478,3 +478,61 @@ describe('simulateDungeon — unknown invader type & multi-wave tracking', () =>
     expect(r.recommendation).toContain('클리어 가능');
   });
 });
+
+// ─── calcDungeonDps — two-in-slot, level=10, negative-hp & key structure ─────
+
+describe('calcDungeonDps — two monsters in same slot & level=10 pin', () => {
+  const makeOwned = (id: string, level: number) => ({
+    id, level, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null,
+  });
+
+  it('two dokkaebi_warriors in the same slot double the DPS', () => {
+    const single = makeSlot(['dokkaebi_warrior']);
+    const double = makeSlot(['dokkaebi_warrior', 'dokkaebi_warrior']);
+    const dps1 = calcDungeonDps([single], []);
+    const dps2 = calcDungeonDps([double], []);
+    expect(dps2).toBeCloseTo(dps1 * 2, 5);
+  });
+
+  it('level=10 monster contributes exactly 1.9× the DPS of level=1', () => {
+    // levelMult = 1 + (10-1) × 0.10 = 1.90
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const dpsLv1  = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 1)]);
+    const dpsLv10 = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 10)]);
+    expect(dpsLv10).toBeCloseTo(dpsLv1 * 1.9, 5);
+  });
+
+  it('slot with hp=-1 (negative) is skipped by the hp<=0 guard', () => {
+    const negHpSlot = makeSlot(['dokkaebi_warrior'], [], -1);
+    expect(calcDungeonDps([negHpSlot], [])).toBe(0);
+  });
+
+  it('SimResult has exactly 7 top-level keys', () => {
+    const r = simulateDungeon([], [], [], 100);
+    expect(Object.keys(r).sort()).toStrictEqual(
+      ['finalHp', 'recommendation', 'startHp', 'totalDps', 'waveResults', 'winPct', 'worstWave'],
+    );
+  });
+
+  it('WaveSimResult entries each have exactly 7 keys', () => {
+    const r = simulateDungeon([], [], [makeWave('peasant', 1)], 1000);
+    expect(Object.keys(r.waveResults[0]).sort()).toStrictEqual(
+      ['damageDealt', 'difficulty', 'hpLost', 'invaderCount', 'invaderHpSum', 'survived', 'waveNum'],
+    );
+  });
+
+  it('winPct=50 when finalHp equals exactly half of startHp', () => {
+    // 0 DPS, 2 peasants each dealing 50 damage → hpLost=100 from startHp=200 → finalHp=100 → winPct=50
+    const r = simulateDungeon([], [], [makeWave('peasant', 2)], 200);
+    expect(r.finalHp).toBe(100);
+    expect(r.winPct).toBe(50);
+  });
+
+  it('hpLost=0 in wave when DPS kills all invaders (no survivors to deal damage)', () => {
+    // dokkaebi_warrior DPS kills peasants → survived=0 → hpLost=0
+    const slot = makeSlot(['dokkaebi_warrior']);
+    const r = simulateDungeon([slot], [], [makeWave('peasant', 1)], 1000);
+    expect(r.waveResults[0].survived).toBe(0);
+    expect(r.waveResults[0].hpLost).toBe(0);
+  });
+});
