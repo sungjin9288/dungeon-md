@@ -369,3 +369,37 @@ describe('layout — INVADER_WAYPOINTS exact coordinates', () => {
     expect(INVADER_WAYPOINTS[5].x).toBeGreaterThan(INVADER_WAYPOINTS[6].x);
   });
 });
+
+// ─── layout — derived edge values & torch column symmetry ────────────────────
+
+describe('layout — derived edge values & torch column symmetry', () => {
+  it('GRID_X + GRID_WIDTH = 360 (right grid edge, exact)', () => {
+    expect(GRID_X + GRID_WIDTH).toBe(360);
+  });
+
+  it('GRID_Y + GRID_HEIGHT = 460 (bottom grid edge, exact)', () => {
+    expect(GRID_Y + GRID_HEIGHT).toBe(460);
+  });
+
+  it('FOG_START_Y = 684 (exact: 844 - 160)', () => {
+    expect(FOG_START_Y).toBe(684);
+  });
+
+  it('left-column torches (TL, BL) share the same x = GRID_X', () => {
+    expect(TORCH_POSITIONS[0].x).toBe(GRID_X);
+    expect(TORCH_POSITIONS[2].x).toBe(GRID_X);
+  });
+
+  it('right-column torches (TR, BR) share the same x = GRID_X + GRID_WIDTH', () => {
+    expect(TORCH_POSITIONS[1].x).toBe(GRID_X + GRID_WIDTH);
+    expect(TORCH_POSITIONS[3].x).toBe(GRID_X + GRID_WIDTH);
+  });
+
+  it('COLORS has exactly 16 named colour keys', () => {
+    expect(Object.keys(COLORS)).toHaveLength(16);
+  });
+
+  it('CSS has exactly 8 named CSS colour keys', () => {
+    expect(Object.keys(CSS)).toHaveLength(8);
+  });
+});
