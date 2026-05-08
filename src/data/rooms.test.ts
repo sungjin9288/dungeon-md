@@ -397,3 +397,38 @@ describe('ROOM_DEFS — cost and HP ordering', () => {
     expect(laterAvg).toBeGreaterThan(ch1Avg);
   });
 });
+
+// ─── out-of-range fallbacks & additional spot-checks ─────────────────────────
+
+describe('helper functions — out-of-range fallbacks & spot-checks', () => {
+  it('getScrollAuraBonus(4) returns 0 (out-of-range ?? 0 fallback)', () => {
+    expect(getScrollAuraBonus(4)).toBe(0);
+  });
+
+  it('getMedicineHealRate(4) returns 2 (out-of-range ?? 2 fallback)', () => {
+    expect(getMedicineHealRate(4)).toBe(2);
+  });
+
+  it('getArmoryDmgBonus(4) returns 0.25 (out-of-range ?? 0.25 fallback)', () => {
+    expect(getArmoryDmgBonus(4)).toBeCloseTo(0.25);
+  });
+
+  it('getAltarKillsNeeded(4) returns 10 (out-of-range ?? 10 fallback)', () => {
+    expect(getAltarKillsNeeded(4)).toBe(10);
+  });
+
+  it('getDragonsLairCooldown(4) returns 5000 (out-of-range ?? 5000 fallback)', () => {
+    expect(getDragonsLairCooldown(4)).toBe(5000);
+  });
+
+  it('getUpgradeCost trap_corridor uses explicit costs: Lv1=160, Lv2=320', () => {
+    expect(getUpgradeCost('trap_corridor', 1)).toBe(160);
+    expect(getUpgradeCost('trap_corridor', 2)).toBe(320);
+  });
+
+  it('getAttackDamage: trap Lv1=10, Lv3=round(10×1.96)=20; void_forge Lv1=260', () => {
+    expect(getAttackDamage('trap', 1)).toBe(10);
+    expect(getAttackDamage('trap', 3)).toBe(Math.round(10 * Math.pow(1.4, 2))); // 20
+    expect(getAttackDamage('void_forge', 1)).toBe(260);
+  });
+});
