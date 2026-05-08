@@ -438,3 +438,39 @@ describe('RARITY_CSS / RARITY_STARS — remaining index spot-checks', () => {
     }
   });
 });
+
+// ─── RARITY_POOLS — exact sizes, members & SUMMON_TYPE_DEFS order pins ────────
+
+describe('RARITY_POOLS — exact sizes, additional members & type-def order', () => {
+  it('common pool has exactly 4 entries', () => {
+    expect(RARITY_POOLS.common).toHaveLength(4);
+  });
+
+  it('uncommon pool has exactly 12 entries', () => {
+    expect(RARITY_POOLS.uncommon).toHaveLength(12);
+  });
+
+  it('legendary pool has exactly 6 entries', () => {
+    expect(RARITY_POOLS.legendary).toHaveLength(6);
+  });
+
+  it('dokkaebi_junior is in the common pool', () => {
+    expect(RARITY_POOLS.common).toContain('dokkaebi_junior');
+  });
+
+  it('banya_guardian is in the legendary pool', () => {
+    expect(RARITY_POOLS.legendary).toContain('banya_guardian');
+  });
+
+  it('SUMMON_TYPE_DEFS[2].id is soul and [3].id is friendship (order preserved)', () => {
+    expect(SUMMON_TYPE_DEFS[2].id).toBe('soul');
+    expect(SUMMON_TYPE_DEFS[3].id).toBe('friendship');
+  });
+
+  it('normal.pityRarity is "Epic" and special.pityRarity is "Legend"', () => {
+    const normal  = SUMMON_TYPE_DEFS.find(d => d.id === 'normal')!;
+    const special = SUMMON_TYPE_DEFS.find(d => d.id === 'special')!;
+    expect(normal.pityRarity).toBe('Epic');
+    expect(special.pityRarity).toBe('Legend');
+  });
+});
