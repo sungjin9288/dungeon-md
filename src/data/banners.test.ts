@@ -461,3 +461,45 @@ describe('SEASON_BANNERS — index pins, exact count & date spot-checks', () => 
     expect(b.endDate).toBe('2026-11-30');
   });
 });
+
+// ─── SEASON_BANNERS — late-index pins, soul-type & gap coverage ───────────────
+
+describe('SEASON_BANNERS — late-index pins, soul-type & date-gap coverage', () => {
+  it('SEASON_BANNERS[6].id is ch8_abyss_2027', () => {
+    expect(SEASON_BANNERS[6].id).toBe('ch8_abyss_2027');
+  });
+
+  it('SEASON_BANNERS[7].id is special_dragon_2026 (last entry)', () => {
+    expect(SEASON_BANNERS[7].id).toBe('special_dragon_2026');
+  });
+
+  it('ch8_abyss_2027 is the only banner whose validSummonTypes includes "soul"', () => {
+    const soulBanners = SEASON_BANNERS.filter(b => b.validSummonTypes.includes('soul'));
+    expect(soulBanners).toHaveLength(1);
+    expect(soulBanners[0].id).toBe('ch8_abyss_2027');
+  });
+
+  it('ch8_abyss_2027 startDate=2027-02-01 and endDate=2027-03-31', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'ch8_abyss_2027')!;
+    expect(b.startDate).toBe('2027-02-01');
+    expect(b.endDate).toBe('2027-03-31');
+  });
+
+  it('fall_underworld_2026 startDate is 2026-09-15 (starts mid-September)', () => {
+    const b = SEASON_BANNERS.find(b => b.id === 'fall_underworld_2026')!;
+    expect(b.startDate).toBe('2026-09-15');
+  });
+
+  it('getActiveBanner("2026-09-01") returns null (gap between summer and fall banners)', () => {
+    // summer_sea_2026 ends 2026-08-31; fall_underworld_2026 starts 2026-09-15
+    expect(getActiveBanner(new Date('2026-09-01'))).toBeNull();
+  });
+
+  it('exactly 2 banners have validSummonTypes of length 1 (winter_mountain and special_dragon)', () => {
+    const singleType = SEASON_BANNERS.filter(b => b.validSummonTypes.length === 1);
+    expect(singleType).toHaveLength(2);
+    const ids = singleType.map(b => b.id).sort();
+    expect(ids).toContain('winter_mountain_2026');
+    expect(ids).toContain('special_dragon_2026');
+  });
+});
