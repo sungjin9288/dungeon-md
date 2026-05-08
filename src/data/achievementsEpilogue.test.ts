@@ -431,3 +431,52 @@ describe('EPILOGUE_ACHIEVEMENT_DEFS — exact target, name, icon & boundary pins
     expect(get('fusion_50').icon).toBe('⚗️');
   });
 });
+
+// ─── EPILOGUE_ACHIEVEMENT_DEFS — boundary gaps & derived stats ────────────────
+
+describe('EPILOGUE_ACHIEVEMENT_DEFS — boundary gaps & derived stats', () => {
+  it('fusion_50 is NOT unlocked at 49 fusions (one below its own target)', () => {
+    const ctx    = makeCtx({ totalFusions: 49 });
+    const result = checkAchievements(ctx, {});
+    expect(result).not.toContain('fusion_50');
+  });
+
+  it('only fusion_30 unlocks at exactly 30 fusions — fusion_50 is NOT yet triggered', () => {
+    const ctx    = makeCtx({ totalFusions: 30 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('fusion_30');
+    expect(result).not.toContain('fusion_50'); // 30 < 50
+  });
+
+  it('dm_lv25 unlocks at level 25 but dm_lv30 does NOT (25 < 30)', () => {
+    const ctx    = makeCtx({ dmLevel: 25 });
+    const result = checkAchievements(ctx, {});
+    expect(result).toContain('dm_lv25');
+    expect(result).not.toContain('dm_lv30');
+  });
+
+  it('gold_1000000.getProgress at 0 (emptyCtx) returns 0', () => {
+    const def = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'gold_1000000')!;
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('dm_lv25 and dm_lv30 getProgress return the same value — both read dmLevel', () => {
+    const d25 = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'dm_lv25')!;
+    const d30 = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'dm_lv30')!;
+    const ctx = makeCtx({ dmLevel: 17 });
+    expect(d25.getProgress(ctx)).toBe(17);
+    expect(d30.getProgress(ctx)).toBe(17); // same source field
+  });
+
+  it('sum of all epilogue gem rewards is 780 (300+60+120+100+200)', () => {
+    const total = EPILOGUE_ACHIEVEMENT_DEFS.reduce((acc, d) => acc + (d.reward.gems ?? 0), 0);
+    expect(total).toBe(780);
+  });
+
+  it('fusion_30 and fusion_50 descriptions both contain "합성"', () => {
+    const f30 = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'fusion_30')!;
+    const f50 = EPILOGUE_ACHIEVEMENT_DEFS.find(d => d.id === 'fusion_50')!;
+    expect(f30.description).toContain('합성');
+    expect(f50.description).toContain('합성');
+  });
+});
