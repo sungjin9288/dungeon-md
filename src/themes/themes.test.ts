@@ -461,3 +461,46 @@ describe('ALL_THEMES — glowAlpha, particleTint, textSecondary & index pins', (
     expect(CELESTIAL_THEME.textSecondary).toBe('#7a8ecc');
   });
 });
+
+// ─── decoration coverage & additional spot-checks ────────────────────────────
+
+describe('ALL_THEMES — decoration coverage & remaining spot-checks', () => {
+  it('celestial_realm has exactly 3 decorations (crystals, torches, stalactites)', () => {
+    expect(CELESTIAL_THEME.decorations).toHaveLength(3);
+    expect(CELESTIAL_THEME.decorations).toContain('crystals');
+    expect(CELESTIAL_THEME.decorations).toContain('torches');
+    expect(CELESTIAL_THEME.decorations).toContain('stalactites');
+  });
+
+  it('torches decoration appears in lava_cave, void_throne, celestial — not in cave or ice_cave', () => {
+    expect(LAVA_CAVE_THEME.decorations).toContain('torches');
+    expect(VOID_THRONE_THEME.decorations).toContain('torches');
+    expect(CELESTIAL_THEME.decorations).toContain('torches');
+    expect(CAVE_THEME.decorations).not.toContain('torches');
+    expect(ICE_CAVE_THEME.decorations).not.toContain('torches');
+  });
+
+  it('celestial_realm textAccent is "#ffeebb"', () => {
+    expect(CELESTIAL_THEME.textAccent).toBe('#ffeebb');
+  });
+
+  it('no theme uses the "moss" decoration', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.decorations, `${t.id} should not use moss`).not.toContain('moss');
+    }
+  });
+
+  it('panelDark < slotFill for every theme (header bar is darker than empty slot bg)', () => {
+    for (const t of ALL_THEMES) {
+      expect(t.panelDark, `${t.id} panelDark < slotFill`).toBeLessThan(t.slotFill);
+    }
+  });
+
+  it('lava_cave textAccent is "#ff8844"', () => {
+    expect(LAVA_CAVE_THEME.textAccent).toBe('#ff8844');
+  });
+
+  it('cave particleTint exact values: [0x44aadd, 0x2288aa, 0x66ccee]', () => {
+    expect(CAVE_THEME.particleTint).toStrictEqual([0x44aadd, 0x2288aa, 0x66ccee]);
+  });
+});
