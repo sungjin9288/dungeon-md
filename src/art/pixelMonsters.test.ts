@@ -512,3 +512,37 @@ describe('getRarityPalette — L exact pins; tribe & silhouette fallback spot-ch
     expect(data.silhouette[17][5]).toBe(4);
   });
 });
+
+describe('TRIBE_PALETTES — count, shadow slots & additional exact pins', () => {
+  it('TRIBE_PALETTES has exactly 9 entries (one per tribe)', () => {
+    expect(Object.keys(TRIBE_PALETTES)).toHaveLength(9);
+  });
+
+  it('mask palette[2] = 0x804040 (dark red-brown primary)', () => {
+    expect(TRIBE_PALETTES['mask'][2]).toBe(0x804040);
+  });
+
+  it('underworld palette[2] = 0x6020a0 (dark purple primary)', () => {
+    expect(TRIBE_PALETTES['underworld'][2]).toBe(0x6020a0);
+  });
+
+  it('sansin palette[2] = 0x3a8a3a (forest green primary)', () => {
+    expect(TRIBE_PALETTES['sansin'][2]).toBe(0x3a8a3a);
+  });
+
+  it('celestial palette[5] (shadow) = 0x554400 (dark gold shadow)', () => {
+    expect(TRIBE_PALETTES['celestial'][5]).toBe(0x554400);
+  });
+
+  it('getRarityPalette with unknown rarity string returns base palette unchanged (shift ?? 0)', () => {
+    const BASE: Palette = [0x000000, 0x4a0000, 0xcc3300, 0xff6600, 0xffaa44, 0x220000];
+    expect(getRarityPalette(BASE, 'UNKNOWN')).toStrictEqual(BASE);
+  });
+
+  it('gumiho_guardian uses unique silhouette — row[1][8]=4 (fox ear, absent in base MELEE row[1])', () => {
+    // GUMIHO_GUARDIAN row[1] = row(0,8, 4,1, ...) → col 8 = 4
+    // MELEE_SILHOUETTE row[1] = row(0,24) → all zeros
+    const data = getMonsterSpriteData('gumiho_guardian', 'gumiho', 'melee');
+    expect(data.silhouette[1][8]).toBe(4);
+  });
+});
