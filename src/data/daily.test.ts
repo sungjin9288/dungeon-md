@@ -567,3 +567,59 @@ describe('getDailyDungeon — elementRestrict field', () => {
     expect(VALID_RULES).toContain(dungeon.rule);
   });
 });
+
+// ─── getDailyDungeon — wave invader group counts & boss flags ─────────────────
+
+describe('getDailyDungeon — wave invader grouping & clearReward formulas', () => {
+  const dungeon = getDailyDungeon();
+
+  it('waves 1–2 have exactly 1 invader group each (w < 3: no second group added)', () => {
+    for (const wv of dungeon.waves.filter(wv => (wv.wave ?? 0) <= 2)) {
+      expect(wv.invaders).toHaveLength(1);
+    }
+  });
+
+  it('waves 3–8 have exactly 2 invader groups each (w >= 3: second group pushed)', () => {
+    for (const wv of dungeon.waves.filter(wv => (wv.wave ?? 0) >= 3 && (wv.wave ?? 0) <= 8)) {
+      expect(wv.invaders).toHaveLength(2);
+    }
+  });
+
+  it('waves 1–8 have no invader with isBoss=true (boss only in waves 9–10)', () => {
+    for (const wv of dungeon.waves.filter(wv => (wv.wave ?? 0) <= 8)) {
+      for (const inv of wv.invaders) {
+        expect(inv.isBoss).not.toBe(true);
+      }
+    }
+  });
+
+  it('wave 9 clearReward: boss_rush → 350, others → 220', () => {
+    const wave9 = dungeon.waves.find(w => w.wave === 9)!;
+    const expected = dungeon.rule === 'boss_rush' ? 350 : 220;
+    expect(wave9.clearReward).toBe(expected);
+  });
+
+  it('wave 10 clearReward: boss_rush → 600, others → 450', () => {
+    const wave10 = dungeon.waves.find(w => w.wave === 10)!;
+    const expected = dungeon.rule === 'boss_rush' ? 600 : 450;
+    expect(wave10.clearReward).toBe(expected);
+  });
+
+  it('all 3 daily challenges include gems in their reward (every template grants gems)', () => {
+    for (const ch of getDailyChallenges()) {
+      expect(ch.reward.gems).toBeGreaterThan(0);
+    }
+  });
+
+  it('tickDailyChallenge with no amount arg defaults to 1 — progress increases by exactly 1', () => {
+    const [ch] = getDailyChallenges();
+    const gs1  = makeGs();
+    const gs2  = tickDailyChallenge(gs1, ch.objective.type);   // amount omitted
+    const gs3  = tickDailyChallenge(gs2, ch.objective.type);   // second tick
+    const p1   = gs2.dailyChallenges?.[ch.id]?.progress ?? 0;
+    const p2   = gs3.dailyChallenges?.[ch.id]?.progress ?? 0;
+    // Each tick increments by 1 unless already completed
+    expect(p1).toBe(Math.min(1, ch.objective.target));
+    expect(p2).toBe(Math.min(2, ch.objective.target));
+  });
+});
