@@ -469,3 +469,61 @@ describe('MAIN_QUESTS — reward pins, objective counts & collect_gold escalatio
     expect(threeObj[0].id).toBe('MQ-032');
   });
 });
+
+// ─── MAIN_QUESTS — all IDs unique ────────────────────────────────────────────
+
+describe('MAIN_QUESTS — all IDs unique', () => {
+  it('all 49 quest IDs are distinct (no duplicate entries)', () => {
+    const ids = MAIN_QUESTS.map(q => q.id);
+    expect(new Set(ids).size).toBe(49);
+  });
+});
+
+// ─── EQ epilogue chain — sequential links and reward spot-checks ──────────────
+
+describe('EQ epilogue chain — sequential links and reward spot-checks', () => {
+  const get = (id: string) => MAIN_QUESTS.find(q => q.id === id)!;
+
+  it('EQ-001 → EQ-002 → EQ-003 → EQ-004 → EQ-005 (sequential chain)', () => {
+    expect(get('EQ-001').nextQuestId).toBe('EQ-002');
+    expect(get('EQ-002').nextQuestId).toBe('EQ-003');
+    expect(get('EQ-003').nextQuestId).toBe('EQ-004');
+    expect(get('EQ-004').nextQuestId).toBe('EQ-005');
+  });
+
+  it('EQ-001 reward: gems=200, soulCrystals=600', () => {
+    const r = get('EQ-001').reward;
+    expect(r.gems).toBe(200);
+    expect(r.soulCrystals).toBe(600);
+  });
+
+  it('EQ-002 objectives: fuse_monsters target=15, reach_dm_level target=20', () => {
+    const objs = get('EQ-002').objectives;
+    expect(objs.find(o => o.type === 'fuse_monsters')!.target).toBe(15);
+    expect(objs.find(o => o.type === 'reach_dm_level')!.target).toBe(20);
+  });
+
+  it('EQ-003 reward unlocks "eternal_guardian_skin"', () => {
+    expect(get('EQ-003').reward.unlocks).toContain('eternal_guardian_skin');
+  });
+
+  it('EQ-004 objectives: fuse_monsters target=30, reach_dm_level target=25', () => {
+    const objs = get('EQ-004').objectives;
+    expect(objs.find(o => o.type === 'fuse_monsters')!.target).toBe(30);
+    expect(objs.find(o => o.type === 'reach_dm_level')!.target).toBe(25);
+  });
+
+  it('EQ-005 reward: gold=200000, gems=1000, unlocks "legend_title" and "master_aura_skin"', () => {
+    const r = get('EQ-005').reward;
+    expect(r.gold).toBe(200000);
+    expect(r.gems).toBe(1000);
+    expect(r.unlocks).toContain('legend_title');
+    expect(r.unlocks).toContain('master_aura_skin');
+  });
+
+  it('MQ-001 reward includes monsters field with "dokkaebi_warrior"', () => {
+    const r = get('MQ-001').reward;
+    expect(r.monsters).toBeDefined();
+    expect(r.monsters).toContain('dokkaebi_warrior');
+  });
+});
