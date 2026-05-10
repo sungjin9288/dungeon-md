@@ -383,6 +383,44 @@ describe('lighten — additional edge pins', () => {
   });
 });
 
+// ─── darken / lighten — mixed channel exact-value pins II ────────────────────
+
+describe('darken — mixed channel exact-value pins II', () => {
+  it('darken(0xaabbcc, 0.5) → 0x555d66 (R:floor(170×0.5)=85, G:floor(187×0.5)=93, B:floor(204×0.5)=102)', () => {
+    expect(darken(0xaabbcc, 0.5)).toBe(0x555d66);
+  });
+
+  it('darken(0x336699, 0.6) → 0x1e3d5b (R:floor(51×0.6)=30, G:floor(102×0.6)=61, B:floor(153×0.6)=91)', () => {
+    expect(darken(0x336699, 0.6)).toBe(0x1e3d5b);
+  });
+
+  it('darken(0x404040, 1.5) → 0x606060 (amount > 1 non-integer: floor(64×1.5)=96=0x60 per channel)', () => {
+    expect(darken(0x404040, 1.5)).toBe(0x606060);
+  });
+});
+
+describe('lighten — mixed channel exact-value pins II', () => {
+  it('lighten(0x0000ff, 40) → 0x2828ff (R/G add 40=0x28, B clamps at 255)', () => {
+    expect(lighten(0x0000ff, 40)).toBe(0x2828ff);
+  });
+
+  it('lighten(0xaabbcc, 30) → 0xc8d9ea (R:170+30=200, G:187+30=217, B:204+30=234)', () => {
+    expect(lighten(0xaabbcc, 30)).toBe(0xc8d9ea);
+  });
+});
+
+describe('computeLayout — r=100 exact co-ordinate pins', () => {
+  const l = computeLayout(100, 0xff4400);
+
+  it('hy = 78 (r=100: 100 − 100×0.22 = 78)', () => {
+    expect(l.hy).toBeCloseTo(78, 10);
+  });
+
+  it('by = 122 (hy=78, hr=42, gap=2: 78 + 42 + 100×0.02 = 122)', () => {
+    expect(l.by).toBeCloseTo(122, 10);
+  });
+});
+
 // ─── computeLayout — fill = black ────────────────────────────────────────────
 
 describe('computeLayout — fill=black (color=0x000000)', () => {
