@@ -8,6 +8,18 @@ import { loadGameState } from '../data/wisdom';
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
+export interface RoomLoadoutVisualOptions {
+  readonly roomTypeIcon: string;
+  readonly roomTypeName: string;
+  readonly accentColor: number;
+  readonly primaryMonsterEmoji?: string | null;
+  readonly monsterCount: number;
+  readonly monsterCapacity: number;
+  readonly equipmentCount: number;
+  readonly trapCount: number;
+  readonly trapCapacity: number;
+}
+
 export class Room extends Phaser.GameObjects.Container {
   state: RoomState;
   isSelected = false;
@@ -24,6 +36,8 @@ export class Room extends Phaser.GameObjects.Container {
   private levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   private roomTypeBadge?: Phaser.GameObjects.Text;
+  private slotLoadoutGfx?: Phaser.GameObjects.Graphics;
+  private slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
 
   private roomHpBar?: Phaser.GameObjects.Graphics;
   private roomHpValue = 0;
@@ -198,6 +212,193 @@ export class Room extends Phaser.GameObjects.Container {
     this.drawRoomHpBar();
   }
 
+  setInitialRoomLevel(level: number): void {
+    if (!this.roomData) return;
+    this.roomData.level = Phaser.Math.Clamp(Math.round(level), 1, 3);
+    this.drawLevelBadge();
+  }
+
+  setRoomHpSnapshot(hp: number, maxHp: number): void {
+    const safeMax = Math.max(1, Math.round(maxHp));
+    const safeHp  = Phaser.Math.Clamp(Math.round(hp), 0, safeMax);
+    this.roomHpMax   = safeMax;
+    this.roomHpValue = safeHp;
+    if (this.roomData) {
+      this.roomData.maxRoomHp = safeMax;
+      this.roomData.roomHp    = safeHp;
+      this.roomData.maxHp     = safeMax;
+      this.roomData.hp        = safeHp;
+    }
+    if (!this.roomHpBar) {
+      this.roomHpBar = this.scene.add.graphics();
+      this.add(this.roomHpBar);
+    }
+    this.drawRoomHpBar();
+  }
+
+  setDungeonSlotLoadoutVisual(options: RoomLoadoutVisualOptions): void {
+    this.clearDungeonSlotLoadoutVisual();
+    if (this.state !== 'occupied') return;
+
+    const s = this.cs;
+    const accent = options.accentColor;
+    const accentCSS = `#${accent.toString(16).padStart(6, '0')}`;
+    const g = this.scene.add.graphics();
+    this.slotLoadoutGfx = g;
+    this.add(g);
+
+    const chamberX = -s / 2 + 12;
+    const chamberY = -s / 2 + 25;
+    const chamberW = s - 24;
+    const chamberH = s - 54;
+    const floorY = chamberY + chamberH - 13;
+
+    g.fillStyle(0x03070c, 0.86);
+    g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
+    g.lineStyle(1, accent, 0.28);
+    g.strokeRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
+
+    g.fillStyle(0x122336, 0.52);
+    g.fillRoundedRect(chamberX + 5, chamberY + 5, chamberW - 10, chamberH * 0.42, 5);
+    g.fillStyle(accent, 0.08);
+    g.fillRect(chamberX + 7, chamberY + 7, chamberW - 14, Math.max(4, chamberH * 0.18));
+    g.lineStyle(1, 0xffffff, 0.08);
+    g.lineBetween(chamberX + 8, chamberY + 15, chamberX + chamberW - 8, chamberY + 15);
+
+    g.fillStyle(0x0b121a, 0.92);
+    g.fillPoints([
+      new Phaser.Geom.Point(chamberX + 7, floorY),
+      new Phaser.Geom.Point(chamberX + chamberW - 7, floorY),
+      new Phaser.Geom.Point(chamberX + chamberW - 3, chamberY + chamberH - 4),
+      new Phaser.Geom.Point(chamberX + 3, chamberY + chamberH - 4),
+    ], true);
+    g.lineStyle(1, accent, 0.18);
+    g.lineBetween(chamberX + 8, floorY, chamberX + chamberW - 8, floorY);
+    g.lineStyle(1, 0x000000, 0.28);
+    g.lineBetween(chamberX + 14, floorY + 5, chamberX + chamberW - 14, floorY + 5);
+
+    const hasGuardian = options.monsterCount > 0;
+    const centerY = chamberY + chamberH * 0.52;
+    g.fillStyle(0x000000, 0.42);
+    g.fillEllipse(0, floorY + 3, 36, 9);
+    g.fillStyle(hasGuardian ? accent : 0x27394c, hasGuardian ? 0.24 : 0.14);
+    g.fillEllipse(0, floorY + 1, 31, 7);
+    g.fillStyle(0x1a2430, 0.96);
+    g.fillRoundedRect(-16, centerY + 10, 32, 7, 4);
+    g.lineStyle(1, accent, hasGuardian ? 0.42 : 0.18);
+    g.strokeRoundedRect(-16, centerY + 10, 32, 7, 4);
+
+    if (options.equipmentCount > 0) {
+      g.lineStyle(2, 0xffd166, 0.34);
+      g.strokeCircle(0, centerY + 3, 18);
+      g.lineStyle(1, 0xfff0b0, 0.24);
+      g.strokeCircle(0, centerY + 3, 22);
+      g.fillStyle(0xffd166, 0.72);
+      g.fillCircle(-19, centerY - 6, 1.8);
+      g.fillCircle(19, centerY + 7, 1.6);
+      g.fillCircle(8, centerY - 17, 1.5);
+    }
+
+    const trapFixtures = Math.min(4, options.trapCount);
+    for (let i = 0; i < trapFixtures; i++) {
+      const fixtureX = chamberX + 10 + i * ((chamberW - 20) / Math.max(1, trapFixtures - 1));
+      g.fillStyle(0x4ee89a, 0.2);
+      g.fillCircle(fixtureX, floorY + 2, 5);
+      g.fillStyle(0x4ee89a, 0.78);
+      g.fillTriangle(fixtureX - 4, floorY + 5, fixtureX, floorY - 6, fixtureX + 4, floorY + 5);
+      g.lineStyle(1, 0xcaffde, 0.36);
+      g.lineBetween(fixtureX - 5, floorY + 5, fixtureX + 5, floorY + 5);
+    }
+
+    g.lineStyle(2, accent, 0.34);
+    g.strokeRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10);
+    g.fillStyle(accent, 0.22);
+    g.fillRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
+    g.lineStyle(1, 0xffffff, 0.16);
+    g.strokeRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
+
+    const title = this.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
+      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontSize: '8px',
+      color: '#fff4d6',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.slotLoadoutLabels.push(title);
+    this.add(title);
+
+    const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
+    const guardian = this.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
+      fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
+      fontSize: hasGuardian ? '25px' : '15px',
+      color: hasGuardian ? '#ffffff' : '#47647b',
+      stroke: '#05080c',
+      strokeThickness: hasGuardian ? 3 : 1,
+    }).setOrigin(0.5);
+    this.slotLoadoutLabels.push(guardian);
+    this.add(guardian);
+
+    if (options.monsterCount > 1) {
+      g.fillStyle(0xff8a45, 0.9);
+      g.fillRoundedRect(10, centerY - 17, 18, 11, 4);
+      g.lineStyle(1, 0xfff0cc, 0.45);
+      g.strokeRoundedRect(10, centerY - 17, 18, 11, 4);
+      const count = this.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
+        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontSize: '7px',
+        color: '#fff4d6',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.slotLoadoutLabels.push(count);
+      this.add(count);
+    }
+
+    const stripY = s / 2 - 26;
+    g.fillStyle(0x06131d, 0.78);
+    g.fillRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
+    g.lineStyle(1, accent, 0.28);
+    g.strokeRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
+
+    const drawPips = (startX: number, y: number, count: number, cap: number, fill: number): void => {
+      const safeCap = Math.max(1, Math.min(5, cap));
+      for (let i = 0; i < safeCap; i++) {
+        g.fillStyle(i < count ? fill : 0x132332, i < count ? 0.95 : 0.9);
+        g.fillCircle(startX + i * 6, y, 2.2);
+        g.lineStyle(0.6, i < count ? fill : accent, i < count ? 0.55 : 0.22);
+        g.strokeCircle(startX + i * 6, y, 2.2);
+      }
+    };
+
+    drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, 0xff8a45);
+    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, 0x4ee89a);
+
+    if (options.equipmentCount > 0) {
+      g.fillStyle(0xffd166, 0.2);
+      g.fillRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
+      g.lineStyle(1, 0xffd166, 0.5);
+      g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
+      const equipment = this.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
+        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontSize: '7px',
+        color: '#ffe6a3',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.slotLoadoutLabels.push(equipment);
+      this.add(equipment);
+    }
+
+    const loadoutLabel = options.equipmentCount > 0
+      ? `M${options.monsterCount}/${options.monsterCapacity} E${options.equipmentCount} T${options.trapCount}/${options.trapCapacity}`
+      : `M${options.monsterCount}/${options.monsterCapacity} T${options.trapCount}/${options.trapCapacity}`;
+    const loadout = this.scene.add.text(0, stripY + 7, loadoutLabel, {
+      fontFamily: 'monospace',
+      fontSize: '7px',
+      color: accentCSS,
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    this.slotLoadoutLabels.push(loadout);
+    this.add(loadout);
+  }
+
   addBonusHp(bonus: number): void {
     this.roomHpMax  += bonus;
     this.roomHpValue += bonus;
@@ -345,6 +546,7 @@ export class Room extends Phaser.GameObjects.Container {
 
   occupyWith(type: RoomType): void {
     const def = ROOM_DEFS[type];
+    this.clearDungeonSlotLoadoutVisual();
 
     // Remove candle
     this.candleTween?.stop();
@@ -500,6 +702,13 @@ export class Room extends Phaser.GameObjects.Container {
       -this.cs / 2 + 4, -this.cs / 2 + 2, icon, { fontSize: '11px' },
     ).setOrigin(0, 0).setAlpha(0.85);
     this.add(this.roomTypeBadge);
+  }
+
+  private clearDungeonSlotLoadoutVisual(): void {
+    this.slotLoadoutGfx?.destroy();
+    this.slotLoadoutGfx = undefined;
+    this.slotLoadoutLabels.forEach(label => label.destroy());
+    this.slotLoadoutLabels = [];
   }
 
   setBrokenState(): void {

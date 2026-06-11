@@ -15,7 +15,7 @@ import type { RoomData } from '../data/rooms';
 import type { EquipmentStats } from '../data/barracks';
 import { rollMaterialDrop, MATERIAL_DEFS, HYBRID_DEFS } from '../data/fusion';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { tickDailyChallenge } from '../data/daily';
+import { applyInvaderKillProgress } from '../data/progressionTransactions';
 import { CANVAS_WIDTH, GRID_Y, GRID_ROWS } from '../constants/layout';
 import { audioManager } from '../audio/AudioManager';
 import {
@@ -119,15 +119,9 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   spawnDeathParticles(scene, inv.x, inv.y);
 
   // ── Persistence & achievements ──────────────────────────────────────────────
-  const gs = loadGameState();
-  const updatedGs = {
-    ...gs,
-    totalKills:      (gs.totalKills      ?? 0) + 1,
-    totalGoldEarned: (gs.totalGoldEarned ?? 0) + inv.def.reward,
-    bossesKilled:    [...(gs.bossesKilled ?? []), inv.def.type],
-  };
-  saveGameState(tickDailyChallenge(updatedGs, 'kill_count'));
-  ctx.checkAchievementsAndToast(updatedGs);
+  const progressResult = applyInvaderKillProgress(loadGameState(), inv.def.type, goldReward);
+  saveGameState(progressResult.state);
+  ctx.checkAchievementsAndToast(progressResult.state);
 
   // ── Boss split (knight → 4 peasants) ───────────────────────────────────────
   if (inv.def.type === 'knight' && ctx.wave === ctx.maxWave && !ctx.isEndless && !inv.def.isMiniBoss) {

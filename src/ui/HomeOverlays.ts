@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { COLORS, CSS } from '../constants/colors';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
 import { getUnlockedSlots } from '../data/wisdom';
@@ -12,6 +13,41 @@ import { showAudioSettings } from './AudioSettingsPanel';
 import { openQuestLog, type QuestLogState } from './QuestLogPanel';
 import { openPrestigeModal, buildPrestigeBadge } from './PrestigeModal';
 import { openSimulationModal } from './SimulationModal';
+import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
+
+const OVERLAY_FILL = 0x0e0903;
+const OVERLAY_ROW_FILL = 0x120c05;
+const VICTORY_GREEN = 0x28c76f;
+const VICTORY_GREEN_DARK = 0x0b3519;
+const VICTORY_TEXT = '#80ffad';
+const DEFEAT_RED = 0xcc3322;
+const DEFEAT_RED_DARK = 0x33100c;
+const DEFEAT_TEXT = '#ff7a62';
+
+interface BattleReturnGrowthContext {
+  readonly previousDmLevel: number;
+  readonly nextDmLevel: number;
+  readonly previousSlots: number;
+  readonly nextSlots: number;
+  readonly questCompletionPending?: boolean;
+  readonly materialsEarned?: Record<string, number>;
+}
+
+interface BattleReturnGrowthSummary {
+  readonly icon: string;
+  readonly label: string;
+  readonly value: string;
+  readonly valueColor: string;
+  readonly fillColor: number;
+  readonly borderColor: number;
+  readonly note: string;
+  readonly buttonLabel: string;
+}
+
+interface DmLevelUpOverlayOptions {
+  readonly primaryLabel?: string;
+  readonly onDismiss?: () => void;
+}
 
 // ─── DM Title data ────────────────────────────────────────────────────────────
 // Maps unlockedFeatures key → display label + color.
@@ -31,6 +67,11 @@ const DM_TITLE_PRIORITY = ['abyss_title', 'heaven_title', 'volcano_title'] as co
 export interface TopBarRefs {
   /** Gold / crystal / gem text nodes — used by checkBattleReturn to animate. */
   currencyTexts: Phaser.GameObjects.Text[];
+  /** DM level and XP refs — updated when battle rewards settle on the home scene. */
+  dmLevelText: Phaser.GameObjects.Text;
+  xpText: Phaser.GameObjects.Text;
+  xpFill: Phaser.GameObjects.Graphics;
+  xpFillBounds: { x: number; y: number; w: number; h: number; radius: number; color: number };
 }
 
 /**
@@ -90,7 +131,7 @@ export function buildTopBar(
   const nameLineY = earnedTitleKey ? 8 : 12;
   const xpBarX = 66, xpBarY = earnedTitleKey ? 38 : 30, xpBarW = 150, xpBarH = 8;
 
-  scene.add.text(66, nameLineY, `던전 마스터  Lv.${gs.dmLevel}`, {
+  const dmLevelText = scene.add.text(66, nameLineY, `던전 마스터  Lv.${gs.dmLevel}`, {
     fontFamily: 'Georgia, serif', fontSize: '13px',
     color: t.panelBorderCSS, fontStyle: 'bold',
   }).setDepth(6);
@@ -104,13 +145,14 @@ export function buildTopBar(
   const xpPct  = Math.min(gs.dmXP / xpForLevel(gs.dmLevel), 1);
   g.fillStyle(t.stoneDark, 1);
   g.fillRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 3);
+  const xpFill = scene.add.graphics().setDepth(5.5);
   if (xpPct > 0) {
-    g.fillStyle(t.panelBorder, 1);
-    g.fillRoundedRect(xpBarX, xpBarY, Math.floor(xpBarW * xpPct), xpBarH, 3);
+    xpFill.fillStyle(t.panelBorder, 1);
+    xpFill.fillRoundedRect(xpBarX + 1, xpBarY + 1, Math.floor((xpBarW - 2) * xpPct), xpBarH - 2, 2);
   }
   g.lineStyle(1, t.stoneMid, 0.7);
   g.strokeRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 3);
-  scene.add.text(xpBarX + xpBarW / 2, xpBarY + 4, `${gs.dmXP} / ${xpForLevel(gs.dmLevel)} XP`, {
+  const xpText = scene.add.text(xpBarX + xpBarW / 2, xpBarY + 4, `${gs.dmXP} / ${xpForLevel(gs.dmLevel)} XP`, {
     fontFamily: 'sans-serif', fontSize: '8px', color: t.textSecondary,
   }).setOrigin(0.5).setDepth(6);
 
@@ -182,7 +224,20 @@ export function buildTopBar(
     currencyTexts.push(valT);
   }
 
-  return { currencyTexts };
+  return {
+    currencyTexts,
+    dmLevelText,
+    xpText,
+    xpFill,
+    xpFillBounds: {
+      x: xpBarX + 1,
+      y: xpBarY + 1,
+      w: xpBarW - 2,
+      h: xpBarH - 2,
+      radius: 2,
+      color: t.panelBorder,
+    },
+  };
 }
 
 // ─── Header torch ─────────────────────────────────────────────────────────────
@@ -297,7 +352,7 @@ export function buildStatsBar(
   const stats = [
     { icon: '💀', val: (gs.totalKills        ?? 0).toLocaleString('ko-KR'), label: '처치'    },
     { icon: '💰', val: (gs.totalGoldEarned   ?? 0).toLocaleString('ko-KR'), label: '황금'    },
-    { icon: '🗺', val: `${clearedStages}/62`,                                label: '스테이지' },
+    { icon: '🗺', val: `${clearedStages}/${gs.stageProgress.length}`,         label: '스테이지' },
   ];
 
   const colW = CANVAS_WIDTH / stats.length;
@@ -320,48 +375,166 @@ export function showBattleReturnOverlay(
   scene: Phaser.Scene,
   result: { goldEarned: number; dmXP: number },
   onDismiss: () => void,
+  growth?: BattleReturnGrowthContext,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
-  const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.72);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.add(dim);
+  c.add(buildOverlayDim(scene, 0x000000, 0.74));
 
-  const PW = 300, PH = 220;
+  const growthSummary = buildBattleReturnGrowthSummary(growth);
+  const PW = 310, PH = 268;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
-  const pg = scene.add.graphics();
-  pg.fillStyle(0x081a0a, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 8);
-  pg.lineStyle(2, 0x22bb55, 0.9);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 8);
-  c.add(pg);
+  const panel = addFramedPanel(scene, {
+    x: PX,
+    y: PY,
+    w: PW,
+    h: PH,
+    radius: 12,
+    fillColor: OVERLAY_FILL,
+    borderColor: VICTORY_GREEN,
+    borderAlpha: 0.94,
+    borderWidth: 2,
+    accentColor: VICTORY_GREEN,
+    accentAlpha: 0.85,
+    glowColor: VICTORY_GREEN,
+    glowOpacity: 0.12,
+    shadowOpacity: 0.62,
+    shadowOffsetY: 5,
+  });
+  addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '침략 격퇴! ✓', {
-    fontFamily: 'Georgia, serif', fontSize: '21px', color: '#44ff88', fontStyle: 'bold',
+    fontFamily: 'Georgia, serif', fontSize: '21px', color: VICTORY_TEXT, fontStyle: 'bold',
   }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 56, '────────────────────', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#1a4a2a',
+
+  addToContainer(c, ...Object.values(addInfoRow(scene, {
+    x: PX + 24,
+    y: PY + 64,
+    w: PW - 48,
+    h: 28,
+    icon: '💰',
+    label: '전리품 골드',
+    value: `+${result.goldEarned.toLocaleString('ko-KR')}`,
+    valueColor: VICTORY_TEXT,
+    fillColor: OVERLAY_ROW_FILL,
+    borderColor: VICTORY_GREEN_DARK,
+  })));
+  addToContainer(c, ...Object.values(addInfoRow(scene, {
+    x: PX + 24,
+    y: PY + 100,
+    w: PW - 48,
+    h: 28,
+    icon: '✦',
+    label: '던전 마스터 XP',
+    value: `+${result.dmXP.toLocaleString('ko-KR')}`,
+    valueColor: VICTORY_TEXT,
+    fillColor: OVERLAY_ROW_FILL,
+    borderColor: VICTORY_GREEN_DARK,
+  })));
+  addToContainer(c, ...Object.values(addInfoRow(scene, {
+    x: PX + 24,
+    y: PY + 136,
+    w: PW - 48,
+    h: 32,
+    icon: growthSummary.icon,
+    label: growthSummary.label,
+    value: growthSummary.value,
+    valueColor: growthSummary.valueColor,
+    fillColor: growthSummary.fillColor,
+    borderColor: growthSummary.borderColor,
+  })));
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 188, growthSummary.note, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
   }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 76, [
-    `💰  +${result.goldEarned} 골드`,
-    `✨  +${result.dmXP} 던전 마스터 XP`,
-  ].join('\n'), {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8f0c8',
-    align: 'center', lineSpacing: 8,
-  }).setOrigin(0.5, 0));
 
-  const btn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 38, '확인', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: '#44ff88', fontStyle: 'bold',
-    backgroundColor: '#0a2a0a', padding: { x: 32, y: 10 },
-  }).setOrigin(0.5).setInteractive();
-  btn.on('pointerdown', () => { c.destroy(true); onDismiss(); });
-  c.add(btn);
-
-  c.setAlpha(0).setScale(0.88);
-  scene.tweens.add({
-    targets: c, alpha: 1, scaleX: 1, scaleY: 1,
-    duration: 220, ease: 'Back.easeOut',
+  addOverlayButton(scene, c, {
+    x: PX + 44,
+    y: PY + PH - 58,
+    w: PW - 88,
+    label: growthSummary.buttonLabel,
+    fillColor: VICTORY_GREEN_DARK,
+    hoverFillColor: 0x105027,
+    borderColor: VICTORY_GREEN,
+    textColor: VICTORY_TEXT,
+    onPress: () => {
+      c.destroy(true);
+      onDismiss();
+    },
   });
+
+  animateOverlayIn(scene, c);
+}
+
+function buildBattleReturnGrowthSummary(
+  growth?: BattleReturnGrowthContext,
+): BattleReturnGrowthSummary {
+  const materialCount = Object.values(growth?.materialsEarned ?? {})
+    .reduce((sum, qty) => sum + Math.max(0, qty), 0);
+  const leveledUp = !!growth && growth.nextDmLevel > growth.previousDmLevel;
+  const slotUnlocked = !!growth && growth.nextSlots > growth.previousSlots;
+
+  if (slotUnlocked && growth) {
+    return {
+      icon: '🏰',
+      label: '던전 확장',
+      value: `${growth.previousSlots} → ${growth.nextSlots} 방`,
+      valueColor: '#88ffcc',
+      fillColor: 0x082018,
+      borderColor: 0x1e7a58,
+      note: '새 방을 설계해 침입 동선을 더 길게 만들 수 있습니다',
+      buttonLabel: '방 확장 확인',
+    };
+  }
+
+  if (leveledUp && growth) {
+    return {
+      icon: '✦',
+      label: '마스터 성장',
+      value: `Lv.${growth.previousDmLevel} → ${growth.nextDmLevel}`,
+      valueColor: CSS.TORCH_AMBER,
+      fillColor: 0x1f1605,
+      borderColor: COLORS.TORCH_GOLD,
+      note: '레벨 보상이 다음 방어 준비에 반영됩니다',
+      buttonLabel: '성장 확인',
+    };
+  }
+
+  if (materialCount > 0) {
+    return {
+      icon: '⚒',
+      label: '제작 재료',
+      value: `+${materialCount.toLocaleString('ko-KR')}`,
+      valueColor: '#9be7ff',
+      fillColor: 0x061721,
+      borderColor: 0x1f6f8f,
+      note: '공방에서 수호자 장비를 제작하거나 강화하세요',
+      buttonLabel: '공방 준비',
+    };
+  }
+
+  if (growth?.questCompletionPending) {
+    return {
+      icon: '📜',
+      label: '퀘스트 완료',
+      value: '보상 대기',
+      valueColor: CSS.TORCH_AMBER,
+      fillColor: 0x1f1605,
+      borderColor: COLORS.TORCH_GOLD,
+      note: '확인 후 메인 퀘스트 보상과 해금이 이어집니다',
+      buttonLabel: '퀘스트 보상 확인',
+    };
+  }
+
+  return {
+    icon: '▣',
+    label: '던전 성장',
+    value: '재정비 가능',
+    valueColor: VICTORY_TEXT,
+    fillColor: OVERLAY_ROW_FILL,
+    borderColor: VICTORY_GREEN_DARK,
+    note: '보상이 즉시 저장되었습니다. 방 배치와 장비를 보강하세요',
+    buttonLabel: '던전 성장 확인',
+  };
 }
 
 // ─── DM level-up overlay ──────────────────────────────────────────────────────
@@ -369,66 +542,78 @@ export function showBattleReturnOverlay(
 export function showDmLevelUpOverlay(
   scene: Phaser.Scene,
   newLevel: number,
+  options: DmLevelUpOverlayOptions = {},
 ): void {
   const newSlots  = getUnlockedSlots(newLevel);
   const prevSlots = getUnlockedSlots(newLevel - 1);
   const slotUnlocked = newSlots > prevSlots;
 
   const c = scene.add.container(0, 0).setDepth(75);
-  const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.78);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.add(dim);
+  c.add(buildOverlayDim(scene, 0x000000, 0.78));
 
-  const PW = 280, PH = 210;
+  const PW = 304, PH = 222;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
-  const pg = scene.add.graphics();
-  pg.fillStyle(0x1a1000, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 10);
-  pg.lineStyle(2.5, 0xffcc44, 1);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 10);
-  pg.lineStyle(1, 0xffdd88, 0.3);
-  pg.strokeRoundedRect(PX + 4, PY + 4, PW - 8, PH - 8, 8);
-  c.add(pg);
+  const panel = addFramedPanel(scene, {
+    x: PX,
+    y: PY,
+    w: PW,
+    h: PH,
+    radius: 12,
+    fillColor: OVERLAY_FILL,
+    borderColor: COLORS.TORCH_GOLD,
+    borderAlpha: 1,
+    borderWidth: 2.5,
+    accentColor: COLORS.TORCH_AMBER,
+    accentAlpha: 0.9,
+    glowColor: COLORS.TORCH_AMBER,
+    glowOpacity: 0.14,
+    shadowOpacity: 0.62,
+    shadowOffsetY: 5,
+  });
+  addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 26, '✨ LEVEL UP! ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: '#ffcc44', letterSpacing: 3,
+    fontFamily: 'Georgia, serif', fontSize: '15px', color: CSS.TORCH_GOLD, letterSpacing: 3,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 60, `던전 마스터 Lv.${newLevel}`, {
-    fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: '#ffee88',
+    fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: CSS.PARCHMENT,
   }).setOrigin(0.5));
 
-  if (slotUnlocked) {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 100, `🏰 방 슬롯 해금!  ${prevSlots} → ${newSlots}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#88ffcc',
-      backgroundColor: '#002a1a', padding: { x: 8, y: 4 },
-    }).setOrigin(0.5));
-  } else {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 100, '전투력이 강화되었습니다', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#c8d880',
-    }).setOrigin(0.5));
-  }
-
-  const btn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 36, '확인', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffcc44',
-    backgroundColor: '#2a1a00', padding: { x: 32, y: 9 },
-  }).setOrigin(0.5).setInteractive();
-  btn.on('pointerdown', () => {
-    scene.tweens.add({
-      targets: c, alpha: 0, duration: 200, onComplete: () => c.destroy(true),
-    });
+  const row = addInfoRow(scene, {
+    x: PX + 24,
+    y: PY + 96,
+    w: PW - 48,
+    h: 30,
+    icon: slotUnlocked ? '🏰' : '⚔',
+    label: slotUnlocked ? '방 슬롯 해금' : '전투력 강화',
+    value: slotUnlocked ? `${prevSlots} → ${newSlots}` : '적용 완료',
+    valueColor: slotUnlocked ? '#88ffcc' : CSS.TORCH_AMBER,
+    fillColor: slotUnlocked ? 0x082018 : OVERLAY_ROW_FILL,
+    borderColor: slotUnlocked ? 0x1e7a58 : COLORS.STONE_MID,
   });
-  c.add(btn);
+  addToContainer(c, ...Object.values(row));
 
-  c.setAlpha(0).setScale(0.82);
-  scene.tweens.add({
-    targets: c, alpha: 1, scaleX: 1, scaleY: 1,
-    duration: 280, ease: 'Back.easeOut',
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 148, '다음 방어 준비에 즉시 반영됩니다', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+  }).setOrigin(0.5));
+
+  addOverlayButton(scene, c, {
+    x: PX + 52,
+    y: PY + PH - 58,
+    w: PW - 104,
+    label: options.primaryLabel ?? '확인',
+    fillColor: 0x2a1a00,
+    hoverFillColor: 0x3a2608,
+    borderColor: COLORS.TORCH_GOLD,
+    textColor: CSS.TORCH_GOLD,
+    onPress: () => dismissOverlay(scene, c, options.onDismiss),
   });
+
+  animateOverlayIn(scene, c, 0.82, 280);
 
   scene.time.delayedCall(4000, () => {
     if (c.active) {
-      scene.tweens.add({ targets: c, alpha: 0, duration: 200, onComplete: () => c.destroy(true) });
+      dismissOverlay(scene, c, options.onDismiss);
     }
   });
 }
@@ -440,40 +625,68 @@ export function showBattleDefeatOverlay(
   onRetry: () => void,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
-  const dim = scene.add.graphics();
-  dim.fillStyle(0x1a0000, 0.8);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.add(dim);
+  c.add(buildOverlayDim(scene, 0x1a0000, 0.82));
 
-  const PW = 300, PH = 200;
+  const PW = 310, PH = 208;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
-  const pg = scene.add.graphics();
-  pg.fillStyle(0x1a0500, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 8);
-  pg.lineStyle(2, 0xaa2222, 0.9);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 8);
-  c.add(pg);
+  const panel = addFramedPanel(scene, {
+    x: PX,
+    y: PY,
+    w: PW,
+    h: PH,
+    radius: 12,
+    fillColor: OVERLAY_FILL,
+    borderColor: DEFEAT_RED,
+    borderAlpha: 0.94,
+    borderWidth: 2,
+    accentColor: DEFEAT_RED,
+    accentAlpha: 0.88,
+    glowColor: DEFEAT_RED,
+    glowOpacity: 0.12,
+    shadowOpacity: 0.64,
+    shadowOffsetY: 5,
+  });
+  addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '던전 함락...', {
-    fontFamily: 'Georgia, serif', fontSize: '20px', color: '#ff4444', fontStyle: 'bold',
-  }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 66, '수호자들이 물러났습니다.\n다시 방어를 준비하세요.', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c8a0a0',
-    align: 'center', lineSpacing: 6,
+    fontFamily: 'Georgia, serif', fontSize: '20px', color: DEFEAT_TEXT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
-  const btn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 38, '다시 준비하기', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ff6644',
-    backgroundColor: '#2a0000', padding: { x: 24, y: 9 },
-  }).setOrigin(0.5).setInteractive();
-  btn.on('pointerdown', () => { c.destroy(true); onRetry(); });
-  c.add(btn);
-
-  c.setAlpha(0).setScale(0.88);
-  scene.tweens.add({
-    targets: c, alpha: 1, scaleX: 1, scaleY: 1,
-    duration: 220, ease: 'Back.easeOut',
+  const row = addInfoRow(scene, {
+    x: PX + 24,
+    y: PY + 64,
+    w: PW - 48,
+    h: 34,
+    icon: '🛡',
+    label: '방어 실패',
+    value: '재정비 필요',
+    valueColor: DEFEAT_TEXT,
+    fillColor: DEFEAT_RED_DARK,
+    borderColor: DEFEAT_RED,
   });
+  addToContainer(c, ...Object.values(row));
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 122, '수호자들이 물러났습니다.\n다시 방어를 준비하세요.', {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_DIM,
+    align: 'center', lineSpacing: 5,
+  }).setOrigin(0.5));
+
+  addOverlayButton(scene, c, {
+    x: PX + 42,
+    y: PY + PH - 58,
+    w: PW - 84,
+    label: '다시 준비하기',
+    fillColor: DEFEAT_RED_DARK,
+    hoverFillColor: 0x4a1710,
+    borderColor: DEFEAT_RED,
+    textColor: DEFEAT_TEXT,
+    onPress: () => {
+      c.destroy(true);
+      onRetry();
+    },
+  });
+
+  animateOverlayIn(scene, c);
 }
 
 // ─── Chapter-complete overlay ─────────────────────────────────────────────────
@@ -482,52 +695,162 @@ export function showChapterCompleteOverlay(
   scene: Phaser.Scene,
 ): void {
   const c = scene.add.container(0, 0).setDepth(90);
-  const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.85);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.add(dim);
+  c.add(buildOverlayDim(scene, 0x000000, 0.85));
 
   const PW = 340, PH = 280;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
-  const pg = scene.add.graphics();
-  pg.fillStyle(0x100800, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 10);
-  pg.lineStyle(2.5, 0xc8921a, 1);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 10);
-  c.add(pg);
+  const panel = addFramedPanel(scene, {
+    x: PX,
+    y: PY,
+    w: PW,
+    h: PH,
+    radius: 12,
+    fillColor: OVERLAY_FILL,
+    borderColor: COLORS.TORCH_GOLD,
+    borderAlpha: 1,
+    borderWidth: 2.5,
+    accentColor: COLORS.TORCH_AMBER,
+    accentAlpha: 0.9,
+    glowColor: COLORS.TORCH_AMBER,
+    glowOpacity: 0.13,
+    shadowOpacity: 0.64,
+    shadowOffsetY: 5,
+  });
+  addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 30, '✨  Chapter 1  ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8921a',
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_GOLD,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 58, '메인 퀘스트 완료!', {
-    fontFamily: 'Georgia, serif', fontSize: '24px', color: '#f0e6c8', fontStyle: 'bold',
+    fontFamily: 'Georgia, serif', fontSize: '24px', color: CSS.PARCHMENT, fontStyle: 'bold',
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 96, '던전이 더욱 강해졌다.\n연구소가 개방되었습니다.', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#c8b090',
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
     align: 'center', lineSpacing: 6,
   }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 148, '─────────────────────', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#3a2810',
-  }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 170, '"구미호 계곡에서 이상한 소식이..."', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#806040', fontStyle: 'italic',
-  }).setOrigin(0.5));
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 192, '— Chapter 2 티저 —', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#4a3020',
-  }).setOrigin(0.5));
 
-  const btn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 38, '확인', {
-    fontFamily: 'Georgia, serif', fontSize: '16px', color: '#c8921a', fontStyle: 'bold',
-    backgroundColor: '#1a0f00', padding: { x: 36, y: 12 },
-  }).setOrigin(0.5).setInteractive();
-  btn.on('pointerdown', () => { c.destroy(true); scene.scene.restart(); });
-  c.add(btn);
-
-  c.setScale(0.85).setAlpha(0);
-  scene.tweens.add({
-    targets: c, scaleX: 1, scaleY: 1, alpha: 1,
-    duration: 300, ease: 'Back.easeOut',
+  const unlockRow = addInfoRow(scene, {
+    x: PX + 32,
+    y: PY + 130,
+    w: PW - 64,
+    h: 30,
+    icon: '🔓',
+    label: '신규 시설',
+    value: '연구소 개방',
+    valueColor: CSS.TORCH_AMBER,
+    fillColor: OVERLAY_ROW_FILL,
+    borderColor: COLORS.STONE_MID,
   });
+  addToContainer(c, ...Object.values(unlockRow));
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 182, '"구미호 계곡에서 이상한 소식이..."', {
+    fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED, fontStyle: 'italic',
+  }).setOrigin(0.5));
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 204, 'Chapter 2 티저', {
+    fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+  }).setOrigin(0.5));
+
+  addOverlayButton(scene, c, {
+    x: PX + 56,
+    y: PY + PH - 60,
+    w: PW - 112,
+    label: '확인',
+    fillColor: 0x1a0f00,
+    hoverFillColor: 0x2a1a00,
+    borderColor: COLORS.TORCH_GOLD,
+    textColor: CSS.TORCH_GOLD,
+    onPress: () => {
+      c.destroy(true);
+      scene.scene.restart();
+    },
+  });
+
+  animateOverlayIn(scene, c, 0.85, 300);
+}
+
+function buildOverlayDim(
+  scene: Phaser.Scene,
+  fillColor: number,
+  alpha: number,
+): Phaser.GameObjects.Graphics {
+  const dim = scene.add.graphics();
+  dim.fillStyle(fillColor, alpha);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  return dim;
+}
+
+function addOverlayButton(
+  scene: Phaser.Scene,
+  container: Phaser.GameObjects.Container,
+  options: {
+    readonly x: number;
+    readonly y: number;
+    readonly w: number;
+    readonly label: string;
+    readonly fillColor: number;
+    readonly hoverFillColor: number;
+    readonly borderColor: number;
+    readonly textColor: string;
+    readonly onPress: () => void;
+  },
+): void {
+  const button = addPrimaryActionButton(scene, {
+    x: options.x,
+    y: options.y,
+    w: options.w,
+    h: 44,
+    label: options.label,
+    fontSize: '15px',
+    fillColor: options.fillColor,
+    hoverFillColor: options.hoverFillColor,
+    borderColor: options.borderColor,
+    hoverBorderColor: COLORS.TORCH_AMBER,
+    textColor: options.textColor,
+    onPress: options.onPress,
+  });
+  addToContainer(container, button.bg, button.text, button.zone);
+}
+
+function animateOverlayIn(
+  scene: Phaser.Scene,
+  container: Phaser.GameObjects.Container,
+  fromScale = 0.88,
+  duration = 220,
+): void {
+  container.setAlpha(0).setScale(fromScale);
+  scene.tweens.add({
+    targets: container,
+    alpha: 1,
+    scaleX: 1,
+    scaleY: 1,
+    duration,
+    ease: 'Back.easeOut',
+  });
+}
+
+function dismissOverlay(
+  scene: Phaser.Scene,
+  container: Phaser.GameObjects.Container,
+  onDismiss?: () => void,
+): void {
+  if (!container.active) return;
+  container.setActive(false);
+  scene.tweens.add({
+    targets: container,
+    alpha: 0,
+    duration: 200,
+    onComplete: () => {
+      container.destroy(true);
+      onDismiss?.();
+    },
+  });
+}
+
+function addToContainer(
+  container: Phaser.GameObjects.Container,
+  ...objects: Phaser.GameObjects.GameObject[]
+): void {
+  objects.forEach(obj => container.add(obj));
 }
 
 // openSimulationModal is used in buildDungeonGrid — re-export for convenience

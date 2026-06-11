@@ -109,6 +109,15 @@ export const STAGE_CONFIGS = [
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
 const SAVE_KEY = 'dungeonStageProgress';
+const CHAPTER_GATE_UNLOCKS: Record<number, number> = {
+  9:  10,
+  19: 20,
+  31: 32,
+  41: 42,
+  51: 52,
+  61: 62,
+  71: 72,
+};
 
 export function loadProgress(): StageProgress[] {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -134,30 +143,39 @@ export function saveProgress(progress: StageProgress[]): void {
   localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
 }
 
+export function applyStageClear(
+  progress: StageProgress[],
+  stageIndex: number,
+  stars: number,
+  hpPercent?: number,
+): StageProgress[] {
+  if (!progress[stageIndex]) return progress;
+
+  const unlockIndices = new Set<number>();
+  if (stageIndex + 1 < TOTAL_STAGES) unlockIndices.add(stageIndex + 1);
+  const gateUnlock = CHAPTER_GATE_UNLOCKS[stageIndex];
+  if (gateUnlock !== undefined && gateUnlock < TOTAL_STAGES) unlockIndices.add(gateUnlock);
+
+  return progress.map((entry, i) => {
+    if (!entry) return entry;
+    if (i === stageIndex) {
+      return {
+        ...entry,
+        bestStars: Math.max(entry.bestStars, stars),
+        ...(hpPercent !== undefined
+          ? { bestHpPercent: Math.max(entry.bestHpPercent ?? 0, hpPercent) }
+          : {}),
+      };
+    }
+    if (unlockIndices.has(i)) return { ...entry, unlocked: true };
+    return entry;
+  });
+}
+
 /** Call after clearing a stage to unlock the next one and record stars + HP%. */
 export function recordClear(stageIndex: number, stars: number, hpPercent?: number): StageProgress[] {
   const prog = loadProgress();
-  if (!prog[stageIndex]) return prog;
-  prog[stageIndex].bestStars = Math.max(prog[stageIndex].bestStars, stars);
-  if (hpPercent !== undefined) {
-    prog[stageIndex].bestHpPercent = Math.max(prog[stageIndex].bestHpPercent ?? 0, hpPercent);
-  }
-  // Unlock next stage
-  if (stageIndex + 1 < TOTAL_STAGES) prog[stageIndex + 1].unlocked = true;
-  // Clearing Stage 10 (index 9) also unlocks Stage 11 (index 10) — Ch2 gate
-  if (stageIndex === 9 && prog[10]) prog[10].unlocked = true;
-  // Clearing Stage 20 (index 19) also unlocks Stage 21 (index 20) — Ch3 gate
-  if (stageIndex === 19 && prog[20]) prog[20].unlocked = true;
-  // Clearing Stage 32 (index 31) also unlocks Stage 33 (index 32) — Ch4 gate
-  if (stageIndex === 31 && prog[32]) prog[32].unlocked = true;
-  // Clearing Stage 42 (index 41) also unlocks Stage 43 (index 42) — Ch5 gate
-  if (stageIndex === 41 && prog[42]) prog[42].unlocked = true;
-  // Clearing Stage 52 (index 51) also unlocks Stage 53 (index 52) — Ch6 gate
-  if (stageIndex === 51 && prog[52]) prog[52].unlocked = true;
-  // Clearing Stage 62 (index 61) also unlocks Stage 63 (index 62) — Ch7 gate
-  if (stageIndex === 61 && prog[62]) prog[62].unlocked = true;
-  // Clearing Stage 72 (index 71) also unlocks Stage 73 (index 72) — Ch8 gate
-  if (stageIndex === 71 && prog[72]) prog[72].unlocked = true;
-  saveProgress(prog);
-  return prog;
+  const next = applyStageClear(prog, stageIndex, stars, hpPercent);
+  saveProgress(next);
+  return next;
 }

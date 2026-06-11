@@ -6,11 +6,17 @@
  */
 import Phaser from 'phaser';
 import { rollWaveEvent, type WaveEventDef } from '../data/waveEvents';
-import { INVADER_DEFS } from '../data/invaders';
+import { INVADER_DEFS, type InvaderDef, type InvaderType } from '../data/invaders';
 import type { WaveSpec } from '../data/stages';
 import type { DungeonTheme } from '../themes/themes';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { COLORS, CSS } from '../constants/colors';
 import { logger } from '../utils/logger';
+import { addFramedPanel, addPrimaryActionButton, GAME_UI } from '../ui/GameUiPrimitives';
+
+const OVERLAY_PANEL_FILL = 0x0e0903;
+const PREVIEW_PANEL_FILL = 0x101b26;
+const PREVIEW_ROW_FILL = 0x172838;
 
 // ─── WaveEventContext ──────────────────────────────────────────────────────
 
@@ -58,51 +64,75 @@ export function showWaveEvent(
   evt: WaveEventDef,
   onDone: () => void,
 ): void {
-  const { scene, theme: t } = ctx;
+  const { scene } = ctx;
   const ov = scene.add.container(0, 0).setDepth(250);
+  const accent = cssToHex(evt.color);
 
   // Dim
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.6);
+  dim.fillStyle(0x000000, 0.66);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setAlpha(0);
   ov.add(dim);
   scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
   // Card
-  const cw = 260, ch = 120;
+  const cw = 280, ch = 132;
   const cx = (CANVAS_WIDTH - cw) / 2;
   const cy = CANVAS_HEIGHT / 2 - ch / 2 - 20;
-
-  const card = scene.add.graphics();
-  card.fillStyle(t.panelDark, 1);
-  card.fillRoundedRect(cx, cy, cw, ch, 8);
-  card.lineStyle(2, parseInt(evt.color.replace('#', ''), 16), 0.9);
-  card.strokeRoundedRect(cx, cy, cw, ch, 8);
-  card.setAlpha(0).setY(-40);
-  ov.add(card);
-  scene.tweens.add({ targets: card, y: 0, alpha: 1, duration: 300, ease: 'Power2.easeOut' });
+  const frame = addFramedPanel(scene, {
+    x: cx,
+    y: cy,
+    w: cw,
+    h: ch,
+    radius: 12,
+    fillColor: OVERLAY_PANEL_FILL,
+    borderColor: accent,
+    borderAlpha: 0.9,
+    borderWidth: 2,
+    accentColor: accent,
+    accentAlpha: 0.9,
+    glowColor: accent,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.58,
+    shadowOffsetY: 4,
+  });
+  addToContainer(ov, frame.shadow, frame.panel, frame.glow);
 
   // Icon
-  const icon = scene.add.text(cx + cw / 2, cy + 28, evt.icon, {
+  const icon = scene.add.text(cx + cw / 2, cy + 30, evt.icon, {
     fontSize: '32px',
-  }).setOrigin(0.5).setAlpha(0);
+  }).setOrigin(0.5);
   ov.add(icon);
-  scene.tweens.add({ targets: icon, alpha: 1, duration: 200, delay: 150 });
 
   // Name
-  const name = scene.add.text(cx + cw / 2, cy + 62, evt.name, {
+  const name = scene.add.text(cx + cw / 2, cy + 66, evt.name, {
     fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: evt.color,
-  }).setOrigin(0.5).setAlpha(0);
+  }).setOrigin(0.5);
   ov.add(name);
-  scene.tweens.add({ targets: name, alpha: 1, duration: 200, delay: 250 });
 
   // Description
-  const desc = scene.add.text(cx + cw / 2, cy + 86, evt.description, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#aabbcc',
-  }).setOrigin(0.5).setAlpha(0);
+  const desc = scene.add.text(cx + cw / 2, cy + 94, evt.description, {
+    fontFamily: 'sans-serif',
+    fontSize: '10px',
+    color: CSS.PARCHMENT_DIM,
+    wordWrap: { width: cw - 34 },
+    align: 'center',
+  }).setOrigin(0.5);
   ov.add(desc);
-  scene.tweens.add({ targets: desc, alpha: 1, duration: 200, delay: 350 });
+
+  const cardObjects = [frame.shadow, frame.panel, frame.glow, icon, name, desc];
+  cardObjects.forEach(obj => {
+    obj.setAlpha(0);
+    obj.y -= 28;
+  });
+  scene.tweens.add({
+    targets: cardObjects,
+    y: '+=28',
+    alpha: 1,
+    duration: 300,
+    ease: 'Power2.easeOut',
+  });
 
   // Apply event effect
   applyWaveEvent(ctx, evt);
@@ -162,6 +192,142 @@ export function applyWaveEvent(ctx: WaveEventContext, evt: WaveEventDef): void {
   logger.debug(`[EVENT] ${evt.name} applied: gold×${ctx.waveGoldMult} hp×${ctx.waveHpMult} atk×${ctx.waveAtkMult} spd×${ctx.waveSpdMult}`);
 }
 
+function getWaveThreatScore(rows: readonly [string, number][]): number {
+  return rows.reduce((sum, [type, count]) => {
+    const def = INVADER_DEFS[type as InvaderType];
+    if (!def) return sum;
+    const behaviorBonus = def.behavior ? 22 : 0;
+    const bossBonus = def.isBoss || def.isMiniBoss ? 90 : 0;
+    return sum + count * Math.round(def.hp / 18 + def.damage / 18 + def.speed / 9 + behaviorBonus) + bossBonus;
+  }, 0);
+}
+
+function getThreatTier(score: number): { readonly label: string; readonly color: number; readonly css: string } {
+  if (score >= 520) return { label: 'BOSS', color: 0xff6b8a, css: '#ffb8c9' };
+  if (score >= 260) return { label: 'HIGH', color: 0xffb84d, css: '#ffdf8a' };
+  if (score >= 120) return { label: 'MID', color: 0xffd166, css: '#ffdf8a' };
+  return { label: 'LOW', color: 0x4ee89a, css: '#b9ffd8' };
+}
+
+function addPreviewMetricChip(
+  scene: Phaser.Scene,
+  ov: Phaser.GameObjects.Container,
+  x: number,
+  y: number,
+  w: number,
+  label: string,
+  value: string,
+  accent: number,
+): void {
+  const g = scene.add.graphics();
+  g.fillStyle(0x06131d, 0.78);
+  g.fillRoundedRect(x, y, w, 28, 7);
+  g.fillStyle(accent, 0.14);
+  g.fillRoundedRect(x + 5, y + 5, 20, 18, 5);
+  g.lineStyle(1, accent, 0.44);
+  g.strokeRoundedRect(x, y, w, 28, 7);
+  ov.add(g);
+  ov.add(scene.add.text(x + 11, y + 9, label, {
+    fontFamily: 'sans-serif',
+    fontSize: '7px',
+    color: GAME_UI.colors.mutedText,
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  ov.add(scene.add.text(x + w - 8, y + 18, value, {
+    fontFamily: 'monospace',
+    fontSize: '10px',
+    color: CSS.PARCHMENT,
+    fontStyle: 'bold',
+  }).setOrigin(1, 0.5));
+}
+
+function addEnemyBriefingRow(
+  scene: Phaser.Scene,
+  ov: Phaser.GameObjects.Container,
+  cx: number,
+  cw: number,
+  def: InvaderDef,
+  count: number,
+  rowY: number,
+): void {
+  const rowG = scene.add.graphics();
+  rowG.fillStyle(0x020609, 0.28);
+  rowG.fillRoundedRect(cx + 13, rowY - 12, cw - 26, 33, GAME_UI.radius.row);
+  rowG.fillStyle(PREVIEW_ROW_FILL, 0.97);
+  rowG.fillRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
+  rowG.fillStyle(def.color, 0.12);
+  rowG.fillRoundedRect(cx + 18, rowY - 8, 35, 21, 6);
+  rowG.lineStyle(1, def.color, 0.52);
+  rowG.strokeRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
+  rowG.fillStyle(def.color, 0.82);
+  rowG.fillCircle(cx + 35, rowY + 2, Math.min(9, Math.max(5, def.radius * 0.5)));
+  rowG.fillStyle(0xffffff, 0.22);
+  rowG.fillCircle(cx + 32, rowY - 1, 2.5);
+  ov.add(rowG);
+
+  ov.add(scene.add.text(cx + 62, rowY - 4, `${def.koreanName}`, {
+    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontSize: '11px',
+    color: CSS.PARCHMENT,
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  ov.add(scene.add.text(cx + 62, rowY + 10, `HP ${def.hp} · 피해 ${def.damage}`, {
+    fontFamily: 'monospace',
+    fontSize: '8px',
+    color: GAME_UI.colors.mutedText,
+  }).setOrigin(0, 0.5));
+
+  const countLabel = `×${count}`;
+  const countBg = scene.add.graphics();
+  countBg.fillStyle(0x06131d, 0.82);
+  countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
+  countBg.lineStyle(1, COLORS.TORCH_GOLD, 0.48);
+  countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
+  ov.add(countBg);
+  ov.add(scene.add.text(cx + cw - 37, rowY, countLabel, {
+    fontFamily: 'monospace',
+    fontSize: '11px',
+    color: '#fff4d6',
+    fontStyle: 'bold',
+  }).setOrigin(0.5));
+
+  if (def.behavior) {
+    const behaviorLabel: Record<string, string> = {
+      VOID_PHASE: '위상',
+      REVIVE_ONCE: '부활',
+      BERSERKER_RAGE: '광폭',
+      STEALTH: '은신',
+      SIEGE_SHIELD: '방패',
+      DIVINE_WARD: '신성',
+      IRON_BODY: '강체',
+      RALLY_CRY: '집결',
+      TRAP_IMMUNITY: '함정면역',
+      FOX_QUEEN_PHASE: '보스',
+      UNDYING_KNIGHT: '불사',
+      DECOY_CLONE: '분신',
+      POISON_TRAIL: '독장판',
+      VOID_TELEPORT: '도약',
+      DRAGON_KING_PHASE: '보스',
+      VOID_STEALTH_ELITE: '은신도약',
+      STUN_IMMUNE: '기절필수',
+      FIVE_PHASE: '다단계',
+      MIRROR_SHIELD: '반사',
+      SWARM: '분열',
+      SHADOW_REALM: '그림자',
+      EMPEROR_PHASE: '황제',
+      GOD_EMPEROR_PHASE: '신황제',
+      VOID_SURGE: '공허',
+      PRIMORDIAL_PHASE: '원초',
+    };
+    ov.add(scene.add.text(cx + cw - 102, rowY + 10, behaviorLabel[def.behavior] ?? '특수', {
+      fontFamily: 'sans-serif',
+      fontSize: '7px',
+      color: '#ffb8c9',
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5));
+  }
+}
+
 // ─── showWavePreview ───────────────────────────────────────────────────────
 
 export function showWavePreview(ctx: WaveEventContext): void {
@@ -174,108 +340,124 @@ export function showWavePreview(ctx: WaveEventContext): void {
     ? null
     : ctx.waveConfigs[Math.min(nextWave - 1, ctx.waveConfigs.length - 1)];
 
+  const typeCount = new Map<string, number>();
+  if (cfg) {
+    for (const { type, count } of cfg.invaders) {
+      typeCount.set(type, (typeCount.get(type) ?? 0) + count);
+    }
+  }
+  const enemyRows = [...typeCount.entries()];
+  const totalInvaders = [...typeCount.values()].reduce((a, b) => a + b, 0);
+  const totalDamage = enemyRows.reduce((sum, [type, count]) => {
+    const def = INVADER_DEFS[type as InvaderType];
+    return sum + (def ? def.damage * count : 0);
+  }, 0);
+  const threat = getThreatTier(getWaveThreatScore(enemyRows));
+
   const ov = scene.add.container(0, 0).setDepth(300);
 
   // Dim
   const dim = scene.add.graphics().setAlpha(0);
-  dim.fillStyle(0x000000, 0.65);
+  dim.fillStyle(0x000000, 0.68);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ov.add(dim);
   scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
   // Card
-  const cw = 310, ch = cfg ? 40 + cfg.invaders.length * 36 + 80 : 140;
+  const cw = 318;
+  const ch = cfg ? 132 + enemyRows.length * 38 + 62 : 172;
   const cx = CANVAS_WIDTH / 2 - cw / 2;
   const cy = CANVAS_HEIGHT / 2 - ch / 2;
-  const card = scene.add.graphics();
-  card.fillStyle(0x1a0f00, 1);
-  card.fillRoundedRect(cx, cy, cw, ch, 10);
-  card.lineStyle(2, 0xc8921a, 0.9);
-  card.strokeRoundedRect(cx, cy, cw, ch, 10);
-  ov.add(card);
+  const card = addFramedPanel(scene, {
+    x: cx,
+    y: cy,
+    w: cw,
+    h: ch,
+    radius: 12,
+    fillColor: PREVIEW_PANEL_FILL,
+    borderColor: threat.color,
+    borderAlpha: 0.88,
+    borderWidth: 2,
+    accentColor: threat.color,
+    accentAlpha: 0.82,
+    glowColor: threat.color,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.56,
+    shadowOffsetY: 4,
+  });
+  addToContainer(ov, card.shadow, card.panel, card.glow);
 
   // Title
   ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 18,
     `⚠️  ${nextWave}번째 침략 예고`, {
-    fontFamily: 'Georgia, serif', fontSize: '15px',
-    fontStyle: 'bold', color: '#c8921a',
+    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '15px',
+    fontStyle: 'bold', color: threat.css,
   }).setOrigin(0.5));
 
   if (cfg) {
+    const rail = scene.add.graphics();
+    rail.fillStyle(0x06131d, 0.64);
+    rail.fillRoundedRect(cx + 14, cy + 35, cw - 28, 5, 3);
+    rail.fillStyle(threat.color, 0.8);
+    rail.fillRoundedRect(cx + 14, cy + 35, Math.max(18, (cw - 28) * Phaser.Math.Clamp(getWaveThreatScore(enemyRows) / 600, 0.12, 1)), 5, 3);
+    ov.add(rail);
+
+    addPreviewMetricChip(scene, ov, cx + 16, cy + 47, 84, '위협', threat.label, threat.color);
+    addPreviewMetricChip(scene, ov, cx + 108, cy + 47, 86, '규모', `${totalInvaders}`, 0x4bd5ff);
+    addPreviewMetricChip(scene, ov, cx + 202, cy + 47, 100, '돌파 피해', `${totalDamage}`, 0xff6b8a);
+
     // Enemy list
-    let rowY = cy + 46;
-    const typeCount = new Map<string, number>();
-    for (const { type, count } of cfg.invaders) {
-      typeCount.set(type, (typeCount.get(type) ?? 0) + count);
-    }
-    const totalInvaders = [...typeCount.values()].reduce((a, b) => a + b, 0);
+    let rowY = cy + 94;
 
-    for (const [type, count] of typeCount) {
-      const def = INVADER_DEFS[type as import('../data/invaders').InvaderType];
+    for (const [type, count] of enemyRows) {
+      const def = INVADER_DEFS[type as InvaderType];
       if (!def) continue;
-
-      const rowG = scene.add.graphics();
-      rowG.fillStyle(0x2d1a00, 0.7);
-      rowG.fillRoundedRect(cx + 12, rowY - 12, cw - 24, 30, 4);
-      ov.add(rowG);
-
-      // HP bar (relative strength)
-      const hpFrac = Math.min(1, def.hp / 1000);
-      const barW   = 60;
-      const hpG    = scene.add.graphics();
-      hpG.fillStyle(0x0e0900, 1);
-      hpG.fillRoundedRect(cx + cw - 90, rowY - 6, barW, 8, 2);
-      hpG.fillStyle(def.hp > 400 ? 0x8b0000 : def.hp > 150 ? 0xc8921a : 0x2d9e2d, 1);
-      hpG.fillRoundedRect(cx + cw - 90, rowY - 6, barW * hpFrac, 8, 2);
-      ov.add(hpG);
-
-      ov.add(scene.add.text(cx + 20, rowY,
-        `×${count}  ${def.koreanName}`, {
-        fontFamily: 'sans-serif', fontSize: '12px', color: '#e8d090',
-      }).setOrigin(0, 0.5));
-      ov.add(scene.add.text(cx + cw - 24, rowY,
-        `HP ${def.hp}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
-      }).setOrigin(1, 0.5));
-
-      // Special behavior badge
-      if (def.behavior) {
-        const behaviorLabel: Record<string, string> = {
-          VOID_PHASE: '순간이동', REVIVE_ONCE: '부활', NINJA_STEALTH: '은신',
-          SIEGE_SHIELD: '방어막', HOLY_PALADIN: '신성면역', IRON_GOLEM: '둔화면역',
-        };
-        ov.add(scene.add.text(cx + 20 + 120, rowY,
-          `[${behaviorLabel[def.behavior] ?? def.behavior}]`, {
-          fontFamily: 'sans-serif', fontSize: '8px', color: '#ff8888',
-        }).setOrigin(0, 0.5));
-      }
-
-      rowY += 36;
+      addEnemyBriefingRow(scene, ov, cx, cw, def, count, rowY);
+      rowY += 38;
     }
 
     // Total / damage warning
     ov.add(scene.add.text(CANVAS_WIDTH / 2, rowY + 2,
-      `총 ${totalInvaders}명  ·  돌파 시 던전 피해`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#664400',
+      `침입문 → 던전 심장부 · 방어선 돌파 시 HP 피해`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: GAME_UI.colors.mutedText,
     }).setOrigin(0.5));
   } else {
     ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 60,
-      '무한 모드 — 침략자가 계속 강해집니다', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#806040',
+      '무한 모드 - 침략자가 계속 강해집니다', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
     }).setOrigin(0.5));
   }
 
   // Confirm button
-  const btnY = cy + ch - 32;
-  const btnBg = scene.add.graphics();
-  btnBg.fillStyle(0x8b0000, 0.85);
-  btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6);
-  ov.add(btnBg);
-  const btnT = scene.add.text(CANVAS_WIDTH / 2, btnY, '⚔  침략 시작', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#e8d090',
-  }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-  btnT.on('pointerover', () => { btnBg.clear(); btnBg.fillStyle(0xb00000, 1); btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6); });
-  btnT.on('pointerout',  () => { btnBg.clear(); btnBg.fillStyle(0x8b0000, 0.85); btnBg.fillRoundedRect(cx + 40, btnY - 14, cw - 80, 28, 6); });
-  btnT.on('pointerdown', () => { ov.destroy(); ctx.startWave(); });
-  ov.add(btnT);
+  const btn = addPrimaryActionButton(scene, {
+    x: cx + 40,
+    y: cy + ch - 48,
+    w: cw - 80,
+    h: 34,
+    label: '🛡  방어 시작',
+    fontSize: '13px',
+    fillColor: 0x1fae73,
+    hoverFillColor: 0x25c884,
+    borderColor: 0x8cffc1,
+    hoverBorderColor: COLORS.TORCH_AMBER,
+    textColor: '#fff8d8',
+    onPress: () => {
+      ov.destroy();
+      ctx.startWave();
+    },
+  });
+  addToContainer(ov, btn.bg, btn.text, btn.zone);
+}
+
+function cssToHex(color: string, fallback = COLORS.TORCH_GOLD): number {
+  const raw = color.startsWith('#') ? color.slice(1) : color;
+  const parsed = Number.parseInt(raw, 16);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function addToContainer(
+  container: Phaser.GameObjects.Container,
+  ...objects: Phaser.GameObjects.GameObject[]
+): void {
+  objects.forEach(obj => container.add(obj));
 }

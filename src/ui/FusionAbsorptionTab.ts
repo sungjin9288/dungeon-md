@@ -3,12 +3,12 @@
 // Sacrifices monsters → XP + same-type ATK stacks for a base target monster.
 
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { type OwnedMonster, addXp } from '../data/barracks';
-import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
+import { type OwnedMonster } from '../data/barracks';
 import {
   RARITY_XP_VALUES,
   getBaseId, getMonsterRarity, getMonsterEmoji,
 } from '../data/fusion';
+import { applyFusionAbsorption } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
@@ -170,47 +170,17 @@ function executeAbsorption(ctx: FusionTabContext, state: AbsorptionState): void 
   const target = state.absorbTarget;
   if (!target || state.absorbSacrifices.length === 0) return;
 
-  const gs = loadGameState();
-  let totalXP = 0;
-  let sameTypeCount = 0;
+  const result = applyFusionAbsorption(loadGameState(), target, state.absorbSacrifices);
+  if (!result.ok) return;
 
-  // Count how many times each sacrifice id should be removed
-  const removalCounts = new Map<string, number>();
-  for (const sac of state.absorbSacrifices) {
-    const r = sac.rarity ?? getMonsterRarity(sac.id);
-    totalXP += RARITY_XP_VALUES[r] ?? 30;
-    if (getBaseId(sac.id) === getBaseId(target.id)) sameTypeCount++;
-    removalCounts.set(sac.id, (removalCounts.get(sac.id) ?? 0) + 1);
-  }
-
-  // Filter out sacrificed monsters (immutably)
-  const withoutSacrifices = gs.ownedMonsters.filter(m => {
-    const n = removalCounts.get(m.id) ?? 0;
-    if (n > 0) { removalCounts.set(m.id, n - 1); return false; }
-    return true;
-  });
-
-  // Apply XP and stacks to a copy of the target
-  const freshTarget = gs.ownedMonsters.find(m => m.id === target.id);
-  if (!freshTarget) return;
-  const targetCopy = { ...freshTarget };
-  addXp(targetCopy, totalXP);
-  const newStacks = Math.min((targetCopy.absorptionStacks ?? 0) + sameTypeCount, 10);
-  logger.debug(`[ABSORB] ${target.id}: +${totalXP} XP, stacks: ${newStacks}/10 (+5% ATK per stack)`);
-
-  const newMonsters = withoutSacrifices.map(m =>
-    m.id === target.id ? { ...targetCopy, absorptionStacks: newStacks } : m,
-  );
-
-  const updated = { ...gs, ownedMonsters: newMonsters };
-  updateQuestObjective(updated, 'fuse_monsters');
-  saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
+  saveGameState(result.state);
+  logger.debug(`[ABSORB] ${target.id}: +${result.totalXp} XP, stacks: ${result.newStacks}/10 (+5% ATK per stack)`);
 
   state.setAbsorbSacrifices([]);
   state.setAbsorbTarget(null);
   showFusionAnimation(ctx, '흡수', () => {
     ctx.refreshTab();
-    const stackMsg = sameTypeCount > 0 ? ` · ATK 스택 +${sameTypeCount}` : '';
-    showResultToast(ctx, `흡수 완료! +${totalXP} XP${stackMsg}`, '#cc8844');
+    const stackMsg = result.sameTypeCount > 0 ? ` · ATK 스택 +${result.sameTypeCount}` : '';
+    showResultToast(ctx, `흡수 완료! +${result.totalXp} XP${stackMsg}`, '#cc8844');
   });
 }

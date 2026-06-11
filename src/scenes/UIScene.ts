@@ -9,6 +9,7 @@ export class UIScene extends Phaser.Scene {
   private hpFill!: Phaser.GameObjects.Graphics;
   private hpText?: Phaser.GameObjects.Text;
   private waveLabel!: Phaser.GameObjects.Text;
+  private waveProgress?: Phaser.GameObjects.Graphics;
   private statusText!: Phaser.GameObjects.Text;
   private speedBtn!: Phaser.GameObjects.Text;
   private pauseBtn!: Phaser.GameObjects.Text;
@@ -44,27 +45,27 @@ export class UIScene extends Phaser.Scene {
     const st = this.safeTop;
     const g = this.add.graphics();
 
-    // Base fill — extends from y=0 to cover under the notch
-    g.fillStyle(COLORS.BLACK, 1);
+    // Base fill — extends from y=0 to cover under the notch.
+    g.fillGradientStyle(0x06131d, 0x06131d, 0x11283a, 0x1c1730, 1, 1, 1, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, TOP_BAR_HEIGHT + st);
 
-    // Stone texture rows
-    for (let y = 0; y < TOP_BAR_HEIGHT + st; y += 10) {
-      g.fillStyle(COLORS.STONE_DARK, 0.22);
-      g.fillRect(0, y, CANVAS_WIDTH, 5);
+    // Command-room texture rows
+    for (let y = 0; y < TOP_BAR_HEIGHT + st; y += 12) {
+      g.fillStyle(0x4bd5ff, 0.045);
+      g.fillRect(0, y, CANVAS_WIDTH, 3);
+      g.fillStyle(0x000000, 0.12);
+      g.fillRect(0, y + 7, CANVAS_WIDTH, 2);
     }
 
     // Top edge highlight
-    g.fillStyle(0xffffff, 0.05);
+    g.fillStyle(0xffffff, 0.08);
     g.fillRect(0, 0, CANVAS_WIDTH, 2);
 
-    // Gold bottom border
-    g.fillStyle(COLORS.TORCH_GOLD, 1);
-    g.fillRect(0, TOP_BAR_HEIGHT + st - 4, CANVAS_WIDTH, 4);
-
-    // Inner glow line just above border
-    g.fillStyle(COLORS.TORCH_AMBER, 0.3);
-    g.fillRect(0, TOP_BAR_HEIGHT + st - 7, CANVAS_WIDTH, 3);
+    // Bottom command border
+    g.fillStyle(0x4bd5ff, 0.36);
+    g.fillRect(0, TOP_BAR_HEIGHT + st - 6, CANVAS_WIDTH, 2);
+    g.fillStyle(COLORS.TORCH_GOLD, 0.92);
+    g.fillRect(0, TOP_BAR_HEIGHT + st - 3, CANVAS_WIDTH, 3);
   }
 
   private createHUD(): void {
@@ -76,43 +77,57 @@ export class UIScene extends Phaser.Scene {
     this.hp     = this.registry.get('hp')    ?? 1000;
     this.maxHp  = this.registry.get('hp')    ?? 1000;
     this.wave   = this.registry.get('wave')  ?? 0;
+    this.maxWave = this.registry.get('maxWave') ?? 10;
 
     // ── Title ──────────────────────────────────────────────
+    const titlePlate = this.add.graphics();
+    titlePlate.fillStyle(0x071824, 0.86);
+    titlePlate.fillRoundedRect(10, st + 8, 154, 44, 9);
+    titlePlate.lineStyle(1.2, 0x4bd5ff, 0.46);
+    titlePlate.strokeRoundedRect(10, st + 8, 154, 44, 9);
+    titlePlate.fillStyle(COLORS.TORCH_GOLD, 0.16);
+    titlePlate.fillRoundedRect(18, st + 14, 138, 3, 2);
+
     // Shadow layer
-    this.add.text(18, st + 16, '던전 수호자', {
-      fontFamily: "Georgia, 'Times New Roman', serif",
-      fontSize: '22px',
-      color: '#3a1800',
+    this.add.text(18, st + 18, '던전 방어전', {
+      fontFamily: "Trebuchet MS, Apple SD Gothic Neo, sans-serif",
+      fontSize: '18px',
+      fontStyle: 'bold',
+      color: '#021018',
     });
     // Main title
-    this.add.text(16, st + 14, '던전 수호자', {
-      fontFamily: "Georgia, 'Times New Roman', serif",
-      fontSize: '22px',
+    this.add.text(16, st + 16, '던전 방어전', {
+      fontFamily: "Trebuchet MS, Apple SD Gothic Neo, sans-serif",
+      fontSize: '18px',
+      fontStyle: 'bold',
       color: CSS.TORCH_AMBER,
     });
-    this.add.text(16, st + 40, 'DUNGEON  GUARDIAN', {
-      fontFamily: 'sans-serif',
-      fontSize: '11px',
-      color: CSS.PARCHMENT_MUTED,
-      letterSpacing: 4,
+    this.add.text(18, st + 38, 'DUNGEON DEFENSE', {
+      fontFamily: 'monospace',
+      fontSize: '9px',
+      color: '#9fd9ea',
     });
 
     // ── Wave pill + speed toggle (left, row 2) ────────────────────────────
     const wavePill = this.add.graphics();
-    wavePill.fillStyle(COLORS.STONE_DARK, 1);
+    wavePill.fillStyle(0x071824, 0.96);
     wavePill.fillRoundedRect(12, st + 58, 120, 26, 4);
-    wavePill.lineStyle(1, COLORS.BLOOD_RED, 0.5);
+    wavePill.lineStyle(1, 0x4bd5ff, 0.44);
     wavePill.strokeRoundedRect(12, st + 58, 120, 26, 4);
+    wavePill.fillStyle(COLORS.TORCH_GOLD, 0.14);
+    wavePill.fillRoundedRect(20, st + 62, 68, 3, 2);
     // Divider between wave label and speed button
-    wavePill.lineStyle(1, COLORS.BLOOD_RED, 0.3);
+    wavePill.lineStyle(1, 0x4bd5ff, 0.24);
     wavePill.lineBetween(96, st + 62, 96, st + 80);
 
-    this.waveLabel = this.add.text(54, st + 71, `침략 ${this.wave}/${this.maxWave}`, {
+    this.waveLabel = this.add.text(54, st + 71, this.getWaveLabel(), {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
       color: CSS.PARCHMENT,
     }).setOrigin(0.5);
+    this.waveProgress = this.add.graphics();
+    this.redrawWaveProgress();
 
     // ── Speed toggle button ───────────────────────────────
     this.speedBtn = this.add.text(110, st + 71, '1x', {
@@ -230,6 +245,40 @@ export class UIScene extends Phaser.Scene {
 
   private safeHby = 60;
 
+  private getWaveLabel(): string {
+    if (this.maxWave >= 9999) return this.wave > 0 ? `침략 ${this.wave}` : '침략 대기';
+    return this.wave > 0 && this.wave === this.maxWave
+      ? '⚠ 최종 침략!'
+      : `침략 ${this.wave}/${this.maxWave}`;
+  }
+
+  private redrawWaveProgress(): void {
+    if (!this.waveProgress) return;
+    const st = this.safeTop;
+    const g = this.waveProgress;
+    g.clear();
+
+    const endless = this.maxWave >= 9999;
+    const pipCount = endless ? 5 : Phaser.Math.Clamp(this.maxWave || 1, 1, 10);
+    const activeCount = endless
+      ? (this.wave > 0 ? ((this.wave - 1) % pipCount) + 1 : 0)
+      : Math.min(this.wave, pipCount);
+    const startX = 24;
+    const y = st + 80;
+    const gap = 7;
+
+    for (let i = 0; i < pipCount; i++) {
+      const active = i < activeCount;
+      const current = active && i === activeCount - 1;
+      g.fillStyle(active ? COLORS.TORCH_GOLD : 0x29465a, active ? 0.92 : 0.74);
+      g.fillCircle(startX + i * gap, y, current ? 2.6 : 2.1);
+      if (current) {
+        g.lineStyle(1, COLORS.TORCH_AMBER, 0.62);
+        g.strokeCircle(startX + i * gap, y, 4.1);
+      }
+    }
+  }
+
   private redrawHp(): void {
     const hbx = 138, hby = this.safeHby, hbw = CANVAS_WIDTH - hbx - 8, hbh = 14;
     const pct  = this.hp / this.maxHp;
@@ -319,9 +368,15 @@ export class UIScene extends Phaser.Scene {
     });
     this.registry.events.on('changedata-wave', (_: unknown, v: number) => {
       this.wave = v;
-      const isFinal = v > 0 && v === this.maxWave;
-      this.waveLabel?.setText(isFinal ? `⚠ 최종 침략!` : `침략 ${v}/${this.maxWave}`);
+      const isFinal = this.maxWave < 9999 && v > 0 && v === this.maxWave;
+      this.waveLabel?.setText(this.getWaveLabel());
       this.waveLabel?.setColor(isFinal ? '#ff4444' : CSS.PARCHMENT);
+      this.redrawWaveProgress();
+    });
+    this.registry.events.on('changedata-maxWave', (_: unknown, v: number) => {
+      this.maxWave = v;
+      this.waveLabel?.setText(this.getWaveLabel());
+      this.redrawWaveProgress();
     });
     this.registry.events.on('changedata-status', (_: unknown, v: string) => {
       this.statusText?.setText(v);

@@ -4,12 +4,12 @@
 
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
-import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
 import {
   RARITY_STARS, RARITY_COLORS,
   HYBRID_DEFS, COMBINATION_TABLE,
   getBaseId, combinationKey,
 } from '../data/fusion';
+import { FUSION_COMBINATION_COST, applyFusionCombination } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
@@ -35,7 +35,7 @@ export function buildCombinationTab(
   const sx0   = (CANVAS_WIDTH - totalW) / 2;
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY - 26,
-    '서로 다른 몬스터 2마리 + 💎 100 → 혼종 탄생', {
+    `서로 다른 몬스터 2마리 + 💠 ${FUSION_COMBINATION_COST} → 혼종 탄생`, {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: '#4488cc',
       wordWrap: { width: CANVAS_WIDTH - 40 }, align: 'center',
     }).setOrigin(0.5));
@@ -66,9 +66,9 @@ export function buildCombinationTab(
   // Crystal cost
   const gs = loadGameState();
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY + slotH + 14,
-    `💠 보유 수정: ${gs.soulCrystals} / 필요: 100`, {
+    `💠 보유 수정: ${gs.soulCrystals} / 필요: ${FUSION_COMBINATION_COST}`, {
       fontFamily: 'sans-serif', fontSize: '11px',
-      color: gs.soulCrystals >= 100 ? '#4488cc' : '#aa2222',
+      color: gs.soulCrystals >= FUSION_COMBINATION_COST ? '#4488cc' : '#aa2222',
     }).setOrigin(0.5));
 
   const arrowY  = LY + slotH + 42;
@@ -120,9 +120,9 @@ export function buildCombinationTab(
     }).setOrigin(0.5));
   }
 
-  const allReady = bothFilled && gs.soulCrystals >= 100;
+  const allReady = bothFilled && gs.soulCrystals >= FUSION_COMBINATION_COST;
   const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 28,
-    allReady ? '🧪 조합 시도 (-💠 100)' : bothFilled ? '💠 부족 (100 필요)' : '조건 미충족', {
+    allReady ? `🧪 조합 시도 (-💠 ${FUSION_COMBINATION_COST})` : bothFilled ? `💠 부족 (${FUSION_COMBINATION_COST} 필요)` : '조건 미충족', {
       fontFamily: 'Georgia, serif', fontSize: '14px',
       color: allReady ? '#4488cc' : '#2a3a55', fontStyle: 'bold',
       backgroundColor: allReady ? '#001433' : '#000810',
@@ -138,8 +138,8 @@ export function buildCombinationTab(
       ctx,
       known ? '🧪 조합을 실행하시겠습니까?' : '⚠️ 미지의 조합',
       known
-        ? `${known.emoji} ${known.name} 생성\n💠 100 소모됩니다.`
-        : '결과를 알 수 없습니다\n💠 100 소모 (실패 가능)',
+        ? `${known.emoji} ${known.name} 생성\n💠 ${FUSION_COMBINATION_COST} 소모됩니다.`
+        : `결과를 알 수 없습니다\n💠 ${FUSION_COMBINATION_COST} 소모 (실패 가능)`,
       known ? '#4488cc' : '#885533',
       () => executeCombination(ctx, state),
     );
@@ -152,46 +152,27 @@ function executeCombination(ctx: FusionTabContext, state: CombinationState): voi
   if (!slotA || !slotB) return;
 
   const gs = loadGameState();
-  if (gs.soulCrystals < 100) return;
+  const result = applyFusionCombination(gs, slotA, slotB);
+  if (!result.ok) return;
 
-  const key      = combinationKey(slotA.id, slotB.id);
-  const hybridId = COMBINATION_TABLE[key];
+  saveGameState(result.state);
+  state.setCombineSlots([null, null]);
 
-  if (hybridId) {
-    const hybrid = HYBRID_DEFS[hybridId];
-    const isNew  = !(gs.discoveredCombinations ?? []).includes(hybridId);
+  if (result.recipeMatched) {
+    const { hybrid, hybridId, isNewDiscovery } = result;
 
-    if (isNew) logger.debug(`[COMBINATION] NEW DISCOVERY: ${hybridId} — ${hybrid.name}`);
-
-    const avgLevel = Math.round((slotA.level + slotB.level) / 2);
-    const newMonster = {
-      id: hybridId, level: avgLevel, xp: 0,
-      skillPoints: 0, spentSkills: {}, equippedSkills: [], equipment: null,
-      rarity: hybrid.rarity, absorptionStacks: 0,
-    };
-    const updated = {
-      ...gs,
-      soulCrystals: gs.soulCrystals - 100,
-      ownedMonsters: [...gs.ownedMonsters, newMonster],
-      ...(isNew ? { discoveredCombinations: [...(gs.discoveredCombinations ?? []), hybridId] } : {}),
-    };
-    updateQuestObjective(updated, 'fuse_monsters');
-    saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
-
-    state.setCombineSlots([null, null]);
+    if (isNewDiscovery) logger.debug(`[COMBINATION] NEW DISCOVERY: ${hybridId} — ${hybrid.name}`);
     showFusionAnimation(ctx, '조합', () => {
       ctx.refreshHeader();
       ctx.refreshTab();
-      if (isNew) {
+      if (isNewDiscovery) {
         showDiscoveryFanfare(ctx, hybrid.emoji, hybrid.name, hybrid.rarity);
       } else {
         showResultToast(ctx, `${hybrid.name} 조합 성공!`, '#4488cc');
       }
     });
   } else {
-    logger.debug(`[COMBINATION] FAILED: ${key} — no known recipe`);
-    saveGameState({ ...gs, soulCrystals: gs.soulCrystals - 100 });
-    state.setCombineSlots([null, null]);
+    logger.debug(`[COMBINATION] FAILED: ${result.recipeKey} — no known recipe`);
 
     // Fail animation (smoke)
     const smoke = ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '💨', {

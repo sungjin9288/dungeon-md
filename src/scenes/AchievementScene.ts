@@ -9,6 +9,7 @@ import {
   type AchievementContext,
   type AchievementDef,
 } from '../data/achievements';
+import { claimAchievementReward } from '../data/rewardTransactions';
 
 // ─── AchievementScene ─────────────────────────────────────────────────────────
 
@@ -367,22 +368,13 @@ export class AchievementScene extends Phaser.Scene {
 
   private claimReward(achievementId: string, reward: AchievementDef['reward']): void {
     const gs = loadGameState();
-    const entry = gs.achievements?.[achievementId];
-    if (!entry?.unlocked || entry.rewardClaimed) return;
+    const result = claimAchievementReward(gs, achievementId, reward);
+    if (!result.ok) return;
 
-    const updated = {
-      ...gs,
-      gems:         (gs.gems         ?? 0) + (reward.gems         ?? 0),
-      soulCrystals: (gs.soulCrystals ?? 0) + (reward.soulCrystals ?? 0),
-      achievements: {
-        ...gs.achievements,
-        [achievementId]: { ...entry, rewardClaimed: true },
-      },
-    };
-    saveGameState(updated);
+    saveGameState(result.state);
 
     // Rebuild list to reflect claimed state
-    this.gameState = updated;
+    this.gameState = result.state;
     this.buildList();
 
     // Toast feedback

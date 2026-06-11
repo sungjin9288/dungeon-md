@@ -3,13 +3,31 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   loadGameState, saveGameState,
   getUnlockedSlots,
+  getRoomSlotCapacity,
+  SLOT_UNLOCK_LEVELS,
+  type DungeonSlot,
+  type GameState,
+  type OwnedMonster,
 } from '../data/wisdom';
+import { calculateDungeonMetrics, calculateRoomMetrics } from '../data/dungeonMetrics';
+import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
 import {
-  startQuest, updateQuestObjective, completeAndAdvance,
-  assignSubQuests, tickSubQuestProgress,
-  type MainQuest,
-} from '../data/quests';
-import { STARTER_BLUEPRINTS } from '../data/fusion';
+  getDungeonActionQueue,
+  getRoomActionRecommendation,
+  type RoomActionRecommendation,
+} from '../data/roomActionRecommendations';
+import { MONSTER_DEFS } from '../data/monsters';
+import {
+  applyBattleReturnSettlement,
+  xpForDmLevel,
+  type BattleReturnResult,
+} from '../data/invasionTransactions';
+import {
+  initializeHomeQuestState,
+  settleCompletedHomeMainQuest,
+  type HomeMainQuestCompletionResult,
+} from '../data/questLifecycleTransactions';
+import { settleTutorialStageAdvance } from '../data/tutorialTransactions';
 import { ACHIEVEMENT_DEFS } from '../data/achievements';
 import { audioManager } from '../audio/AudioManager';
 import { TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE } from '../ui/TutorialOverlay';
@@ -35,7 +53,7 @@ import {
 import {
   type RoomSlotContext,
   drawBattleSlot as _drawBattleSlot,
-  SLOT_W, SLOT_H,
+  SLOT_W, SLOT_H, INVASION_ORDER,
 } from '../ui/RoomSlotRenderer';
 import { applyIdleAnimation as _applyIdleAnimation } from '../ui/MonsterAnimations';
 import {
@@ -50,6 +68,8 @@ import {
   drawSynergyConnectors,
   drawSynergySummary,
 } from '../ui/DungeonSynergy';
+import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
+import { addFramedPanel } from '../ui/GameUiPrimitives';
 import {
   type TopBarRefs,
   buildTopBar,
@@ -71,12 +91,80 @@ const GRID_COLS_HOME = 3;
 const GRID_ROWS_HOME = 3;
 
 const SLOT_PAD_X = Math.floor((CANVAS_WIDTH - GRID_COLS_HOME * SLOT_W) / (GRID_COLS_HOME + 1));
-const SLOT_PAD_Y = 16;
+const SLOT_PAD_Y = 8;
 const QUEST_BANNER_H = 22;
+const BLUEPRINT_Y = TOP_H + QUEST_BANNER_H + 5;
+const BLUEPRINT_H = 0;
 const GRID_START_Y = TOP_H + QUEST_BANNER_H + 10;
 
-function xpForLevel(lv: number): number { return lv * 100; }
+function xpForLevel(lv: number): number { return xpForDmLevel(lv); }
 
+interface GameStateResult {
+  readonly state: GameState;
+  readonly changed: boolean;
+}
+
+interface HomeDirective {
+  readonly icon: string;
+  readonly title: string;
+  readonly body: string;
+  readonly ctaLabel: string;
+  readonly statLabel: string;
+  readonly statValue: string;
+  readonly accent: number;
+  readonly onPress: () => void;
+}
+
+interface HomeRoomFeedback {
+  readonly kind: 'equipment' | 'upgrade' | 'design' | 'monster' | 'trap' | 'repair' | 'unlock';
+  readonly slotIdx: number;
+  readonly title: string;
+  readonly body: string;
+  readonly equipmentName?: string;
+  readonly equipmentEmoji?: string;
+  readonly statLabel?: string;
+  readonly statBefore?: string;
+  readonly statAfter?: string;
+  readonly accent: number;
+}
+
+interface HomeRoomActionPin {
+  readonly slotIdx: number;
+  readonly label: string;
+  readonly icon: string;
+  readonly accent: number;
+}
+
+interface HomeFocusTarget {
+  readonly monsterId: string;
+  readonly sourceLabel: string;
+  readonly slotIdx: number | null;
+}
+
+interface HomeCommandButtonHint {
+  readonly text: string;
+  readonly accent: number;
+}
+
+interface HomeOpsStatus {
+  readonly readiness: number;
+  readonly builtRooms: number;
+  readonly unlockedSlots: number;
+  readonly assignedMonsters: number;
+  readonly monsterCapacity: number;
+  readonly installedTraps: number;
+  readonly trapCapacity: number;
+  readonly threatScore: number;
+  readonly nextSlotLevel: number | null;
+}
+
+interface RouteSegmentVisualState {
+  readonly accent: number;
+  readonly energy: number;
+  readonly builtCount: number;
+  readonly isBroken: boolean;
+  readonly isPlanned: boolean;
+}
 
 export class DungeonHomeScene extends Phaser.Scene {
   private gs = loadGameState();
@@ -84,10 +172,21 @@ export class DungeonHomeScene extends Phaser.Scene {
   private roomDetailState: RoomDetailState = createRoomDetailState();
   private roomDetailCallbacks: RoomDetailCallbacks = {
     getGameState: () => this.gs,
-    saveAndRefresh: () => saveGameState(this.gs),
-    rebuildDungeonSlots: () => this.rebuildDungeonSlots(),
+    saveAndRefresh: (nextState = this.gs) => this.persistGameState(nextState),
+    rebuildDungeonSlots: () => this.refreshHomeDynamicPanels(),
+    markRoomChanged: (slotIdx) => this.markRoomChanged(slotIdx),
+    navigateToScene: (sceneKey) => this.navigateFromHome(sceneKey),
+    openRoomSlot: (slotIdx) => this.openDungeonSlot(slotIdx),
+    startBattle: () => goToPreBattle(this, this.gs, this.invasionState),
+    isPreBattleEditActive: () => this.hasPreBattleEditReturn(),
+    resumePreBattle: () => this.resumePreBattleFromRoomEdit(),
   };
   private dungeonContainer: Phaser.GameObjects.Container | null = null;
+  private dungeonBlueprintContainer: Phaser.GameObjects.Container | null = null;
+  private commandDeckContainer: Phaser.GameObjects.Container | null = null;
+  private recentlyChangedRoomIdx: number | null = null;
+  private pendingRoomFeedback: HomeRoomFeedback | null = null;
+  private roomFocusTransitionActive = false;
 
   // Quest log panel
   private questLogState: QuestLogState = { questLogOpen: false };
@@ -97,39 +196,101 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   // Currency text refs for live animation
   private currencyTexts: Phaser.GameObjects.Text[] = [];
+  private topBarRefs: TopBarRefs | null = null;
 
   // Theme
   private theme!: DungeonTheme;
 
   constructor() { super({ key: 'DungeonHomeScene' }); }
 
+  private persistGameState(nextState = this.gs): void {
+    this.gs = nextState;
+    saveGameState(this.gs);
+    this.refreshCurrencyTexts();
+    this.refreshTopBarProgress();
+  }
+
+  private markRoomChanged(slotIdx: number): void {
+    this.recentlyChangedRoomIdx = slotIdx;
+  }
+
+  private refreshCurrencyTexts(): void {
+    const values = [this.gs.homeGold, this.gs.soulCrystals, this.gs.gems];
+    this.currencyTexts.forEach((text, idx) => {
+      text.setText((values[idx] ?? 0).toLocaleString('ko-KR'));
+    });
+  }
+
+  private refreshTopBarProgress(): void {
+    if (!this.topBarRefs) return;
+    const refs = this.topBarRefs;
+    const xpTarget = xpForLevel(this.gs.dmLevel);
+    const xpPct = Phaser.Math.Clamp((this.gs.dmXP ?? 0) / xpTarget, 0, 1);
+    refs.dmLevelText.setText(`던전 마스터  Lv.${this.gs.dmLevel}`);
+    refs.xpText.setText(`${this.gs.dmXP} / ${xpTarget} XP`);
+    refs.xpFill.clear();
+    if (xpPct > 0) {
+      refs.xpFill.fillStyle(refs.xpFillBounds.color, 1);
+      refs.xpFill.fillRoundedRect(
+        refs.xpFillBounds.x,
+        refs.xpFillBounds.y,
+        Math.floor(refs.xpFillBounds.w * xpPct),
+        refs.xpFillBounds.h,
+        refs.xpFillBounds.radius,
+      );
+    }
+  }
+
+  private refreshHomeDynamicPanels(): void {
+    this.rebuildDungeonBlueprintPanel();
+    this.rebuildDungeonSlots();
+    this.buildCommandDeck();
+  }
+
+  private applyGameStateResult<T extends GameStateResult>(result: T): T {
+    if (result.changed) this.persistGameState(result.state);
+    return result;
+  }
+
   // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
   create(): void {
     this.gs = loadGameState();
+    this.roomDetailState = createRoomDetailState();
+    this.questLogState = { questLogOpen: false };
+    this.invasionState = createInvasionUIState();
+    this.currencyTexts = [];
+    this.topBarRefs = null;
+    this.dungeonContainer = null;
+    this.dungeonBlueprintContainer = null;
+    this.commandDeckContainer = null;
+    this.recentlyChangedRoomIdx = null;
+    this.pendingRoomFeedback = this.consumeHomeRoomFeedback();
+    this.roomFocusTransitionActive = false;
+    if (this.pendingRoomFeedback) this.recentlyChangedRoomIdx = this.pendingRoomFeedback.slotIdx;
     this.theme = getActiveTheme(this.gs.equippedTheme);
     this.buildBackground();
 
     const topBarRefs: TopBarRefs = buildTopBar(
       this, this.gs, this.theme, TOP_H, this.questLogState, xpForLevel,
     );
+    this.topBarRefs = topBarRefs;
     this.currencyTexts = topBarRefs.currencyTexts;
 
     buildQuestBanner(this, this.gs, this.theme, TOP_H,
       () => openQuestLog(this, this.questLogState, this.gs));
     this.buildDungeonGrid();
+    this.buildCommandDeck();
     buildStatsBar(this, this.gs, this.theme, BOT_Y);
     this.buildBottomNav();
     buildDailyContentPanel(this, () => showChallengePanel(this));
     this.addAmbientEffects();
-
-    // Store gs ref on registry for InvasionUI reminder-icon callback
-    this.registry.set('_invasionGs', this.gs);
+    if (this.pendingRoomFeedback) this.showHomeRoomFeedbackBanner(this.pendingRoomFeedback);
 
     this.checkBattleReturn();  // must run before initQuests so rewards applied first
     this.initQuests();
-    this.gs = assignSubQuests(this.gs);
-    saveGameState(this.gs);
+    // Store latest gs ref after battle return and quest initialization.
+    this.registry.set('_invasionGs', this.gs);
 
     const pendingUnlock = this.registry.get('pendingUnlock') as string | undefined;
     if (pendingUnlock) this.registry.remove('pendingUnlock');
@@ -142,7 +303,175 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(250, 0, 0, 0);
     audioManager.resume().then(() => audioManager.playBgm('home'));
+    this.maybeOpenFocusedDungeonSlot();
     this.maybeShowTutorial();
+  }
+
+  private maybeOpenFocusedDungeonSlot(): void {
+    const focusedSlotIdx = this.consumeFocusRoomSlotIdx();
+    const feedbackSlotIdx = this.pendingRoomFeedback?.kind === 'equipment'
+      ? this.pendingRoomFeedback.slotIdx
+      : null;
+    const slotIdx = focusedSlotIdx ?? feedbackSlotIdx;
+    if (slotIdx === null) return;
+    const openDelay = this.pendingRoomFeedback?.slotIdx === slotIdx ? 2400 : 280;
+
+    window.setTimeout(() => {
+      if (!this.scene.isActive()) return;
+      this.openDungeonSlot(slotIdx);
+    }, openDelay);
+  }
+
+  private consumeFocusRoomSlotIdx(): number | null {
+    const raw = this.registry.get('focusRoomSlotIdx');
+    this.registry.remove('focusRoomSlotIdx');
+    this.registry.remove('focusMonsterId');
+    this.registry.remove('focusSourceLabel');
+    const slotIdx = typeof raw === 'number' ? raw : Number(raw);
+    if (!Number.isInteger(slotIdx)) return null;
+    if (slotIdx < 0 || slotIdx >= getUnlockedSlots(this.gs.dmLevel)) return null;
+    return slotIdx;
+  }
+
+  private hasPreBattleEditReturn(): boolean {
+    return Boolean(this.registry.get('preBattleEditReturn'))
+      && Boolean(this.registry.get('invasionConfig'));
+  }
+
+  private resumePreBattleFromRoomEdit(): void {
+    if (!this.hasPreBattleEditReturn()) {
+      goToPreBattle(this, this.gs, this.invasionState);
+      return;
+    }
+
+    this.registry.remove('preBattleEditReturn');
+    if (!this.registry.get('questId')) {
+      this.registry.set('questId', this.gs.activeMainQuestId);
+    }
+    this.cameras.main.fadeOut(220, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('PreBattleScene');
+    });
+  }
+
+  private consumeHomeRoomFeedback(): HomeRoomFeedback | null {
+    const raw = this.registry.get('homeRoomFeedback') as Partial<HomeRoomFeedback> | undefined;
+    this.registry.remove('homeRoomFeedback');
+    if (!raw || (
+      raw.kind !== 'equipment'
+      && raw.kind !== 'upgrade'
+      && raw.kind !== 'design'
+      && raw.kind !== 'monster'
+      && raw.kind !== 'trap'
+      && raw.kind !== 'repair'
+      && raw.kind !== 'unlock'
+    )) return null;
+    const slotIdx = typeof raw.slotIdx === 'number' ? raw.slotIdx : Number(raw.slotIdx);
+    if (!Number.isInteger(slotIdx)) return null;
+    if (slotIdx < 0 || slotIdx >= getUnlockedSlots(this.gs.dmLevel)) return null;
+    if (!raw.title || !raw.body) return null;
+    if (raw.kind === 'equipment' && (!raw.equipmentName || !raw.equipmentEmoji)) return null;
+    return {
+      kind: raw.kind,
+      slotIdx,
+      title: raw.title,
+      body: raw.body,
+      equipmentName: raw.equipmentName,
+      equipmentEmoji: raw.equipmentEmoji,
+      statLabel: raw.statLabel,
+      statBefore: raw.statBefore,
+      statAfter: raw.statAfter,
+      accent: typeof raw.accent === 'number' ? raw.accent : 0x88ffdd,
+    };
+  }
+
+  private showHomeRoomFeedbackBanner(feedback: HomeRoomFeedback): void {
+    const w = 318;
+    const h = 62;
+    const x = (CANVAS_WIDTH - w) / 2;
+    const y = TOP_H + QUEST_BANNER_H + 2;
+    const accent = feedback.accent;
+    const icon = feedback.kind === 'equipment'
+      ? feedback.equipmentEmoji ?? '⚒'
+      : feedback.kind === 'repair'
+        ? '🛠'
+        : feedback.kind === 'monster'
+          ? '👹'
+          : feedback.kind === 'trap'
+            ? '⚠'
+            : '★';
+    const statText = feedback.statLabel && feedback.statBefore && feedback.statAfter
+      ? `${feedback.statLabel} ${feedback.statBefore}→${feedback.statAfter}`
+      : `B${feedback.slotIdx + 1}`;
+    const title = feedback.kind === 'equipment' && feedback.equipmentName
+      ? `${feedback.equipmentEmoji ?? icon} ${feedback.equipmentName} 장착 완료`
+      : feedback.title;
+
+    const c = this.add.container(0, 0).setDepth(38).setAlpha(0).setY(-8);
+    const bg = this.add.graphics();
+    bg.fillStyle(0x04110f, 0.96);
+    bg.fillRoundedRect(x, y, w, h, 12);
+    bg.fillStyle(accent, 0.12);
+    bg.fillRoundedRect(x + 7, y + 7, w - 14, h - 14, 9);
+    bg.fillStyle(0x020609, 0.34);
+    bg.fillRoundedRect(x + w - 88, y + 12, 74, h - 24, 9);
+    bg.lineStyle(1.6, accent, 0.84);
+    bg.strokeRoundedRect(x, y, w, h, 12);
+    bg.lineStyle(1, 0xffffff, 0.12);
+    bg.strokeRoundedRect(x + 5, y + 5, w - 10, h - 10, 9);
+    bg.fillStyle(accent, 0.18);
+    bg.fillCircle(x + 34, y + h / 2, 22);
+    bg.lineStyle(1, 0xffffff, 0.18);
+    bg.strokeCircle(x + 34, y + h / 2, 22);
+    c.add(bg);
+
+    c.add(this.add.text(x + 34, y + h / 2, icon, {
+      fontFamily: 'sans-serif',
+      fontSize: '22px',
+    }).setOrigin(0.5));
+    c.add(this.add.text(x + 66, y + 19, title, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '13px',
+      color: '#d8fff5',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    c.add(this.add.text(x + 66, y + 40, feedback.body, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: this.theme.textSecondary,
+      wordWrap: { width: w - 166, useAdvancedWrap: true },
+    }).setOrigin(0, 0.5));
+    c.add(this.add.text(x + w - 51, y + h / 2 - 4, statText, {
+      fontFamily: 'sans-serif',
+      fontSize: '12px',
+      color: '#b8fff0',
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+    c.add(this.add.text(x + w - 51, y + h / 2 + 13, '방 반영', {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: '#82cdbd',
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+    this.tweens.add({
+      targets: c,
+      alpha: 1,
+      y: 0,
+      duration: 180,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: c,
+          alpha: 0,
+          y: -8,
+          delay: 1900,
+          duration: 240,
+          ease: 'Quad.easeIn',
+          onComplete: () => c.destroy(),
+        });
+      },
+    });
   }
 
   // ─── Tutorial ─────────────────────────────────────────────────────────────────
@@ -158,10 +487,11 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.time.delayedCall(700, () => {
       if (!this.tutorialOverlay) {
         this.tutorialOverlay = new TutorialOverlay(this, (completedStage) => {
-          this.gs = { ...this.gs, tutorialStage: completedStage };
-          saveGameState(this.gs);
-          if (completedStage < TUTORIAL_DONE) {
-            const nextStep = TUTORIAL_STEPS.find(s => s.stage === completedStage);
+          const result = this.applyGameStateResult(
+            settleTutorialStageAdvance(this.gs, completedStage),
+          );
+          if (result.nextStage !== null) {
+            const nextStep = TUTORIAL_STEPS.find(s => s.stage === result.nextStage);
             if (nextStep && this.tutorialOverlay) this.tutorialOverlay.show(nextStep);
           } else {
             this.tutorialOverlay = null;
@@ -175,10 +505,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   // ─── Quest system ─────────────────────────────────────────────────────────────
 
   private initQuests(): void {
-    if (!this.gs.activeMainQuestId) {
-      this.gs = startQuest(this.gs, 'MQ-001');
-      saveGameState(this.gs);
-    }
+    this.applyGameStateResult(initializeHomeQuestState(this.gs));
     checkForInvasion(
       this, this.gs, this.invasionState,
       GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
@@ -188,8 +515,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   // ─── Battle return ────────────────────────────────────────────────────────────
 
   private checkBattleReturn(): void {
-    const result = this.registry.get('battleResult') as
-      { won: boolean; goldEarned: number; dmXP: number; materialsEarned?: Record<string, number> } | undefined;
+    const result = this.registry.get('battleResult') as BattleReturnResult | undefined;
     if (!result) return;
     this.registry.remove('battleResult');
     this.registry.remove('returnTo');
@@ -197,36 +523,22 @@ export class DungeonHomeScene extends Phaser.Scene {
     const prevGold    = this.gs.homeGold;
     const prevCrystal = this.gs.soulCrystals;
     const prevGems    = this.gs.gems;
+    const prevDmLevel = this.gs.dmLevel;
+    const prevSlots = getUnlockedSlots(prevDmLevel);
 
-    // DM level-up: compute new xp/level without mutation
-    let newDmXP    = this.gs.dmXP + result.dmXP;
-    let newDmLevel = this.gs.dmLevel;
-    while (newDmXP >= xpForLevel(newDmLevel)) {
-      newDmXP    -= xpForLevel(newDmLevel);
-      newDmLevel += 1;
-    }
-    const didLevelUp = newDmLevel > this.gs.dmLevel;
-
-    // Materials: build new record before merging
-    const newMaterials = { ...(this.gs.materials ?? {}) };
-    if (result.materialsEarned) {
-      Object.entries(result.materialsEarned).forEach(([id, qty]) => {
-        newMaterials[id] = (newMaterials[id] ?? 0) + qty;
-      });
-    }
-
-    this.gs = {
-      ...this.gs,
-      homeGold:        this.gs.homeGold + result.goldEarned,
-      dmXP:            newDmXP,
-      dmLevel:         newDmLevel,
-      totalGoldEarned: (this.gs.totalGoldEarned ?? 0) + result.goldEarned,
-      materials:       newMaterials,
+    const settlement = this.applyGameStateResult(
+      applyBattleReturnSettlement(this.gs, result),
+    );
+    const didLevelUp = settlement.didLevelUp;
+    const battleReturnGrowth = {
+      previousDmLevel: prevDmLevel,
+      nextDmLevel: this.gs.dmLevel,
+      previousSlots: prevSlots,
+      nextSlots: getUnlockedSlots(this.gs.dmLevel),
+      questCompletionPending: !!settlement.defendUpdate?.questDone,
+      materialsEarned: result.materialsEarned,
     };
-    updateQuestObjective(this.gs, 'collect_gold', result.goldEarned);
-    this.gs = tickSubQuestProgress(this.gs, 'collect_gold', result.goldEarned);
-    updateQuestObjective(this.gs, 'reach_dm_level');
-    this.gs = tickSubQuestProgress(this.gs, 'reach_dm_level');
+    if (settlement.changed) this.refreshHomeDynamicPanels();
 
     // Animate changed currency displays
     const newVals = [this.gs.homeGold, this.gs.soulCrystals, this.gs.gems];
@@ -248,33 +560,35 @@ export class DungeonHomeScene extends Phaser.Scene {
     });
 
     if (result.won) {
-      const update = updateQuestObjective(this.gs, 'defend_invasion');
-      this.gs = tickSubQuestProgress(this.gs, 'defend_invasion');
-      saveGameState(this.gs);
+      const update = settlement.defendUpdate;
       const afterReturn = () => {
         if (didLevelUp) {
-          this.time.delayedCall(200, () => showDmLevelUpOverlay(this, this.gs.dmLevel));
+          const slotUnlocked = battleReturnGrowth.nextSlots > battleReturnGrowth.previousSlots;
+          this.time.delayedCall(200, () => showDmLevelUpOverlay(this, this.gs.dmLevel, {
+            primaryLabel: slotUnlocked ? '새 방 설계' : '확인',
+            onDismiss: slotUnlocked
+              ? () => this.revealUnlockedRoom(
+                  battleReturnGrowth.previousSlots,
+                  battleReturnGrowth.nextSlots,
+                )
+              : undefined,
+          }));
         } else if (update?.questDone) {
-          const [newGs, done] = completeAndAdvance(this.gs);
-          this.gs = newGs;
-          saveGameState(this.gs);
+          const done = this.advanceCompletedQuest();
           if (done) this.handleQuestComplete(done);
         }
       };
       if (update?.questDone && !didLevelUp) {
-        const [newGs2, done] = completeAndAdvance(this.gs);
-        this.gs = newGs2;
-        saveGameState(this.gs);
+        const done = this.advanceCompletedQuest();
         this.time.delayedCall(400, () => {
           showBattleReturnOverlay(this, result, () => {
             if (done) this.handleQuestComplete(done);
-          });
+          }, battleReturnGrowth);
         });
       } else {
-        this.time.delayedCall(400, () => showBattleReturnOverlay(this, result, afterReturn));
+        this.time.delayedCall(400, () => showBattleReturnOverlay(this, result, afterReturn, battleReturnGrowth));
       }
     } else {
-      saveGameState(this.gs);
       this.time.delayedCall(400, () => showBattleDefeatOverlay(
         this,
         () => showInvasionBanner(
@@ -285,67 +599,171 @@ export class DungeonHomeScene extends Phaser.Scene {
     }
   }
 
+  private revealUnlockedRoom(previousSlots: number, nextSlots: number): void {
+    if (nextSlots <= previousSlots) return;
+    const slotIdx = previousSlots;
+    if (slotIdx < 0 || slotIdx >= getUnlockedSlots(this.gs.dmLevel)) return;
+
+    this.pendingRoomFeedback = {
+      kind: 'unlock',
+      slotIdx,
+      title: '새 방 해금',
+      body: `방 #${slotIdx + 1} 설계 가능`,
+      statLabel: '방',
+      statBefore: String(previousSlots),
+      statAfter: String(nextSlots),
+      accent: 0x4bd5ff,
+    };
+    this.recentlyChangedRoomIdx = slotIdx;
+    this.refreshHomeDynamicPanels();
+
+    this.time.delayedCall(420, () => {
+      if (!this.scene.isActive('DungeonHomeScene')) return;
+      const overlayOpen = !!this.roomDetailState.roomDetailContainer
+        || !!this.roomDetailState.monsterPickerContainer
+        || !!this.roomDetailState.trapPickerContainer;
+      if (overlayOpen) return;
+      this.openDungeonSlot(slotIdx);
+    });
+  }
+
   // ─── Quest completion handling ────────────────────────────────────────────────
 
-  private handleQuestComplete(result: {
-    completedQuest: MainQuest;
-    nextQuestId: string | null;
-    unlocks: string[];
-  }): void {
-    const isChapterEnd = result.completedQuest.id === 'MQ-010';
-    if (result.unlocks.length > 0) this.registry.set('pendingUnlock', result.unlocks[0]);
-    if (isChapterEnd) this.registry.set('chapterComplete', true);
+  private advanceCompletedQuest(): HomeMainQuestCompletionResult | null {
+    const result = this.applyGameStateResult(settleCompletedHomeMainQuest(this.gs));
+    return result.completion ? result : null;
+  }
 
-    if (result.completedQuest.id === 'MQ-007') {
-      const prevBps = this.gs.blueprints ?? [];
-      const toAdd   = STARTER_BLUEPRINTS.filter(bp => !prevBps.includes(bp));
-      toAdd.forEach(bp => logger.debug(`[FORGE] Blueprint unlocked: ${bp}`));
-      this.gs = { ...this.gs, blueprints: [...prevBps, ...toAdd] };
-      saveGameState(this.gs);
+  private handleQuestComplete(result: HomeMainQuestCompletionResult): void {
+    const completion = result.completion;
+    if (!completion) return;
+
+    if (result.pendingUnlock) this.registry.set('pendingUnlock', result.pendingUnlock);
+    if (result.chapterCompleted) this.registry.set('chapterComplete', true);
+
+    result.unlockedBlueprintIds.forEach(bp => logger.debug(`[FORGE] Blueprint unlocked: ${bp}`));
+    if (result.awakeningStonesAwarded > 0) {
+      logger.debug(`[AWAKEN] +${result.awakeningStonesAwarded} awakening stone (total: ${this.gs.awakeningStones})`);
     }
 
-    if (result.completedQuest.id === 'MQ-010') {
-      this.gs = { ...this.gs, awakeningStones: (this.gs.awakeningStones ?? 0) + 1 };
-      saveGameState(this.gs);
-      logger.debug(`[AWAKEN] +1 awakening stone (total: ${this.gs.awakeningStones})`);
-    }
-
-    // ── Blueprint unlock rewards (Ch3 → Ch8) ──────────────────────────────────
-    // Map: quest ID → blueprint ID unlocked on completion.
-    const QUEST_BP_REWARDS: Record<string, string> = {
-      'MQ-015': 'bp_ore_plate',        // Ch3 — 광석 흉갑 (rarity 2)
-      'MQ-020': 'bp_arcane_core',      // Ch4 — 마법 핵심 (rarity 3)
-      'MQ-025': 'bp_guardian_crown',   // Ch5 — 수호자의 왕관 (rarity 4)
-      'MQ-030': 'bp_celestial_lance',  // Ch6 — 천상의 창 (rarity 3)
-      'MQ-034': 'bp_divine_aegis',     // Ch7 — 신성 방패 (rarity 4)
-      'MQ-038': 'bp_void_blade',       // Ch8 — 허공의 칼날 (rarity 4)
-      'MQ-041': 'bp_abyss_mail',       // Ch8 — 심연의 갑옷 (rarity 4)
-      'MQ-044': 'bp_primordial_gem',   // Ch8 — 원초의 보석 (rarity 5)
-    };
-    const bpUnlock = QUEST_BP_REWARDS[result.completedQuest.id];
-    if (bpUnlock) {
-      const prevBps = this.gs.blueprints ?? [];
-      if (!prevBps.includes(bpUnlock)) {
-        this.gs = { ...this.gs, blueprints: [...prevBps, bpUnlock] };
-        logger.debug(`[FORGE] Blueprint unlocked: ${bpUnlock}`);
-        saveGameState(this.gs);
-      }
-    }
-
-    if (result.completedQuest.id === 'MQ-044') {
-      showGameCompleteOverlay(this, result.completedQuest);
+    if (result.gameCompleted) {
+      showGameCompleteOverlay(this, completion.completedQuest);
     } else {
-      showQuestCompleteOverlay(this, result.completedQuest);
+      showQuestCompleteOverlay(this, completion.completedQuest);
     }
   }
 
   // ─── Room Detail Overlay (delegated to RoomDetailOverlay.ts) ─────────────────
 
   private openRoomDetail(slotIdx: number, cellX: number, cellY: number): void {
-    openRoomDetailOverlay(
-      this, this.roomDetailState, this.theme, this.roomDetailCallbacks,
-      slotIdx, cellX, cellY,
-    );
+    if (this.roomFocusTransitionActive) return;
+
+    const openOverlay = () => {
+      openRoomDetailOverlay(
+        this, this.roomDetailState, this.theme, this.roomDetailCallbacks,
+        slotIdx, cellX, cellY,
+      );
+    };
+
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      openOverlay();
+      return;
+    }
+
+    this.playRoomFocusTransition(slotIdx, cellX, cellY, openOverlay);
+  }
+
+  private playRoomFocusTransition(
+    slotIdx: number,
+    cellX: number,
+    cellY: number,
+    onFocusComplete: () => void,
+  ): void {
+    this.roomFocusTransitionActive = true;
+    const accent = this.getRoomFocusAccent(slotIdx);
+    const startX = cellX + SLOT_W / 2;
+    const startY = cellY + SLOT_H / 2;
+    const targetX = CANVAS_WIDTH / 2;
+    const targetY = GRID_START_Y + 146;
+
+    const layer = this.add.container(0, 0).setDepth(92).setAlpha(0);
+    const dim = this.add.graphics();
+    dim.fillStyle(0x000000, 0.46);
+    dim.fillRect(0, TOP_H, CANVAS_WIDTH, BOT_Y - TOP_H);
+    layer.add(dim);
+
+    const beam = this.add.graphics();
+    beam.fillStyle(accent, 0.08);
+    beam.beginPath();
+    beam.moveTo(startX - 38, startY - 34);
+    beam.lineTo(startX + 38, startY - 34);
+    beam.lineTo(targetX + 112, targetY + 96);
+    beam.lineTo(targetX - 112, targetY + 96);
+    beam.closePath();
+    beam.fillPath();
+    beam.lineStyle(1, accent, 0.22);
+    beam.lineBetween(startX - 40, startY - 34, targetX - 112, targetY + 96);
+    beam.lineBetween(startX + 40, startY - 34, targetX + 112, targetY + 96);
+    layer.add(beam);
+
+    const focus = this.add.container(startX, startY);
+    const focusG = this.add.graphics();
+    focus.add(focusG);
+    _drawBattleSlot(this.makeRoomSlotCtx(), focus, focusG, -SLOT_W / 2, -SLOT_H / 2, slotIdx, true);
+
+    const ring = this.add.graphics();
+    ring.lineStyle(3, accent, 0.82);
+    ring.strokeRoundedRect(-SLOT_W / 2 - 6, -SLOT_H / 2 - 6, SLOT_W + 12, SLOT_H + 12, 14);
+    ring.lineStyle(1, 0xffffff, 0.28);
+    ring.strokeRoundedRect(-SLOT_W / 2 + 5, -SLOT_H / 2 + 5, SLOT_W - 10, SLOT_H - 10, 10);
+    ring.fillStyle(accent, 0.14);
+    ring.fillRoundedRect(-42, -SLOT_H / 2 - 26, 84, 19, 7);
+    focus.add(ring);
+
+    const label = this.add.text(0, -SLOT_H / 2 - 16, `방 #${slotIdx + 1} 확대`, {
+      fontFamily: 'sans-serif',
+      fontSize: '11px',
+      color: '#fff4d6',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    focus.add(label);
+    layer.add(focus);
+
+    this.tweens.add({
+      targets: layer,
+      alpha: 1,
+      duration: 90,
+      ease: 'Quad.easeOut',
+    });
+    this.tweens.add({
+      targets: focus,
+      x: targetX,
+      y: targetY,
+      scaleX: 2.08,
+      scaleY: 2.08,
+      duration: 260,
+      ease: 'Cubic.easeOut',
+      onComplete: () => {
+        onFocusComplete();
+        this.tweens.add({
+          targets: layer,
+          alpha: 0,
+          duration: 120,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            layer.destroy(true);
+            this.roomFocusTransitionActive = false;
+          },
+        });
+      },
+    });
+  }
+
+  private getRoomFocusAccent(slotIdx: number): number {
+    const slot = this.gs.dungeonSlots?.[slotIdx];
+    if (slot?.roomType && slot.hp <= 0) return 0xff5544;
+    if (slot?.roomType) return this.getRoomActivityColor(slot);
+    return 0x4bd5ff;
   }
 
   // ─── Stone background ────────────────────────────────────────────────────────
@@ -369,24 +787,97 @@ export class DungeonHomeScene extends Phaser.Scene {
     const bg = this.add.graphics().setDepth(1);
     bg.fillStyle(t.bgPrimary, 1);
     bg.fillRect(0, TOP_H, CANVAS_WIDTH, BOT_Y - TOP_H);
-    this.add.text(CANVAS_WIDTH / 2, TOP_H + 8, '⚔️  나의 던전  ⚔️', {
-      fontFamily: 'Georgia, serif', fontSize: '11px',
-      color: t.textSecondary, letterSpacing: 2,
-    }).setOrigin(0.5, 0).setDepth(2);
 
-    // Simulation button
-    const simBtnX = CANVAS_WIDTH - 56, simBtnY = TOP_H + 4;
-    const simBg = this.add.graphics().setDepth(5);
-    simBg.fillStyle(t.panelDark, 1);
-    simBg.fillRoundedRect(simBtnX, simBtnY, 50, 22, 4);
-    simBg.lineStyle(1, t.panelBorder, 0.7);
-    simBg.strokeRoundedRect(simBtnX, simBtnY, 50, 22, 4);
-    const simTxt = this.add.text(simBtnX + 25, simBtnY + 11, '⚗ 예측', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: t.panelBorderCSS,
-    }).setOrigin(0.5).setDepth(6).setInteractive();
-    simTxt.on('pointerdown', () => openSimulationModal(this, this.gs, this.theme));
+    const gridCaveY = GRID_START_Y - 8;
+    const gridCaveH = GRID_ROWS_HOME * SLOT_H + (GRID_ROWS_HOME - 1) * SLOT_PAD_Y + 16;
+    bg.fillStyle(t.stoneDark, 0.34);
+    bg.fillRoundedRect(8, gridCaveY, CANVAS_WIDTH - 16, gridCaveH, 12);
+    bg.lineStyle(1.5, t.panelBorder, 0.18);
+    bg.strokeRoundedRect(8, gridCaveY, CANVAS_WIDTH - 16, gridCaveH, 12);
+    bg.fillStyle(t.panelBorder, 0.05);
+    for (let row = 0; row < GRID_ROWS_HOME; row++) {
+      const tunnelY = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2 - 5;
+      bg.fillRoundedRect(24, tunnelY, CANVAS_WIDTH - 48, 10, 5);
+    }
+    for (let col = 0; col < GRID_COLS_HOME; col++) {
+      const tunnelX = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2 - 5;
+      bg.fillRoundedRect(tunnelX, GRID_START_Y + 18, 10, gridCaveH - 36, 5);
+    }
+
+    const lowerCavernY = gridCaveY + gridCaveH - 5;
+    const lowerCavernH = Math.max(70, BOT_Y - lowerCavernY - 24);
+    bg.fillStyle(0x010405, 0.48);
+    bg.fillRect(0, lowerCavernY, CANVAS_WIDTH, lowerCavernH);
+    bg.fillStyle(t.stoneDark, 0.30);
+    bg.beginPath();
+    bg.moveTo(0, lowerCavernY + 17);
+    bg.lineTo(35, lowerCavernY + 5);
+    bg.lineTo(102, lowerCavernY + 14);
+    bg.lineTo(176, lowerCavernY + 3);
+    bg.lineTo(252, lowerCavernY + 16);
+    bg.lineTo(337, lowerCavernY + 6);
+    bg.lineTo(CANVAS_WIDTH, lowerCavernY + 18);
+    bg.lineTo(CANVAS_WIDTH, lowerCavernY + lowerCavernH);
+    bg.lineTo(0, lowerCavernY + lowerCavernH);
+    bg.closePath();
+    bg.fillPath();
+    bg.fillStyle(0x000000, 0.22);
+    bg.fillEllipse(CANVAS_WIDTH / 2, lowerCavernY + 20, CANVAS_WIDTH - 36, 24);
+    bg.lineStyle(1, t.stoneLight, 0.08);
+    for (let i = 0; i < 7; i++) {
+      const x = 18 + i * 58;
+      const topY = lowerCavernY + 16 + (i % 2) * 9;
+      bg.lineBetween(x, topY, x + 18, topY + 54);
+      bg.lineBetween(x + 20, topY + 8, x + 9, topY + 70);
+    }
+    bg.fillStyle(t.panelBorder, 0.07);
+    for (let i = 0; i < 4; i++) {
+      const x = 50 + i * 87;
+      bg.fillRoundedRect(x, lowerCavernY + 18, 10, lowerCavernH - 20, 5);
+      bg.fillStyle(0x000000, 0.20);
+      bg.fillRoundedRect(x + 4, lowerCavernY + 24, 5, lowerCavernH - 34, 3);
+      bg.fillStyle(t.panelBorder, 0.07);
+    }
+    bg.fillStyle(t.stoneMid, 0.20);
+    for (let i = 0; i < 8; i++) {
+      const x = 19 + i * 49;
+      const h = 12 + (i % 3) * 6;
+      bg.fillTriangle(x, BOT_Y - 29, x + 8, BOT_Y - 29 - h, x + 17, BOT_Y - 29);
+    }
+    bg.lineStyle(1, t.panelBorder, 0.09);
+    bg.lineBetween(16, lowerCavernY + lowerCavernH - 18, CANVAS_WIDTH - 16, lowerCavernY + lowerCavernH - 24);
+
+    if (BLUEPRINT_H > 0) {
+      this.rebuildDungeonBlueprintPanel();
+
+      // Simulation button
+      const simBtnX = CANVAS_WIDTH - 66, simBtnY = BLUEPRINT_Y + 8;
+      const simBg = this.add.graphics().setDepth(5);
+      simBg.fillStyle(t.panelDark, 1);
+      simBg.fillRoundedRect(simBtnX, simBtnY, 56, 24, 5);
+      simBg.lineStyle(1, t.panelBorder, 0.7);
+      simBg.strokeRoundedRect(simBtnX, simBtnY, 56, 24, 5);
+      const simTxt = this.add.text(simBtnX + 28, simBtnY + 12, '⚗ 예측', {
+        fontFamily: 'sans-serif', fontSize: '9px', color: t.panelBorderCSS,
+      }).setOrigin(0.5).setDepth(6).setInteractive();
+      simTxt.on('pointerdown', () => openSimulationModal(this, this.gs, this.theme));
+    }
 
     this.rebuildDungeonSlots();
+  }
+
+  private rebuildDungeonBlueprintPanel(): void {
+    if (this.dungeonBlueprintContainer) this.dungeonBlueprintContainer.destroy();
+    if (BLUEPRINT_H <= 0) {
+      this.dungeonBlueprintContainer = null;
+      return;
+    }
+    this.dungeonBlueprintContainer = buildDungeonBlueprintPanel(this, this.gs, this.theme, {
+      x: 10,
+      y: BLUEPRINT_Y,
+      w: CANVAS_WIDTH - 86,
+      h: BLUEPRINT_H,
+    });
   }
 
   private rebuildDungeonSlots(): void {
@@ -399,24 +890,13 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     const g = this.add.graphics();
     c.add(g);
+    const changedIdx = this.recentlyChangedRoomIdx;
 
-    for (let row = 0; row < GRID_ROWS_HOME; row++) {
-      for (let col = 0; col < GRID_COLS_HOME; col++) {
-        const idx        = row * GRID_COLS_HOME + col;
-        const isUnlocked = idx < unlockedCount;
-        const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-        const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
-        this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
-
-        if (isUnlocked) {
-          const _sx = sx, _sy = sy, _idx = idx;
-          const zone = this.add.zone(sx + SLOT_W / 2, sy + SLOT_H / 2, SLOT_W, SLOT_H)
-            .setDepth(10).setInteractive();
-          zone.on('pointerdown', () => this.openRoomDetail(_idx, _sx, _sy));
-          c.add(zone);
-        }
-      }
-    }
+    this.drawDungeonMapBackdrop(c, g, unlockedCount);
+    this.drawDungeonRouteNetwork(c, g, unlockedCount);
+    this.addDungeonRouteFlow(c, unlockedCount);
+    this.addDungeonActivityLayer(c, unlockedCount);
+    this.drawDungeonRoomAlcoves(g, unlockedCount);
 
     const synergyCtx: SynergyDrawContext = {
       scene: this, theme: this.theme,
@@ -427,7 +907,1513 @@ export class DungeonHomeScene extends Phaser.Scene {
       gridStartY: GRID_START_Y,
     };
     drawSynergyConnectors(synergyCtx, c, unlockedCount);
+
+    for (let row = 0; row < GRID_ROWS_HOME; row++) {
+      for (let col = 0; col < GRID_COLS_HOME; col++) {
+        const idx        = row * GRID_COLS_HOME + col;
+        const isUnlocked = idx < unlockedCount;
+        const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
+        const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+        this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
+        if (idx === changedIdx && isUnlocked) this.addRoomChangedPulse(c, sx, sy, idx);
+
+        if (isUnlocked) {
+          const _sx = sx, _sy = sy, _idx = idx;
+          const focusAffordance = this.addRoomOpenAffordance(c, _sx, _sy, _idx);
+          const zone = this.add.zone(sx + SLOT_W / 2, sy + SLOT_H / 2, SLOT_W, SLOT_H)
+            .setDepth(10).setInteractive({ useHandCursor: true });
+          zone.on('pointerover', () => focusAffordance.setHover(true));
+          zone.on('pointerout', () => focusAffordance.setHover(false));
+          zone.on('pointerdown', () => {
+            focusAffordance.pulse();
+            this.openRoomDetail(_idx, _sx, _sy);
+          });
+          c.add(zone);
+        }
+      }
+    }
+
+    this.addDungeonCrewLayer(c, unlockedCount);
+    this.addPrimaryRoomActionPin(c, unlockedCount);
+    this.addActionQueueRankMarkers(c, unlockedCount);
+    this.addRoomMaintenanceBadges(c, unlockedCount);
     drawSynergySummary(synergyCtx, c, CANVAS_WIDTH);
+  }
+
+  private addRoomOpenAffordance(
+    c: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    slotIdx: number,
+  ): { setHover: (hover: boolean) => void; pulse: () => void } {
+    const accent = this.getRoomFocusAccent(slotIdx);
+    const base = this.add.graphics();
+    const hover = this.add.graphics().setVisible(false);
+    const pulse = this.add.graphics().setVisible(false);
+    const corner = 10;
+    const inset = 6;
+
+    const drawCorners = (
+      graphics: Phaser.GameObjects.Graphics,
+      alpha: number,
+      weight: number,
+      expand = 0,
+    ): void => {
+      const left = x + inset - expand;
+      const top = y + inset - expand;
+      const right = x + SLOT_W - inset + expand;
+      const bottom = y + SLOT_H - inset + expand;
+      const len = corner + expand * 0.5;
+
+      graphics.clear();
+      graphics.lineStyle(weight, accent, alpha);
+      graphics.lineBetween(left, top + len, left, top);
+      graphics.lineBetween(left, top, left + len, top);
+      graphics.lineBetween(right - len, top, right, top);
+      graphics.lineBetween(right, top, right, top + len);
+      graphics.lineBetween(left, bottom - len, left, bottom);
+      graphics.lineBetween(left, bottom, left + len, bottom);
+      graphics.lineBetween(right - len, bottom, right, bottom);
+      graphics.lineBetween(right, bottom - len, right, bottom);
+    };
+
+    drawCorners(base, 0.22, 1);
+    drawCorners(hover, 0.86, 1.6, 2);
+    c.add([base, hover, pulse]);
+
+    return {
+      setHover: (isHover: boolean): void => {
+        hover.setVisible(isHover);
+        base.setAlpha(isHover ? 0.35 : 1);
+      },
+      pulse: (): void => {
+        drawCorners(pulse, 0.92, 2, 3);
+        pulse.setVisible(true).setAlpha(1);
+        this.tweens.killTweensOf(pulse);
+        this.tweens.add({
+          targets: pulse,
+          alpha: 0,
+          duration: 220,
+          ease: 'Quad.easeOut',
+          onComplete: () => pulse.setVisible(false),
+        });
+      },
+    };
+  }
+
+  private addPrimaryRoomActionPin(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    const route = this.getUnlockedRoute(unlockedCount);
+    const pin = route
+      .map(idx => this.getRoomActionPin(idx))
+      .find((candidate): candidate is HomeRoomActionPin => Boolean(candidate));
+    if (!pin) return;
+    const rankedSlots = new Set(
+      getDungeonActionQueue(this.gs, unlockedCount)
+        .slice(0, 3)
+        .map(action => action.slotIdx),
+    );
+    if (rankedSlots.has(pin.slotIdx)) return;
+
+    const col = pin.slotIdx % GRID_COLS_HOME;
+    const row = Math.floor(pin.slotIdx / GRID_COLS_HOME);
+    const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W - 17;
+    const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + 29;
+    const pinContainer = this.add.container(x, y);
+    const g = this.add.graphics();
+
+    g.fillStyle(0x03070b, 0.92);
+    g.fillCircle(0, 0, 14);
+    g.lineStyle(1.2, pin.accent, 0.76);
+    g.strokeCircle(0, 0, 14);
+    g.fillStyle(pin.accent, 0.22);
+    g.fillCircle(0, 0, 8);
+    g.fillStyle(0xffffff, 0.18);
+    g.fillCircle(-4, -5, 2.2);
+    g.fillTriangle(10, 0, 4, -4, 4, 4);
+    pinContainer.add(g);
+
+    const text = this.add.text(-1, 0, pin.icon, {
+      fontFamily: 'sans-serif',
+      fontSize: '12px',
+      color: '#fff4d6',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    pinContainer.add(text);
+    const zone = this.add.zone(0, 0, 34, 34)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => {
+      audioManager.playSfx('button_click');
+      this.openDungeonSlot(pin.slotIdx);
+    });
+    pinContainer.add(zone);
+    c.add(pinContainer);
+
+    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    this.tweens.add({
+      targets: pinContainer,
+      y: y - 3,
+      alpha: { from: 0.86, to: 1 },
+      duration: 740,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private getRoomActionPin(slotIdx: number): HomeRoomActionPin | null {
+    const action = getRoomActionRecommendation(this.gs, slotIdx);
+    if (action.kind === 'ready') return null;
+    return { slotIdx, label: action.label, icon: action.icon, accent: action.accent };
+  }
+
+  private addActionQueueRankMarkers(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    const actions = getDungeonActionQueue(this.gs, unlockedCount).slice(0, 3);
+    if (actions.length === 0) return;
+
+    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    actions.forEach((action, i) => {
+      const col = action.slotIdx % GRID_COLS_HOME;
+      const row = Math.floor(action.slotIdx / GRID_COLS_HOME);
+      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
+      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + 10;
+      const rank = i + 1;
+      this.addActionQueueRoomSpotlight(c, action, rank, x, y + SLOT_H / 2 - 10, reducedMotion);
+      const markerW = 42;
+      const marker = this.add.container(x, y).setDepth(14);
+      const bg = this.add.graphics();
+
+      bg.fillStyle(0x020609, 0.94);
+      bg.fillRoundedRect(-markerW / 2, -10, markerW, 20, 8);
+      bg.lineStyle(1.2, action.accent, 0.86);
+      bg.strokeRoundedRect(-markerW / 2, -10, markerW, 20, 8);
+      bg.fillStyle(action.accent, 0.22);
+      bg.fillRoundedRect(-markerW / 2 + 4, -6, markerW - 8, 12, 6);
+      bg.fillStyle(0x03070b, 0.92);
+      bg.fillCircle(-markerW / 2 + 11, 0, 9);
+      bg.lineStyle(1, action.accent, 0.76);
+      bg.strokeCircle(-markerW / 2 + 11, 0, 9);
+      bg.fillStyle(0xffffff, 0.18);
+      bg.fillCircle(-markerW / 2 + 8, -3, 2);
+      marker.add(bg);
+
+      marker.add(this.add.text(-markerW / 2 + 11, 0, String(rank), {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: '#fff6d6',
+        fontStyle: 'bold',
+      }).setOrigin(0.5));
+      marker.add(this.add.text(8, 0, action.icon, {
+        fontFamily: 'sans-serif',
+        fontSize: '11px',
+        color: '#fff6d6',
+        fontStyle: 'bold',
+      }).setOrigin(0.5));
+
+      const zone = this.add.zone(0, 0, markerW + 16, 30)
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => marker.setScale(1.06));
+      zone.on('pointerout', () => marker.setScale(1));
+      zone.on('pointerdown', () => {
+        audioManager.playSfx('button_click');
+        this.openDungeonSlot(action.slotIdx);
+      });
+      marker.add(zone);
+      c.add(marker);
+
+      if (reducedMotion) return;
+      this.tweens.add({
+        targets: marker,
+        y: y - 2,
+        alpha: { from: 0.88, to: 1 },
+        duration: 680 + i * 90,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+  }
+
+  private addActionQueueRoomSpotlight(
+    c: Phaser.GameObjects.Container,
+    action: RoomActionRecommendation,
+    rank: number,
+    x: number,
+    y: number,
+    reducedMotion: boolean,
+  ): void {
+    const spotlight = this.add.container(x, y).setDepth(13);
+    const g = this.add.graphics();
+    const ringW = SLOT_W + 12 - Math.min(rank, 3) * 2;
+    const ringH = SLOT_H + 10 - Math.min(rank, 3) * 2;
+    const left = -ringW / 2;
+    const top = -ringH / 2;
+    const alpha = rank === 1 ? 0.80 : rank === 2 ? 0.56 : 0.42;
+
+    g.fillStyle(action.accent, rank === 1 ? 0.10 : 0.055);
+    g.fillRoundedRect(left, top, ringW, ringH, 13);
+    g.lineStyle(rank === 1 ? 2.2 : 1.4, action.accent, alpha);
+    g.strokeRoundedRect(left, top, ringW, ringH, 13);
+    g.lineStyle(1, 0xffffff, rank === 1 ? 0.18 : 0.10);
+    g.strokeRoundedRect(left + 5, top + 5, ringW - 10, ringH - 10, 10);
+
+    g.fillStyle(0x020609, 0.72);
+    g.fillCircle(left + 18, top + 18, 7);
+    g.lineStyle(1, action.accent, 0.54);
+    g.strokeCircle(left + 18, top + 18, 7);
+    g.fillStyle(action.accent, 0.34);
+    g.fillCircle(left + 18, top + 18, 3);
+    spotlight.add(g);
+
+    c.add(spotlight);
+    if (reducedMotion || rank !== 1) return;
+    this.tweens.add({
+      targets: spotlight,
+      scaleX: 1.04,
+      scaleY: 1.04,
+      alpha: { from: 0.82, to: 1 },
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private addRoomMaintenanceBadges(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    const queue = getDungeonActionQueue(this.gs, unlockedCount);
+    const spotlightedSlots = new Set(queue.slice(0, 3).map(action => action.slotIdx));
+    const primaryPin = this.getUnlockedRoute(unlockedCount)
+      .map(idx => this.getRoomActionPin(idx))
+      .find((candidate): candidate is HomeRoomActionPin => Boolean(candidate));
+    const maintenanceActions = queue
+      .filter(action =>
+        action.kind === 'growth'
+        && !spotlightedSlots.has(action.slotIdx)
+        && action.slotIdx !== primaryPin?.slotIdx,
+      )
+      .slice(0, 3);
+    if (maintenanceActions.length === 0) return;
+
+    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    maintenanceActions.forEach(action => {
+      const col = action.slotIdx % GRID_COLS_HOME;
+      const row = Math.floor(action.slotIdx / GRID_COLS_HOME);
+      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
+      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H - 15;
+      const label = `${action.icon} ${action.label}`;
+      const badgeW = Math.max(54, 38 + action.label.length * 10);
+      const badge = this.add.container(x, y).setDepth(15);
+      const bg = this.add.graphics();
+
+      bg.fillStyle(0x040708, 0.94);
+      bg.fillRoundedRect(-badgeW / 2, -13, badgeW, 26, 8);
+      bg.lineStyle(1.2, action.accent, 0.78);
+      bg.strokeRoundedRect(-badgeW / 2, -13, badgeW, 26, 8);
+      bg.fillStyle(action.accent, 0.20);
+      bg.fillRoundedRect(-badgeW / 2 + 4, -9, badgeW - 8, 18, 6);
+      badge.add(bg);
+
+      const labelText = this.add.text(0, -4, label, {
+        fontFamily: 'sans-serif',
+        fontSize: '9px',
+        color: '#fff5dc',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      const statText = this.add.text(0, 7, action.statValue, {
+        fontFamily: 'monospace',
+        fontSize: '7px',
+        color: '#b8fff0',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      const zone = this.add.zone(0, 0, badgeW + 8, 32)
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerover', () => badge.setScale(1.06));
+      zone.on('pointerout', () => badge.setScale(1));
+      zone.on('pointerdown', () => {
+        audioManager.playSfx('button_click');
+        this.openDungeonSlot(action.slotIdx);
+      });
+      badge.add([labelText, statText, zone]);
+      c.add(badge);
+
+      if (reducedMotion) return;
+      this.tweens.add({
+        targets: badge,
+        alpha: { from: 0.82, to: 1 },
+        y: y - 2,
+        duration: 780,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+  }
+
+  private addDungeonActivityLayer(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    for (let idx = 0; idx < unlockedCount; idx++) {
+      const slot = this.gs.dungeonSlots?.[idx];
+      if (!slot?.roomType) continue;
+
+      const col = idx % GRID_COLS_HOME;
+      const row = Math.floor(idx / GRID_COLS_HOME);
+      const cx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
+      const cy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2;
+      this.addRoomActivityAura(c, cx, cy, slot, idx);
+    }
+  }
+
+  private drawDungeonRoomAlcoves(
+    g: Phaser.GameObjects.Graphics,
+    unlockedCount: number,
+  ): void {
+    const totalSlots = GRID_COLS_HOME * GRID_ROWS_HOME;
+    for (let idx = 0; idx < totalSlots; idx++) {
+      const col = idx % GRID_COLS_HOME;
+      const row = Math.floor(idx / GRID_COLS_HOME);
+      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
+      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+      this.drawDungeonRoomAlcove(g, x, y, idx, idx < unlockedCount);
+    }
+  }
+
+  private drawDungeonRoomAlcove(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    slotIdx: number,
+    unlocked: boolean,
+  ): void {
+    const slot = this.gs.dungeonSlots?.[slotIdx];
+    const isBuilt = Boolean(unlocked && slot?.roomType);
+    const isBroken = Boolean(isBuilt && slot?.hp <= 0);
+    const accent = isBroken
+      ? 0xff5544
+      : isBuilt && slot
+        ? this.getRoomActivityColor(slot)
+        : unlocked
+          ? 0x4bd5ff
+          : 0x4a5360;
+    const readiness = slot?.roomType ? calculateRoomMetrics(this.gs, slot).readiness : 0;
+    const energy = unlocked
+      ? Phaser.Math.Clamp((isBuilt ? readiness / 100 : 0.28) + (slot?.roomLevel ?? 0) * 0.05, 0.22, 0.92)
+      : 0.12;
+    const left = x - 8;
+    const top = y - 8;
+    const w = SLOT_W + 16;
+    const h = SLOT_H + 18;
+    const midX = x + SLOT_W / 2;
+    const floorY = y + SLOT_H + 8;
+    const alpha = unlocked ? 0.48 : 0.22;
+
+    g.fillStyle(0x020405, unlocked ? 0.66 : 0.40);
+    g.fillRoundedRect(left, top, w, h, 14);
+    g.lineStyle(1.1, 0x131b1b, unlocked ? 0.78 : 0.42);
+    g.strokeRoundedRect(left, top, w, h, 14);
+
+    g.fillStyle(0x101615, unlocked ? 0.60 : 0.32);
+    g.fillRoundedRect(left + 5, top + 4, w - 10, 13, 7);
+    g.fillStyle(0xffffff, unlocked ? 0.055 : 0.025);
+    g.fillRoundedRect(left + 12, top + 7, w - 24, 3, 2);
+
+    g.fillStyle(0x070b0a, unlocked ? 0.80 : 0.46);
+    g.fillRoundedRect(left + 3, top + 15, 8, h - 24, 5);
+    g.fillRoundedRect(left + w - 11, top + 15, 8, h - 24, 5);
+    g.lineStyle(1, accent, unlocked ? 0.18 + energy * 0.16 : 0.08);
+    g.lineBetween(left + 7, top + 22, left + 7, top + h - 16);
+    g.lineBetween(left + w - 7, top + 22, left + w - 7, top + h - 16);
+
+    g.fillStyle(0x010202, unlocked ? 0.62 : 0.32);
+    g.fillEllipse(midX, floorY, SLOT_W + 18, 16);
+    g.fillStyle(accent, isBroken ? 0.12 : 0.045 + energy * 0.055);
+    g.fillEllipse(midX, floorY - 1, SLOT_W + 4, 9);
+
+    const socketAlpha = isBroken ? 0.34 : 0.16 + energy * 0.20;
+    const sockets = [
+      { x: left + 13, y: top + 13 },
+      { x: left + w - 13, y: top + 13 },
+      { x: left + 13, y: top + h - 13 },
+      { x: left + w - 13, y: top + h - 13 },
+    ];
+    sockets.forEach((socket, socketIdx) => {
+      g.fillStyle(0x010404, unlocked ? 0.86 : 0.46);
+      g.fillCircle(socket.x, socket.y, socketIdx < 2 ? 3.5 : 3);
+      g.fillStyle(accent, unlocked ? socketAlpha : 0.07);
+      g.fillCircle(socket.x, socket.y, socketIdx < 2 ? 1.8 : 1.5);
+    });
+
+    if (isBuilt) {
+      g.lineStyle(1.2, accent, isBroken ? 0.28 : 0.18 + energy * 0.22);
+      g.strokeRoundedRect(left + 4, top + 4, w - 8, h - 8, 11);
+      g.fillStyle(accent, isBroken ? 0.08 : 0.04 + energy * 0.045);
+      g.fillRoundedRect(left + 15, floorY - 9, w - 30, 5, 3);
+      return;
+    }
+
+    if (unlocked) {
+      g.lineStyle(1, accent, alpha * 0.32);
+      g.strokeRoundedRect(left + 12, top + 20, w - 24, h - 34, 8);
+      g.fillStyle(accent, 0.055);
+      g.fillRoundedRect(left + 20, top + h - 18, w - 40, 4, 2);
+      return;
+    }
+
+    g.lineStyle(1, 0x6f7786, 0.10);
+    g.strokeRoundedRect(left + 12, top + 20, w - 24, h - 34, 8);
+    g.lineStyle(1, 0x6f7786, 0.08);
+    g.lineBetween(left + 24, top + 25, left + w - 24, top + h - 22);
+    g.lineBetween(left + w - 24, top + 25, left + 24, top + h - 22);
+  }
+
+  private addRoomActivityAura(
+    c: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    slot: DungeonSlot,
+    idx: number,
+  ): void {
+    const isBroken = Boolean(slot.roomType && slot.hp <= 0);
+    const monsterCount = (slot.monsterIds ?? []).filter(Boolean).length;
+    const trapCount = (slot.trapIds ?? []).filter(Boolean).length;
+    const loadoutCount = monsterCount + trapCount;
+    const hasActiveLoadout = loadoutCount > 0;
+    const activity = Math.min(1, 0.28 + (monsterCount + trapCount + slot.roomLevel) * 0.13);
+    const accent = isBroken ? 0xff5544 : this.getRoomActivityColor(slot);
+    const aura = this.add.container(x, y).setAlpha(isBroken ? 0.42 : 0.30 + activity * 0.18);
+
+    const glow = this.add.graphics();
+    glow.fillStyle(accent, isBroken ? 0.12 : 0.08 + activity * 0.06);
+    glow.fillCircle(0, 0, 49);
+    glow.fillStyle(accent, isBroken ? 0.11 : 0.12 + activity * 0.07);
+    glow.fillCircle(0, 0, 29);
+    glow.lineStyle(1, accent, isBroken ? 0.28 : 0.18 + activity * 0.22);
+    glow.strokeCircle(0, 0, 42);
+    glow.strokeCircle(0, 0, 24);
+    aura.add(glow);
+
+    const motePositions = isBroken
+      ? [{ x: -18, y: -13 }, { x: 19, y: 15 }]
+      : hasActiveLoadout
+        ? [{ x: -28, y: -20 }, { x: 22, y: 24 }]
+        : [];
+    motePositions.forEach((pos, moteIdx) => {
+      const mote = this.add.circle(pos.x, pos.y, moteIdx % 2 === 0 ? 2.4 : 1.8, accent, isBroken ? 0.36 : 0.34 + activity * 0.24);
+      aura.add(mote);
+      this.tweens.add({
+        targets: mote,
+        alpha: isBroken ? 0.08 : 0.12,
+        y: pos.y + (moteIdx % 2 === 0 ? -5 : 4),
+        duration: 760 + ((idx + moteIdx) % 4) * 130,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    });
+
+    if (isBroken) {
+      glow.lineStyle(1.4, 0xff5544, 0.30);
+      glow.lineBetween(-18, -18, -2, 3);
+      glow.lineBetween(-2, 3, 18, 21);
+      glow.lineBetween(4, -22, -2, 3);
+    }
+
+    c.add(aura);
+    if (hasActiveLoadout || isBroken) {
+      this.tweens.add({
+        targets: aura,
+        scaleX: isBroken ? 1.04 : 1.08,
+        scaleY: isBroken ? 1.04 : 1.08,
+        alpha: isBroken ? 0.25 : 0.22 + activity * 0.16,
+        duration: isBroken ? 640 : 1100 + (idx % 3) * 170,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+  }
+
+  private addDungeonCrewLayer(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    for (let idx = 0; idx < unlockedCount; idx++) {
+      const slot = this.gs.dungeonSlots?.[idx];
+      if (!slot?.roomType || slot.hp <= 0) continue;
+
+      const monsterIds = (slot.monsterIds ?? []).filter((id): id is string => typeof id === 'string');
+      const trapIds = (slot.trapIds ?? []).filter((id): id is string => typeof id === 'string');
+      if (monsterIds.length === 0 && trapIds.length === 0) continue;
+
+      const col = idx % GRID_COLS_HOME;
+      const row = Math.floor(idx / GRID_COLS_HOME);
+      const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
+      const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+      const accent = monsterIds.length > 0 ? this.getRoomActivityColor(slot) : 0xffc45f;
+      const icon = monsterIds.length > 0
+        ? this.resolveMonsterVisual(monsterIds[0]).emoji
+        : '⚠';
+      const loadoutCount = monsterIds.length + trapIds.length;
+      const badgeX = sx + SLOT_W + 5;
+      const badgeY = sy + 42 + (idx % 2) * 15;
+
+      this.addRoomCrewBadge(c, badgeX, badgeY, icon, loadoutCount, accent, trapIds.length > 0, reducedMotion, idx);
+    }
+  }
+
+  private addRoomCrewBadge(
+    c: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    icon: string,
+    count: number,
+    accent: number,
+    hasTrap: boolean,
+    reducedMotion: boolean,
+    seed: number,
+  ): void {
+    const badge = this.add.container(x, y).setDepth(13);
+    const g = this.add.graphics();
+    const countText = count > 1 ? String(Math.min(count, 9)) : '';
+
+    g.fillStyle(0x020607, 0.94);
+    g.fillCircle(0, 0, 9.5);
+    g.lineStyle(1.2, accent, 0.78);
+    g.strokeCircle(0, 0, 9.5);
+    g.fillStyle(accent, 0.18);
+    g.fillCircle(0, 0, 6);
+    g.fillStyle(0xffffff, 0.22);
+    g.fillCircle(-3.5, -3.5, 1.7);
+    if (hasTrap) {
+      g.fillStyle(0xffc45f, 0.94);
+      g.fillTriangle(-9, 8, -4, -1, 1, 8);
+      g.lineStyle(1, 0x020607, 0.64);
+      g.lineBetween(-7, 6, -4, 1);
+      g.lineBetween(-4, 1, -1, 6);
+    }
+    if (count > 1) {
+      g.fillStyle(accent, 0.94);
+      g.fillCircle(7.5, 7.5, 4.8);
+      g.lineStyle(1, 0x020607, 0.72);
+      g.strokeCircle(7.5, 7.5, 4.8);
+    }
+    badge.add(g);
+
+    badge.add(this.add.text(0, -1, icon, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: '#fff4d6',
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+    if (countText) {
+      badge.add(this.add.text(7.5, 7.5, countText, {
+        fontFamily: 'monospace',
+        fontSize: '7px',
+        color: '#06100d',
+        fontStyle: 'bold',
+      }).setOrigin(0.5));
+    }
+    c.add(badge);
+
+    if (reducedMotion) return;
+    this.tweens.add({
+      targets: badge,
+      y: y + (seed % 2 === 0 ? -2 : 2),
+      alpha: { from: 0.86, to: 1 },
+      duration: 760 + (seed % 5) * 80,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private getRoomActivityColor(slot: DungeonSlot): number {
+    switch (slot.roomType) {
+      case 'combat': return 0xff8a45;
+      case 'trap': return 0xc8921a;
+      case 'support': return 0x44ccaa;
+      case 'magic': return 0x9c7cff;
+      default: return this.theme.panelBorder;
+    }
+  }
+
+  private drawDungeonCavernSilhouette(
+    g: Phaser.GameObjects.Graphics,
+    mapX: number,
+    mapY: number,
+    mapW: number,
+    mapH: number,
+  ): void {
+    const t = this.theme;
+    const left = mapX - 5;
+    const right = mapX + mapW + 5;
+    const top = mapY - 5;
+    const bottom = mapY + mapH + 6;
+    const topPoints = [
+      { x: left + 18, y: top + 18 },
+      { x: left + 44, y: top + 3 },
+      { x: left + 91, y: top + 10 },
+      { x: left + 139, y: top },
+      { x: left + 190, y: top + 7 },
+      { x: left + 245, y: top + 2 },
+      { x: right - 42, y: top + 15 },
+    ];
+    const bottomPoints = [
+      { x: right - 33, y: bottom - 8 },
+      { x: right - 84, y: bottom + 3 },
+      { x: right - 151, y: bottom - 2 },
+      { x: right - 215, y: bottom + 4 },
+      { x: left + 76, y: bottom - 3 },
+      { x: left + 28, y: bottom - 14 },
+    ];
+
+    g.fillStyle(0x000000, 0.34);
+    g.fillRoundedRect(mapX + 4, mapY + 8, mapW - 8, mapH + 10, 24);
+
+    g.fillStyle(t.stoneDark, 0.84);
+    g.beginPath();
+    g.moveTo(left + 9, top + 46);
+    topPoints.forEach(p => g.lineTo(p.x, p.y));
+    g.lineTo(right - 9, top + 53);
+    g.lineTo(right + 2, bottom - 44);
+    bottomPoints.forEach(p => g.lineTo(p.x, p.y));
+    g.lineTo(left - 2, bottom - 52);
+    g.closePath();
+    g.fillPath();
+
+    g.lineStyle(2, t.stoneMid, 0.34);
+    g.beginPath();
+    g.moveTo(left + 20, top + 42);
+    topPoints.slice(1, -1).forEach(p => g.lineTo(p.x, p.y + 5));
+    g.lineTo(right - 20, top + 43);
+    g.strokePath();
+
+    g.lineStyle(1, t.stoneLight, 0.10);
+    for (let i = 0; i < 8; i++) {
+      const x = mapX + 26 + ((i * 47) % (mapW - 52));
+      const y = mapY + 10 + ((i * 29) % (mapH - 20));
+      g.lineBetween(x, y, x + 18 + (i % 3) * 7, y - 7 + (i % 2) * 13);
+      if (i % 2 === 0) g.lineBetween(x + 8, y - 3, x + 2, y + 10);
+    }
+  }
+
+  private drawDungeonDepthShafts(
+    g: Phaser.GameObjects.Graphics,
+    mapX: number,
+    mapY: number,
+    mapW: number,
+    mapH: number,
+  ): void {
+    const t = this.theme;
+    const shaftW = 30;
+    const leftX = mapX + 11;
+    const rightX = mapX + mapW - shaftW - 11;
+
+    for (const x of [leftX, rightX]) {
+      g.fillStyle(0x020405, 0.58);
+      g.fillRoundedRect(x, mapY + 24, shaftW, mapH - 48, 13);
+      g.lineStyle(1.2, t.panelBorder, 0.18);
+      g.strokeRoundedRect(x + 3, mapY + 27, shaftW - 6, mapH - 54, 10);
+      g.lineStyle(1, t.stoneLight, 0.08);
+      for (let y = mapY + 44; y < mapY + mapH - 42; y += 34) {
+        g.lineBetween(x + 7, y, x + shaftW - 7, y + 8);
+      }
+    }
+
+    for (let row = 0; row < GRID_ROWS_HOME; row++) {
+      const cy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2;
+      g.fillStyle(t.panelBorder, 0.10);
+      g.fillRoundedRect(leftX + shaftW - 2, cy - 10, 24, 20, 9);
+      g.fillRoundedRect(rightX - 22, cy - 10, 24, 20, 9);
+      g.lineStyle(1, t.panelBorder, 0.18);
+      g.lineBetween(leftX + shaftW + 4, cy, SLOT_PAD_X - 4, cy);
+      g.lineBetween(SLOT_PAD_X + GRID_COLS_HOME * SLOT_W + (GRID_COLS_HOME - 1) * SLOT_PAD_X + 4, cy, rightX - 4, cy);
+    }
+
+    g.fillStyle(0xffc875, 0.10);
+    g.fillCircle(leftX + shaftW / 2, mapY + 42, 12);
+    g.fillCircle(rightX + shaftW / 2, mapY + mapH - 42, 12);
+    g.fillStyle(0xffd978, 0.48);
+    g.fillCircle(leftX + shaftW / 2, mapY + 42, 2.5);
+    g.fillCircle(rightX + shaftW / 2, mapY + mapH - 42, 2.5);
+  }
+
+  private drawDungeonEntranceGate(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    accent: number,
+  ): void {
+    g.fillStyle(0x020405, 0.84);
+    g.fillRoundedRect(x - 20, y - 27, 40, 54, 12);
+    g.fillStyle(0x101a20, 0.94);
+    g.fillRoundedRect(x - 16, y - 22, 32, 44, 10);
+    g.fillStyle(0x020405, 0.90);
+    g.fillCircle(x, y - 4, 12);
+    g.fillRoundedRect(x - 12, y - 4, 24, 24, 7);
+    g.lineStyle(1.4, accent, 0.62);
+    g.strokeRoundedRect(x - 18, y - 25, 36, 50, 11);
+    g.lineStyle(1, 0xffffff, 0.12);
+    g.lineBetween(x - 9, y - 17, x - 9, y + 18);
+    g.lineBetween(x + 9, y - 17, x + 9, y + 18);
+    g.fillStyle(accent, 0.22);
+    g.fillCircle(x, y + 7, 3);
+    c.add(this.add.text(x, y - 35, '침입문', {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: '#d8f7ff',
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5).setAlpha(0.88));
+  }
+
+  private drawDungeonHeartCore(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    accent: number,
+  ): void {
+    g.fillStyle(0x020405, 0.86);
+    g.fillCircle(x, y, 25);
+    g.fillStyle(accent, 0.12);
+    g.fillCircle(x, y, 31);
+    g.lineStyle(1.4, accent, 0.68);
+    g.strokeCircle(x, y, 23);
+    g.lineStyle(1, 0xffffff, 0.14);
+    g.strokeCircle(x, y, 14);
+    g.fillStyle(accent, 0.58);
+    g.fillCircle(x, y, 5);
+    g.fillStyle(accent, 0.20);
+    g.fillTriangle(x, y - 18, x + 15, y + 10, x - 15, y + 10);
+    c.add(this.add.text(x, y + 35, '심장부', {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: '#fff0b8',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setAlpha(0.9));
+  }
+
+  private drawDungeonMapBackdrop(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    unlockedCount: number,
+  ): void {
+    const t = this.theme;
+    const mapX = 8;
+    const mapY = GRID_START_Y - 12;
+    const mapW = CANVAS_WIDTH - 16;
+    const mapH = GRID_ROWS_HOME * SLOT_H + (GRID_ROWS_HOME - 1) * SLOT_PAD_Y + 24;
+
+    this.drawDungeonCavernSilhouette(g, mapX, mapY, mapW, mapH);
+
+    const framePath = [
+      { x: mapX + 13, y: mapY + 24 },
+      { x: mapX + 37, y: mapY + 8 },
+      { x: mapX + 91, y: mapY + 13 },
+      { x: mapX + 134, y: mapY + 6 },
+      { x: mapX + 190, y: mapY + 12 },
+      { x: mapX + mapW - 38, y: mapY + 7 },
+      { x: mapX + mapW - 13, y: mapY + 25 },
+      { x: mapX + mapW - 8, y: mapY + mapH - 34 },
+      { x: mapX + mapW - 31, y: mapY + mapH - 9 },
+      { x: mapX + mapW - 92, y: mapY + mapH - 14 },
+      { x: mapX + mapW - 145, y: mapY + mapH - 7 },
+      { x: mapX + 92, y: mapY + mapH - 11 },
+      { x: mapX + 31, y: mapY + mapH - 8 },
+      { x: mapX + 8, y: mapY + mapH - 34 },
+    ];
+    const drawFramePath = (offset: number): void => {
+      g.beginPath();
+      framePath.forEach((p, idx) => {
+        const ox = p.x < mapX + mapW / 2 ? -offset : offset;
+        const oy = p.y < mapY + mapH / 2 ? -offset : offset;
+        if (idx === 0) g.moveTo(p.x + ox, p.y + oy);
+        else g.lineTo(p.x + ox, p.y + oy);
+      });
+      g.closePath();
+    };
+
+    g.fillStyle(0x020405, 0.92);
+    drawFramePath(4);
+    g.fillPath();
+    g.fillStyle(t.bgPrimary, 0.84);
+    drawFramePath(0);
+    g.fillPath();
+    g.lineStyle(2, t.stoneMid, 0.54);
+    drawFramePath(0);
+    g.strokePath();
+    g.lineStyle(1, t.panelBorder, 0.22);
+    g.beginPath();
+    g.moveTo(mapX + 28, mapY + 30);
+    g.lineTo(mapX + 54, mapY + 18);
+    g.lineTo(mapX + 119, mapY + 23);
+    g.lineTo(mapX + 176, mapY + 20);
+    g.lineTo(mapX + mapW - 35, mapY + 23);
+    g.strokePath();
+    g.beginPath();
+    g.moveTo(mapX + 27, mapY + mapH - 36);
+    g.lineTo(mapX + 62, mapY + mapH - 22);
+    g.lineTo(mapX + 126, mapY + mapH - 27);
+    g.lineTo(mapX + 205, mapY + mapH - 21);
+    g.lineTo(mapX + mapW - 33, mapY + mapH - 36);
+    g.strokePath();
+
+    drawCaveWallTexture(g, t, mapX + 4, mapY + 4, mapW - 8, mapH - 8, 211);
+    this.drawDungeonDepthShafts(g, mapX, mapY, mapW, mapH);
+
+    for (let i = 0; i < 7; i++) {
+      const yy = mapY + 24 + i * 43;
+      const alpha = i % 2 === 0 ? 0.10 : 0.07;
+      g.lineStyle(1, i % 2 === 0 ? t.stoneLight : t.panelBorder, alpha);
+      g.lineBetween(mapX + 18, yy, mapX + mapW - 18, yy + ((i % 3) - 1) * 4);
+    }
+
+    g.fillStyle(0x000000, 0.28);
+    g.fillEllipse(CANVAS_WIDTH / 2, mapY + mapH - 8, mapW - 34, 34);
+    g.fillStyle(t.stoneDark, 0.34);
+    g.fillRoundedRect(mapX + 12, mapY + 12, mapW - 24, 16, 8);
+    g.fillRoundedRect(mapX + 12, mapY + mapH - 28, mapW - 24, 16, 8);
+
+    for (let row = 0; row < GRID_ROWS_HOME; row++) {
+      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) - 5;
+      const shelfAlpha = row % 2 === 0 ? 0.18 : 0.22;
+      g.fillStyle(row % 2 === 0 ? t.bgSecondary : t.stoneDark, shelfAlpha + 0.05);
+      g.fillRoundedRect(mapX + 13, y + 3, mapW - 26, SLOT_H + 3, 20);
+      g.fillStyle(0x000000, 0.22);
+      g.fillRoundedRect(mapX + 23, y + SLOT_H - 4, mapW - 46, 15, 9);
+      g.fillStyle(t.stoneDark, 0.28);
+      g.fillRoundedRect(mapX + 25, y + 13, mapW - 50, 14, 9);
+      g.lineStyle(2, t.stoneDark, 0.36);
+      g.lineBetween(mapX + 26, y + SLOT_H - 4, mapX + mapW - 26, y + SLOT_H - 4);
+      g.lineStyle(1, t.stoneLight, 0.13);
+      g.lineBetween(mapX + 34, y + 17, mapX + mapW - 34, y + 11);
+      g.lineStyle(1, t.panelBorder, 0.08);
+      g.lineBetween(mapX + 39, y + 30, mapX + mapW - 39, y + 27);
+
+      const floorChipX = mapX + 24;
+      const floorChipY = y + 18;
+      g.fillStyle(0x03070b, 0.72);
+      g.fillRoundedRect(floorChipX - 12, floorChipY - 8, 24, 16, 5);
+      g.lineStyle(1, t.panelBorder, 0.30);
+      g.strokeRoundedRect(floorChipX - 12, floorChipY - 8, 24, 16, 5);
+      c.add(this.add.text(floorChipX, floorChipY, `B${row + 1}`, {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: t.textSecondary,
+        fontStyle: 'bold',
+      }).setOrigin(0.5).setAlpha(0.78));
+
+      const braceY = y + SLOT_H - 3;
+      for (let col = 0; col < GRID_COLS_HOME - 1; col++) {
+        const braceX = SLOT_PAD_X + (col + 1) * SLOT_W + col * SLOT_PAD_X + SLOT_PAD_X / 2 - 3;
+        g.fillStyle(t.stoneMid, 0.20);
+        g.fillRoundedRect(braceX - 1, y + 23, 8, SLOT_H - 32, 4);
+        g.fillStyle(t.stoneLight, 0.10);
+        g.fillRoundedRect(braceX + 2, y + 28, 3, SLOT_H - 43, 2);
+        g.lineStyle(1, t.stoneMid, 0.20);
+        g.lineBetween(braceX - 7, braceY, braceX + 12, y + 28);
+        g.lineBetween(braceX + 12, braceY, braceX - 7, y + 28);
+      }
+    }
+
+    g.lineStyle(1, t.stoneLight, 0.10);
+    for (let i = 0; i < 9; i++) {
+      const crackX = mapX + 30 + ((i * 41) % (mapW - 60));
+      const crackY = mapY + 34 + ((i * 53) % (mapH - 68));
+      g.lineBetween(crackX, crackY, crackX + 10 + (i % 3) * 4, crackY - 4 + (i % 2) * 9);
+      g.lineBetween(crackX + 8, crackY - 2, crackX + 2, crackY + 8);
+    }
+
+    for (let row = 0; row < GRID_ROWS_HOME; row++) {
+      for (let col = 0; col < GRID_COLS_HOME; col++) {
+        const idx = row * GRID_COLS_HOME + col;
+        const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
+        const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+        const slot = this.gs.dungeonSlots?.[idx];
+        const isUnlocked = idx < unlockedCount;
+        const isBuilt = !!slot?.roomType;
+        const isBroken = isBuilt && !!slot && slot.hp <= 0;
+        const accent = isBroken
+          ? 0xff5544
+          : isBuilt && slot ? this.getRoomActivityColor(slot)
+            : isUnlocked ? 0x4bd5ff : t.stoneMid;
+        const alpha = isBroken ? 0.24 : isBuilt ? 0.18 : isUnlocked ? 0.12 : 0.07;
+
+        g.fillStyle(0x000000, isUnlocked ? 0.42 : 0.24);
+        g.fillEllipse(x + SLOT_W / 2, y + SLOT_H - 8, SLOT_W + 18, 22);
+        g.fillStyle(accent, alpha);
+        g.fillRoundedRect(x - 6, y - 3, SLOT_W + 12, SLOT_H + 6, 16);
+        g.fillStyle(0x010304, isUnlocked ? 0.50 : 0.32);
+        g.fillRoundedRect(x + 1, y + 7, SLOT_W - 2, SLOT_H - 8, 15);
+        g.lineStyle(1.5, accent, isUnlocked ? 0.30 : 0.11);
+        g.strokeRoundedRect(x + 1, y + 6, SLOT_W - 2, SLOT_H - 8, 14);
+        g.fillStyle(t.stoneMid, isUnlocked ? 0.22 : 0.10);
+        g.fillRoundedRect(x + 11, y + 13, 20, 5, 3);
+        g.fillRoundedRect(x + SLOT_W - 31, y + 13, 20, 5, 3);
+        g.fillRoundedRect(x + 11, y + SLOT_H - 18, 20, 5, 3);
+        g.fillRoundedRect(x + SLOT_W - 31, y + SLOT_H - 18, 20, 5, 3);
+        g.lineStyle(1, t.stoneLight, isUnlocked ? 0.10 : 0.05);
+        g.lineBetween(x + 18, y + 23, x + SLOT_W - 18, y + 21);
+        g.lineBetween(x + 17, y + SLOT_H - 24, x + SLOT_W - 17, y + SLOT_H - 27);
+
+        if (!isUnlocked) {
+          g.lineStyle(1, t.stoneLight, 0.08);
+          g.lineBetween(x + 18, y + 31, x + SLOT_W - 16, y + 67);
+          g.lineBetween(x + SLOT_W - 18, y + 31, x + 16, y + 72);
+        } else if (!isBuilt) {
+          g.fillStyle(0x4bd5ff, 0.09);
+          g.fillRoundedRect(x + 19, y + 34, SLOT_W - 38, 25, 9);
+          g.lineStyle(1, 0x4bd5ff, 0.20);
+          g.lineBetween(x + 25, y + 52, x + SLOT_W - 25, y + 41);
+        } else {
+          g.fillStyle(accent, 0.07);
+          g.fillCircle(x + SLOT_W / 2, y + 45, 25);
+        }
+      }
+    }
+
+    const route = this.getUnlockedRoute(unlockedCount);
+    if (route.length > 0) {
+      const first = this.getSlotCenter(route[0]);
+      const last = this.getSlotCenter(route[route.length - 1]);
+      this.drawDungeonMapAnchor(c, g, mapX + mapW - 21, first.y, 0x4bd5ff);
+      this.drawDungeonMapAnchor(c, g, mapX + 21, last.y, 0xffe27a);
+      this.drawDungeonEntranceGate(c, g, mapX + mapW - 10, mapY + 50, 0x4bd5ff);
+      this.drawDungeonHeartCore(c, g, mapX + 26, mapY + mapH - 43, 0xffe27a);
+    }
+
+    const cornerSize = 18;
+    g.fillStyle(t.panelBorder, 0.15);
+    g.fillTriangle(mapX + 8, mapY + 8, mapX + cornerSize, mapY + 8, mapX + 8, mapY + cornerSize);
+    g.fillTriangle(mapX + mapW - 8, mapY + 8, mapX + mapW - cornerSize, mapY + 8, mapX + mapW - 8, mapY + cornerSize);
+    g.fillTriangle(mapX + 8, mapY + mapH - 8, mapX + cornerSize, mapY + mapH - 8, mapX + 8, mapY + mapH - cornerSize);
+    g.fillTriangle(mapX + mapW - 8, mapY + mapH - 8, mapX + mapW - cornerSize, mapY + mapH - 8, mapX + mapW - 8, mapY + mapH - cornerSize);
+  }
+
+  private drawDungeonMapAnchor(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    accent: number,
+  ): void {
+    g.fillStyle(0x050806, 0.86);
+    g.fillCircle(x, y, 13);
+    g.lineStyle(1.4, accent, 0.66);
+    g.strokeCircle(x, y, 13);
+    g.fillStyle(accent, 0.18);
+    g.fillCircle(x, y, 7);
+    c.add(this.add.circle(x, y, 2.4, accent, 0.9));
+  }
+
+  private fillDungeonRouteTunnel(
+    g: Phaser.GameObjects.Graphics,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    width: number,
+    color: number,
+    alpha: number,
+    index: number,
+  ): void {
+    const passage = this.getRoutePassage(from, to);
+    const dx = passage.to.x - passage.from.x;
+    const dy = passage.to.y - passage.from.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy;
+    const py = ux;
+    const wobble = index % 2 === 0 ? 3 : -3;
+    const mid = {
+      x: (passage.from.x + passage.to.x) / 2 + px * wobble,
+      y: (passage.from.y + passage.to.y) / 2 + py * wobble,
+    };
+    const half = width / 2;
+    const innerHalf = Math.max(4, half - 3);
+
+    g.fillStyle(color, alpha);
+    g.beginPath();
+    g.moveTo(passage.from.x + px * half - ux * 2, passage.from.y + py * half - uy * 2);
+    g.lineTo(mid.x + px * (half + 2), mid.y + py * (half + 2));
+    g.lineTo(passage.to.x + px * innerHalf + ux * 2, passage.to.y + py * innerHalf + uy * 2);
+    g.lineTo(passage.to.x - px * half + ux * 2, passage.to.y - py * half + uy * 2);
+    g.lineTo(mid.x - px * (half + 1), mid.y - py * (half + 1));
+    g.lineTo(passage.from.x - px * innerHalf - ux * 2, passage.from.y - py * innerHalf - uy * 2);
+    g.closePath();
+    g.fillPath();
+  }
+
+  private drawDungeonRouteWallStones(
+    g: Phaser.GameObjects.Graphics,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    index: number,
+  ): void {
+    const t = this.theme;
+    const passage = this.getRoutePassage(from, to);
+    const dx = passage.to.x - passage.from.x;
+    const dy = passage.to.y - passage.from.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy;
+    const py = ux;
+    const count = Math.max(2, Math.floor(len / 28));
+
+    for (let i = 1; i <= count; i++) {
+      const tpos = i / (count + 1);
+      const cx = passage.from.x + dx * tpos;
+      const cy = passage.from.y + dy * tpos;
+      const offset = i % 2 === 0 ? 9 : -9;
+      const sx = cx + px * offset;
+      const sy = cy + py * offset;
+      const stoneW = Math.abs(dx) >= Math.abs(dy) ? 11 : 7;
+      const stoneH = Math.abs(dx) >= Math.abs(dy) ? 6 : 11;
+      g.fillStyle(t.stoneMid, 0.17 + (index % 2) * 0.03);
+      g.fillRoundedRect(sx - stoneW / 2, sy - stoneH / 2, stoneW, stoneH, 3);
+      g.lineStyle(1, t.stoneLight, 0.06);
+      g.lineBetween(sx - px * 3 - ux * 2, sy - py * 3 - uy * 2, sx + px * 3 + ux * 2, sy + py * 3 + uy * 2);
+    }
+  }
+
+  private drawDungeonRouteNetwork(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    unlockedCount: number,
+  ): void {
+    const route = this.getUnlockedRoute(unlockedCount);
+    if (route.length === 0) return;
+
+    const t = this.theme;
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.fillDungeonRouteTunnel(
+        g,
+        this.getSlotCenter(route[i]),
+        this.getSlotCenter(route[i + 1]),
+        31,
+        0x010304,
+        0.46,
+        i,
+      );
+    }
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.fillDungeonRouteTunnel(
+        g,
+        this.getSlotCenter(route[i]),
+        this.getSlotCenter(route[i + 1]),
+        23,
+        t.stoneDark,
+        0.68,
+        i + 1,
+      );
+    }
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.fillDungeonRouteTunnel(
+        g,
+        this.getSlotCenter(route[i]),
+        this.getSlotCenter(route[i + 1]),
+        12,
+        t.stoneMid,
+        0.34,
+        i + 2,
+      );
+    }
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.drawRouteInfrastructureSegment(g, route[i], route[i + 1], i);
+    }
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.drawDungeonRouteWallStones(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]), i);
+    }
+
+    g.lineStyle(1.5, t.panelBorder, 0.12);
+    for (let i = 0; i < route.length - 1; i++) {
+      this.strokeDungeonRouteSegment(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]));
+    }
+
+    for (let i = 0; i < route.length - 1; i++) {
+      this.drawRouteSignal(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]), i);
+    }
+
+    route.forEach((idx, routeIdx) => {
+      const center = this.getSlotCenter(idx);
+      this.drawRouteJunction(c, g, center.x, center.y, routeIdx + 1, idx, unlockedCount);
+    });
+  }
+
+  private drawRouteInfrastructureSegment(
+    g: Phaser.GameObjects.Graphics,
+    fromIdx: number,
+    toIdx: number,
+    index: number,
+  ): void {
+    const state = this.getRouteSegmentVisualState(fromIdx, toIdx);
+    const passage = this.getRoutePassage(this.getSlotCenter(fromIdx), this.getSlotCenter(toIdx));
+    const dx = passage.to.x - passage.from.x;
+    const dy = passage.to.y - passage.from.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy;
+    const py = ux;
+    const railOffset = 8 + (index % 2);
+    const railAlpha = state.isPlanned ? 0.12 : state.isBroken ? 0.24 : 0.16 + state.energy * 0.22;
+    const plateAlpha = state.isPlanned ? 0.10 : state.isBroken ? 0.17 : 0.12 + state.energy * 0.13;
+
+    this.strokeRouteOffsetLine(g, passage, px, py, railOffset, state.accent, railAlpha, 2);
+    this.strokeRouteOffsetLine(g, passage, px, py, -railOffset, state.accent, railAlpha * 0.78, 2);
+    this.strokeRouteOffsetLine(g, passage, px, py, 0, 0xffffff, state.isPlanned ? 0.035 : 0.05 + state.energy * 0.05, 1);
+
+    const plateCount = Math.max(1, Math.floor(len / 38));
+    for (let i = 1; i <= plateCount; i++) {
+      const ratio = i / (plateCount + 1);
+      const cx = passage.from.x + dx * ratio;
+      const cy = passage.from.y + dy * ratio;
+      const plateLength = state.isPlanned ? 10 : 13 + state.energy * 4;
+      const plateThickness = state.isPlanned ? 4 : 5.5;
+      this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, plateLength, plateThickness, state.accent, plateAlpha);
+      g.fillStyle(0xffffff, state.isPlanned ? 0.05 : 0.07 + state.energy * 0.07);
+      g.fillCircle(cx - ux * 2, cy - uy * 2, 1.1);
+    }
+
+    this.drawRouteTerminal(g, passage.from.x, passage.from.y, ux, uy, px, py, state, 1);
+    this.drawRouteTerminal(g, passage.to.x, passage.to.y, -ux, -uy, px, py, state, 2);
+  }
+
+  private getRouteSegmentVisualState(fromIdx: number, toIdx: number): RouteSegmentVisualState {
+    const slots = this.gs.dungeonSlots ?? [];
+    const endpoints = [slots[fromIdx], slots[toIdx]].filter((slot): slot is DungeonSlot => !!slot?.roomType);
+    const isBroken = endpoints.some(slot => slot.hp <= 0);
+    const roomMetrics = endpoints.map(slot => calculateRoomMetrics(this.gs, slot));
+    const readiness = endpoints.length > 0
+      ? Math.round(roomMetrics.reduce((sum, metrics) => sum + metrics.readiness, 0) / endpoints.length)
+      : 0;
+    const threatScore = roomMetrics.reduce((sum, metrics) => sum + metrics.threatScore, 0);
+    const accent = isBroken
+      ? 0xff5544
+      : endpoints.length > 0
+        ? this.getRouteFlowAccent(fromIdx, toIdx)
+        : 0x4bd5ff;
+    const activeEnergy = Phaser.Math.Clamp(
+      readiness / 100 * 0.68 + Math.min(1, threatScore / 220) * 0.22 + endpoints.length * 0.08,
+      0.24,
+      1,
+    );
+
+    return {
+      accent,
+      energy: endpoints.length > 0 ? activeEnergy : 0.18,
+      builtCount: endpoints.length,
+      isBroken,
+      isPlanned: endpoints.length === 0,
+    };
+  }
+
+  private strokeRouteOffsetLine(
+    g: Phaser.GameObjects.Graphics,
+    passage: { from: { x: number; y: number }; to: { x: number; y: number } },
+    px: number,
+    py: number,
+    offset: number,
+    color: number,
+    alpha: number,
+    width: number,
+  ): void {
+    g.lineStyle(width, color, alpha);
+    g.beginPath();
+    g.moveTo(passage.from.x + px * offset, passage.from.y + py * offset);
+    g.lineTo(passage.to.x + px * offset, passage.to.y + py * offset);
+    g.strokePath();
+  }
+
+  private fillRouteServicePlate(
+    g: Phaser.GameObjects.Graphics,
+    cx: number,
+    cy: number,
+    ux: number,
+    uy: number,
+    px: number,
+    py: number,
+    length: number,
+    thickness: number,
+    color: number,
+    alpha: number,
+  ): void {
+    const halfLength = length / 2;
+    const halfThickness = thickness / 2;
+
+    g.fillStyle(color, alpha);
+    g.beginPath();
+    g.moveTo(cx + ux * halfLength + px * halfThickness, cy + uy * halfLength + py * halfThickness);
+    g.lineTo(cx - ux * halfLength + px * halfThickness, cy - uy * halfLength + py * halfThickness);
+    g.lineTo(cx - ux * halfLength - px * halfThickness, cy - uy * halfLength - py * halfThickness);
+    g.lineTo(cx + ux * halfLength - px * halfThickness, cy + uy * halfLength - py * halfThickness);
+    g.closePath();
+    g.fillPath();
+  }
+
+  private drawRouteTerminal(
+    g: Phaser.GameObjects.Graphics,
+    edgeX: number,
+    edgeY: number,
+    ux: number,
+    uy: number,
+    px: number,
+    py: number,
+    state: RouteSegmentVisualState,
+    terminalIndex: number,
+  ): void {
+    const cx = edgeX + ux * 8;
+    const cy = edgeY + uy * 8;
+    const terminalAlpha = state.isPlanned ? 0.18 : state.isBroken ? 0.34 : 0.26 + state.energy * 0.24;
+
+    this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, 9, 18, 0x020405, 0.78);
+    this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, 6, 13, state.accent, terminalAlpha);
+    g.lineStyle(1, state.accent, terminalAlpha + 0.08);
+    g.strokeCircle(cx, cy, state.builtCount > 0 ? 4.2 : 3.3);
+    g.fillStyle(0xffffff, state.isPlanned ? 0.06 : 0.10 + state.energy * 0.06);
+    g.fillCircle(cx + px * (terminalIndex % 2 === 0 ? 3 : -3), cy + py * (terminalIndex % 2 === 0 ? 3 : -3), 1.1);
+  }
+
+  private getUnlockedRoute(unlockedCount: number): number[] {
+    return Array.from({ length: GRID_COLS_HOME * GRID_ROWS_HOME }, (_, idx) => idx)
+      .filter(idx => idx < unlockedCount)
+      .sort((a, b) => (INVASION_ORDER[a] ?? 99) - (INVASION_ORDER[b] ?? 99));
+  }
+
+  private getSlotCenter(idx: number): { x: number; y: number } {
+    const col = idx % GRID_COLS_HOME;
+    const row = Math.floor(idx / GRID_COLS_HOME);
+    return {
+      x: SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2,
+      y: GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2,
+    };
+  }
+
+  private strokeDungeonRouteSegment(
+    g: Phaser.GameObjects.Graphics,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ): void {
+    const passage = this.getRoutePassage(from, to);
+    g.beginPath();
+    g.moveTo(passage.from.x, passage.from.y);
+    g.lineTo(passage.to.x, passage.to.y);
+    g.strokePath();
+  }
+
+  private getRoutePassage(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ): { from: { x: number; y: number }; to: { x: number; y: number } } {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const dir = Math.sign(dx) || 1;
+      return {
+        from: { x: from.x + dir * (SLOT_W / 2 - 2), y: from.y },
+        to: { x: to.x - dir * (SLOT_W / 2 - 2), y: to.y },
+      };
+    }
+
+    const dir = Math.sign(dy) || 1;
+    return {
+      from: { x: from.x, y: from.y + dir * (SLOT_H / 2 - 2) },
+      to: { x: to.x, y: to.y - dir * (SLOT_H / 2 - 2) },
+    };
+  }
+
+  private drawRouteSignal(
+    g: Phaser.GameObjects.Graphics,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    index: number,
+  ): void {
+    const passage = this.getRoutePassage(from, to);
+    const x = Math.round((passage.from.x + passage.to.x) / 2);
+    const y = Math.round((passage.from.y + passage.to.y) / 2);
+    const dx = Math.sign(passage.to.x - passage.from.x);
+    const dy = Math.sign(passage.to.y - passage.from.y);
+    const pulseAlpha = 0.18 + (index % 2) * 0.08;
+    this.drawRouteChevron(g, x, y, dx, dy, pulseAlpha);
+  }
+
+  private drawRouteChevron(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    dx: number,
+    dy: number,
+    alpha: number,
+  ): void {
+    const accent = this.theme.panelBorder;
+    g.fillStyle(accent, alpha);
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const dir = dx >= 0 ? 1 : -1;
+      g.fillTriangle(x + dir * 5, y, x - dir * 3, y - 4, x - dir * 3, y + 4);
+    } else {
+      const dir = dy >= 0 ? 1 : -1;
+      g.fillTriangle(x, y + dir * 5, x - 4, y - dir * 3, x + 4, y - dir * 3);
+    }
+    g.fillStyle(0xffffff, alpha * 0.38);
+    g.fillCircle(x, y, 1.2);
+  }
+
+  private addDungeonRouteFlow(
+    c: Phaser.GameObjects.Container,
+    unlockedCount: number,
+  ): void {
+    const route = this.getUnlockedRoute(unlockedCount);
+    if (route.length < 2) return;
+
+    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    for (let i = 0; i < route.length - 1; i++) {
+      const fromIdx = route[i];
+      const toIdx = route[i + 1];
+      const passage = this.getRoutePassage(this.getSlotCenter(fromIdx), this.getSlotCenter(toIdx));
+      const dx = passage.to.x - passage.from.x;
+      const dy = passage.to.y - passage.from.y;
+      const len = Math.max(1, Math.hypot(dx, dy));
+      const ux = dx / len;
+      const uy = dy / len;
+      const accent = this.getRouteFlowAccent(fromIdx, toIdx);
+
+      for (let n = 0; n < 2; n++) {
+        const t = reducedMotion ? 0.32 + n * 0.28 : n * 0.36;
+        const x = passage.from.x + dx * t;
+        const y = passage.from.y + dy * t;
+        const signal = this.add.graphics();
+        signal.setPosition(x, y);
+        this.paintRouteFlowSignal(signal, ux, uy, accent, 0.64 - n * 0.12);
+        c.add(signal);
+
+        if (reducedMotion) continue;
+        signal.setAlpha(0.08);
+        this.tweens.add({
+          targets: signal,
+          x: passage.to.x,
+          y: passage.to.y,
+          alpha: { from: 0.10, to: 0.72 },
+          duration: 1500 + i * 70,
+          delay: i * 130 + n * 520,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          onRepeat: () => {
+            signal.setPosition(passage.from.x, passage.from.y);
+            signal.setAlpha(0.08);
+          },
+        });
+      }
+    }
+  }
+
+  private getRouteFlowAccent(fromIdx: number, toIdx: number): number {
+    const slots = this.gs.dungeonSlots ?? [];
+    const from = slots[fromIdx];
+    const to = slots[toIdx];
+    if ((from?.roomType && from.hp <= 0) || (to?.roomType && to.hp <= 0)) return 0xff5544;
+    if (from?.roomType) return this.getRoomActivityColor(from);
+    if (to?.roomType) return this.getRoomActivityColor(to);
+    return 0x4bd5ff;
+  }
+
+  private paintRouteFlowSignal(
+    g: Phaser.GameObjects.Graphics,
+    ux: number,
+    uy: number,
+    accent: number,
+    alpha: number,
+  ): void {
+    const px = -uy;
+    const py = ux;
+    g.clear();
+    g.fillStyle(accent, alpha * 0.16);
+    g.fillCircle(0, 0, 8);
+    g.lineStyle(1, accent, alpha * 0.62);
+    g.strokeCircle(0, 0, 5);
+    g.fillStyle(accent, alpha);
+    g.fillTriangle(
+      ux * 6,
+      uy * 6,
+      -ux * 4 + px * 4,
+      -uy * 4 + py * 4,
+      -ux * 4 - px * 4,
+      -uy * 4 - py * 4,
+    );
+    g.fillStyle(0xffffff, alpha * 0.42);
+    g.fillCircle(-ux * 1.5, -uy * 1.5, 1.3);
+  }
+
+  private drawRouteJunction(
+    c: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    routeOrder: number,
+    slotIdx: number,
+    unlockedCount: number,
+  ): void {
+    const slot = this.gs.dungeonSlots?.[slotIdx];
+    const isBuilt = !!slot?.roomType && slot.hp > 0;
+    const isBroken = !!slot?.roomType && slot.hp <= 0;
+    const metrics = slot?.roomType ? calculateRoomMetrics(this.gs, slot) : null;
+    const accent = isBroken ? 0xff5544 : isBuilt ? this.getRoomActivityColor(slot) : 0x4bd5ff;
+    const alpha = slotIdx < unlockedCount ? 0.58 : 0.22;
+    const accessAlpha = isBuilt
+      ? 0.16 + Phaser.Math.Clamp((metrics?.readiness ?? 0) / 100, 0, 1) * 0.16
+      : 0.10;
+
+    if (slotIdx < unlockedCount) {
+      g.lineStyle(1, accent, isBroken ? 0.24 : accessAlpha);
+      g.strokeCircle(x, y, 54);
+      const couplers = [
+        { x: x - 55, y },
+        { x: x + 55, y },
+        { x, y: y - 55 },
+        { x, y: y + 55 },
+      ];
+      couplers.forEach((p, idx) => {
+        g.fillStyle(0x020405, 0.74);
+        g.fillCircle(p.x, p.y, idx % 2 === 0 ? 4.6 : 3.8);
+        g.fillStyle(accent, isBroken ? 0.22 : accessAlpha + 0.08);
+        g.fillCircle(p.x, p.y, idx % 2 === 0 ? 2.5 : 2.1);
+      });
+    }
+
+    g.fillStyle(0x050806, 0.82);
+    g.fillCircle(x, y, 13);
+    g.lineStyle(1.2, accent, alpha);
+    g.strokeCircle(x, y, 13);
+    g.fillStyle(accent, isBuilt ? 0.18 : 0.09);
+    g.fillCircle(x, y, 7);
+
+    if (isBuilt || isBroken) {
+      const marker = this.add.text(x, y, String(routeOrder), {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: isBroken ? '#ffb0a0' : '#ffe080',
+        fontStyle: 'bold',
+      }).setOrigin(0.5).setAlpha(0.66);
+      c.add(marker);
+    }
   }
 
   // ─── Slot helpers ─────────────────────────────────────────────────────────────
@@ -449,10 +2435,1002 @@ export class DungeonHomeScene extends Phaser.Scene {
     _drawBattleSlot(this.makeRoomSlotCtx(), c, g, x, y, index, unlocked);
   }
 
+  private addRoomChangedPulse(
+    c: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    slotIdx: number,
+  ): void {
+    const feedback = this.pendingRoomFeedback?.slotIdx === slotIdx ? this.pendingRoomFeedback : null;
+    const accent = feedback?.accent ?? this.theme.panelBorder;
+    const pulse = this.add.container(x + SLOT_W / 2, y + SLOT_H / 2);
+    const ring = this.add.graphics();
+    const left = -SLOT_W / 2;
+    const top = -SLOT_H / 2;
+    ring.lineStyle(2, accent, 0.95);
+    ring.strokeRoundedRect(left - 4, top - 4, SLOT_W + 8, SLOT_H + 8, 9);
+    ring.lineStyle(1, 0xffffff, 0.34);
+    ring.strokeRoundedRect(left + 4, top + 4, SLOT_W - 8, SLOT_H - 8, 6);
+    ring.fillStyle(accent, 0.16);
+    ring.fillRoundedRect(left + 11, top + 8, SLOT_W - 22, feedback ? 32 : 14, 5);
+    if (feedback) {
+      ring.fillStyle(0xffffff, 0.10);
+      ring.fillCircle(left + 20, top + 60, 5);
+      ring.fillCircle(left + SLOT_W - 20, top + 68, 4);
+      ring.fillCircle(left + SLOT_W - 14, top + 30, 3);
+    }
+
+    const label = this.add.text(0, top + (feedback ? 14 : 15), feedback?.title ?? '방 성장', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '10px',
+      color: '#fff1b8',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    pulse.add([ring, label]);
+    if (feedback) {
+      const statLabel = feedback.statLabel && feedback.statBefore && feedback.statAfter
+        ? `${feedback.statLabel} ${feedback.statBefore}→${feedback.statAfter}`
+        : null;
+      const itemLabel = statLabel ?? (feedback.kind === 'equipment'
+        ? `${feedback.equipmentEmoji} ${feedback.equipmentName}`
+        : feedback.body);
+      const item = this.add.text(0, top + 29, itemLabel, {
+        fontFamily: 'sans-serif',
+        fontSize: statLabel ? '10px' : '9px',
+        color: '#d8fff5',
+        fontStyle: 'bold',
+        align: 'center',
+        wordWrap: { width: SLOT_W - 28, useAdvancedWrap: true },
+      }).setOrigin(0.5);
+      pulse.add(item);
+    }
+    c.add(pulse);
+
+    this.tweens.add({
+      targets: pulse,
+      alpha: 0,
+      scaleX: 1.12,
+      scaleY: 1.12,
+      duration: 2200,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        pulse.destroy();
+        const overlayOpen = !!this.roomDetailState.roomDetailContainer
+          || !!this.roomDetailState.monsterPickerContainer
+          || !!this.roomDetailState.trapPickerContainer;
+        if (!overlayOpen && this.recentlyChangedRoomIdx === slotIdx) {
+          this.recentlyChangedRoomIdx = null;
+        }
+        if (this.pendingRoomFeedback?.slotIdx === slotIdx) this.pendingRoomFeedback = null;
+      },
+    });
+  }
+
   private applyIdleAnimation(
     emoji: Phaser.GameObjects.Text, monsterId: string, _compact = false,
   ): void {
     _applyIdleAnimation(this, emoji, monsterId);
+  }
+
+  // ─── Command deck ────────────────────────────────────────────────────────────
+
+  private buildCommandDeck(): void {
+    if (this.commandDeckContainer) {
+      this.commandDeckContainer.destroy();
+      this.commandDeckContainer = null;
+    }
+    const t = this.theme;
+    const deckX = 12;
+    const minDeckY = GRID_START_Y + GRID_ROWS_HOME * (SLOT_H + SLOT_PAD_Y) + 8;
+    const deckW = CANVAS_WIDTH - deckX * 2;
+    const statsTopY = BOT_Y - 26;
+    const availableDeckH = statsTopY - minDeckY - 10;
+    const deckH = Math.min(218, availableDeckH);
+    const deckY = Math.max(minDeckY, statsTopY - deckH - 10);
+    if (deckH < 190) return;
+    const deck = this.add.container(0, 0).setDepth(4);
+    this.commandDeckContainer = deck;
+
+    const unlockedSlots = getUnlockedSlots(this.gs.dmLevel);
+    const visibleSlots = (this.gs.dungeonSlots ?? []).slice(0, unlockedSlots);
+    const builtRooms = visibleSlots.filter(slot => !!slot?.roomType).length;
+    const ownedMonsters = this.gs.ownedMonsters ?? [];
+    const skillReady = ownedMonsters.filter(m => (m.skillPoints ?? 0) > 0).length;
+    const collectionSummary = this.getMonsterCollectionSummary(ownedMonsters);
+    const nextSlot = SLOT_UNLOCK_LEVELS.find(([, count]) => count > unlockedSlots);
+    const dungeonMetrics = calculateDungeonMetrics(this.gs, unlockedSlots);
+    const capacityTotals = visibleSlots.reduce((totals, slot) => {
+      if (!slot?.roomType) return totals;
+      const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+      return {
+        monsters: totals.monsters + cap.monsters,
+        traps: totals.traps + cap.traps,
+      };
+    }, { monsters: 0, traps: 0 });
+    const directive = this.getHomeDirective(
+      unlockedSlots,
+      visibleSlots,
+      dungeonMetrics.readiness,
+      skillReady,
+    );
+    const actionQueue = getDungeonActionQueue(this.gs, unlockedSlots).slice(0, 3);
+
+    const frame = addFramedPanel(this, {
+      x: deckX,
+      y: deckY,
+      w: deckW,
+      h: deckH,
+      radius: 9,
+      fillColor: t.panelDark,
+      borderColor: t.panelBorder,
+      borderAlpha: 0.64,
+      borderWidth: 1.4,
+      accentColor: t.panelBorder,
+      accentAlpha: 0.48,
+      glowColor: t.panelBorder,
+      glowOpacity: 0.08,
+      shadowOpacity: 0.42,
+      shadowOffsetY: 3,
+    });
+    deck.add([frame.shadow, frame.panel, frame.glow]);
+
+    const g = this.add.graphics();
+    deck.add(g);
+    g.fillStyle(0x031314, 0.50);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 66, 7);
+    g.fillStyle(t.panelBorder, 0.08);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 28, 7);
+    g.fillStyle(0x44ccaa, 0.10);
+    g.fillRoundedRect(deckX + 9, deckY + 13, 5, deckH - 26, 3);
+    g.fillStyle(0xffc45c, 0.08);
+    g.fillRoundedRect(deckX + deckW - 14, deckY + 13, 5, deckH - 26, 3);
+    g.lineStyle(1, t.panelBorder, 0.22);
+    g.lineBetween(deckX + 14, deckY + 80, deckX + deckW - 14, deckY + 80);
+    g.lineBetween(deckX + 14, deckY + deckH - 51, deckX + deckW - 14, deckY + deckH - 51);
+
+    deck.add(this.add.text(deckX + 16, deckY + 20, '던전 운영실', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '15px',
+      color: t.panelBorderCSS,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    this.drawHomeCollectionChip(deck, g, deckX + deckW - 172, deckY + 9, 112, 22, collectionSummary);
+    deck.add(this.add.text(deckX + deckW - 16, deckY + 20, `DM Lv.${this.gs.dmLevel}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: t.textSecondary,
+    }).setOrigin(1, 0.5));
+
+    this.drawHomeOpsStatusPanel(
+      deck,
+      g,
+      deckX + 14,
+      deckY + 40,
+      deckW - 28,
+      34,
+      {
+        readiness: dungeonMetrics.readiness,
+        builtRooms,
+        unlockedSlots,
+        assignedMonsters: dungeonMetrics.assignedMonsters,
+        monsterCapacity: capacityTotals.monsters,
+        installedTraps: dungeonMetrics.installedTraps,
+        trapCapacity: capacityTotals.traps,
+        threatScore: dungeonMetrics.threatScore,
+        nextSlotLevel: nextSlot?.[0] ?? null,
+      },
+    );
+
+    const directiveY = deckY + 83;
+    this.drawHomeDirectiveCard(deck, deckX + 14, directiveY, deckW - 28, 40, directive);
+
+    const queueY = directiveY + 48;
+    this.drawHomeActionQueue(deck, g, deckX + 14, queueY, deckW - 28, actionQueue);
+
+    const buttonY = deckY + deckH - 44;
+    const buttonW = (deckW - 44) / 3;
+    const firstAction = actionQueue[0];
+    const growthTarget = this.getFocusedMonsterGrowthTarget();
+    const forgeTarget = this.getFocusedForgeTarget();
+    this.addCommandDeckButton(
+      deck,
+      deckX + 14,
+      buttonY,
+      buttonW,
+      '방 확대',
+      '▣',
+      () => this.openFirstDungeonSlot(),
+      firstAction ? { text: `우선 B${firstAction.slotIdx + 1}`, accent: firstAction.accent } : { text: '전체 완비', accent: 0x44ccaa },
+    );
+    this.addCommandDeckButton(
+      deck,
+      deckX + 22 + buttonW,
+      buttonY,
+      buttonW,
+      '몬스터 성장',
+      '👹',
+      () => this.openFocusedMonsterGrowth(),
+      { text: this.formatHomeFocusTarget(growthTarget, '성장 지휘'), accent: 0x44ccaa },
+    );
+    this.addCommandDeckButton(
+      deck,
+      deckX + 30 + buttonW * 2,
+      buttonY,
+      buttonW,
+      '장비 제작',
+      '⚒',
+      () => this.openFocusedForge(),
+      { text: this.formatHomeFocusTarget(forgeTarget, '제작 대기'), accent: 0xa887ff },
+    );
+  }
+
+  private getMonsterCollectionSummary(
+    ownedMonsters: readonly OwnedMonster[],
+  ): { owned: number; total: number; rareOwned: number; percent: number } {
+    const ownedTypes = new Set<string>();
+    for (const monster of ownedMonsters) {
+      const typeId = Object.keys(MONSTER_DEFS).find(
+        id => monster.id === id || monster.id.startsWith(`${id}_`),
+      );
+      if (typeId) ownedTypes.add(typeId);
+    }
+    const defs = Object.values(MONSTER_DEFS);
+    const rareOwned = Array.from(ownedTypes).filter(id => {
+      const rarity = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.rarityTier;
+      return rarity === 'E' || rarity === 'L';
+    }).length;
+    const total = defs.length;
+    return {
+      owned: ownedTypes.size,
+      total,
+      rareOwned,
+      percent: total > 0 ? ownedTypes.size / total : 0,
+    };
+  }
+
+  private drawHomeCollectionChip(
+    deck: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    summary: { owned: number; total: number; rareOwned: number; percent: number },
+  ): void {
+    g.fillStyle(0x120b25, 0.88);
+    g.fillRoundedRect(x, y, w, h, 8);
+    g.lineStyle(1, 0xff9adf, 0.60);
+    g.strokeRoundedRect(x, y, w, h, 8);
+    g.fillStyle(0xff9adf, 0.17);
+    g.fillCircle(x + 12, y + h / 2, 8);
+    g.fillStyle(0xffffff, 0.24);
+    g.fillCircle(x + 9, y + 7, 1.6);
+    g.fillCircle(x + w - 12, y + 6, 1.3);
+    g.fillStyle(0x8bdcff, 0.22);
+    g.fillRoundedRect(x + 27, y + h - 6, Math.max(5, (w - 42) * summary.percent), 3, 2);
+    deck.add(this.add.text(x + 12, y + h / 2, '★', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '12px',
+      color: '#ffe6ff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+    deck.add(this.add.text(x + 27, y + 8, `도감 ${summary.owned}/${summary.total}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '8px',
+      color: '#ffd6f6',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(x + w - 8, y + 8, `E+ ${summary.rareOwned}`, {
+      fontFamily: 'monospace',
+      fontSize: '7px',
+      color: '#8bdcff',
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5));
+  }
+
+  private getHomeDirective(
+    unlockedSlots: number,
+    visibleSlots: readonly (DungeonSlot | undefined)[],
+    dungeonReadiness: number,
+    skillReady: number,
+  ): HomeDirective {
+    const entries = Array.from({ length: unlockedSlots }, (_, idx) => ({
+      idx,
+      slot: visibleSlots[idx],
+    }));
+    const roomName = (idx: number): string => `방 #${idx + 1}`;
+    const buildHomeDirective = (
+      copy: ReturnType<typeof getReadinessDirectiveCopy>,
+      statValue: string,
+      onPress: () => void,
+    ): HomeDirective => ({
+      icon: copy.icon,
+      title: copy.title,
+      body: copy.body,
+      ctaLabel: copy.ctaLabel,
+      statLabel: copy.statLabel,
+      statValue,
+      accent: copy.accent,
+      onPress,
+    });
+    const buildRoomActionDirective = (
+      slotIdx: number,
+      onPress: () => void,
+    ): HomeDirective => {
+      const action = getRoomActionRecommendation(this.gs, slotIdx);
+      return {
+        icon: action.icon,
+        title: action.title,
+        body: action.body,
+        ctaLabel: action.ctaLabel,
+        statLabel: action.statLabel,
+        statValue: action.statValue,
+        accent: action.accent,
+        onPress,
+      };
+    };
+
+    const broken = entries.find(({ slot }) => !!slot?.roomType && slot.hp <= 0);
+    if (broken) {
+      return buildRoomActionDirective(broken.idx, () => this.openDungeonSlot(broken.idx));
+    }
+
+    const monsterGap = entries.find(({ slot }) => {
+      if (!slot?.roomType) return false;
+      const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+      return (slot.monsterIds ?? []).filter(Boolean).length < cap.monsters;
+    });
+    if (monsterGap?.slot) {
+      return buildRoomActionDirective(monsterGap.idx, () => this.openDungeonSlot(monsterGap.idx));
+    }
+
+    const trapGap = entries.find(({ slot }) => {
+      if (!slot?.roomType) return false;
+      const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+      return (slot.trapIds ?? []).filter(Boolean).length < cap.traps;
+    });
+    if (trapGap?.slot) {
+      return buildRoomActionDirective(trapGap.idx, () => this.openDungeonSlot(trapGap.idx));
+    }
+
+    const empty = entries.find(({ slot }) => !slot?.roomType);
+    if (empty) {
+      return buildRoomActionDirective(empty.idx, () => this.openDungeonSlot(empty.idx));
+    }
+
+    if (skillReady > 0) {
+      return buildHomeDirective(
+        getReadinessDirectiveCopy('grow-monster', { skillReady }),
+        `${skillReady}`,
+        () => this.navigateFromHome('BarracksScene'),
+      );
+    }
+
+    const weakestRoom = entries
+      .filter((entry): entry is { idx: number; slot: DungeonSlot } => !!entry.slot?.roomType)
+      .map(entry => ({
+        idx: entry.idx,
+        slot: entry.slot,
+        readiness: calculateRoomMetrics(this.gs, entry.slot).readiness,
+      }))
+      .sort((a, b) => a.readiness - b.readiness)[0];
+
+    if (dungeonReadiness < 85 && weakestRoom) {
+      return buildHomeDirective(
+        getReadinessDirectiveCopy('forge-equipment', {
+          roomLabel: roomName(weakestRoom.idx),
+          readiness: weakestRoom.readiness,
+        }),
+        `${weakestRoom.readiness}%`,
+        () => this.navigateFromHome('ForgeScene'),
+      );
+    }
+
+    return buildHomeDirective(
+      getReadinessDirectiveCopy('battle-ready', { readiness: dungeonReadiness }),
+      `${dungeonReadiness}%`,
+      () => goToPreBattle(this, this.gs, this.invasionState),
+    );
+  }
+
+  private drawHomeOpsStatusPanel(
+    deck: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    status: HomeOpsStatus,
+  ): void {
+    const t = this.theme;
+    const readinessPct = Phaser.Math.Clamp(status.readiness / 100, 0, 1);
+    const readinessColor = status.readiness >= 80
+      ? 0x44ccaa
+      : status.readiness >= 55 ? 0xffc45c : 0xff6b5f;
+    const readinessCss = `#${readinessColor.toString(16).padStart(6, '0')}`;
+
+    g.fillStyle(0x02090b, 0.72);
+    g.fillRoundedRect(x, y, w, h, 7);
+    g.lineStyle(1, readinessColor, 0.34);
+    g.strokeRoundedRect(x, y, w, h, 7);
+    g.fillStyle(readinessColor, 0.13);
+    g.fillRoundedRect(x + 5, y + 5, 72, h - 10, 6);
+
+    deck.add(this.add.text(x + 12, y + 12, '운영도', {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: t.textSecondary,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(x + 70, y + 20, `${status.readiness}%`, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '18px',
+      color: readinessCss,
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5));
+
+    const barX = x + 86;
+    const barY = y + 10;
+    const barW = w - 96;
+    g.fillStyle(0x030506, 0.95);
+    g.fillRoundedRect(barX, barY, barW, 7, 4);
+    g.fillStyle(readinessColor, 0.95);
+    g.fillRoundedRect(barX, barY, Math.max(6, barW * readinessPct), 7, 4);
+    g.lineStyle(1, 0xffffff, 0.14);
+    g.lineBetween(barX + 4, barY + 2, barX + Math.max(6, barW * readinessPct) - 4, barY + 2);
+
+    const chipY = y + 23;
+    const chips = [
+      { label: '방', value: `${status.builtRooms}/${status.unlockedSlots}`, accent: t.panelBorder },
+      {
+        label: '수호',
+        value: status.monsterCapacity > 0 ? `${status.assignedMonsters}/${status.monsterCapacity}` : '-',
+        accent: 0xff8a45,
+      },
+      {
+        label: '함정',
+        value: status.trapCapacity > 0 ? `${status.installedTraps}/${status.trapCapacity}` : '-',
+        accent: 0xc8921a,
+      },
+    ];
+    const chipGap = 4;
+    const chipW = (barW - chipGap * (chips.length - 1)) / chips.length;
+    chips.forEach((chip, i) => {
+      const chipX = barX + i * (chipW + chipGap);
+      const chipCss = `#${chip.accent.toString(16).padStart(6, '0')}`;
+      g.fillStyle(chip.accent, 0.12);
+      g.fillRoundedRect(chipX, chipY, chipW, 12, 4);
+      g.lineStyle(1, chip.accent, 0.28);
+      g.strokeRoundedRect(chipX, chipY, chipW, 12, 4);
+      deck.add(this.add.text(chipX + 4, chipY + 6, chip.label, {
+        fontFamily: 'sans-serif',
+        fontSize: '7px',
+        color: t.textSecondary,
+        fontStyle: 'bold',
+      }).setOrigin(0, 0.5));
+      deck.add(this.add.text(chipX + chipW - 4, chipY + 6, chip.value, {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: chipCss,
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5));
+    });
+  }
+
+  private drawHomeDirectiveCard(
+    deck: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    directive: HomeDirective,
+  ): void {
+    const t = this.theme;
+    const accentCss = `#${directive.accent.toString(16).padStart(6, '0')}`;
+    const bg = this.add.graphics();
+    deck.add(bg);
+    bg.fillStyle(directive.accent, 0.11);
+    bg.fillRoundedRect(x, y, w, h, 7);
+    bg.fillStyle(t.stoneDark, 0.72);
+    bg.fillRoundedRect(x + 1, y + 1, w - 2, h - 2, 7);
+    bg.lineStyle(1.3, directive.accent, 0.58);
+    bg.strokeRoundedRect(x, y, w, h, 7);
+    bg.fillStyle(directive.accent, 0.26);
+    bg.fillRoundedRect(x + 6, y + 6, 24, h - 12, 6);
+
+    deck.add(this.add.text(x + 18, y + h / 2, directive.icon, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '14px',
+      color: accentCss,
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+    deck.add(this.add.text(x + 38, y + 10, directive.title, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '11px',
+      color: accentCss,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(x + 38, y + 24, directive.body, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: t.textSecondary,
+      wordWrap: { width: Math.max(120, w - 164), useAdvancedWrap: true },
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(x + w - 104, y + 10, directive.statLabel, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: t.textSecondary,
+    }).setOrigin(0.5));
+    deck.add(this.add.text(x + w - 104, y + 24, directive.statValue, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '12px',
+      color: accentCss,
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+    const ctaX = x + w - 78;
+    const ctaY = y + 5;
+    const ctaW = 70;
+    const ctaH = h - 10;
+    const ctaBg = this.add.graphics();
+    deck.add(ctaBg);
+    const drawCta = (hover = false): void => {
+      ctaBg.clear();
+      ctaBg.fillStyle(directive.accent, hover ? 0.35 : 0.22);
+      ctaBg.fillRoundedRect(ctaX, ctaY, ctaW, ctaH, 6);
+      ctaBg.lineStyle(1.2, directive.accent, hover ? 0.9 : 0.58);
+      ctaBg.strokeRoundedRect(ctaX, ctaY, ctaW, ctaH, 6);
+    };
+    drawCta(false);
+
+    const ctaText = this.add.text(ctaX + ctaW / 2, ctaY + ctaH / 2, directive.ctaLabel, {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: t.textPrimary,
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    const zone = this.add.zone(ctaX, ctaY, ctaW, ctaH)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    deck.add([ctaText, zone]);
+    zone.on('pointerover', () => {
+      drawCta(true);
+      ctaText.setColor(accentCss);
+    });
+    zone.on('pointerout', () => {
+      drawCta(false);
+      ctaText.setColor(t.textPrimary);
+      ctaText.setScale(1);
+    });
+    zone.on('pointerdown', () => {
+      this.tweens.add({ targets: ctaText, scaleX: 0.92, scaleY: 0.92, yoyo: true, duration: 80 });
+      audioManager.playSfx('button_click');
+      directive.onPress();
+    });
+  }
+
+  private drawHomeActionQueue(
+    deck: Phaser.GameObjects.Container,
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    actions: readonly RoomActionRecommendation[],
+  ): number {
+    const t = this.theme;
+    const rowH = 44;
+    const chipY = y + 11;
+    const chipH = 33;
+    const gap = 6;
+    const items = actions.slice(0, 3);
+
+    deck.add(this.add.text(x + 2, y + 3, '다음 명령', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '10px',
+      color: t.textSecondary,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(x + w - 2, y + 3, items.length > 0 ? `대기 ${items.length}` : '완비', {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: items.length > 0 ? '#b8fff0' : t.textSecondary,
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5));
+
+    if (items.length === 0) {
+      g.fillStyle(0x071812, 0.64);
+      g.fillRoundedRect(x, chipY, w, chipH, 7);
+      g.lineStyle(1, 0x44ccaa, 0.38);
+      g.strokeRoundedRect(x, chipY, w, chipH, 7);
+      deck.add(this.add.text(x + w / 2, chipY + chipH / 2, '모든 방이 다음 침공 준비 완료', {
+        fontFamily: 'sans-serif',
+        fontSize: '10px',
+        color: '#b8fff0',
+        fontStyle: 'bold',
+      }).setOrigin(0.5));
+      return rowH;
+    }
+
+    const chipW = (w - gap * 2) / 3;
+    items.forEach((action, i) => {
+      const chipX = x + i * (chipW + gap);
+      const targetHint = this.getActionTargetHint(action);
+      const statLabel = targetHint
+        ? `${targetHint} ${action.statValue}`
+        : action.statValue;
+      const bg = this.add.graphics();
+      deck.add(bg);
+      const draw = (hover = false): void => {
+        bg.clear();
+        bg.fillStyle(0x040908, hover ? 0.94 : 0.82);
+        bg.fillRoundedRect(chipX, chipY, chipW, chipH, 7);
+        bg.lineStyle(1.2, action.accent, hover ? 0.88 : 0.54);
+        bg.strokeRoundedRect(chipX, chipY, chipW, chipH, 7);
+        bg.fillStyle(action.accent, hover ? 0.28 : 0.18);
+        bg.fillRoundedRect(chipX + 4, chipY + 4, 24, chipH - 8, 6);
+        bg.fillStyle(action.accent, hover ? 0.26 : 0.16);
+        bg.fillRoundedRect(chipX + 32, chipY + 5, chipW - 42, 5, 3);
+      };
+      draw(false);
+
+      const rankBg = this.add.graphics();
+      deck.add(rankBg);
+      const drawRank = (hover = false): void => {
+        rankBg.clear();
+        rankBg.fillStyle(action.accent, hover ? 1 : 0.9);
+        rankBg.fillRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
+        rankBg.lineStyle(1, 0x04100c, hover ? 0.72 : 0.44);
+        rankBg.strokeRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
+      };
+      drawRank(false);
+
+      const iconText = this.add.text(chipX + 15.5, chipY + chipH / 2, action.icon, {
+        fontFamily: 'sans-serif',
+        fontSize: '14px',
+      }).setOrigin(0.5);
+      const labelText = this.add.text(chipX + 33, chipY + 14, `B${action.slotIdx + 1} ${action.label}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '10px',
+        color: '#fff0c2',
+        fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      const statText = this.add.text(chipX + 33, chipY + 26, statLabel, {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: targetHint ? '#b8fff0' : t.textSecondary,
+      }).setOrigin(0, 0.5);
+      const rankText = this.add.text(chipX + chipW - 14, chipY + 12, String(i + 1), {
+        fontFamily: 'monospace',
+        fontSize: '9px',
+        color: '#04100c',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      deck.add([iconText, labelText, statText, rankText]);
+
+      const zone = this.add.zone(chipX, chipY, chipW, chipH)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      deck.add(zone);
+      zone.on('pointerover', () => {
+        draw(true);
+        drawRank(true);
+        labelText.setColor('#fff8d8');
+      });
+      zone.on('pointerout', () => {
+        draw(false);
+        drawRank(false);
+        labelText.setColor('#fff0c2');
+        iconText.setScale(1);
+        labelText.setScale(1);
+        statText.setScale(1);
+        rankText.setScale(1);
+      });
+      zone.on('pointerdown', () => {
+        audioManager.playSfx('button_click');
+        this.tweens.add({
+          targets: [iconText, labelText, statText, rankText],
+          scaleX: 0.92,
+          scaleY: 0.92,
+          yoyo: true,
+          duration: 80,
+        });
+        this.openDungeonSlot(action.slotIdx);
+      });
+    });
+
+    return rowH;
+  }
+
+  private addCommandDeckButton(
+    deck: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    w: number,
+    label: string,
+    icon: string,
+    onPress: () => void,
+    hint?: HomeCommandButtonHint,
+  ): void {
+    const t = this.theme;
+    const bg = this.add.graphics();
+    const h = hint ? 40 : 36;
+    deck.add(bg);
+    const draw = (hover = false): void => {
+      bg.clear();
+      bg.fillStyle(0x020609, 0.36);
+      bg.fillRoundedRect(x, y + 3, w, h, 7);
+      bg.fillStyle(hover ? t.panelBorder : t.stoneDark, hover ? 0.24 : 0.90);
+      bg.fillRoundedRect(x, y, w, h, 7);
+      bg.lineStyle(1.2, t.panelBorder, hover ? 0.9 : 0.52);
+      bg.strokeRoundedRect(x, y, w, h, 7);
+      bg.lineStyle(1, 0xffffff, hover ? 0.18 : 0.10);
+      bg.lineBetween(x + 10, y + 6, x + w - 10, y + 6);
+      if (hint) {
+        bg.fillStyle(hint.accent, hover ? 0.3 : 0.2);
+        bg.fillRoundedRect(x + 7, y + h - 9, w - 14, 5, 3);
+      }
+    };
+    draw(false);
+
+    const iconT = this.add.text(x + 16, y + h / 2, icon, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '13px',
+      color: t.panelBorderCSS,
+    }).setOrigin(0.5);
+    const labelT = this.add.text(x + 31, y + (hint ? 13 : h / 2), label, {
+      fontFamily: 'sans-serif',
+      fontSize: '11px',
+      color: t.textSecondary,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    const children: Phaser.GameObjects.GameObject[] = [iconT, labelT];
+
+    let hintT: Phaser.GameObjects.Text | null = null;
+    if (hint) {
+      hintT = this.add.text(x + 31, y + 27, hint.text, {
+        fontFamily: 'sans-serif',
+        fontSize: '8px',
+        color: '#b8fff0',
+        fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      children.push(hintT);
+    }
+
+    const zone = this.add.zone(x, y, w, h)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    deck.add([...children, zone]);
+    zone.on('pointerover', () => {
+      draw(true);
+      labelT.setColor(t.panelBorderCSS);
+      hintT?.setColor('#fff0c2');
+    });
+    zone.on('pointerout', () => {
+      draw(false);
+      labelT.setColor(t.textSecondary);
+      hintT?.setColor('#b8fff0');
+      iconT.setScale(1);
+      labelT.setScale(1);
+      hintT?.setScale(1);
+    });
+    zone.on('pointerdown', () => {
+      this.tweens.add({ targets: children, scaleX: 0.92, scaleY: 0.92, yoyo: true, duration: 80 });
+      audioManager.playSfx('button_click');
+      onPress();
+    });
+  }
+
+  private openFirstDungeonSlot(): void {
+    const unlockedSlots = getUnlockedSlots(this.gs.dmLevel);
+    const queuedAction = getDungeonActionQueue(this.gs, unlockedSlots)[0];
+    if (queuedAction) {
+      this.openDungeonSlot(queuedAction.slotIdx);
+      return;
+    }
+
+    const slots = this.gs.dungeonSlots ?? [];
+    let idx = 0;
+    for (let i = 0; i < unlockedSlots; i++) {
+      const slot = slots[i];
+      const hasMonster = (slot?.monsterIds ?? []).some(Boolean);
+      if (!slot?.roomType || !hasMonster || slot.hp <= 0) {
+        idx = i;
+        break;
+      }
+    }
+    this.openDungeonSlot(idx);
+  }
+
+  private openFocusedMonsterGrowth(): void {
+    const target = this.getFocusedMonsterGrowthTarget();
+
+    if (target) {
+      this.applyHomeFocusTarget(target);
+    } else {
+      this.clearHomeFocusTarget();
+    }
+    this.navigateFromHome('BarracksScene');
+  }
+
+  private openFocusedForge(): void {
+    const target = this.getFocusedForgeTarget();
+
+    if (target) {
+      this.applyHomeFocusTarget(target);
+    } else {
+      this.clearHomeFocusTarget();
+    }
+    this.registry.set('forgeReturnScene', 'DungeonHomeScene');
+    this.navigateFromHome('ForgeScene');
+  }
+
+  private getFocusedMonsterGrowthTarget(): HomeFocusTarget | null {
+    return this.findQueuedGrowthTarget('level')
+      ?? this.findQueuedGrowthTarget('readiness')
+      ?? this.findSkillReadyMonsterTarget()
+      ?? this.findLowestLevelMonsterTarget();
+  }
+
+  private getFocusedForgeTarget(): HomeFocusTarget | null {
+    return this.findQueuedGrowthTarget('equipment')
+      ?? this.findFirstUnequippedMonsterTarget();
+  }
+
+  private formatHomeFocusTarget(target: HomeFocusTarget | null, fallback: string): string {
+    if (!target) return fallback;
+    const visual = this.resolveMonsterVisual(target.monsterId);
+    const roomMatch = /^방 #(\d+)/.exec(target.sourceLabel);
+    const source = roomMatch ? `B${roomMatch[1]}` : target.sourceLabel;
+    return `${source} ${visual.name}`;
+  }
+
+  private getActionTargetHint(action: RoomActionRecommendation): string | null {
+    if (action.kind !== 'growth') return null;
+    const target = action.statLabel === 'E'
+      ? this.findUnequippedRoomMonsterTarget(action.slotIdx)
+      : this.findUnderleveledRoomMonsterTarget(action.slotIdx)
+        ?? this.findFirstRoomMonsterTarget(action.slotIdx);
+    return target ? this.resolveMonsterVisual(target.monsterId).name : null;
+  }
+
+  private findQueuedGrowthTarget(kind: 'equipment' | 'level' | 'readiness'): HomeFocusTarget | null {
+    const unlockedSlots = getUnlockedSlots(this.gs.dmLevel);
+    const actions = getDungeonActionQueue(this.gs, unlockedSlots).filter(action => action.kind === 'growth');
+
+    for (const action of actions) {
+      if (kind === 'equipment' && action.statLabel !== 'E') continue;
+      if (kind === 'level' && action.statLabel !== 'Lv') continue;
+      if (kind === 'readiness' && action.statLabel === 'E') continue;
+
+      const target = kind === 'equipment'
+        ? this.findUnequippedRoomMonsterTarget(action.slotIdx)
+        : this.findUnderleveledRoomMonsterTarget(action.slotIdx) ?? this.findFirstRoomMonsterTarget(action.slotIdx);
+      if (target) return target;
+    }
+
+    return null;
+  }
+
+  private findUnequippedRoomMonsterTarget(slotIdx: number): HomeFocusTarget | null {
+    const monster = this.findRoomMonster(slotIdx, owned => !owned.equipment);
+    return monster ? this.buildRoomFocusTarget(slotIdx, monster.id) : null;
+  }
+
+  private findUnderleveledRoomMonsterTarget(slotIdx: number): HomeFocusTarget | null {
+    const targetLevel = Math.max(2, this.gs.dmLevel - 1);
+    const monster = this.findRoomMonster(slotIdx, owned => owned.level < targetLevel);
+    return monster ? this.buildRoomFocusTarget(slotIdx, monster.id) : null;
+  }
+
+  private findFirstRoomMonsterTarget(slotIdx: number): HomeFocusTarget | null {
+    const monster = this.findRoomMonster(slotIdx, () => true);
+    return monster ? this.buildRoomFocusTarget(slotIdx, monster.id) : null;
+  }
+
+  private findRoomMonster(slotIdx: number, predicate: (monster: OwnedMonster) => boolean): OwnedMonster | null {
+    const slot = this.gs.dungeonSlots?.[slotIdx];
+    if (!slot) return null;
+
+    for (const monsterId of slot.monsterIds ?? []) {
+      if (!monsterId) continue;
+      const owned = this.gs.ownedMonsters.find(monster => monster.id === monsterId);
+      if (owned && predicate(owned)) return owned;
+    }
+
+    return null;
+  }
+
+  private findFirstUnequippedMonsterTarget(): HomeFocusTarget | null {
+    const target = (this.gs.ownedMonsters ?? [])
+      .find(monster => !monster.equipment);
+    return target ? this.buildMonsterFocusTarget(target.id, '장비 지휘') : null;
+  }
+
+  private findSkillReadyMonsterTarget(): HomeFocusTarget | null {
+    const target = [...(this.gs.ownedMonsters ?? [])]
+      .filter(monster => (monster.skillPoints ?? 0) > 0)
+      .sort((a, b) =>
+        ((b.skillPoints ?? 0) - (a.skillPoints ?? 0))
+        || (b.level - a.level)
+        || (b.xp - a.xp),
+      )[0];
+    return target ? this.buildMonsterFocusTarget(target.id, '성장 지휘') : null;
+  }
+
+  private findLowestLevelMonsterTarget(): HomeFocusTarget | null {
+    const target = [...(this.gs.ownedMonsters ?? [])]
+      .sort((a, b) =>
+        (a.level - b.level)
+        || (a.xp - b.xp)
+        || a.id.localeCompare(b.id),
+      )[0];
+    return target ? this.buildMonsterFocusTarget(target.id, '성장 지휘') : null;
+  }
+
+  private buildRoomFocusTarget(slotIdx: number, monsterId: string): HomeFocusTarget {
+    return {
+      monsterId,
+      sourceLabel: `방 #${slotIdx + 1} 수호자`,
+      slotIdx,
+    };
+  }
+
+  private buildMonsterFocusTarget(monsterId: string, fallbackSourceLabel: string): HomeFocusTarget {
+    const slotIdx = this.findMonsterRoomSlotIdx(monsterId);
+    if (slotIdx !== null) return this.buildRoomFocusTarget(slotIdx, monsterId);
+    return {
+      monsterId,
+      sourceLabel: fallbackSourceLabel,
+      slotIdx: null,
+    };
+  }
+
+  private findMonsterRoomSlotIdx(monsterId: string): number | null {
+    const slots = this.gs.dungeonSlots ?? [];
+    const idx = slots.findIndex(slot => (slot?.monsterIds ?? []).includes(monsterId));
+    return idx >= 0 ? idx : null;
+  }
+
+  private applyHomeFocusTarget(target: HomeFocusTarget): void {
+    this.registry.set('focusMonsterId', target.monsterId);
+    this.registry.set('focusSourceLabel', target.sourceLabel);
+    if (target.slotIdx === null) {
+      this.registry.remove('focusRoomSlotIdx');
+    } else {
+      this.registry.set('focusRoomSlotIdx', target.slotIdx);
+    }
+  }
+
+  private clearHomeFocusTarget(): void {
+    this.registry.remove('focusMonsterId');
+    this.registry.remove('focusSourceLabel');
+    this.registry.remove('focusRoomSlotIdx');
+  }
+
+  private openDungeonSlot(idx: number): void {
+    const col = idx % GRID_COLS_HOME;
+    const row = Math.floor(idx / GRID_COLS_HOME);
+    const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
+    const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+    this.openRoomDetail(idx, sx, sy);
+  }
+
+  private navigateFromHome(sceneKey: string): void {
+    this.cameras.main.fadeOut(220, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(sceneKey));
+  }
+
+  private resolveMonsterVisual(monsterId: string): { emoji: string; name: string } {
+    const baseId = Object.keys(MONSTER_DEFS).find(
+      id => monsterId === id || monsterId.startsWith(`${id}_`),
+    );
+    const def = baseId ? MONSTER_DEFS[baseId as keyof typeof MONSTER_DEFS] : undefined;
+    const name = def?.name ?? '수호자';
+    return {
+      emoji: def?.emoji ?? '👹',
+      name: name.length > 5 ? `${name.slice(0, 4)}…` : name,
+    };
   }
 
   // ─── Bottom nav ───────────────────────────────────────────────────────────────
@@ -462,7 +3440,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(8);
     g.fillStyle(t.panelDark, 1);
     g.fillRect(0, BOT_Y, CANVAS_WIDTH, BOT_H);
-    g.lineStyle(2, t.panelBorder, 0.5);
+    g.fillStyle(t.panelBorder, 0.08);
+    g.fillRect(0, BOT_Y, CANVAS_WIDTH, 3);
+    g.lineStyle(2, t.panelBorder, 0.45);
     g.lineBetween(0, BOT_Y, CANVAS_WIDTH, BOT_Y);
 
     const tabs = [
@@ -473,6 +3453,8 @@ export class DungeonHomeScene extends Phaser.Scene {
       { icon: '⚔️', label: '전투',  key: 'battle'   },
     ];
     const tabW = CANVAS_WIDTH / tabs.length;
+    const panelY = BOT_Y + 6;
+    const panelH = BOT_H - 12;
 
     // Pre-compute badge conditions once outside the loop
     const today = new Date().toISOString().slice(0, 10);
@@ -484,24 +3466,35 @@ export class DungeonHomeScene extends Phaser.Scene {
     tabs.forEach(({ icon, label, key }, i) => {
       const tx       = i * tabW + tabW / 2;
       const isActive = key === 'home';
+      const panelX = i * tabW + 6;
+      const panelW = tabW - 12;
+
+      if (i > 0) {
+        g.lineStyle(1, t.stoneDark, 0.42);
+        g.lineBetween(i * tabW, BOT_Y + 10, i * tabW, CANVAS_HEIGHT - 10);
+      }
+
       if (isActive) {
-        g.fillStyle(t.bgPrimary, 1);
-        g.fillRect(i * tabW, BOT_Y + 1, tabW, BOT_H - 1);
-        g.lineStyle(2, t.panelBorder, 1);
-        g.lineBetween(i * tabW, BOT_Y, (i + 1) * tabW, BOT_Y);
+        g.fillStyle(t.panelBorder, 0.16);
+        g.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
+        g.lineStyle(1.2, t.panelBorder, 0.9);
+        g.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
+        g.fillStyle(t.panelBorder, 0.95);
+        g.fillRoundedRect(panelX + 10, panelY + 3, panelW - 20, 3, 2);
+      } else {
+        g.fillStyle(t.bgPrimary, 0.18);
+        g.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
+        g.lineStyle(1, t.stoneMid, 0.22);
+        g.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
       }
       const iconTxt = this.add.text(tx, BOT_Y + 10, icon, {
         fontFamily: 'sans-serif', fontSize: '20px',
       }).setOrigin(0.5, 0).setDepth(9);
-      this.add.text(tx, BOT_Y + 36, label, {
-        fontFamily: 'Georgia, serif', fontSize: '11px',
+      const labelTxt = this.add.text(tx, BOT_Y + 45, label, {
+        fontFamily: 'Georgia, serif', fontSize: '10px',
         color: isActive ? t.panelBorderCSS : t.textSecondary,
         fontStyle: isActive ? 'bold' : 'normal',
-      }).setOrigin(0.5, 0).setDepth(9);
-      if (i > 0) {
-        g.lineStyle(1, t.stoneDark, 0.5);
-        g.lineBetween(i * tabW, BOT_Y + 6, i * tabW, CANVAS_HEIGHT - 6);
-      }
+      }).setOrigin(0.5).setDepth(9);
 
       // Badge indicators — red circle at top-right of icon
       const showBadge = (
@@ -511,20 +3504,48 @@ export class DungeonHomeScene extends Phaser.Scene {
         (key === 'battle'   && hasUnclaimedAchievement)
       );
       if (showBadge) {
-        const bx = tx + 12;
-        const by = BOT_Y + 8;
+        const bx = tx + 14;
+        const by = panelY + 9;
         const badgeG = this.add.graphics().setDepth(61);
         badgeG.fillStyle(0xff2222, 1);
         badgeG.fillCircle(bx, by, 5);
+        badgeG.lineStyle(1, 0xffffff, 0.65);
+        badgeG.strokeCircle(bx, by, 5);
         this.add.text(bx, by, '!', {
           fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
         }).setOrigin(0.5).setDepth(62);
       }
 
       if (!isActive) {
-        iconTxt.setInteractive();
-        iconTxt.on('pointerdown', () => {
-          this.tweens.add({ targets: iconTxt, scaleX: 0.82, scaleY: 0.82, duration: 80, yoyo: true });
+        const hoverG = this.add.graphics().setDepth(8.5).setVisible(false);
+        hoverG.fillStyle(t.panelBorder, 0.09);
+        hoverG.fillRoundedRect(panelX, panelY, panelW, panelH, 8);
+        hoverG.lineStyle(1, t.panelBorder, 0.45);
+        hoverG.strokeRoundedRect(panelX, panelY, panelW, panelH, 8);
+
+        const zone = this.add.zone(i * tabW, BOT_Y, tabW, BOT_H)
+          .setOrigin(0, 0)
+          .setDepth(11)
+          .setInteractive({ useHandCursor: true });
+
+        zone.on('pointerover', () => {
+          hoverG.setVisible(true);
+          labelTxt.setColor(t.panelBorderCSS);
+        });
+        zone.on('pointerout', () => {
+          hoverG.setVisible(false);
+          labelTxt.setColor(t.textSecondary);
+          iconTxt.setScale(1);
+          labelTxt.setScale(1);
+        });
+        zone.on('pointerdown', () => {
+          this.tweens.add({
+            targets: [iconTxt, labelTxt],
+            scaleX: 0.9,
+            scaleY: 0.9,
+            duration: 80,
+            yoyo: true,
+          });
           audioManager.playSfx('button_click');
           this.cameras.main.fadeOut(220, 0, 0, 0);
           this.cameras.main.once('camerafadeoutcomplete', () => {

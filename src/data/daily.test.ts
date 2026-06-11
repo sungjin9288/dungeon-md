@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
+  applyDailyChallengeTick,
   getDailyDungeon,
   getWeeklyBoss,
   getDailyChallenges,
+  ensureDailyChallengeDate,
+  prepareDailyChallengeViewState,
   tickDailyChallenge,
   getTodayString,
   getThisWeekMonday,
@@ -81,6 +84,43 @@ describe('getDailyChallenges', () => {
       );
       expect(rewardKeys.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// ─── ensureDailyChallengeDate ────────────────────────────────────────────────
+
+describe('ensureDailyChallengeDate', () => {
+  it('returns the same state when the daily challenge date already matches', () => {
+    const gs = makeGs({
+      dailyChallengeDate: '2026-05-13',
+      dailyChallenges: {
+        'dc-current-0': { completed: false, progress: 2 },
+      },
+    });
+
+    const result = ensureDailyChallengeDate(gs, '2026-05-13');
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(gs);
+  });
+
+  it('resets stale challenge progress without mutating the original state', () => {
+    const gs = makeGs({
+      dailyChallengeDate: '2026-05-12',
+      dailyChallenges: {
+        'dc-old-0': { completed: true, progress: 99 },
+      },
+    });
+
+    const result = ensureDailyChallengeDate(gs, '2026-05-13');
+
+    expect(result.changed).toBe(true);
+    expect(result.state).not.toBe(gs);
+    expect(result.state.dailyChallengeDate).toBe('2026-05-13');
+    expect(result.state.dailyChallenges).toEqual({});
+    expect(gs.dailyChallenges).toEqual({
+      'dc-old-0': { completed: true, progress: 99 },
+    });
   });
 });
 
@@ -212,6 +252,89 @@ describe('tickDailyChallenge — progress', () => {
     }
     // Gems must not have increased (all were already done)
     expect(next.gems).toBe(200);
+  });
+});
+
+// ─── applyDailyChallengeTick — transaction result ────────────────────────────
+
+describe('applyDailyChallengeTick', () => {
+  it('reports changed state, completed ids, and earned gems when challenges complete', () => {
+    const challenges = getDailyChallenges();
+    const ch = challenges.find(c => c.reward.gems !== undefined);
+    if (!ch) return;
+    const matching = challenges.filter(c => c.objective.type === ch.objective.type);
+    const expectedGems = matching.reduce((sum, c) => sum + (c.reward.gems ?? 0), 0);
+    const gs = makeGs({ gems: 50 });
+
+    const result = applyDailyChallengeTick(gs, ch.objective.type, 99_999);
+
+    expect(result.changed).toBe(true);
+    expect(result.state).not.toBe(gs);
+    expect(result.rewardGems).toBe(expectedGems);
+    expect(result.completedIds.sort()).toEqual(matching.map(c => c.id).sort());
+    expect(result.state.gems).toBe(50 + expectedGems);
+    expect(gs.gems).toBe(50);
+  });
+
+  it('returns the same state when today is current and no challenge matches', () => {
+    const challenges = getDailyChallenges();
+    const usedTypes = new Set(challenges.map(c => c.objective.type));
+    const allTypes = ['kill_count', 'no_damage', 'skill_use', 'tribe_only', 'wave_clear'] as const;
+    const absent = allTypes.find(t => !usedTypes.has(t));
+    if (!absent) return;
+    const gs = makeGs();
+
+    const result = applyDailyChallengeTick(gs, absent);
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(gs);
+    expect(result.completedIds).toEqual([]);
+    expect(result.rewardGems).toBe(0);
+  });
+});
+
+// ─── prepareDailyChallengeViewState — display state result ────────────────────
+
+describe('prepareDailyChallengeViewState', () => {
+  it('returns display metadata for current daily challenges without changing current state', () => {
+    const challenges = getDailyChallenges();
+    const completedId = challenges[0].id;
+    const gs = makeGs({
+      dailyChallenges: {
+        [completedId]: { completed: true, progress: challenges[0].objective.target },
+      },
+    });
+
+    const result = prepareDailyChallengeViewState(gs, getTodayString());
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(gs);
+    expect(result.challenges).toHaveLength(3);
+    expect(result.completedCount).toBe(1);
+    expect(result.allCompleted).toBe(false);
+    expect(result.totalRewardGems).toBe(
+      result.challenges.reduce((sum, challenge) => sum + (challenge.reward.gems ?? 0), 0),
+    );
+  });
+
+  it('resets stale daily challenge progress and reports changed state', () => {
+    const gs = makeGs({
+      dailyChallengeDate: '2000-01-01',
+      dailyChallenges: {
+        stale: { completed: true, progress: 99 },
+      },
+    });
+
+    const result = prepareDailyChallengeViewState(gs, '2026-05-14');
+
+    expect(result.changed).toBe(true);
+    expect(result.state).not.toBe(gs);
+    expect(result.today).toBe('2026-05-14');
+    expect(result.state.dailyChallengeDate).toBe('2026-05-14');
+    expect(result.state.dailyChallenges).toEqual({});
+    expect(result.completedCount).toBe(0);
+    expect(result.allCompleted).toBe(false);
+    expect(gs.dailyChallenges?.stale?.completed).toBe(true);
   });
 });
 

@@ -7,17 +7,18 @@ import { MonsterSelectPanel }  from '../ui/MonsterSelectPanel';
 import { RoomUpgradePanel }    from '../ui/RoomUpgradePanel';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
-  CANVAS_HEIGHT,
+  CANVAS_HEIGHT, CANVAS_WIDTH,
   GRID_COLS, GRID_ROWS, CELL_SIZE, GRID_Y,
 } from '../constants/layout';
+import { COLORS, CSS } from '../constants/colors';
 import { type RoomData, type RoomType } from '../data/rooms';
 import { resolveMonsterDef, type MonsterId } from '../data/monsters';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
 import { type EquipmentStats } from '../data/barracks';
-import { tickDailyChallenge, type DailyDungeon, type WeeklyBoss } from '../data/daily';
-import { updateQuestObjective } from '../data/quests';
+import { applyDailyChallengeTick, type DailyDungeon, type WeeklyBoss } from '../data/daily';
+import type { ObjectiveType } from '../data/quests';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import { applyChapterTheme } from './ChapterTheme';
 import { resolveStageSetup, buildEquipmentMap } from '../combat/DungeonSceneInit';
@@ -42,7 +43,7 @@ import {
   runLunarRhythm as _runLunarRhythm,
   runExtraMonsterAttacks as _runExtraMonsterAttacks,
 } from '../combat/RoomMechanics';
-import { runTrapEffects as _runTrapEffects } from '../combat/RoomTriggers';
+import { runTrapEffects as _runTrapEffects, recalcRoomTypeBonuses as _recalcRoomTypeBonuses } from '../combat/RoomTriggers';
 import { showWisdomToast as _showWisdomToast } from '../combat/VisualEffects';
 import { showBossWarning as _showBossWarning, updateLowHpVignette as _updateLowHpVignette } from '../combat/ImpactVfx';
 import { showWaveClear as _showWaveClear, triggerWaveFail as _triggerWaveFail } from '../combat/ResultFlow';
@@ -57,6 +58,8 @@ import {
   addDustMoteParticles,
   addDungeonFog,
   buildWaveStartButton,
+  deployDungeonSlotsToGrid,
+  type DungeonSlotDeploymentSummary,
 } from '../combat/DungeonLayout';
 import { activateSkillEffect } from '../combat/ActiveSkills';
 import { BossHud } from '../combat/BossHud';
@@ -136,6 +139,7 @@ export class DungeonScene extends Phaser.Scene {
   resultOverlay?: Phaser.GameObjects.Container;
   returnTo?: string;   // set when launched from invasion (PreBattleScene)
   countdownBar?: Phaser.GameObjects.Graphics;
+  private commandStrip?: Phaser.GameObjects.Container;
 
   // ── Combat interaction subsystems ─────────────────────────────────────────
   skillHUD?: SkillHUD;
@@ -272,6 +276,7 @@ export class DungeonScene extends Phaser.Scene {
     this.registry.set('gems',  this.gems);
     this.registry.set('hp',    this.dungeonHp);
     this.registry.set('wave',  this.wave);
+    this.registry.set('maxWave', this.maxWave);
     this.registry.set('status','');
 
     // Ch7 (stages 63-72) always use Celestial Realm theme
@@ -282,6 +287,7 @@ export class DungeonScene extends Phaser.Scene {
     this.drawBackground();
     this.buildPath();
     this.buildGrid();
+    const deploymentSummary = this.deployDungeonSlots();
     this.placeTorches();
     this.addDustMotes();
     this.addFog();
@@ -293,6 +299,8 @@ export class DungeonScene extends Phaser.Scene {
     applyChapterTheme(this, this.stageChapter, this.effectiveCellSize);
 
     this.showWisdomToast();
+    this.buildDungeonCommandStrip(deploymentSummary);
+    this.showDungeonDeploymentToast(deploymentSummary);
     // Ensure DungeonHomeScene is hidden when battle starts (it may still be active as a background scene)
     if (this.scene.isActive('DungeonHomeScene')) this.scene.stop('DungeonHomeScene');
     this.scene.launch('UIScene');
@@ -339,6 +347,8 @@ export class DungeonScene extends Phaser.Scene {
     this.lowHpVignette = undefined;
     this.killCounterText?.destroy();
     this.killCounterText = undefined;
+    this.commandStrip?.destroy();
+    this.commandStrip = undefined;
 
     // Clear cached data
     this.equipmentMap.clear();
@@ -411,6 +421,134 @@ export class DungeonScene extends Phaser.Scene {
       dungeonTrapSlots:  this.dungeonTrapSlots,
       onRoomClick:       (r) => this.onRoomClick(r),
     });
+  }
+
+  private deployDungeonSlots(): DungeonSlotDeploymentSummary {
+    const summary = deployDungeonSlotsToGrid({
+      rooms:             this.rooms,
+      roomGrid:          this.roomGrid,
+      effectiveCols:     this.effectiveCols,
+      dungeonTrapSlots:  this.dungeonTrapSlots,
+      equipmentMap:      this.equipmentMap,
+    });
+
+    if (summary.builtRooms > 0) {
+      this.synergyManager.recalc(this.roomGrid, this.effectiveCols);
+      _recalcRoomTypeBonuses(buildRoomMechanicsCtx(this));
+    }
+
+    return summary;
+  }
+
+  private showDungeonDeploymentToast(summary: DungeonSlotDeploymentSummary): void {
+    if (summary.builtRooms <= 0) return;
+    const toastY = GRID_Y + GRID_ROWS * this.effectiveCellSize + 5;
+
+    const toast = this.add.text(
+      CANVAS_WIDTH / 2,
+      toastY,
+      `던전 전개 완료 · 방 ${summary.builtRooms} · 수호자 ${summary.assignedMonsters} · 장비 ${summary.equippedMonsters} · 함정 ${summary.activeTraps}`,
+      {
+        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontSize: '11px',
+        color: summary.brokenRooms > 0 ? '#ffb06a' : '#d8f7ff',
+        backgroundColor: '#102538dd',
+        padding: { x: 10, y: 5 },
+      },
+    ).setOrigin(0.5).setDepth(120).setAlpha(0);
+
+    this.tweens.add({
+      targets: toast,
+      alpha: { from: 0, to: 0.94 },
+      y: toastY - 6,
+      duration: 220,
+      ease: 'Cubic.easeOut',
+      yoyo: true,
+      hold: 1250,
+      onComplete: () => toast.destroy(),
+    });
+  }
+
+  private buildDungeonCommandStrip(summary: DungeonSlotDeploymentSummary): void {
+    this.commandStrip?.destroy();
+    if (summary.builtRooms <= 0) return;
+
+    const builtSlots = this.dungeonTrapSlots.filter(slot => Boolean(slot.roomType));
+    const totalMaxHp = builtSlots.reduce((sum, slot) => sum + Math.max(1, slot.maxHp), 0);
+    const totalHp = builtSlots.reduce((sum, slot) => sum + Phaser.Math.Clamp(slot.hp, 0, Math.max(1, slot.maxHp)), 0);
+    const durability = totalMaxHp > 0 ? Math.round((totalHp / totalMaxHp) * 100) : 100;
+    const warning = summary.brokenRooms > 0
+      ? `파손${summary.brokenRooms}`
+      : summary.assignedMonsters <= 0
+        ? '수호 없음'
+        : durability < 50
+          ? '수리'
+          : '준비';
+    const warningColor = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0
+      ? 0xff6b45
+      : 0x4ee89a;
+
+    const y = GRID_Y - 8;
+    const strip = this.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
+    const g = this.add.graphics();
+    const w = CANVAS_WIDTH - 24;
+    const h = 22;
+    g.fillStyle(0x06131d, 0.88);
+    g.fillRoundedRect(-w / 2, -h / 2, w, h, 7);
+    g.lineStyle(1.2, COLORS.TORCH_GOLD, 0.48);
+    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 7);
+    g.fillStyle(COLORS.TORCH_GOLD, 0.12);
+    g.fillRoundedRect(-w / 2 + 8, -h / 2 + 4, w - 16, 3, 2);
+    strip.add(g);
+
+    const title = this.add.text(-w / 2 + 12, 0, '방어 진형', {
+      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontSize: '10px',
+      fontStyle: 'bold',
+      color: CSS.TORCH_AMBER,
+    }).setOrigin(0, 0.5);
+    strip.add(title);
+
+    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, 0x4bd5ff);
+    this.addCommandStripChip(strip, -50, `수호${summary.assignedMonsters}`, 0xff8a45);
+    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, 0x4ee89a);
+    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`, summary.equippedMonsters > 0 ? 0xffd166 : 0x61778d);
+    this.addCommandStripChip(strip, 115, `내구${durability}%`, durability < 50 ? 0xff6b45 : 0xffd166);
+    this.addCommandStripChip(strip, 172, warning, warningColor, true);
+
+    this.commandStrip = strip;
+    this.tweens.add({
+      targets: strip,
+      alpha: { from: 0, to: 0.96 },
+      y: y - 2,
+      duration: 220,
+      ease: 'Cubic.easeOut',
+    });
+  }
+
+  private addCommandStripChip(
+    strip: Phaser.GameObjects.Container,
+    x: number,
+    label: string,
+    color: number,
+    alignRight = false,
+  ): void {
+    const text = this.add.text(x, 0, label, {
+      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontSize: '9px',
+      fontStyle: 'bold',
+      color: '#fff4d6',
+    }).setOrigin(alignRight ? 1 : 0.5, 0.5);
+    const b = text.getBounds();
+    const padX = 8;
+    const chipX = alignRight ? x - b.width - padX * 2 : x - b.width / 2 - padX;
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 0.16);
+    bg.fillRoundedRect(chipX, -8, b.width + padX * 2, 16, 5);
+    bg.lineStyle(1, color, 0.42);
+    bg.strokeRoundedRect(chipX, -8, b.width + padX * 2, 16, 5);
+    strip.add(bg);
+    strip.add(text);
   }
 
   private placeTorches(): void {
@@ -486,8 +624,8 @@ export class DungeonScene extends Phaser.Scene {
 
   activateSkill(skillId: string, room: Room): void {
     audioManager.playSfx('skill_activate');
-    // Track skill_use daily challenge
-    saveGameState(tickDailyChallenge(loadGameState(), 'skill_use'));
+    const dailyResult = applyDailyChallengeTick(loadGameState(), 'skill_use');
+    if (dailyResult.changed) saveGameState(dailyResult.state);
 
     activateSkillEffect(skillId, buildActiveSkillContext(this, room));
   }
@@ -743,7 +881,7 @@ export class DungeonScene extends Phaser.Scene {
     _checkAchievementsAndToast(buildQuestTrackerCtx(this), gs);
   }
 
-  tickQuestAndNotify(gs: ReturnType<typeof loadGameState>, type: Parameters<typeof updateQuestObjective>[1], amount = 1): ReturnType<typeof loadGameState> {
+  tickQuestAndNotify(gs: ReturnType<typeof loadGameState>, type: ObjectiveType, amount = 1): ReturnType<typeof loadGameState> {
     return _tickQuestAndNotify(buildQuestTrackerCtx(this), gs, type, amount);
   }
 

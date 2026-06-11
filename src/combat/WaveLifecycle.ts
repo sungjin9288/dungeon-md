@@ -11,10 +11,11 @@ import { Invader } from '../objects/Invader';
 import { INVADER_DEFS } from '../data/invaders';
 import type { WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { tickDailyChallenge } from '../data/daily';
+import { applyEndlessRunReward, applyWaveClearDailyChallengeProgress } from '../data/waveTransactions';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_ROWS, GRID_Y } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS } from '../constants/colors';
 import { logger } from '../utils/logger';
+import { WAVE_BUTTON_H, WAVE_BUTTON_W } from './DungeonLayout';
 
 // ─── showWaveEnemyPreview ─────────────────────────────────────────────────────
 // Brief "농민 ×5  기사 ×1" pill shown just after the wave banner slides in.
@@ -93,22 +94,14 @@ export function showEndlessResult(
   killsThisRun:    number,
   goldEarnedThisRun: number,
 ): void {
-  const gs           = loadGameState();
-  const crystalsBase = Math.floor(wave / 5);
-  const milestone    = (wave >= 100 ? 10 : 0) + (wave >= 50 ? 5 : 0) + (wave >= 20 ? 2 : 0);
-  const crystals     = Math.round((crystalsBase + milestone) * crystalEarnMult);
-  const previousBest = gs.endlessHighScore ?? 0;
-  const isNewRecord  = wave > previousBest;
-
-  saveGameState({
-    ...gs,
-    soulCrystals:     (gs.soulCrystals    ?? 0) + crystals,
-    endlessHighScore: Math.max(previousBest, wave),
-  });
+  const rewardResult = applyEndlessRunReward(loadGameState(), wave, crystalEarnMult);
+  saveGameState(rewardResult.state);
 
   scene.registry.set('endlessResult', {
     wave, kills: killsThisRun, goldEarned: goldEarnedThisRun,
-    crystalsEarned: crystals, isNewRecord, previousBest,
+    crystalsEarned: rewardResult.crystalsEarned,
+    isNewRecord: rewardResult.isNewRecord,
+    previousBest: rewardResult.previousBest,
   });
 
   scene.scene.stop('UIScene');
@@ -171,11 +164,8 @@ export function checkWaveEnd(ctx: CheckWaveEndContext): void {
     // Daily challenge ticks
     const noDmg = ctx.dungeonHp >= ctx.waveStartDungeonHp;
     ctx.consecutiveNoDmgWaves = noDmg ? ctx.consecutiveNoDmgWaves + 1 : 0;
-    {
-      let gs_dc = tickDailyChallenge(loadGameState(), 'wave_clear');
-      if (noDmg) gs_dc = tickDailyChallenge(gs_dc, 'no_damage');
-      saveGameState(gs_dc);
-    }
+    const dailyResult = applyWaveClearDailyChallengeProgress(loadGameState(), noDmg);
+    if (dailyResult.changed) saveGameState(dailyResult.state);
 
     if (ctx.wave >= ctx.maxWave) {
       ctx.showChapterClear();
@@ -213,7 +203,7 @@ export interface WavePrepContext {
 // Redraws the wave-start button and fires a golden pulse to attract attention.
 
 export function enableWaveButton(ctx: WavePrepContext): void {
-  const bw = 270, bh = 48;
+  const bw = WAVE_BUTTON_W, bh = WAVE_BUTTON_H;
   const bx = CANVAS_WIDTH / 2 - bw / 2;
   const by = GRID_Y + GRID_ROWS * ctx.effectiveCellSize + 20;
   ctx.setWaveEndChecked(false);
@@ -221,7 +211,7 @@ export function enableWaveButton(ctx: WavePrepContext): void {
   ctx.drawBtn(ctx.waveBtnBg, bx, by, bw, bh, false);
   ctx.waveBtnBg.setAlpha(1);
   ctx.waveBtnZone.setInteractive();
-  ctx.waveLabel.setText('⚔  침략 시작').setColor(CSS.PARCHMENT);
+  ctx.waveLabel.setText('🛡  방어 시작').setColor('#fff8d8');
 
   // Golden pulse to draw attention to the newly-ready button
   const scene = ctx.scene;

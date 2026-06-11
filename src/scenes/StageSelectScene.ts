@@ -60,6 +60,35 @@ const STAGE_ENEMY_ICONS: string[] = ALL_STAGES.map(cfg => {
   return top;
 });
 
+function drawStageAccent(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  color: number,
+  alpha: number,
+): void {
+  g.fillStyle(color, alpha);
+  g.fillRoundedRect(x + 8, y + 4, Math.max(8, w - 16), 3, 2);
+}
+
+function pressStagePlaque(
+  scene: Phaser.Scene,
+  bg: Phaser.GameObjects.Graphics,
+  onComplete: () => void,
+): void {
+  scene.tweens.add({
+    targets: bg,
+    alpha: 0.68,
+    duration: 70,
+    yoyo: true,
+    onComplete: () => {
+      bg.setAlpha(1);
+      onComplete();
+    },
+  });
+}
+
 // ─── StageSelectScene ─────────────────────────────────────────────────────────
 
 export class StageSelectScene extends Phaser.Scene {
@@ -82,7 +111,14 @@ export class StageSelectScene extends Phaser.Scene {
     this.drawHeader();
     this.drawGrid();
     for (let i = 0; i < CHAPTER_SECTION_DATA.length; i++) {
-      drawChapterSection(this, CHAPTER_SECTION_DATA[i], CHAPTER_PLAQUE_THEMES[i], this.progress, (idx) => this.showRewardPreview(idx));
+      drawChapterSection(
+        this,
+        CHAPTER_SECTION_DATA[i],
+        CHAPTER_PLAQUE_THEMES[i],
+        this.progress,
+        (idx) => this.showRewardPreview(idx),
+        this.frontierIdx,
+      );
     }
     this.drawWisdomButton();
     this.drawEndlessButton();
@@ -220,6 +256,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.fillRoundedRect(x, y, w, h, 6);
       bg.lineStyle(1, 0x3a2810, 0.8);
       bg.strokeRoundedRect(x, y, w, h, 6);
+      drawStageAccent(bg, x, y, w, 0x3a2810, 0.35);
 
       this.add.text(x + w / 2, y + h / 2 - 4, '⛓', {
         fontFamily: 'sans-serif', fontSize: '20px',
@@ -234,6 +271,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.fillRoundedRect(x, y, w, h, 6);
       bg.lineStyle(1.5, 0x6a4820, 0.9);
       bg.strokeRoundedRect(x, y, w, h, 6);
+      drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, idx === this.frontierIdx ? 0.9 : 0.55);
 
       this.add.text(x + w / 2, y + 16, label, {
         fontFamily: "Georgia, serif", fontSize: '18px', fontStyle: 'bold',
@@ -255,9 +293,23 @@ export class StageSelectScene extends Phaser.Scene {
 
       // Interactive
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => this.showRewardPreview(idx));
-      zone.on('pointerover', () => { bg.clear(); bg.fillStyle(0x3d3020, 1); bg.fillRoundedRect(x, y, w, h, 6); bg.lineStyle(1.5, COLORS.TORCH_GOLD, 0.7); bg.strokeRoundedRect(x, y, w, h, 6); });
-      zone.on('pointerout',  () => { bg.clear(); bg.fillStyle(0x2d2416, 1); bg.fillRoundedRect(x, y, w, h, 6); bg.lineStyle(1.5, 0x6a4820, 0.9); bg.strokeRoundedRect(x, y, w, h, 6); });
+      zone.on('pointerdown', () => pressStagePlaque(this, bg, () => this.showRewardPreview(idx)));
+      zone.on('pointerover', () => {
+        bg.clear();
+        bg.fillStyle(0x3d3020, 1);
+        bg.fillRoundedRect(x, y, w, h, 6);
+        bg.lineStyle(1.5, COLORS.TORCH_GOLD, 0.75);
+        bg.strokeRoundedRect(x, y, w, h, 6);
+        drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, 0.9);
+      });
+      zone.on('pointerout',  () => {
+        bg.clear();
+        bg.fillStyle(0x2d2416, 1);
+        bg.fillRoundedRect(x, y, w, h, 6);
+        bg.lineStyle(1.5, 0x6a4820, 0.9);
+        bg.strokeRoundedRect(x, y, w, h, 6);
+        drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, idx === this.frontierIdx ? 0.9 : 0.55);
+      });
 
     } else {
       // Cleared — gold glow
@@ -265,6 +317,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.fillRoundedRect(x, y, w, h, 6);
       bg.lineStyle(2, COLORS.TORCH_GOLD, 0.9);
       bg.strokeRoundedRect(x, y, w, h, 6);
+      drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, 0.85);
 
       this.add.text(x + w / 2, y + 16, label, {
         fontFamily: "Georgia, serif", fontSize: '18px', fontStyle: 'bold',
@@ -299,7 +352,7 @@ export class StageSelectScene extends Phaser.Scene {
       }
 
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => this.showRewardPreview(idx));
+      zone.on('pointerdown', () => pressStagePlaque(this, bg, () => this.showRewardPreview(idx)));
     }
 
     // Phase B2: boss stage — red pulsing ring + larger badge
@@ -342,6 +395,9 @@ export class StageSelectScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
+      const cue = this.add.graphics();
+      cue.fillStyle(COLORS.TORCH_GOLD, 0.95);
+      cue.fillTriangle(x + 7, y + 9, x + 7, y + 21, x + 17, y + 15);
     }
   }
 
@@ -518,6 +574,7 @@ export class StageSelectScene extends Phaser.Scene {
     } else {
       this.scene.get('StageRewardOverlay').scene.restart();
     }
+    this.scene.bringToTop('StageRewardOverlay');
   }
 
   // ─── Launch ─────────────────────────────────────────────────────────────
@@ -546,4 +603,3 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
 }
-

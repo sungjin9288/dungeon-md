@@ -32,8 +32,9 @@ const SYNERGY_COLOR: Record<string, number> = {
 };
 
 /**
- * Draw animated glow lines between adjacent slots that share the same room type.
- * Each pair gets a wide soft line + a travelling pulse dot.
+ * Draw subtle resource channels between adjacent rooms of the same type.
+ * The caller draws this before room shells so synergy reads as floor wiring,
+ * not as a UI line over monsters or traps.
  */
 export function drawSynergyConnectors(
   ctx: SynergyDrawContext,
@@ -76,26 +77,36 @@ export function drawSynergyConnectors(
     const by = gridStartY + bRow * (SLOT_H + slotPadY) + SLOT_H / 2;
 
     const color = SYNERGY_COLOR[aSlot.roomType] ?? 0xffffff;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const horizontal = Math.abs(dx) >= Math.abs(dy);
+    const dir = horizontal ? Math.sign(dx) || 1 : Math.sign(dy) || 1;
+    const from = horizontal
+      ? { x: ax + dir * (SLOT_W / 2 - 4), y: ay }
+      : { x: ax, y: ay + dir * (SLOT_H / 2 - 4) };
+    const to = horizontal
+      ? { x: bx - dir * (SLOT_W / 2 - 4), y: by }
+      : { x: bx, y: by - dir * (SLOT_H / 2 - 4) };
 
-    // Layered glow line
-    const sg = scene.add.graphics().setDepth(4);
-    sg.lineStyle(6, color, 0.15);
-    sg.lineBetween(ax, ay, bx, by);
-    sg.lineStyle(3, color, 0.5);
-    sg.lineBetween(ax, ay, bx, by);
-    sg.lineStyle(1, 0xffffff, 0.4);
-    sg.lineBetween(ax, ay, bx, by);
+    // Layered floor channel
+    const sg = scene.add.graphics();
+    sg.lineStyle(7, color, 0.08);
+    sg.lineBetween(from.x, from.y, to.x, to.y);
+    sg.lineStyle(3, color, 0.24);
+    sg.lineBetween(from.x, from.y, to.x, to.y);
+    sg.lineStyle(1, 0xffffff, 0.18);
+    sg.lineBetween(from.x, from.y, to.x, to.y);
     c.add(sg);
 
-    // Travelling pulse dot
-    const dot = scene.add.graphics().setDepth(5);
-    dot.fillStyle(color, 0.9);
-    dot.fillCircle(0, 0, 3);
-    dot.setPosition(ax, ay);
+    // Travelling floor pulse
+    const dot = scene.add.graphics();
+    dot.fillStyle(color, 0.58);
+    dot.fillCircle(0, 0, 2.2);
+    dot.setPosition(from.x, from.y);
     c.add(dot);
     scene.tweens.add({
-      targets: dot, x: bx, y: by,
-      duration: 1200 + Math.random() * 600,
+      targets: dot, x: to.x, y: to.y,
+      duration: 1450 + Math.random() * 700,
       yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       delay: Math.random() * 800,
     });

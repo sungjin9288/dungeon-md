@@ -10,6 +10,7 @@
 
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState, saveGameState } from '../data/wisdom';
+import { applyGameCompletionReward } from '../data/storyTransactions';
 import { logger } from '../utils/logger';
 import type { ResultFlowContext } from './ResultFlow';
 
@@ -20,16 +21,14 @@ export function showGameComplete(ctx: ResultFlowContext): void {
 
   // Persist rewards first (guard against duplicate triggers)
   const crystalBonus = 50;
-  const gs0 = loadGameState();
-  if (!gs0.gameCompleted) {
-    gs0.soulCrystals += crystalBonus;
-    gs0.gameCompleted = true;
-    saveGameState(gs0);
-    ctx.checkAchievementsAndToast(gs0);
+  const completionResult = applyGameCompletionReward(loadGameState(), crystalBonus);
+  if (completionResult.changed) {
+    saveGameState(completionResult.state);
+    ctx.checkAchievementsAndToast(completionResult.state);
   }
 
   // Play game_complete cinematic on first clear
-  const gs1 = loadGameState();
+  const gs1 = completionResult.state;
   const seen = gs1.cinematicSeen ?? [];
   if (!seen.includes('game_complete')) {
     scene.scene.stop('UIScene');

@@ -69,29 +69,36 @@ export interface ObjectiveUpdate {
   questDone: boolean;
 }
 
-export function updateQuestObjective(
+export function applyQuestObjectiveUpdate(
   gs:     GameState,
   type:   ObjectiveType,
   amount  = 1,
-): ObjectiveUpdate | null {
-  if (!gs.activeMainQuestId) return null;
+): [GameState, ObjectiveUpdate | null] {
+  if (!gs.activeMainQuestId) return [gs, null];
   const questId = gs.activeMainQuestId;
   const quest   = getQuest(questId);
   const prog    = gs.questProgress[questId];
-  if (!quest || !prog || prog.completed) return null;
+  if (!quest || !prog || prog.completed) return [gs, null];
+
   for (const obj of quest.objectives) {
     if (obj.type !== type) continue;
     const cur  = prog.objectives[obj.id] ?? 0;
     if (cur >= obj.target) continue;
+
     const next = Math.min(cur + amount, obj.target);
-    prog.objectives[obj.id] = next;
+    const nextObjectives = { ...prog.objectives, [obj.id]: next };
+    const nextProgress = { ...prog, objectives: nextObjectives };
+    const nextGs = {
+      ...gs,
+      questProgress: { ...gs.questProgress, [questId]: nextProgress },
+    };
     logger.debug(`[OBJECTIVE] ${obj.type}: ${next}/${obj.target}`);
     const questDone = quest.objectives.every(
-      o => (prog.objectives[o.id] ?? 0) >= o.target,
+      o => (nextObjectives[o.id] ?? 0) >= o.target,
     );
-    return { questId, objId: obj.id, current: next, target: obj.target, questDone };
+    return [nextGs, { questId, objId: obj.id, current: next, target: obj.target, questDone }];
   }
-  return null;
+  return [gs, null];
 }
 
 export function completeAndAdvance(
@@ -395,4 +402,99 @@ export function claimSubQuest(gs: GameState, sqId: string): [GameState, SubQuest
   };
 
   return [assignSubQuests(partialGs), sq];
+}
+
+export type SubQuestClaimFailureReason =
+  | 'unknown_subquest'
+  | 'not_active'
+  | 'not_complete';
+
+export type SubQuestClaimResult =
+  | { ok: true; state: GameState; subQuest: SubQuest; changed: true }
+  | { ok: false; state: GameState; reason: SubQuestClaimFailureReason; subQuest?: SubQuest };
+
+export function applySubQuestClaim(gs: GameState, sqId: string): SubQuestClaimResult {
+  const sq = getSubQuestById(sqId);
+  if (!sq) return { ok: false, state: gs, reason: 'unknown_subquest' };
+
+  if (!(gs.activeSubQuestIds ?? []).includes(sqId)) {
+    return { ok: false, state: gs, reason: 'not_active', subQuest: sq };
+  }
+
+  const progress = (gs.subQuestProgress ?? {})[sqId] ?? 0;
+  if (progress < sq.objective.target) {
+    return { ok: false, state: gs, reason: 'not_complete', subQuest: sq };
+  }
+
+  const [state, claimed] = claimSubQuest(gs, sqId);
+  if (!claimed) return { ok: false, state: gs, reason: 'not_active', subQuest: sq };
+  return { ok: true, state, subQuest: claimed, changed: true };
+}
+
+export interface SubQuestLogItem {
+  subQuest: SubQuest;
+  progress: number;
+  target: number;
+  completed: boolean;
+  progressRatio: number;
+}
+
+export interface SubQuestLogViewStateResult {
+  state: GameState;
+  changed: boolean;
+  items: SubQuestLogItem[];
+  allCompleted: boolean;
+}
+
+function subQuestArraysEqual(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function subQuestProgressEqual(
+  left: Record<string, number>,
+  right: Record<string, number>,
+): boolean {
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  return subQuestArraysEqual(leftKeys, rightKeys) && leftKeys.every(key => left[key] === right[key]);
+}
+
+function subQuestStateChanged(source: GameState, assigned: GameState): boolean {
+  return (
+    source.activeSubQuestIds === undefined ||
+    source.subQuestProgress === undefined ||
+    source.completedSubQuestIds === undefined ||
+    !subQuestArraysEqual(source.activeSubQuestIds ?? [], assigned.activeSubQuestIds ?? []) ||
+    !subQuestArraysEqual(source.completedSubQuestIds ?? [], assigned.completedSubQuestIds ?? []) ||
+    !subQuestProgressEqual(source.subQuestProgress ?? {}, assigned.subQuestProgress ?? {})
+  );
+}
+
+export function prepareSubQuestLogViewState(gs: GameState): SubQuestLogViewStateResult {
+  const assignedState = assignSubQuests(gs);
+  const changed = subQuestStateChanged(gs, assignedState);
+  const state = changed ? assignedState : gs;
+  const items = (state.activeSubQuestIds ?? [])
+    .map(subQuestId => {
+      const subQuest = getSubQuestById(subQuestId);
+      if (!subQuest) return null;
+
+      const progress = state.subQuestProgress?.[subQuestId] ?? 0;
+      const target = subQuest.objective.target;
+      return {
+        subQuest,
+        progress,
+        target,
+        completed: progress >= target,
+        progressRatio: Math.min(progress / target, 1),
+      };
+    })
+    .filter((item): item is SubQuestLogItem => item !== null);
+
+  return {
+    state,
+    changed,
+    items,
+    allCompleted: items.length === 0,
+  };
 }

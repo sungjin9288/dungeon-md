@@ -3,7 +3,7 @@ import { COLORS, CSS }        from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   BRANCH_DEFS, MAX_WISDOM_TIER,
-  loadGameState, saveGameState,
+  loadGameState, saveGameState, upgradeWisdomBranch,
   type BranchDef, type GameState,
 } from '../data/wisdom';
 
@@ -522,19 +522,15 @@ export class AncestralWisdomScene extends Phaser.Scene {
   // ─── Upgrade logic ────────────────────────────────────────────────────────────
 
   private performUpgrade(branch: BranchDef): void {
-    const tier = this.state.wisdomTree[branch.id] ?? 0;
-    if (tier >= MAX_WISDOM_TIER) return;
-    const cost = branch.costPerTier[tier];
-    if (this.state.soulCrystals < cost) return;
+    const result = upgradeWisdomBranch(this.state, branch.id);
+    if (!result.ok) return;
 
-    // Deduct cost, increment tier
-    this.state.soulCrystals -= cost;
-    this.state.wisdomTree[branch.id] = tier + 1;
+    this.state = result.state;
     saveGameState(this.state);
 
     // Update crystal display + cost deduction float + pop
     this.crystalText.setText(`💠 ${this.state.soulCrystals} 영혼 수정`);
-    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${cost}💠`, {
+    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${result.cost}💠`, {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
       color: '#aa88ff', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(250).setAlpha(0);
@@ -553,7 +549,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     // Animate node
     const container = this.nodeContainers.get(branch.id);
     if (container) {
-      this.renderNode(branch, tier + 1, container);
+      this.renderNode(branch, result.nextTier, container);
       // Expanding ring
       const ring = this.add.graphics();
       ring.lineStyle(3, COLORS.TORCH_GOLD, 0.9);

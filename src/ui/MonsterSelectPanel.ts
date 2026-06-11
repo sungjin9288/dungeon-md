@@ -6,6 +6,7 @@ import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } f
 import { HYBRID_DEFS } from '../data/fusion';
 import { loadGameState } from '../data/wisdom';
 import { getMonsterAtk } from '../data/barracks';
+import { addFramedPanel, addPrimaryActionButton, GAME_UI } from './GameUiPrimitives';
 
 // Map roomType → melee/ranged/magic/support for hybrid card type badge
 function inferMonsterType(roomTypes: string[]): MonsterDef['type'] {
@@ -24,9 +25,14 @@ function rarityColor(rarity: number): number {
 
 const PANEL_H    = 286;
 const CARD_W     = 90;
-const CARD_H     = 218;
+const CARD_H     = 206;
 const CARD_GAP   = 6;
 const HEADER_H   = 50;
+const OPEN_MS    = 300;
+const CLOSE_MS   = 250;
+const MAX_VISIBLE_CARDS = 4;
+
+const MONSTER_PANEL_ACCENT = 0x8c35d9;
 
 export class MonsterSelectPanel extends Phaser.GameObjects.Container {
   static readonly HEIGHT = PANEL_H;
@@ -35,6 +41,10 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
   private pendingCol   = 0;
   private isOpen       = false;
   private cardGroup:   Phaser.GameObjects.GameObject[] = [];
+  private currentMonsters: MonsterDef[] = [];
+  private scrollIndex   = 0;
+  private slotLabel!:    Phaser.GameObjects.Text;
+  private countLabel?:   Phaser.GameObjects.Text;
   private onAssignCb:  (row: number, col: number, id: MonsterId) => void;
   private onCloseCb:   () => void;
 
@@ -76,6 +86,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
         accentColor:     rarityColor(h.rarity),
         unlockStage:     0,
       }));
+    this.slotLabel.setText(`R${row + 1} · C${col + 1}`);
     this.rebuildCards([...monsters, ...hybridCards]);
 
     if (this.isOpen) return;
@@ -83,7 +94,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.scene.tweens.add({
       targets: this,
       y: CANVAS_HEIGHT - PANEL_H,
-      duration: 300,
+      duration: OPEN_MS,
       ease: 'Power2.easeOut',
     });
   }
@@ -93,67 +104,94 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.isOpen = false;
     this.onCloseCb();
     this.scene.tweens.add({
-      targets: this, y: CANVAS_HEIGHT, duration: 250, ease: 'Power2.easeIn',
+      targets: this, y: CANVAS_HEIGHT, duration: CLOSE_MS, ease: 'Power2.easeIn',
     });
   }
 
   // ─── Static frame ─────────────────────────────────────────────────────────
 
   private buildFrame(): void {
-    const bg = this.scene.add.graphics();
-    bg.fillStyle(COLORS.BLACK, 0.97);
-    bg.fillRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
+    const frame = addFramedPanel(this.scene, {
+      x: 0,
+      y: 0,
+      w: CANVAS_WIDTH,
+      h: PANEL_H + 18,
+      radius: 16,
+      fillColor: 0x0e0903,
+      borderColor: MONSTER_PANEL_ACCENT,
+      borderAlpha: 0.9,
+      borderWidth: 2,
+      accentColor: MONSTER_PANEL_ACCENT,
+      accentAlpha: 0.95,
+      glowColor: 0xb365ff,
+      glowOpacity: 0.14,
+      shadowOpacity: 0.68,
+      shadowOffsetY: 4,
+    });
+    this.add(frame.shadow);
+    this.add(frame.panel);
+    this.add(frame.glow);
 
-    for (let y = 4; y < PANEL_H; y += 10) {
-      bg.fillStyle(COLORS.STONE_DARK, 0.18);
-      bg.fillRect(0, y, CANVAS_WIDTH, 5);
-    }
-
-    // Purple top border for monster theme
-    bg.fillStyle(0x6020a0, 0.9);
-    bg.fillRoundedRect(0, 0, CANVAS_WIDTH, 3, { tl: 16, tr: 16, bl: 0, br: 0 });
-    bg.fillStyle(0x9040e0, 0.2);
-    bg.fillRoundedRect(0, 3, CANVAS_WIDTH, 3, { tl: 12, tr: 12, bl: 0, br: 0 });
-    this.add(bg);
-
-    const title = this.scene.add.text(CANVAS_WIDTH / 2, 18, '👹  몬스터 배치  👹', {
+    const title = this.scene.add.text(18, 16, '몬스터 배치', {
       fontFamily: "Georgia, 'Times New Roman', serif",
-      fontSize: '16px',
+      fontSize: '17px',
+      fontStyle: 'bold',
       color: '#d080ff',
-    }).setOrigin(0.5, 0);
+    }).setOrigin(0, 0);
     this.add(title);
 
+    const caption = this.scene.add.text(18, 35, '방에 배치할 수호자를 선택', {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(0, 0);
+    this.add(caption);
+
+    this.slotLabel = this.scene.add.text(CANVAS_WIDTH - 86, 18, 'R1 · C1', {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: CSS.PARCHMENT_DIM,
+      fontStyle: 'bold',
+    }).setOrigin(0.5, 0);
+    this.add(this.slotLabel);
+
     const div = this.scene.add.graphics();
-    div.lineStyle(1, 0x6020a0, 0.4);
+    div.lineStyle(1, MONSTER_PANEL_ACCENT, 0.4);
     div.lineBetween(12, HEADER_H - 4, CANVAS_WIDTH - 12, HEADER_H - 4);
     this.add(div);
 
-    // Close button
-    const closeBg = this.scene.add.graphics();
-    closeBg.fillStyle(COLORS.STONE_DARK, 0.8);
-    closeBg.fillRoundedRect(CANVAS_WIDTH - 40, 6, 32, 32, 4);
-    closeBg.lineStyle(1, 0x6020a0, 0.5);
-    closeBg.strokeRoundedRect(CANVAS_WIDTH - 40, 6, 32, 32, 4);
-    this.add(closeBg);
-
-    const closeText = this.scene.add.text(CANVAS_WIDTH - 24, 22, '✕', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: CSS.PARCHMENT_MUTED,
-    }).setOrigin(0.5);
-    this.add(closeText);
-
-    const closeZone = this.scene.add.zone(CANVAS_WIDTH - 40, 6, 32, 32)
-      .setOrigin(0, 0).setInteractive();
-    closeZone.on('pointerdown', () => this.close());
-    closeZone.on('pointerover', () => closeText.setColor('#d080ff'));
-    closeZone.on('pointerout',  () => closeText.setColor(CSS.PARCHMENT_MUTED));
-    this.add(closeZone);
+    const closeButton = addPrimaryActionButton(this.scene, {
+      x: CANVAS_WIDTH - 43,
+      y: 8,
+      w: 34,
+      h: 30,
+      label: '×',
+      fontSize: '16px',
+      fillColor: 0x1a1208,
+      hoverFillColor: 0x24170a,
+      borderColor: COLORS.STONE_MID,
+      hoverBorderColor: 0xd080ff,
+      textColor: CSS.PARCHMENT_MUTED,
+      onPress: () => this.close(),
+    });
+    this.add(closeButton.bg);
+    this.add(closeButton.text);
+    this.add(closeButton.zone);
   }
 
   // ─── Cards ────────────────────────────────────────────────────────────────
 
   private rebuildCards(monsters: MonsterDef[]): void {
+    this.currentMonsters = monsters;
+    this.scrollIndex = 0;
+    this.renderCards();
+  }
+
+  private renderCards(): void {
     this.cardGroup.forEach(obj => obj.destroy());
     this.cardGroup = [];
+    const monsters = this.currentMonsters;
+    this.countLabel = undefined;
 
     if (monsters.length === 0) {
       const empty = this.scene.add.text(CANVAS_WIDTH / 2, PANEL_H / 2, '배치 가능한 몬스터 없음', {
@@ -161,117 +199,215 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       }).setOrigin(0.5);
       this.add(empty);
       this.cardGroup.push(empty);
+      this.countLabel = this.scene.add.text(CANVAS_WIDTH - 74, 36, '0 / 0', {
+        fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+      }).setOrigin(0.5, 0);
+      this.add(this.countLabel);
+      this.cardGroup.push(this.countLabel);
       return;
     }
 
-    // Center cards horizontally
-    const totalW = monsters.length * CARD_W + (monsters.length - 1) * CARD_GAP;
+    const visibleCount = Math.min(MAX_VISIBLE_CARDS, monsters.length);
+    const maxStart = Math.max(0, monsters.length - visibleCount);
+    this.scrollIndex = Phaser.Math.Clamp(this.scrollIndex, 0, maxStart);
+    const visibleMonsters = monsters.slice(this.scrollIndex, this.scrollIndex + visibleCount);
+
+    const totalW = visibleMonsters.length * CARD_W + (visibleMonsters.length - 1) * CARD_GAP;
     const startX = (CANVAS_WIDTH - totalW) / 2;
 
-    monsters.forEach((def, i) => {
+    visibleMonsters.forEach((def, i) => {
       this.buildCard(def, startX + i * (CARD_W + CARD_GAP), HEADER_H);
     });
+
+    this.buildPager(monsters.length, visibleCount);
   }
 
   private buildCard(def: MonsterDef, cx: number, cy: number): void {
     const accent = def.accentColor;
 
-    // Background
-    const bg = this.scene.add.graphics();
-    this.drawCardBg(bg, cx, cy, accent, false);
-    this.add(bg); this.cardGroup.push(bg);
+    const frame = addFramedPanel(this.scene, {
+      x: cx,
+      y: cy,
+      w: CARD_W,
+      h: CARD_H,
+      radius: 8,
+      fillColor: 0x181008,
+      borderColor: accent,
+      borderAlpha: 0.72,
+      borderWidth: 1.5,
+      accentColor: accent,
+      accentAlpha: 0.78,
+      glowColor: accent,
+      glowOpacity: 0.1,
+      shadowOpacity: 0.24,
+      shadowOffsetY: 2,
+    });
+    this.add(frame.shadow);
+    this.add(frame.panel);
+    this.add(frame.glow);
+    this.cardGroup.push(frame.shadow, frame.panel, frame.glow);
 
-    // Left accent stripe
     const stripe = this.scene.add.graphics();
-    stripe.fillStyle(accent, 0.75);
-    stripe.fillRect(cx, cy + 5, 3, CARD_H - 10);
+    stripe.fillStyle(accent, 0.72);
+    stripe.fillRoundedRect(cx + 5, cy + 16, 3, CARD_H - 32, 2);
     this.add(stripe); this.cardGroup.push(stripe);
 
-    // Monster emoji
-    const icon = this.scene.add.text(cx + CARD_W / 2, cy + 14, def.emoji, {
-      fontSize: '26px',
+    const icon = this.scene.add.text(cx + CARD_W / 2, cy + 16, def.emoji, {
+      fontSize: '27px',
     }).setOrigin(0.5, 0);
     this.add(icon); this.cardGroup.push(icon);
 
-    // Type badge
-    const typeColor: Record<string, string> = {
-      melee: '#cc4444', ranged: '#44aa44', magic: '#9944cc', support: '#44aacc',
-    };
-    const badge = this.scene.add.text(cx + CARD_W / 2, cy + 48, def.type.toUpperCase(), {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: typeColor[def.type] ?? CSS.PARCHMENT_MUTED,
+    const badgeLabel = this.getTypeLabel(def.type);
+    const badge = this.scene.add.text(cx + CARD_W / 2, cy + 54, badgeLabel, {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      fontStyle: 'bold',
+      color: this.getTypeColor(def.type),
     }).setOrigin(0.5, 0);
     this.add(badge); this.cardGroup.push(badge);
 
-    // Korean name
-    const nameT = this.scene.add.text(cx + CARD_W / 2, cy + 60, def.name, {
-      fontFamily: "Georgia, serif", fontSize: '10px', color: CSS.PARCHMENT,
+    const nameT = this.scene.add.text(cx + CARD_W / 2, cy + 68, def.name, {
+      fontFamily: "Georgia, serif",
+      fontSize: '10px',
+      fontStyle: 'bold',
+      color: CSS.PARCHMENT,
+      wordWrap: { width: CARD_W - 10 },
+      align: 'center',
     }).setOrigin(0.5, 0);
     this.add(nameT); this.cardGroup.push(nameT);
 
-    // Passive description
-    const descT = this.scene.add.text(cx + CARD_W / 2, cy + 76, def.passiveDesc, {
-      fontFamily: 'sans-serif', fontSize: '11px',
+    const descT = this.scene.add.text(cx + CARD_W / 2, cy + 88, def.passiveDesc, {
+      fontFamily: 'sans-serif',
+      fontSize: '8px',
       color: CSS.PARCHMENT_MUTED,
-      wordWrap: { width: CARD_W - 10 }, align: 'center',
+      wordWrap: { width: CARD_W - 14 },
+      align: 'center',
+      lineSpacing: 2,
     }).setOrigin(0.5, 0).setAlpha(0.85);
     this.add(descT); this.cardGroup.push(descT);
 
-    // ATK preview — find owned monster with this id to show real level ATK
     const gs = loadGameState();
     const owned = gs.ownedMonsters.find(m => m.id === def.id);
     if (owned) {
       const atk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills);
-      const atkT = this.scene.add.text(cx + CARD_W / 2, cy + CARD_H - 58,
-        `⚔ ${atk}`, {
-        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: '#ff9944',
-      }).setOrigin(0.5, 0);
+      const atkBg = this.scene.add.graphics();
+      atkBg.fillStyle(COLORS.BLACK, 0.28);
+      atkBg.fillRoundedRect(cx + 18, cy + 137, CARD_W - 36, 20, GAME_UI.radius.row);
+      atkBg.lineStyle(1, accent, 0.42);
+      atkBg.strokeRoundedRect(cx + 18, cy + 137, CARD_W - 36, 20, GAME_UI.radius.row);
+      this.add(atkBg); this.cardGroup.push(atkBg);
+
+      const atkT = this.scene.add.text(cx + CARD_W / 2, cy + 147, `⚔ ${atk}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '11px',
+        fontStyle: 'bold',
+        color: '#ff9944',
+      }).setOrigin(0.5);
       this.add(atkT); this.cardGroup.push(atkT);
     }
 
-    // [배치] button
-    const btnY   = cy + CARD_H - 40;
-    const btnBg  = this.scene.add.graphics();
-    btnBg.fillStyle(accent, 0.85);
-    btnBg.fillRoundedRect(cx + 5, btnY, CARD_W - 10, 28, 3);
-    this.add(btnBg); this.cardGroup.push(btnBg);
-
-    const btnT = this.scene.add.text(cx + CARD_W / 2, btnY + 14, '배치', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CSS.PARCHMENT,
-    }).setOrigin(0.5);
-    this.add(btnT); this.cardGroup.push(btnT);
-
-    // Interactive zone
-    const zone = this.scene.add.zone(cx, cy, CARD_W, CARD_H).setOrigin(0, 0).setInteractive();
-    zone.on('pointerdown', () => {
+    const assignSelected = (): void => {
       this.onAssignCb(this.pendingRow, this.pendingCol, def.id);
       this.close();
-    });
-    zone.on('pointerover', () => {
-      this.drawCardBg(bg, cx, cy, accent, true);
-      btnBg.clear();
-      btnBg.fillStyle(accent, 1);
-      btnBg.fillRoundedRect(cx + 5, btnY, CARD_W - 10, 28, 3);
-    });
-    zone.on('pointerout', () => {
-      this.drawCardBg(bg, cx, cy, accent, false);
-      btnBg.clear();
-      btnBg.fillStyle(accent, 0.85);
-      btnBg.fillRoundedRect(cx + 5, btnY, CARD_W - 10, 28, 3);
-    });
+    };
+
+    const zone = this.scene.add.zone(cx, cy, CARD_W, CARD_H - 48).setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', assignSelected);
+    zone.on('pointerover', () => frame.panel.setAlpha(0.96));
+    zone.on('pointerout', () => frame.panel.setAlpha(1));
     this.add(zone); this.cardGroup.push(zone);
+
+    const button = addPrimaryActionButton(this.scene, {
+      x: cx + 8,
+      y: cy + CARD_H - 44,
+      w: CARD_W - 16,
+      h: GAME_UI.touch.compactHeight,
+      label: '배치',
+      fontSize: '12px',
+      fillColor: accent,
+      hoverFillColor: accent,
+      borderColor: accent,
+      hoverBorderColor: 0xd080ff,
+      onPress: assignSelected,
+    });
+    this.add(button.bg);
+    this.add(button.text);
+    this.add(button.zone);
+    this.cardGroup.push(button.bg, button.text, button.zone);
   }
 
-  private drawCardBg(
-    g: Phaser.GameObjects.Graphics,
-    cx: number, cy: number,
-    accent: number,
-    hover: boolean,
-  ): void {
-    g.clear();
-    g.fillStyle(accent, hover ? 0.2 : 0.08);
-    g.fillRoundedRect(cx, cy, CARD_W, CARD_H, 4);
-    g.lineStyle(1, accent, hover ? 0.9 : 0.55);
-    g.strokeRoundedRect(cx, cy, CARD_W, CARD_H, 4);
+  private buildPager(total: number, visibleCount: number): void {
+    this.countLabel = this.scene.add.text(CANVAS_WIDTH / 2, PANEL_H - 14,
+      `${this.scrollIndex + 1}-${this.scrollIndex + visibleCount} / ${total}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '9px',
+      color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(0.5, 0.5);
+    this.add(this.countLabel);
+    this.cardGroup.push(this.countLabel);
+
+    if (total <= visibleCount) return;
+
+    const prev = addPrimaryActionButton(this.scene, {
+      x: 10,
+      y: PANEL_H - 34,
+      w: 28,
+      h: 26,
+      label: '‹',
+      fontSize: '15px',
+      enabled: this.scrollIndex > 0,
+      fillColor: 0x1a1208,
+      hoverFillColor: 0x24170a,
+      borderColor: COLORS.STONE_MID,
+      hoverBorderColor: 0xd080ff,
+      textColor: CSS.PARCHMENT_MUTED,
+      onPress: () => {
+        this.scrollIndex = Math.max(0, this.scrollIndex - 1);
+        this.renderCards();
+      },
+    });
+    const next = addPrimaryActionButton(this.scene, {
+      x: CANVAS_WIDTH - 38,
+      y: PANEL_H - 34,
+      w: 28,
+      h: 26,
+      label: '›',
+      fontSize: '15px',
+      enabled: this.scrollIndex + visibleCount < total,
+      fillColor: 0x1a1208,
+      hoverFillColor: 0x24170a,
+      borderColor: COLORS.STONE_MID,
+      hoverBorderColor: 0xd080ff,
+      textColor: CSS.PARCHMENT_MUTED,
+      onPress: () => {
+        const maxStart = Math.max(0, total - visibleCount);
+        this.scrollIndex = Math.min(maxStart, this.scrollIndex + 1);
+        this.renderCards();
+      },
+    });
+    this.add(prev.bg); this.add(prev.text); this.add(prev.zone);
+    this.add(next.bg); this.add(next.text); this.add(next.zone);
+    this.cardGroup.push(prev.bg, prev.text, prev.zone, next.bg, next.text, next.zone);
+  }
+
+  private getTypeLabel(type: MonsterDef['type']): string {
+    const labels: Record<string, string> = {
+      melee: '근접',
+      ranged: '원거리',
+      magic: '마법',
+      support: '지원',
+    };
+    return labels[type] ?? String(type).toUpperCase();
+  }
+
+  private getTypeColor(type: MonsterDef['type']): string {
+    const colors: Record<string, string> = {
+      melee: '#ff6b5a',
+      ranged: '#76d46b',
+      magic: '#d080ff',
+      support: '#5ec8e8',
+    };
+    return colors[type] ?? CSS.PARCHMENT_MUTED;
   }
 }

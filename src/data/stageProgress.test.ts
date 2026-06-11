@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   STAGE_CONFIGS,
   TOTAL_STAGES,
+  applyStageClear,
   loadProgress,
   saveProgress,
   recordClear,
@@ -229,6 +230,59 @@ describe('loadProgress', () => {
     expect(loaded[0].bestStars).toBe(2);
     expect(loaded[0].bestHpPercent).toBe(88);
     expect(loaded[1].bestStars).toBe(0);
+  });
+});
+
+// ─── applyStageClear ─────────────────────────────────────────────────────────
+
+describe('applyStageClear', () => {
+  it('returns a new progress array without mutating the input entries', () => {
+    const progress = loadProgress();
+    const originalStage = progress[0];
+    const originalNext = progress[1];
+
+    const next = applyStageClear(progress, 0, 3, 88);
+
+    expect(next).not.toBe(progress);
+    expect(next[0]).not.toBe(originalStage);
+    expect(next[1]).not.toBe(originalNext);
+    expect(next[0].bestStars).toBe(3);
+    expect(next[0].bestHpPercent).toBe(88);
+    expect(next[1].unlocked).toBe(true);
+    expect(progress[0].bestStars).toBe(0);
+    expect(progress[0].bestHpPercent).toBeUndefined();
+    expect(progress[1].unlocked).toBe(false);
+  });
+
+  it('preserves higher bestStars and bestHpPercent values', () => {
+    const progress = loadProgress();
+    const first = applyStageClear(progress, 0, 3, 91);
+    const second = applyStageClear(first, 0, 1, 25);
+
+    expect(second[0].bestStars).toBe(3);
+    expect(second[0].bestHpPercent).toBe(91);
+  });
+
+  it('does not write bestHpPercent when hpPercent is omitted', () => {
+    const next = applyStageClear(loadProgress(), 0, 2);
+
+    expect(next[0].bestStars).toBe(2);
+    expect(next[0].bestHpPercent).toBeUndefined();
+  });
+
+  it('returns the same reference for an out-of-range stage index', () => {
+    const progress = loadProgress();
+
+    expect(applyStageClear(progress, 999, 3)).toBe(progress);
+    expect(applyStageClear(progress, -1, 3)).toBe(progress);
+  });
+
+  it('unlocks chapter gates through the shared clear rule', () => {
+    const next = applyStageClear(loadProgress(), 71, 3, 100);
+
+    expect(next[71].bestStars).toBe(3);
+    expect(next[72].unlocked).toBe(true);
+    expect(next[71].bestHpPercent).toBe(100);
   });
 });
 

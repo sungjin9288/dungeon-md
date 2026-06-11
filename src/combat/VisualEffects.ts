@@ -11,10 +11,92 @@ export function showAttackLine(
   scene: Phaser.Scene,
   x1: number, y1: number, x2: number, y2: number,
 ): void {
-  const g = scene.add.graphics().setDepth(45);
-  g.lineStyle(1.5, COLORS.TORCH_GOLD, 0.9);
-  g.lineBetween(x1, y1, x2, y2);
-  scene.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  if (dist <= 0) return;
+
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const px = -ny;
+  const py = nx;
+
+  const slash = scene.add.graphics().setDepth(46);
+  slash.lineStyle(4, COLORS.TORCH_GLOW, 0.28);
+  slash.lineBetween(x1, y1, x2, y2);
+  slash.lineStyle(2, COLORS.TORCH_GOLD, 0.88);
+  slash.lineBetween(x1, y1, x2, y2);
+  slash.lineStyle(1, 0xfff2a8, 0.9);
+  slash.lineBetween(x1 + px * 3, y1 + py * 3, x2 + px * 3, y2 + py * 3);
+
+  const spark = scene.add.graphics().setDepth(48);
+  spark.fillStyle(0xfff2a8, 0.96);
+  spark.fillCircle(x2, y2, 3);
+  spark.lineStyle(1.5, COLORS.TORCH_AMBER, 0.84);
+  for (let i = 0; i < 4; i++) {
+    const angle = Math.PI / 4 + i * Math.PI / 2;
+    const sx = x2 + Math.cos(angle) * 4;
+    const sy = y2 + Math.sin(angle) * 4;
+    const ex = x2 + Math.cos(angle) * 14;
+    const ey = y2 + Math.sin(angle) * 14;
+    spark.lineBetween(sx, sy, ex, ey);
+  }
+
+  scene.tweens.add({
+    targets: slash,
+    alpha: 0,
+    duration: 160,
+    ease: 'Cubic.easeOut',
+    onComplete: () => slash.destroy(),
+  });
+  scene.tweens.add({
+    targets: spark,
+    alpha: 0,
+    scaleX: 1.7,
+    scaleY: 1.7,
+    duration: 220,
+    ease: 'Cubic.easeOut',
+    onComplete: () => spark.destroy(),
+  });
+}
+
+export function showEquipmentStrike(
+  scene: Phaser.Scene,
+  x1: number, y1: number, x2: number, y2: number,
+): void {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const dist = Math.hypot(dx, dy);
+  if (dist <= 0) return;
+
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const px = -ny;
+  const py = nx;
+  const midX = x1 + dx * 0.62;
+  const midY = y1 + dy * 0.62;
+
+  const g = scene.add.graphics().setDepth(49);
+  g.lineStyle(2, 0xffd166, 0.65);
+  g.lineBetween(x1 + px * 5, y1 + py * 5, x2 + px * 5, y2 + py * 5);
+  g.fillStyle(0xfff0a8, 0.95);
+  for (let i = -1; i <= 1; i++) {
+    const sx = midX + nx * i * 9 + px * 5;
+    const sy = midY + ny * i * 9 + py * 5;
+    g.fillCircle(sx, sy, 2.4);
+  }
+  g.lineStyle(1, 0xfff5c4, 0.9);
+  g.strokeCircle(x2, y2, 8);
+
+  scene.tweens.add({
+    targets: g,
+    alpha: 0,
+    scaleX: 1.35,
+    scaleY: 1.35,
+    duration: 260,
+    ease: 'Cubic.easeOut',
+    onComplete: () => g.destroy(),
+  });
 }
 
 export function showFirstStrikeEffect(
@@ -289,4 +371,3 @@ export function showWisdomToast(
     },
   });
 }
-

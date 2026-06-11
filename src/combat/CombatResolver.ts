@@ -25,13 +25,13 @@ import {
 } from './GridQueries';
 import {
   showAttackLine     as _showAttackLine,
+  showEquipmentStrike as _showEquipmentStrike,
   showFirstStrikeEffect as _showFirstStrikeEffect,
   showTrapRing       as _showTrapRing,
   showHolyBurst      as _showHolyBurst,
   spawnCharmOrb      as _spawnCharmOrb,
   showTideWave       as _showTideWave,
   showMagicImmuneMiss as _showMagicImmuneMiss,
-  showFloatText      as _showFloatText,
   showGoldFloat      as _showGoldFloat,
   triggerDragonRoar  as _triggerDragonRoar,
 } from './VisualEffects';
@@ -361,6 +361,7 @@ export function resolveAttack(
       data.lastAttackTime = now;
       ctx.rooms[row][col].flashAttack();
       _showAttackLine(ctx.scene, roomX, cellCenterY, target.x, target.y);
+      _showEquipmentStrike(ctx.scene, roomX, cellCenterY, target.x, target.y);
       return true;
     }
   }
@@ -371,10 +372,7 @@ export function resolveAttack(
   data.lastAttackTime = now;
   ctx.rooms[row][col].flashAttack();
   _showAttackLine(ctx.scene, roomX, cellCenterY, target.x, target.y);
-  if (finalDmg >= 10) {
-    const dmgCol = finalDmg >= 500 ? '#ffee44' : finalDmg >= 200 ? '#ffaa44' : '#ff7777';
-    _showFloatText(ctx.scene, target.x, target.y - 20, `-${finalDmg}`, dmgCol);
-  }
+  if (eqStats) _showEquipmentStrike(ctx.scene, roomX, cellCenterY, target.x, target.y);
 
   // ── CHAIN_LIGHTNING: chain to 3 nearby at 40% ────────────────────────────────
   if (mDef?.passive === 'CHAIN_LIGHTNING') {

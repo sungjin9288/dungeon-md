@@ -3,6 +3,7 @@ import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from '../data/stages';
+import { addFramedPanel, addInfoRow, addPrimaryActionButton, type InfoRowOptions } from '../ui/GameUiPrimitives';
 
 const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8];
 
@@ -42,8 +43,8 @@ export class StageRewardOverlay extends Phaser.Scene {
     const bestHpPct  = prog.bestHpPercent ?? null;
     const isCleared  = bestStars > 0;
 
-    const cw = 280;
-    const baseCh2 = 220;
+    const cw = 300;
+    const baseCh2 = 244;
     const ch2 = isCleared ? baseCh2 + 44 : baseCh2;
     const cx = CANVAS_WIDTH / 2 - cw / 2;
     const cy = CANVAS_HEIGHT / 2 - ch2 / 2;
@@ -57,49 +58,68 @@ export class StageRewardOverlay extends Phaser.Scene {
     dim.fillStyle(0x000000, 0.6);
     dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    const dismiss = () => this.scene.stop();
+    const dismissZone = this.add.zone(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT)
+      .setOrigin(0.5)
+      .setInteractive();
+    dismissZone.once('pointerdown', dismiss);
+
     // Card
-    const card = this.add.graphics();
-    card.fillStyle(0x1a1208, 1);
-    card.fillRoundedRect(cx, cy, cw, ch2, 10);
-    card.lineStyle(2, COLORS.TORCH_GOLD, 0.85);
-    card.strokeRoundedRect(cx, cy, cw, ch2, 10);
+    const { glow } = addFramedPanel(this, {
+      x: cx,
+      y: cy,
+      w: cw,
+      h: ch2,
+      radius: 10,
+      fillColor: 0x1a1208,
+      borderColor: COLORS.TORCH_GOLD,
+      borderAlpha: 0.85,
+      glowColor: COLORS.TORCH_GOLD,
+      glowOpacity: 0.14,
+      shadowOpacity: 0.72,
+      shadowOffsetY: 5,
+    });
 
     // Difficulty badge (top-right)
-    this.add.text(cx + cw - 14, cy + 12, diffLabel, {
+    const badgeBg = this.add.graphics();
+    badgeBg.fillStyle(isBoss ? 0x341010 : 0x102010, 0.95);
+    badgeBg.fillRoundedRect(cx + cw - 78, cy + 11, 62, 18, 9);
+    badgeBg.lineStyle(1, isBoss ? 0xff4444 : 0x44cc66, 0.6);
+    badgeBg.strokeRoundedRect(cx + cw - 78, cy + 11, 62, 18, 9);
+    this.add.text(cx + cw - 47, cy + 20, diffLabel, {
       fontFamily: 'sans-serif', fontSize: '10px', color: diffColor,
-    }).setOrigin(1, 0);
+    }).setOrigin(0.5);
 
     // Title
-    this.add.text(CANVAS_WIDTH / 2, cy + 20, `⚔️ 스테이지 ${cfg.stageNumber}`, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5);
+    this.add.text(cx + 18, cy + 20, `스테이지 ${cfg.stageNumber}`, {
+      fontFamily: 'Georgia, serif',
+      fontSize: '18px',
+      fontStyle: 'bold',
+      color: CSS.TORCH_AMBER,
+    }).setOrigin(0, 0.5);
 
     // Chapter subtitle
-    this.add.text(CANVAS_WIDTH / 2, cy + 34, CHAPTER_NAMES[ch] ?? `챕터 ${ch}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
-    }).setOrigin(0.5);
+    this.add.text(cx + 19, cy + 38, CHAPTER_NAMES[ch] ?? `챕터 ${ch}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#9a7650',
+    }).setOrigin(0, 0.5);
 
     // Divider
     const dg = this.add.graphics();
     dg.lineStyle(1, COLORS.TORCH_GOLD, 0.2);
-    dg.lineBetween(cx + 16, cy + 54, cx + cw - 16, cy + 54);
+    dg.lineBetween(cx + 16, cy + 58, cx + cw - 16, cy + 58);
 
     // Reward rows
     const rows = [
-      { label: '예상 골드', value: `~${estimatedGold.toLocaleString('ko-KR')} 💰`, color: '#ffcc44' },
-      { label: '보석',      value: `+${estimatedGems} 💎`,                          color: '#aa88ff' },
-      { label: '웨이브',    value: `${waveCount}파`,                                 color: CSS.PARCHMENT_MUTED },
-      { label: '보스',      value: isBoss ? '있음 👹' : '없음',                       color: isBoss ? '#ff6655' : '#666666' },
-    ];
-    rows.forEach(({ label, value, color }, i) => {
-      const ry = cy + 70 + i * 24;
-      this.add.text(cx + 24, ry, label, { fontFamily: 'sans-serif', fontSize: '11px', color: '#886644' });
-      this.add.text(cx + cw - 24, ry, value, { fontFamily: 'sans-serif', fontSize: '11px', color }).setOrigin(1, 0);
-    });
+      { icon: '💰', label: '예상 골드', value: `~${estimatedGold.toLocaleString('ko-KR')}`, valueColor: '#ffcc44' },
+      { icon: '💎', label: '보석', value: `+${estimatedGems}`, valueColor: '#aa88ff' },
+      { icon: '〰', label: '웨이브', value: `${waveCount}파`, valueColor: CSS.PARCHMENT_DIM },
+      { icon: '👹', label: '보스', value: isBoss ? '있음' : '없음', valueColor: isBoss ? '#ff6655' : '#6f5a45' },
+    ] satisfies Array<Omit<InfoRowOptions, 'x' | 'y' | 'w'>>;
+    rows.forEach((row, i) => addInfoRow(this, { ...row, x: cx + 18, y: cy + 72 + i * 25, w: cw - 36 }));
 
     // Previous clear record section
     if (isCleared) {
-      const recY = cy + ch2 - 38 - 44 - 8;
+      const recY = cy + ch2 - 48 - 44 - 8;
 
       // Thin divider
       const rdiv = this.add.graphics();
@@ -108,7 +128,7 @@ export class StageRewardOverlay extends Phaser.Scene {
 
       // Record label
       this.add.text(cx + 16, recY + 6, '이전 기록', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#664422',
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#9a7650',
       });
 
       // Stars
@@ -127,31 +147,27 @@ export class StageRewardOverlay extends Phaser.Scene {
     }
 
     // Start button
-    const btnY = cy + ch2 - 38;
+    const btnY = cy + ch2 - 44;
     const btnLabel = isCleared ? '🔄  재도전' : '⚔️  시작';
-    const startBg = this.add.graphics();
-    startBg.fillStyle(0x8b0000, 1);
-    startBg.fillRoundedRect(cx + 20, btnY, cw - 40, 28, 6);
-    this.add.text(CANVAS_WIDTH / 2, btnY + 14, btnLabel, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold', color: '#f0e6c8',
-    }).setOrigin(0.5);
-
-    const dismiss = () => this.scene.stop();
-
-    const startZone = this.add.zone(CANVAS_WIDTH / 2, btnY + 14, cw - 40, 28).setInteractive({ useHandCursor: true });
-    startZone.once('pointerdown', () => {
-      this.scene.stop();
-      const stageScene = this.scene.get('StageSelectScene') as Phaser.Scene & { launchStage?: (i: number) => void };
-      stageScene?.launchStage?.(idx);
+    addPrimaryActionButton(this, {
+      x: cx + 18,
+      y: btnY,
+      w: cw - 36,
+      h: 34,
+      label: btnLabel,
+      fontSize: '14px',
+      once: true,
+      onPress: () => {
+        this.scene.stop();
+        const stageScene = this.scene.get('StageSelectScene') as Phaser.Scene & { launchStage?: (i: number) => void };
+        stageScene?.launchStage?.(idx);
+      },
     });
-
-    const dismissZone = this.add.zone(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT)
-      .setOrigin(0.5).setInteractive();
-    dismissZone.once('pointerdown', dismiss);
 
     // Fade-in via container alpha
     const all = this.children.list.slice();
     all.forEach((o: Phaser.GameObjects.GameObject) => { (o as Phaser.GameObjects.GameObject & { setAlpha?: (a: number) => void }).setAlpha?.(0); });
+    glow.setAlpha(0);
     this.tweens.add({ targets: all, alpha: 1, duration: 180 });
   }
 }

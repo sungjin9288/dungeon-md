@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>App Icon Generator</title>
+<style>
+  body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  canvas { border: 1px solid #333; }
+</style>
+</head>
+<body>
+<canvas id="icon" width="1024" height="1024"></canvas>
+<script>
+const c = document.getElementById('icon');
+const ctx = c.getContext('2d');
+const W = 1024, H = 1024;
+
+// Background gradient (dark dungeon)
+const bg = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, W*0.7);
+bg.addColorStop(0, '#2a1800');
+bg.addColorStop(0.5, '#1a0f00');
+bg.addColorStop(1, '#0d0600');
+ctx.fillStyle = bg;
+ctx.fillRect(0, 0, W, H);
+
+// Subtle stone texture pattern
+ctx.globalAlpha = 0.08;
+for (let i = 0; i < 2000; i++) {
+  const x = Math.random() * W;
+  const y = Math.random() * H;
+  const r = Math.random() * 3 + 0.5;
+  ctx.fillStyle = Math.random() > 0.5 ? '#4d3e2a' : '#3d3020';
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+}
+ctx.globalAlpha = 1;
+
+// Outer border ring
+ctx.strokeStyle = '#c8921a';
+ctx.lineWidth = 12;
+ctx.beginPath();
+ctx.roundRect(24, 24, W - 48, H - 48, 180);
+ctx.stroke();
+
+// Inner glow ring
+ctx.strokeStyle = 'rgba(200, 146, 26, 0.3)';
+ctx.lineWidth = 6;
+ctx.beginPath();
+ctx.roundRect(44, 44, W - 88, H - 88, 160);
+ctx.stroke();
+
+// Corner torch flames (4 corners)
+const torchPositions = [
+  [120, 120], [W-120, 120], [120, H-120], [W-120, H-120]
+];
+torchPositions.forEach(([tx, ty]) => {
+  // Glow
+  const glow = ctx.createRadialGradient(tx, ty, 5, tx, ty, 80);
+  glow.addColorStop(0, 'rgba(255, 107, 26, 0.4)');
+  glow.addColorStop(0.5, 'rgba(255, 136, 0, 0.15)');
+  glow.addColorStop(1, 'rgba(255, 136, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(tx - 80, ty - 80, 160, 160);
+  // Flame core
+  ctx.fillStyle = '#ffaa00';
+  ctx.beginPath();
+  ctx.arc(tx, ty, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ff6b1a';
+  ctx.beginPath();
+  ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+  ctx.fill();
+});
+
+// Central dungeon emblem — castle emoji as large text
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Gold circle behind emblem
+const emblemGlow = ctx.createRadialGradient(W/2, H/2 - 60, 20, W/2, H/2 - 60, 200);
+emblemGlow.addColorStop(0, 'rgba(200, 146, 26, 0.25)');
+emblemGlow.addColorStop(1, 'rgba(200, 146, 26, 0)');
+ctx.fillStyle = emblemGlow;
+ctx.beginPath();
+ctx.arc(W/2, H/2 - 60, 200, 0, Math.PI * 2);
+ctx.fill();
+
+// Emblem border circle
+ctx.strokeStyle = 'rgba(200, 146, 26, 0.5)';
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.arc(W/2, H/2 - 60, 160, 0, Math.PI * 2);
+ctx.stroke();
+
+// Castle + sword emojis
+ctx.font = '240px sans-serif';
+ctx.fillText('🏰', W/2, H/2 - 80);
+
+// Crossed swords below castle
+ctx.font = '100px sans-serif';
+ctx.fillText('⚔️', W/2, H/2 + 80);
+
+// Title: 던전 수호자
+ctx.font = 'bold 88px Georgia, serif';
+ctx.fillStyle = '#c8921a';
+ctx.shadowColor = 'rgba(200, 146, 26, 0.6)';
+ctx.shadowBlur = 20;
+ctx.fillText('던전 수호자', W/2, H/2 + 260);
+ctx.shadowBlur = 0;
+
+// Subtitle
+ctx.font = '36px Georgia, serif';
+ctx.fillStyle = '#907a58';
+ctx.fillText('DUNGEON GUARDIAN', W/2, H/2 + 330);
+
+// Decorative line under title
+ctx.strokeStyle = '#c8921a';
+ctx.lineWidth = 2;
+ctx.globalAlpha = 0.5;
+ctx.beginPath();
+ctx.moveTo(W/2 - 200, H/2 + 370);
+ctx.lineTo(W/2 + 200, H/2 + 370);
+ctx.stroke();
+ctx.globalAlpha = 1;
+
+// Small decorative dots on the line
+ctx.fillStyle = '#c8921a';
+[W/2 - 200, W/2 - 100, W/2, W/2 + 100, W/2 + 200].forEach(x => {
+  ctx.beginPath();
+  ctx.arc(x, H/2 + 370, 4, 0, Math.PI * 2);
+  ctx.fill();
+});
+</script>
+</body>
+</html>

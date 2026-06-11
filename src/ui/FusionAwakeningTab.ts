@@ -4,6 +4,7 @@
 
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
+import { applyFusionAwakening } from '../data/fusionTransactions';
 import {
   AWAKENED_PASSIVES,
   getBaseId, getMonsterEmoji, getMonsterDisplayName,
@@ -168,20 +169,11 @@ function confirmAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
 }
 
 function executeAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
-  const gs = loadGameState();
-  if ((gs.awakeningStones ?? 0) < 1) return;
+  const result = applyFusionAwakening(loadGameState(), monster);
+  if (!result.ok) return;
 
-  const newMonsters = gs.ownedMonsters.map(m =>
-    m.id === monster.id ? { ...m, absorptionStacks: (m.absorptionStacks ?? 0) + 3 } : m,
-  );
-  const updated = {
-    ...gs,
-    awakeningStones: (gs.awakeningStones ?? 0) - 1,
-    monsterAwakened: { ...(gs.monsterAwakened ?? {}), [monster.id]: true },
-    ownedMonsters: newMonsters,
-  };
-  saveGameState(updated);
-  logger.debug(`[AWAKEN] ${monster.id} awakened! Stones remaining: ${updated.awakeningStones}`);
+  saveGameState(result.state);
+  logger.debug(`[AWAKEN] ${monster.id} awakened! Stones remaining: ${result.state.awakeningStones}`);
 
   showFusionAnimation(ctx, '각성', () => {
     ctx.refreshTab();

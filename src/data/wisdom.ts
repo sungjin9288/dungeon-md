@@ -517,6 +517,64 @@ export function getWisdomBonuses(state: GameState): WisdomBonuses {
   };
 }
 
+export type WisdomUpgradeFailureReason =
+  | 'unknown_branch'
+  | 'max_tier'
+  | 'insufficient_soul_crystals';
+
+export type WisdomUpgradeResult =
+  | {
+      ok: true;
+      state: GameState;
+      branch: BranchDef;
+      previousTier: number;
+      nextTier: number;
+      cost: number;
+    }
+  | {
+      ok: false;
+      state: GameState;
+      reason: WisdomUpgradeFailureReason;
+      branch?: BranchDef;
+      currentTier?: number;
+      cost?: number;
+    };
+
+export function upgradeWisdomBranch(state: GameState, branchId: string): WisdomUpgradeResult {
+  const branch = BRANCH_DEFS.find(b => b.id === branchId);
+  if (!branch) return { ok: false, state, reason: 'unknown_branch' };
+
+  const currentTier = state.wisdomTree[branch.id] ?? 0;
+  if (currentTier >= MAX_WISDOM_TIER) {
+    return { ok: false, state, reason: 'max_tier', branch, currentTier };
+  }
+
+  const cost = branch.costPerTier[currentTier];
+  if (state.soulCrystals < cost) {
+    return { ok: false, state, reason: 'insufficient_soul_crystals', branch, currentTier, cost };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      soulCrystals: state.soulCrystals - cost,
+      wisdomTree: { ...state.wisdomTree, [branch.id]: currentTier + 1 },
+    },
+    branch,
+    previousTier: currentTier,
+    nextTier: currentTier + 1,
+    cost,
+  };
+}
+
+export function recordBuiltRoom(state: GameState, roomType: string): GameState {
+  return {
+    ...state,
+    roomsBuilt: [...(state.roomsBuilt ?? []), roomType],
+  };
+}
+
 // ── New Game+ / Prestige ──────────────────────────────────────────────────────
 
 /** Returns a flat damage multiplier bonus from prestige (10% per level). */

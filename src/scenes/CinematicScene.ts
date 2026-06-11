@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type DialogueLine, type CinematicDef, getCinematic } from '../data/cinematics';
 import { loadGameState, saveGameState } from '../data/wisdom';
+import { markCinematicSeen } from '../data/storyTransactions';
 
 // ─── Scene data passed via scene.start ────────────────────────────────────────
 
@@ -64,11 +65,8 @@ export class CinematicScene extends Phaser.Scene {
     this.lines = def.lines;
 
     // Mark as seen
-    const gs = loadGameState();
-    const prevSeen = gs.cinematicSeen ?? [];
-    if (!prevSeen.includes(data.cinematicId)) {
-      saveGameState({ ...gs, cinematicSeen: [...prevSeen, data.cinematicId] });
-    }
+    const seenResult = markCinematicSeen(loadGameState(), data.cinematicId);
+    if (seenResult.changed) saveGameState(seenResult.state);
 
     // Dim overlay — 40% so dungeon is visible behind
     const dim = this.add.graphics().setDepth(0);

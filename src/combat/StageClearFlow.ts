@@ -9,7 +9,7 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import { MONSTER_DEFS } from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { getTodayString, getThisWeekMonday } from '../data/daily';
+import { applyClearRewards } from '../data/clearRewards';
 import { recordClear, STAGE_CONFIGS } from '../data/stageProgress';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
@@ -31,68 +31,22 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   const gs = loadGameState();
   const stageCfg = scene.registry.get('stageConfig') as { stageNumber?: number } | undefined;
   const stageNum = stageCfg?.stageNumber;
+  const hpPercent = Math.round((ctx.dungeonHp / ctx.maxHp) * 100);
 
-  // Stage progress update
-  let newStageProgress = gs.stageProgress;
-  if (stageNum !== undefined) {
-    const stageIdx = stageNum - 1;
-    newStageProgress = gs.stageProgress.map((p, i) => {
-      if (!p) return p;
-      if (i === stageIdx) return { ...p, bestStars: Math.max(p.bestStars, stars) };
-      if (i === stageIdx + 1) return { ...p, unlocked: true };
-      return p;
-    });
-  }
-
-  // Accumulate numeric + object field changes
-  let newSoulCrystals  = (gs.soulCrystals ?? 0) + crystals;
-  let newMaterials     = { ...gs.materials };
-  let newDailyDone     = gs.dailyDungeonCompleted;
-  let newWeeklyReset   = gs.weeklyBossResetDate;
-  let newWeeklyHpDealt = gs.weeklyBossHpDealt;
-  let newBlueprints    = gs.blueprints ?? [];
-
-  // Daily dungeon clear
-  if (ctx.dailyMode) {
-    const today = getTodayString();
-    newDailyDone = today;
-    newSoulCrystals += ctx.dailyMode.rewards.crystals;
-    for (const matId of ctx.dailyMode.rewards.materials) {
-      newMaterials[matId] = (newMaterials[matId] ?? 0) + 1;
-    }
-  }
-
-  // Weekly boss clear
-  if (ctx.weeklyBossMode) {
-    const thisWeek = getThisWeekMonday();
-    if (gs.weeklyBossResetDate !== thisWeek) {
-      newWeeklyReset   = thisWeek;
-      newWeeklyHpDealt = 0;
-      newSoulCrystals += ctx.weeklyBossMode.rewards.skinShards * 10;
-      newMaterials['boss_essence'] = (newMaterials['boss_essence'] ?? 0) + 1;
-      const prevBps = gs.blueprints ?? [];
-      newBlueprints = prevBps.includes('bp_boss_amulet') ? prevBps : [...prevBps, 'bp_boss_amulet'];
-    }
-  }
-
-  // Build updated state and let tickQuestAndNotify mutate nested quest progress
-  const updated = {
-    ...gs,
-    soulCrystals:          newSoulCrystals,
-    stageProgress:         newStageProgress,
-    materials:             newMaterials,
-    dailyDungeonCompleted: newDailyDone,
-    weeklyBossResetDate:   newWeeklyReset,
-    weeklyBossHpDealt:     newWeeklyHpDealt,
-    blueprints:            newBlueprints,
-  };
+  const updated = applyClearRewards(gs, {
+    earnedCrystals: crystals,
+    stageNumber: stageNum,
+    stars,
+    hpPercent,
+    dailyMode: ctx.dailyMode,
+    weeklyBossMode: ctx.weeklyBossMode,
+  });
   // Pass stageNum as amount so complete_stage objectives like target=73
   // are satisfied immediately on clearing that specific stage.
   const finalGs = ctx.tickQuestAndNotify(updated, 'complete_stage', stageNum ?? 1);
   saveGameState(finalGs);
 
   // Sync to StageSelectScene's own progress key
-  const hpPercent = Math.round((ctx.dungeonHp / ctx.maxHp) * 100);
   if (stageNum !== undefined) recordClear(stageNum - 1, stars, hpPercent);
 
   logger.debug(`[CHAPTER CLEAR] stars=${stars} +${crystals} soul crystals (×${ctx.wisdomBonuses.crystalEarnMult.toFixed(2)})`);
@@ -317,4 +271,3 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     }
   });
 }
-

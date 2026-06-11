@@ -15,6 +15,8 @@ import {
   getUnlockedSlots,
   getWisdomBonuses,
   getPrestigeDmgMult,
+  upgradeWisdomBranch,
+  recordBuiltRoom,
   loadGameState,
   saveGameState,
   exportGameState,
@@ -464,6 +466,107 @@ describe('getWisdomBonuses', () => {
     expect(b.startingGold).toBe(100); // 2 * 50
     expect(b.extraSlots).toBe(3);
     expect(b.fortressHp).toBe(100); // 2 * 50
+  });
+});
+
+// ─── State transitions ───────────────────────────────────────────────────────
+
+describe('upgradeWisdomBranch', () => {
+  it('deducts the current tier cost and increments the selected branch immutably', () => {
+    const state = loadGameState();
+    state.soulCrystals = 100;
+    state.wisdomTree['goldHands'] = 0;
+
+    const result = upgradeWisdomBranch(state, 'goldHands');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.state).not.toBe(state);
+    expect(result.state.wisdomTree).not.toBe(state.wisdomTree);
+    expect(result.previousTier).toBe(0);
+    expect(result.nextTier).toBe(1);
+    expect(result.cost).toBe(5);
+    expect(result.state.soulCrystals).toBe(95);
+    expect(result.state.wisdomTree['goldHands']).toBe(1);
+    expect(state.soulCrystals).toBe(100);
+    expect(state.wisdomTree['goldHands']).toBe(0);
+  });
+
+  it('uses the next tier cost for later upgrades', () => {
+    const state = loadGameState();
+    state.soulCrystals = 100;
+    state.wisdomTree['goldHands'] = 2;
+
+    const result = upgradeWisdomBranch(state, 'goldHands');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.reason);
+    expect(result.previousTier).toBe(2);
+    expect(result.nextTier).toBe(3);
+    expect(result.cost).toBe(20);
+    expect(result.state.soulCrystals).toBe(80);
+  });
+
+  it('fails without changing state when soul crystals are insufficient', () => {
+    const state = loadGameState();
+    state.soulCrystals = 4;
+
+    const result = upgradeWisdomBranch(state, 'goldHands');
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected insufficient crystals');
+    expect(result.reason).toBe('insufficient_soul_crystals');
+    expect(result.state).toBe(state);
+    expect(state.wisdomTree['goldHands']).toBe(0);
+  });
+
+  it('fails without changing state when the branch is already max tier', () => {
+    const state = loadGameState();
+    state.soulCrystals = 999;
+    state.wisdomTree['goldHands'] = 5;
+
+    const result = upgradeWisdomBranch(state, 'goldHands');
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected max tier');
+    expect(result.reason).toBe('max_tier');
+    expect(result.state).toBe(state);
+    expect(state.wisdomTree['goldHands']).toBe(5);
+  });
+
+  it('fails without changing state for an unknown branch id', () => {
+    const state = loadGameState();
+    state.soulCrystals = 999;
+
+    const result = upgradeWisdomBranch(state, 'missing_branch');
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('expected unknown branch');
+    expect(result.reason).toBe('unknown_branch');
+    expect(result.state).toBe(state);
+  });
+});
+
+describe('recordBuiltRoom', () => {
+  it('appends a room build entry immutably and preserves duplicates', () => {
+    const state = loadGameState();
+    state.roomsBuilt = ['guardian'];
+
+    const next = recordBuiltRoom(state, 'guardian');
+
+    expect(next).not.toBe(state);
+    expect(next.roomsBuilt).not.toBe(state.roomsBuilt);
+    expect(next.roomsBuilt).toEqual(['guardian', 'guardian']);
+    expect(state.roomsBuilt).toEqual(['guardian']);
+  });
+
+  it('treats missing legacy roomsBuilt as an empty list', () => {
+    const state = loadGameState();
+    state.roomsBuilt = undefined as unknown as string[];
+
+    const next = recordBuiltRoom(state, 'trap');
+
+    expect(next.roomsBuilt).toEqual(['trap']);
   });
 });
 

@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS, CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import type { OwnedMonster } from '../data/barracks';
 import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
+import { claimCodexTribeReward } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
 import { generatePortrait } from '../art/PortraitGenerator';
 import { showCodexMonsterDetail } from '../ui/CodexMonsterDetail';
@@ -68,6 +68,20 @@ const CX   = CANVAS_WIDTH / 2;
 const HDR_H = 88;
 const BOT_H = 64;
 const PAD   = 12;
+const CODEX_RARITY_META: Record<string, { label: string; stars: string; color: number; css: string }> = {
+  C: { label: 'C', stars: '★',     color: 0x8f98a5, css: '#b9c0ca' },
+  U: { label: 'U', stars: '★★',    color: 0x58c681, css: '#8ff0ad' },
+  R: { label: 'R', stars: '★★★',   color: 0x62a8ff, css: '#9bc9ff' },
+  E: { label: 'E', stars: '★★★★',  color: 0xc978ff, css: '#e3b4ff' },
+  L: { label: 'L', stars: '★★★★★', color: 0xffc857, css: '#ffd878' },
+};
+const CODEX_ELEMENT_LABELS: Record<string, string> = {
+  fire: '화염',
+  frost: '서리',
+  lightning: '번개',
+  dark: '암흑',
+  holy: '신성',
+};
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -214,6 +228,7 @@ export class CodexScene extends Phaser.Scene {
     mask.fillStyle(0xffffff, 1);
     mask.fillRect(0, HDR_H, CANVAS_WIDTH, CANVAS_HEIGHT - HDR_H - BOT_H);
     this.contentCtr.setMask(mask.createGeometryMask());
+    mask.setVisible(false);
 
     if (this.codexTab === 'invaders') {
       this.buildInvaderContent();
@@ -329,7 +344,7 @@ export class CodexScene extends Phaser.Scene {
   ): number {
     const cols  = 3;
     const cellW = (CANVAS_WIDTH - PAD * 2 - 4) / cols;
-    const cellH = 72;
+    const cellH = 88;
     const rows  = Math.ceil(monsters.length / cols);
 
     // sort: owned first, then alphabetical
@@ -363,45 +378,86 @@ export class CodexScene extends Phaser.Scene {
   ): void {
     const g = this.add.graphics();
     this.contentCtr.add(g);
+    const rarity = this.getRarityMeta(m.rarityTier);
+    const dexNo = this.getDexNo(m.id);
+    const elementLabel = m.element ? CODEX_ELEMENT_LABELS[m.element] ?? m.element : '중립';
 
     if (owned) {
-      g.fillStyle(0x1a0f00, 1);
-      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 6);
-      g.lineStyle(1, tribeColor, 0.7);
-      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 6);
+      g.fillStyle(0x000000, 0.24);
+      g.fillRoundedRect(x + 3, y + 4, w - 5, h - 4, 7);
+      g.fillStyle(0x150b08, 1);
+      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
+      g.fillStyle(rarity.color, 0.10);
+      g.fillRoundedRect(x + 8, y + 20, w - 16, 35, 7);
+      g.fillStyle(tribeColor, 0.08);
+      g.fillRoundedRect(x + 7, y + 58, w - 14, 16, 6);
+      this.drawFoilLines(g, x + 8, y + 20, w - 16, 35, rarity.color, 0.10);
+      g.lineStyle(1.2, rarity.color, 0.72);
+      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
+      g.lineStyle(1, 0xffffff, 0.10);
+      g.strokeRoundedRect(x + 6, y + 6, w - 12, h - 12, 5);
+      g.fillStyle(0x060402, 0.94);
+      g.fillRoundedRect(x + 8, y + 7, 42, 13, 5);
+      g.lineStyle(1, rarity.color, 0.46);
+      g.strokeRoundedRect(x + 8, y + 7, 42, 13, 5);
+      g.fillStyle(rarity.color, 0.17);
+      g.fillRoundedRect(x + w - 38, y + 7, 27, 13, 5);
+      g.lineStyle(1, rarity.color, 0.54);
+      g.strokeRoundedRect(x + w - 38, y + 7, 27, 13, 5);
 
       const codexSkin = getSkinForMonster(m.id, this.gs.equippedSkins ?? {});
       const codexPortraitKey = generatePortrait(this, m.id as MonsterId, codexSkin?.id);
       if (this.textures.exists(codexPortraitKey)) {
-        const portrait = this.add.image(x + w / 2, y + 24, codexPortraitKey)
-          .setOrigin(0.5).setDisplaySize(32, 32);
+        const portrait = this.add.image(x + w / 2, y + 38, codexPortraitKey)
+          .setOrigin(0.5).setDisplaySize(34, 34);
         this.contentCtr.add(portrait);
       } else {
-        const emojiT = this.add.text(x + w / 2, y + 12, codexSkin ? codexSkin.emoji : m.emoji, {
-          fontFamily: 'sans-serif', fontSize: '26px',
+        const emojiT = this.add.text(x + w / 2, y + 24, codexSkin ? codexSkin.emoji : m.emoji, {
+          fontFamily: 'sans-serif', fontSize: '28px',
         }).setOrigin(0.5, 0);
         this.contentCtr.add(emojiT);
       }
 
-      // rarity stars
-      const rarityMap: Record<string, string> = {
-        C: '⭐', U: '⭐⭐', R: '⭐⭐⭐', E: '⭐⭐⭐⭐', L: '⭐⭐⭐⭐⭐',
-      };
-      const stars = rarityMap[m.rarityTier ?? 'C'] ?? '⭐';
-      const starsT = this.add.text(x + w / 2, y + 43, stars, {
-        fontFamily: 'sans-serif', fontSize: '11px',
-      }).setOrigin(0.5, 0);
+      const dexT = this.add.text(x + 29, y + 13.5, `도감 ${dexNo}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '7px',
+        color: rarity.css,
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.contentCtr.add(dexT);
+
+      const rarityT = this.add.text(x + w - 24.5, y + 13.5, rarity.label, {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: rarity.css,
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.contentCtr.add(rarityT);
+
+      const starsT = this.add.text(x + 13, y + h - 15, rarity.stars, {
+        fontFamily: 'sans-serif',
+        fontSize: '8px',
+        color: rarity.css,
+      }).setOrigin(0, 0.5);
       this.contentCtr.add(starsT);
 
-      const nameT = this.add.text(x + w / 2, y + h - 13, m.name, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
+      const nameT = this.add.text(x + w / 2, y + 62, this.truncateLabel(m.name, 7), {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: CSS.PARCHMENT_DIM,
+        fontStyle: 'bold',
         align: 'center', wordWrap: { width: w - 8 },
       }).setOrigin(0.5, 0);
       this.contentCtr.add(nameT);
 
+      const metaT = this.add.text(x + w / 2, y + 76, `${elementLabel} · Ch.${m.chapter ?? '-'}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '7px',
+        color: '#b39b72',
+      }).setOrigin(0.5);
+      this.contentCtr.add(metaT);
+
       // Tap to show detail overlay
       const tapZone = this.add.zone(x + w / 2, y + h / 2, w - 4, h - 4)
-        .setInteractive().setOrigin(0.5);
+        .setInteractive({ useHandCursor: true }).setOrigin(0.5);
       this.contentCtr.add(tapZone);
       tapZone.on('pointerdown', () => {
         this.detailOverlay?.destroy();
@@ -412,21 +468,88 @@ export class CodexScene extends Phaser.Scene {
 
     } else {
       // Silhouette (unowned)
-      g.fillStyle(0x0e0a04, 1);
-      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 6);
+      g.fillStyle(0x000000, 0.22);
+      g.fillRoundedRect(x + 3, y + 4, w - 5, h - 4, 7);
+      g.fillStyle(0x0b0808, 1);
+      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
+      g.fillStyle(rarity.color, 0.04);
+      g.fillRoundedRect(x + 8, y + 20, w - 16, 35, 7);
+      this.drawFoilLines(g, x + 8, y + 20, w - 16, 35, rarity.color, 0.035);
       g.lineStyle(1, 0x2a1a00, 0.8);
-      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 6);
+      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
+      g.fillStyle(0x060402, 0.88);
+      g.fillRoundedRect(x + 8, y + 7, 42, 13, 5);
+      g.lineStyle(1, 0x3a2a18, 0.5);
+      g.strokeRoundedRect(x + 8, y + 7, 42, 13, 5);
+      g.fillStyle(0x060402, 0.88);
+      g.fillRoundedRect(x + w - 38, y + 7, 27, 13, 5);
+      g.lineStyle(1, rarity.color, 0.24);
+      g.strokeRoundedRect(x + w - 38, y + 7, 27, 13, 5);
 
-      const shadowT = this.add.text(x + w / 2, y + 12, '❓', {
-        fontFamily: 'sans-serif', fontSize: '26px',
+      const dexT = this.add.text(x + 29, y + 13.5, `도감 ${dexNo}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '7px',
+        color: '#5e4a36',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.contentCtr.add(dexT);
+
+      const rarityT = this.add.text(x + w - 24.5, y + 13.5, rarity.label, {
+        fontFamily: 'monospace',
+        fontSize: '8px',
+        color: '#5d4d38',
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      this.contentCtr.add(rarityT);
+
+      const shadowT = this.add.text(x + w / 2, y + 28, '???', {
+        fontFamily: 'Georgia, serif', fontSize: '18px',
       }).setOrigin(0.5, 0).setAlpha(0.4);
       this.contentCtr.add(shadowT);
 
-      const unknownT = this.add.text(x + w / 2, y + h - 18, '???', {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#3a2800',
+      const unknownT = this.add.text(x + w / 2, y + 64, '미발견', {
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a3a18',
+        fontStyle: 'bold',
       }).setOrigin(0.5, 0);
       this.contentCtr.add(unknownT);
+
+      const hintT = this.add.text(x + w / 2, y + 78, `${elementLabel} · Ch.${m.chapter ?? '-'}`, {
+        fontFamily: 'sans-serif',
+        fontSize: '7px',
+        color: '#46301c',
+      }).setOrigin(0.5);
+      this.contentCtr.add(hintT);
     }
+  }
+
+  private getDexNo(monsterId: MonsterId): string {
+    const index = Object.keys(MONSTER_DEFS).indexOf(monsterId);
+    return String(Math.max(0, index) + 1).padStart(3, '0');
+  }
+
+  private getRarityMeta(rarityTier: string | undefined): typeof CODEX_RARITY_META[keyof typeof CODEX_RARITY_META] {
+    return CODEX_RARITY_META[rarityTier ?? 'C'] ?? CODEX_RARITY_META.C;
+  }
+
+  private drawFoilLines(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    color: number,
+    alpha: number,
+  ): void {
+    const lineCount = Math.max(3, Math.ceil(w / 28));
+    for (let i = -1; i < lineCount; i++) {
+      const sx = x + 8 + i * 24;
+      g.lineStyle(0.8, color, alpha);
+      g.lineBetween(sx, y + h - 5, sx + 42, y + 4);
+    }
+  }
+
+  private truncateLabel(value: string, maxChars: number): string {
+    return value.length > maxChars ? `${value.slice(0, maxChars)}…` : value;
   }
 
   // ─── Monster detail overlay ────────────────────────────────────────────────
@@ -504,32 +627,11 @@ export class CodexScene extends Phaser.Scene {
     if (!rewardMonsterId) return;
 
     const gs = loadGameState();
-    const prevClaimed = gs.codexRewardsClaimed ?? [];
-    if (prevClaimed.includes(tribeId)) return;
+    const result = claimCodexTribeReward(gs, tribeId, rewardMonsterId);
+    if (!result.ok) return;
 
-    const mDef = MONSTER_DEFS[rewardMonsterId];
-    if (!mDef) return;
-
-    const newMonster: OwnedMonster = {
-      id: rewardMonsterId,
-      level: 1,
-      xp: 0,
-      skillPoints: 0,
-      spentSkills: {},
-      equippedSkills: [],
-      equipment: null,
-      absorptionStacks: 0,
-    };
-
-    const alreadyOwned = gs.ownedMonsters.some(m => m.id === rewardMonsterId);
-    const newClaimed   = [...prevClaimed, tribeId];
-    const updated = {
-      ...gs,
-      ownedMonsters:       alreadyOwned ? gs.ownedMonsters : [...gs.ownedMonsters, newMonster],
-      codexRewardsClaimed: newClaimed,
-      completedTribes:     newClaimed.length,
-    };
-    saveGameState(updated);
+    saveGameState(result.state);
+    this.gs = result.state;
   }
 
   // ─── Scroll ────────────────────────────────────────────────────────────────

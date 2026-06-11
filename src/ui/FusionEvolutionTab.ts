@@ -1,15 +1,15 @@
 // ─── Evolution Tab ─────────────────────────────────────────────────────────────
 // Implements the 진화 (Evolution) tab for FusionScene.
-// Requires 3 identical base-type monsters → produces evolved form.
+// Requires 3 identical monsters → produces evolved form.
 
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
-import { updateQuestObjective, tickSubQuestProgress } from '../data/quests';
 import {
   RARITY_STARS, RARITY_COLORS,
-  getBaseId, getMonsterEmoji, getMonsterDisplayName,
+  getMonsterEmoji, getMonsterDisplayName,
   getMonsterBaseDamage, getNextEvolution,
 } from '../data/fusion';
+import { applyFusionEvolution } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
@@ -41,7 +41,7 @@ export function buildEvolutionTab(
     const fi = i;
     drawMonsterSlot(ctx, c, sx, LY, slotW, slotH, state.evoSlots[i] ?? null, '진화', () => {
       const filter = state.evoSlots[0] && fi > 0
-        ? (m: OwnedMonster) => getBaseId(m.id) === getBaseId(state.evoSlots[0]!.id)
+        ? (m: OwnedMonster) => m.id === state.evoSlots[0]!.id
         : undefined;
       openMonsterPicker(ctx, filter, (monster) => {
         const next = [...state.evoSlots];
@@ -140,39 +140,18 @@ export function buildEvolutionTab(
 }
 
 function executeEvolution(ctx: FusionTabContext, state: EvolutionState): void {
-  const slot0 = state.evoSlots[0];
-  if (!slot0) return;
-  const tier = getNextEvolution(slot0.id);
-  if (!tier) return;
+  const result = applyFusionEvolution(loadGameState(), state.evoSlots);
+  if (!result.ok) return;
 
-  const gs = loadGameState();
-  const maxLevel = Math.max(...state.evoSlots.map(s => s?.level ?? 1));
+  saveGameState(result.state);
 
-  // Remove exactly 3 monsters of slot0's type (immutable filter approach)
-  let toRemove = 3;
-  const trimmed = gs.ownedMonsters.filter(m => {
-    if (toRemove > 0 && m.id === slot0.id) { toRemove--; return false; }
-    return true;
-  });
-
-  const evolved: OwnedMonster = {
-    id: tier.resultId, level: maxLevel, xp: 0,
-    skillPoints: 0,
-    spentSkills: { [tier.unlockedSkill]: 1 },
-    equippedSkills: [], equipment: null,
-    rarity: tier.rarity, absorptionStacks: 0,
-  };
-  const updated = { ...gs, ownedMonsters: [...trimmed, evolved] };
-  updateQuestObjective(updated, 'fuse_monsters');
-  saveGameState(tickSubQuestProgress(updated, 'fuse_monsters'));
-
-  const evolvedAtk = getMonsterBaseDamage(tier.resultId);
-  const baseAtk    = getMonsterBaseDamage(slot0.id);
-  logger.debug(`[EVOLUTION] ${getBaseId(slot0.id)}×3 → ${tier.resultId} Lv.${maxLevel} ATK:${evolvedAtk} (was ${baseAtk})`);
+  const evolvedAtk = getMonsterBaseDamage(result.resultId);
+  const baseAtk    = getMonsterBaseDamage(result.consumedMonsterId);
+  logger.debug(`[EVOLUTION] ${result.consumedMonsterId}×3 → ${result.resultId} Lv.${result.monster.level} ATK:${evolvedAtk} (was ${baseAtk})`);
 
   state.setEvoSlots([null, null, null]);
   showFusionAnimation(ctx, '진화', () => {
     ctx.refreshTab();
-    showResultToast(ctx, `${getMonsterDisplayName(tier.resultId)} 진화 완료!`, '#44cc66');
+    showResultToast(ctx, `${getMonsterDisplayName(result.resultId)} 진화 완료!`, '#44cc66');
   });
 }

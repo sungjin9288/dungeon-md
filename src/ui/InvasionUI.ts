@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { getQuest, type InvasionConfig } from '../data/quests';
 import type { GameState } from '../data/wisdom';
+import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { SLOT_H } from './RoomSlotRenderer';
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ import { SLOT_H } from './RoomSlotRenderer';
 export interface InvasionUIState {
   invasionConfig?: InvasionConfig;
   alertBanner?: Phaser.GameObjects.Container;
+  reminderBanner?: Phaser.GameObjects.Container;
   reminderIcon?: Phaser.GameObjects.Text;
   invasionShownAt: number;
   /** Cached gs for use when the reminder icon is tapped after the initial banner. */
@@ -83,43 +85,70 @@ export function showInvasionBanner(
   if (!cfg) return;
   if (!state.invasionShownAt) state.invasionShownAt = Date.now();
 
-  const c = scene.add.container(0, -110).setDepth(60);
+  const bannerH = 124;
+  const c = scene.add.container(0, -bannerH).setDepth(60);
 
-  const bg = scene.add.graphics();
-  bg.fillStyle(0x660000, 1);
-  bg.fillRect(0, 0, CANVAS_WIDTH, 104);
-  bg.lineStyle(2, 0xc8921a, 0.8);
-  bg.lineBetween(0, 104, CANVAS_WIDTH, 104);
-  c.add(bg);
+  const frame = addFramedPanel(scene, {
+    x: 12,
+    y: 10,
+    w: CANVAS_WIDTH - 24,
+    h: 106,
+    radius: 9,
+    fillColor: 0x1a0800,
+    borderColor: 0xff6655,
+    borderAlpha: 0.86,
+    accentColor: 0xff6655,
+    accentAlpha: 0.82,
+    glowColor: 0xff6655,
+    glowOpacity: 0.10,
+    shadowOpacity: 0.68,
+    shadowOffsetY: 4,
+  });
+  c.add([frame.shadow, frame.panel, frame.glow]);
 
-  c.add(scene.add.text(18, 10, '⚠️  침략 발생!', {
-    fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ff7755', fontStyle: 'bold',
+  c.add(scene.add.text(24, 28, '침략 발생', {
+    fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ff7755', fontStyle: 'bold',
   }));
-  c.add(scene.add.text(18, 34, `${cfg.name}이(가) 쳐들어온다!`, {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f0c8a0',
+  c.add(scene.add.text(24, 52, cfg.name, {
+    fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0c8a0',
   }));
   const waveCount = cfg.waves.length;
-  c.add(scene.add.text(18, 52, `🌊 총 ${waveCount} 웨이브`, {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc8844',
+  c.add(scene.add.text(24, 71, `총 ${waveCount} 웨이브 · 방어 실패 시 퀘스트 진행 불가`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#cc8844',
   }));
 
-  const prepBtn = scene.add.text(CANVAS_WIDTH - 16, 60, '방어 준비 →', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f0e6c8', fontStyle: 'bold',
-    backgroundColor: '#8b0000', padding: { x: 10, y: 5 },
-  }).setOrigin(1, 0).setInteractive();
-  prepBtn.on('pointerdown', () => onPrepare());
-  c.add(prepBtn);
+  const prepBtn = addPrimaryActionButton(scene, {
+    x: CANVAS_WIDTH - 152,
+    y: 74,
+    w: 124,
+    h: 32,
+    label: '방어 준비',
+    fontSize: '13px',
+    once: true,
+    onPress: onPrepare,
+  });
+  c.add([prepBtn.bg, prepBtn.text, prepBtn.zone]);
 
-  const laterBtn = scene.add.text(16, 62, '잠시 후에', {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#886644',
-  }).setInteractive();
-  laterBtn.on('pointerdown', () => dismissBanner(scene, state));
-  c.add(laterBtn);
+  const laterBg = scene.add.graphics();
+  laterBg.fillStyle(0x120904, 0.88);
+  laterBg.fillRoundedRect(24, 78, 82, 26, 8);
+  laterBg.lineStyle(1, 0x3a2810, 0.72);
+  laterBg.strokeRoundedRect(24, 78, 82, 26, 8);
+  c.add(laterBg);
+
+  const laterBtn = scene.add.text(65, 91, '잠시 후에', {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#9a7650',
+  }).setOrigin(0.5);
+  const laterZone = scene.add.zone(24, 78, 82, 26).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+  laterZone.on('pointerover', () => laterBtn.setColor('#c8921a'));
+  laterZone.on('pointerout', () => laterBtn.setColor('#9a7650'));
+  laterZone.on('pointerdown', () => dismissBanner(scene, state));
+  c.add([laterBtn, laterZone]);
 
   state.alertBanner = c;
 
   // Slide down
-  c.setY(-110);
+  c.setY(-bannerH);
   scene.tweens.add({ targets: c, y: 0, duration: 200, ease: 'Quad.easeOut' });
 }
 
@@ -133,7 +162,7 @@ export function dismissBanner(
   if (!banner) return;
   state.alertBanner = undefined;
   scene.tweens.add({
-    targets: banner, y: -110,
+    targets: banner, y: -124,
     duration: 200, ease: 'Quad.easeIn',
     onComplete: () => { banner.destroy(); showReminderIcon(scene, state); },
   });
@@ -145,7 +174,7 @@ export function showReminderIcon(
   scene: Phaser.Scene,
   state: InvasionUIState,
 ): void {
-  if (state.reminderIcon) return;
+  if (state.reminderBanner) return;
 
   const COUNTDOWN_MS = 15 * 60 * 1000;
   const getLabel = (): string => {
@@ -153,13 +182,37 @@ export function showReminderIcon(
     const remaining = Math.max(0, COUNTDOWN_MS - elapsed);
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
-    return `🔴  침략  ${mins}:${String(secs).padStart(2, '0')} 후 — 탭하여 준비`;
+    return `침략 ${mins}:${String(secs).padStart(2, '0')} 후 — 탭하여 준비`;
   };
 
-  state.reminderIcon = scene.add.text(CANVAS_WIDTH / 2, 72, getLabel(), {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ff5544',
-    backgroundColor: '#2a0000', padding: { x: 10, y: 5 },
-  }).setOrigin(0.5).setDepth(30).setInteractive();
+  const c = scene.add.container(CANVAS_WIDTH / 2, 74).setDepth(30);
+  const frame = addFramedPanel(scene, {
+    x: -154,
+    y: -17,
+    w: 308,
+    h: 34,
+    radius: 10,
+    fillColor: 0x220400,
+    borderColor: 0xff6655,
+    borderAlpha: 0.72,
+    accentColor: 0xff6655,
+    accentAlpha: 0.55,
+    glowColor: 0xff6655,
+    glowOpacity: 0.06,
+    shadowOpacity: 0.42,
+    shadowOffsetY: 2,
+  });
+  c.add([frame.shadow, frame.panel, frame.glow]);
+
+  state.reminderIcon = scene.add.text(0, 1, getLabel(), {
+    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ff6655',
+  }).setOrigin(0.5);
+
+  const zone = scene.add.zone(-154, -17, 308, 34).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+  zone.on('pointerover', () => state.reminderIcon?.setColor('#ff9977'));
+  zone.on('pointerout', () => state.reminderIcon?.setColor('#ff6655'));
+  c.add([state.reminderIcon, zone]);
+  state.reminderBanner = c;
 
   const timerEvent = scene.time.addEvent({
     delay: 1000,
@@ -169,15 +222,16 @@ export function showReminderIcon(
     },
   });
 
-  state.reminderIcon.on('pointerdown', () => {
+  zone.on('pointerdown', () => {
     timerEvent.remove();
-    state.reminderIcon?.destroy();
+    state.reminderBanner?.destroy(true);
+    state.reminderBanner = undefined;
     state.reminderIcon = undefined;
     if (!state.cachedGs) return;
     showInvasionBanner(scene, state, () => goToPreBattle(scene, state.cachedGs!, state));
   });
   scene.tweens.add({
-    targets: state.reminderIcon, alpha: { from: 0.55, to: 1.0 },
+    targets: c, alpha: { from: 0.72, to: 1.0 },
     duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
   });
 }
@@ -191,6 +245,8 @@ export function goToPreBattle(
 ): void {
   state.alertBanner?.destroy();
   state.alertBanner = undefined;
+  state.reminderBanner?.destroy(true);
+  state.reminderBanner = undefined;
   state.reminderIcon?.destroy();
   state.reminderIcon = undefined;
 

@@ -11,9 +11,15 @@ import { MONSTER_DEFS, getMonstersForRoom, type MonsterId } from '../data/monste
 import { HYBRID_DEFS } from '../data/fusion';
 import { loadGameState, saveGameState, ROOM_SLOT_TYPE_DEFS, type DungeonSlot } from '../data/wisdom';
 import type { EquipmentStats } from '../data/barracks';
-import type { updateQuestObjective } from '../data/quests';
+import {
+  applyCombatMonsterAssignmentProgress,
+  applyCombatRoomBuildProgress,
+  applyCombatRoomUpgradeProgress,
+  type CombatRoomActionProgressResult,
+} from '../data/progressionTransactions';
 import { audioManager } from '../audio/AudioManager';
 import { showFloatText } from './VisualEffects';
+import { showQuestCompleteToast } from './QuestTracker';
 import { logger } from '../utils/logger';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -37,15 +43,21 @@ export interface RoomActionsContext {
   spawnBuildParticles(x: number, y: number): void;
   recalcRoomTypeBonuses(): void;
   recalcSynergies(): void;
-  tickQuestAndNotify(
-    gs: ReturnType<typeof loadGameState>,
-    type: Parameters<typeof updateQuestObjective>[1],
-    amount?: number,
-  ): void;
   checkAchievementsAndToast(gs: ReturnType<typeof loadGameState>): void;
   openMonsterPanel(row: number, col: number, type: RoomType, unlockedStage: number): void;
   shakeRoomSelectionPanel(): void;
   shakeUpgradePanel(): void;
+}
+
+function persistRoomActionProgress(
+  ctx: RoomActionsContext,
+  result: CombatRoomActionProgressResult,
+): ReturnType<typeof loadGameState> {
+  if (result.changed) saveGameState(result.state);
+  if (result.questCompleted) {
+    ctx.scene.time.delayedCall(600, () => showQuestCompleteToast(ctx));
+  }
+  return result.state;
 }
 
 // ─── placeRoom ────────────────────────────────────────────────────────────────
@@ -63,11 +75,6 @@ export function placeRoom(ctx: RoomActionsContext, row: number, col: number, typ
   ctx.gold -= effectiveCost;
   ctx.setGoldRegistry(ctx.gold);
   audioManager.playSfx('room_build');
-  {
-    const gs_q = loadGameState();
-    ctx.tickQuestAndNotify(gs_q, 'build_room');
-    saveGameState(gs_q);
-  }
 
   const room = ctx.rooms[row][col];
   room.occupyWith(type);
@@ -83,12 +90,11 @@ export function placeRoom(ctx: RoomActionsContext, row: number, col: number, typ
   showFloatText(ctx.scene, room.x, room.y - 20, `-${effectiveCost} 💰`, '#ff8866');
   logger.debug(`[PLACE] ${type} at [${row},${col}] | gold left: ${ctx.gold}`);
 
-  // Track for achievements
-  const gs1 = loadGameState();
-  gs1.roomsBuilt = gs1.roomsBuilt ?? [];
-  gs1.roomsBuilt.push(type);
-  saveGameState(gs1);
-  ctx.checkAchievementsAndToast(gs1);
+  const trackedState = persistRoomActionProgress(
+    ctx,
+    applyCombatRoomBuildProgress(loadGameState(), type),
+  );
+  ctx.checkAchievementsAndToast(trackedState);
 
   // Auto-assign pre-configured monsters from home slot data
   const flatIdx  = row * ctx.effectiveCols + col;
@@ -163,8 +169,7 @@ export function assignMonster(ctx: RoomActionsContext, row: number, col: number,
       `${emoji} Lv.${level} 배치됨!`,
       '#d0a0ff',
     );
-    ctx.tickQuestAndNotify(gs_q, 'assign_monster');
-    saveGameState(gs_q);
+    persistRoomActionProgress(ctx, applyCombatMonsterAssignmentProgress(gs_q));
   }
 
   logger.debug(`[MONSTER] ${id} → [${row},${col}]`);
@@ -189,9 +194,7 @@ export function upgradeRoom(ctx: RoomActionsContext, row: number, col: number): 
   ctx.setGoldRegistry(ctx.gold);
   audioManager.playSfx('room_upgrade');
   {
-    const gs_q = loadGameState();
-    ctx.tickQuestAndNotify(gs_q, 'upgrade_room');
-    saveGameState(gs_q);
+    persistRoomActionProgress(ctx, applyCombatRoomUpgradeProgress(loadGameState()));
   }
 
   data.level++;

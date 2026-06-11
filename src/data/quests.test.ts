@@ -6,15 +6,17 @@ import {
   MAIN_QUESTS,
   SUB_QUEST_POOL,
   SUB_QUEST_POOL_CH1,
+  applyQuestObjectiveUpdate,
+  applySubQuestClaim,
   assignSubQuests,
   claimSubQuest,
   completeAndAdvance,
   getQuest,
   getSubQuestById,
   grantQuestSkins,
+  prepareSubQuestLogViewState,
   startQuest,
   tickSubQuestProgress,
-  updateQuestObjective,
 } from './quests';
 
 // ─── Test helpers ────────────────────────────────────────────────────────────
@@ -140,9 +142,65 @@ describe('startQuest', () => {
   });
 });
 
-// ─── updateQuestObjective ─────────────────────────────────────────────────────
+// ─── applyQuestObjectiveUpdate ───────────────────────────────────────────────
 
-describe('updateQuestObjective', () => {
+describe('applyQuestObjectiveUpdate', () => {
+  let gs: GameState;
+
+  beforeEach(() => {
+    gs = freshGameState();
+  });
+
+  it('returns an updated GameState without mutating the input quest progress', () => {
+    gs = startQuest(gs, 'MQ-001');
+    const originalProgress = gs.questProgress;
+    const originalQuest = gs.questProgress['MQ-001'];
+    const originalObjectives = originalQuest.objectives;
+
+    const [nextGs, update] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
+
+    expect(update).not.toBeNull();
+    expect(update?.questDone).toBe(true);
+    expect(nextGs).not.toBe(gs);
+    expect(nextGs.questProgress).not.toBe(originalProgress);
+    expect(nextGs.questProgress['MQ-001']).not.toBe(originalQuest);
+    expect(nextGs.questProgress['MQ-001'].objectives).not.toBe(originalObjectives);
+    expect(nextGs.questProgress['MQ-001'].objectives['O1']).toBe(1);
+    expect(gs.questProgress['MQ-001'].objectives['O1']).toBe(0);
+  });
+
+  it('returns the same GameState reference when no objective matches', () => {
+    gs = startQuest(gs, 'MQ-001');
+
+    const [nextGs, update] = applyQuestObjectiveUpdate(gs, 'assign_monster', 1);
+
+    expect(update).toBeNull();
+    expect(nextGs).toBe(gs);
+    expect(gs.questProgress['MQ-001'].objectives['O1']).toBe(0);
+  });
+
+  it('supports sequential immutable updates when callers pass the returned state', () => {
+    gs = { ...gs, dmLevel: 1 };
+    gs = startQuest(gs, 'MQ-004');
+
+    const [firstGs, first] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
+    const [secondGs, second] = applyQuestObjectiveUpdate(firstGs, 'build_room', 1);
+    const [thirdGs, third] = applyQuestObjectiveUpdate(secondGs, 'reach_dm_level', 3);
+
+    expect(first?.questDone).toBe(false);
+    expect(second?.current).toBe(2);
+    expect(second?.questDone).toBe(false);
+    expect(third?.questDone).toBe(true);
+    expect(thirdGs.questProgress['MQ-004'].objectives['O1']).toBe(2);
+    expect(thirdGs.questProgress['MQ-004'].objectives['O2']).toBe(3);
+    expect(gs.questProgress['MQ-004'].objectives['O1']).toBe(0);
+    expect(gs.questProgress['MQ-004'].objectives['O2']).toBe(0);
+  });
+});
+
+// ─── applyQuestObjectiveUpdate — edge cases ──────────────────────────────────
+
+describe('applyQuestObjectiveUpdate — edge cases', () => {
   let gs: GameState;
 
   beforeEach(() => {
@@ -150,60 +208,68 @@ describe('updateQuestObjective', () => {
   });
 
   it('returns null when no active quest', () => {
-    const result = updateQuestObjective(gs, 'build_room', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(result).toBeNull();
+    expect(nextGs).toBe(gs);
   });
 
   it('increments matching objective and returns update payload', () => {
     gs = startQuest(gs, 'MQ-001'); // build_room target 1
-    const result = updateQuestObjective(gs, 'build_room', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(result).not.toBeNull();
     expect(result?.questId).toBe('MQ-001');
     expect(result?.objId).toBe('O1');
     expect(result?.current).toBe(1);
     expect(result?.target).toBe(1);
     expect(result?.questDone).toBe(true);
+    expect(nextGs.questProgress['MQ-001'].objectives['O1']).toBe(1);
   });
 
   it('does not increment when type does not match', () => {
     gs = startQuest(gs, 'MQ-001'); // build_room only
-    const result = updateQuestObjective(gs, 'assign_monster', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'assign_monster', 1);
     expect(result).toBeNull();
+    expect(nextGs).toBe(gs);
     expect(gs.questProgress['MQ-001'].objectives['O1']).toBe(0);
   });
 
   it('clamps to target on over-increment', () => {
     gs = startQuest(gs, 'MQ-008'); // feed_monster target 3
-    const result = updateQuestObjective(gs, 'feed_monster', 99);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'feed_monster', 99);
     expect(result?.current).toBe(3);
     expect(result?.questDone).toBe(true);
+    expect(nextGs.questProgress['MQ-008'].objectives[result!.objId]).toBe(3);
   });
 
   it('marks questDone=false until all objectives are met', () => {
     // MQ-004 has build_room(2) + reach_dm_level(3)
     gs = { ...gs, dmLevel: 1 }; // prevents auto-satisfaction
     gs = startQuest(gs, 'MQ-004');
-    const first = updateQuestObjective(gs, 'build_room', 1);
+    let first;
+    [gs, first] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(first?.questDone).toBe(false);
-    const second = updateQuestObjective(gs, 'build_room', 1);
+    let second;
+    [gs, second] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(second?.current).toBe(2);
     expect(second?.questDone).toBe(false); // reach_dm_level still pending
-    const third = updateQuestObjective(gs, 'reach_dm_level', 3);
+    const [, third] = applyQuestObjectiveUpdate(gs, 'reach_dm_level', 3);
     expect(third?.questDone).toBe(true);
   });
 
   it('returns null when quest is already completed', () => {
     gs = startQuest(gs, 'MQ-001');
     gs = { ...gs, questProgress: { ...gs.questProgress, 'MQ-001': { ...gs.questProgress['MQ-001'], completed: true as const } } };
-    const result = updateQuestObjective(gs, 'build_room', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(result).toBeNull();
+    expect(nextGs).toBe(gs);
   });
 
   it('returns null when trying to increment a completed objective', () => {
     gs = startQuest(gs, 'MQ-001');
     gs = { ...gs, questProgress: { ...gs.questProgress, 'MQ-001': { ...gs.questProgress['MQ-001'], objectives: { ...gs.questProgress['MQ-001'].objectives, 'O1': 1 } } } };
-    const result = updateQuestObjective(gs, 'build_room', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'build_room', 1);
     expect(result).toBeNull();
+    expect(nextGs).toBe(gs);
   });
 });
 
@@ -442,6 +508,129 @@ describe('claimSubQuest', () => {
   });
 });
 
+describe('applySubQuestClaim', () => {
+  it('claims only completed active sub-quests through a result object', () => {
+    const gs = {
+      ...freshGameState(),
+      activeSubQuestIds: ['SQ-001'],
+      subQuestProgress: { 'SQ-001': 1 },
+      completedSubQuestIds: [],
+    };
+
+    const result = applySubQuestClaim(gs, 'SQ-001');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.subQuest.id).toBe('SQ-001');
+    expect(result.changed).toBe(true);
+    expect(result.state.homeGold).toBe(gs.homeGold + 120);
+    expect(result.state.completedSubQuestIds).toContain('SQ-001');
+    expect(result.state.subQuestProgress['SQ-001']).toBeUndefined();
+    expect(gs.completedSubQuestIds).toEqual([]);
+    expect(gs.subQuestProgress['SQ-001']).toBe(1);
+  });
+
+  it('rejects incomplete, inactive, and unknown sub-quest claims without changing state', () => {
+    const gs = {
+      ...freshGameState(),
+      activeSubQuestIds: ['SQ-001'],
+      subQuestProgress: { 'SQ-001': 0 },
+      completedSubQuestIds: [],
+    };
+
+    const incomplete = applySubQuestClaim(gs, 'SQ-001');
+    expect(incomplete.ok).toBe(false);
+    if (!incomplete.ok) {
+      expect(incomplete.reason).toBe('not_complete');
+      expect(incomplete.state).toBe(gs);
+    }
+
+    const inactive = applySubQuestClaim(gs, 'SQ-002');
+    expect(inactive.ok).toBe(false);
+    if (!inactive.ok) {
+      expect(inactive.reason).toBe('not_active');
+      expect(inactive.state).toBe(gs);
+    }
+
+    const unknown = applySubQuestClaim(gs, 'SQ-BOGUS');
+    expect(unknown.ok).toBe(false);
+    if (!unknown.ok) {
+      expect(unknown.reason).toBe('unknown_subquest');
+      expect(unknown.state).toBe(gs);
+    }
+  });
+});
+
+describe('prepareSubQuestLogViewState', () => {
+  it('builds sub-quest view items without changing an already-filled active list', () => {
+    const gs = {
+      ...freshGameState(),
+      activeSubQuestIds: ['SQ-001', 'SQ-006'],
+      subQuestProgress: { 'SQ-001': 1, 'SQ-006': 0 },
+      completedSubQuestIds: [],
+    };
+
+    const result = prepareSubQuestLogViewState(gs);
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(gs);
+    expect(result.allCompleted).toBe(false);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]).toMatchObject({
+      progress: 1,
+      target: 1,
+      completed: true,
+      progressRatio: 1,
+    });
+    expect(result.items[0].subQuest.id).toBe('SQ-001');
+    expect(result.items[1]).toMatchObject({
+      progress: 0,
+      target: 1,
+      completed: false,
+      progressRatio: 0,
+    });
+    expect(result.items[1].subQuest.id).toBe('SQ-006');
+  });
+
+  it('fills empty active slots and reports the normalized state as changed', () => {
+    const gs = {
+      ...freshGameState(),
+      activeSubQuestIds: [],
+      subQuestProgress: {},
+      completedSubQuestIds: SUB_QUEST_POOL.slice(2).map(sq => sq.id),
+    };
+
+    const result = prepareSubQuestLogViewState(gs);
+    const activeIds = [...result.state.activeSubQuestIds].sort();
+    const itemIds = result.items.map(item => item.subQuest.id).sort();
+
+    expect(result.changed).toBe(true);
+    expect(result.state).not.toBe(gs);
+    expect(activeIds).toEqual(['SQ-001', 'SQ-002']);
+    expect(result.state.subQuestProgress['SQ-001']).toBe(0);
+    expect(result.state.subQuestProgress['SQ-002']).toBe(0);
+    expect(itemIds).toEqual(['SQ-001', 'SQ-002']);
+    expect(gs.activeSubQuestIds).toEqual([]);
+    expect(gs.subQuestProgress).toEqual({});
+  });
+
+  it('reports all completed when no sub-quests remain assignable', () => {
+    const gs = {
+      ...freshGameState(),
+      activeSubQuestIds: [],
+      subQuestProgress: {},
+      completedSubQuestIds: SUB_QUEST_POOL.map(sq => sq.id),
+    };
+
+    const result = prepareSubQuestLogViewState(gs);
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(gs);
+    expect(result.items).toEqual([]);
+    expect(result.allCompleted).toBe(true);
+  });
+});
+
 // ─── Epilogue quest chain (EQ-001 ~ EQ-005) ──────────────────────────────────
 
 describe('EQ chain — data integrity', () => {
@@ -506,7 +695,7 @@ describe('EQ chain — data integrity', () => {
   });
 });
 
-describe('EQ chain — updateQuestObjective with fuse_monsters', () => {
+describe('EQ chain — applyQuestObjectiveUpdate with fuse_monsters', () => {
   let gs: GameState;
 
   beforeEach(() => {
@@ -516,7 +705,7 @@ describe('EQ chain — updateQuestObjective with fuse_monsters', () => {
   });
 
   it('increments fuse_monsters objective', () => {
-    const result = updateQuestObjective(gs, 'fuse_monsters', 1);
+    const [, result] = applyQuestObjectiveUpdate(gs, 'fuse_monsters', 1);
     expect(result).not.toBeNull();
     expect(result!.current).toBe(1);
     expect(result!.questDone).toBe(false);
@@ -524,15 +713,16 @@ describe('EQ chain — updateQuestObjective with fuse_monsters', () => {
 
   it('fuse_monsters does not affect reach_dm_level objective', () => {
     // Increment by 1 — O1 (fuse_monsters) advances, but O2 (reach_dm_level) stays 0
-    const result = updateQuestObjective(gs, 'fuse_monsters', 1);
+    const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'fuse_monsters', 1);
     expect(result).not.toBeNull();
     // questDone is false because O2 (reach_dm_level) is still pending
     expect(result!.questDone).toBe(false);
+    expect(nextGs.questProgress['EQ-002'].objectives['O2']).toBe(0);
   });
 
   it('quest is done only after both objectives are met', () => {
-    updateQuestObjective(gs, 'fuse_monsters', 15); // O1 maxed
-    const done = updateQuestObjective(gs, 'reach_dm_level', 20); // O2 maxed
+    [gs] = applyQuestObjectiveUpdate(gs, 'fuse_monsters', 15); // O1 maxed
+    const [, done] = applyQuestObjectiveUpdate(gs, 'reach_dm_level', 20); // O2 maxed
     expect(done!.questDone).toBe(true);
   });
 });
@@ -544,8 +734,8 @@ describe('EQ chain — completeAndAdvance awards unlocks', () => {
     gs = freshGameState();
     gs = startQuest(gs, 'EQ-003');
     // Satisfy both objectives
-    updateQuestObjective(gs, 'summon', 60);
-    updateQuestObjective(gs, 'collect_gold', 500000);
+    [gs] = applyQuestObjectiveUpdate(gs, 'summon', 60);
+    [gs] = applyQuestObjectiveUpdate(gs, 'collect_gold', 500000);
     // Mark as completed manually so completeAndAdvance can fire
     gs = {
       ...gs,

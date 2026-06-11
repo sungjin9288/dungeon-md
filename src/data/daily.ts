@@ -8,6 +8,7 @@
 import type { ElementId } from './monsters';
 import type { InvaderType } from './invaders';
 import type { WaveSpec } from './stages';
+import type { GameState } from './wisdom';
 
 // ─── Seeded RNG ────────────────────────────────────────────────────────────────
 
@@ -317,26 +318,87 @@ export function getDailyChallenges(): DailyChallenge[] {
 
 // ─── Daily challenge progress tracking ────────────────────────────────────────
 
-import type { GameState } from './wisdom';
+export interface DailyChallengeDateResult {
+  state:   GameState;
+  changed: boolean;
+}
+
+export interface DailyChallengeTickResult {
+  state:        GameState;
+  changed:      boolean;
+  completedIds: string[];
+  rewardGems:   number;
+}
+
+export interface DailyChallengeViewStateResult {
+  state:           GameState;
+  changed:         boolean;
+  today:           string;
+  challenges:      DailyChallenge[];
+  completedCount:  number;
+  allCompleted:    boolean;
+  totalRewardGems: number;
+}
+
+export function ensureDailyChallengeDate(
+  state: GameState,
+  today = getTodayString(),
+): DailyChallengeDateResult {
+  if (state.dailyChallengeDate === today && state.dailyChallenges) {
+    return { state, changed: false };
+  }
+
+  return {
+    state: {
+      ...state,
+      dailyChallengeDate: today,
+      dailyChallenges:    state.dailyChallengeDate === today ? { ...(state.dailyChallenges ?? {}) } : {},
+    },
+    changed: true,
+  };
+}
+
+export function prepareDailyChallengeViewState(
+  state: GameState,
+  today = getTodayString(),
+): DailyChallengeViewStateResult {
+  const dateResult = ensureDailyChallengeDate(state, today);
+  const challenges = getDailyChallenges();
+  const completedCount = challenges.filter(
+    challenge => dateResult.state.dailyChallenges[challenge.id]?.completed ?? false,
+  ).length;
+  const totalRewardGems = challenges.reduce((sum, challenge) => sum + (challenge.reward.gems ?? 0), 0);
+
+  return {
+    state: dateResult.state,
+    changed: dateResult.changed,
+    today,
+    challenges,
+    completedCount,
+    allCompleted: completedCount === challenges.length,
+    totalRewardGems,
+  };
+}
 
 /**
  * Increment progress for all today's daily challenges of a given objective type.
- * Mutates gs (caller must saveGameState).
- * Returns array of challenge IDs that just completed.
+ * Returns a transaction result; caller must saveGameState when changed is true.
  */
-export function tickDailyChallenge(
+export function applyDailyChallengeTick(
   gs: GameState,
   type: DailyChallenge['objective']['type'],
   amount = 1,
   filter?: string,
-): GameState {
-  const today = getTodayString();
-  // Reset if it's a new day
-  const prevChallenges = gs.dailyChallengeDate !== today ? {} : { ...(gs.dailyChallenges ?? {}) };
+): DailyChallengeTickResult {
+  const dateResult = ensureDailyChallengeDate(gs);
+  const { state } = dateResult;
+  const prevChallenges = { ...(state.dailyChallenges ?? {}) };
 
   const challenges = getDailyChallenges();
   const updatedChallenges = { ...prevChallenges };
-  let newGems = gs.gems ?? 0;
+  let newGems = state.gems ?? 0;
+  const completedIds: string[] = [];
+  let changed = dateResult.changed;
 
   for (const ch of challenges) {
     if (ch.objective.type !== type) continue;
@@ -349,14 +411,38 @@ export function tickDailyChallenge(
     const newCompleted = newProgress >= ch.objective.target;
     if (newCompleted && ch.reward.gems) newGems += ch.reward.gems;
     updatedChallenges[ch.id] = { completed: newCompleted, progress: newProgress };
+    changed = changed || newProgress !== prev.progress || newCompleted !== prev.completed;
+    if (newCompleted && !prev.completed) completedIds.push(ch.id);
+  }
+
+  if (newGems !== (state.gems ?? 0)) changed = true;
+  if (!changed) {
+    return { state: gs, changed: false, completedIds: [], rewardGems: 0 };
   }
 
   return {
-    ...gs,
-    gems:               newGems,
-    dailyChallenges:    updatedChallenges,
-    dailyChallengeDate: today,
+    state: {
+      ...state,
+      gems:               newGems,
+      dailyChallenges:    updatedChallenges,
+    },
+    changed:      true,
+    completedIds,
+    rewardGems:   newGems - (state.gems ?? 0),
   };
+}
+
+/**
+ * Backwards-compatible state-only wrapper for older call sites.
+ * Prefer applyDailyChallengeTick for new persistence paths.
+ */
+export function tickDailyChallenge(
+  gs: GameState,
+  type: DailyChallenge['objective']['type'],
+  amount = 1,
+  filter?: string,
+): GameState {
+  return applyDailyChallengeTick(gs, type, amount, filter).state;
 }
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────

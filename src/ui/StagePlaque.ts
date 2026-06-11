@@ -14,6 +14,7 @@ import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import type { StageProgress } from '../data/stageProgress';
+import { addPanelShadow } from './PanelDepth';
 
 // ── PlaqueTheme ───────────────────────────────────────────────────────────────
 
@@ -243,17 +244,24 @@ export function drawGenericPlaque(
   theme:    PlaqueTheme,
   progress: StageProgress[],
   onSelect: (idx: number) => void,
+  highlightIdx?: number,
 ): void {
   const prog  = progress[idx];
   const cfg   = STAGE_CONFIGS[idx];
   const label = cfg ? String(cfg.stageNumber) : String(idx + 1);
   const bg    = scene.add.graphics();
+  const isFrontier = idx === highlightIdx && !!prog?.unlocked && prog.bestStars === 0;
+
+  if (prog?.unlocked) {
+    addPanelShadow(scene, x, y, w, h, 6, { offsetY: 2, opacity: isFrontier ? 0.7 : 0.45 });
+  }
 
   if (!prog?.unlocked) {
     bg.fillStyle(theme.lockedBg, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
     bg.lineStyle(1, theme.lockedBorder, 0.8);
     bg.strokeRoundedRect(x, y, w, h, 6);
+    _drawPlaqueAccent(bg, x, y, w, theme.lockedBorder, 0.35);
     scene.add.text(x + w / 2, y + h / 2 - 4, '⛓',
       { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
     scene.add.text(x + w / 2, y + h - 12, label,
@@ -266,6 +274,7 @@ export function drawGenericPlaque(
       bg.fillRoundedRect(x, y, w, h, 6);
       bg.lineStyle(1.5, strokeCol, 0.9);
       bg.strokeRoundedRect(x, y, w, h, 6);
+      _drawPlaqueAccent(bg, x, y, w, strokeCol, isFrontier ? 0.95 : 0.65);
     };
     drawBase(theme.unclearedBg, theme.unclearedBorder);
     scene.add.text(x + w / 2, y + 14, label, {
@@ -276,7 +285,7 @@ export function drawGenericPlaque(
       fontFamily: 'sans-serif', fontSize: '11px', color: theme.unclearedStarColor,
     }).setOrigin(0.5);
     const zone = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => onSelect(idx));
+    zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
     zone.on('pointerover', () => drawBase(theme.unclearedHoverBg,  theme.unclearedHoverBorder));
     zone.on('pointerout',  () => drawBase(theme.unclearedBg,       theme.unclearedBorder));
 
@@ -285,6 +294,7 @@ export function drawGenericPlaque(
     bg.fillRoundedRect(x, y, w, h, 6);
     bg.lineStyle(2, theme.clearedBorder, 0.9);
     bg.strokeRoundedRect(x, y, w, h, 6);
+    _drawPlaqueAccent(bg, x, y, w, theme.clearedBorder, 0.85);
     scene.add.text(x + w / 2, y + 14, label, {
       fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
       color: theme.clearedLabelColor,
@@ -294,13 +304,73 @@ export function drawGenericPlaque(
       _drawHpDisplay(scene, x, y, w, h, prog.bestHpPercent, theme.showHpBar);
     }
     const zone = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => onSelect(idx));
+    zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
   }
 
   if (cfg?.bossWave) {
     scene.add.text(x + w - 4, y + 4, theme.bossEmoji,
       { fontSize: '11px' }).setOrigin(1, 0);
   }
+
+  if (isFrontier) {
+    _drawFrontierCue(scene, x, y, w, h, theme.unclearedHoverBorder);
+  }
+}
+
+// ── Plaque visual helpers ─────────────────────────────────────────────────────
+
+function _drawPlaqueAccent(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  color: number,
+  alpha: number,
+): void {
+  g.fillStyle(color, alpha);
+  g.fillRoundedRect(x + 8, y + 4, Math.max(8, w - 16), 3, 2);
+}
+
+function _pressPlaque(
+  scene: Phaser.Scene,
+  bg: Phaser.GameObjects.Graphics,
+  onComplete: () => void,
+): void {
+  scene.tweens.add({
+    targets: bg,
+    alpha: 0.68,
+    duration: 70,
+    yoyo: true,
+    onComplete: () => {
+      bg.setAlpha(1);
+      onComplete();
+    },
+  });
+}
+
+function _drawFrontierCue(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: number,
+): void {
+  const ring = scene.add.graphics();
+  ring.lineStyle(2.5, color, 1);
+  ring.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 8);
+  scene.tweens.add({
+    targets: ring,
+    alpha: { from: 0.35, to: 1 },
+    duration: 850,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+  });
+
+  const cue = scene.add.graphics();
+  cue.fillStyle(color, 0.95);
+  cue.fillTriangle(x + 7, y + 9, x + 7, y + 21, x + 17, y + 15);
 }
 
 // ── _drawHpDisplay ────────────────────────────────────────────────────────────
@@ -341,6 +411,7 @@ export function drawChapterSection(
   theme:    PlaqueTheme,
   progress: StageProgress[],
   onSelect: (idx: number) => void,
+  highlightIdx?: number,
 ): void {
   const unlocked = (progress[data.unlockIdx]?.bestStars ?? 0) > 0;
 
@@ -355,7 +426,7 @@ export function drawChapterSection(
         color: data.activeTextColor, letterSpacing: 2,
       }).setOrigin(0.5, 1);
     drawChapterProgressBar(scene, data.startIdx, data.stageCount, data.progressBarY, progress);
-    _drawChapterGrid(scene, data, theme, progress, onSelect);
+    _drawChapterGrid(scene, data, theme, progress, onSelect, highlightIdx);
   } else {
     scene.add.text(CANVAS_WIDTH / 2, data.labelY,
       `Chapter ${data.num}  —  ${data.name}  🔒`, {
@@ -386,6 +457,7 @@ function _drawChapterGrid(
   theme:    PlaqueTheme,
   progress: StageProgress[],
   onSelect: (idx: number) => void,
+  highlightIdx?: number,
 ): void {
   const { cols, rows, bw, bh, gapX, gapY, startIdx, gridStartY } = data;
   const gridW  = cols * bw + (cols - 1) * gapX;
@@ -396,7 +468,7 @@ function _drawChapterGrid(
       const idx = startIdx + r * cols + c;
       const x   = startX + c * (bw + gapX);
       const y   = gridStartY + r * (bh + gapY);
-      drawGenericPlaque(scene, idx, x, y, bw, bh, theme, progress, onSelect);
+      drawGenericPlaque(scene, idx, x, y, bw, bh, theme, progress, onSelect, highlightIdx);
     }
   }
 }

@@ -29,6 +29,19 @@ interface AudioSettings {
   sfxEnabled: boolean;
 }
 
+type ManagedBgmSynth =
+  | Tone.Synth
+  | Tone.PolySynth
+  | Tone.NoiseSynth
+  | Tone.MembraneSynth
+  | Tone.MetalSynth
+  | Tone.AMSynth
+  | Tone.FMSynth;
+
+type TriggerAttackReleaseVoice = {
+  triggerAttackRelease: (...args: unknown[]) => unknown;
+};
+
 const AUDIO_KEY = 'dungeonAudioSettings';
 
 // ─── AudioManager ─────────────────────────────────────────────────────────────
@@ -46,8 +59,9 @@ class AudioManager {
   private started   = false;
   private currentTrack: BgmTrack = 'none';
   private bgmParts:  Tone.Part[]  = [];
-  private bgmSynths: (Tone.Synth | Tone.PolySynth | Tone.NoiseSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.AMSynth | Tone.FMSynth)[] = [];
+  private bgmSynths: ManagedBgmSynth[] = [];
   private bgmLoop:   Tone.Loop | null = null;
+  private bgmVoiceLastTimes = new WeakMap<object, number>();
 
   private constructor() {
     this.loadSettings();
@@ -135,16 +149,67 @@ class AudioManager {
     Tone.getTransport().stop();
     Tone.getTransport().cancel();
 
-    this.bgmLoop?.stop().dispose();
+    try {
+      this.bgmLoop?.stop(0).dispose();
+    } catch {
+      this.bgmLoop?.dispose();
+    }
     this.bgmLoop = null;
 
-    this.bgmParts.forEach(p => p.stop().dispose());
+    this.bgmParts.forEach(p => {
+      try { p.stop(0); } catch { /* Tone can produce a tiny negative stop time after rapid scene restarts */ }
+      try { p.dispose(); } catch { /* already gone */ }
+    });
     this.bgmParts = [];
 
     this.bgmSynths.forEach(s => { try { s.disconnect(); s.dispose(); } catch { /* already gone */ } });
     this.bgmSynths = [];
+    this.bgmVoiceLastTimes = new WeakMap<object, number>();
 
     this.currentTrack = 'none';
+  }
+
+  private resolveBgmScheduleTime(voice: object, time: number): number {
+    const now = Tone.now();
+    const last = this.bgmVoiceLastTimes.get(voice) ?? Number.NEGATIVE_INFINITY;
+    const minTime = Math.max(now + 0.015, last + 0.002);
+    const candidate = Number.isFinite(time) ? time : minTime;
+    const safeTime = Math.max(candidate, minTime);
+    this.bgmVoiceLastTimes.set(voice, safeTime);
+    return safeTime;
+  }
+
+  private triggerBgmNote(
+    voice: unknown,
+    note: string | string[],
+    duration: string,
+    time: number,
+    velocity?: number,
+  ): void {
+    const target = voice as TriggerAttackReleaseVoice;
+    const scheduledTime = this.resolveBgmScheduleTime(voice as object, time);
+    try {
+      target.triggerAttackRelease(note, duration, scheduledTime, velocity);
+    } catch {
+      const retryTime = this.resolveBgmScheduleTime(voice as object, Tone.now() + 0.05);
+      try { target.triggerAttackRelease(note, duration, retryTime, velocity); } catch { /* skip unstable audio frame */ }
+    }
+  }
+
+  private triggerBgmDuration(
+    voice: unknown,
+    duration: string,
+    time: number,
+    velocity?: number,
+  ): void {
+    const target = voice as TriggerAttackReleaseVoice;
+    const scheduledTime = this.resolveBgmScheduleTime(voice as object, time);
+    try {
+      target.triggerAttackRelease(duration, scheduledTime, velocity);
+    } catch {
+      const retryTime = this.resolveBgmScheduleTime(voice as object, Tone.now() + 0.05);
+      try { target.triggerAttackRelease(duration, retryTime, velocity); } catch { /* skip unstable audio frame */ }
+    }
   }
 
   // ── SFX ─────────────────────────────────────────────────────────────────────
@@ -196,7 +261,7 @@ class AudioManager {
     const vol = Tone.gainToDb(this.settings.bgmVolume * 0.45);
 
     // Pluck melody (main voice)
-    const pluck = new Tone.Synth({
+    const pluck = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'triangle' },
       envelope: { attack: 0.01, decay: 0.8, sustain: 0.0, release: 1.2 },
       volume: vol,
@@ -231,13 +296,13 @@ class AudioManager {
     ];
 
     const melodyPart = new Tone.Part((time, note: string) => {
-      pluck.triggerAttackRelease(note, '8n', time, 0.6);
+      this.triggerBgmNote(pluck, note, '8n', time, 0.6);
     }, melody);
     melodyPart.loop = true;
     melodyPart.loopEnd = '4m';
 
     const padPart = new Tone.Part((time, notes: string[]) => {
-      pad.triggerAttackRelease(notes, '2n', time, 0.3);
+      this.triggerBgmNote(pad, notes, '2n', time, 0.3);
     }, harmonyChords);
     padPart.loop = true;
     padPart.loopEnd = '4m';
@@ -255,14 +320,14 @@ class AudioManager {
     const vol = Tone.gainToDb(this.settings.bgmVolume * 0.5);
 
     // Lead synth
-    const lead = new Tone.Synth({
+    const lead = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'sawtooth' },
       envelope: { attack: 0.02, decay: 0.1, sustain: 0.6, release: 0.3 },
       volume: vol - 4,
     }).toDestination();
 
     // Bass
-    const bass = new Tone.Synth({
+    const bass = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'square' },
       envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.2 },
       volume: vol - 2,
@@ -315,22 +380,22 @@ class AudioManager {
     ];
 
     const riffPart = new Tone.Part((time, note: string) => {
-      lead.triggerAttackRelease(note, '16n', time, 0.7);
+      this.triggerBgmNote(lead, note, '16n', time, 0.7);
     }, riff);
     riffPart.loop = true; riffPart.loopEnd = '2m';
 
     const bassPart = new Tone.Part((time, note: string) => {
-      bass.triggerAttackRelease(note, '8n', time, 0.8);
+      this.triggerBgmNote(bass, note, '8n', time, 0.8);
     }, bassLine);
     bassPart.loop = true; bassPart.loopEnd = '2m';
 
     const kickPart = new Tone.Part((time) => {
-      kick.triggerAttackRelease('C1', '8n', time);
+      this.triggerBgmNote(kick, 'C1', '8n', time);
     }, kickPattern);
     kickPart.loop = true; kickPart.loopEnd = '2m';
 
     const hihatPart = new Tone.Part((time) => {
-      hihat.triggerAttackRelease('16n', time);
+      this.triggerBgmDuration(hihat, '16n', time);
     }, hihatPattern);
     hihatPart.loop = true; hihatPart.loopEnd = '2m';
 
@@ -351,7 +416,7 @@ class AudioManager {
       volume: vol,
     }).toDestination();
 
-    const bells = new Tone.Synth({
+    const bells = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: 'triangle' },
       envelope: { attack: 0.001, decay: 1.5, sustain: 0.0, release: 2.0 },
       volume: vol - 4,
@@ -379,12 +444,12 @@ class AudioManager {
     ];
 
     const padPart = new Tone.Part((time, notes: string[]) => {
-      pad.triggerAttackRelease(notes, '2n', time, 0.4);
+      this.triggerBgmNote(pad, notes, '2n', time, 0.4);
     }, chords);
     padPart.loop = true; padPart.loopEnd = '4m';
 
     const bellPart = new Tone.Part((time, note: string) => {
-      bells.triggerAttackRelease(note, '8n', time, 0.5);
+      this.triggerBgmNote(bells, note, '8n', time, 0.5);
     }, bellNotes);
     bellPart.loop = true; bellPart.loopEnd = '4m';
 

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS, CSS } from '../constants/colors';
+import { TUTORIAL_DONE_STAGE } from '../data/tutorialTransactions';
 
 // ─── Tutorial step definitions ────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
-export const TUTORIAL_DONE = 99;
+export const TUTORIAL_DONE = TUTORIAL_DONE_STAGE;
 
 // ─── TutorialOverlay class ────────────────────────────────────────────────────
 

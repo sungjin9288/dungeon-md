@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { COLORS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
+import { purchaseDailyEquipment, purchaseDailySkill } from '../data/shopTransactions';
 import { ACTIVE_SKILLS, EQUIPMENT_DEFS, type ActiveSkill, type Equipment } from '../data/barracks';
 
 // ─── Daily rotation seeded by UTC day ─────────────────────────────────────────
@@ -75,11 +76,10 @@ export function buildEquipmentTab(ctx: ShopDailyTabContext): void {
       eq.goldCost, eq.gemCost, owned, 'equip',
       () => {
         const state = loadGameState();
-        if (state.soulCrystals < eq.gemCost) { ctx.showToast('영혼 결정체 부족'); return; }
-        state.soulCrystals -= eq.gemCost;
-        if (!state.ownedEquipment.includes(eq.id)) state.ownedEquipment.push(eq.id);
-        saveGameState(state);
-        ctx.showToast(`${eq.name} 구입 완료!`);
+        const result = purchaseDailyEquipment(state, eq.id, eq.gemCost);
+        if (!result.ok) { ctx.showToast('영혼 결정체 부족'); return; }
+        if (result.changed) saveGameState(result.state);
+        ctx.showToast(result.changed ? `${eq.name} 구입 완료!` : '이미 보유 중');
         ctx.refreshContent();
       },
     );
@@ -125,11 +125,10 @@ export function buildSkillTab(ctx: ShopDailyTabContext): void {
       sk.goldCost, sk.gemCost, owned, 'skill',
       () => {
         const state = loadGameState();
-        if (state.soulCrystals < sk.gemCost) { ctx.showToast('영혼 결정체 부족'); return; }
-        state.soulCrystals -= sk.gemCost;
-        if (!state.ownedActiveSkills.includes(sk.id)) state.ownedActiveSkills.push(sk.id);
-        saveGameState(state);
-        ctx.showToast(`${sk.name} 습득!`);
+        const result = purchaseDailySkill(state, sk.id, sk.gemCost);
+        if (!result.ok) { ctx.showToast('영혼 결정체 부족'); return; }
+        if (result.changed) saveGameState(result.state);
+        ctx.showToast(result.changed ? `${sk.name} 습득!` : '이미 보유 중');
         ctx.refreshContent();
       },
     );

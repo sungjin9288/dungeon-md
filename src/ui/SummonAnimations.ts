@@ -22,9 +22,81 @@ export interface SummonResult {
 
 const CX       = CANVAS_WIDTH / 2;
 const PORTAL_CY = 130;
+const SUMMON_TRIBE_LABELS: Record<string, string> = {
+  dokkaebi: '도깨비',
+  gumiho: '구미호',
+  dragon: '용족',
+  underworld: '저승',
+  sansin: '산신',
+  sea: '해신',
+  mask: '탈족',
+  moonlight: '달빛',
+  celestial: '천상',
+};
+const SUMMON_ELEMENT_LABELS: Record<string, string> = {
+  fire: '화염',
+  frost: '서리',
+  lightning: '번개',
+  dark: '암흑',
+  holy: '신성',
+};
 
 function wait(scene: Phaser.Scene, ms: number, cb: () => void): void {
   scene.time.delayedCall(ms, cb);
+}
+
+function getDexNo(monsterId: MonsterId): string {
+  const index = Object.keys(MONSTER_DEFS).indexOf(monsterId);
+  return String(Math.max(0, index) + 1).padStart(3, '0');
+}
+
+function getMonsterTagLine(def: (typeof MONSTER_DEFS)[MonsterId]): string {
+  const tribe = def.tribe ? SUMMON_TRIBE_LABELS[def.tribe] ?? def.tribe : '던전';
+  const element = def.element ? SUMMON_ELEMENT_LABELS[def.element] ?? def.element : '중립';
+  return `${tribe} · ${element}`;
+}
+
+function drawFoilLines(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: number,
+  alpha: number,
+): void {
+  const lineCount = Math.max(3, Math.ceil(w / 28));
+  for (let i = -1; i < lineCount; i++) {
+    const sx = x + 14 + i * 34;
+    g.lineStyle(1, color, alpha);
+    g.lineBetween(sx, y + h - 14, sx + 68, y + 12);
+  }
+}
+
+function drawStatusPill(
+  scene: Phaser.Scene,
+  c: Phaser.GameObjects.Container,
+  x: number,
+  y: number,
+  w: number,
+  label: string,
+  color: number,
+  textColor: string,
+): void {
+  const g = scene.add.graphics();
+  g.fillStyle(0x07020c, 0.94);
+  g.fillRoundedRect(x, y, w, 18, 7);
+  g.fillStyle(color, 0.18);
+  g.fillRoundedRect(x + 4, y + 4, w - 8, 4, 3);
+  g.lineStyle(1, color, 0.66);
+  g.strokeRoundedRect(x, y, w, 18, 7);
+  c.add(g);
+  c.add(scene.add.text(x + w / 2, y + 9, label, {
+    fontFamily: 'sans-serif',
+    fontSize: '9px',
+    color: textColor,
+    fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(99));
 }
 
 // ─── Single pull animation ──────────────────────────────────────────────────
@@ -113,21 +185,42 @@ export function playSinglePullAnimation(
       darkOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       // Card panel
-      const panW = 260, panH = 310;
+      const panW = 268, panH = 336;
       const panX = (CANVAS_WIDTH - panW) / 2;
       const panY = (CANVAS_HEIGHT - panH) / 2 - 30;
       const panG = scene.add.graphics().setDepth(96);
+      panG.fillStyle(0x040208, 0.48);
+      panG.fillRoundedRect(panX + 4, panY + 6, panW, panH, 14);
       panG.fillStyle(0x100022, 1);
       panG.fillRoundedRect(panX, panY, panW, panH, 14);
+      panG.fillStyle(rColor, 0.12);
+      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
+      panG.fillStyle(0x05020b, 0.74);
+      panG.fillRoundedRect(panX + 20, panY + 170, panW - 40, 88, 12);
+      drawFoilLines(panG, panX + 13, panY + 38, panW - 26, 126, rColor, result.rarityIdx >= 2 ? 0.17 : 0.08);
       panG.lineStyle(2, rColor, 0.9);
       panG.strokeRoundedRect(panX, panY, panW, panH, 14);
+      panG.lineStyle(1, 0xffffff, 0.13);
+      panG.strokeRoundedRect(panX + 6, panY + 6, panW - 12, panH - 12, 10);
       ov.add(panG);
+
+      drawStatusPill(scene, ov, panX + 18, panY + 16, 70, `도감 ${getDexNo(result.monsterId)}`, rColor, rCss);
+      drawStatusPill(
+        scene,
+        ov,
+        panX + panW - 82,
+        panY + 16,
+        64,
+        result.isNew ? 'NEW' : 'DUP',
+        result.isNew ? 0xffd45c : 0x44ffcc,
+        result.isNew ? '#fff1b0' : '#b8fff0',
+      );
 
       // Rarity glow behind emoji
       const glowG = scene.add.graphics().setDepth(97);
       for (let r = 50; r >= 10; r -= 8) {
         glowG.fillStyle(rColor, 0.025 * (52 - r));
-        glowG.fillCircle(CX, panY + 80, r);
+        glowG.fillCircle(CX, panY + 96, r);
       }
       ov.add(glowG);
 
@@ -135,10 +228,10 @@ export function playSinglePullAnimation(
       const summonPortraitKey = generatePortrait(scene, result.monsterId as MonsterId);
       let revealObj: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
       if (scene.textures.exists(summonPortraitKey)) {
-        revealObj = scene.add.image(CX, panY + 80, summonPortraitKey)
+        revealObj = scene.add.image(CX, panY + 96, summonPortraitKey)
           .setOrigin(0.5).setDisplaySize(56, 56).setDepth(98).setScale(0);
       } else {
-        revealObj = scene.add.text(CX, panY + 80, def.emoji, {
+        revealObj = scene.add.text(CX, panY + 96, def.emoji, {
           fontFamily: 'sans-serif', fontSize: '64px',
         }).setOrigin(0.5).setDepth(98).setScale(0);
       }
@@ -152,7 +245,7 @@ export function playSinglePullAnimation(
         const angle = (i / burstCount) * Math.PI * 2;
         const pg = scene.add.graphics().setDepth(97);
         pg.fillStyle(rColor, 0.9);
-        pg.fillCircle(CX, panY + 80, 3 + result.rarityIdx);
+        pg.fillCircle(CX, panY + 96, 3 + result.rarityIdx);
         ov.add(pg);
         scene.tweens.add({
           targets: pg,
@@ -181,7 +274,7 @@ export function playSinglePullAnimation(
         let delay = 0;
         chars.forEach((_, idx) => {
           wait(scene, delay, () => {
-            const st = scene.add.text(CX - (chars.length - 1) * 12 + idx * 24, panY + 144, chars[idx], {
+            const st = scene.add.text(CX - (chars.length - 1) * 12 + idx * 24, panY + 156, chars[idx], {
               fontFamily: 'sans-serif', fontSize: '16px',
             }).setOrigin(0.5).setDepth(98).setAlpha(0).setScale(0);
             ov.add(st);
@@ -193,13 +286,19 @@ export function playSinglePullAnimation(
 
       // Name
       wait(scene,200, () => {
-        const nameT = scene.add.text(CX, panY + 170, def.name, {
+        const nameT = scene.add.text(CX, panY + 184, def.name, {
           fontFamily: 'Georgia, serif', fontSize: '22px', color: rCss,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(nameT);
         scene.tweens.add({ targets: nameT, alpha: 1, duration: 300 });
 
-        const rarityT = scene.add.text(CX, panY + 196, RARITY_KO[result.rarityIdx], {
+        const tagT = scene.add.text(CX, panY + 210, getMonsterTagLine(def), {
+          fontFamily: 'sans-serif', fontSize: '10px', color: '#bfa8df',
+        }).setOrigin(0.5).setDepth(98).setAlpha(0);
+        ov.add(tagT);
+        scene.tweens.add({ targets: tagT, alpha: 1, duration: 300 });
+
+        const rarityT = scene.add.text(CX, panY + 232, `${RARITY_KO[result.rarityIdx]} · ${RARITY_STARS[result.rarityIdx]}`, {
           fontFamily: 'sans-serif', fontSize: '12px', color: rCss,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(rarityT);
@@ -209,10 +308,10 @@ export function playSinglePullAnimation(
       // New / dupe badge
       wait(scene,400, () => {
         const badgeText = result.isNew
-          ? '✨ 새 몬스터 획득!'
-          : `🔄 중복 +${result.scComp}💠`;
+          ? '새 몬스터 도감 등록'
+          : `중복 보상 +${result.scComp}💠`;
         const badgeColor = result.isNew ? '#ffdd44' : '#888888';
-        const badgeT = scene.add.text(CX, panY + 230, badgeText, {
+        const badgeT = scene.add.text(CX, panY + 270, badgeText, {
           fontFamily: 'sans-serif', fontSize: '13px', color: badgeColor,
           backgroundColor: result.isNew ? '#442200' : '#222222',
           padding: { x: 12, y: 5 },
@@ -225,7 +324,7 @@ export function playSinglePullAnimation(
       wait(scene,800, () => {
         scene.input.enabled = true;
 
-        const againT = scene.add.text(CX - 58, panY + 278, '다시 소환', {
+        const againT = scene.add.text(CX - 58, panY + 310, '다시 소환', {
           fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
           backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
         }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
@@ -238,7 +337,7 @@ export function playSinglePullAnimation(
           onComplete();
         });
 
-        const confirmT = scene.add.text(CX + 52, panY + 278, '확인  ✓', {
+        const confirmT = scene.add.text(CX + 52, panY + 310, '확인  ✓', {
           fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
           backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
         }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
@@ -341,11 +440,31 @@ export function playMultiPullAnimation(
 
           // Card bg
           const cg = scene.add.graphics();
+          cg.fillStyle(0x040208, 0.42);
+          cg.fillRoundedRect(-cardW / 2 + 2, -cardH / 2 + 3, cardW, cardH, 8);
           cg.fillStyle(0x100022, 1);
           cg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+          cg.fillStyle(rColor, result.rarityIdx >= 2 ? 0.13 : 0.07);
+          cg.fillRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
+          drawFoilLines(cg, -cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, rColor, result.rarityIdx >= 2 ? 0.18 : 0.07);
           cg.lineStyle(1.5, rColor, result.rarityIdx >= 2 ? 1 : 0.5);
           cg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+          cg.lineStyle(1, 0xffffff, 0.10);
+          cg.strokeRoundedRect(-cardW / 2 + 4, -cardH / 2 + 4, cardW - 8, cardH - 8, 6);
           cc.add(cg);
+
+          const dexBg = scene.add.graphics();
+          dexBg.fillStyle(0x07020c, 0.94);
+          dexBg.fillRoundedRect(-34, -49, 68, 13, 5);
+          dexBg.lineStyle(1, rColor, 0.55);
+          dexBg.strokeRoundedRect(-34, -49, 68, 13, 5);
+          cc.add(dexBg);
+          cc.add(scene.add.text(0, -42.5, `도감 ${getDexNo(result.monsterId)}`, {
+            fontFamily: 'sans-serif',
+            fontSize: '7px',
+            color: RARITY_CSS[result.rarityIdx] ?? '#ffffff',
+            fontStyle: 'bold',
+          }).setOrigin(0.5));
 
           // Flash before flip for Rare+
           if (result.rarityIdx >= 2) {
@@ -361,37 +480,50 @@ export function playMultiPullAnimation(
           }
 
           // Emoji
-          const et = scene.add.text(0, -20, mDef.emoji, {
+          const et = scene.add.text(0, -17, mDef.emoji, {
             fontFamily: 'sans-serif', fontSize: '24px',
           }).setOrigin(0.5);
           cc.add(et);
 
           // Name
-          cc.add(scene.add.text(0, 12, mDef.name.slice(0, 5), {
+          cc.add(scene.add.text(0, 14, mDef.name.slice(0, 5), {
             fontFamily: 'sans-serif', fontSize: '11px', color: result.isNew ? '#ffdd44' : '#888888',
           }).setOrigin(0.5));
 
           // Stars
-          cc.add(scene.add.text(0, 26, RARITY_STARS[result.rarityIdx], {
-            fontFamily: 'sans-serif', fontSize: '11px',
+          cc.add(scene.add.text(0, 29, RARITY_STARS[result.rarityIdx], {
+            fontFamily: 'sans-serif', fontSize: '10px',
+            color: RARITY_CSS[result.rarityIdx] ?? '#ffffff',
+          }).setOrigin(0.5));
+          cc.add(scene.add.text(0, 40, RARITY_KO[result.rarityIdx] ?? '획득', {
+            fontFamily: 'sans-serif',
+            fontSize: '7px',
+            color: RARITY_CSS[result.rarityIdx] ?? '#ffffff',
+            fontStyle: 'bold',
           }).setOrigin(0.5));
 
           // New/dupe tag
           if (!result.isNew) {
             const dg2 = scene.add.graphics();
-            dg2.fillStyle(0x333333, 0.8);
-            dg2.fillRoundedRect(-28, cardH / 2 - 16, 56, 13, 3);
+            dg2.fillStyle(0x0b1f1d, 0.9);
+            dg2.fillRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
+            dg2.lineStyle(1, 0x44ffcc, 0.48);
+            dg2.strokeRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
             cc.add(dg2);
-            cc.add(scene.add.text(0, cardH / 2 - 9, `+${result.scComp}💠`, {
-              fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
+            cc.add(scene.add.text(0, cardH / 2 - 11, `DUP +${result.scComp}`, {
+              fontFamily: 'sans-serif', fontSize: '8px', color: '#44ffcc',
+              fontStyle: 'bold',
             }).setOrigin(0.5));
           } else {
             const ng = scene.add.graphics();
-            ng.fillStyle(0xc8921a, 0.8);
-            ng.fillRoundedRect(-16, cardH / 2 - 16, 32, 13, 3);
+            ng.fillStyle(0x3b2500, 0.94);
+            ng.fillRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
+            ng.lineStyle(1, 0xffd45c, 0.68);
+            ng.strokeRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
             cc.add(ng);
-            cc.add(scene.add.text(0, cardH / 2 - 9, 'NEW', {
-              fontFamily: 'sans-serif', fontSize: '11px', color: '#000000',
+            cc.add(scene.add.text(0, cardH / 2 - 11, 'NEW', {
+              fontFamily: 'sans-serif', fontSize: '9px', color: '#ffe8a3',
+              fontStyle: 'bold',
             }).setOrigin(0.5));
           }
 

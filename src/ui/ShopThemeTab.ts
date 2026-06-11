@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { loadGameState, saveGameState } from '../data/wisdom';
+import { equipTheme, purchaseAndEquipTheme, unequipTheme } from '../data/shopTransactions';
 import { ALL_THEMES, type DungeonTheme } from '../themes/themes';
 import { addPanelShadow, addInnerGlow } from './PanelDepth';
 
@@ -33,7 +34,6 @@ export interface ShopThemeTabContext {
 export function buildThemeTab(ctx: ShopThemeTabContext): void {
   const { scene, contentCtr } = ctx;
   const gs = loadGameState();
-  if (!gs.ownedThemes) gs.ownedThemes = ['cave'];
 
   contentCtr.add(scene.add.text(CANVAS_WIDTH / 2, 108, '🏰 던전 테마', {
     fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
@@ -172,25 +172,22 @@ function drawThemeCard(
 
   zone.on('pointerdown', () => {
     const state = loadGameState();
-    if (!state.ownedThemes) state.ownedThemes = ['cave'];
 
     if (equipped && rarity !== 'default') {
-      state.equippedTheme = 'cave';
-      saveGameState(state);
+      const result = unequipTheme(state);
+      if (result.ok && result.changed) saveGameState(result.state);
       ctx.showToast('기본 동굴 테마로 변경');
       ctx.refreshContent();
     } else if (canEquip) {
-      state.equippedTheme = theme.id;
-      saveGameState(state);
+      const result = equipTheme(state, theme.id);
+      if (result.ok && result.changed) saveGameState(result.state);
       ctx.showToast(`${theme.name} 테마 장착!`);
       ctx.refreshContent();
     } else if (canBuy) {
-      if ((state.gems ?? 0) < gemCost) { ctx.showToast('젬 부족!'); return; }
-      state.gems -= gemCost;
-      if (!state.ownedThemes.includes(theme.id)) state.ownedThemes.push(theme.id);
-      state.equippedTheme = theme.id;
-      saveGameState(state);
-      gemsText.setText(`💎 ${state.gems} 젬`);
+      const result = purchaseAndEquipTheme(state, theme.id, gemCost);
+      if (!result.ok) { ctx.showToast('젬 부족!'); return; }
+      if (result.changed) saveGameState(result.state);
+      gemsText.setText(`💎 ${result.state.gems} 젬`);
       ctx.showPurchaseFlash(gemCost, '💎', '#88aaff');
       ctx.showToast(`${theme.name} 테마 구입 및 장착!`);
       ctx.refreshContent();

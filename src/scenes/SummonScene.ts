@@ -6,7 +6,7 @@ import { audioManager } from '../audio/AudioManager';
 import { getActiveBanner, type SeasonBanner } from '../data/banners';
 import {
   type SummonType, type SummonTypeDef, SUMMON_TYPE_DEFS,
-  RARITY_RATES, RARITIES, RARITY_STARS, RARITY_CSS, RARITY_KO,
+  RARITY_RATES, RARITIES, RARITY_STARS, RARITY_COLORS, RARITY_CSS, RARITY_KO,
 } from '../data/summonPools';
 import { buildBannerCard } from '../ui/SummonBannerCard';
 import { executePull as runPull } from '../ui/SummonPullLogic';
@@ -21,6 +21,24 @@ const CARD_ML   = 11;  // left margin
 const CARDS_Y   = 228; // top of first row
 const PORTAL_CY = 130; // portal center Y
 const TAB_Y     = 186; // tab bar top
+const SUMMON_TRIBE_LABELS: Record<string, string> = {
+  dokkaebi: '도깨비',
+  gumiho: '구미호',
+  dragon: '용족',
+  underworld: '저승',
+  sansin: '산신',
+  sea: '해신',
+  mask: '탈족',
+  moonlight: '달빛',
+  celestial: '천상',
+};
+const SUMMON_ELEMENT_LABELS: Record<string, string> = {
+  fire: '화염',
+  frost: '서리',
+  lightning: '번개',
+  dark: '암흑',
+  holy: '신성',
+};
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +54,7 @@ export class SummonScene extends Phaser.Scene {
   create(): void {
     this.drawBackground();
     this.drawPortal();
+    this.drawCollectionShowcase();
     this.drawHeader();
     this.drawTabBar();
     this.buildSummonTab();
@@ -131,6 +150,141 @@ export class SummonScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(5);
   }
 
+  private drawCollectionShowcase(): void {
+    const gs = loadGameState();
+    const summary = this.getCollectionSummary(gs);
+    const g = this.add.graphics().setDepth(2);
+
+    const progress = summary.total > 0 ? summary.owned / summary.total : 0;
+    const barW = 92;
+    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x17082b, 0x7755ff);
+    this.add.text(28, 91, '도감 수집', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#bca8ff',
+    }).setDepth(6);
+    this.add.text(28, 109, `${summary.owned}/${summary.total}`, {
+      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffffff',
+    }).setDepth(6);
+
+    const pg = this.add.graphics().setDepth(6);
+    pg.fillStyle(0x08020f, 0.85);
+    pg.fillRoundedRect(28, 134, barW, 7, 4);
+    pg.fillStyle(0xffd45c, 0.95);
+    pg.fillRoundedRect(28, 134, Phaser.Math.Clamp(barW * progress, 3, barW), 7, 4);
+    pg.lineStyle(1, 0xffffff, 0.12);
+    pg.strokeRoundedRect(28, 134, barW, 7, 4);
+
+    this.drawShowcasePanel(g, CANVAS_WIDTH - 126, 78, 112, 78, 0x261022, 0xff66aa);
+    this.add.text(CANVAS_WIDTH - 112, 91, '레어 획득', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffc0df',
+    }).setDepth(6);
+    this.add.text(CANVAS_WIDTH - 112, 111, `E ${summary.epics}`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dd88ff',
+    }).setDepth(6);
+    this.add.text(CANVAS_WIDTH - 60, 111, `L ${summary.legends}`, {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffb066',
+    }).setDepth(6);
+    this.add.text(CANVAS_WIDTH - 112, 134, `${summary.totalPulls} pulls`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8aa8',
+    }).setDepth(6);
+
+    this.drawRecentPullChips(summary.recent);
+  }
+
+  private drawShowcasePanel(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    bg: number,
+    border: number,
+  ): void {
+    g.fillStyle(0x000000, 0.22);
+    g.fillRoundedRect(x + 2, y + 3, w, h, 8);
+    g.fillStyle(bg, 0.84);
+    g.fillRoundedRect(x, y, w, h, 8);
+    g.lineStyle(1, border, 0.55);
+    g.strokeRoundedRect(x, y, w, h, 8);
+    g.lineStyle(1, 0xffffff, 0.08);
+    g.lineBetween(x + 10, y + 2, x + w - 10, y + 2);
+  }
+
+  private drawRecentPullChips(recent: NonNullable<ReturnType<typeof loadGameState>['summonHistory']>): void {
+    const y = 162;
+    const title = recent.length > 0 ? '최근 획득' : '첫 소환 보상 대기';
+    this.add.text(CX, y - 12, title, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#9070bb',
+    }).setOrigin(0.5).setDepth(6);
+
+    const chips = recent.slice(0, 3);
+    if (chips.length === 0) {
+      const emptyG = this.add.graphics().setDepth(5);
+      emptyG.fillStyle(0x13051d, 0.86);
+      emptyG.fillRoundedRect(CX - 53, y - 1, 106, 20, 10);
+      emptyG.lineStyle(1, 0x7a55ff, 0.35);
+      emptyG.strokeRoundedRect(CX - 53, y - 1, 106, 20, 10);
+      this.add.text(CX, y + 9, 'NEW 카드팩 OPEN', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd86b',
+      }).setOrigin(0.5).setDepth(6);
+      return;
+    }
+
+    const startX = CX - ((chips.length - 1) * 42) / 2;
+    chips.forEach((rec, i) => {
+      const def = MONSTER_DEFS[rec.monsterId as MonsterId];
+      if (!def) return;
+      const rarityIdx = RARITIES.indexOf(rec.rarity);
+      const color = RARITY_COLORS[rarityIdx] ?? 0x8866ff;
+      const x = startX + i * 42;
+      const chipG = this.add.graphics().setDepth(5);
+      chipG.fillStyle(0x11051d, 0.92);
+      chipG.fillRoundedRect(x - 17, y - 2, 34, 24, 9);
+      chipG.lineStyle(1.2, color, 0.8);
+      chipG.strokeRoundedRect(x - 17, y - 2, 34, 24, 9);
+      chipG.fillStyle(color, rec.isNew ? 0.24 : 0.12);
+      chipG.fillCircle(x + 11, y + 3, rec.isNew ? 4 : 2);
+      this.add.text(x, y + 9, def.emoji, {
+        fontFamily: 'sans-serif', fontSize: '15px',
+      }).setOrigin(0.5).setDepth(6);
+    });
+  }
+
+  private getCollectionSummary(gs: ReturnType<typeof loadGameState>): {
+    owned: number;
+    total: number;
+    totalPulls: number;
+    epics: number;
+    legends: number;
+    recent: NonNullable<ReturnType<typeof loadGameState>['summonHistory']>;
+  } {
+    const validIds = new Set(Object.keys(MONSTER_DEFS));
+    const ownedIds = new Set(
+      (gs.ownedMonsters ?? [])
+        .map(monster => monster.id)
+        .filter(id => validIds.has(id)),
+    );
+    const history = gs.summonHistory ?? [];
+    return {
+      owned:      ownedIds.size,
+      total:      validIds.size,
+      totalPulls: history.length,
+      epics:      history.filter(record => record.rarity === 'epic').length,
+      legends:    history.filter(record => record.rarity === 'legendary').length,
+      recent:     history.slice().reverse().slice(0, 3),
+    };
+  }
+
+  private getDexNo(monsterId: MonsterId): string {
+    const index = Object.keys(MONSTER_DEFS).indexOf(monsterId);
+    return String(Math.max(0, index) + 1).padStart(3, '0');
+  }
+
+  private getMonsterTagLine(def: (typeof MONSTER_DEFS)[MonsterId]): string {
+    const tribe = def.tribe ? SUMMON_TRIBE_LABELS[def.tribe] ?? def.tribe : '던전';
+    const element = def.element ? SUMMON_ELEMENT_LABELS[def.element] ?? def.element : '중립';
+    return `${tribe} · ${element}`;
+  }
+
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
@@ -222,14 +376,20 @@ export class SummonScene extends Phaser.Scene {
 
     // ── Background ──────────────────────────────────────────────
     const bg = this.add.graphics();
+    bg.fillStyle(0x000000, 0.22);
+    bg.fillRoundedRect(cx - CARD_W / 2 + 2, cardTop + 3, CARD_W, CARD_H, 8);
     bg.fillStyle(def.bgColor, 1);
-    bg.fillRoundedRect(cx - CARD_W / 2, cardTop, CARD_W, CARD_H, 10);
+    bg.fillRoundedRect(cx - CARD_W / 2, cardTop, CARD_W, CARD_H, 8);
     bg.lineStyle(1.5, def.border, 0.9);
-    bg.strokeRoundedRect(cx - CARD_W / 2, cardTop, CARD_W, CARD_H, 10);
+    bg.strokeRoundedRect(cx - CARD_W / 2, cardTop, CARD_W, CARD_H, 8);
     // Inner highlight line at top
     bg.lineStyle(1, def.border, 0.3);
     bg.lineBetween(cx - CARD_W / 2 + 10, cardTop + 1, cx + CARD_W / 2 - 10, cardTop + 1);
+    bg.fillStyle(def.border, 0.08);
+    bg.fillCircle(cx, cardTop + 36, 38);
     c.add(bg);
+
+    this.drawSummonPackSkin(c, def, cx, cardTop);
 
     // ── Icon ─────────────────────────────────────────────────────
     c.add(this.add.text(cx, cardTop + 26, def.icon, {
@@ -317,6 +477,102 @@ export class SummonScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#444466',
       }).setOrigin(0.5));
     }
+  }
+
+  private drawSummonPackSkin(
+    c: Phaser.GameObjects.Container,
+    def: SummonTypeDef,
+    cx: number,
+    cardTop: number,
+  ): void {
+    const gs = loadGameState();
+    const rates = RARITY_RATES[def.id];
+    const highRate = (rates[3] ?? 0) + (rates[4] ?? 0);
+    const rateLabel = def.id === 'friendship' ? 'C/U' : `E+ ${highRate}%`;
+    const today = new Date().toISOString().slice(0, 10);
+    const isFriendReady = def.id === 'friendship' && gs.lastFriendSummon !== today;
+    const pity = def.hasPity
+      ? gs.summonPity?.[def.id as 'normal' | 'special'] ?? { count: 0, guaranteed: def.id === 'normal' ? 50 : 80 }
+      : null;
+    const pityPct = pity ? Phaser.Math.Clamp(pity.count / pity.guaranteed, 0, 1) : 0;
+    const stateAccent = isFriendReady ? 0x66ffcc : pityPct >= 0.75 ? 0xffd66b : def.border;
+
+    const deco = this.add.graphics();
+    deco.fillStyle(0xffffff, 0.08);
+    deco.fillRoundedRect(cx - 28, cardTop + 10, 56, 44, 8);
+    deco.lineStyle(1, def.border, 0.35);
+    deco.strokeRoundedRect(cx - 28, cardTop + 10, 56, 44, 8);
+    deco.fillStyle(def.border, 0.10);
+    deco.fillRoundedRect(cx - 20, cardTop + 16, 40, 32, 6);
+    deco.fillStyle(def.border, 0.06);
+    deco.fillCircle(cx, cardTop + 32, 42);
+    deco.lineStyle(1, def.border, 0.22);
+    deco.strokeCircle(cx, cardTop + 32, 35);
+    deco.lineStyle(1.5, stateAccent, def.hasPity || isFriendReady ? 0.68 : 0.34);
+    deco.beginPath();
+    deco.arc(
+      cx,
+      cardTop + 32,
+      41,
+      Phaser.Math.DegToRad(-92),
+      Phaser.Math.DegToRad(-92 + 360 * (def.hasPity ? pityPct : isFriendReady ? 1 : highRate / 100)),
+    );
+    deco.strokePath();
+    deco.fillStyle(0x05020a, 0.82);
+    deco.fillRoundedRect(cx - CARD_W / 2 + 9, cardTop + 9, 47, 16, 6);
+    deco.fillRoundedRect(cx + CARD_W / 2 - 58, cardTop + 9, 49, 16, 6);
+    deco.lineStyle(1, def.border, 0.42);
+    deco.strokeRoundedRect(cx - CARD_W / 2 + 9, cardTop + 9, 47, 16, 6);
+    deco.strokeRoundedRect(cx + CARD_W / 2 - 58, cardTop + 9, 49, 16, 6);
+    deco.fillStyle(0x05020a, 0.88);
+    deco.fillRoundedRect(cx + 34, cardTop + 62, 47, 15, 6);
+    deco.lineStyle(1, stateAccent, 0.52);
+    deco.strokeRoundedRect(cx + 34, cardTop + 62, 47, 15, 6);
+    deco.fillStyle(stateAccent, 0.12);
+    deco.fillCircle(cx + 43, cardTop + 69.5, 4.2);
+    c.add(deco);
+
+    const packBadge = this.add.text(cx - CARD_W / 2 + 32, cardTop + 17, 'PACK', {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#f6eaff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    c.add(packBadge);
+
+    const rateBadge = this.add.text(cx + CARD_W / 2 - 33.5, cardTop + 17, rateLabel, {
+      fontFamily: 'sans-serif', fontSize: '8px', color: def.accent,
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+    c.add(rateBadge);
+    c.add(this.add.text(cx + 58, cardTop + 69.5, def.hasPity ? `천장 ${Math.round(pityPct * 100)}%` : isFriendReady ? '무료' : '팩', {
+      fontFamily: 'sans-serif',
+      fontSize: '8px',
+      color: isFriendReady ? '#b8fff0' : def.accent,
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+    const rarityY = cardTop + 92;
+    const activeRates = rates
+      .map((rate, idx) => ({ rate, idx }))
+      .filter(item => item.rate > 0);
+    const startX = cx - ((activeRates.length - 1) * 20) / 2;
+    activeRates.forEach((item, i) => {
+      const dot = this.add.graphics();
+      const x = startX + i * 20;
+      dot.fillStyle(RARITY_COLORS[item.idx] ?? def.border, item.idx >= 3 ? 0.18 : 0.08);
+      dot.fillCircle(x, rarityY, item.idx >= 3 ? 6.2 : 4.8);
+      dot.fillStyle(RARITY_COLORS[item.idx] ?? def.border, item.idx >= 3 ? 0.9 : 0.55);
+      dot.fillCircle(x, rarityY, item.idx >= 3 ? 3.6 : 2.7);
+      dot.lineStyle(0.8, RARITY_COLORS[item.idx] ?? def.border, item.idx >= 3 ? 0.54 : 0.26);
+      dot.strokeCircle(x, rarityY, item.idx >= 3 ? 6.2 : 4.8);
+      c.add(dot);
+    });
+
+    c.add(this.add.text(cx - 50, cardTop + 32, '✦', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: def.accent,
+    }).setOrigin(0.5));
+    c.add(this.add.text(cx + 50, cardTop + 38, '✦', {
+      fontFamily: 'sans-serif', fontSize: '8px', color: def.accent,
+    }).setOrigin(0.5));
   }
 
   private makeCardBtn(
@@ -511,38 +767,86 @@ export class SummonScene extends Phaser.Scene {
       }).setOrigin(0.5));
     } else {
       let ry = CARDS_Y + 26;
-      filtered.slice(0, 18).forEach(rec => {
+      filtered.slice(0, 11).forEach(rec => {
         const def = MONSTER_DEFS[rec.monsterId as MonsterId];
         if (!def) return;
         const rarityIdx = RARITIES.indexOf(rec.rarity);
+        const rarityColor = RARITY_COLORS[rarityIdx] ?? 0x6644ff;
+        const rarityCss = RARITY_CSS[rarityIdx] ?? '#9977cc';
+        const rowX = 12;
+        const rowW = CANVAS_WIDTH - 24;
+        const rowH = 42;
+        const statusLabel = rec.isNew ? 'NEW' : rec.scCompensation ? `+${rec.scCompensation}💠` : 'DUP';
 
         // Row bg
         const rbg = this.add.graphics();
-        rbg.fillStyle(0x0a0018, 1);
-        rbg.fillRect(8, ry - 1, CANVAS_WIDTH - 16, 26);
-        rbg.lineStyle(1, 0x2a1044, 0.5);
-        rbg.lineBetween(8, ry + 25, CANVAS_WIDTH - 8, ry + 25);
+        rbg.fillStyle(0x000000, 0.18);
+        rbg.fillRoundedRect(rowX + 1, ry + 2, rowW, rowH, 8);
+        rbg.fillStyle(0x0e061a, 0.96);
+        rbg.fillRoundedRect(rowX, ry, rowW, rowH, 8);
+        rbg.fillStyle(rarityColor, rec.isNew ? 0.17 : 0.08);
+        rbg.fillRoundedRect(rowX + 6, ry + 6, 50, rowH - 12, 8);
+        rbg.fillStyle(rarityColor, rec.isNew ? 0.08 : 0.035);
+        rbg.fillRoundedRect(rowX + 64, ry + 6, rowW - 140, rowH - 12, 8);
+        for (let i = 0; i < 6; i++) {
+          rbg.lineStyle(0.8, rarityColor, rec.isNew ? 0.10 : 0.045);
+          rbg.lineBetween(rowX + 70 + i * 28, ry + rowH - 8, rowX + 108 + i * 28, ry + 8);
+        }
+        rbg.lineStyle(1, rarityColor, rec.isNew ? 0.82 : 0.42);
+        rbg.strokeRoundedRect(rowX, ry, rowW, rowH, 8);
+        rbg.lineStyle(1, 0xffffff, 0.10);
+        rbg.strokeRoundedRect(rowX + 4, ry + 4, rowW - 8, rowH - 8, 6);
+        rbg.fillStyle(0x080211, 0.94);
+        rbg.fillRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
+        rbg.lineStyle(1, rarityColor, 0.48);
+        rbg.strokeRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
+        rbg.fillStyle(rec.isNew ? 0x3b2500 : 0x071816, 0.94);
+        rbg.fillRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);
+        rbg.lineStyle(1, rec.isNew ? 0xffd45c : 0x44ffcc, rec.isNew ? 0.72 : 0.54);
+        rbg.strokeRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);
         c.add(rbg);
 
-        c.add(this.add.text(28, ry + 12, def.emoji, {
-          fontFamily: 'sans-serif', fontSize: '16px',
+        c.add(this.add.text(38, ry + 11, `도감 ${this.getDexNo(rec.monsterId as MonsterId)}`, {
+          fontFamily: 'sans-serif',
+          fontSize: '7px',
+          color: rarityCss,
+          fontStyle: 'bold',
         }).setOrigin(0.5));
-        c.add(this.add.text(48, ry + 12, def.name, {
-          fontFamily: 'sans-serif', fontSize: '10px', color: rec.isNew ? '#ffdd44' : '#888888',
+        c.add(this.add.text(37, ry + 27, def.emoji, {
+          fontFamily: 'sans-serif', fontSize: '18px',
+        }).setOrigin(0.5));
+
+        c.add(this.add.text(72, ry + 11, def.name, {
+          fontFamily: 'sans-serif',
+          fontSize: '11px',
+          color: rec.isNew ? '#ffffff' : '#b6a9c8',
+          fontStyle: rec.isNew ? 'bold' : 'normal',
         }).setOrigin(0, 0.5));
-        c.add(this.add.text(160, ry + 12, RARITY_STARS[rarityIdx] ?? '', {
-          fontFamily: 'sans-serif', fontSize: '11px',
+        c.add(this.add.text(72, ry + 28, this.getMonsterTagLine(def), {
+          fontFamily: 'sans-serif',
+          fontSize: '8px',
+          color: '#9d86be',
         }).setOrigin(0, 0.5));
-        if (!rec.isNew && rec.scCompensation) {
-          c.add(this.add.text(CANVAS_WIDTH - 12, ry + 12, `+${rec.scCompensation}💠`, {
-            fontFamily: 'sans-serif', fontSize: '11px', color: '#44ffcc',
-          }).setOrigin(1, 0.5));
-        } else if (rec.isNew) {
-          c.add(this.add.text(CANVAS_WIDTH - 12, ry + 12, 'NEW', {
-            fontFamily: 'sans-serif', fontSize: '11px', color: '#ffdd44',
-          }).setOrigin(1, 0.5));
-        }
-        ry += 27;
+
+        c.add(this.add.text(202, ry + 11, RARITY_STARS[rarityIdx] ?? '', {
+          fontFamily: 'sans-serif',
+          fontSize: '10px',
+          color: rarityCss,
+        }).setOrigin(0.5));
+        c.add(this.add.text(202, ry + 28, RARITY_KO[rarityIdx] ?? '획득', {
+          fontFamily: 'sans-serif',
+          fontSize: '8px',
+          color: rarityCss,
+          fontStyle: 'bold',
+        }).setOrigin(0.5));
+
+        c.add(this.add.text(CANVAS_WIDTH - 50, ry + 21, statusLabel, {
+          fontFamily: 'sans-serif',
+          fontSize: rec.isNew ? '10px' : '9px',
+          color: rec.isNew ? '#ffe8a3' : '#b8fff0',
+          fontStyle: 'bold',
+        }).setOrigin(0.5));
+        ry += 46;
       });
     }
 
@@ -592,4 +896,3 @@ export class SummonScene extends Phaser.Scene {
     this.tweens.add({ targets: t, alpha: 0, duration: 500, delay: 2000, onComplete: () => t.destroy() });
   }
 }
-

@@ -4,12 +4,61 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { getDailyDungeon, getDailyChallenges, getWeeklyBoss, getTodayString, getThisWeekMonday } from '../data/daily';
+import {
+  getDailyDungeon,
+  getWeeklyBoss,
+  prepareDailyChallengeViewState,
+  getTodayString,
+  getThisWeekMonday,
+} from '../data/daily';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
+import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
 
 interface ShowChallengePanelFn {
   (): void;
+}
+
+const EVENT_TILE_SIZE = 42;
+const EVENT_TILE_GAP = 8;
+const CHALLENGE_PANEL_FILL = 0x061018;
+const CHALLENGE_ROW_FILL = 0x081420;
+const CHALLENGE_DONE_FILL = 0x082518;
+const CHALLENGE_CYAN = 0x44cccc;
+const CHALLENGE_CYAN_DARK = 0x226c6c;
+const CHALLENGE_DONE_GREEN = 0x44cc88;
+
+function drawEventTileShell(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  opts: {
+    readonly fillColor: number;
+    readonly borderColor: number;
+    readonly accentColor: number;
+    readonly done?: boolean;
+  },
+): void {
+  const { shadow, panel, glow } = addFramedPanel(scene, {
+    x,
+    y,
+    w: EVENT_TILE_SIZE,
+    h: EVENT_TILE_SIZE,
+    radius: 8,
+    fillColor: opts.fillColor,
+    borderColor: opts.done ? 0x44cc44 : opts.borderColor,
+    borderAlpha: opts.done ? 0.9 : 0.78,
+    borderWidth: 1.5,
+    accentColor: opts.done ? 0x44cc44 : opts.accentColor,
+    accentAlpha: opts.done ? 0.75 : 0.62,
+    glowColor: opts.done ? 0x44cc44 : opts.accentColor,
+    glowOpacity: opts.done ? 0.09 : 0.07,
+    shadowOpacity: 0.42,
+    shadowOffsetY: 3,
+  });
+  shadow.setDepth(9);
+  panel.setDepth(10);
+  glow.setDepth(11);
 }
 
 export function buildDailyContentPanel(
@@ -20,13 +69,15 @@ export function buildDailyContentPanel(
   const today = getTodayString();
   const daily = getDailyDungeon();
   const weeklyBoss = getWeeklyBoss();
-  const challenges = getDailyChallenges();
+  const dailyView = prepareDailyChallengeViewState(gs, today);
+  const { challenges } = dailyView;
 
   const dailyDone = gs.dailyDungeonCompleted === today;
 
-  // Floating daily content button - right side of screen
-  const btnX = CANVAS_WIDTH - 55;
-  const btnY = 140;
+  // Compact event rail. Keep it on the screen edge so the dungeon rooms remain the focus.
+  const btnX = CANVAS_WIDTH - EVENT_TILE_SIZE - 7;
+  const btnY = 468;
+  const tileCenter = EVENT_TILE_SIZE / 2;
 
   // Rule label mapping
   const ELEMENT_KR: Record<string, string> = {
@@ -41,26 +92,27 @@ export function buildDailyContentPanel(
   const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: '#aaaaaa' };
 
   // Daily dungeon button
-  const dailyBg = scene.add.graphics().setDepth(10);
-  dailyBg.fillStyle(dailyDone ? 0x1a3a1a : 0x3a1a00, 0.9);
-  dailyBg.fillRoundedRect(btnX, btnY, 48, 48, 8);
-  dailyBg.lineStyle(1.5, dailyDone ? 0x44cc44 : 0xc8921a, 0.8);
-  dailyBg.strokeRoundedRect(btnX, btnY, 48, 48, 8);
+  drawEventTileShell(scene, btnX, btnY, {
+    fillColor: dailyDone ? 0x102810 : 0x261006,
+    borderColor: 0xc8921a,
+    accentColor: 0xc8921a,
+    done: dailyDone,
+  });
 
-  scene.add.text(btnX + 24, btnY + 10, dailyDone ? '✅' : '⚔️', {
-    fontFamily: 'sans-serif', fontSize: '16px',
+  scene.add.text(btnX + tileCenter, btnY + 13, dailyDone ? '✅' : '⚔️', {
+    fontFamily: 'sans-serif', fontSize: '15px',
   }).setOrigin(0.5).setDepth(11);
 
   // Rule sub-label / done countdown (small, inside button)
   if (!dailyDone) {
-    scene.add.text(btnX + 24, btnY + 27, ruleLabel.text, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: ruleLabel.color,
+    scene.add.text(btnX + tileCenter, btnY + 30, ruleLabel.text, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: ruleLabel.color,
     }).setOrigin(0.5).setDepth(11);
   } else {
     const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
     let secs = Math.max(0, Math.floor((midnight.getTime() - Date.now()) / 1000));
-    const cdT = scene.add.text(btnX + 24, btnY + 27, '', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aa44',
+    const cdT = scene.add.text(btnX + tileCenter, btnY + 30, '', {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#44aa44',
     }).setOrigin(0.5).setDepth(11);
     const fmtHms = (s: number) =>
       `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -70,12 +122,8 @@ export function buildDailyContentPanel(
     }});
   }
 
-  scene.add.text(btnX + 24, btnY + 38, '일일', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#c8921a',
-  }).setOrigin(0.5).setDepth(11);
-
   if (!dailyDone) {
-    const zone = scene.add.zone(btnX + 24, btnY + 24, 48, 48)
+    const zone = scene.add.zone(btnX + tileCenter, btnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
       .setInteractive().setDepth(12);
     zone.on('pointerdown', () => {
       audioManager.playSfx('button_click');
@@ -94,23 +142,24 @@ export function buildDailyContentPanel(
   }
 
   // Weekly boss button
-  const weekBtnY = btnY + 56;
+  const weekBtnY = btnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
   const weeklyDone = gs.weeklyBossResetDate === getThisWeekMonday();
-  const weeklyBg = scene.add.graphics().setDepth(10);
-  weeklyBg.fillStyle(weeklyDone ? 0x1a0030 : 0x2a0030, 0.9);
-  weeklyBg.fillRoundedRect(btnX, weekBtnY, 48, 48, 8);
-  weeklyBg.lineStyle(1.5, weeklyDone ? 0x44cc44 : 0xaa44ff, 0.8);
-  weeklyBg.strokeRoundedRect(btnX, weekBtnY, 48, 48, 8);
+  drawEventTileShell(scene, btnX, weekBtnY, {
+    fillColor: weeklyDone ? 0x102810 : 0x19051f,
+    borderColor: 0xaa44ff,
+    accentColor: 0xaa44ff,
+    done: weeklyDone,
+  });
 
-  scene.add.text(btnX + 24, weekBtnY + 10, weeklyDone ? '✅' : '👑', {
-    fontFamily: 'sans-serif', fontSize: '16px',
+  scene.add.text(btnX + tileCenter, weekBtnY + 13, weeklyDone ? '✅' : '👑', {
+    fontFamily: 'sans-serif', fontSize: '15px',
   }).setOrigin(0.5).setDepth(11);
 
   // Boss name sub-label / done countdown
   if (!weeklyDone) {
     const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
-    scene.add.text(btnX + 24, weekBtnY + 27, bossShort, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#cc99ff',
+    scene.add.text(btnX + tileCenter, weekBtnY + 30, bossShort, {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#cc99ff',
     }).setOrigin(0.5).setDepth(11);
   } else {
     const now2 = new Date();
@@ -118,8 +167,8 @@ export function buildDailyContentPanel(
     const daysUntil = ((1 - now2.getDay() + 7) % 7) || 7;
     nextMon.setDate(now2.getDate() + daysUntil); nextMon.setHours(0, 0, 0, 0);
     let wSecs = Math.max(0, Math.floor((nextMon.getTime() - now2.getTime()) / 1000));
-    const wCdT = scene.add.text(btnX + 24, weekBtnY + 27, '', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#44aa44',
+    const wCdT = scene.add.text(btnX + tileCenter, weekBtnY + 30, '', {
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#44aa44',
     }).setOrigin(0.5).setDepth(11);
     const fmtDhm = (s: number) => {
       const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
@@ -132,12 +181,8 @@ export function buildDailyContentPanel(
     }});
   }
 
-  scene.add.text(btnX + 24, weekBtnY + 38, '주간', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: weeklyDone ? '#44cc44' : '#aa44ff',
-  }).setOrigin(0.5).setDepth(11);
-
   // Weekly boss click - launch as invasion-style battle
-  const weekZone = scene.add.zone(btnX + 24, weekBtnY + 24, 48, 48)
+  const weekZone = scene.add.zone(btnX + tileCenter, weekBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
     .setInteractive().setDepth(12);
   weekZone.on('pointerdown', () => {
     audioManager.playSfx('button_click');
@@ -162,39 +207,36 @@ export function buildDailyContentPanel(
   });
 
   // Challenge button
-  const chalBtnY = weekBtnY + 56;
-  const completedCount = challenges.filter(c => {
-    const chState = gs.dailyChallenges[c.id];
-    return chState?.completed ?? false;
-  }).length;
+  const chalBtnY = weekBtnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
+  const completedCount = dailyView.completedCount;
 
-  const chalBg = scene.add.graphics().setDepth(10);
-  chalBg.fillStyle(0x003030, 0.9);
-  chalBg.fillRoundedRect(btnX, chalBtnY, 48, 48, 8);
-  chalBg.lineStyle(1.5, 0x44cccc, 0.8);
-  chalBg.strokeRoundedRect(btnX, chalBtnY, 48, 48, 8);
+  drawEventTileShell(scene, btnX, chalBtnY, {
+    fillColor: 0x041f20,
+    borderColor: 0x44cccc,
+    accentColor: 0x44cccc,
+  });
 
-  scene.add.text(btnX + 24, chalBtnY + 14, '🎯', {
-    fontFamily: 'sans-serif', fontSize: '18px',
+  scene.add.text(btnX + tileCenter, chalBtnY + 14, '🎯', {
+    fontFamily: 'sans-serif', fontSize: '16px',
   }).setOrigin(0.5).setDepth(11);
 
-  scene.add.text(btnX + 24, chalBtnY + 33, `${completedCount}/3`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#44cccc',
+  scene.add.text(btnX + tileCenter, chalBtnY + 30, `${completedCount}/3`, {
+    fontFamily: 'sans-serif', fontSize: '9px', color: '#44cccc',
   }).setOrigin(0.5).setDepth(11);
 
   // Mini dot indicators — one per challenge
-  const dotStates = challenges.map(c => gs.dailyChallenges[c.id]);
+  const dotStates = challenges.map(c => dailyView.state.dailyChallenges[c.id]);
   dotStates.forEach((st, di) => {
     const completed  = st?.completed ?? false;
     const inProgress = !completed && (st?.progress ?? 0) > 0;
     const dotColor   = completed ? '#44ff88' : inProgress ? '#ffcc44' : '#336666';
-    const dotX = btnX + 12 + di * 14;
-    scene.add.text(dotX, chalBtnY + 44, '●', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: dotColor,
+    const dotX = btnX + 10 + di * 11;
+    scene.add.text(dotX, chalBtnY + 37, '●', {
+      fontFamily: 'sans-serif', fontSize: '7px', color: dotColor,
     }).setDepth(11);
   });
 
-  const chalZone = scene.add.zone(btnX + 24, chalBtnY + 24, 48, 48)
+  const chalZone = scene.add.zone(btnX + tileCenter, chalBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
     .setInteractive().setDepth(12);
   chalZone.on('pointerdown', () => {
     audioManager.playSfx('button_click');
@@ -204,14 +246,10 @@ export function buildDailyContentPanel(
 
 export function showChallengePanel(scene: Phaser.Scene): void {
   const gs = loadGameState();
-  const today = getTodayString();
-  // Reset stale progress and persist if date changed
-  let workGs = gs;
-  if (gs.dailyChallengeDate !== today) {
-    workGs = { ...gs, dailyChallenges: {}, dailyChallengeDate: today };
-    saveGameState(workGs);
-  }
-  const challenges = getDailyChallenges();
+  const dailyView = prepareDailyChallengeViewState(gs);
+  const workGs = dailyView.state;
+  if (dailyView.changed) saveGameState(workGs);
+  const { challenges } = dailyView;
 
   const c = scene.add.container(0, 0).setDepth(95);
 
@@ -222,23 +260,31 @@ export function showChallengePanel(scene: Phaser.Scene): void {
   dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   c.add(dim);
 
-  const PW = 340, PH = 320;
+  const PW = 340, PH = 342;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
 
-  const pg = scene.add.graphics();
-  pg.fillStyle(0x060e18, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 10);
-  pg.lineStyle(2, 0x44cccc, 1);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 10);
-  c.add(pg);
+  const panel = addFramedPanel(scene, {
+    x: PX,
+    y: PY,
+    w: PW,
+    h: PH,
+    radius: 12,
+    fillColor: CHALLENGE_PANEL_FILL,
+    borderColor: CHALLENGE_CYAN,
+    borderAlpha: 0.9,
+    borderWidth: 2,
+    accentColor: CHALLENGE_CYAN,
+    accentAlpha: 0.72,
+    glowColor: CHALLENGE_CYAN,
+    glowOpacity: 0.10,
+    shadowOpacity: 0.62,
+    shadowOffsetY: 5,
+  });
+  addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   // ── Header: "all done" banner vs normal title ────────────────────────────
-  const allDone = challenges.every(
-    ch => workGs.dailyChallenges[ch.id]?.completed ?? false,
-  );
-  const totalGems = allDone
-    ? challenges.reduce((sum, ch) => sum + (ch.reward.gems ?? 0), 0)
-    : 0;
+  const allDone = dailyView.allCompleted;
+  const totalGems = allDone ? dailyView.totalRewardGems : 0;
 
   if (allDone) {
     c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 16, '🎉 모든 도전 완료!', {
@@ -249,81 +295,104 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     }).setOrigin(0.5));
   } else {
     c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '🎯  오늘의 도전 과제', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cccc', fontStyle: 'bold',
+      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#78ffff', fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
   challenges.forEach((ch, i) => {
     const entry = workGs.dailyChallenges[ch.id] ?? { completed: false, progress: 0 };
-    const rowY  = PY + 56 + i * 78;
+    const rowY  = PY + 58 + i * 78;
     const ratio = Math.min(entry.progress / ch.objective.target, 1);
+    const rowX = PX + 12;
+    const rowW = PW - 24;
+    const rowH = 70;
 
     // Row background
     const rbg = scene.add.graphics();
-    rbg.fillStyle(entry.completed ? 0x0a2a1a : 0x0a1422, 0.8);
-    rbg.fillRoundedRect(PX + 12, rowY, PW - 24, 68, 6);
-    if (entry.completed) {
-      rbg.lineStyle(1, 0x44cc88, 0.6);
-      rbg.strokeRoundedRect(PX + 12, rowY, PW - 24, 68, 6);
-    }
+    rbg.fillStyle(entry.completed ? CHALLENGE_DONE_FILL : CHALLENGE_ROW_FILL, 0.96);
+    rbg.fillRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
+    rbg.lineStyle(1, entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_CYAN_DARK, entry.completed ? 0.68 : 0.55);
+    rbg.strokeRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
     c.add(rbg);
 
     // Status icon + description
-    c.add(scene.add.text(PX + 26, rowY + 12, entry.completed ? '✅' : '🔲', {
+    c.add(scene.add.text(rowX + 14, rowY + 15, entry.completed ? '✅' : '🔲', {
       fontFamily: 'sans-serif', fontSize: '14px',
     }));
-    c.add(scene.add.text(PX + 48, rowY + 12, ch.description, {
+    c.add(scene.add.text(rowX + 38, rowY + 12, ch.description, {
       fontFamily: 'Georgia, serif', fontSize: '11px',
       color: entry.completed ? '#88eebb' : '#d0c8b0',
+      wordWrap: { width: 200, useAdvancedWrap: true },
     }));
 
     // Reward badge
-    c.add(scene.add.text(PX + PW - 24, rowY + 12, `+${ch.reward.gems ?? 0} 💎`, {
+    const rewardBg = scene.add.graphics();
+    rewardBg.fillStyle(entry.completed ? 0x103624 : 0x0a1f2d, 0.95);
+    rewardBg.fillRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
+    rewardBg.lineStyle(1, entry.completed ? CHALLENGE_DONE_GREEN : 0x336688, 0.65);
+    rewardBg.strokeRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
+    c.add(rewardBg);
+    c.add(scene.add.text(PX + PW - 36, rowY + 20, `+${ch.reward.gems ?? 0} 💎`, {
       fontFamily: 'sans-serif', fontSize: '10px',
-      color: entry.completed ? '#aaffcc' : '#88aacc',
-    }).setOrigin(1, 0));
+      color: entry.completed ? '#aaffcc' : '#9ed8ff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
 
-    // Progress bar — track
-    const barX = PX + 26, barY = rowY + 44, barW = PW - 88, barH = 8;
-    const track = scene.add.graphics();
-    track.fillStyle(0x1a2a3a, 1);
-    track.fillRoundedRect(barX, barY, barW, barH, 4);
-    c.add(track);
-
-    // Progress bar — animated fill rectangle
+    // Progress bar
+    const barX = rowX + 14, barY = rowY + 47, barW = rowW - 78, barH = 9;
     const fillColor = entry.completed ? 0x44cc88 : 0x44aacc;
-    const fill = scene.add.rectangle(barX, barY, 2, barH, fillColor).setOrigin(0, 0);
-    c.add(fill);
-    if (ratio > 0) {
-      scene.tweens.add({
-        targets: fill,
-        displayWidth: barW * ratio,
-        duration: 480,
-        ease: 'Power2.Out',
-        delay: 120 + i * 150,
-      });
-    }
+    const progress = addProgressBar(scene, {
+      x: barX,
+      y: barY,
+      w: barW,
+      h: barH,
+      ratio,
+      fillColor,
+      trackColor: 0x06101a,
+      borderColor: entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_CYAN_DARK,
+      borderAlpha: 0.68,
+      delay: 120 + i * 140,
+      duration: 440,
+    });
+    addToContainer(c, progress.track, progress.fill);
 
     // Progress text: count + percentage
     const pct = Math.floor(ratio * 100);
-    c.add(scene.add.text(barX + barW + 8, barY - 1,
+    c.add(scene.add.text(barX + barW + 10, barY - 3,
       `${entry.progress}/${ch.objective.target}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#88aacc',
+        fontFamily: 'sans-serif', fontSize: '10px', color: entry.completed ? '#aaffcc' : '#88cce8',
+        fontStyle: 'bold',
       }));
-    c.add(scene.add.text(barX + barW + 8, barY + 10,
+    c.add(scene.add.text(barX + barW + 10, barY + 10,
       entry.completed ? '완료' : `${pct}%`, {
         fontFamily: 'sans-serif', fontSize: '9px',
         color: entry.completed ? '#44ffaa' : '#667788',
       }));
   });
 
-  const closeBtn = scene.add.text(CANVAS_WIDTH / 2, PY + PH - 26, '닫기', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: '#44cccc', fontStyle: 'bold',
-    backgroundColor: '#060e18', padding: { x: 32, y: 10 },
-  }).setOrigin(0.5).setInteractive();
-  closeBtn.on('pointerdown', () => { c.destroy(true); });
-  c.add(closeBtn);
+  const closeBtn = addPrimaryActionButton(scene, {
+    x: PX + 92,
+    y: PY + PH - 42,
+    w: PW - 184,
+    h: 32,
+    label: '닫기',
+    fontSize: '13px',
+    fillColor: 0x071822,
+    hoverFillColor: 0x0b2834,
+    borderColor: CHALLENGE_CYAN,
+    hoverBorderColor: 0x78ffff,
+    textColor: '#78ffff',
+    onPress: () => { c.destroy(true); },
+  });
+  addToContainer(c, closeBtn.bg, closeBtn.text, closeBtn.zone);
 
   c.setScale(0.88).setAlpha(0);
   scene.tweens.add({ targets: c, scaleX: 1, scaleY: 1, alpha: 1, duration: 240, ease: 'Back.easeOut' });
+}
+
+function addToContainer(
+  container: Phaser.GameObjects.Container,
+  ...objects: Phaser.GameObjects.GameObject[]
+): void {
+  objects.forEach(obj => container.add(obj));
 }

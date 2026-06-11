@@ -6,6 +6,7 @@
  * a TYPE ONLY to avoid a circular-dependency at runtime.
  */
 import type { DungeonScene } from '../scenes/DungeonScene';
+import type { ObjectiveType } from '../data/quests';
 import { type RoomInputContext, showRepairOption as _showRepairOption, type RepairUIContext } from './RoomInput';
 import { type ActiveSkillContext } from './ActiveSkills';
 import { type RoomActionsContext } from './RoomActions';
@@ -73,7 +74,7 @@ export function buildRoomInputCtx(ds: DungeonScene): RoomInputContext {
     closeRoomPanel:     ()          => ds.panel.close(),
     openRoomPanel:      (r, c, g)   => ds.panel.open(r, c, g),
     openMonsterPanel:   (r, c, t, s, x) => ds.monsterPanel.open(r, c, t, s, x ?? undefined),
-    openUpgradePanel:   (r, c, d, h) => ds.upgradePanel.open(r, c, d, h),
+    openUpgradePanel:   (r, c, d, h, l) => ds.upgradePanel.open(r, c, d, h, l),
     showRangePreview:   (r, c, rng) => ds.showRangePreview(r, c, rng),
     getSynergyHints:    ()          => ds.synergyManager.activeSynergies.map(s => ({ name: s.tier.name, desc: s.tier.desc })),
     getGold:            ()          => ds.gold,
@@ -132,7 +133,6 @@ export function buildRoomActionsCtx(ds: DungeonScene): RoomActionsContext {
     spawnBuildParticles:      (x, y)       => ds.spawnBuildParticles(x, y),
     recalcRoomTypeBonuses:    ()           => _recalcRoomTypeBonuses(buildRoomMechanicsCtx(ds)),
     recalcSynergies:          ()           => ds.synergyManager.recalc(ds.roomGrid, ds.effectiveCols),
-    tickQuestAndNotify:       (gs, t, a)   => ds.tickQuestAndNotify(gs, t, a),
     checkAchievementsAndToast:(gs)         => ds.checkAchievementsAndToast(gs),
     openMonsterPanel:         (r, c, t, s) => ds.monsterPanel.open(r, c, t, s),
     shakeRoomSelectionPanel:  ()           => ds.panel.shakeInsufficient(),
@@ -325,7 +325,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     showFloatText: (x, y, text, color) => _showFloatText(ds, x, y, text, color),
     showEndlessResult: () => ds.showEndlessResult(),
     checkAchievementsAndToast: (gs) => ds.checkAchievementsAndToast(gs),
-    tickQuestAndNotify: (gs, type, amount) => ds.tickQuestAndNotify(gs, type as Parameters<typeof import('../data/quests').updateQuestObjective>[1], amount),
+    tickQuestAndNotify: (gs, type, amount) => ds.tickQuestAndNotify(gs, type as ObjectiveType, amount),
     setDungeonHp: (hp) => { ds.dungeonHp = hp; ds.registry.set('hp', hp); },
     setGold: (g) => { ds.gold = g; ds.registry.set('gold', g); },
     setGems: (g) => { ds.gems = g; ds.registry.set('gems', g); },
@@ -535,6 +535,7 @@ export function buildGameplayInitCtx(ds: DungeonScene): GameplayInitContext {
     roomGrid:      ds.roomGrid,
     rooms:         ds.rooms,
     effectiveCols: ds.effectiveCols,
+    effectiveCellSize: ds.effectiveCellSize,
     setTargetingSkillId: (v) => { ds.targetingSkillId = v; },
     setSkillHUD:         (v) => { ds.skillHUD = v; },
     setSwapManager:      (v) => { ds.swapManager = v; },

@@ -5,8 +5,13 @@ import { INVADER_DEFS, type InvaderType } from '../data/invaders';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { getMonsterSpriteData, drawMonsterSprite } from '../art/PixelMonsters';
 import { drawInvaderShape } from '../art/InvaderShapes';
-import { loadGameState } from '../data/wisdom';
-import { getCinematic } from '../data/cinematics';
+
+const PROCEDURAL_INVADER_ASSET_TYPES = new Set<InvaderType>([
+  'void_soldier',
+  'abyss_berserker',
+  'primordial_guard',
+  'primordial_titan',
+]);
 
 export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
@@ -42,9 +47,11 @@ export class BootScene extends Phaser.Scene {
       barFill.fillRoundedRect(CANVAS_WIDTH / 2 - 149, 411, Math.floor(298 * v), 12, 3);
     });
 
-    // Load AI-generated invader sprites
+    // Load AI-generated invader sprites. Ch8 final invaders currently rely on
+    // procedural shapes, so do not queue missing image URLs for them.
     const invaderTypes = Object.keys(INVADER_DEFS) as InvaderType[];
     invaderTypes.forEach(type => {
+      if (PROCEDURAL_INVADER_ASSET_TYPES.has(type)) return;
       this.load.image(`invader-ai-${type}`, `/assets/invaders/${type}.jpg`);
     });
 
@@ -77,17 +84,7 @@ export class BootScene extends Phaser.Scene {
     this.generateTextures();
     this.generateMonsterTextures();
 
-    // First launch: show prologue cinematic before home screen
-    const gs = loadGameState();
-    const isFirstLaunch = !gs.cinematicSeen || gs.cinematicSeen.length === 0;
-    if (isFirstLaunch && getCinematic('ch1_opening')) {
-      this.scene.start('CinematicScene', {
-        cinematicId: 'ch1_opening',
-        nextScene: 'DungeonHomeScene',
-      });
-    } else {
-      this.scene.start('DungeonHomeScene');
-    }
+    this.scene.start('DungeonHomeScene');
   }
 
   private generateTextures(): void {

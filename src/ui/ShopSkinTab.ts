@@ -4,6 +4,12 @@ import { CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { SKIN_DATA, MONSTER_DEFS, type MonsterSkin } from '../data/monsters';
 import { getQuest } from '../data/quests';
+import {
+  equipSkin,
+  purchaseAndEquipSkin,
+  purchaseSkin,
+  unequipSkin,
+} from '../data/shopTransactions';
 import { addPanelShadow, addInnerGlow } from './PanelDepth';
 
 export type SkinFilter = 'all' | 'normal' | 'rare' | 'limited';
@@ -244,12 +250,15 @@ function drawSkinCard(
     contentCtr.add(zone);
     zone.on('pointerdown', () => {
       const state = loadGameState();
-      const newEquippedSkins = equipped
-        ? Object.fromEntries(Object.entries(state.equippedSkins ?? {}).filter(([k]) => k !== skin.monsterId))
-        : { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id };
-      const updated = { ...state, equippedSkins: newEquippedSkins };
-      saveGameState(updated);
-      gemsText.setText(`💎 ${updated.gems} 젬`);
+      const result = equipped
+        ? unequipSkin(state, skin.monsterId)
+        : equipSkin(state, skin.monsterId, skin.id);
+      if (!result.ok) {
+        ctx.showToast(result.reason === 'skin_not_owned' ? '보유하지 않은 스킨입니다.' : '장착 실패');
+        return;
+      }
+      if (result.changed) saveGameState(result.state);
+      gemsText.setText(`💎 ${result.state.gems} 젬`);
       ctx.refreshContent();
     });
 
@@ -304,23 +313,17 @@ function drawSkinCard(
     contentCtr.add(zone);
     zone.on('pointerdown', () => {
       const state = loadGameState();
-      if ((state.gems ?? 0) < skin.gemCost) {
+      const result = purchaseSkin(state, skin.monsterId, skin.id, skin.gemCost);
+      if (!result.ok) {
         ctx.showToast('젬 부족!');
         return;
       }
-      const prevOwned = state.ownedSkins?.[skin.monsterId] ?? [];
-      const updated = {
-        ...state,
-        gems: (state.gems ?? 0) - skin.gemCost,
-        ownedSkins: {
-          ...(state.ownedSkins ?? {}),
-          [skin.monsterId]: prevOwned.includes(skin.id) ? prevOwned : [...prevOwned, skin.id],
-        },
-      };
-      saveGameState(updated);
-      gemsText.setText(`💎 ${updated.gems} 젬`);
-      ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
-      ctx.showToast(`${skin.name} 구입 완료!`);
+      if (result.changed) {
+        saveGameState(result.state);
+        ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
+        ctx.showToast(`${skin.name} 구입 완료!`);
+      }
+      gemsText.setText(`💎 ${result.state.gems} 젬`);
       ctx.refreshContent();
     });
   }
@@ -436,34 +439,24 @@ export function showPreviewModal(
   ov.add(actZ);
   actZ.on('pointerdown', () => {
     const state = loadGameState();
-    if (isOwned) {
-      const updated = {
-        ...state,
-        equippedSkins: { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id },
-      };
-      saveGameState(updated);
-      ov.destroy();
-      ctx.refreshContent();
-      ctx.showToast(`${skin.name} 장착!`);
-    } else {
-      if ((state.gems ?? 0) < skin.gemCost) { ctx.showToast('젬 부족!'); return; }
-      const prevOwned = state.ownedSkins?.[skin.monsterId] ?? [];
-      const updated = {
-        ...state,
-        gems: (state.gems ?? 0) - skin.gemCost,
-        ownedSkins: {
-          ...(state.ownedSkins ?? {}),
-          [skin.monsterId]: prevOwned.includes(skin.id) ? prevOwned : [...prevOwned, skin.id],
-        },
-        equippedSkins: { ...(state.equippedSkins ?? {}), [skin.monsterId]: skin.id },
-      };
-      saveGameState(updated);
-      gemsText.setText(`💎 ${updated.gems} 젬`);
-      ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
-      ov.destroy();
-      ctx.refreshContent();
-      ctx.showToast(`${skin.name} 구입 및 장착!`);
+    const currentlyOwned = (state.ownedSkins?.[skin.monsterId] ?? []).includes(skin.id);
+    const result = currentlyOwned
+      ? equipSkin(state, skin.monsterId, skin.id)
+      : purchaseAndEquipSkin(state, skin.monsterId, skin.id, skin.gemCost);
+    if (!result.ok) {
+      ctx.showToast(result.reason === 'insufficient_gems' ? '젬 부족!' : '장착 실패');
+      return;
     }
+    if (result.changed) saveGameState(result.state);
+    gemsText.setText(`💎 ${result.state.gems} 젬`);
+    if (!currentlyOwned && result.changed) {
+      ctx.showPurchaseFlash(skin.gemCost, '💎', '#88aaff');
+      ctx.showToast(`${skin.name} 구입 및 장착!`);
+    } else {
+      ctx.showToast(`${skin.name} 장착!`);
+    }
+    ov.destroy();
+    ctx.refreshContent();
   });
 
   return ov;
