@@ -481,6 +481,11 @@ export const SKILL_TREES: Partial<Record<MonsterId, SkillTree>> = {
   five_dragon_complete:  simpleTree('five_dragon_complete',  '오룡완성격', '오룡완성갑', '오룡완성기운'),
 };
 
+/** Resolve a monster's skill tree; monsters without a custom tree get the standard fallback. */
+export function getSkillTree(monsterId: MonsterId): SkillTree {
+  return SKILL_TREES[monsterId] ?? simpleTree(monsterId, '공격', '방어', '지원');
+}
+
 // ─── Active Skills (purchasable) ──────────────────────────────────────────────
 
 export interface ActiveSkill {

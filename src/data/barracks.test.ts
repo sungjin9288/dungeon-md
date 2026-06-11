@@ -3,6 +3,7 @@ import {
   xpToNextLevel,
   addXp,
   getMonsterAtk,
+  getSkillTree,
   SKILL_TREES,
   ACTIVE_SKILLS,
   EQUIPMENT_DEFS,
@@ -624,5 +625,52 @@ describe('EQUIPMENT_STATS — spot-checks for Ch7/Ch8 items', () => {
 
   it('eq_divine_aegis has roomHpBonus 500', () => {
     expect(EQUIPMENT_STATS['eq_divine_aegis']?.roomHpBonus).toBe(500);
+  });
+});
+
+// ─── getSkillTree — custom trees & standard fallback ──────────────────────────
+
+describe('getSkillTree — custom trees & standard fallback', () => {
+  it('returns the custom tree for dokkaebi_warrior (same object as SKILL_TREES entry)', () => {
+    expect(getSkillTree('dokkaebi_warrior')).toBe(SKILL_TREES['dokkaebi_warrior']);
+  });
+
+  it('returns a fallback tree for celestial_guardian (no custom tree defined)', () => {
+    expect(SKILL_TREES['celestial_guardian' as keyof typeof SKILL_TREES]).toBeUndefined();
+    const tree = getSkillTree('celestial_guardian' as Parameters<typeof getSkillTree>[0]);
+    expect(tree.monsterId).toBe('celestial_guardian');
+  });
+
+  it('fallback tree uses standard branch names 공격/방어/지원', () => {
+    const tree = getSkillTree('sky_archer' as Parameters<typeof getSkillTree>[0]);
+    expect(tree.branchNames).toEqual({ A: '공격', B: '방어', C: '지원' });
+  });
+
+  it('fallback tree has 9 nodes (3 branches × 3 tiers)', () => {
+    const tree = getSkillTree('heaven_mage' as Parameters<typeof getSkillTree>[0]);
+    expect(tree.nodes).toHaveLength(9);
+  });
+
+  it('fallback tree tier-2/3 nodes require the previous tier', () => {
+    const tree = getSkillTree('solar_warrior' as Parameters<typeof getSkillTree>[0]);
+    for (const node of tree.nodes) {
+      if (node.tier === 1) expect(node.requires).toBeUndefined();
+      else expect(node.requires).toBe(`${node.branch}${node.tier - 1}`);
+    }
+  });
+
+  it('all 8 celestial monsters without custom trees get a valid fallback', () => {
+    const ids = ['celestial_guardian', 'sky_archer', 'heaven_mage', 'solar_warrior',
+                 'divine_healer', 'starlight_knight', 'celestial_sage', 'god_realm_general'];
+    for (const id of ids) {
+      const tree = getSkillTree(id as Parameters<typeof getSkillTree>[0]);
+      expect(tree.monsterId, id).toBe(id);
+      expect(tree.nodes.length, id).toBe(9);
+    }
+  });
+
+  it('node costs in the fallback match tier (cost === tier)', () => {
+    const tree = getSkillTree('divine_healer' as Parameters<typeof getSkillTree>[0]);
+    for (const node of tree.nodes) expect(node.cost).toBe(node.tier);
   });
 });
