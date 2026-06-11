@@ -10,6 +10,7 @@ import {
   type AchievementDef,
 } from '../data/achievements';
 import { claimAchievementReward } from '../data/rewardTransactions';
+import { unlockAvailableAchievements } from '../data/progressionTransactions';
 
 // ─── AchievementScene ─────────────────────────────────────────────────────────
 
@@ -49,7 +50,11 @@ export class AchievementScene extends Phaser.Scene {
 
   create(): void {
     this.scrollY   = 0;
-    this.gameState = loadGameState();
+    // Sweep unlocks earned outside battle (gold, summons, DM level, fusion …) —
+    // the in-battle kill sweep is the only other unlock path.
+    const sweep = unlockAvailableAchievements(loadGameState());
+    if (sweep.changed) saveGameState(sweep.state);
+    this.gameState = sweep.state;
     this.ctx       = this.buildContext();
 
     this.drawBackground();
