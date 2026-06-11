@@ -163,7 +163,7 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 - [x] iOS 시뮬레이터 빌드 — `xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator` BUILD SUCCEEDED
 - [x] **Android 에뮬레이터 실행 검증** — APK 설치·구동, 게임 홈·튜토리얼 인터랙션 정상,
       세로 잠금 작동(가로 회전 강제에도 ROTATION_0 유지), `tools/screenshots/android-01-home.png`
-      (Medium Phone API 36, 1080×2400. ※ Android 스플래시는 Capacitor 기본 로고 — 커스텀 교체 권장)
+      (Medium Phone API 36, 1080×2400. ※ Android 아이콘·스플래시 커스텀 교체 완료 — 게임 문양 + #1A0F00 배경)
 - [x] cap sync 정상 (※ `LANG=en_US.UTF-8` 필요 — CocoaPods UTF-8 제약)
 - [x] 앱 아이콘 1024×1024 AppIcon.appiconset 배치 완료
 - [x] public/privacy.html 존재 (Phase B: 웹 호스팅 배포만 남음)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ system splash: dungeon background behind the adaptive icon
+         (pre-12 devices use the full-bleed @drawable/splash instead). -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">#1A0F00</item>
+        <item name="android:background">@drawable/splash</item>
+    </style>
+</resources>
