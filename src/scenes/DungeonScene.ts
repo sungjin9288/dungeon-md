@@ -160,7 +160,7 @@ export class DungeonScene extends Phaser.Scene {
   // ── Player state ───────────────────────────────────────────────────────────
   gold      = 500;
   startGold = 500;
-  gems      = 200;
+  gems      = 0;   // loaded from GameState in create() — revive spends REAL gems
   dungeonHp = 1000;
   maxHp     = 1000;
 
@@ -272,6 +272,7 @@ export class DungeonScene extends Phaser.Scene {
     logger.debug(`[WISDOM] startingGold: ${this.gold}, maxHp: ${this.maxHp}, slots: ${this.baseSlots + this.wisdomBonuses.extraSlots}`);
 
     this.returnTo = this.registry.get('returnTo') as string | undefined;
+    this.gems = gameState.gems ?? 0;
     this.registry.set('gold',  this.gold);
     this.registry.set('gems',  this.gems);
     this.registry.set('hp',    this.dungeonHp);

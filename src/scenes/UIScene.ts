@@ -73,7 +73,7 @@ export class UIScene extends Phaser.Scene {
 
     // Sync initial values from registry (set by DungeonScene before UIScene launches)
     this.gold   = this.registry.get('gold')  ?? 500;
-    this.gems   = this.registry.get('gems')  ?? 200;
+    this.gems   = this.registry.get('gems')  ?? 0;
     this.hp     = this.registry.get('hp')    ?? 1000;
     this.maxHp  = this.registry.get('hp')    ?? 1000;
     this.wave   = this.registry.get('wave')  ?? 0;

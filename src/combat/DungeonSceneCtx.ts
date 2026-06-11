@@ -7,6 +7,7 @@
  */
 import type { DungeonScene } from '../scenes/DungeonScene';
 import type { ObjectiveType } from '../data/quests';
+import { loadGameState, saveGameState } from '../data/wisdom';
 import { type RoomInputContext, showRepairOption as _showRepairOption, type RepairUIContext } from './RoomInput';
 import { type ActiveSkillContext } from './ActiveSkills';
 import { type RoomActionsContext } from './RoomActions';
@@ -328,7 +329,13 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     tickQuestAndNotify: (gs, type, amount) => ds.tickQuestAndNotify(gs, type as ObjectiveType, amount),
     setDungeonHp: (hp) => { ds.dungeonHp = hp; ds.registry.set('hp', hp); },
     setGold: (g) => { ds.gold = g; ds.registry.set('gold', g); },
-    setGems: (g) => { ds.gems = g; ds.registry.set('gems', g); },
+    setGems: (g) => {
+      ds.gems = g;
+      ds.registry.set('gems', g);
+      // Gems are global currency — persist immediately so revive costs survive
+      // battle exit (gold/crystals settle at battle end; gems do not).
+      saveGameState({ ...loadGameState(), gems: g });
+    },
     setWave: (w) => { ds.wave = w; ds.registry.set('wave', w); },
     setWaveActive: (v) => { ds.waveActive = v; },
     setWaveEndChecked: (v) => { ds.waveEndChecked = v; },
