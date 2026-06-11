@@ -40,6 +40,7 @@ import {
 } from './RoomTriggers';
 import { spawnGhostWarrior as _spawnGhostWarrior } from './RoomMechanics';
 import { applyInvaderBehavior } from './InvaderBehaviors';
+import { setupWeeklyBossPhases } from './WeeklyBossBehavior';
 import { hasDivineTerritory } from './GridQueries';
 import { applyRoomSlotDamage as _applyRoomSlotDamage } from './RoomDurability';
 import { saveRoomHpsToGameState as _saveRoomHpsToGameState } from './RoomDurability';
@@ -219,6 +220,7 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
     waveHpMult:      ds.waveHpMult,
     waveSpdMult:     ds.waveSpdMult,
     dailySpeedMult:  ds.dailyMode?.modifiers.invaderSpeedMult ?? 1,
+    weeklyBoss:      ds.weeklyBossMode,
     get waveActive()     { return ds.waveActive; },
     get activeInvaders() { return ds.activeInvaders; },
     get spawnQueue()     { return ds.spawnQueue; },
@@ -226,7 +228,16 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
     set waveHasSpawned(v: boolean) { ds.waveHasSpawned = v; },
     setRemainingInvadersRegistry: (n) => ds.registry.set('remainingInvaders', n),
     hasSynergy:   (id)       => ds.synergyManager.hasSpecial(id),
-    applyBehavior: (inv, def) => applyInvaderBehavior(buildBossCtx(ds), inv, def),
+    applyBehavior: (inv, def) => {
+      // Weekly boss mode: the boss runs the generic raid phase ruleset
+      // instead of its native chapter behavior; escorts stay native.
+      const weekly = ds.weeklyBossMode;
+      if (weekly && def.type === weekly.bossType) {
+        setupWeeklyBossPhases(buildBossCtx(ds), inv, weekly);
+      } else {
+        applyInvaderBehavior(buildBossCtx(ds), inv, def);
+      }
+    },
   };
 }
 

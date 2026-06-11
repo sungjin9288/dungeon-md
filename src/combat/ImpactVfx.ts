@@ -19,6 +19,8 @@ export interface BossWarningConfig {
   readonly wave: number;
   readonly isEndless: boolean;
   readonly buildBossHpBar: (hp: number) => void;
+  /** Overrides the displayed/HUD boss HP (weekly boss totalHp). */
+  readonly bossHpOverride?: number;
 }
 
 export function showBossWarning(
@@ -34,7 +36,7 @@ export function showBossWarning(
   const bossDef = bossGrp ? INVADER_DEFS[bossGrp.type] : null;
   const endlessBossName = wave >= 50 ? '전설적 침략자' : wave >= 30 ? '고위 보스' : wave >= 20 ? '엘리트 보스' : '미니 보스';
   const bossName = bossDef?.koreanName ?? (isEndless ? endlessBossName : '보스');
-  const bossHp   = bossDef?.hp ?? (isEndless ? 200 + wave * 30 : 350);
+  const bossHp   = config.bossHpOverride ?? bossDef?.hp ?? (isEndless ? 200 + wave * 30 : 350);
 
   // Boss-specific accent color (hex -> CSS string)
   const bossColorNum = bossDef?.color ?? 0xff2222;

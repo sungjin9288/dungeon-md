@@ -187,7 +187,7 @@ export interface WeeklyBoss {
   weekIndex:    number;
 }
 
-const WEEKLY_BOSS_POOL: Array<{ name: string; bossType: InvaderType; hp: number }> = [
+export const WEEKLY_BOSS_POOL: ReadonlyArray<{ name: string; bossType: InvaderType; hp: number }> = [
   { name: '용왕의 분노',       bossType: 'dragon_king',          hp: 50000 },
   { name: '여우 여왕의 귀환',   bossType: 'fox_queen',            hp: 40000 },
   { name: '삼신 파괴자',       bossType: 'three_god_destroyer',   hp: 80000 },

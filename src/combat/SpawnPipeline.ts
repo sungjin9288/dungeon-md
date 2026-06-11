@@ -14,7 +14,9 @@ import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
 import { INVADER_DEFS } from '../data/invaders';
+import type { WeeklyBoss } from '../data/daily';
 import type { BossContext } from './BossBehaviors';
+import { resolveSpawnDef } from './spawnDefResolve';
 import { playInvaderSpawnEntrance } from './ImpactVfx';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ export interface SpawnPipelineContext {
   readonly waveHpMult:     number;
   readonly waveSpdMult:    number;
   readonly dailySpeedMult: number;
+  /** Active weekly boss config (weeklyBossMode), or null outside the mode. */
+  readonly weeklyBoss:     WeeklyBoss | null;
 
   get waveActive():    boolean;
   get activeInvaders(): Invader[];
@@ -56,22 +60,19 @@ export function processSpawnQueue(ctx: SpawnPipelineContext, initialDelay: numbe
 
 // ─── spawnInvaderWithDef ──────────────────────────────────────────────────────
 // Creates and configures one Invader:
-//   1. Apply wave-event HP/speed multipliers and daily-mode speed modifier.
+//   1. Resolve the effective def (wave multipliers + weekly boss override).
 //   2. Instantiate Invader, set depth, play spawn entrance VFX.
 //   3. Apply CELESTIAL_DESCENT synergy slow if active.
 //   4. Register in activeInvaders, mark waveHasSpawned.
 //   5. Hand off to InvaderBehaviors for per-type passive/phase setup.
 
 export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef): void {
-  const { waveHpMult, waveSpdMult, dailySpeedMult } = ctx;
-  const modDef = (waveHpMult !== 1 || waveSpdMult !== 1 || dailySpeedMult !== 1)
-    ? { ...def, hp: Math.round(def.hp * waveHpMult), speed: Math.round(def.speed * waveSpdMult * dailySpeedMult) }
-    : def;
+  const modDef = resolveSpawnDef(def, ctx, ctx.weeklyBoss);
 
   const inv = new Invader(ctx.scene, ctx.invaderPath, modDef);
   inv.setDepth(40);
 
-  playInvaderSpawnEntrance(ctx.scene, inv, !!def.isBoss);
+  playInvaderSpawnEntrance(ctx.scene, inv, !!modDef.isBoss);
 
   if (ctx.hasSynergy('CELESTIAL_DESCENT')) inv.applySlow(0.75, 3000);
 
@@ -79,7 +80,7 @@ export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef):
   ctx.waveHasSpawned = true;
   ctx.setRemainingInvadersRegistry(ctx.activeInvaders.filter(i => i.active).length);
 
-  ctx.applyBehavior(inv, def);
+  ctx.applyBehavior(inv, modDef);
 }
 
 // ─── spawnInvaderByType ───────────────────────────────────────────────────────

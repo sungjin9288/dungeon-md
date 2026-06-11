@@ -792,6 +792,7 @@ export class DungeonScene extends Phaser.Scene {
       wave: this.wave,
       isEndless: this.isEndless,
       buildBossHpBar: (hp: number) => this.buildBossHpBar(hp),
+      bossHpOverride: this.weeklyBossMode?.totalHp,
     });
   }
 
