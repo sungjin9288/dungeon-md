@@ -327,10 +327,18 @@ export class UIScene extends Phaser.Scene {
   }
 
   private bindRegistry(): void {
-    this.registry.events.on('changedata-gold', (_: unknown, v: number) => {
+    // The registry is GAME-global: listeners outlive this scene unless removed.
+    // Without the shutdown cleanup, a second battle in the same session fires
+    // stale handlers on destroyed text objects and crashes (endless 재도전 등).
+    const registryEvents = this.registry.events;
+    const on = (key: string, fn: (...args: never[]) => void): void => {
+      registryEvents.on(key, fn);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => registryEvents.off(key, fn));
+    };
+    on('changedata-gold', (_: unknown, v: number) => {
       this.gold = v; this.goldText?.setText(v.toLocaleString('ko-KR'));
     });
-    this.registry.events.on('changedata-goldWarn', () => {
+    on('changedata-goldWarn', () => {
       if (!this.goldText) return;
       this.goldText.setColor('#ff4444');
       this.tweens.add({
@@ -339,10 +347,10 @@ export class UIScene extends Phaser.Scene {
         onComplete: () => this.goldText?.setColor(CSS.TORCH_AMBER),
       });
     });
-    this.registry.events.on('changedata-gems', (_: unknown, v: number) => {
+    on('changedata-gems', (_: unknown, v: number) => {
       this.gems = v; this.gemsText?.setText(v.toLocaleString('ko-KR'));
     });
-    this.registry.events.on('changedata-hp', (_: unknown, v: number) => {
+    on('changedata-hp', (_: unknown, v: number) => {
       if (v < this.hp) {
         this.flashDamageVignette();
         // HP text scale/color pulse
@@ -366,22 +374,22 @@ export class UIScene extends Phaser.Scene {
       }
       this.hp = v; this.redrawHp();
     });
-    this.registry.events.on('changedata-wave', (_: unknown, v: number) => {
+    on('changedata-wave', (_: unknown, v: number) => {
       this.wave = v;
       const isFinal = this.maxWave < 9999 && v > 0 && v === this.maxWave;
       this.waveLabel?.setText(this.getWaveLabel());
       this.waveLabel?.setColor(isFinal ? '#ff4444' : CSS.PARCHMENT);
       this.redrawWaveProgress();
     });
-    this.registry.events.on('changedata-maxWave', (_: unknown, v: number) => {
+    on('changedata-maxWave', (_: unknown, v: number) => {
       this.maxWave = v;
       this.waveLabel?.setText(this.getWaveLabel());
       this.redrawWaveProgress();
     });
-    this.registry.events.on('changedata-status', (_: unknown, v: string) => {
+    on('changedata-status', (_: unknown, v: string) => {
       this.statusText?.setText(v);
     });
-    this.registry.events.on('changedata-remainingInvaders', (_: unknown, v: number) => {
+    on('changedata-remainingInvaders', (_: unknown, v: number) => {
       if (v > 0) {
         this.remainingText?.setText(`👾 ${v}명`);
         this.remainingText?.setColor(v <= 3 ? '#ffcc44' : CSS.PARCHMENT_MUTED);
