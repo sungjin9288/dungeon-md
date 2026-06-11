@@ -10,8 +10,12 @@ Canvas 390×844 (iPhone 기준), FIT 스케일 모드.
 ```bash
 npm run dev        # 개발 서버 :8083
 npm run build      # dist/ 생성
-npx cap sync       # dist/ → android/ + ios/ 동기화
+LANG=en_US.UTF-8 npx cap sync   # dist/ → android/ + ios/ 동기화 (CocoaPods가 UTF-8 로케일 요구)
 ```
+
+dev 서버 전용 QA 파라미터 (프로덕션 빌드에선 제거됨):
+- `?scene=SummonScene` — 부팅 후 해당 씬으로 바로 점프 (스크린샷/QA용)
+- `?skipTutorial=1` — 튜토리얼 완료 상태로 시드
 
 ---
 
@@ -35,9 +39,8 @@ src/
 ## 씬 목록 & 흐름
 
 ```
-BootScene
-  → (첫 실행) CinematicScene(ch1_opening) → DungeonHomeScene
-  → (재실행)  DungeonHomeScene
+BootScene → DungeonHomeScene
+  (컷씬은 부팅이 아니라 스테이지 진입 시 STAGE_CINEMATICS 기준으로 재생)
 
 DungeonHomeScene          홈 허브. 퀘스트·침략 확인, 설정 오버레이, 세이브 관리
   → StageSelectScene      챕터별 스테이지 선택 (80개, 8챕터)

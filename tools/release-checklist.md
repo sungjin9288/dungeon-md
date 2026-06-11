@@ -1,10 +1,11 @@
 # 던전 수호자 v1.0.0 — App Store 출시 체크리스트
 
-## 빌드 상태 (최종 확인)
-- [x] `npm run build` — TypeScript 에러 0
-- [x] `npx cap sync` — iOS + Android 동기화 완료
+## 빌드 상태 (최종 확인: 2026-06-11)
+- [x] `npm run build` — TypeScript 에러 0, 테스트 2,389개 통과
+- [x] `npx cap sync` — iOS + Android 동기화 완료 (Safe Area·세로잠금·퀘스트/부활 수정 포함)
 - [x] 번들 크기: index 498kB + tone 251kB + phaser 1479kB (gzip 합계 ~535kB)
 - [x] 버전: 1.0.0 / 빌드: 1
+- [x] **출하 번들 standalone 검증** — 시뮬레이터에 dev 서버 없이 설치, 부팅→홈 진입·Safe Area·튜토리얼 정상 (iPhone 17 Pro Max)
 
 ---
 
