@@ -102,6 +102,21 @@ const game = new Phaser.Game(config);
 window.__phaserGame = game;
 window.__gameDpr = dpr;
 
+// DEV-only: jump straight to a scene for screenshot/QA runs (?scene=SummonScene)
+if (import.meta.env.DEV) {
+  const targetScene = new URLSearchParams(window.location.search).get('scene');
+  if (targetScene) {
+    // Wait for the normal Boot → Home flow to settle, then swap to the target.
+    const jump = window.setInterval(() => {
+      if (!game.scene.isActive('DungeonHomeScene')) return;
+      window.clearInterval(jump);
+      if (targetScene === 'DungeonHomeScene') return;
+      game.scene.stop('DungeonHomeScene');
+      game.scene.start(targetScene);
+    }, 300);
+  }
+}
+
 type RuntimeRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): RuntimeRecord {

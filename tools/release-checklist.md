@@ -33,6 +33,9 @@ ios/App/App/Assets.xcassets/AppIcon.appiconset/
 - 추가 커스텀이 필요하면 `ios/App/App/Assets.xcassets/Splash.imageset/` 수정
 
 ### 5. 스크린샷 촬영 (Simulator)
+> ✅ 2026-06-11 — `tools/screenshots/01~05.png` 캡처 완료 (iPhone 17 Pro Max, 1320×2868 6.9")
+> 방법: dev 서버 `?scene=` 파라미터(main.ts DEV 전용) + simctl screenshot. 상태바 9:41 정리.
+> ⚠️ 발견: 상단 헤더가 Dynamic Island에 가려짐 — Safe Area top inset 미적용 (수정 필요, 수정 후 재촬영 권장)
 ```
 iPhone 15 Pro Max (6.7") — 필수
 iPad Pro 12.9" (6세대) — 권장
