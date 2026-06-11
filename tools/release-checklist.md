@@ -146,14 +146,20 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 
 ### 성능 테스트
 - [ ] iPhone SE (2세대) — 저사양 기기
-- [ ] 60fps 유지 확인
+- [ ] 60fps 유지 확인 (브라우저 전투 중 FPS 60 표시 확인 — 실기기 재확인 필요)
 - [ ] 메모리 경고 없음
 - [ ] 배터리 과소비 없음
 
 ### UI 확인
 - [ ] Safe Area 적용 (노치/Dynamic Island 영역)
-- [ ] 가로 화면 잠금 (세로 전용)
+- [x] 가로 화면 잠금 (세로 전용) (2026-06-11 — iOS Info.plist Portrait 전용 + UIRequiresFullScreen, Android screenOrientation="portrait")
 - [ ] 다크 모드 무관 (게임 자체 테마)
+
+### 네이티브 빌드 검증 (2026-06-11)
+- [x] iOS 시뮬레이터 빌드 — `xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator` BUILD SUCCEEDED
+- [x] cap sync 정상 (※ `LANG=en_US.UTF-8` 필요 — CocoaPods UTF-8 제약)
+- [x] 앱 아이콘 1024×1024 AppIcon.appiconset 배치 완료
+- [x] public/privacy.html 존재 (Phase B: 웹 호스팅 배포만 남음)
 
 ---
 
