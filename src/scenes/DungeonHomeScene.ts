@@ -191,6 +191,9 @@ export class DungeonHomeScene extends Phaser.Scene {
   // Quest log panel
   private questLogState: QuestLogState = { questLogOpen: false };
 
+  // Guards duplicate quest-complete overlays when multiple refreshes land in one frame
+  private questSettlePending = false;
+
   // Invasion state (extracted to InvasionUI.ts)
   private invasionState: InvasionUIState = createInvasionUIState();
 
@@ -245,6 +248,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.rebuildDungeonBlueprintPanel();
     this.rebuildDungeonSlots();
     this.buildCommandDeck();
+    this.settlePendingQuestCompletion();
   }
 
   private applyGameStateResult<T extends GameStateResult>(result: T): T {
@@ -506,10 +510,36 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   private initQuests(): void {
     this.applyGameStateResult(initializeHomeQuestState(this.gs));
+    this.settlePendingQuestCompletion();
     checkForInvasion(
       this, this.gs, this.invasionState,
       GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
     );
+  }
+
+  /**
+   * Settle a main quest whose objectives were completed outside battle
+   * (home room build, summon, fusion, feeding). Battle returns settle via
+   * checkBattleReturn; this covers every other path and re-checks for a
+   * newly started invasion quest so the chain keeps flowing at home.
+   */
+  private settlePendingQuestCompletion(): void {
+    if (this.questSettlePending) return;
+    const done = this.advanceCompletedQuest();
+    if (!done) return;
+    this.questSettlePending = true;
+    this.time.delayedCall(350, () => {
+      this.questSettlePending = false;
+      if (!this.scene.isActive('DungeonHomeScene')) return;
+      this.handleQuestComplete(done);
+      checkForInvasion(
+        this, this.gs, this.invasionState,
+        GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
+      );
+      // The next quest may start already satisfied (auto-met objectives) —
+      // drain the chain so back-to-back completions settle without user input.
+      this.settlePendingQuestCompletion();
+    });
   }
 
   // ─── Battle return ────────────────────────────────────────────────────────────

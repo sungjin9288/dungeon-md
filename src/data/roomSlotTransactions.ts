@@ -215,7 +215,19 @@ export function assignMonsterToRoomSlot(
   const nextSlot = normalizeDungeonSlot({ ...base, monsterIds });
   const dungeonSlots = [...clearedSlots];
   dungeonSlots[slotIdx] = nextSlot;
-  return { ok: true, state: { ...state, dungeonSlots }, slot: nextSlot, changed: true };
+  const withSlot = { ...state, dungeonSlots };
+
+  // Quest tick only for NET-NEW placements — moving an already-placed monster
+  // between slots must not re-count toward assign_monster objectives.
+  const wasAlreadyPlaced = (state.dungeonSlots ?? []).some(
+    s => s?.monsterIds?.includes(monsterId),
+  );
+  if (wasAlreadyPlaced) {
+    return { ok: true, state: withSlot, slot: nextSlot, changed: true };
+  }
+  const [questUpdated] = applyQuestObjectiveUpdate(withSlot, 'assign_monster');
+  const nextState = tickSubQuestProgress(questUpdated, 'assign_monster');
+  return { ok: true, state: nextState, slot: nextSlot, changed: true };
 }
 
 export function removeMonsterFromRoomSlot(

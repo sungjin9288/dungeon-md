@@ -1,6 +1,7 @@
 import {
   assignSubQuests,
   completeAndAdvance,
+  isActiveQuestObjectiveComplete,
   startQuest,
   type MainQuest,
 } from './quests';
@@ -119,6 +120,11 @@ export function initializeHomeQuestState(
 }
 
 export function advanceCompletedMainQuest(state: GameState): MainQuestAdvanceResult {
+  // completeAndAdvance() completes unconditionally — only settle when the
+  // active quest's objectives are actually all met (e.g. home settle path).
+  if (!isActiveQuestObjectiveComplete(state)) {
+    return { state, changed: false, completion: null };
+  }
   const [nextState, completion] = completeAndAdvance(state);
   return {
     state: nextState,

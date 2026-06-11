@@ -178,6 +178,39 @@ describe('questLifecycleTransactions — main quest completion advancement', () 
     expect(result.state).toBe(state);
     expect(result.completion).toBeNull();
   });
+
+  it('does NOT force-complete a quest whose objectives are unmet (regression: home settle loop)', () => {
+    // MQ-003 requires defend_invasion 1 — freshly started, objective at 0.
+    const state = startQuest(makeState(), 'MQ-003');
+
+    const result = advanceCompletedMainQuest(state);
+
+    expect(result.changed).toBe(false);
+    expect(result.state).toBe(state);
+    expect(result.completion).toBeNull();
+    expect(result.state.questProgress['MQ-003']?.completed).toBeFalsy();
+    expect(result.state.activeMainQuestId).toBe('MQ-003');
+  });
+
+  it('does NOT settle a quest with only partial multi-objective progress (MQ-004 O1 met, O2 unmet)', () => {
+    // MQ-004: build_room 2 + reach_dm_level 3 — only the build objective met.
+    const started = startQuest(makeState(), 'MQ-004');
+    const state = {
+      ...started,
+      questProgress: {
+        ...started.questProgress,
+        'MQ-004': {
+          ...started.questProgress['MQ-004'],
+          objectives: { ...started.questProgress['MQ-004'].objectives, O1: 2 },
+        },
+      },
+    };
+
+    const result = advanceCompletedMainQuest(state);
+
+    expect(result.completion).toBeNull();
+    expect(result.state.activeMainQuestId).toBe('MQ-004');
+  });
 });
 
 describe('questLifecycleTransactions — home main quest completion settlement', () => {

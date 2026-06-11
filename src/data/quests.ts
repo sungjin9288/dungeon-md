@@ -45,6 +45,28 @@ export function startQuest(gs: GameState, questId: string): GameState {
       objectives[o.id] = o.target;
       logger.debug(`[OBJECTIVE] collect_gold: ${o.target}/${o.target} (auto-met)`);
     }
+    // State-derived objectives: work done BEFORE this quest became active
+    // still counts (e.g. the tutorial places a monster while MQ-001 is active,
+    // then MQ-002 "place a monster" starts already satisfied).
+    if (o.type === 'assign_monster') {
+      const placed = (gs.dungeonSlots ?? []).reduce(
+        (n, s) => n + (s?.monsterIds?.filter(Boolean).length ?? 0), 0,
+      );
+      if (placed > cur) {
+        objectives[o.id] = Math.min(placed, o.target);
+        logger.debug(`[OBJECTIVE] assign_monster: ${objectives[o.id]}/${o.target} (auto-met from placements)`);
+      }
+    }
+    if (o.type === 'build_room') {
+      const built = Math.max(
+        (gs.dungeonSlots ?? []).filter(s => s != null).length,
+        gs.roomsBuilt?.length ?? 0,
+      );
+      if (built > cur) {
+        objectives[o.id] = Math.min(built, o.target);
+        logger.debug(`[OBJECTIVE] build_room: ${objectives[o.id]}/${o.target} (auto-met from existing rooms)`);
+      }
+    }
   });
 
   const newProg = existingProg
@@ -99,6 +121,19 @@ export function applyQuestObjectiveUpdate(
     return [nextGs, { questId, objId: obj.id, current: next, target: obj.target, questDone }];
   }
   return [gs, null];
+}
+
+/**
+ * True when the active main quest exists, is not yet completed, and every
+ * objective target is met. completeAndAdvance() itself completes
+ * unconditionally — callers settling outside an objective tick MUST check
+ * this first or they will force-complete quests with unmet objectives.
+ */
+export function isActiveQuestObjectiveComplete(gs: GameState): boolean {
+  const quest = getQuest(gs.activeMainQuestId);
+  const prog  = gs.questProgress[gs.activeMainQuestId];
+  if (!quest || !prog || prog.completed) return false;
+  return quest.objectives.every(o => (prog.objectives[o.id] ?? 0) >= o.target);
 }
 
 export function completeAndAdvance(

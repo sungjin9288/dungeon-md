@@ -43,7 +43,10 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   });
   // Pass stageNum as amount so complete_stage objectives like target=73
   // are satisfied immediately on clearing that specific stage.
-  const finalGs = ctx.tickQuestAndNotify(updated, 'complete_stage', stageNum ?? 1);
+  // Invasion battles have no stageNumber and must not tick complete_stage.
+  const finalGs = stageNum !== undefined
+    ? ctx.tickQuestAndNotify(updated, 'complete_stage', stageNum)
+    : updated;
   saveGameState(finalGs);
 
   // Sync to StageSelectScene's own progress key
@@ -86,6 +89,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     ? `⚔️  ${ctx.dailyMode.name}  클리어!`
     : ctx.weeklyBossMode
     ? `👑  ${ctx.weeklyBossMode.name}  격파!`
+    : ctx.returnTo
+    ? '🛡️  침략 방어 성공!'
     : `🎉  ${chLabel} 클리어!`;
   const title = scene.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
     fontFamily: "Georgia, serif", fontSize: '24px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
@@ -223,20 +228,23 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   };
 
   const btnData: Array<{ label: string; action: () => void; enabled: boolean }> = [
-    {
+    // Invasion battles (returnTo set) have no next-stage concept — show only the return button.
+    ...(ctx.returnTo ? [] : [{
       label: nextCfg ? `다음 스테이지 →  (${nextCfg.stageNumber}스테이지)` : '🏆  모든 챕터 클리어!',
       action: nextCfg ? launchNext : () => {},
       enabled: !!nextCfg,
-    },
+    }]),
     {
       label: ctx.returnTo ? '🏰  던전으로 귀환' : '스테이지 선택으로',
       action: () => {
         if (ctx.returnTo) {
           scene.registry.set('battleResult', { won: true, goldEarned, dmXP: 150, materialsEarned: { ...ctx.materialsEarnedThisRun } });
           ov.destroy();
+          scene.scene.stop('UIScene');
           scene.scene.start('DungeonHomeScene');
         } else {
           ov.destroy();
+          scene.scene.stop('UIScene');
           scene.scene.start('StageSelectScene');
         }
       },

@@ -268,6 +268,46 @@ describe('roomSlotTransactions — monster assignment', () => {
     expect(result.slot.monsterIds).toEqual([undefined]);
     expect(state.dungeonSlots[0].monsterIds).toEqual(['m1']);
   });
+
+  it('ticks the assign_monster quest objective on a NET-NEW placement (regression: MQ-002 never progressed at home)', () => {
+    // MQ-002 objective O1 = assign_monster target 1
+    const started = startQuest(makeState({
+      dungeonSlots: [makeSlot({ monsterIds: [undefined] })],
+    }), 'MQ-002');
+
+    const result = assignMonsterToRoomSlot(started, 0, 0, 'dokkaebi_warrior');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.questProgress['MQ-002'].objectives.O1).toBe(1);
+  });
+
+  it('does NOT tick assign_monster when moving an already-placed monster between slots', () => {
+    // MQ-027 O2 = assign_monster target 3. One monster placed at quest start
+    // → auto-met to 1. Moving that same monster must NOT raise it to 2.
+    const started = startQuest(makeState({
+      dungeonSlots: [
+        makeSlot({ monsterIds: ['dokkaebi_warrior'] }),
+        makeSlot({ roomLevel: 2, monsterIds: [undefined, undefined] }),
+      ],
+    }), 'MQ-027');
+    expect(started.questProgress['MQ-027'].objectives.O2).toBe(1); // auto-met baseline
+
+    const result = assignMonsterToRoomSlot(started, 1, 0, 'dokkaebi_warrior');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.questProgress['MQ-027'].objectives.O2).toBe(1); // unchanged
+    expect(result.state.dungeonSlots[1].monsterIds).toEqual(['dokkaebi_warrior', undefined]);
+  });
+
+  it('startQuest auto-mets assign_monster and build_room from existing dungeon state', () => {
+    const started = startQuest(makeState({
+      dungeonSlots: [makeSlot({ monsterIds: ['m1'] }), makeSlot({ monsterIds: [undefined] })],
+    }), 'MQ-002');
+
+    expect(started.questProgress['MQ-002'].objectives.O1).toBe(1);
+  });
 });
 
 describe('roomSlotTransactions — traps', () => {
