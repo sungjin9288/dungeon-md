@@ -29,11 +29,25 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        /* Keep the game canvas out of the notch/Dynamic Island and home bar.
+           Phaser FIT mode scales into the padded box, so scenes don't need
+           per-element safe-area offsets. */
+        padding-top: var(--sat);
+        padding-bottom: var(--sab);
+        padding-left: var(--sal);
+        padding-right: var(--sar);
       }
       canvas { display: block; touch-action: none; }
+      /* Sized by body's content box (padding excluded) — Phaser FIT measures
+         this element, so the canvas always lands inside the safe area. */
+      #game-root {
+        width: 100%; height: 100%;
+        display: flex; justify-content: center; align-items: center;
+      }
     </style>
   </head>
   <body>
+    <div id="game-root"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

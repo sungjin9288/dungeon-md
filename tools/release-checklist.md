@@ -34,8 +34,8 @@ ios/App/App/Assets.xcassets/AppIcon.appiconset/
 
 ### 5. 스크린샷 촬영 (Simulator)
 > ✅ 2026-06-11 — `tools/screenshots/01~05.png` 캡처 완료 (iPhone 17 Pro Max, 1320×2868 6.9")
-> 방법: dev 서버 `?scene=` 파라미터(main.ts DEV 전용) + simctl screenshot. 상태바 9:41 정리.
-> ⚠️ 발견: 상단 헤더가 Dynamic Island에 가려짐 — Safe Area top inset 미적용 (수정 필요, 수정 후 재촬영 권장)
+> 방법: dev 서버 `?scene=`/`?skipTutorial=1` 파라미터(main.ts DEV 전용) + simctl screenshot. 상태바 9:41 정리.
+> ✅ Safe Area 가림 발견 → 수정 완료 (contentInset 'never' + body env() 패딩 + #game-root) → 전체 재촬영
 ```
 iPhone 15 Pro Max (6.7") — 필수
 iPad Pro 12.9" (6세대) — 권장
@@ -154,7 +154,7 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 - [ ] 배터리 과소비 없음
 
 ### UI 확인
-- [ ] Safe Area 적용 (노치/Dynamic Island 영역)
+- [x] Safe Area 적용 (노치/Dynamic Island 영역) (2026-06-11 — iPhone 17 Pro Max 시뮬레이터에서 5개 씬 검증)
 - [x] 가로 화면 잠금 (세로 전용) (2026-06-11 — iOS Info.plist Portrait 전용 + UIRequiresFullScreen, Android screenOrientation="portrait")
 - [ ] 다크 모드 무관 (게임 자체 테마)
 

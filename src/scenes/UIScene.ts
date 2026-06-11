@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout';
-import { getGameSafeArea } from '../constants/safeArea';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -30,8 +29,9 @@ export class UIScene extends Phaser.Scene {
   constructor() { super({ key: 'UIScene' }); }
 
   create(): void {
-    // Safe area offset — pushes all HUD elements below the device notch/status bar
-    const { top: st } = getGameSafeArea(this.scale.displayScale.x);
+    // Safe area is handled globally: index.html pads <body> with env(safe-area-inset-*),
+    // so the canvas never sits under the notch — no per-element offset needed.
+    const st = 0;
     this.safeTop = st;
 
     this.drawBar();

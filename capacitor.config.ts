@@ -8,7 +8,10 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   ios: {
-    contentInset: 'always',
+    // 'never' lets env(safe-area-inset-*) report real notch insets inside the
+    // WebView — index.html pads <body> with them so the canvas avoids the
+    // Dynamic Island/home bar. ('always' zeroes env() via scroll insets.)
+    contentInset: 'never',
   },
   plugins: {
     SplashScreen: {

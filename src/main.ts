@@ -62,7 +62,7 @@ const config = {
   width:  CANVAS_WIDTH  * dpr,
   height: CANVAS_HEIGHT * dpr,
   backgroundColor: '#1a0f00',
-  parent: document.body,
+  parent: 'game-root',
   render: {
     antialias:    true,
     antialiasGL:  true,
@@ -103,8 +103,14 @@ window.__phaserGame = game;
 window.__gameDpr = dpr;
 
 // DEV-only: jump straight to a scene for screenshot/QA runs (?scene=SummonScene)
+// Optional ?skipTutorial=1 marks the tutorial as done before the game boots.
 if (import.meta.env.DEV) {
-  const targetScene = new URLSearchParams(window.location.search).get('scene');
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('skipTutorial')) {
+    const raw = JSON.parse(localStorage.getItem('dungeonGameState') ?? '{}') as Record<string, unknown>;
+    localStorage.setItem('dungeonGameState', JSON.stringify({ ...raw, tutorialStage: 99 }));
+  }
+  const targetScene = params.get('scene');
   if (targetScene) {
     // Wait for the normal Boot → Home flow to settle, then swap to the target.
     const jump = window.setInterval(() => {
