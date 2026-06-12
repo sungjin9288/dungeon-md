@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addSceneHeader } from '../ui/GameUiPrimitives';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
@@ -288,17 +289,11 @@ export class SummonScene extends Phaser.Scene {
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    // Back button
-    const backT = this.add.text(16, 14, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#9977cc',
-      backgroundColor: '#1a0030', padding: { x: 8, y: 4 },
-    }).setInteractive().setDepth(10);
-    backT.on('pointerdown', () => this.scene.start('DungeonHomeScene'));
-
-    // Title
-    this.add.text(CX, 16, '✨ 몬스터 소환', {
-      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#cc88ff',
-    }).setOrigin(0.5).setDepth(10);
+    addSceneHeader(this, {
+      title:  '✨ 몬스터 소환',
+      y:      22,
+      onBack: () => this.scene.start('DungeonHomeScene'),
+    });
 
     // Resource bar
     const gs = loadGameState();

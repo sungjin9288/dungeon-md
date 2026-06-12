@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS, CSS } from '../constants/colors';
+import { addSceneHeader } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
@@ -129,21 +130,11 @@ export class CodexScene extends Phaser.Scene {
   // ─── Header ────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    // ── Back button ──
-    const backBg = this.add.graphics().setDepth(10);
-    backBg.fillStyle(COLORS.STONE_MID, 1);
-    backBg.fillRoundedRect(8, 10, 72, 32, 6);
-    this.add.text(44, 26, '← 뒤로', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(11);
-    this.add.zone(44, 26, 72, 32).setInteractive().setDepth(12)
-      .on('pointerdown', () => this.scene.start((this.registry.get('previousScene') as string) ?? 'BarracksScene'));
-
-    // ── Title ──
-    this.add.text(CX, 26, '📖 도감', {
-      fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(10);
+    addSceneHeader(this, {
+      title:  '📖 도감',
+      y:      26,
+      onBack: () => this.scene.start((this.registry.get('previousScene') as string) ?? 'BarracksScene'),
+    });
 
     // ── Tab chips ──
     const tabDefs: Array<{ key: 'monsters' | 'invaders'; label: string }> = [
