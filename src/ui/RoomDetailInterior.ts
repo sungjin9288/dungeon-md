@@ -35,7 +35,7 @@ export type { PickerNavCallbacks };
 import {
   findFirstEmptySlot, formatSignedPower, getEquippedItem,
   navigateFromRoomDetail, prefersReducedMotion, shouldHighlightDirectiveTarget,
-  EquipmentBadge, MONSTER_RARITY_META, MONSTER_TYPE_COLOR, MONSTER_TYPE_LABEL, ROOM_TYPE_ACCENT, RoomDetailCallbacks, RoomDetailState, RoomDirective } from './RoomDetailOverlay';
+  EquipmentBadge, MONSTER_RARITY_META, MONSTER_TYPE_COLOR, MONSTER_TYPE_LABEL, ROOM_TYPE_ACCENT, RoomDetailCallbacks, RoomDetailState, RoomDirective } from './RoomDetailShared';
 
 export function buildRoomInteriorPreview(
   scene: Phaser.Scene,
