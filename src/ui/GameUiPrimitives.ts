@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
+import { CANVAS_WIDTH } from '../constants/layout';
 import { addInnerGlow, addPanelShadow } from './PanelDepth';
 
 export const GAME_UI = {
@@ -13,15 +14,15 @@ export const GAME_UI = {
     compactHeight: 34,
   },
   colors: {
-    panelFill: 0x101b26,
-    rowFill: 0x172838,
+    panelFill: 0x1f1305,
+    rowFill: 0x2c1d0d,
     rowBorder: 0x55b88a,
     primaryFill: 0x1b9f71,
     primaryHoverFill: 0x24bd86,
     primaryBorder: 0x8cffc1,
     primaryHoverBorder: 0xffdf6e,
-    mutedText: '#bad9e8',
-    bevelLight: 0xd8f5ff,
+    mutedText: '#c8b896',
+    bevelLight: 0xf5e8c8,
     shadowFill: 0x070503,
     valueChipFill: 0x140c03,
   },
@@ -370,4 +371,149 @@ export function addProgressBar(
   }
 
   return { track, fill };
+}
+
+// ─── Scene Header ─────────────────────────────────────────────────────────────
+// 표준 씬 헤더: 좌측 뒤로 버튼 + 중앙 Georgia serif 골드 타이틀(+서브타이틀).
+// 우측 부가 요소(타이머·도감 버튼 등)는 씬이 표준 좌표에 직접 배치한다.
+
+export interface SceneHeaderOptions {
+  title:      string;
+  onBack:     () => void;
+  /** 타이틀 색 — 기본은 통일 골드. 구역 정체성은 탭/버튼 액센트로만 표현 권장. */
+  titleCSS?:  string;
+  subtitle?:  string;
+  /** 헤더 중심 y (기본 28) */
+  y?:         number;
+  backLabel?: string;
+  depth?:     number;
+}
+
+export interface SceneHeaderRefs {
+  container: Phaser.GameObjects.Container;
+  title:     Phaser.GameObjects.Text;
+  back:      Phaser.GameObjects.Text;
+}
+
+export function addSceneHeader(
+  scene: Phaser.Scene,
+  o: SceneHeaderOptions,
+): SceneHeaderRefs {
+  const y     = o.y ?? 28;
+  const depth = o.depth ?? 10;
+  const container = scene.add.container(0, 0).setDepth(depth);
+
+  const back = scene.add.text(18, y, o.backLabel ?? '← 뒤로', {
+    fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
+    backgroundColor: '#2d2416', padding: { x: 8, y: 4 },
+  }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+  back.on('pointerdown', o.onBack);
+  container.add(back);
+
+  const title = scene.add.text(CANVAS_WIDTH / 2, y, o.title, {
+    fontFamily: 'Georgia, serif', fontSize: '20px',
+    color: o.titleCSS ?? CSS.TORCH_AMBER,
+  }).setOrigin(0.5);
+  container.add(title);
+
+  if (o.subtitle) {
+    container.add(scene.add.text(title.x, y + 18, o.subtitle, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+    }).setOrigin(0.5));
+  }
+
+  return { container, title, back };
+}
+
+// ─── Tab Bar ──────────────────────────────────────────────────────────────────
+// 표준 탭바: 등폭 탭, 활성 = 액센트 볼드 + 하단 2px 언더라인, 비활성 = 음소거.
+// 우상단 숫자 뱃지 지원(연구소 가용 카운트 등).
+
+export interface TabBarTab<T extends string = string> {
+  id:         T;
+  label:      string;
+  badge?:     number;
+  /** 탭별 액센트 오버라이드 (기본은 TabBarOptions.accent) */
+  accent?:    number;
+  accentCSS?: string;
+}
+
+export interface TabBarOptions<T extends string = string> {
+  tabs:      ReadonlyArray<TabBarTab<T>>;
+  active:    T;
+  /** 탭바 상단 y */
+  y:         number;
+  onSelect:  (id: T) => void;
+  accent?:    number;
+  accentCSS?: string;
+  height?:    number;
+  fontSize?:  string;
+  depth?:     number;
+  width?:     number;
+}
+
+export interface TabBarRefs {
+  container: Phaser.GameObjects.Container;
+}
+
+export function addTabBar<T extends string>(
+  scene: Phaser.Scene,
+  o: TabBarOptions<T>,
+): TabBarRefs {
+  const height  = o.height ?? 32;
+  const depth   = o.depth ?? 10;
+  const width   = o.width ?? CANVAS_WIDTH;
+  const accent  = o.accent ?? COLORS.TORCH_AMBER;
+  const accentCSS = o.accentCSS ?? CSS.TORCH_AMBER;
+  const fontSize  = o.fontSize ?? '13px';
+
+  const container = scene.add.container(0, o.y).setDepth(depth);
+
+  const bg = scene.add.graphics();
+  bg.fillStyle(COLORS.PANEL_DEEP, 1);
+  bg.fillRect(0, 0, width, height);
+  bg.lineStyle(1, COLORS.STONE_MID, 0.6);
+  bg.lineBetween(0, height, width, height);
+  container.add(bg);
+
+  const tabW = width / o.tabs.length;
+  o.tabs.forEach((tab, i) => {
+    const isActive = tab.id === o.active;
+    const tabAccent    = tab.accent    ?? accent;
+    const tabAccentCSS = tab.accentCSS ?? accentCSS;
+    const cx = i * tabW + tabW / 2;
+
+    if (isActive) {
+      const fill = scene.add.graphics();
+      fill.fillStyle(COLORS.CARD_BG, 1);
+      fill.fillRect(i * tabW, 0, tabW, height);
+      fill.lineStyle(2, tabAccent, 1);
+      fill.lineBetween(i * tabW + 6, height - 1, (i + 1) * tabW - 6, height - 1);
+      container.add(fill);
+    }
+
+    container.add(scene.add.text(cx, height / 2, tab.label, {
+      fontFamily: 'Georgia, serif', fontSize,
+      color: isActive ? tabAccentCSS : CSS.PARCHMENT_MUTED,
+      fontStyle: isActive ? 'bold' : 'normal',
+    }).setOrigin(0.5));
+
+    if (tab.badge && tab.badge > 0) {
+      const bx = (i + 1) * tabW - 10;
+      const badge = scene.add.graphics();
+      badge.fillStyle(COLORS.BLOOD_GLOW, 1);
+      badge.fillCircle(bx, 8, 7);
+      container.add(badge);
+      container.add(scene.add.text(bx, 8, tab.badge > 9 ? '9+' : String(tab.badge), {
+        fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
+      }).setOrigin(0.5));
+    }
+
+    const zone = scene.add.zone(i * tabW, 0, tabW, height)
+      .setOrigin(0).setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => { if (!isActive) o.onSelect(tab.id); });
+    container.add(zone);
+  });
+
+  return { container };
 }

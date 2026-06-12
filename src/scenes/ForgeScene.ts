@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CSS } from '../constants/colors';
+import { CSS, ZONE_ACCENTS } from '../constants/colors';
+import { addTabBar } from '../ui/GameUiPrimitives';
 import {
   ROOM_SLOT_TYPE_DEFS,
   getRoomSlotCapacity,
@@ -213,9 +214,9 @@ export class ForgeScene extends Phaser.Scene {
     }).setOrigin(0.5));
 
     const back = this.add.text(18, HEADER_H / 2, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#cc9944',
-      backgroundColor: '#1a0800', padding: { x: 8, y: 4 },
-    }).setOrigin(0, 0.5).setInteractive();
+      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
+      backgroundColor: '#2d2416', padding: { x: 8, y: 4 },
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
     back.on('pointerdown', () => {
       this.cameras.main.fadeOut(200, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(this.returnScene));
@@ -343,63 +344,24 @@ export class ForgeScene extends Phaser.Scene {
 
   private drawTabBar(): void {
     this.tabContainer?.destroy();
-    const c = this.add.container(0, HEADER_H).setDepth(9);
-    this.tabContainer = c;
-
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0d0600, 1);
-    bg.fillRect(0, 0, CANVAS_WIDTH, TAB_H);
-    bg.fillStyle(0xffaa44, 0.06);
-    bg.fillRoundedRect(12, 6, CANVAS_WIDTH - 24, TAB_H - 12, 8);
-    bg.lineStyle(1, 0x3a2000, 0.6);
-    bg.lineBetween(0, TAB_H, CANVAS_WIDTH, TAB_H);
-    c.add(bg);
-
-    const tabs: Array<{ id: 'craft' | 'dismantle'; label: string }> = [
-      { id: 'craft',    label: '⚒️  제작' },
-      { id: 'dismantle', label: '🔨  분해' },
-    ];
-    const tw = CANVAS_WIDTH / tabs.length;
-
-    tabs.forEach(({ id, label }, i) => {
-      const isActive = id === this.activeTab;
-      const x = i * tw;
-
-      const tabBg = this.add.graphics();
-      tabBg.fillStyle(0x070503, isActive ? 0.32 : 0.12);
-      tabBg.fillRoundedRect(x + 12, 8, tw - 24, TAB_H - 16, 8);
-      tabBg.fillStyle(isActive ? 0x2a1400 : 0x0d0600, isActive ? 1 : 0.62);
-      tabBg.fillRoundedRect(x + 14, 7, tw - 28, TAB_H - 14, 8);
-      tabBg.lineStyle(1, isActive ? 0xffaa44 : 0x3a2000, isActive ? 0.88 : 0.42);
-      tabBg.strokeRoundedRect(x + 14, 7, tw - 28, TAB_H - 14, 8);
-      c.add(tabBg);
-
-      const t = this.add.text(x + tw / 2, TAB_H / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '13px',
-        color: isActive ? '#ffaa44' : '#886633',
-        fontStyle: isActive ? 'bold' : 'normal',
-      }).setOrigin(0.5);
-      const zone = this.add.zone(x + 6, 4, tw - 12, TAB_H - 8)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        if (this.activeTab !== id) {
-          this.activeTab    = id;
-          this.selectedBpId = null;
-          this.selectedEqIdx = null;
-          this.drawTabBar();
-          this.renderContent();
-        }
-      });
-      c.add([t, zone]);
-
-      if (isActive) {
-        const ul = this.add.graphics();
-        ul.lineStyle(2, 0xffaa44, 1);
-        ul.lineBetween(x + 8, TAB_H - 1, x + tw - 8, TAB_H - 1);
-        c.add(ul);
-      }
-    });
+    this.tabContainer = addTabBar<'craft' | 'dismantle'>(this, {
+      tabs: [
+        { id: 'craft',     label: '⚒️  제작' },
+        { id: 'dismantle', label: '🔨  분해' },
+      ],
+      active:    this.activeTab,
+      y:         HEADER_H,
+      height:    TAB_H,
+      accent:    ZONE_ACCENTS.forge,
+      accentCSS: '#ffaa44',
+      onSelect:  id => {
+        this.activeTab     = id;
+        this.selectedBpId  = null;
+        this.selectedEqIdx = null;
+        this.drawTabBar();
+        this.renderContent();
+      },
+    }).container;
   }
 
   // ─── Content dispatch ────────────────────────────────────────────────────

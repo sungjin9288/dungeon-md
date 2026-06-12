@@ -8,6 +8,7 @@ import {
   getBaseId,
 } from '../data/fusion';
 import { logger } from '../utils/logger';
+import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import {
   type TabId, type FusionTabContext,
   TAB_ACCENT, TAB_ACCENT_CSS,
@@ -30,8 +31,7 @@ const TABS: readonly TabId[] = ['진화', '흡수', '조합', '각성'];
 export class FusionScene extends Phaser.Scene {
   private activeTab: TabId = '진화';
   private contentContainer?: Phaser.GameObjects.Container;
-  private tabButtons: Phaser.GameObjects.Text[]      = [];
-  private tabUnderlines: Phaser.GameObjects.Graphics[] = [];
+  private tabBarContainer?: Phaser.GameObjects.Container;
   private cauldronEmoji?: Phaser.GameObjects.Text;
   private headerContainer?: Phaser.GameObjects.Container;
 
@@ -93,19 +93,15 @@ export class FusionScene extends Phaser.Scene {
     g.lineBetween(0, HEADER_H, CANVAS_WIDTH, HEADER_H);
     c.add(g);
 
-    c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2, '🔬 연구소', {
-      fontFamily: 'Georgia, serif', fontSize: '20px', color: '#44cc88',
-    }).setOrigin(0.5));
-
-    const back = this.add.text(18, HEADER_H / 2, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#669966',
-      backgroundColor: '#001208', padding: { x: 8, y: 4 },
-    }).setOrigin(0, 0.5).setInteractive();
-    back.on('pointerdown', () => {
-      this.cameras.main.fadeOut(200, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('DungeonHomeScene'));
+    const header = addSceneHeader(this, {
+      title: '🔬 연구소',
+      y:     HEADER_H / 2,
+      onBack: () => {
+        this.cameras.main.fadeOut(200, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('DungeonHomeScene'));
+      },
     });
-    c.add(back);
+    c.add(header.container);
 
     const gs = loadGameState();
     const discovered = gs.discoveredCombinations?.length ?? 0;
@@ -153,52 +149,19 @@ export class FusionScene extends Phaser.Scene {
   // ─── Tab bar ─────────────────────────────────────────────────────────────
 
   private drawTabBar(): void {
-    this.tabButtons.forEach(b => b.destroy());
-    this.tabUnderlines.forEach(u => u.destroy());
-    this.tabButtons    = [];
-    this.tabUnderlines = [];
-
-    const g = this.add.graphics().setDepth(10);
-    g.fillStyle(0x0e0a04, 1);
-    g.fillRect(0, HEADER_H, CANVAS_WIDTH, TAB_H);
-    g.lineStyle(1, 0x55b88a, 0.2);
-    g.lineBetween(0, HEADER_H + TAB_H, CANVAS_WIDTH, HEADER_H + TAB_H);
-
+    this.tabBarContainer?.destroy();
     const counts = this.computeTabCounts();
-    const tabW = CANVAS_WIDTH / TABS.length;
-    TABS.forEach((tab, i) => {
-      const cx = i * tabW + tabW / 2;
-      const cy = HEADER_H + TAB_H / 2;
-      const isActive = tab === this.activeTab;
-      const color = isActive ? TAB_ACCENT_CSS[tab] : '#336644';
-
-      const t = this.add.text(cx, cy, tab, {
-        fontFamily: 'Georgia, serif', fontSize: '15px', color,
-        fontStyle: isActive ? 'bold' : 'normal',
-      }).setOrigin(0.5).setDepth(11).setInteractive();
-      t.on('pointerdown', () => this.switchTab(tab));
-      this.tabButtons.push(t);
-
-      if (isActive) {
-        const ul = this.add.graphics().setDepth(11);
-        ul.lineStyle(2, TAB_ACCENT[tab], 1);
-        ul.lineBetween(i * tabW + 6, HEADER_H + TAB_H - 1, (i + 1) * tabW - 6, HEADER_H + TAB_H - 1);
-        this.tabUnderlines.push(ul);
-      }
-
-      // Badge: show count when > 0
-      const count = counts[tab];
-      if (count > 0) {
-        const bx = (i + 1) * tabW - 8;
-        const by = HEADER_H + 8;
-        const bg = this.add.graphics().setDepth(12);
-        bg.fillStyle(0xff2222, 1);
-        bg.fillCircle(bx, by, 7);
-        this.add.text(bx, by, count > 9 ? '9+' : String(count), {
-          fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
-        }).setOrigin(0.5).setDepth(13);
-      }
-    });
+    this.tabBarContainer = addTabBar<TabId>(this, {
+      tabs: TABS.map(tab => ({
+        id: tab, label: tab, badge: counts[tab],
+        accent: TAB_ACCENT[tab], accentCSS: TAB_ACCENT_CSS[tab],
+      })),
+      active:   this.activeTab,
+      y:        HEADER_H,
+      height:   TAB_H,
+      fontSize: '15px',
+      onSelect: tab => this.switchTab(tab),
+    }).container;
   }
 
   switchTab(tab: TabId): void {

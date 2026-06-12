@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CSS } from '../constants/colors';
+import { ZONE_ACCENTS } from '../constants/colors';
 import { loadGameState } from '../data/wisdom';
+import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { buildSkinTab, type SkinFilter, type ShopSkinTabContext } from '../ui/ShopSkinTab';
 import { buildThemeTab, type ShopThemeTabContext } from '../ui/ShopThemeTab';
 import { buildEquipmentTab, buildSkillTab, type ShopDailyTabContext } from '../ui/ShopDailyTab';
@@ -43,15 +44,10 @@ export class ShopScene extends Phaser.Scene {
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    this.add.text(28, 24, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_MUTED,
-      backgroundColor: '#2d2416', padding: { x: 8, y: 4 },
-    }).setInteractive().setDepth(10)
-      .on('pointerdown', () => this.scene.start('BarracksScene'));
-
-    this.add.text(CANVAS_WIDTH / 2, 28, '🏪 상점', {
-      fontFamily: 'Georgia, serif', fontSize: '20px', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(10);
+    addSceneHeader(this, {
+      title:  '🏪 상점',
+      onBack: () => this.scene.start('BarracksScene'),
+    });
 
     const gs = loadGameState();
     this.gemsText = this.add.text(CANVAS_WIDTH / 2 - 10, 50, `💎 ${gs.gems}`, {
@@ -87,41 +83,20 @@ export class ShopScene extends Phaser.Scene {
   // ─── Tab bar ────────────────────────────────────────────────────────────────
 
   private drawTabBar(): void {
-    const tabs: { id: ShopTab; label: string }[] = [
-      { id: 'skin',      label: '🎨 스킨' },
-      { id: 'theme',     label: '🏰 테마' },
-      { id: 'equipment', label: '⚒️ 장비' },
-      { id: 'skill',     label: '✨ 스킬' },
-    ];
-    const tabW = CANVAS_WIDTH / tabs.length;
-    const tabY = 66;
-    const g = this.add.graphics().setDepth(9);
-
-    tabs.forEach(({ id, label }, i) => {
-      const tx = i * tabW;
-      const isActive = id === this.activeTab;
-
-      g.fillStyle(isActive ? 0x241808 : 0x140c03, 1);
-      g.fillRect(tx, tabY, tabW, 28);
-      g.lineStyle(1, isActive ? 0x8866ff : 0x2c1d0d, 0.8);
-      if (isActive) {
-        g.lineBetween(tx, tabY + 27, tx + tabW, tabY + 27);
-      }
-
-      this.add.text(tx + tabW / 2, tabY + 14, label, {
-        fontFamily: 'Georgia, serif', fontSize: '11px',
-        color: isActive ? '#cc88ff' : CSS.PARCHMENT_MUTED,
-        fontStyle: isActive ? 'bold' : 'normal',
-      }).setOrigin(0.5).setDepth(10);
-
-      const zone = this.add.zone(tx + tabW / 2, tabY + 14, tabW, 28)
-        .setInteractive().setDepth(11);
-      zone.on('pointerdown', () => {
-        if (this.activeTab !== id) {
-          this.activeTab = id;
-          this.scene.restart();
-        }
-      });
+    addTabBar<ShopTab>(this, {
+      tabs: [
+        { id: 'skin',      label: '🎨 스킨' },
+        { id: 'theme',     label: '🏰 테마' },
+        { id: 'equipment', label: '⚒️ 장비' },
+        { id: 'skill',     label: '✨ 스킬' },
+      ],
+      active:    this.activeTab,
+      y:         66,
+      height:    28,
+      fontSize:  '11px',
+      accent:    ZONE_ACCENTS.shop,
+      accentCSS: '#cc88ff',
+      onSelect:  id => { this.activeTab = id; this.scene.restart(); },
     });
   }
 
