@@ -266,6 +266,22 @@ export class DungeonScene extends Phaser.Scene {
     this.maxHp            = setup.stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus + this.wisdomBonuses.fortressHp;
     this.dungeonHp        = this.maxHp;
 
+    // Reset per-battle state — Phaser는 씬 인스턴스를 재사용하므로 클래스 필드
+    // 초기값은 재진입 시 복원되지 않음. 이전 전투의 wave=10이 남으면
+    // startWave의 wave >= maxWave 가드에 막혀 다음 전투가 시작 불가(소프트락).
+    this.wave            = 0;
+    this.waveActive      = false;
+    this.prepActive      = false;
+    this.prepTimer       = 0;
+    this.spawnQueue      = [];
+    this.waveEndChecked  = false;
+    this.waveHasSpawned  = false;
+    this.selectedRoom    = null;
+    this.killsThisRun    = 0;
+    this.goldEarnedThisRun = 0;
+    this.endlessRecordBroken = false;
+    this.skillCooldowns.clear();
+
     // Load unlockedStage from STAGE_CONFIGS so the monster picker shows correct options
     this.unlockedStage = STAGE_CONFIGS.find(s => s.stageNumber === setup.stageNumber)?.unlockedStage ?? setup.stageNumber;
 
