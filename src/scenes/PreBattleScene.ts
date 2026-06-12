@@ -556,7 +556,7 @@ function drawDefenseActionTargetBadge(
   badge.strokeRoundedRect(x + w - badgeW - 8, y + 5, badgeW, 14, 4);
 
   const text = scene.add.text(x + w - badgeW / 2 - 8, y + 12, label, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '7px',
     color: '#f0e6c8',
     fontStyle: 'bold',
@@ -596,7 +596,7 @@ function drawDefenseQueueBadge(
   g.lineStyle(1, action.accent, 0.62);
   g.strokeRoundedRect(x - w, y, w, 14, 4);
   scene.add.text(x - w / 2, y + 7, label, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '7px',
     color: '#f0e6c8',
     fontStyle: 'bold',
@@ -741,7 +741,7 @@ export class PreBattleScene extends Phaser.Scene {
     };
     drawBack();
     const backBtn = this.add.text(45, 24, '← 취소', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '12px', color: '#d8f7ff',
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#d8f7ff',
     }).setOrigin(0.5);
     const backZone = this.add.zone(10, 10, 70, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     backZone.on('pointerover', () => {
@@ -778,21 +778,21 @@ export class PreBattleScene extends Phaser.Scene {
     ig.lineBetween(24, iY + 66, CANVAS_WIDTH - 24, iY + 66);
 
     this.add.text(CANVAS_WIDTH / 2, iY + 18, `🚨  ${cfg?.name ?? '침략 알림'}`, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
+      fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd6df',
     }).setOrigin(0.5);
 
     this.add.text(22, iY + 76, '예상 적군:', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '11px', color: '#ffdf6e', fontStyle: 'bold',
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ffdf6e', fontStyle: 'bold',
     });
 
     let ey = iY + 96;
     const wave1 = cfg?.waves?.[0]?.invaders ?? [];
     wave1.forEach(({ type, count }) => {
       this.add.text(30, ey, `${ENEMY_EMOJI[type] ?? '👥'}  ${ENEMY_NAME[type] ?? type}  ×${count}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#f0e6c8',
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e6c8',
       });
       ey += 22;
     });
@@ -842,7 +842,7 @@ export class PreBattleScene extends Phaser.Scene {
     dg.fillRoundedRect(28, dY + 192, CANVAS_WIDTH - 56, 122, 10);
 
     this.add.text(CANVAS_WIDTH / 2, dY + 16, '던전 방어 편성', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#f0e6c8', fontStyle: 'bold',
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e6c8', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.add.text(CANVAS_WIDTH - 28, dY + 16, `DM Lv.${gs.dmLevel}`, {
@@ -858,7 +858,7 @@ export class PreBattleScene extends Phaser.Scene {
     dg.fillStyle(directive.accent, 0.22);
     dg.fillRoundedRect(32, directiveY + 8, 30, 30, 6);
     this.add.text(47, directiveY + 23, directiveIcon, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '17px',
       color: `#${directive.accent.toString(16).padStart(6, '0')}`,
       fontStyle: 'bold',
@@ -870,7 +870,7 @@ export class PreBattleScene extends Phaser.Scene {
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(72, directiveY + 25, directive.title, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '11px',
       color: '#f0e6c8',
       fontStyle: 'bold',
@@ -1046,7 +1046,7 @@ export class PreBattleScene extends Phaser.Scene {
         draw();
         ov.add(btnBg);
         const btnText = this.add.text(x + w / 2, y + h / 2, label, {
-          fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+          fontFamily: 'Georgia, serif',
           fontSize: '11px',
           color: '#fff8d8',
           fontStyle: 'bold',
@@ -1076,7 +1076,7 @@ export class PreBattleScene extends Phaser.Scene {
       ov.add(ovBg);
 
       ov.add(this.add.text(0, -popH / 2 + 29, `#${room.index + 1} ${room.typeIcon} ${room.typeName}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '14px', color: CASUAL.cream, fontStyle: 'bold',
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: CASUAL.cream, fontStyle: 'bold',
       }).setOrigin(0.5));
       ov.add(this.add.text(0, -popH / 2 + 58, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}  DEF ${room.power}`, {
         fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
@@ -1197,7 +1197,7 @@ export class PreBattleScene extends Phaser.Scene {
           fontFamily: 'sans-serif', fontSize: '20px', color: '#ffd166',
         }).setOrigin(0.5);
         this.add.text(cx + 42, cy + 15, `#${index + 1} 미설계`, {
-          fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '10px', color: '#cfe8f5', fontStyle: 'bold',
+          fontFamily: 'Georgia, serif', fontSize: '10px', color: '#cfe8f5', fontStyle: 'bold',
         }).setOrigin(0, 0.5);
         this.add.text(cx + 42, cy + 30, '방 타입 선택 필요', {
           fontFamily: 'sans-serif', fontSize: '8px', color: '#9db5c5',
@@ -1267,7 +1267,7 @@ export class PreBattleScene extends Phaser.Scene {
       }
 
       this.add.text(cx + 42, cy + 15, `#${room.index + 1} ${shortenLabel(room.typeName, 6)}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '10px', color: '#f0e6c8', fontStyle: 'bold',
+        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#f0e6c8', fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       this.add.text(cx + 42, cy + 30, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}`, {
         fontFamily: 'monospace', fontSize: '8px', color: room.style.text,
@@ -1282,7 +1282,7 @@ export class PreBattleScene extends Phaser.Scene {
         dg.lineStyle(1, CASUAL.gold, 0.5);
         dg.strokeRoundedRect(cx + 7, cy + cardH - 16, 30, 11, 4);
         this.add.text(cx + 22, cy + cardH - 10.5, `⚙${room.equipment.length}`, {
-          fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+          fontFamily: 'Georgia, serif',
           fontSize: '7px',
           color: '#ffe6a3',
           fontStyle: 'bold',

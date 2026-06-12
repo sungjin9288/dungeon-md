@@ -107,7 +107,7 @@ export function buildDungeonBlueprintPanel(
   g.fillRoundedRect(x + 8, y + 5, w - 16, 4, 2);
 
   c.add(scene.add.text(x + 13, y + 14, '던전 전경', {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '12px',
     color: t.panelBorderCSS,
     fontStyle: 'bold',

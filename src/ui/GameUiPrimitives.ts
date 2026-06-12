@@ -13,6 +13,12 @@ export const GAME_UI = {
     primaryHeight: 48,
     compactHeight: 34,
   },
+  /** 타이포 3계층 — 타이틀=serif, 본문=sans, 수치/타이머=mono */
+  fonts: {
+    title:   'Georgia, serif',
+    body:    'sans-serif',
+    numeric: 'monospace',
+  },
   colors: {
     panelFill: 0x1f1305,
     rowFill: 0x2c1d0d,
@@ -269,7 +275,7 @@ export function addPrimaryActionButton(
   draw(enabled ? fillColor : disabledFillColor, enabled ? borderColor : disabledBorderColor);
 
   const text = scene.add.text(x + w / 2, y + h / 2, label, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize,
     color: enabled ? textColor : disabledTextColor,
     fontStyle: 'bold',

@@ -226,7 +226,7 @@ function drawRoomNameRibbon(
   g.fillRoundedRect(ribbonX + 5, ribbonY + 4, ribbonW - 10, 2, 1);
 
   c.add(scene.add.text(ribbonX + ribbonW / 2, ribbonY + ribbonH / 2 + 0.5, label, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '8px',
     color: labelColor,
     fontStyle: 'bold',

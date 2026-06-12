@@ -318,7 +318,7 @@ export class Room extends Phaser.GameObjects.Container {
     g.strokeRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
 
     const title = this.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '8px',
       color: '#f0e6c8',
       fontStyle: 'bold',
@@ -343,7 +343,7 @@ export class Room extends Phaser.GameObjects.Container {
       g.lineStyle(1, 0xfff0cc, 0.45);
       g.strokeRoundedRect(10, centerY - 17, 18, 11, 4);
       const count = this.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '7px',
         color: '#f0e6c8',
         fontStyle: 'bold',
@@ -377,7 +377,7 @@ export class Room extends Phaser.GameObjects.Container {
       g.lineStyle(1, 0xe8c468, 0.5);
       g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
       const equipment = this.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '7px',
         color: '#ffe6a3',
         fontStyle: 'bold',

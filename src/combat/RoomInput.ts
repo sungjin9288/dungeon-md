@@ -156,13 +156,13 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   }).setOrigin(0.5));
 
   card.add(scene.add.text(cardX + 52, cardY + 16, canAfford ? '긴급 정비' : '정비 대기', {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '12px',
     fontStyle: 'bold',
     color: CSS.PARCHMENT,
   }).setOrigin(0, 0.5));
   card.add(scene.add.text(cardX + 52, cardY + 31, roomName, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '9px',
     color: '#8fb4c4',
   }).setOrigin(0, 0.5));
@@ -174,7 +174,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   damageChip.strokeRoundedRect(cardX + cardW - 74, cardY + 10, 60, 20, 8);
   card.add(damageChip);
   card.add(scene.add.text(cardX + cardW - 44, cardY + 20, `피해 ${dmgPct}%`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '9px',
     fontStyle: 'bold',
     color: canAfford ? '#8cffc1' : '#ff9a78',
@@ -202,7 +202,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
     color: '#e8d5aa',
   }).setOrigin(0, 0.5));
   card.add(scene.add.text(cardX + cardW - 15, cardY + 68, `비용 ${cost}`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '10px',
     fontStyle: 'bold',
     color: canAfford ? CSS.TORCH_AMBER : '#ff8a6e',
@@ -376,7 +376,7 @@ function showRoomIntelTip(room: Room): void {
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   tip.add(scene.add.text(-panelW / 2 + 48, -panelH / 2 + 30, `${roomTypeDef?.name ?? def.koreanName}`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '11px',
     color: '#f0e6c8',
     fontStyle: 'bold',

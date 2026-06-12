@@ -399,7 +399,7 @@ function drawRouteEndpoint(
   c.add(g);
 
   const text = scene.add.text(0, 20, label, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '9px',
     color: CSS.PARCHMENT,
     fontStyle: 'bold',
@@ -588,7 +588,7 @@ export function buildWaveStartButton(
   paintWaveButton(bg, bx, by, bw, bh, false);
 
   const label = scene.add.text(CANVAS_WIDTH / 2, by + bh / 2 - 1, '🛡  방어 시작', {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '17px',
     fontStyle: 'bold',
     color: '#fff8d8',

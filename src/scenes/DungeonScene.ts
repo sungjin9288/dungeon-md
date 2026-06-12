@@ -450,7 +450,7 @@ export class DungeonScene extends Phaser.Scene {
       toastY,
       `던전 전개 완료 · 방 ${summary.builtRooms} · 수호자 ${summary.assignedMonsters} · 장비 ${summary.equippedMonsters} · 함정 ${summary.activeTraps}`,
       {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '11px',
         color: summary.brokenRooms > 0 ? '#ffb06a' : '#d8f7ff',
         backgroundColor: '#102538dd',
@@ -503,7 +503,7 @@ export class DungeonScene extends Phaser.Scene {
     strip.add(g);
 
     const title = this.add.text(-w / 2 + 12, 0, '방어 진형', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '10px',
       fontStyle: 'bold',
       color: CSS.TORCH_AMBER,
@@ -535,7 +535,7 @@ export class DungeonScene extends Phaser.Scene {
     alignRight = false,
   ): void {
     const text = this.add.text(x, 0, label, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '9px',
       fontStyle: 'bold',
       color: '#f0e6c8',

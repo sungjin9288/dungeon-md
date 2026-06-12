@@ -90,14 +90,14 @@ export class UIScene extends Phaser.Scene {
 
     // Shadow layer
     this.add.text(18, st + 18, '던전 방어전', {
-      fontFamily: "Trebuchet MS, Apple SD Gothic Neo, sans-serif",
+      fontFamily: 'Georgia, serif',
       fontSize: '18px',
       fontStyle: 'bold',
       color: '#140a02',
     });
     // Main title
     this.add.text(16, st + 16, '던전 방어전', {
-      fontFamily: "Trebuchet MS, Apple SD Gothic Neo, sans-serif",
+      fontFamily: 'Georgia, serif',
       fontSize: '18px',
       fontStyle: 'bold',
       color: CSS.TORCH_AMBER,

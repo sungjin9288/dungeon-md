@@ -937,7 +937,7 @@ function drawInteriorRoomPlaque(
     fontFamily: 'sans-serif',
     fontSize: '12px' }).setOrigin(0.5));
   c.add(scene.add.text(plaqueX + 36, plaqueY + 12, `${roomName} Lv.${roomLevel}`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '10px',
     color: danger ? '#ffb7a8' : '#fff3cf',
     fontStyle: 'bold' }).setOrigin(0, 0.5));

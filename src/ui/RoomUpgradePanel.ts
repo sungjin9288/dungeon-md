@@ -365,7 +365,7 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     this.addContent(frame.shadow, frame.panel, frame.glow);
 
     const chip = this.scene.add.text(CONTENT_X + 14, y + 17, `${loadout.slotIcon} ${loadout.slotName}`, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '12px',
       fontStyle: 'bold',
       color: '#f0e6c8',

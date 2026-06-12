@@ -68,7 +68,7 @@ export class SkillHUD {
     this.container.add(dock.glow);
     this.container.add(drawSkillDockOrnaments(scene, barX, HUD_Y, barW, HUD_H));
     this.container.add(scene.add.text(CANVAS_WIDTH / 2, HUD_Y + 9, '전술 스킬', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '8px',
       fontStyle: 'bold',
       color: '#ffdf8a',

@@ -332,7 +332,7 @@ function drawPreBattleReturnStrip(
     fontSize: '11px',
     color: '#f0e6c8' }).setOrigin(0.5));
   c.add(scene.add.text(x + 40, y + 12, '침공 편집 중', {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '10px',
     color: '#ffdf6e',
     fontStyle: 'bold' }).setOrigin(0, 0.5));

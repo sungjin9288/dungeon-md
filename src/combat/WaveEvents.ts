@@ -266,7 +266,7 @@ function addEnemyBriefingRow(
   ov.add(rowG);
 
   ov.add(scene.add.text(cx + 62, rowY - 4, `${def.koreanName}`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '11px',
     color: CSS.PARCHMENT,
     fontStyle: 'bold',
@@ -390,7 +390,7 @@ export function showWavePreview(ctx: WaveEventContext): void {
   // Title
   ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 18,
     `⚠️  ${nextWave}번째 침략 예고`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '15px',
+    fontFamily: 'Georgia, serif', fontSize: '15px',
     fontStyle: 'bold', color: threat.css,
   }).setOrigin(0.5));
 

@@ -119,13 +119,13 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
       color: CSS.TORCH_AMBER,
     }).setOrigin(0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 22, '전술 슬롯 비어 있음', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '11px',
       fontStyle: 'bold',
       color: CSS.PARCHMENT,
     }).setOrigin(0, 0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 39, monsterName, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '9px',
       color: CSS.PARCHMENT_DIM,
     }).setOrigin(0, 0.5));
@@ -194,14 +194,14 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
   popup.add(header);
 
   const title = scene.add.text(panelX + PANEL_PAD + 14, panelY + 17, '전술 명령', {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '10px',
     fontStyle: 'bold',
     color: CSS.TORCH_AMBER,
   }).setOrigin(0, 0.5);
   popup.add(title);
   popup.add(scene.add.text(panelX + PANEL_PAD + 14, panelY + 29, `${monsterName} · Lv.${om?.level ?? 1}`, {
-    fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+    fontFamily: 'Georgia, serif',
     fontSize: '8px',
     color: '#9fc0ce',
   }).setOrigin(0, 0.5));
@@ -257,7 +257,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     popup.add(iconT);
 
     const nameT = scene.add.text(bx + 39, by + 18, sk.name, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '10px',
       fontStyle: 'bold',
       color: ready ? '#f2fbff' : '#777777',
@@ -266,7 +266,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     popup.add(nameT);
 
     popup.add(scene.add.text(bx + 10, by + 41, sk.desc, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '8px',
       color: ready ? '#aacbd8' : '#666666',
       wordWrap: { width: CARD_W - 20 },
@@ -309,7 +309,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     popup.add(statusBg);
 
     const cdT = scene.add.text(bx + 45 + (CARD_W - 53) / 2, by + CARD_H - 16.5, cdLeft, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
+      fontFamily: 'Georgia, serif',
       fontSize: '9px',
       fontStyle: 'bold',
       color: ready ? '#8cffc1' : '#ff9a78',
