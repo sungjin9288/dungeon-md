@@ -74,9 +74,10 @@ const config = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width:  CANVAS_WIDTH  * dpr,
     height: CANVAS_HEIGHT * dpr,
-    // min/max are CSS display bounds (not physical canvas) — do NOT multiply by dpr
+    // min/max are CSS display bounds (not physical canvas) — do NOT multiply by dpr.
+    // No max: on tablets FIT scales the portrait canvas to full height
+    // (aspect-locked letterbox); phones are bounded by their own viewport.
     min: { width: 320, height: 568 },
-    max: { width: 430, height: 932 },
   },
   scene: [BootScene, DungeonScene, UIScene, StageSelectScene, AncestralWisdomScene, EndlessResultScene, AchievementScene, BarracksScene, SummonScene, ShopScene, CinematicScene, DungeonHomeScene, PreBattleScene, FusionScene, ForgeScene, CodexScene, StageRewardOverlay],
 };

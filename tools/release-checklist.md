@@ -41,6 +41,8 @@ ios/App/App/Assets.xcassets/AppIcon.appiconset/
 iPhone 15 Pro Max (6.7") — 필수
 iPad Pro 12.9" (6세대) — 권장
 ```
+> ✅ 2026-06-12 — iPad 검증·스크린샷 완료: scale.max 제한 제거로 iPad 풀하이트 렌더
+> (이전: 화면 중앙 소형 표시). `tools/screenshots/ipad-01~03.png` (iPad Pro 13", 2064×2752)
 씬별 캡처 방법:
 1. Simulator에서 게임 실행
 2. 각 씬 진입 후 `Cmd + S` (Screenshot to Desktop)
@@ -157,7 +159,7 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 ### UI 확인
 - [x] Safe Area 적용 (노치/Dynamic Island 영역) (2026-06-11 — iPhone 17 Pro Max 시뮬레이터에서 5개 씬 검증)
 - [x] 가로 화면 잠금 (세로 전용) (2026-06-11 — iOS Info.plist Portrait 전용 + UIRequiresFullScreen, Android screenOrientation="portrait")
-- [ ] 다크 모드 무관 (게임 자체 테마)
+- [x] 다크 모드 무관 (게임 자체 테마) (2026-06-12 — prefers-color-scheme:dark 강제 상태에서 동일 렌더, body #1a0f00 고정)
 
 ### 네이티브 빌드 검증 (2026-06-11)
 - [x] iOS 시뮬레이터 빌드 — `xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator` BUILD SUCCEEDED
