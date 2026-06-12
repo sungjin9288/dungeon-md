@@ -238,6 +238,7 @@ function buildSuccessContent(
   const btnZone = scene.add.zone(CANVAS_WIDTH / 2, cy + ch - 40, 280, 36);
   ov.add(btnZone);
   scene.time.delayedCall(btnDelay + 400, () => {
+    if (!btnZone.scene) return;   // 패널이 타이머보다 먼저 파괴됨 (준비 카운트다운 자동 진행)
     btnT.setColor(CSS.PARCHMENT);
     btnZone.setInteractive();
     btnZone.on('pointerdown', () => {
@@ -259,6 +260,7 @@ function buildSuccessContent(
     const skipZone = scene.add.zone(CANVAS_WIDTH / 2, cy + ch - 14, 200, 24);
     ov.add(skipZone);
     scene.time.delayedCall(btnDelay + 600, () => {
+      if (!skipZone.scene) return;   // 패널 선파괴 가드
       skipZone.setInteractive();
       skipZone.on('pointerdown', () => {
         ov.destroy();
