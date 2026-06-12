@@ -35,19 +35,19 @@ export const CHAPTER_1: StageConfig[] = [
         invaders: [{ type: 'peasant', count: 5, spawnDelay: 1500 }, { type: 'shaman', count: 2, spawnDelay: 1500 }] },
       // Wave 5 — 방패기사 ×3, 농민병사 ×5
       { wave: 5, clearReward: 130,
-        invaders: [{ type: 'knight', count: 3, spawnDelay: 1500 }, { type: 'peasant', count: 5, spawnDelay: 1500 }] },
+        invaders: [{ type: 'knight', count: 1, spawnDelay: 1500 }, { type: 'peasant', count: 7, spawnDelay: 1500 }] },
       // Wave 6 — 방패기사 ×4, 마을궁수 ×3
       { wave: 6, clearReward: 150,
-        invaders: [{ type: 'knight', count: 4, spawnDelay: 1400 }, { type: 'peasant', count: 3, spawnDelay: 1400 }] },
+        invaders: [{ type: 'knight', count: 2, spawnDelay: 1400 }, { type: 'peasant', count: 5, spawnDelay: 1400 }] },
       // Wave 7 — 야전치유사 ×2, 농민병사 ×8
       { wave: 7, clearReward: 160,
         invaders: [{ type: 'soldier', count: 2, spawnDelay: 1300 }, { type: 'peasant', count: 8, spawnDelay: 1300 }] },
       // Wave 8 — 방패기사 ×5, 야전치유사 ×2, 도둑 ×3
       { wave: 8, clearReward: 200,
-        invaders: [{ type: 'knight', count: 5, spawnDelay: 1200 }, { type: 'soldier', count: 2, spawnDelay: 1200 }, { type: 'shaman', count: 3, spawnDelay: 1200 }] },
+        invaders: [{ type: 'knight', count: 3, spawnDelay: 1200 }, { type: 'soldier', count: 2, spawnDelay: 1200 }, { type: 'shaman', count: 3, spawnDelay: 1200 }] },
       // Wave 9 — 방패기사 ×6, 마을궁수 ×4, 야전치유사 ×3
       { wave: 9, clearReward: 250,
-        invaders: [{ type: 'knight', count: 6, spawnDelay: 1100 }, { type: 'peasant', count: 4, spawnDelay: 1100 }, { type: 'soldier', count: 3, spawnDelay: 1100 }] },
+        invaders: [{ type: 'knight', count: 3, spawnDelay: 1100 }, { type: 'peasant', count: 4, spawnDelay: 1100 }, { type: 'soldier', count: 2, spawnDelay: 1100 }] },
       // Wave 10 — 도깨비대왕 ×1 BOSS (knight with isBoss flag)
       { wave: 10, clearReward: 500,
         invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }] },
