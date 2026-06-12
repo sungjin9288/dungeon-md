@@ -1,15 +1,15 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CSS, ZONE_ACCENTS } from '../constants/colors';
+import {
+  getBlueprintRecommendation, getMonsterDefForOwned, findMonsterRoom, findOpenMonsterRoom,
+  type ForgeRecommendation, type ForgeMonsterDef,
+} from '../data/forgeRecommendations';
 import { addTabBar } from '../ui/GameUiPrimitives';
 import {
-  ROOM_SLOT_TYPE_DEFS,
-  getRoomSlotCapacity,
   loadGameState,
   saveGameState,
-  type DungeonSlot,
   type GameState,
-  type RoomSlotType,
 } from '../data/wisdom';
 import {
   BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, RARITY_NAMES,
@@ -27,9 +27,6 @@ import { equipMonsterEquipment } from '../data/barracksTransactions';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
 import {
   EQUIPMENT_DEFS,
-  getEquipmentStats,
-  getMonsterAtk,
-  type EquipmentStats,
   type OwnedMonster,
 } from '../data/barracks';
 import { logger } from '../utils/logger';
@@ -64,18 +61,6 @@ interface RoomEquipmentFeedback {
   readonly accent: number;
 }
 
-interface ForgeRecommendation {
-  readonly monsterId: string;
-  readonly monsterName: string;
-  readonly monsterEmoji: string;
-  readonly monsterLevel: number;
-  readonly roomLabel: string;
-  readonly targetLine: string;
-  readonly powerDelta: number;
-  readonly accent: number;
-  readonly kind: 'focus' | 'deployed' | 'open-room' | 'bench';
-}
-
 interface ForgeTargetCue {
   readonly monsterId: string;
   readonly monsterName: string;
@@ -88,7 +73,6 @@ interface ForgeTargetCue {
   readonly priority: number;
 }
 
-type ForgeMonsterDef = (typeof MONSTER_DEFS)[keyof typeof MONSTER_DEFS];
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -389,7 +373,7 @@ export class ForgeScene extends Phaser.Scene {
     const previewBlueprint = bestCraftable
       ?? ownedBlueprints.map(id => BLUEPRINT_DEFS[id]).find((bp): bp is BlueprintDef => Boolean(bp));
     const recommendation = mode === 'craft' && previewBlueprint
-      ? this.getBlueprintRecommendation(gs, previewBlueprint)
+      ? getBlueprintRecommendation(gs, previewBlueprint)
       : null;
     const materialTypes = Object.values(gs.materials ?? {}).filter(qty => qty > 0).length;
     const craftedCount = (gs.craftedEquipment ?? []).length;
@@ -827,7 +811,7 @@ export class ForgeScene extends Phaser.Scene {
   ): { name: string; emoji: string; level: number } | null {
     const holder = gs.ownedMonsters?.find(monster => monster.equipment === equipmentId);
     if (!holder) return null;
-    const def = this.getMonsterDefForOwned(holder.id);
+    const def = getMonsterDefForOwned(holder.id);
     return {
       name: def?.name ?? holder.id,
       emoji: def?.emoji ?? '👹',
@@ -998,174 +982,6 @@ export class ForgeScene extends Phaser.Scene {
     return value.length > maxChars ? `${value.slice(0, maxChars)}…` : value;
   }
 
-  private getBlueprintRecommendation(
-    gs: GameState,
-    bp: BlueprintDef,
-  ): ForgeRecommendation | null {
-    const focusMonster = this.focusMonsterId
-      ? gs.ownedMonsters.find(monster => monster.id === this.focusMonsterId)
-      : null;
-    if (focusMonster) {
-      return this.buildBlueprintRecommendation(gs, bp, focusMonster, 'focus');
-    }
-
-    const ranked = gs.ownedMonsters
-      .map(monster => {
-        const recommendation = this.buildBlueprintRecommendation(gs, bp, monster);
-        return {
-          recommendation,
-          score: this.scoreBlueprintRecommendation(bp, monster, recommendation),
-        };
-      })
-      .sort((a, b) => b.score - a.score);
-
-    return ranked[0]?.recommendation ?? null;
-  }
-
-  private buildBlueprintRecommendation(
-    gs: GameState,
-    bp: BlueprintDef,
-    monster: OwnedMonster,
-    forcedKind?: ForgeRecommendation['kind'],
-  ): ForgeRecommendation {
-    const def = this.getMonsterDefForOwned(monster.id);
-    const assignedRoom = this.findMonsterRoom(gs, monster.id);
-    const openRoom = assignedRoom ? null : this.findOpenMonsterRoom(gs, monster);
-    const kind = forcedKind
-      ?? (assignedRoom ? 'deployed' : openRoom ? 'open-room' : 'bench');
-    const roomRef = assignedRoom ?? openRoom;
-    const roomLabel = kind === 'focus' && this.focusSourceLabel
-      ? this.focusSourceLabel
-      : roomRef
-        ? `방 #${roomRef.index + 1}`
-        : '막사 대기';
-    const roomTypeName = roomRef?.slot.roomType
-      ? this.getRoomTypeName(roomRef.slot.roomType)
-      : kind === 'bench'
-        ? '배치 대기'
-        : '방 보강';
-    const powerDelta = this.getBlueprintPowerDelta(monster, bp);
-    const monsterName = def?.name ?? monster.id;
-    const targetLine = `${monsterName} · ${roomLabel} ${roomTypeName} 장착 시 방 전력 +${powerDelta} 예상`;
-
-    return {
-      monsterId: monster.id,
-      monsterName,
-      monsterEmoji: def?.emoji ?? '👹',
-      monsterLevel: monster.level,
-      roomLabel,
-      targetLine,
-      powerDelta,
-      accent: def?.accentColor ?? this.rarityHex(bp.rarity),
-      kind,
-    };
-  }
-
-  private scoreBlueprintRecommendation(
-    bp: BlueprintDef,
-    monster: OwnedMonster,
-    recommendation: ForgeRecommendation,
-  ): number {
-    const def = this.getMonsterDefForOwned(monster.id);
-    let score = recommendation.powerDelta;
-    if (!monster.equipment) score += 36;
-    if (recommendation.kind === 'focus') score += 80;
-    if (recommendation.kind === 'deployed') score += 28;
-    if (recommendation.kind === 'open-room') score += 12;
-    score += Math.min(24, monster.level);
-    score += this.getBlueprintMonsterFit(bp, def);
-    return score;
-  }
-
-  private getBlueprintMonsterFit(
-    bp: BlueprintDef,
-    def: ForgeMonsterDef | null,
-  ): number {
-    if (!def) return 0;
-    if (bp.type === 'weapon') return def.baseDamage > 0 ? 18 : -10;
-    if (bp.type === 'armor') return def.type === 'support' ? 16 : 10;
-    if (bp.type === 'accessory') {
-      return def.type === 'support' || def.type === 'magic' ? 18 : 8;
-    }
-    return 0;
-  }
-
-  private getBlueprintPowerDelta(monster: OwnedMonster, bp: BlueprintDef): number {
-    const baseAtk = this.getOwnedMonsterAttack(monster);
-    const nextPower = this.calculateEquipmentImpactPower(baseAtk, getEquipmentStats(bp.resultId));
-    const currentPower = this.calculateEquipmentImpactPower(baseAtk, getEquipmentStats(monster.equipment));
-    return Math.max(0, nextPower - currentPower);
-  }
-
-  private getOwnedMonsterAttack(monster: OwnedMonster): number {
-    const def = this.getMonsterDefForOwned(monster.id);
-    if (!def) return Math.max(8, monster.level * 3);
-    return getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills ?? {});
-  }
-
-  private calculateEquipmentImpactPower(baseAtk: number, stats: EquipmentStats): number {
-    let power = 0;
-    if (stats.atkMult) power += Math.round(baseAtk * stats.atkMult);
-    if (stats.roomHpBonus) power += Math.round(stats.roomHpBonus / 20);
-    if (stats.stunBonus) power += Math.round(stats.stunBonus / 100);
-    if (stats.freezeChance) power += Math.round(stats.freezeChance * 40);
-    if (stats.executeChance) power += Math.round(stats.executeChance * 80);
-    if (stats.procBonus) power += Math.round(stats.procBonus * 60);
-    if (stats.skillCdMult && stats.skillCdMult < 1) power += Math.round((1 - stats.skillCdMult) * 40);
-    if (stats.goldMult) power += Math.round(stats.goldMult * 25);
-    if (stats.crystalMult) power += Math.round(stats.crystalMult * 30);
-    return Math.max(0, power);
-  }
-
-  private getMonsterDefForOwned(monsterId: string): ForgeMonsterDef | null {
-    const exact = MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS];
-    if (exact) return exact;
-    const baseId = Object.keys(MONSTER_DEFS).find(
-      id => monsterId === id || monsterId.startsWith(`${id}_`),
-    ) as keyof typeof MONSTER_DEFS | undefined;
-    return baseId ? MONSTER_DEFS[baseId] : null;
-  }
-
-  private findMonsterRoom(
-    gs: GameState,
-    monsterId: string,
-  ): { slot: DungeonSlot; index: number } | null {
-    const index = (gs.dungeonSlots ?? []).findIndex(slot => (slot?.monsterIds ?? []).includes(monsterId));
-    if (index < 0) return null;
-    return { slot: gs.dungeonSlots[index], index };
-  }
-
-  private findOpenMonsterRoom(
-    gs: GameState,
-    monster: OwnedMonster,
-  ): { slot: DungeonSlot; index: number } | null {
-    const preferred = this.getPreferredRoomSlotType(monster);
-    const candidates = (gs.dungeonSlots ?? [])
-      .map((slot, index) => ({ slot, index }))
-      .filter(({ slot }) => Boolean(slot?.roomType) && this.hasOpenMonsterSlot(slot));
-    return candidates.sort((a, b) => {
-      const aPreferred = a.slot.roomType === preferred ? 1 : 0;
-      const bPreferred = b.slot.roomType === preferred ? 1 : 0;
-      return bPreferred - aPreferred;
-    })[0] ?? null;
-  }
-
-  private hasOpenMonsterSlot(slot: DungeonSlot): boolean {
-    const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-    return (slot.monsterIds ?? []).filter(Boolean).length < cap.monsters;
-  }
-
-  private getPreferredRoomSlotType(monster: OwnedMonster): RoomSlotType {
-    const def = this.getMonsterDefForOwned(monster.id);
-    if (def?.type === 'magic') return 'magic';
-    if (def?.type === 'support') return 'support';
-    return 'combat';
-  }
-
-  private getRoomTypeName(roomType?: RoomSlotType): string {
-    return ROOM_SLOT_TYPE_DEFS.find(def => def.id === roomType)?.name ?? '미지정 방';
-  }
-
   private buildForgeTargetRail(
     c: Phaser.GameObjects.Container,
     gs: GameState,
@@ -1258,9 +1074,9 @@ export class ForgeScene extends Phaser.Scene {
   }
 
   private buildForgeTargetCue(gs: GameState, monster: OwnedMonster): ForgeTargetCue {
-    const def = this.getMonsterDefForOwned(monster.id);
-    const assignedRoom = this.findMonsterRoom(gs, monster.id);
-    const openRoom = assignedRoom ? null : this.findOpenMonsterRoom(gs, monster);
+    const def = getMonsterDefForOwned(monster.id);
+    const assignedRoom = findMonsterRoom(gs, monster.id);
+    const openRoom = assignedRoom ? null : findOpenMonsterRoom(gs, monster);
     const currentEquipment = this.getMonsterEquipmentDisplay(gs, monster.id);
     const roomLabel = assignedRoom
       ? `방 #${assignedRoom.index + 1}`
@@ -1329,7 +1145,7 @@ export class ForgeScene extends Phaser.Scene {
       const typeMeta = this.getForgeTypeMeta(bp.type);
       const cardNo = String(index + 1).padStart(3, '0');
       const effectLabels = this.summarizeBlueprintEffects(bp);
-      const recommendation = this.getBlueprintRecommendation(gs, bp);
+      const recommendation = getBlueprintRecommendation(gs, bp, { monsterId: this.focusMonsterId, sourceLabel: this.focusSourceLabel });
       const missingTotal = Math.max(0, progress.need - progress.have);
       const craftStateLabel = canCraft ? '단조 가능' : `부족 ${missingTotal}`;
       const recommendationLine = recommendation
@@ -1727,7 +1543,7 @@ export class ForgeScene extends Phaser.Scene {
   private showCraftCompleteCard(bp: BlueprintDef): void {
     const c = this.add.container(0, 0).setDepth(60);
     const focusMonsterId = this.focusMonsterId;
-    const recommendation = this.getBlueprintRecommendation(loadGameState(), bp);
+    const recommendation = getBlueprintRecommendation(loadGameState(), bp);
     const typeMeta = this.getForgeTypeMeta(bp.type);
     const targetMonsterId = focusMonsterId ?? recommendation?.monsterId ?? null;
     const targetLabel = focusMonsterId
@@ -1992,7 +1808,7 @@ export class ForgeScene extends Phaser.Scene {
     const gs = loadGameState();
     const bp = BLUEPRINT_DEFS[bpId];
     if (!bp || !canCraftBlueprint(bp, gs.materials ?? {})) return;
-    const recommendation = this.getBlueprintRecommendation(gs, bp);
+    const recommendation = getBlueprintRecommendation(gs, bp, { monsterId: this.focusMonsterId, sourceLabel: this.focusSourceLabel });
 
     const matStr = Object.entries(bp.materials)
       .map(([id, qty]) => {
