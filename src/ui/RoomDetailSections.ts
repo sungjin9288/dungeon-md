@@ -37,12 +37,23 @@ export type { PickerNavCallbacks };
 
 
 import {
-  addCompactAttributeChip, addCompactEmptySlotGlyph, addCompactEquipmentSocket,
-  addCompactLoadoutButton, addRecommendedMonsterSlotPreview, addRecommendedTrapSlotPreview,
-  drawCollectorCardSkin, drawCompactEmptyMonsterPlanTag,
-  drawCompactEmptyTrapPlanTag, drawCompactGrowthMeter, drawCompactLoadoutSlotFrame,
-  drawCompactRoomTypeStateTag, drawCompactTrapEffectTag, fitSlotLabel,
-  formatCompactTrapCost, getMonsterRarityMeta, navigateToFocusedMonster } from './RoomDetailInterior';
+  addCompactAttributeChip,
+  addCompactEmptySlotGlyph,
+  addCompactEquipmentSocket,
+  addCompactLoadoutButton,
+  addRecommendedMonsterSlotPreview,
+  addRecommendedTrapSlotPreview,
+  drawCollectorCardSkin,
+  drawCompactEmptyMonsterPlanTag,
+  drawCompactEmptyTrapPlanTag,
+  drawCompactGrowthMeter,
+  drawCompactLoadoutSlotFrame,
+  drawCompactRoomTypeStateTag,
+  drawCompactTrapEffectTag,
+  fitSlotLabel,
+  formatCompactTrapCost,
+  getMonsterRarityMeta } from './RoomDetailCompactCards';
+import { navigateToFocusedMonster } from './RoomDetailInterior';
 
 import {
   ROOM_DETAIL_REOPEN_DELAY_MS, MONSTER_ROW_ACCENT, TRAP_ROW_ACCENT, ROOM_TYPE_ACCENT, ROOM_TYPE_SHORT_BONUS, ROOM_TYPE_ROLE_CHIP, MONSTER_TYPE_LABEL, MONSTER_TYPE_COLOR, getEquippedItem, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks } from './RoomDetailShared';
