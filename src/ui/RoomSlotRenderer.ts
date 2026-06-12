@@ -33,7 +33,7 @@ const ROOM_TYPE_SHORT_LABEL: Record<string, string> = {
   support: '지원',
   magic: '마법',
 };
-const HOME_MONSTER_SLOT_COLOR = 0x8ff0d0;
+const HOME_MONSTER_SLOT_COLOR = 0xc4e4b8;
 const HOME_TRAP_SLOT_COLOR = 0xffc45f;
 
 interface RoomActionHint {
@@ -123,13 +123,13 @@ function drawEquipmentPowerAura(
 ): void {
   if (equipmentPower <= 0) return;
 
-  g.lineStyle(1.4, 0xffd166, 0.54);
+  g.lineStyle(1.4, 0xe8c468, 0.54);
   g.strokeRoundedRect(x + 8, y + 15, SLOT_W - 16, SLOT_H - 25, 11);
   g.lineStyle(0.8, 0xffffff, 0.14);
   g.strokeRoundedRect(x + 13, y + 20, SLOT_W - 26, SLOT_H - 35, 8);
-  g.fillStyle(0xffd166, 0.08);
+  g.fillStyle(0xe8c468, 0.08);
   g.fillRoundedRect(x + 13, y + 21, SLOT_W - 26, 7, 4);
-  g.fillStyle(0xffd166, 0.15);
+  g.fillStyle(0xe8c468, 0.15);
   g.fillCircle(x + 20, y + 25, 3);
   g.fillCircle(x + SLOT_W - 20, y + 25, 3);
 
@@ -160,7 +160,7 @@ function drawRoomOperationsChip(
   const chipY = y + 57;
   const chipW = 82;
   const chipH = 18;
-  const readinessColor = readiness >= 78 ? 0x44ccaa : readiness >= 45 ? 0xc8921a : 0xff6a4a;
+  const readinessColor = readiness >= 78 ? 0x66c08a : readiness >= 45 ? 0xc8921a : 0xff6a4a;
   const label = loadoutStatus
     ? `${roomShortLabel ?? '방'} M${loadoutStatus.monsterCount}`
     : '운영';
@@ -170,7 +170,7 @@ function drawRoomOperationsChip(
     ? `${Math.round(readiness)}%/${Math.min(999, threatScore)}`
     : `${Math.round(readiness)}%/-`;
 
-  g.fillStyle(0x030607, 0.86);
+  g.fillStyle(0x070503, 0.86);
   g.fillRoundedRect(chipX, chipY, chipW, chipH, 4);
   g.lineStyle(1, readinessColor, 0.46);
   g.strokeRoundedRect(chipX, chipY, chipW, chipH, 4);
@@ -216,7 +216,7 @@ function drawRoomNameRibbon(
   const ribbonH = 15;
   const labelColor = danger ? '#ffb7a8' : '#fff3cf';
 
-  g.fillStyle(0x020405, 0.82);
+  g.fillStyle(0x050302, 0.82);
   g.fillRoundedRect(ribbonX, ribbonY + 2, ribbonW, ribbonH, 5);
   g.fillStyle(accent, danger ? 0.18 : 0.10 + glow * 0.08);
   g.fillRoundedRect(ribbonX, ribbonY, ribbonW, ribbonH, 5);
@@ -247,7 +247,7 @@ function drawHomeSocketChip(
   if (capacity <= 0) return;
   const complete = count >= capacity;
   const label = `${kind}${count}/${capacity}`;
-  g.fillStyle(0x030607, 0.90);
+  g.fillStyle(0x070503, 0.90);
   g.fillRoundedRect(x, y, 38, 16, 5);
   g.lineStyle(1, color, complete ? 0.38 : 0.66);
   g.strokeRoundedRect(x, y, 38, 16, 5);
@@ -274,7 +274,7 @@ function drawHomeEmptyRoomLoadoutCue(
   status: ReturnType<typeof calculateRoomLoadoutStatus>,
   accent: number,
 ): void {
-  g.fillStyle(0x020405, 0.58);
+  g.fillStyle(0x050302, 0.58);
   g.fillRoundedRect(x + 10, y + 48, SLOT_W - 20, 22, 7);
   g.lineStyle(1, accent, 0.24);
   g.strokeRoundedRect(x + 10, y + 48, SLOT_W - 20, 22, 7);
@@ -362,7 +362,7 @@ function drawRoomTypeProps(
   if (roomType === 'magic') {
     const cx = x + SLOT_W / 2;
     const cy = y + 64;
-    g.fillStyle(0x09061a, 0.58);
+    g.fillStyle(0x140d10, 0.58);
     g.fillCircle(cx, cy, 26);
     g.lineStyle(1.2, accent, 0.28 + alpha * 0.24);
     g.strokeCircle(cx, cy, 24);
@@ -423,11 +423,11 @@ function drawDungeonRoomShell(
   const backH = 38;
   const floorY = y + 58;
 
-  g.fillStyle(0x020405, 0.54);
+  g.fillStyle(0x050302, 0.54);
   g.fillEllipse(x + SLOT_W / 2, y + SLOT_H - 10, SLOT_W - 10, 18);
 
   // Cutaway chamber silhouette: carved rim, back wall, side walls, and a perspective floor.
-  g.fillStyle(0x071012, 0.98);
+  g.fillStyle(0x140d04, 0.98);
   g.beginPath();
   g.moveTo(x + 13, y + 29);
   g.lineTo(x + 22, y + 14);
@@ -441,7 +441,7 @@ function drawDungeonRoomShell(
   g.lineTo(x + 6, y + SLOT_H - 14);
   g.closePath();
   g.fillPath();
-  g.fillStyle(0x020405, 0.64);
+  g.fillStyle(0x050302, 0.64);
   g.beginPath();
   g.moveTo(chamberX + 7, chamberY + 21);
   g.lineTo(chamberX + 18, chamberY + 9);
@@ -468,18 +468,18 @@ function drawDungeonRoomShell(
 
   g.fillStyle(0x152229, 0.98);
   g.fillRoundedRect(backX, backY, backW, backH, 8);
-  g.fillStyle(0x071014, 0.72);
+  g.fillStyle(0x140d04, 0.72);
   g.fillRoundedRect(backX + 6, backY + 7, backW - 12, backH - 9, 7);
   drawMasonryLines(g, backX + 4, backY + 5, backW - 8, accent, 0.42 + glow * 0.28);
 
-  g.fillStyle(0x0b1519, 0.98);
+  g.fillStyle(0x190f08, 0.98);
   g.fillTriangle(chamberX + 3, chamberY + 18, backX, backY + 7, x + 14, y + SLOT_H - 13);
   g.fillTriangle(chamberX + chamberW - 3, chamberY + 18, backX + backW, backY + 7, x + SLOT_W - 14, y + SLOT_H - 13);
   g.lineStyle(1, accent, 0.12 + glow * 0.16);
   g.lineBetween(backX, backY + 10, x + 14, y + SLOT_H - 14);
   g.lineBetween(backX + backW, backY + 10, x + SLOT_W - 14, y + SLOT_H - 14);
 
-  g.fillStyle(0x091113, 0.96);
+  g.fillStyle(0x130d06, 0.96);
   g.beginPath();
   g.moveTo(x + 16, floorY);
   g.lineTo(x + SLOT_W - 16, floorY);
@@ -503,7 +503,7 @@ function drawDungeonRoomShell(
   g.lineBetween(x + 32, floorY + 7, x + SLOT_W - 32, floorY + 7);
   g.lineBetween(x + 25, floorY + 17, x + SLOT_W - 25, floorY + 17);
 
-  g.fillStyle(0x020405, 0.88);
+  g.fillStyle(0x050302, 0.88);
   g.fillCircle(x + SLOT_W / 2, backY + 21, 15);
   g.fillRoundedRect(x + SLOT_W / 2 - 15, backY + 21, 30, 23, 7);
   g.fillStyle(accent, 0.08 + glow * 0.09);
@@ -566,7 +566,7 @@ function drawLockedExcavationFace(
     g.closePath();
   };
 
-  g.fillStyle(0x020405, 0.82);
+  g.fillStyle(0x050302, 0.82);
   traceRockPath(3);
   g.fillPath();
   g.fillStyle(t.stoneDark, 0.84);
@@ -651,7 +651,7 @@ function drawLockedExcavationFace(
   g.fillStyle(0xffcf72, 0.15);
   g.fillCircle(x + 18, y + 31, 6);
   g.fillCircle(x + SLOT_W - 18, y + 31, 6);
-  g.fillStyle(0x4bd5ff, 0.10);
+  g.fillStyle(0x55b88a, 0.10);
   g.fillCircle(cx, y + 43, 31);
   g.fillStyle(0xffd978, 0.48);
   g.fillCircle(x + 18, y + 31, 2);
@@ -671,7 +671,7 @@ function drawConstructionScaffold(
   accent: number,
 ): void {
   const cx = x + SLOT_W / 2;
-  g.fillStyle(0x020405, 0.52);
+  g.fillStyle(0x050302, 0.52);
   g.beginPath();
   g.moveTo(x + 12, y + 34);
   g.lineTo(x + 22, y + 17);
@@ -754,7 +754,7 @@ function drawConstructionScaffold(
   g.strokeRoundedRect(x + 28, y + 31, 44, 24, 7);
   g.fillStyle(accent, 0.10);
   g.fillRoundedRect(x + 32, y + 35, 36, 16, 4);
-  g.lineStyle(1, 0x9ff4ff, 0.34);
+  g.lineStyle(1, 0xf5e8c8, 0.34);
   g.strokeRoundedRect(x + 35, y + 37, 13, 10, 2);
   g.strokeRoundedRect(x + 52, y + 37, 12, 10, 2);
   g.lineBetween(x + 48, y + 42, x + 52, y + 42);
@@ -765,7 +765,7 @@ function drawConstructionScaffold(
   g.fillCircle(x + 28, y + 30, 2.3);
   g.fillCircle(x + 72, y + 30, 2.3);
 
-  g.fillStyle(0x9ff4ff, 0.18);
+  g.fillStyle(0xf5e8c8, 0.18);
   g.fillRoundedRect(x + 38, y + 65, 24, 5, 3);
   g.lineStyle(1, accent, 0.24);
   g.lineBetween(x + 50, y + 58, x + 50, y + 82);
@@ -918,7 +918,7 @@ export function drawBattleSlot(
     // Glow behind emoji — cool-toned by monster type
     const glowColor: Record<string, number> = {
       melee:   0x884444,   // muted red
-      ranged:  0x446688,   // steel blue
+      ranged:  0x6e5a3e,   // steel blue
       magic:   0x664488,   // purple
       support: 0x448866,   // teal
     };

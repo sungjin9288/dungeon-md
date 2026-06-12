@@ -203,10 +203,10 @@ function getWaveThreatScore(rows: readonly [string, number][]): number {
 }
 
 function getThreatTier(score: number): { readonly label: string; readonly color: number; readonly css: string } {
-  if (score >= 520) return { label: 'BOSS', color: 0xff6b8a, css: '#ffb8c9' };
+  if (score >= 520) return { label: 'BOSS', color: 0xd9594a, css: '#ffb8c9' };
   if (score >= 260) return { label: 'HIGH', color: 0xffb84d, css: '#ffdf8a' };
-  if (score >= 120) return { label: 'MID', color: 0xffd166, css: '#ffdf8a' };
-  return { label: 'LOW', color: 0x4ee89a, css: '#b9ffd8' };
+  if (score >= 120) return { label: 'MID', color: 0xe8c468, css: '#ffdf8a' };
+  return { label: 'LOW', color: 0x5fb854, css: '#b9ffd8' };
 }
 
 function addPreviewMetricChip(
@@ -220,7 +220,7 @@ function addPreviewMetricChip(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(0x06131d, 0.78);
+  g.fillStyle(0x140c03, 0.78);
   g.fillRoundedRect(x, y, w, 28, 7);
   g.fillStyle(accent, 0.14);
   g.fillRoundedRect(x + 5, y + 5, 20, 18, 5);
@@ -251,7 +251,7 @@ function addEnemyBriefingRow(
   rowY: number,
 ): void {
   const rowG = scene.add.graphics();
-  rowG.fillStyle(0x020609, 0.28);
+  rowG.fillStyle(0x070503, 0.28);
   rowG.fillRoundedRect(cx + 13, rowY - 12, cw - 26, 33, GAME_UI.radius.row);
   rowG.fillStyle(PREVIEW_ROW_FILL, 0.97);
   rowG.fillRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
@@ -279,7 +279,7 @@ function addEnemyBriefingRow(
 
   const countLabel = `×${count}`;
   const countBg = scene.add.graphics();
-  countBg.fillStyle(0x06131d, 0.82);
+  countBg.fillStyle(0x140c03, 0.82);
   countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
   countBg.lineStyle(1, COLORS.TORCH_GOLD, 0.48);
   countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
@@ -287,7 +287,7 @@ function addEnemyBriefingRow(
   ov.add(scene.add.text(cx + cw - 37, rowY, countLabel, {
     fontFamily: 'monospace',
     fontSize: '11px',
-    color: '#fff4d6',
+    color: '#f0e6c8',
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -396,15 +396,15 @@ export function showWavePreview(ctx: WaveEventContext): void {
 
   if (cfg) {
     const rail = scene.add.graphics();
-    rail.fillStyle(0x06131d, 0.64);
+    rail.fillStyle(0x140c03, 0.64);
     rail.fillRoundedRect(cx + 14, cy + 35, cw - 28, 5, 3);
     rail.fillStyle(threat.color, 0.8);
     rail.fillRoundedRect(cx + 14, cy + 35, Math.max(18, (cw - 28) * Phaser.Math.Clamp(getWaveThreatScore(enemyRows) / 600, 0.12, 1)), 5, 3);
     ov.add(rail);
 
     addPreviewMetricChip(scene, ov, cx + 16, cy + 47, 84, '위협', threat.label, threat.color);
-    addPreviewMetricChip(scene, ov, cx + 108, cy + 47, 86, '규모', `${totalInvaders}`, 0x4bd5ff);
-    addPreviewMetricChip(scene, ov, cx + 202, cy + 47, 100, '돌파 피해', `${totalDamage}`, 0xff6b8a);
+    addPreviewMetricChip(scene, ov, cx + 108, cy + 47, 86, '규모', `${totalInvaders}`, 0x55b88a);
+    addPreviewMetricChip(scene, ov, cx + 202, cy + 47, 100, '돌파 피해', `${totalDamage}`, 0xd9594a);
 
     // Enemy list
     let rowY = cy + 94;

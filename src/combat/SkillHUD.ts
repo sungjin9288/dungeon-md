@@ -152,7 +152,7 @@ function drawSkillDockOrnaments(
   h: number,
 ): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
-  g.fillStyle(0x06131d, 0.52);
+  g.fillStyle(0x140c03, 0.52);
   g.fillRoundedRect(x + 10, y + 6, w - 20, 8, 4);
   g.fillStyle(COLORS.TORCH_GOLD, 0.52);
   g.fillRoundedRect(x + 24, y + 8, w - 48, 2, 1);
@@ -161,7 +161,7 @@ function drawSkillDockOrnaments(
   g.lineStyle(1, COLORS.TORCH_GOLD, 0.34);
   g.lineBetween(x + 8, y + 18, x + 8, y + h - 16);
   g.lineBetween(x + w - 8, y + 18, x + w - 8, y + h - 16);
-  g.fillStyle(0x020609, 0.7);
+  g.fillStyle(0x070503, 0.7);
   g.fillCircle(x + 11, y + 12, 3);
   g.fillCircle(x + w - 11, y + 12, 3);
   g.fillStyle(COLORS.TORCH_GOLD, 0.48);
@@ -261,7 +261,7 @@ class SkillSlot {
       this.bg.strokeRoundedRect(-3, -3, SLOT_SIZE + 6, SLOT_SIZE + 6, 12);
     }
 
-    this.bg.fillStyle(0x020609, 0.56);
+    this.bg.fillStyle(0x070503, 0.56);
     this.bg.fillRoundedRect(1, 3, SLOT_SIZE, SLOT_SIZE - 1, 10);
     this.bg.fillStyle(fill, this.skill ? 0.98 : 0.7);
     this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE, 10);
@@ -273,7 +273,7 @@ class SkillSlot {
     this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE, 10);
 
     if (this.skill) {
-      this.bg.fillStyle(0x020609, 0.68);
+      this.bg.fillStyle(0x070503, 0.68);
       this.bg.fillCircle(8, 7, 5.4);
       this.bg.lineStyle(1, accent, this.highlight ? 0.82 : 0.48);
       this.bg.strokeCircle(8, 7, 5.4);
@@ -381,7 +381,7 @@ function getCategoryCss(category: ActiveSkill['category'] | undefined): string {
     case 'combat':
       return '#ffb8a0';
     case 'defense':
-      return '#bcefff';
+      return '#dce8c8';
     case 'support':
       return '#b9ffd8';
     default:

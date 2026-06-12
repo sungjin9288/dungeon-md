@@ -46,12 +46,12 @@ export class UIScene extends Phaser.Scene {
     const g = this.add.graphics();
 
     // Base fill — extends from y=0 to cover under the notch.
-    g.fillGradientStyle(0x06131d, 0x06131d, 0x11283a, 0x1c1730, 1, 1, 1, 1);
+    g.fillGradientStyle(0x140c03, 0x140c03, 0x2a1c0c, 0x241505, 1, 1, 1, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, TOP_BAR_HEIGHT + st);
 
     // Command-room texture rows
     for (let y = 0; y < TOP_BAR_HEIGHT + st; y += 12) {
-      g.fillStyle(0x4bd5ff, 0.045);
+      g.fillStyle(0x55b88a, 0.045);
       g.fillRect(0, y, CANVAS_WIDTH, 3);
       g.fillStyle(0x000000, 0.12);
       g.fillRect(0, y + 7, CANVAS_WIDTH, 2);
@@ -62,7 +62,7 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, 0, CANVAS_WIDTH, 2);
 
     // Bottom command border
-    g.fillStyle(0x4bd5ff, 0.36);
+    g.fillStyle(0x55b88a, 0.36);
     g.fillRect(0, TOP_BAR_HEIGHT + st - 6, CANVAS_WIDTH, 2);
     g.fillStyle(COLORS.TORCH_GOLD, 0.92);
     g.fillRect(0, TOP_BAR_HEIGHT + st - 3, CANVAS_WIDTH, 3);
@@ -81,9 +81,9 @@ export class UIScene extends Phaser.Scene {
 
     // ── Title ──────────────────────────────────────────────
     const titlePlate = this.add.graphics();
-    titlePlate.fillStyle(0x071824, 0.86);
+    titlePlate.fillStyle(0x1f1305, 0.86);
     titlePlate.fillRoundedRect(10, st + 8, 154, 44, 9);
-    titlePlate.lineStyle(1.2, 0x4bd5ff, 0.46);
+    titlePlate.lineStyle(1.2, 0x55b88a, 0.46);
     titlePlate.strokeRoundedRect(10, st + 8, 154, 44, 9);
     titlePlate.fillStyle(COLORS.TORCH_GOLD, 0.16);
     titlePlate.fillRoundedRect(18, st + 14, 138, 3, 2);
@@ -93,7 +93,7 @@ export class UIScene extends Phaser.Scene {
       fontFamily: "Trebuchet MS, Apple SD Gothic Neo, sans-serif",
       fontSize: '18px',
       fontStyle: 'bold',
-      color: '#021018',
+      color: '#140a02',
     });
     // Main title
     this.add.text(16, st + 16, '던전 방어전', {
@@ -105,19 +105,19 @@ export class UIScene extends Phaser.Scene {
     this.add.text(18, st + 38, 'DUNGEON DEFENSE', {
       fontFamily: 'monospace',
       fontSize: '9px',
-      color: '#9fd9ea',
+      color: '#c8b896',
     });
 
     // ── Wave pill + speed toggle (left, row 2) ────────────────────────────
     const wavePill = this.add.graphics();
-    wavePill.fillStyle(0x071824, 0.96);
+    wavePill.fillStyle(0x1f1305, 0.96);
     wavePill.fillRoundedRect(12, st + 58, 120, 26, 4);
-    wavePill.lineStyle(1, 0x4bd5ff, 0.44);
+    wavePill.lineStyle(1, 0x55b88a, 0.44);
     wavePill.strokeRoundedRect(12, st + 58, 120, 26, 4);
     wavePill.fillStyle(COLORS.TORCH_GOLD, 0.14);
     wavePill.fillRoundedRect(20, st + 62, 68, 3, 2);
     // Divider between wave label and speed button
-    wavePill.lineStyle(1, 0x4bd5ff, 0.24);
+    wavePill.lineStyle(1, 0x55b88a, 0.24);
     wavePill.lineBetween(96, st + 62, 96, st + 80);
 
     this.waveLabel = this.add.text(54, st + 71, this.getWaveLabel(), {

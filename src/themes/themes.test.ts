@@ -183,10 +183,10 @@ describe('ALL_THEMES — property constraints', () => {
 // ─── Per-theme spot-checks ────────────────────────────────────────────────────
 
 describe('Per-theme spot-checks', () => {
-  it('cave: particleGravity=120, bgGridAlpha=0.45, panelBorderCSS=#3a8890', () => {
+  it('cave: particleGravity=120, bgGridAlpha=0.45, panelBorderCSS=#8a6e30', () => {
     expect(CAVE_THEME.particleGravity).toBe(120);
     expect(CAVE_THEME.bgGridAlpha).toBe(0.45);
-    expect(CAVE_THEME.panelBorderCSS).toBe('#3a8890');
+    expect(CAVE_THEME.panelBorderCSS).toBe('#8a6e30');
   });
 
   it('ice_cave: particleGravity=40, bgGridAlpha=0.55, panelBorderCSS=#6ab4d8', () => {
@@ -432,9 +432,9 @@ describe('ALL_THEMES — glowAlpha, particleTint, textSecondary & index pins', (
     expect(ALL_THEMES[3]).toBe(VOID_THRONE_THEME);
   });
 
-  it('cave is the only theme where ambientColor === glowColor (both 0x2288aa)', () => {
+  it('cave is the only theme where ambientColor === glowColor (both 0xc8721a)', () => {
     expect(CAVE_THEME.ambientColor).toBe(CAVE_THEME.glowColor);
-    expect(CAVE_THEME.ambientColor).toBe(0x2288aa);
+    expect(CAVE_THEME.ambientColor).toBe(0xc8721a);
     for (const t of ALL_THEMES.filter(t => t.id !== 'cave')) {
       expect(t.ambientColor, `${t.id} ambientColor should ≠ glowColor`).not.toBe(t.glowColor);
     }
@@ -455,8 +455,8 @@ describe('ALL_THEMES — glowAlpha, particleTint, textSecondary & index pins', (
     expect(VOID_THRONE_THEME.particleTint).toHaveLength(3);
   });
 
-  it('textSecondary spot-checks: cave=#607080, lava=#805030, celestial=#7a8ecc', () => {
-    expect(CAVE_THEME.textSecondary).toBe('#607080');
+  it('textSecondary spot-checks: cave=#907a58, lava=#805030, celestial=#7a8ecc', () => {
+    expect(CAVE_THEME.textSecondary).toBe('#907a58');
     expect(LAVA_CAVE_THEME.textSecondary).toBe('#805030');
     expect(CELESTIAL_THEME.textSecondary).toBe('#7a8ecc');
   });
@@ -500,7 +500,7 @@ describe('ALL_THEMES — decoration coverage & remaining spot-checks', () => {
     expect(LAVA_CAVE_THEME.textAccent).toBe('#ff8844');
   });
 
-  it('cave particleTint exact values: [0x44aadd, 0x2288aa, 0x66ccee]', () => {
-    expect(CAVE_THEME.particleTint).toStrictEqual([0x44aadd, 0x2288aa, 0x66ccee]);
+  it('cave particleTint exact values: [0xe8a820, 0xc8721a, 0xffd060] (torch embers)', () => {
+    expect(CAVE_THEME.particleTint).toStrictEqual([0xe8a820, 0xc8721a, 0xffd060]);
   });
 });

@@ -368,7 +368,7 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
       fontSize: '12px',
       fontStyle: 'bold',
-      color: '#fff4d6',
+      color: '#f0e6c8',
     }).setOrigin(0, 0.5);
     const level = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, y + 17, `설계 Lv.${loadout.roomLevel}`, {
       fontFamily: 'monospace',
@@ -405,14 +405,14 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     const bar = this.scene.add.graphics();
     const barX = CANVAS_WIDTH - CONTENT_X - 88;
     const barY = y + 48;
-    bar.fillStyle(0x06131d, 0.92);
+    bar.fillStyle(0x140c03, 0.92);
     bar.fillRoundedRect(barX, barY, 74, 6, 3);
-    bar.fillStyle(hpPct > 0.6 ? 0x4ee89a : hpPct > 0.3 ? 0xffd166 : 0xff6b8a, 0.95);
+    bar.fillStyle(hpPct > 0.6 ? 0x5fb854 : hpPct > 0.3 ? 0xe8c468 : 0xd9594a, 0.95);
     bar.fillRoundedRect(barX, barY, Math.max(4, 74 * hpPct), 6, 3);
     const hpText = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, y + 38, `HP ${Math.round(loadout.hp)}/${Math.round(loadout.maxHp)}`, {
       fontFamily: 'monospace',
       fontSize: '8px',
-      color: '#c6e8f3',
+      color: '#e8d5aa',
     }).setOrigin(1, 0.5);
     this.addContent(bar, hpText);
   }

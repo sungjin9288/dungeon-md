@@ -95,7 +95,7 @@ const MONSTER_TYPE_LABEL: Record<string, string> = {
 const MONSTER_TYPE_COLOR: Record<string, number> = {
   melee: 0xd65a42,
   ranged: 0x5fb7ff,
-  magic: 0xa887ff,
+  magic: 0x9a6cd8,
   support: 0x65e0a0,
 };
 
@@ -104,7 +104,7 @@ const MONSTER_RARITY_META = {
   U: { label: 'UNIQUE', stars: '★★', color: 0x65e0a0, css: '#65e0a0' },
   R: { label: 'RARE', stars: '★★★', color: 0x5fb7ff, css: '#5fb7ff' },
   E: { label: 'EPIC', stars: '★★★★', color: 0xc58cff, css: '#c58cff' },
-  L: { label: 'LEGEND', stars: '★★★★★', color: 0xffd166, css: '#ffd166' },
+  L: { label: 'LEGEND', stars: '★★★★★', color: 0xe8c468, css: '#ffd166' },
 } as const;
 
 type RoomDirectiveTarget = 'type' | 'repair' | 'monster' | 'trap' | 'growth' | 'none';
@@ -230,7 +230,7 @@ function consumeRoomDetailFeedback(
     statLabel: typeof raw.statLabel === 'string' ? raw.statLabel : undefined,
     statBefore: typeof raw.statBefore === 'string' ? raw.statBefore : undefined,
     statAfter: typeof raw.statAfter === 'string' ? raw.statAfter : undefined,
-    accent: typeof raw.accent === 'number' ? raw.accent : 0x88ffdd,
+    accent: typeof raw.accent === 'number' ? raw.accent : 0xc8e8b0,
   };
 }
 
@@ -333,16 +333,16 @@ function drawPreBattleReturnStrip(
   const g = scene.add.graphics();
   g.fillStyle(0x091c2a, 0.96);
   g.fillRoundedRect(x, y, w, h, 9);
-  g.lineStyle(1.2, 0xffd166, 0.74);
+  g.lineStyle(1.2, 0xe8c468, 0.74);
   g.strokeRoundedRect(x, y, w, h, 9);
-  g.fillStyle(0xffd166, 0.12);
+  g.fillStyle(0xe8c468, 0.12);
   g.fillRoundedRect(x + 8, y + 7, 22, 20, 6);
   c.add(g);
 
   c.add(scene.add.text(x + 19, y + 17, '⚔', {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: '#fff4d6',
+    color: '#f0e6c8',
   }).setOrigin(0.5));
   c.add(scene.add.text(x + 40, y + 12, '침공 편집 중', {
     fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
@@ -365,9 +365,9 @@ function drawPreBattleReturnStrip(
     fontSize: '9px',
     fillColor: 0x27445a,
     hoverFillColor: 0x315b78,
-    borderColor: 0xffd166,
+    borderColor: 0xe8c468,
     hoverBorderColor: 0xfff0a3,
-    textColor: '#fff4d6',
+    textColor: '#f0e6c8',
     onPress: () => {
       closeRoomDetail(state, cb);
       scene.time.delayedCall(ROOM_DETAIL_CLOSE_MS + 40, () => {
@@ -398,13 +398,13 @@ function drawRoomActionHeader(
   const readinessColor = getRoomReadinessColor(status.readiness);
   const readinessCss = `#${readinessColor.toString(16).padStart(6, '0')}`;
   const g = scene.add.graphics();
-  g.fillStyle(0x03070b, 0.94);
+  g.fillStyle(0x0b0703, 0.94);
   g.fillRoundedRect(x, y, w, h, 10);
   g.lineStyle(1.4, directive.accent, 0.66);
   g.strokeRoundedRect(x, y, w, h, 10);
   g.fillStyle(directive.accent, 0.12);
   g.fillRoundedRect(x + 7, y + 7, w - 14, h - 14, 8);
-  g.fillStyle(0x03070b, 0.74);
+  g.fillStyle(0x0b0703, 0.74);
   g.fillRoundedRect(x + 12, y + 12, 40, 44, 10);
   g.lineStyle(1.1, directive.accent, 0.58);
   g.strokeRoundedRect(x + 12, y + 12, 40, 44, 10);
@@ -529,7 +529,7 @@ function drawRoomActionHeader(
 }
 
 function getRoomReadinessColor(readiness: number): number {
-  if (readiness >= 78) return 0x44ccaa;
+  if (readiness >= 78) return 0x66c08a;
   if (readiness >= 45) return 0xffc45c;
   return 0xff6b5f;
 }
@@ -682,7 +682,7 @@ function registerRoomUpgradeFeedback(
     statLabel: stats ? '준비' : undefined,
     statBefore: stats ? `${stats.readinessBefore}%` : undefined,
     statAfter: stats ? `${stats.readinessAfter}%` : undefined,
-    accent: 0xffd166,
+    accent: 0xe8c468,
   };
   scene.registry.set('homeRoomFeedback', feedback);
   scene.registry.set('roomDetailFeedback', feedback);
@@ -733,7 +733,7 @@ function registerRoomRepairFeedback(
     statLabel: stats ? '위협' : undefined,
     statBefore: stats ? String(stats.threatBefore) : undefined,
     statAfter: stats ? String(stats.threatAfter) : undefined,
-    accent: 0x44ccaa,
+    accent: 0x66c08a,
   };
   scene.registry.set('homeRoomFeedback', feedback);
   scene.registry.set('roomDetailFeedback', feedback);
@@ -1573,9 +1573,9 @@ function buildRoomOperationsPanel(
     borderColor: 0x2f8f75,
     borderAlpha: 0.38,
     borderWidth: 1.2,
-    accentColor: 0x44ccaa,
+    accentColor: 0x66c08a,
     accentAlpha: 0.34,
-    glowColor: 0x44ccaa,
+    glowColor: 0x66c08a,
     glowOpacity: 0.04,
     shadowOpacity: 0.26,
     shadowOffsetY: 3,
@@ -1586,7 +1586,7 @@ function buildRoomOperationsPanel(
   }
 
   const g = scene.add.graphics();
-  g.fillStyle(0x44ccaa, 0.07);
+  g.fillStyle(0x66c08a, 0.07);
   g.fillRoundedRect(secX + 10, secY + 10, secW - 20, 28, 7);
   g.lineStyle(1, 0x2f8f75, 0.18);
   g.lineBetween(secX + 14, secY + 58, secX + secW - 14, secY + 58);
@@ -1595,7 +1595,7 @@ function buildRoomOperationsPanel(
   c.add(scene.add.text(secX + 18, secY + 24, '운영 현황', {
     fontFamily: 'Georgia, serif',
     fontSize: '14px',
-    color: '#88ffdd',
+    color: '#c8e8b0',
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   c.add(scene.add.text(secX + secW - 18, secY + 24, `${typeDef?.name ?? '미설계'} · ${status}`, {
@@ -1609,7 +1609,7 @@ function buildRoomOperationsPanel(
   const readinessY = secY + 48;
   g.fillStyle(0x07100d, 1);
   g.fillRoundedRect(secX + 14, readinessY, readinessW, 8, 4);
-  g.fillStyle(roomMetrics.readiness >= 70 ? 0x44ccaa : roomMetrics.readiness >= 35 ? 0xc8921a : 0x8a4c32, 0.92);
+  g.fillStyle(roomMetrics.readiness >= 70 ? 0x66c08a : roomMetrics.readiness >= 35 ? 0xc8921a : 0x8a4c32, 0.92);
   g.fillRoundedRect(secX + 14, readinessY, Math.max(5, readinessW * roomMetrics.readiness / 100), 8, 4);
   c.add(scene.add.text(secX + 14, readinessY - 10, `준비도 ${roomMetrics.readiness}%`, {
     fontFamily: 'sans-serif',
@@ -1623,7 +1623,7 @@ function buildRoomOperationsPanel(
     y: secY + 39,
     w: 128,
     h: 18,
-    accent: slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x44ccaa : 0x44ccaa,
+    accent: slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x66c08a : 0x66c08a,
     showLabels: true,
   });
 
@@ -1664,14 +1664,14 @@ function buildRoomOperationsPanel(
     c.add([button.bg, button.text, button.zone]);
   };
 
-  addShortcut(secX + 14, canResumePreBattle ? '👹 성장' : '👹 성장/레벨업', 0x123a2b, 0x4ee89a, '#c8ffe0', () => {
+  addShortcut(secX + 14, canResumePreBattle ? '👹 성장' : '👹 성장/레벨업', 0x123a2b, 0x5fb854, '#c8ffe0', () => {
     if (firstMonsterId) {
       navigateToFocusedMonster(scene, state, cb, firstMonsterId, slotIdx);
       return;
     }
     navigateFromRoomDetail(scene, state, cb, 'BarracksScene');
   });
-  addShortcut(secX + 14 + shortcutW + shortcutGap, canResumePreBattle ? '⚒ 장비' : '⚒ 장비 강화', 0x2e2142, 0xa887ff, '#e4d8ff', () => {
+  addShortcut(secX + 14 + shortcutW + shortcutGap, canResumePreBattle ? '⚒ 장비' : '⚒ 장비 강화', 0x2e2142, 0x9a6cd8, '#e4d8ff', () => {
     if (firstMonsterId) {
       navigateToFocusedForge(scene, state, cb, firstMonsterId, slotIdx);
       return;
@@ -1679,7 +1679,7 @@ function buildRoomOperationsPanel(
     navigateFromRoomDetail(scene, state, cb, 'ForgeScene');
   });
   if (canResumePreBattle) {
-    addShortcut(secX + 14 + (shortcutW + shortcutGap) * 2, '⚔ 침공 복귀', 0x27445a, 0xffd166, '#fff4d6', () => {
+    addShortcut(secX + 14 + (shortcutW + shortcutGap) * 2, '⚔ 침공 복귀', 0x27445a, 0xe8c468, '#f0e6c8', () => {
       closeRoomDetail(state, cb);
       scene.time.delayedCall(ROOM_DETAIL_CLOSE_MS + 40, () => {
         cb.resumePreBattle?.();
@@ -1730,7 +1730,7 @@ function getRoomDirective(
       body: recommendation?.reason ?? '먼저 전투실, 함정실, 지원실, 마법실 중 역할을 정하세요.',
       ctaLabel: recommendation ? '추천 적용' : '아래에서 설계',
       target: 'type',
-      accent: 0x4bd5ff,
+      accent: 0x55b88a,
       fillColor: 0x08151c,
       textColor: '#c8f1ff',
       onPress: recommendation
@@ -1822,7 +1822,7 @@ function getRoomDirective(
       body: `${focusMonsterDef?.name ?? '수호자'} 장비가 비어 있습니다. 제작소에서 바로 보강하세요.`,
       ctaLabel: '장비 강화',
       target: 'growth',
-      accent: 0xa887ff,
+      accent: 0x9a6cd8,
       fillColor: 0x151026,
       textColor: '#e4d8ff',
       onPress: () => navigateToFocusedForge(scene, state, cb, firstUnequippedMonsterId, slotIdx),
@@ -1891,7 +1891,7 @@ function getRoomDirective(
       body: '모든 작업 큐가 비었습니다. 다음 침공 방어로 진행하세요.',
       ctaLabel: '침공 준비',
       target: 'none',
-      accent: 0xffd166,
+      accent: 0xe8c468,
       fillColor: 0x1f1506,
       textColor: '#ffe8a6',
       onPress: () => startBattleFromRoomDetail(scene, state, cb),
@@ -1903,7 +1903,7 @@ function getRoomDirective(
     body: '이 방은 다음 침입을 막을 준비가 끝났습니다.',
     ctaLabel: '완비',
     target: 'none',
-    accent: 0x44ccaa,
+    accent: 0x66c08a,
     fillColor: 0x071812,
     textColor: '#b7ffe8',
   };
@@ -2047,7 +2047,7 @@ function buildRoomInteriorPreview(
   directive: RoomDirective,
 ): number {
   const panelH = 314;
-  const accent = slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x44ccaa : 0x4bd5ff;
+  const accent = slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x66c08a : 0x55b88a;
   const roomMetrics = calculateRoomMetrics(gs, slot);
 
   const frame = addFramedPanel(scene, {
@@ -2212,7 +2212,7 @@ function buildRoomInteriorPreview(
         color: '#ffe080',
         fontStyle: 'bold',
       }).setOrigin(0.5));
-      drawInteriorSlotActionChip(scene, c, pos.x - 22, pos.y - 26, '성장', 0x44ccaa, true);
+      drawInteriorSlotActionChip(scene, c, pos.x - 22, pos.y - 26, '성장', 0x66c08a, true);
       if (equipment) {
         drawInteriorEquipmentBadge(scene, c, pos.x + 23, pos.y - 17, equipment, accent);
       } else {
@@ -2338,7 +2338,7 @@ function drawUnbuiltRoomBlueprintPreview(
     const optionY = y + h - 54;
     const isRecommended = type.id === recommendation.roomType;
     const optionAccent = ROOM_TYPE_ACCENT[type.id] ?? accent;
-    g.fillStyle(isRecommended ? optionAccent : 0x071014, isRecommended ? 0.28 : 0.82);
+    g.fillStyle(isRecommended ? optionAccent : 0x140d04, isRecommended ? 0.28 : 0.82);
     g.fillRoundedRect(optionX - 31, optionY - 16, 62, 36, 9);
     g.lineStyle(isRecommended ? 1.6 : 1, optionAccent, isRecommended ? 0.78 : 0.26);
     g.strokeRoundedRect(optionX - 31, optionY - 16, 62, 36, 9);
@@ -2353,7 +2353,7 @@ function drawUnbuiltRoomBlueprintPreview(
     c.add(scene.add.text(optionX, optionY + 12, fitSlotLabel(type.name, 5), {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: isRecommended ? '#fff4d6' : '#7fa2a8',
+      color: isRecommended ? '#f0e6c8' : '#7fa2a8',
       fontStyle: isRecommended ? 'bold' : 'normal',
     }).setOrigin(0.5));
   });
@@ -2411,7 +2411,7 @@ function drawInteriorEquipmentSummary(
   const assignedCount = Math.max(1, assignedMonsterIds.length, monsterCount);
   const fullyEquipped = firstMonsterId && equippedCount >= assignedCount;
   const statusLabel = !firstMonsterId ? 'EMPTY' : fullyEquipped ? 'READY' : 'NEED';
-  const statusColor = !firstMonsterId ? 0x31443d : fullyEquipped ? 0x44ccaa : 0xffc44d;
+  const statusColor = !firstMonsterId ? 0x31443d : fullyEquipped ? 0x66c08a : 0xffc44d;
   const text = primaryEquipment
     ? `${primaryEquipment.icon} ${primaryEquipment.name} · ${primaryEquipment.effect}${equipmentEntries.length > 1 ? ` · +${equipmentEntries.length - 1}` : ''}`
     : firstMonsterId
@@ -2430,9 +2430,9 @@ function drawInteriorEquipmentSummary(
 
   g.fillStyle(0x050806, 0.9);
   g.fillRoundedRect(x, y, w, railH, 8);
-  g.lineStyle(1.2, primaryEquipment ? 0xffd166 : accent, primaryEquipment ? 0.62 : 0.32);
+  g.lineStyle(1.2, primaryEquipment ? 0xe8c468 : accent, primaryEquipment ? 0.62 : 0.32);
   g.strokeRoundedRect(x, y, w, railH, 8);
-  g.fillStyle(primaryEquipment ? 0xffd166 : accent, primaryEquipment ? 0.18 : 0.1);
+  g.fillStyle(primaryEquipment ? 0xe8c468 : accent, primaryEquipment ? 0.18 : 0.1);
   g.fillRoundedRect(x + 5, y + 5, 28, railH - 10, 7);
   g.lineStyle(1, primaryEquipment ? 0xffef9c : accent, primaryEquipment ? 0.42 : 0.24);
   g.strokeRoundedRect(x + 5, y + 5, 28, railH - 10, 7);
@@ -2463,9 +2463,9 @@ function drawInteriorEquipmentSummary(
     color: primaryEquipment ? '#fff0c2' : '#9ebcae',
   }).setOrigin(0, 0.5));
 
-  g.fillStyle(equipmentPower > 0 ? 0xffd166 : 0x11261d, equipmentPower > 0 ? 0.22 : 0.46);
+  g.fillStyle(equipmentPower > 0 ? 0xe8c468 : 0x11261d, equipmentPower > 0 ? 0.22 : 0.46);
   g.fillRoundedRect(pipAreaX - 2, y + 4, 48, 10, 4);
-  g.lineStyle(1, equipmentPower > 0 ? 0xffd166 : 0x38584c, equipmentPower > 0 ? 0.46 : 0.3);
+  g.lineStyle(1, equipmentPower > 0 ? 0xe8c468 : 0x38584c, equipmentPower > 0 ? 0.46 : 0.3);
   g.strokeRoundedRect(pipAreaX - 2, y + 4, 48, 10, 4);
   c.add(scene.add.text(pipAreaX + 22, y + 9, powerLabel, {
     fontFamily: 'sans-serif',
@@ -2481,7 +2481,7 @@ function drawInteriorEquipmentSummary(
     const pipX = pipStartX + i * pipGap;
     const monsterId = assignedMonsterIds[i];
     const equipped = Boolean(monsterId && getEquippedItem(gs, monsterId));
-    g.fillStyle(equipped ? 0xffd166 : 0x101a1a, equipped ? 0.95 : 0.78);
+    g.fillStyle(equipped ? 0xe8c468 : 0x101a1a, equipped ? 0.95 : 0.78);
     g.fillRoundedRect(pipX, y + 18, 8, 8, 3);
     g.lineStyle(1, equipped ? 0xffef9c : 0x3f6557, equipped ? 0.7 : 0.42);
     g.strokeRoundedRect(pipX, y + 18, 8, 8, 3);
@@ -2497,7 +2497,7 @@ function drawInteriorEquipmentSummary(
 
   g.fillStyle(firstMonsterId ? 0x2e2142 : 0x111716, firstMonsterId ? 0.95 : 0.72);
   g.fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 6);
-  g.lineStyle(1, firstMonsterId ? 0xa887ff : 0x31443d, firstMonsterId ? 0.64 : 0.38);
+  g.lineStyle(1, firstMonsterId ? 0x9a6cd8 : 0x31443d, firstMonsterId ? 0.64 : 0.38);
   g.strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 6);
   c.add(scene.add.text(buttonX + buttonW / 2, buttonY + buttonH / 2, actionLabel, {
     fontFamily: 'sans-serif',
@@ -2531,10 +2531,10 @@ function drawInteriorLoadoutBands(
 ): void {
   const trapY = y + Math.round(h * 0.27);
   const guardY = y + Math.round(h * 0.68);
-  const readinessColor = readiness >= 78 ? 0x44ccaa : readiness >= 45 ? 0xc8921a : 0xff6a4a;
+  const readinessColor = readiness >= 78 ? 0x66c08a : readiness >= 45 ? 0xc8921a : 0xff6a4a;
   const floorTop = y + Math.round(h * 0.43);
 
-  g.fillStyle(0x020405, 0.34);
+  g.fillStyle(0x050302, 0.34);
   g.fillRoundedRect(x + 24, trapY - 16, w - 48, 36, 10);
   g.fillStyle(0x030608, 0.44);
   g.beginPath();
@@ -2600,7 +2600,7 @@ function drawInteriorLoadoutBands(
 
   const chipX = x + w - 76;
   const chipY = y + h - 18;
-  g.fillStyle(0x03070b, 0.88);
+  g.fillStyle(0x0b0703, 0.88);
   g.fillRoundedRect(chipX, chipY, 58, 13, 5);
   g.lineStyle(1, readinessColor, 0.56);
   g.strokeRoundedRect(chipX, chipY, 58, 13, 5);
@@ -2658,7 +2658,7 @@ function drawInteriorPlacementScaffold(
     g.fillPath();
     g.lineStyle(1, color, filled ? 0.30 : 0.16);
     g.strokePath();
-    g.fillStyle(0x020405, 0.34);
+    g.fillStyle(0x050302, 0.34);
     g.fillCircle(pos.x, pos.y + 2, 18);
     g.fillStyle(color, filled ? 0.22 : 0.10);
     g.fillCircle(pos.x, pos.y + 2, 8);
@@ -2667,7 +2667,7 @@ function drawInteriorPlacementScaffold(
   for (let i = 0; i < monsterCap; i += 1) {
     const pos = getPreviewSlotPosition(i, monsterCap, x + 58, y + Math.round(h * 0.68), w - 116, 34);
     const filled = Boolean(slot.monsterIds?.[i]);
-    const color = filled ? accent : 0x4bd5ff;
+    const color = filled ? accent : 0x55b88a;
     const alpha = filled ? 0.20 + glow * 0.10 : 0.08 + glow * 0.04;
 
     g.lineStyle(1, color, alpha);
@@ -2703,7 +2703,7 @@ function drawInteriorEquipmentTrack(
   const visibleCapacity = Math.min(Math.max(1, monsterCap), 4);
   g.fillStyle(0x030608, 0.76);
   g.fillRoundedRect(startX - 8, y - 7, visibleCapacity * 8 + 14, 14, 5);
-  g.lineStyle(1, 0xffd166, equippedCount > 0 ? 0.38 : 0.18);
+  g.lineStyle(1, 0xe8c468, equippedCount > 0 ? 0.38 : 0.18);
   g.strokeRoundedRect(startX - 8, y - 7, visibleCapacity * 8 + 14, 14, 5);
   g.fillStyle(accent, 0.08);
   g.fillRoundedRect(startX - 5, y + 4, Math.max(5, visibleCapacity * 8 + 8), 1.5, 1);
@@ -2711,7 +2711,7 @@ function drawInteriorEquipmentTrack(
   for (let i = 0; i < visibleCapacity; i += 1) {
     const px = startX + i * 8;
     const filled = i < equippedCount;
-    g.fillStyle(filled ? 0xffd166 : 0x121a1a, filled ? 0.94 : 0.78);
+    g.fillStyle(filled ? 0xe8c468 : 0x121a1a, filled ? 0.94 : 0.78);
     g.beginPath();
     g.moveTo(px, y - 4);
     g.lineTo(px + 4, y);
@@ -2719,13 +2719,13 @@ function drawInteriorEquipmentTrack(
     g.lineTo(px - 4, y);
     g.closePath();
     g.fillPath();
-    g.lineStyle(1, filled ? 0xffd166 : accent, filled ? 0.58 : 0.24);
+    g.lineStyle(1, filled ? 0xe8c468 : accent, filled ? 0.58 : 0.24);
     g.strokeTriangle(px, y - 4, px + 4, y, px, y + 4);
     g.lineBetween(px, y + 4, px - 4, y);
     g.lineBetween(px - 4, y, px, y - 4);
   }
   if (monsterCap > visibleCapacity) {
-    g.fillStyle(0xffd166, 0.46);
+    g.fillStyle(0xe8c468, 0.46);
     g.fillCircle(startX + visibleCapacity * 8 + 2, y, 1.5);
   }
 }
@@ -2746,7 +2746,7 @@ function drawInteriorChamber(
   const backH = Math.round(h * 0.42);
   const floorY = backY + backH - 4;
 
-  g.fillStyle(0x020405, 0.99);
+  g.fillStyle(0x050302, 0.99);
   g.fillRoundedRect(x, y, w, h, 14);
   g.fillStyle(isBroken ? 0x210b08 : 0x111b22, 0.90);
   g.fillRoundedRect(x + 8, y + 8, w - 16, h - 16, 12);
@@ -2757,7 +2757,7 @@ function drawInteriorChamber(
 
   g.fillStyle(0x17262d, 0.95);
   g.fillRoundedRect(x + 24, backY, w - 48, backH, 11);
-  g.fillStyle(0x071014, 0.84);
+  g.fillStyle(0x140d04, 0.84);
   g.fillRoundedRect(x + 34, backY + 13, w - 68, backH - 18, 9);
   g.lineStyle(1, accent, 0.12);
   for (let gy = backY + 24; gy < backY + backH - 7; gy += 13) {
@@ -2768,7 +2768,7 @@ function drawInteriorChamber(
     g.lineBetween(gx, backY + 18, gx - 7, backY + backH - 8);
   }
 
-  g.fillStyle(0x071014, 0.96);
+  g.fillStyle(0x140d04, 0.96);
   g.beginPath();
   g.moveTo(x + 34, floorY);
   g.lineTo(x + w - 34, floorY);
@@ -2847,7 +2847,7 @@ function drawInteriorDungeonEditorDetails(
   const ceilingY = y + 18;
   const floorY = y + h - 38;
 
-  g.fillStyle(0x020405, 0.58);
+  g.fillStyle(0x050302, 0.58);
   g.fillRoundedRect(x + 30, y + 13, w - 60, 11, 5);
   g.fillStyle(accent, 0.08 + glow * 0.05);
   g.fillRoundedRect(x + 44, y + 16, w - 88, 4, 2);
@@ -2898,18 +2898,18 @@ function drawInteriorEquipmentAura(
 ): void {
   if (equipmentPower <= 0) return;
 
-  g.lineStyle(1.4, 0xffd166, 0.44);
+  g.lineStyle(1.4, 0xe8c468, 0.44);
   g.strokeRoundedRect(x + 7, y + 7, w - 14, h - 18, 10);
   g.lineStyle(0.8, 0xffffff, 0.11);
   g.strokeRoundedRect(x + 17, y + 20, w - 34, h - 48, 8);
-  g.fillStyle(0xffd166, 0.09);
+  g.fillStyle(0xe8c468, 0.09);
   g.fillRoundedRect(x + 22, y + 18, w - 44, 5, 3);
   g.fillCircle(x + 36, y + 24, 3);
   g.fillCircle(x + w - 36, y + 24, 3);
 
   g.fillStyle(0x100b03, 0.92);
   g.fillRoundedRect(x + w - 104, y + 12, 82, 16, 6);
-  g.lineStyle(1, 0xffd166, 0.58);
+  g.lineStyle(1, 0xe8c468, 0.58);
   g.strokeRoundedRect(x + w - 104, y + 12, 82, 16, 6);
   c.add(scene.add.text(x + w - 63, y + 20, `장비 강화 +${equipmentPower}`, {
     fontFamily: 'sans-serif',
@@ -2937,9 +2937,9 @@ function drawInteriorRoomPlaque(
   const plaqueH = 28;
   const plaqueX = x + w / 2 - plaqueW / 2;
   const plaqueY = y + 16;
-  const readinessColor = readiness >= 70 ? 0x4ee89a : readiness >= 35 ? 0xffd166 : 0xff7a5a;
+  const readinessColor = readiness >= 70 ? 0x5fb854 : readiness >= 35 ? 0xe8c468 : 0xff7a5a;
 
-  g.fillStyle(0x020405, 0.72);
+  g.fillStyle(0x050302, 0.72);
   g.fillRoundedRect(plaqueX, plaqueY + 3, plaqueW, plaqueH, 8);
   g.fillStyle(danger ? 0x2a0906 : 0x07131d, 0.94);
   g.fillRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 8);
@@ -3089,7 +3089,7 @@ function drawMonsterPreviewPedestal(
   slotLabel: string,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(0x020405, 0.48);
+  g.fillStyle(0x050302, 0.48);
   g.fillEllipse(x, y + 24, 66, 18);
   g.fillStyle(0x030608, 0.88);
   g.fillRoundedRect(x - 27, y + 5, 54, 22, 9);
@@ -3119,7 +3119,7 @@ function drawMonsterPreviewPedestal(
   g.fillRoundedRect(x - 22, y + 20, 44, 6, 3);
   g.fillCircle(x - 22, y + 15, 2.2);
   g.fillCircle(x + 22, y + 15, 2.2);
-  g.fillStyle(0x020405, 0.90);
+  g.fillStyle(0x050302, 0.90);
   g.fillRoundedRect(x - 33, y + 2, 22, 13, 5);
   g.lineStyle(1, accent, filled ? 0.58 : 0.34);
   g.strokeRoundedRect(x - 33, y + 2, 22, 13, 5);
@@ -3166,7 +3166,7 @@ function drawInteriorEquipmentSocket(
   const g = scene.add.graphics();
   g.fillStyle(0x050806, 0.88);
   g.fillRoundedRect(x - 10, y - 8, 20, 16, 5);
-  g.lineStyle(1, 0xa887ff, 0.52);
+  g.lineStyle(1, 0x9a6cd8, 0.52);
   g.strokeRoundedRect(x - 10, y - 8, 20, 16, 5);
   g.fillStyle(accent, 0.10);
   g.fillCircle(x, y, 7);
@@ -3335,7 +3335,7 @@ function drawTrapPreviewSlot(
 ): void {
   const g = scene.add.graphics();
   const edge = filled ? 0xffc44d : accent;
-  g.fillStyle(0x020405, 0.46);
+  g.fillStyle(0x050302, 0.46);
   g.fillEllipse(x, y + 13, 50, 13);
   g.fillStyle(filled ? 0x2d1b08 : 0x071016, filled ? 0.98 : 0.86);
   g.beginPath();
@@ -3364,7 +3364,7 @@ function drawTrapPreviewSlot(
   g.fillStyle(0xffffff, filled ? 0.14 : 0.06);
   g.fillCircle(x - 14, y - 8, 1.5);
   g.fillCircle(x + 14, y - 8, 1.5);
-  g.fillStyle(0x020405, 0.92);
+  g.fillStyle(0x050302, 0.92);
   g.fillRoundedRect(x - 28, y - 19, 22, 13, 5);
   g.lineStyle(1, edge, filled ? 0.62 : 0.36);
   g.strokeRoundedRect(x - 28, y - 19, 22, 13, 5);
@@ -3561,9 +3561,9 @@ function addCompactEquipmentSocket(
   const filled = Boolean(equipment);
   socket.fillStyle(filled ? 0x332005 : 0x070b0a, filled ? 0.96 : 0.84);
   socket.fillCircle(x, y, 8);
-  socket.lineStyle(1, filled ? 0xffd166 : accent, filled ? 0.68 : 0.30);
+  socket.lineStyle(1, filled ? 0xe8c468 : accent, filled ? 0.68 : 0.30);
   socket.strokeCircle(x, y, 8);
-  socket.fillStyle(filled ? 0xffd166 : accent, filled ? 0.16 : 0.06);
+  socket.fillStyle(filled ? 0xe8c468 : accent, filled ? 0.16 : 0.06);
   socket.fillCircle(x, y, 5);
   c.add(socket);
   if (equipment) {
@@ -3625,9 +3625,9 @@ function drawCompactGrowthMeter(
   g.fillRoundedRect(x, y, w, 5, 3);
   g.lineStyle(1, accent, 0.22);
   g.strokeRoundedRect(x, y, w, 5, 3);
-  g.fillStyle(ready ? 0xffd166 : accent, ready ? 0.88 : 0.72);
+  g.fillStyle(ready ? 0xe8c468 : accent, ready ? 0.88 : 0.72);
   g.fillRoundedRect(x + 1, y + 1, Math.max(4, (w - 2) * progress), 3, 2);
-  g.fillStyle(ready ? 0xffd166 : 0xffffff, ready ? 0.42 : 0.12);
+  g.fillStyle(ready ? 0xe8c468 : 0xffffff, ready ? 0.42 : 0.12);
   g.fillCircle(x + w - 4, y + 2.5, 2);
   c.add(g);
   c.add(scene.add.text(x + w, y - 5, ready ? 'UP' : `${Math.round(progress * 100)}%`, {
@@ -4025,7 +4025,7 @@ function buildRoomTypeStrip(
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
   if (highlightTarget) {
-    drawSectionTargetPulse(scene, c, secX, secY, secW, stripH, 0x4bd5ff, '다음 선택');
+    drawSectionTargetPulse(scene, c, secX, secY, secW, stripH, 0x55b88a, '다음 선택');
   }
 
   c.add(scene.add.text(secX + 14, secY + 15, '방 설계 타입', {
@@ -4230,7 +4230,7 @@ function buildMonsterSection(
       addCompactLoadoutButton(scene, c, cardX + 7, cardY + cardH - 27, swapW, '교체', MONSTER_ROW_ACCENT, () => {
         showMonsterPicker(scene, state, theme, cb, nav, slotIdx, mi);
       });
-      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 27, growW, cardW < 114 ? '성장' : '성장 관리', 0x44ccaa, () => {
+      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 27, growW, cardW < 114 ? '성장' : '성장 관리', 0x66c08a, () => {
         navigateToFocusedMonster(scene, state, cb, om.id, slotIdx);
       }, true);
     } else {

@@ -39,7 +39,7 @@ function getCategoryAccent(category: typeof ACTIVE_SKILLS[number]['category']): 
     case 'combat':
       return COLORS.BLOOD_GLOW;
     case 'defense':
-      return 0x4bd5ff;
+      return 0x55b88a;
     case 'support':
       return 0x5cff9b;
     default:
@@ -106,7 +106,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const bg = scene.add.graphics();
     bg.fillStyle(0x07131d, 0.96);
     bg.fillRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(0x020609, 0.34);
+    bg.fillStyle(0x070503, 0.34);
     bg.fillRoundedRect(tipX + 8, tipY + 8, 34, tipH - 16, 7);
     bg.lineStyle(1.2, COLORS.TORCH_GOLD, 0.62);
     bg.strokeRoundedRect(tipX, tipY, tipW, tipH, 9);
@@ -183,7 +183,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
   popup.add([panel.shadow, panel.panel, panel.glow]);
 
   const header = scene.add.graphics();
-  header.fillStyle(0x020609, 0.28);
+  header.fillStyle(0x070503, 0.28);
   header.fillRoundedRect(panelX + 8, panelY + 8, panelW - 16, 28, 8);
   header.fillStyle(COLORS.TORCH_GOLD, 0.18);
   header.fillRoundedRect(panelX + 14, panelY + 13, 4, 18, 2);
@@ -228,7 +228,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const bg = scene.add.graphics();
     const drawCard = (hover = false): void => {
       bg.clear();
-      bg.fillStyle(0x020609, 0.48);
+      bg.fillStyle(0x070503, 0.48);
       bg.fillRoundedRect(bx, by + 4, CARD_W, CARD_H, 8);
       bg.fillStyle(ready ? (hover ? 0x183449 : 0x112434) : 0x171717, 0.98);
       bg.fillRoundedRect(bx, by, CARD_W, CARD_H, 8);
@@ -287,7 +287,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     }).setOrigin(0.5));
 
     const cooldownBg = scene.add.graphics();
-    cooldownBg.fillStyle(0x020609, 0.42);
+    cooldownBg.fillStyle(0x070503, 0.42);
     cooldownBg.fillRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
     cooldownBg.lineStyle(1, 0xffffff, 0.12);
     cooldownBg.strokeRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
@@ -295,7 +295,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     popup.add(scene.add.text(bx + CARD_W - 27, by + 17, `${sk.cooldown}s`, {
       fontFamily: 'monospace',
       fontSize: '8px',
-      color: ready ? '#c6e8f3' : '#777777',
+      color: ready ? '#e8d5aa' : '#777777',
     }).setOrigin(0.5));
 
     const cdLeft = ready

@@ -34,7 +34,7 @@ export function showRoomGrowthFeedback(
   const parts = stats ? formatShiftParts(stats) : formatDeltaParts(delta);
   const summary = parts.length > 0 ? parts.join(' · ') : '운영 상태 유지';
   const positive = delta.threatDelta > 0 || delta.lootDelta > 0 || delta.readinessDelta > 0;
-  const accent = positive ? 0x44ccaa : 0xc8921a;
+  const accent = positive ? 0x66c08a : 0xc8921a;
   const textColor = positive ? '#bffff0' : '#ffe0a0';
   const readinessRatio = stats ? Phaser.Math.Clamp(stats.readinessAfter / 100, 0, 1) : 0;
 

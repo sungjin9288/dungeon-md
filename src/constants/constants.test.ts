@@ -395,8 +395,14 @@ describe('layout — derived edge values & torch column symmetry', () => {
     expect(TORCH_POSITIONS[3].x).toBe(GRID_X + GRID_WIDTH);
   });
 
-  it('COLORS has exactly 16 named colour keys', () => {
-    expect(Object.keys(COLORS)).toHaveLength(16);
+  it('COLORS has exactly 23 named colour keys (16 base + 7 unified-design tokens)', () => {
+    expect(Object.keys(COLORS)).toHaveLength(23);
+  });
+
+  it('design tokens: JADE accent and unified panel/card base exist', () => {
+    expect(COLORS.JADE).toBe(0x55b88a);
+    expect(COLORS.PANEL_BG).toBe(0x1f1305);
+    expect(COLORS.CARD_BG).toBe(0x2c1d0d);
   });
 
   it('CSS has exactly 8 named CSS colour keys', () => {

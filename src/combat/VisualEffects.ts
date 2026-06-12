@@ -77,7 +77,7 @@ export function showEquipmentStrike(
   const midY = y1 + dy * 0.62;
 
   const g = scene.add.graphics().setDepth(49);
-  g.lineStyle(2, 0xffd166, 0.65);
+  g.lineStyle(2, 0xe8c468, 0.65);
   g.lineBetween(x1 + px * 5, y1 + py * 5, x2 + px * 5, y2 + py * 5);
   g.fillStyle(0xfff0a8, 0.95);
   for (let i = -1; i <= 1; i++) {

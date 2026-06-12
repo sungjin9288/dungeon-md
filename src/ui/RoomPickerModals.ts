@@ -63,7 +63,7 @@ const MONSTER_TYPE_LABEL: Record<string, string> = {
 const MONSTER_TYPE_ACCENT: Record<string, number> = {
   melee: 0xd65a42,
   ranged: 0x5fb7ff,
-  magic: 0xa887ff,
+  magic: 0x9a6cd8,
   support: 0x65e0a0,
 };
 
@@ -79,7 +79,7 @@ const PICKER_MONSTER_RARITY_META = {
   U: { stars: '★★', color: 0x65e0a0, css: '#65e0a0' },
   R: { stars: '★★★', color: 0x5fb7ff, css: '#5fb7ff' },
   E: { stars: '★★★★', color: 0xc58cff, css: '#c58cff' },
-  L: { stars: '★★★★★', color: 0xffd166, css: '#ffd166' },
+  L: { stars: '★★★★★', color: 0xe8c468, css: '#ffd166' },
 } as const;
 
 const MONSTER_ROOM_FIT: Record<string, Partial<Record<string, string>>> = {
@@ -490,8 +490,8 @@ function addDeltaChipRow(
 ): void {
   const chips = [
     { label: '위협', value: delta.threatDelta, suffix: '', color: 0xff8a45 },
-    { label: '전리품', value: delta.lootDelta, suffix: '', color: 0xffd166 },
-    { label: '준비', value: delta.readinessDelta, suffix: '%', color: 0x44ccaa },
+    { label: '전리품', value: delta.lootDelta, suffix: '', color: 0xe8c468 },
+    { label: '준비', value: delta.readinessDelta, suffix: '%', color: 0x66c08a },
   ].filter(chip => chip.value !== 0);
 
   if (chips.length === 0) {
@@ -843,7 +843,7 @@ export function showMonsterPicker(
     `슬롯 ${monsterSlotIdx + 1} · 보유 ${monsterRows.length}체`,
     () => destroyMonsterPicker(state, scene, true),
   );
-  addPickerRoomContext(scene, c, gs, slotIdx, `M 슬롯 ${monsterSlotIdx + 1}`, 0x44ccaa);
+  addPickerRoomContext(scene, c, gs, slotIdx, `M 슬롯 ${monsterSlotIdx + 1}`, 0x66c08a);
 
   const list = scene.add.container(0, listY);
   c.add(list);
@@ -933,9 +933,9 @@ export function showMonsterPicker(
       const gear = scene.add.graphics();
       gear.fillStyle(0x1b1204, enabled ? 0.94 : 0.54);
       gear.fillCircle(cx + 24, cardY + 35, 10);
-      gear.lineStyle(1, 0xffd166, enabled ? 0.62 : 0.22);
+      gear.lineStyle(1, 0xe8c468, enabled ? 0.62 : 0.22);
       gear.strokeCircle(cx + 24, cardY + 35, 10);
-      gear.fillStyle(0xffd166, enabled ? 0.14 : 0.04);
+      gear.fillStyle(0xe8c468, enabled ? 0.14 : 0.04);
       gear.fillCircle(cx + 24, cardY + 35, 6);
       list.add(gear);
       list.add(scene.add.text(cx + 24, cardY + 35, equipmentIcon, {
@@ -994,7 +994,7 @@ export function showMonsterPicker(
         if (!result.ok) return;
         cb.saveAndRefresh(result.state);
         cb.markRoomChanged?.(slotIdx);
-        registerRoomLoadoutFeedback(scene, slotIdx, 'monster', mDef.name, mDef.emoji, freshDelta, 0x44ccaa, growthStats);
+        registerRoomLoadoutFeedback(scene, slotIdx, 'monster', mDef.name, mDef.emoji, freshDelta, 0x66c08a, growthStats);
         showRoomGrowthFeedback(scene, freshDelta, `${mDef.name} 배치 완료`, growthStats);
         logger.debug(`[ROOM] slot ${slotIdx}[${monsterSlotIdx}]: ${mDef.name} (${om.id}) assigned`);
         destroyMonsterPicker(state);

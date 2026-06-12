@@ -63,7 +63,7 @@ export function getReadinessDirectiveCopy(
           ctaLabel: '던전 정비',
           chip: '보강',
           statLabel: '확장',
-          accent: 0x4bd5ff,
+          accent: 0x55b88a,
           severity: 'warning',
         };
       }
@@ -75,7 +75,7 @@ export function getReadinessDirectiveCopy(
           ctaLabel: '던전 정비',
           chip: '설계',
           statLabel: '확장',
-          accent: 0x4bd5ff,
+          accent: 0x55b88a,
           severity: 'danger',
         };
       }
@@ -86,7 +86,7 @@ export function getReadinessDirectiveCopy(
         ctaLabel: `${label} 설계`,
         chip: '설계',
         statLabel: '확장',
-        accent: 0x4bd5ff,
+        accent: 0x55b88a,
         severity: 'warning',
       };
     case 'room-repair':

@@ -10,9 +10,9 @@ export interface RoomLoadoutRailOptions {
   readonly showLabels?: boolean;
 }
 
-const MONSTER_PIP_COLOR = 0x8ff0d0;
+const MONSTER_PIP_COLOR = 0xc4e4b8;
 const TRAP_PIP_COLOR = 0xffc45f;
-const EQUIPMENT_PIP_COLOR = 0xffd166;
+const EQUIPMENT_PIP_COLOR = 0xe8c468;
 
 export function drawRoomLoadoutRail(
   scene: Phaser.Scene,
@@ -34,7 +34,7 @@ export function drawRoomLoadoutRail(
   const totalLoadout = Math.max(1, status.monsterCapacity + status.trapCapacity + equipmentCapacity);
   const loadoutRatio = Phaser.Math.Clamp(filledLoadout / totalLoadout, 0, 1);
 
-  g.fillStyle(0x030607, 0.9);
+  g.fillStyle(0x070503, 0.9);
   g.fillRoundedRect(x, y, w, h, 6);
   g.lineStyle(1, accent, 0.42);
   g.strokeRoundedRect(x, y, w, h, 6);
@@ -85,12 +85,12 @@ function drawLoadoutPipRow(
     const px = startX + i * 6;
     const filled = i < count;
     if (shape === 'circle') {
-      g.fillStyle(filled ? color : 0x141b1d, filled ? 0.92 : 0.7);
+      g.fillStyle(filled ? color : 0x1c1208, filled ? 0.92 : 0.7);
       g.fillCircle(px, y, 2.3);
       g.lineStyle(1, color, filled ? 0.34 : 0.22);
       g.strokeCircle(px, y, 2.6);
     } else {
-      g.fillStyle(filled ? color : 0x141b1d, filled ? 0.92 : 0.7);
+      g.fillStyle(filled ? color : 0x1c1208, filled ? 0.92 : 0.7);
       g.fillTriangle(px - 2.6, y + 2.3, px, y - 2.7, px + 2.6, y + 2.3);
       g.lineStyle(1, color, filled ? 0.32 : 0.2);
       g.strokeTriangle(px - 2.9, y + 2.6, px, y - 3, px + 2.9, y + 2.6);
@@ -127,7 +127,7 @@ function drawEquipmentDiamond(
   y: number,
   filled: boolean,
 ): void {
-  g.fillStyle(filled ? EQUIPMENT_PIP_COLOR : 0x141b1d, filled ? 0.92 : 0.68);
+  g.fillStyle(filled ? EQUIPMENT_PIP_COLOR : 0x1c1208, filled ? 0.92 : 0.68);
   g.beginPath();
   g.moveTo(x, y - 3.7);
   g.lineTo(x + 3.7, y);

@@ -63,7 +63,7 @@ export function getRoomActionRecommendation(
       ctaLabel: `${roomLabel} 설계`,
       statLabel: '확장',
       statValue: `#${roomOrdinal}`,
-      accent: 0x4bd5ff,
+      accent: 0x55b88a,
     };
   }
 
@@ -168,7 +168,7 @@ export function getRoomActionRecommendation(
       ctaLabel: '장비 이동',
       statLabel: 'E',
       statValue: `${equippedCount}/${assignedMonsterIds.length}`,
-      accent: 0xa887ff,
+      accent: 0x9a6cd8,
     };
   }
 
@@ -187,7 +187,7 @@ export function getRoomActionRecommendation(
       ctaLabel: '성장 이동',
       statLabel: 'Lv',
       statValue: `${underleveledMonster.level}/${targetLevel}`,
-      accent: 0x44ccaa,
+      accent: 0x66c08a,
     };
   }
 
@@ -203,7 +203,7 @@ export function getRoomActionRecommendation(
       ctaLabel: '성장 이동',
       statLabel: '준비',
       statValue: `${metrics.readiness}%`,
-      accent: 0x44ccaa,
+      accent: 0x66c08a,
     };
   }
 
@@ -217,7 +217,7 @@ export function getRoomActionRecommendation(
     ctaLabel: '완비',
     statLabel: '준비',
     statValue: `${metrics.readiness}%`,
-    accent: 0x44ccaa,
+    accent: 0x66c08a,
   };
 }
 

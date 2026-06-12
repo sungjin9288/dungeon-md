@@ -34,11 +34,11 @@ interface DungeonBuildSummary {
 
 const ROOM_PREVIEW_STYLE: Record<RoomSlotType | 'empty' | 'locked', { fill: number; accent: number; text: string }> = {
   combat:  { fill: 0x38291f, accent: 0xff8a45, text: '#ffd3a6' },
-  trap:    { fill: 0x173527, accent: 0x4ee89a, text: '#b9ffd8' },
-  support: { fill: 0x173446, accent: 0x4bd5ff, text: '#bcefff' },
-  magic:   { fill: 0x29264c, accent: 0xa887ff, text: '#d6ccff' },
-  empty:   { fill: 0x1d2d3a, accent: 0x6f8799, text: '#b8cfdd' },
-  locked:  { fill: 0x111a22, accent: 0x354757, text: '#617586' },
+  trap:    { fill: 0x173527, accent: 0x5fb854, text: '#b9ffd8' },
+  support: { fill: 0x2a1c0e, accent: 0x55b88a, text: '#dce8c8' },
+  magic:   { fill: 0x2c1f10, accent: 0x9a6cd8, text: '#d6ccff' },
+  empty:   { fill: 0x261808, accent: 0x907a58, text: '#b8cfdd' },
+  locked:  { fill: 0x111a22, accent: 0x3d3020, text: '#617586' },
 };
 
 function getRoomVisual(roomType: RoomSlotType | undefined): { icon: string; name: string } {
@@ -134,7 +134,7 @@ export function buildDungeonBlueprintPanel(
   const progressW = 72;
   g.fillStyle(t.stoneDark, 1);
   g.fillRoundedRect(progressX, progressY, progressW, 5, 3);
-  g.fillStyle(summary.nextUnlockLevel === null ? 0x44ccaa : 0xffcc66, 0.92);
+  g.fillStyle(summary.nextUnlockLevel === null ? 0x66c08a : 0xffcc66, 0.92);
   g.fillRoundedRect(progressX, progressY, Math.max(5, progressW * summary.unlockProgress), 5, 3);
 
   const caveX = x + 94;
@@ -209,11 +209,11 @@ export function buildDungeonBlueprintPanel(
     }).setOrigin(0.5));
 
     if (monsterCount > 0) {
-      g.fillStyle(0xffd166, 0.95);
+      g.fillStyle(0xe8c468, 0.95);
       g.fillCircle(rx + roomW - 11, ry + roomH - 4, 2.5);
     }
     if (trapCount > 0) {
-      g.fillStyle(0x4ee89a, 0.95);
+      g.fillStyle(0x5fb854, 0.95);
       g.fillCircle(rx + roomW - 5, ry + roomH - 4, 2.5);
     }
   }

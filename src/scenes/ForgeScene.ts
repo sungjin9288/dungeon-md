@@ -228,9 +228,9 @@ export class ForgeScene extends Phaser.Scene {
       const returnBg = this.add.graphics();
       returnBg.fillStyle(0x0c211b, 0.96);
       returnBg.fillRoundedRect(returnX, returnY, 66, 26, 7);
-      returnBg.lineStyle(1.2, 0x88ffdd, 0.74);
+      returnBg.lineStyle(1.2, 0xc8e8b0, 0.74);
       returnBg.strokeRoundedRect(returnX, returnY, 66, 26, 7);
-      returnBg.fillStyle(0x88ffdd, 0.14);
+      returnBg.fillStyle(0xc8e8b0, 0.14);
       returnBg.fillRoundedRect(returnX + 4, returnY + 4, 58, 18, 5);
       c.add(returnBg);
 
@@ -366,7 +366,7 @@ export class ForgeScene extends Phaser.Scene {
       const x = i * tw;
 
       const tabBg = this.add.graphics();
-      tabBg.fillStyle(0x020609, isActive ? 0.32 : 0.12);
+      tabBg.fillStyle(0x070503, isActive ? 0.32 : 0.12);
       tabBg.fillRoundedRect(x + 12, 8, tw - 24, TAB_H - 16, 8);
       tabBg.fillStyle(isActive ? 0x2a1400 : 0x0d0600, isActive ? 1 : 0.62);
       tabBg.fillRoundedRect(x + 14, 7, tw - 28, TAB_H - 14, 8);
@@ -477,7 +477,7 @@ export class ForgeScene extends Phaser.Scene {
     panel.fillRoundedRect(x + 100, y + 8, w - 194, h - 16, 10);
     panel.fillStyle(mode === 'craft' ? 0x361404 : 0x24100b, 0.92);
     panel.fillRoundedRect(x + w - 86, y + 11, 74, h - 22, 10);
-    panel.lineStyle(1, 0x88ffdd, target ? 0.34 : 0.12);
+    panel.lineStyle(1, 0xc8e8b0, target ? 0.34 : 0.12);
     panel.strokeRoundedRect(x + 12, y + 14, 78, h - 28, 9);
     c.add(panel);
 
@@ -561,9 +561,9 @@ export class ForgeScene extends Phaser.Scene {
       const chip = this.add.graphics();
       chip.fillStyle(0x071715, 0.96);
       chip.fillRoundedRect(chipX, chipY, 58, 20, 7);
-      chip.lineStyle(1.1, 0x88ffdd, 0.58);
+      chip.lineStyle(1.1, 0xc8e8b0, 0.58);
       chip.strokeRoundedRect(chipX, chipY, 58, 20, 7);
-      chip.fillStyle(0x88ffdd, 0.16);
+      chip.fillStyle(0xc8e8b0, 0.16);
       chip.fillRoundedRect(chipX + 5, chipY + 5, 4, 10, 3);
       c.add(chip);
       c.add(this.add.text(chipX + 32, chipY + 10, this.truncateLabel(sourceLabel, 5), {
@@ -724,7 +724,7 @@ export class ForgeScene extends Phaser.Scene {
     g.strokeCircle(itemCx, itemCy, 25);
     g.lineStyle(1, typeMeta.hex, canCraft ? 0.34 : 0.16);
     g.strokeCircle(itemCx, itemCy, 18);
-    g.fillStyle(0x020609, 0.34);
+    g.fillStyle(0x070503, 0.34);
     g.fillEllipse(itemCx, itemCy + 26, 56, 9);
 
     g.lineStyle(1.5, statusColor, canCraft ? 0.72 : 0.44);
@@ -759,9 +759,9 @@ export class ForgeScene extends Phaser.Scene {
     if (hasRecommendation) {
       g.fillStyle(0x061816, 0.92);
       g.fillRoundedRect(x + cardW - 156, y + 34, 62, 15, 6);
-      g.lineStyle(1, 0x88ffdd, 0.52);
+      g.lineStyle(1, 0xc8e8b0, 0.52);
       g.strokeRoundedRect(x + cardW - 156, y + 34, 62, 15, 6);
-      g.fillStyle(0x88ffdd, 0.16);
+      g.fillStyle(0xc8e8b0, 0.16);
       g.fillCircle(x + cardW - 146, y + 41.5, 4.2);
     }
 
@@ -954,7 +954,7 @@ export class ForgeScene extends Phaser.Scene {
     g.fillRoundedRect(x, y, w, h, 9);
     g.fillStyle(recommendation.accent, 0.15);
     g.fillRoundedRect(x + 6, y + 7, 42, h - 14, 8);
-    g.fillStyle(0x020609, 0.36);
+    g.fillStyle(0x070503, 0.36);
     g.fillRoundedRect(x + w - 72, y + 8, 62, h - 16, 8);
     g.lineStyle(1.2, recommendation.accent, 0.66);
     g.strokeRoundedRect(x, y, w, h, 9);
@@ -1009,7 +1009,7 @@ export class ForgeScene extends Phaser.Scene {
     onClick: () => void,
   ): void {
     const g = this.add.graphics();
-    g.fillStyle(0x020609, 0.34);
+    g.fillStyle(0x070503, 0.34);
     g.fillRoundedRect(x, y + 3, w, h, 7);
     g.fillStyle(variant === 'primary' ? 0x5a2a00 : 0x160b05, variant === 'primary' ? 1 : 0.96);
     g.fillRoundedRect(x, y, w, h, 7);
@@ -1022,7 +1022,7 @@ export class ForgeScene extends Phaser.Scene {
     c.add(this.add.text(x + w / 2, y + h / 2, label, {
       fontFamily: 'sans-serif',
       fontSize: '13px',
-      color: variant === 'primary' ? '#fff4d6' : '#b78a55',
+      color: variant === 'primary' ? '#f0e6c8' : '#b78a55',
       fontStyle: variant === 'primary' ? 'bold' : 'normal',
     }).setOrigin(0.5));
 
@@ -1248,7 +1248,7 @@ export class ForgeScene extends Phaser.Scene {
       chip.fillRoundedRect(chipX, chipY, chipW, 22, 7);
       chip.fillStyle(target.accent, active ? 0.20 : 0.10);
       chip.fillRoundedRect(chipX + 4, chipY + 4, 22, 14, 5);
-      chip.lineStyle(1.1, active ? 0x88ffdd : target.accent, active ? 0.82 : 0.42);
+      chip.lineStyle(1.1, active ? 0xc8e8b0 : target.accent, active ? 0.82 : 0.42);
       chip.strokeRoundedRect(chipX, chipY, chipW, 22, 7);
       c.add(chip);
 
@@ -1483,7 +1483,7 @@ export class ForgeScene extends Phaser.Scene {
       const btnY = oy + (rowH - 4 - btnH) / 2;
 
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(0x020609, 0.34);
+      btnBg.fillStyle(0x070503, 0.34);
       btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 6);
       btnBg.fillStyle(canCraft ? 0xd35f16 : 0x2a1a00, 1);
       btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
@@ -1994,7 +1994,7 @@ export class ForgeScene extends Phaser.Scene {
       const btnY = oy + (rowH - 4 - btnH) / 2;
 
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(0x020609, 0.34);
+      btnBg.fillStyle(0x070503, 0.34);
       btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 5);
       btnBg.fillStyle(holder ? 0x5a1e0c : 0x4a1800, 1);
       btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 5);

@@ -15,15 +15,15 @@ export const GAME_UI = {
   colors: {
     panelFill: 0x101b26,
     rowFill: 0x172838,
-    rowBorder: 0x4bd5ff,
+    rowBorder: 0x55b88a,
     primaryFill: 0x1b9f71,
     primaryHoverFill: 0x24bd86,
     primaryBorder: 0x8cffc1,
     primaryHoverBorder: 0xffdf6e,
     mutedText: '#bad9e8',
     bevelLight: 0xd8f5ff,
-    shadowFill: 0x020609,
-    valueChipFill: 0x06131d,
+    shadowFill: 0x070503,
+    valueChipFill: 0x140c03,
   },
 } as const;
 
@@ -79,7 +79,7 @@ export function addFramedPanel(
   });
 
   const panel = scene.add.graphics();
-  panel.fillStyle(0x020609, 0.38);
+  panel.fillStyle(0x070503, 0.38);
   panel.fillRoundedRect(x + 2, y + h - 8, w - 4, 9, Math.max(3, radius - 2));
   panel.fillStyle(fillColor, 1);
   panel.fillRoundedRect(x, y, w, h, radius);
@@ -100,7 +100,7 @@ export function addFramedPanel(
   }
 
   const rivetColor = accentColor ?? borderColor;
-  panel.fillStyle(0x020609, 0.62);
+  panel.fillStyle(0x070503, 0.62);
   panel.fillCircle(x + 10, y + 10, 2.4);
   panel.fillCircle(x + w - 10, y + 10, 2.4);
   panel.fillCircle(x + 10, y + h - 10, 2.4);

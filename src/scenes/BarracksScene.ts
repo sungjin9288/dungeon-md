@@ -195,7 +195,7 @@ export class BarracksScene extends Phaser.Scene {
         192,
         18,
         `${this.focusSourceLabel} 성장 관리`,
-        0x44ccaa,
+        0x66c08a,
       );
     } else {
       this.drawCollectionProgressChip(CANVAS_WIDTH / 2 - 96, 62, 192, 18);
@@ -253,7 +253,7 @@ export class BarracksScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.22);
     g.fillCircle(x + 10, y + 6, 1.4);
     g.fillCircle(x + w - 14, y + 6, 1.2);
-    g.fillStyle(0x8bdcff, 0.22);
+    g.fillStyle(0xe8d098, 0.22);
     g.fillRoundedRect(x + 31, y + h - 5, Math.max(5, (w - 84) * summary.percent), 3, 2);
 
     this.add.text(x + 14, y + h / 2, '★', {
@@ -271,7 +271,7 @@ export class BarracksScene extends Phaser.Scene {
     this.add.text(x + w - 36, y + 7, `R+ ${summary.rareOwned}`, {
       fontFamily: 'monospace',
       fontSize: '8px',
-      color: '#8bdcff',
+      color: '#e8d098',
       fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(11);
     this.add.text(x + w - 8, y + 7, `L ${summary.legendaryOwned}`, {
@@ -363,7 +363,7 @@ export class BarracksScene extends Phaser.Scene {
     const ctaX = x + w - 72;
     const ctaY = y + 13;
     const cta = this.add.graphics().setDepth(10);
-    cta.fillStyle(0x020609, 0.34);
+    cta.fillStyle(0x070503, 0.34);
     cta.fillRoundedRect(ctaX, ctaY + 3, 58, 30, 7);
     cta.fillStyle(directive.accent, directive.targetMonster ? 0.95 : 0.36);
     cta.fillRoundedRect(ctaX, ctaY, 58, 30, 7);
@@ -419,7 +419,7 @@ export class BarracksScene extends Phaser.Scene {
     g.fillRoundedRect(x + 8, y + 7, w - 16, 3, 2);
     g.fillStyle(accent, 0.18);
     g.fillEllipse(x + w / 2, y + 55, w - 22, 14);
-    g.fillStyle(0x020609, 0.42);
+    g.fillStyle(0x070503, 0.42);
     g.fillEllipse(x + w / 2, y + 58, w - 30, 7);
 
     this.add.text(x + w / 2, y + 10, monster ? '성장 대상' : '대기 슬롯', {
@@ -698,9 +698,9 @@ export class BarracksScene extends Phaser.Scene {
     );
     if (isFocused) {
       const focus = this.add.graphics();
-      focus.fillStyle(0x44ccaa, 0.08);
+      focus.fillStyle(0x66c08a, 0.08);
       focus.fillRoundedRect(x - 4, y - 4, CARD_W + 8, CARD_H + 8, 12);
-      focus.lineStyle(2, 0x88ffdd, 0.92);
+      focus.lineStyle(2, 0xc8e8b0, 0.92);
       focus.strokeRoundedRect(x - 4, y - 4, CARD_W + 8, CARD_H + 8, 12);
       focus.lineStyle(1, 0xffffff, 0.24);
       focus.strokeRoundedRect(x + 2, y + 2, CARD_W - 4, CARD_H - 4, 8);
@@ -739,7 +739,7 @@ export class BarracksScene extends Phaser.Scene {
     chamber.fillRoundedRect(x + 18, y + 25, CARD_W - 36, 4, 2);
     chamber.fillStyle(typeMeta.color, 0.18);
     chamber.fillEllipse(x + CARD_W / 2, y + 68, CARD_W - 54, 12);
-    chamber.fillStyle(0x020609, 0.35);
+    chamber.fillStyle(0x070503, 0.35);
     chamber.fillEllipse(x + CARD_W / 2, y + 72, CARD_W - 72, 6);
     chamber.lineStyle(1, typeMeta.color, 0.34);
     chamber.strokeRoundedRect(x + 9, y + 20, CARD_W - 18, 62, 8);
@@ -763,7 +763,7 @@ export class BarracksScene extends Phaser.Scene {
         fontSize: '9px',
         color: '#061016',
         fontStyle: 'bold',
-        backgroundColor: '#88ffdd',
+        backgroundColor: '#c8e8b0',
         padding: { x: 5, y: 2 },
       }).setOrigin(0, 0.5);
       this.contentContainer.add(focusChip);
@@ -865,7 +865,7 @@ export class BarracksScene extends Phaser.Scene {
 
     const actionCue = this.getMonsterCardActionCue(m, xpPct, Boolean(eqDef), isDeployed, roomPlan);
     const actionBg = this.add.graphics();
-    actionBg.fillStyle(0x020609, 0.34);
+    actionBg.fillStyle(0x070503, 0.34);
     actionBg.fillRoundedRect(x + 12, y + 187, CARD_W - 24, 25, 7);
     actionBg.fillStyle(actionCue.fill, 0.98);
     actionBg.fillRoundedRect(x + 10, y + 184, CARD_W - 20, 27, 7);
@@ -1038,7 +1038,7 @@ export class BarracksScene extends Phaser.Scene {
     g.strokeCircle(cx, cy, 31);
     g.lineStyle(1, typeColor, 0.26);
     g.strokeCircle(cx, cy, 24);
-    g.fillStyle(0x020609, 0.42);
+    g.fillStyle(0x070503, 0.42);
     g.fillEllipse(cx, cy + 27, 68, 12);
 
     if (ready) {
@@ -1084,7 +1084,7 @@ export class BarracksScene extends Phaser.Scene {
       const sx = x + 18 + i * 23;
       g.lineBetween(sx, y + 25, sx + 24, y + 12);
     }
-    g.fillStyle(0x020609, 0.58);
+    g.fillStyle(0x070503, 0.58);
     g.fillRoundedRect(x + 14, y + 29, 50, 14, 5);
     g.lineStyle(1, meta.color, 0.38);
     g.strokeRoundedRect(x + 14, y + 29, 50, 14, 5);
@@ -1094,7 +1094,7 @@ export class BarracksScene extends Phaser.Scene {
     g.fillRoundedRect(x + CARD_W - 54, y + 47, 40, 14, 5);
     g.lineStyle(1, meta.color, 0.62);
     g.strokeRoundedRect(x + CARD_W - 54, y + 47, 40, 14, 5);
-    g.fillStyle(0x020609, 0.54);
+    g.fillStyle(0x070503, 0.54);
     g.fillRoundedRect(x + 17, y + 63, 48, 15, 6);
     g.lineStyle(1, typeColor, 0.32);
     g.strokeRoundedRect(x + 17, y + 63, 48, 15, 6);
@@ -1102,7 +1102,7 @@ export class BarracksScene extends Phaser.Scene {
     g.fillCircle(x + CARD_W - 27, y + 70, 10);
     g.lineStyle(1, meta.elementColor, 0.68);
     g.strokeCircle(x + CARD_W - 27, y + 70, 10);
-    g.fillStyle(0x020609, 0.66);
+    g.fillStyle(0x070503, 0.66);
     g.fillRoundedRect(x + CARD_W / 2 - 27, y + 74, 54, 13, 5);
     g.lineStyle(1, meta.color, 0.42);
     g.strokeRoundedRect(x + CARD_W / 2 - 27, y + 74, 54, 13, 5);
@@ -1224,7 +1224,7 @@ export class BarracksScene extends Phaser.Scene {
         title: '방 수호자 성장',
         body: `${name} · ${nextAction}`,
         cta: '상세',
-        accent: 0x44ccaa,
+        accent: 0x66c08a,
         targetMonster: focused,
       };
     }
@@ -1334,7 +1334,7 @@ export class BarracksScene extends Phaser.Scene {
       return {
         label: `방 #${designRoom.index + 1} 설계 필요`,
         subLabel: `${this.getRoomTypeDisplay(preferredType).name} 추천`,
-        accent: 0x4bd5ff,
+        accent: 0x55b88a,
         kind: 'design',
       };
     }
@@ -1374,7 +1374,7 @@ export class BarracksScene extends Phaser.Scene {
     if (roomType === 'trap') return { name: def?.name ?? '함정실', accent: COLORS.TORCH_AMBER };
     if (roomType === 'support') return { name: def?.name ?? '지원실', accent: 0x89e06f };
     if (roomType === 'magic') return { name: def?.name ?? '마법진', accent: 0xc978ff };
-    return { name: '미설계 방', accent: 0x4bd5ff };
+    return { name: '미설계 방', accent: 0x55b88a };
   }
 
   private drawMonsterBust(monster: OwnedMonster, x: number, y: number, size: number, depth: number): void {
@@ -1440,7 +1440,7 @@ export class BarracksScene extends Phaser.Scene {
         chip: '훈련',
         accent: 0x55d4ff,
         fill: 0x102638,
-        textColor: '#bcefff',
+        textColor: '#dce8c8',
       };
     }
     if (!hasEquipment) {
@@ -1682,7 +1682,7 @@ export class BarracksScene extends Phaser.Scene {
       const bx = 12 + i * (btnW + 4);
       const by = CANVAS_HEIGHT - 56;
       const bg = this.add.graphics().setDepth(21);
-      bg.fillStyle(0x020609, 0.36);
+      bg.fillStyle(0x070503, 0.36);
       bg.fillRoundedRect(bx, by + 3, btnW, 44, 7);
       bg.fillStyle(active ? 0x3a2800 : 0x151817, active ? 1 : 0.92);
       bg.fillRoundedRect(bx, by, btnW, 44, 7);
@@ -1739,7 +1739,7 @@ export class BarracksScene extends Phaser.Scene {
 
   private buildBtn(x: number, y: number, label: string, bg: number, cb: () => void): void {
     const g = this.add.graphics().setDepth(15);
-    g.fillStyle(0x020609, 0.36);
+    g.fillStyle(0x070503, 0.36);
     g.fillRoundedRect(x - 4, y - 11, label.length * 8 + 16, 28, 6);
     g.fillStyle(bg, 1);
     g.fillRoundedRect(x - 4, y - 14, label.length * 8 + 16, 28, 6);

@@ -24,9 +24,9 @@ import type { RoomUpgradeLoadoutSummary } from '../ui/RoomUpgradePanel';
 
 const ROOM_SLOT_ACCENT: Record<RoomSlotType, number> = {
   combat:  0xff8a45,
-  trap:    0x4ee89a,
-  support: 0x4bd5ff,
-  magic:   0xa887ff,
+  trap:    0x5fb854,
+  support: 0x55b88a,
+  magic:   0x9a6cd8,
 };
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   card.add([panel.shadow, panel.panel, panel.glow]);
 
   const shell = scene.add.graphics();
-  shell.fillStyle(0x020609, 0.38);
+  shell.fillStyle(0x070503, 0.38);
   shell.fillRoundedRect(cardX + 9, cardY + 10, 35, cardH - 22, 8);
   shell.fillStyle(accent, 0.16);
   shell.fillRoundedRect(cardX + 16, cardY + 19, 21, cardH - 40, 7);
@@ -199,7 +199,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   card.add(scene.add.text(barX, cardY + 68, `HP ${beforeHp} → ${afterHp}`, {
     fontFamily: 'monospace',
     fontSize: '9px',
-    color: '#c6e8f3',
+    color: '#e8d5aa',
   }).setOrigin(0, 0.5));
   card.add(scene.add.text(cardX + cardW - 15, cardY + 68, `비용 ${cost}`, {
     fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
@@ -326,10 +326,10 @@ function showRoomIntelTip(room: Room): void {
   const hpPct = Phaser.Math.Clamp(hp / maxHp, 0, 1);
   const accent = def.accentColor;
   const hpStatus = hpPct > 0.66
-    ? { label: '정상', color: 0x4ee89a, css: '#b9ffd8' }
+    ? { label: '정상', color: 0x5fb854, css: '#b9ffd8' }
     : hpPct > 0.33
-      ? { label: '주의', color: 0xffd166, css: '#ffdf8a' }
-      : { label: '위험', color: 0xff6b8a, css: '#ffb8c9' };
+      ? { label: '주의', color: 0xe8c468, css: '#ffdf8a' }
+      : { label: '위험', color: 0xd9594a, css: '#ffb8c9' };
 
   const panelW = 224;
   const panelH = 96;
@@ -338,17 +338,17 @@ function showRoomIntelTip(room: Room): void {
   const tip = scene.add.container(px, py).setName('roomIntelTip').setDepth(205).setAlpha(0);
 
   const bg = scene.add.graphics();
-  bg.fillStyle(0x06131d, 0.96);
+  bg.fillStyle(0x140c03, 0.96);
   bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 8);
   bg.lineStyle(1.4, accent, 0.78);
   bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 8);
-  bg.fillStyle(0x020609, 0.32);
+  bg.fillStyle(0x070503, 0.32);
   bg.fillRoundedRect(-panelW / 2 + 7, -panelH / 2 + 8, 31, panelH - 20, 7);
   bg.fillStyle(accent, 0.18);
   bg.fillRoundedRect(-panelW / 2 + 8, -panelH / 2 + 7, panelW - 16, 4, 2);
   bg.fillStyle(accent, 0.16);
   bg.fillRoundedRect(-panelW / 2 + 14, -panelH / 2 + 18, 17, panelH - 40, 5);
-  bg.fillStyle(0x102538, 0.86);
+  bg.fillStyle(0x221504, 0.86);
   bg.fillRoundedRect(-panelW / 2 + 46, panelH / 2 - 20, panelW - 59, 7, 4);
   bg.fillStyle(hpStatus.color, 0.94);
   bg.fillRoundedRect(-panelW / 2 + 46, panelH / 2 - 20, Math.max(4, (panelW - 59) * hpPct), 7, 4);
@@ -372,13 +372,13 @@ function showRoomIntelTip(room: Room): void {
   tip.add(scene.add.text(-panelW / 2 + 48, -panelH / 2 + 16, '방 관리', {
     fontFamily: 'sans-serif',
     fontSize: '7px',
-    color: '#89aec0',
+    color: '#907a58',
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   tip.add(scene.add.text(-panelW / 2 + 48, -panelH / 2 + 30, `${roomTypeDef?.name ?? def.koreanName}`, {
     fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
     fontSize: '11px',
-    color: '#fff4d6',
+    color: '#f0e6c8',
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
 
@@ -422,7 +422,7 @@ function showRoomIntelTip(room: Room): void {
   tip.add(scene.add.text(-panelW / 2 + 48, panelH / 2 - 7, `HP ${Math.round(hp)}/${Math.round(maxHp)}`, {
     fontFamily: 'monospace',
     fontSize: '8px',
-    color: '#c6e8f3',
+    color: '#e8d5aa',
   }).setOrigin(0, 0.5));
 
   scene.tweens.add({ targets: tip, alpha: 1, y: py - 6, duration: 150, ease: 'Cubic.easeOut' });

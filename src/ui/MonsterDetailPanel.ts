@@ -167,7 +167,7 @@ export function showMonsterDetailPanel(
   hero.lineBetween(px + 114, py + 58, px + pw - 44, py + 52);
   hero.fillStyle(accentColor, 0.16);
   hero.fillCircle(px + 57, py + 78, 26);
-  hero.fillStyle(0x020405, 0.38);
+  hero.fillStyle(0x050302, 0.38);
   hero.fillEllipse(px + 57, py + 82, 64, 13);
   ov.add(hero);
 
@@ -218,9 +218,9 @@ export function showMonsterDetailPanel(
     const focusChip = scene.add.graphics();
     focusChip.fillStyle(0x061716, 0.98);
     focusChip.fillRoundedRect(px + pw - 142, py + 65, 112, 18, 7);
-    focusChip.lineStyle(1.1, 0x88ffdd, 0.62);
+    focusChip.lineStyle(1.1, 0xc8e8b0, 0.62);
     focusChip.strokeRoundedRect(px + pw - 142, py + 65, 112, 18, 7);
-    focusChip.fillStyle(0x88ffdd, 0.18);
+    focusChip.fillStyle(0xc8e8b0, 0.18);
     focusChip.fillRoundedRect(px + pw - 138, py + 69, 4, 10, 3);
     ov.add(focusChip);
     ov.add(scene.add.text(px + pw - 84, py + 74, ctx.focusSourceLabel, {
@@ -416,7 +416,7 @@ export function showMonsterDetailPanel(
       fontSize: '12px',
       fillColor: 0x0c211b,
       hoverFillColor: 0x123229,
-      borderColor: 0x88ffdd,
+      borderColor: 0xc8e8b0,
       hoverBorderColor: accentColor,
       textColor: '#b8fff0',
       onPress: () => { ov.destroy(); onClose(); ctx.onReturnToRoom?.(); },
@@ -507,7 +507,7 @@ function drawHeroCollectionBadges(
   badge.strokeCircle(portraitX, portraitY, 36);
   badge.lineStyle(1, meta.elementColor, 0.28);
   badge.strokeCircle(portraitX, portraitY, 28);
-  badge.fillStyle(0x020405, 0.38);
+  badge.fillStyle(0x050302, 0.38);
   badge.fillEllipse(portraitX, portraitY + 30, 70, 12);
 
   badge.lineStyle(1.6, statusColor, skillPoints > 0 || isLevelReady ? 0.72 : 0.34);
@@ -521,7 +521,7 @@ function drawHeroCollectionBadges(
   );
   badge.strokePath();
 
-  badge.fillStyle(0x020609, 0.62);
+  badge.fillStyle(0x070503, 0.62);
   badge.fillRoundedRect(x + 5, y + 5, 42, 14, 5);
   badge.lineStyle(1, meta.color, 0.46);
   badge.strokeRoundedRect(x + 5, y + 5, 42, 14, 5);
@@ -529,11 +529,11 @@ function drawHeroCollectionBadges(
   badge.fillRoundedRect(x + 49, y + 5, 17, 14, 5);
   badge.lineStyle(1, meta.color, 0.72);
   badge.strokeRoundedRect(x + 49, y + 5, 17, 14, 5);
-  badge.fillStyle(0x020609, 0.58);
+  badge.fillStyle(0x070503, 0.58);
   badge.fillRoundedRect(x + 9, y + 48, 52, 15, 6);
   badge.lineStyle(1, meta.elementColor, 0.42);
   badge.strokeRoundedRect(x + 9, y + 48, 52, 15, 6);
-  badge.fillStyle(0x020609, 0.86);
+  badge.fillStyle(0x070503, 0.86);
   badge.fillRoundedRect(x + 60, y + 24, 24, 17, 6);
   badge.lineStyle(1, statusColor, 0.62);
   badge.strokeRoundedRect(x + 60, y + 24, 24, 17, 6);
@@ -753,7 +753,7 @@ function buildFeedTrainingAction(
   const defaultChipColor = `#${chipColor.toString(16).padStart(6, '0')}`;
 
   const bg = scene.add.graphics();
-  bg.fillStyle(0x020609, 0.42);
+  bg.fillStyle(0x070503, 0.42);
   bg.fillRoundedRect(x + 2, y + 3, w - 4, h, 9);
   bg.fillStyle(fillColor, 0.98);
   bg.fillRoundedRect(x, y, w, h, 9);
@@ -956,7 +956,7 @@ function buildSkillTreeSection(
       const nodeH = 52;
 
       const nodeBg = scene.add.graphics();
-      nodeBg.fillStyle(0x020609, 0.38);
+      nodeBg.fillStyle(0x070503, 0.38);
       nodeBg.fillRoundedRect(nx - nodeW / 2 + 2, ny + 3, nodeW, nodeH, 8);
       nodeBg.fillStyle(stateFill, 0.98);
       nodeBg.fillRoundedRect(nx - nodeW / 2, ny, nodeW, nodeH, 8);
@@ -1590,7 +1590,7 @@ function showLockedSkinPopup(
       ? getQuest(skin.unlockRef)?.title ?? skin.unlockRef
       : '?';
     pop.add(scene.add.text(0, -popH / 2 + 48, `퀘스트 「${questTitle}」\n완료 시 해금됩니다`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#c6e8f3',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#e8d5aa',
       align: 'center', lineSpacing: 5,
     }).setOrigin(0.5, 0));
     return;
@@ -1615,7 +1615,7 @@ function showLockedSkinPopup(
   const btn = scene.add.graphics();
   btn.fillStyle(canAfford ? 0x2c5f8a : 0x33394a, 0.96);
   btn.fillRoundedRect(-btnW / 2, btnY - btnH / 2, btnW, btnH, 8);
-  btn.lineStyle(1, canAfford ? 0x4bd5ff : 0x555d72, 0.8);
+  btn.lineStyle(1, canAfford ? 0x55b88a : 0x555d72, 0.8);
   btn.strokeRoundedRect(-btnW / 2, btnY - btnH / 2, btnW, btnH, 8);
   pop.add(btn);
   pop.add(scene.add.text(0, btnY, canAfford ? `💎 ${skin.gemCost} 구매` : '젬 부족', {

@@ -487,14 +487,14 @@ export class DungeonScene extends Phaser.Scene {
           : '준비';
     const warningColor = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0
       ? 0xff6b45
-      : 0x4ee89a;
+      : 0x5fb854;
 
     const y = GRID_Y - 8;
     const strip = this.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
     const g = this.add.graphics();
     const w = CANVAS_WIDTH - 24;
     const h = 22;
-    g.fillStyle(0x06131d, 0.88);
+    g.fillStyle(0x140c03, 0.88);
     g.fillRoundedRect(-w / 2, -h / 2, w, h, 7);
     g.lineStyle(1.2, COLORS.TORCH_GOLD, 0.48);
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, 7);
@@ -510,11 +510,11 @@ export class DungeonScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     strip.add(title);
 
-    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, 0x4bd5ff);
+    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, 0x55b88a);
     this.addCommandStripChip(strip, -50, `수호${summary.assignedMonsters}`, 0xff8a45);
-    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, 0x4ee89a);
-    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`, summary.equippedMonsters > 0 ? 0xffd166 : 0x61778d);
-    this.addCommandStripChip(strip, 115, `내구${durability}%`, durability < 50 ? 0xff6b45 : 0xffd166);
+    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, 0x5fb854);
+    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`, summary.equippedMonsters > 0 ? 0xe8c468 : 0x61778d);
+    this.addCommandStripChip(strip, 115, `내구${durability}%`, durability < 50 ? 0xff6b45 : 0xe8c468);
     this.addCommandStripChip(strip, 172, warning, warningColor, true);
 
     this.commandStrip = strip;
@@ -538,7 +538,7 @@ export class DungeonScene extends Phaser.Scene {
       fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
-      color: '#fff4d6',
+      color: '#f0e6c8',
     }).setOrigin(alignRight ? 1 : 0.5, 0.5);
     const b = text.getBounds();
     const padX = 8;

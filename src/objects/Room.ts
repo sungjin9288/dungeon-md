@@ -289,11 +289,11 @@ export class Room extends Phaser.GameObjects.Container {
     g.strokeRoundedRect(-16, centerY + 10, 32, 7, 4);
 
     if (options.equipmentCount > 0) {
-      g.lineStyle(2, 0xffd166, 0.34);
+      g.lineStyle(2, 0xe8c468, 0.34);
       g.strokeCircle(0, centerY + 3, 18);
       g.lineStyle(1, 0xfff0b0, 0.24);
       g.strokeCircle(0, centerY + 3, 22);
-      g.fillStyle(0xffd166, 0.72);
+      g.fillStyle(0xe8c468, 0.72);
       g.fillCircle(-19, centerY - 6, 1.8);
       g.fillCircle(19, centerY + 7, 1.6);
       g.fillCircle(8, centerY - 17, 1.5);
@@ -302,9 +302,9 @@ export class Room extends Phaser.GameObjects.Container {
     const trapFixtures = Math.min(4, options.trapCount);
     for (let i = 0; i < trapFixtures; i++) {
       const fixtureX = chamberX + 10 + i * ((chamberW - 20) / Math.max(1, trapFixtures - 1));
-      g.fillStyle(0x4ee89a, 0.2);
+      g.fillStyle(0x5fb854, 0.2);
       g.fillCircle(fixtureX, floorY + 2, 5);
-      g.fillStyle(0x4ee89a, 0.78);
+      g.fillStyle(0x5fb854, 0.78);
       g.fillTriangle(fixtureX - 4, floorY + 5, fixtureX, floorY - 6, fixtureX + 4, floorY + 5);
       g.lineStyle(1, 0xcaffde, 0.36);
       g.lineBetween(fixtureX - 5, floorY + 5, fixtureX + 5, floorY + 5);
@@ -320,7 +320,7 @@ export class Room extends Phaser.GameObjects.Container {
     const title = this.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
       fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
       fontSize: '8px',
-      color: '#fff4d6',
+      color: '#f0e6c8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.slotLoadoutLabels.push(title);
@@ -345,7 +345,7 @@ export class Room extends Phaser.GameObjects.Container {
       const count = this.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
         fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
         fontSize: '7px',
-        color: '#fff4d6',
+        color: '#f0e6c8',
         fontStyle: 'bold',
       }).setOrigin(0.5);
       this.slotLoadoutLabels.push(count);
@@ -353,7 +353,7 @@ export class Room extends Phaser.GameObjects.Container {
     }
 
     const stripY = s / 2 - 26;
-    g.fillStyle(0x06131d, 0.78);
+    g.fillStyle(0x140c03, 0.78);
     g.fillRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
     g.lineStyle(1, accent, 0.28);
     g.strokeRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
@@ -369,12 +369,12 @@ export class Room extends Phaser.GameObjects.Container {
     };
 
     drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, 0xff8a45);
-    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, 0x4ee89a);
+    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, 0x5fb854);
 
     if (options.equipmentCount > 0) {
-      g.fillStyle(0xffd166, 0.2);
+      g.fillStyle(0xe8c468, 0.2);
       g.fillRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
-      g.lineStyle(1, 0xffd166, 0.5);
+      g.lineStyle(1, 0xe8c468, 0.5);
       g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
       const equipment = this.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
         fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',

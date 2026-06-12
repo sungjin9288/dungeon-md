@@ -385,7 +385,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       statLabel: raw.statLabel,
       statBefore: raw.statBefore,
       statAfter: raw.statAfter,
-      accent: typeof raw.accent === 'number' ? raw.accent : 0x88ffdd,
+      accent: typeof raw.accent === 'number' ? raw.accent : 0xc8e8b0,
     };
   }
 
@@ -417,7 +417,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     bg.fillRoundedRect(x, y, w, h, 12);
     bg.fillStyle(accent, 0.12);
     bg.fillRoundedRect(x + 7, y + 7, w - 14, h - 14, 9);
-    bg.fillStyle(0x020609, 0.34);
+    bg.fillStyle(0x070503, 0.34);
     bg.fillRoundedRect(x + w - 88, y + 12, 74, h - 24, 9);
     bg.lineStyle(1.6, accent, 0.84);
     bg.strokeRoundedRect(x, y, w, h, 12);
@@ -642,7 +642,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       statLabel: '방',
       statBefore: String(previousSlots),
       statAfter: String(nextSlots),
-      accent: 0x4bd5ff,
+      accent: 0x55b88a,
     };
     this.recentlyChangedRoomIdx = slotIdx;
     this.refreshHomeDynamicPanels();
@@ -753,7 +753,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const label = this.add.text(0, -SLOT_H / 2 - 16, `방 #${slotIdx + 1} 확대`, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: '#fff4d6',
+      color: '#f0e6c8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     focus.add(label);
@@ -793,7 +793,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const slot = this.gs.dungeonSlots?.[slotIdx];
     if (slot?.roomType && slot.hp <= 0) return 0xff5544;
     if (slot?.roomType) return this.getRoomActivityColor(slot);
-    return 0x4bd5ff;
+    return 0x55b88a;
   }
 
   // ─── Stone background ────────────────────────────────────────────────────────
@@ -1054,7 +1054,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const pinContainer = this.add.container(x, y);
     const g = this.add.graphics();
 
-    g.fillStyle(0x03070b, 0.92);
+    g.fillStyle(0x0b0703, 0.92);
     g.fillCircle(0, 0, 14);
     g.lineStyle(1.2, pin.accent, 0.76);
     g.strokeCircle(0, 0, 14);
@@ -1068,7 +1068,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const text = this.add.text(-1, 0, pin.icon, {
       fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: '#fff4d6',
+      color: '#f0e6c8',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     pinContainer.add(text);
@@ -1119,13 +1119,13 @@ export class DungeonHomeScene extends Phaser.Scene {
       const marker = this.add.container(x, y).setDepth(14);
       const bg = this.add.graphics();
 
-      bg.fillStyle(0x020609, 0.94);
+      bg.fillStyle(0x070503, 0.94);
       bg.fillRoundedRect(-markerW / 2, -10, markerW, 20, 8);
       bg.lineStyle(1.2, action.accent, 0.86);
       bg.strokeRoundedRect(-markerW / 2, -10, markerW, 20, 8);
       bg.fillStyle(action.accent, 0.22);
       bg.fillRoundedRect(-markerW / 2 + 4, -6, markerW - 8, 12, 6);
-      bg.fillStyle(0x03070b, 0.92);
+      bg.fillStyle(0x0b0703, 0.92);
       bg.fillCircle(-markerW / 2 + 11, 0, 9);
       bg.lineStyle(1, action.accent, 0.76);
       bg.strokeCircle(-markerW / 2 + 11, 0, 9);
@@ -1194,7 +1194,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.lineStyle(1, 0xffffff, rank === 1 ? 0.18 : 0.10);
     g.strokeRoundedRect(left + 5, top + 5, ringW - 10, ringH - 10, 10);
 
-    g.fillStyle(0x020609, 0.72);
+    g.fillStyle(0x070503, 0.72);
     g.fillCircle(left + 18, top + 18, 7);
     g.lineStyle(1, action.accent, 0.54);
     g.strokeCircle(left + 18, top + 18, 7);
@@ -1335,8 +1335,8 @@ export class DungeonHomeScene extends Phaser.Scene {
       : isBuilt && slot
         ? this.getRoomActivityColor(slot)
         : unlocked
-          ? 0x4bd5ff
-          : 0x4a5360;
+          ? 0x55b88a
+          : 0x4d3e2a;
     const readiness = slot?.roomType ? calculateRoomMetrics(this.gs, slot).readiness : 0;
     const energy = unlocked
       ? Phaser.Math.Clamp((isBuilt ? readiness / 100 : 0.28) + (slot?.roomLevel ?? 0) * 0.05, 0.22, 0.92)
@@ -1349,7 +1349,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const floorY = y + SLOT_H + 8;
     const alpha = unlocked ? 0.48 : 0.22;
 
-    g.fillStyle(0x020405, unlocked ? 0.66 : 0.40);
+    g.fillStyle(0x050302, unlocked ? 0.66 : 0.40);
     g.fillRoundedRect(left, top, w, h, 14);
     g.lineStyle(1.1, 0x131b1b, unlocked ? 0.78 : 0.42);
     g.strokeRoundedRect(left, top, w, h, 14);
@@ -1401,9 +1401,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       return;
     }
 
-    g.lineStyle(1, 0x6f7786, 0.10);
+    g.lineStyle(1, 0x8a7858, 0.10);
     g.strokeRoundedRect(left + 12, top + 20, w - 24, h - 34, 8);
-    g.lineStyle(1, 0x6f7786, 0.08);
+    g.lineStyle(1, 0x8a7858, 0.08);
     g.lineBetween(left + 24, top + 25, left + w - 24, top + h - 22);
     g.lineBetween(left + w - 24, top + 25, left + 24, top + h - 22);
   }
@@ -1519,7 +1519,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const g = this.add.graphics();
     const countText = count > 1 ? String(Math.min(count, 9)) : '';
 
-    g.fillStyle(0x020607, 0.94);
+    g.fillStyle(0x050402, 0.94);
     g.fillCircle(0, 0, 9.5);
     g.lineStyle(1.2, accent, 0.78);
     g.strokeCircle(0, 0, 9.5);
@@ -1530,14 +1530,14 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (hasTrap) {
       g.fillStyle(0xffc45f, 0.94);
       g.fillTriangle(-9, 8, -4, -1, 1, 8);
-      g.lineStyle(1, 0x020607, 0.64);
+      g.lineStyle(1, 0x050402, 0.64);
       g.lineBetween(-7, 6, -4, 1);
       g.lineBetween(-4, 1, -1, 6);
     }
     if (count > 1) {
       g.fillStyle(accent, 0.94);
       g.fillCircle(7.5, 7.5, 4.8);
-      g.lineStyle(1, 0x020607, 0.72);
+      g.lineStyle(1, 0x050402, 0.72);
       g.strokeCircle(7.5, 7.5, 4.8);
     }
     badge.add(g);
@@ -1545,7 +1545,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     badge.add(this.add.text(0, -1, icon, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#fff4d6',
+      color: '#f0e6c8',
       fontStyle: 'bold',
     }).setOrigin(0.5));
     if (countText) {
@@ -1574,7 +1574,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     switch (slot.roomType) {
       case 'combat': return 0xff8a45;
       case 'trap': return 0xc8921a;
-      case 'support': return 0x44ccaa;
+      case 'support': return 0x66c08a;
       case 'magic': return 0x9c7cff;
       default: return this.theme.panelBorder;
     }
@@ -1653,7 +1653,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const rightX = mapX + mapW - shaftW - 11;
 
     for (const x of [leftX, rightX]) {
-      g.fillStyle(0x020405, 0.58);
+      g.fillStyle(0x050302, 0.58);
       g.fillRoundedRect(x, mapY + 24, shaftW, mapH - 48, 13);
       g.lineStyle(1.2, t.panelBorder, 0.18);
       g.strokeRoundedRect(x + 3, mapY + 27, shaftW - 6, mapH - 54, 10);
@@ -1688,11 +1688,11 @@ export class DungeonHomeScene extends Phaser.Scene {
     y: number,
     accent: number,
   ): void {
-    g.fillStyle(0x020405, 0.84);
+    g.fillStyle(0x050302, 0.84);
     g.fillRoundedRect(x - 20, y - 27, 40, 54, 12);
     g.fillStyle(0x101a20, 0.94);
     g.fillRoundedRect(x - 16, y - 22, 32, 44, 10);
-    g.fillStyle(0x020405, 0.90);
+    g.fillStyle(0x050302, 0.90);
     g.fillCircle(x, y - 4, 12);
     g.fillRoundedRect(x - 12, y - 4, 24, 24, 7);
     g.lineStyle(1.4, accent, 0.62);
@@ -1717,7 +1717,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     y: number,
     accent: number,
   ): void {
-    g.fillStyle(0x020405, 0.86);
+    g.fillStyle(0x050302, 0.86);
     g.fillCircle(x, y, 25);
     g.fillStyle(accent, 0.12);
     g.fillCircle(x, y, 31);
@@ -1777,7 +1777,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       g.closePath();
     };
 
-    g.fillStyle(0x020405, 0.92);
+    g.fillStyle(0x050302, 0.92);
     drawFramePath(4);
     g.fillPath();
     g.fillStyle(t.bgPrimary, 0.84);
@@ -1836,7 +1836,7 @@ export class DungeonHomeScene extends Phaser.Scene {
 
       const floorChipX = mapX + 24;
       const floorChipY = y + 18;
-      g.fillStyle(0x03070b, 0.72);
+      g.fillStyle(0x0b0703, 0.72);
       g.fillRoundedRect(floorChipX - 12, floorChipY - 8, 24, 16, 5);
       g.lineStyle(1, t.panelBorder, 0.30);
       g.strokeRoundedRect(floorChipX - 12, floorChipY - 8, 24, 16, 5);
@@ -1880,14 +1880,14 @@ export class DungeonHomeScene extends Phaser.Scene {
         const accent = isBroken
           ? 0xff5544
           : isBuilt && slot ? this.getRoomActivityColor(slot)
-            : isUnlocked ? 0x4bd5ff : t.stoneMid;
+            : isUnlocked ? 0x55b88a : t.stoneMid;
         const alpha = isBroken ? 0.24 : isBuilt ? 0.18 : isUnlocked ? 0.12 : 0.07;
 
         g.fillStyle(0x000000, isUnlocked ? 0.42 : 0.24);
         g.fillEllipse(x + SLOT_W / 2, y + SLOT_H - 8, SLOT_W + 18, 22);
         g.fillStyle(accent, alpha);
         g.fillRoundedRect(x - 6, y - 3, SLOT_W + 12, SLOT_H + 6, 16);
-        g.fillStyle(0x010304, isUnlocked ? 0.50 : 0.32);
+        g.fillStyle(0x030201, isUnlocked ? 0.50 : 0.32);
         g.fillRoundedRect(x + 1, y + 7, SLOT_W - 2, SLOT_H - 8, 15);
         g.lineStyle(1.5, accent, isUnlocked ? 0.30 : 0.11);
         g.strokeRoundedRect(x + 1, y + 6, SLOT_W - 2, SLOT_H - 8, 14);
@@ -1905,9 +1905,9 @@ export class DungeonHomeScene extends Phaser.Scene {
           g.lineBetween(x + 18, y + 31, x + SLOT_W - 16, y + 67);
           g.lineBetween(x + SLOT_W - 18, y + 31, x + 16, y + 72);
         } else if (!isBuilt) {
-          g.fillStyle(0x4bd5ff, 0.09);
+          g.fillStyle(0x55b88a, 0.09);
           g.fillRoundedRect(x + 19, y + 34, SLOT_W - 38, 25, 9);
-          g.lineStyle(1, 0x4bd5ff, 0.20);
+          g.lineStyle(1, 0x55b88a, 0.20);
           g.lineBetween(x + 25, y + 52, x + SLOT_W - 25, y + 41);
         } else {
           g.fillStyle(accent, 0.07);
@@ -1920,9 +1920,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (route.length > 0) {
       const first = this.getSlotCenter(route[0]);
       const last = this.getSlotCenter(route[route.length - 1]);
-      this.drawDungeonMapAnchor(c, g, mapX + mapW - 21, first.y, 0x4bd5ff);
+      this.drawDungeonMapAnchor(c, g, mapX + mapW - 21, first.y, 0x55b88a);
       this.drawDungeonMapAnchor(c, g, mapX + 21, last.y, 0xffe27a);
-      this.drawDungeonEntranceGate(c, g, mapX + mapW - 10, mapY + 50, 0x4bd5ff);
+      this.drawDungeonEntranceGate(c, g, mapX + mapW - 10, mapY + 50, 0x55b88a);
       this.drawDungeonHeartCore(c, g, mapX + 26, mapY + mapH - 43, 0xffe27a);
     }
 
@@ -2036,7 +2036,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         this.getSlotCenter(route[i]),
         this.getSlotCenter(route[i + 1]),
         31,
-        0x010304,
+        0x030201,
         0.46,
         i,
       );
@@ -2141,7 +2141,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       ? 0xff5544
       : endpoints.length > 0
         ? this.getRouteFlowAccent(fromIdx, toIdx)
-        : 0x4bd5ff;
+        : 0x55b88a;
     const activeEnergy = Phaser.Math.Clamp(
       readiness / 100 * 0.68 + Math.min(1, threatScore / 220) * 0.22 + endpoints.length * 0.08,
       0.24,
@@ -2215,7 +2215,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const cy = edgeY + uy * 8;
     const terminalAlpha = state.isPlanned ? 0.18 : state.isBroken ? 0.34 : 0.26 + state.energy * 0.24;
 
-    this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, 9, 18, 0x020405, 0.78);
+    this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, 9, 18, 0x050302, 0.78);
     this.fillRouteServicePlate(g, cx, cy, ux, uy, px, py, 6, 13, state.accent, terminalAlpha);
     g.lineStyle(1, state.accent, terminalAlpha + 0.08);
     g.strokeCircle(cx, cy, state.builtCount > 0 ? 4.2 : 3.3);
@@ -2362,7 +2362,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     if ((from?.roomType && from.hp <= 0) || (to?.roomType && to.hp <= 0)) return 0xff5544;
     if (from?.roomType) return this.getRoomActivityColor(from);
     if (to?.roomType) return this.getRoomActivityColor(to);
-    return 0x4bd5ff;
+    return 0x55b88a;
   }
 
   private paintRouteFlowSignal(
@@ -2405,7 +2405,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const isBuilt = !!slot?.roomType && slot.hp > 0;
     const isBroken = !!slot?.roomType && slot.hp <= 0;
     const metrics = slot?.roomType ? calculateRoomMetrics(this.gs, slot) : null;
-    const accent = isBroken ? 0xff5544 : isBuilt ? this.getRoomActivityColor(slot) : 0x4bd5ff;
+    const accent = isBroken ? 0xff5544 : isBuilt ? this.getRoomActivityColor(slot) : 0x55b88a;
     const alpha = slotIdx < unlockedCount ? 0.58 : 0.22;
     const accessAlpha = isBuilt
       ? 0.16 + Phaser.Math.Clamp((metrics?.readiness ?? 0) / 100, 0, 1) * 0.16
@@ -2421,7 +2421,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         { x, y: y + 55 },
       ];
       couplers.forEach((p, idx) => {
-        g.fillStyle(0x020405, 0.74);
+        g.fillStyle(0x050302, 0.74);
         g.fillCircle(p.x, p.y, idx % 2 === 0 ? 4.6 : 3.8);
         g.fillStyle(accent, isBroken ? 0.22 : accessAlpha + 0.08);
         g.fillCircle(p.x, p.y, idx % 2 === 0 ? 2.5 : 2.1);
@@ -2610,7 +2610,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 66, 7);
     g.fillStyle(t.panelBorder, 0.08);
     g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 28, 7);
-    g.fillStyle(0x44ccaa, 0.10);
+    g.fillStyle(0x66c08a, 0.10);
     g.fillRoundedRect(deckX + 9, deckY + 13, 5, deckH - 26, 3);
     g.fillStyle(0xffc45c, 0.08);
     g.fillRoundedRect(deckX + deckW - 14, deckY + 13, 5, deckH - 26, 3);
@@ -2670,7 +2670,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       '방 확대',
       '▣',
       () => this.openFirstDungeonSlot(),
-      firstAction ? { text: `우선 B${firstAction.slotIdx + 1}`, accent: firstAction.accent } : { text: '전체 완비', accent: 0x44ccaa },
+      firstAction ? { text: `우선 B${firstAction.slotIdx + 1}`, accent: firstAction.accent } : { text: '전체 완비', accent: 0x66c08a },
     );
     this.addCommandDeckButton(
       deck,
@@ -2680,7 +2680,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       '몬스터 성장',
       '👹',
       () => this.openFocusedMonsterGrowth(),
-      { text: this.formatHomeFocusTarget(growthTarget, '성장 지휘'), accent: 0x44ccaa },
+      { text: this.formatHomeFocusTarget(growthTarget, '성장 지휘'), accent: 0x66c08a },
     );
     this.addCommandDeckButton(
       deck,
@@ -2690,7 +2690,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       '장비 제작',
       '⚒',
       () => this.openFocusedForge(),
-      { text: this.formatHomeFocusTarget(forgeTarget, '제작 대기'), accent: 0xa887ff },
+      { text: this.formatHomeFocusTarget(forgeTarget, '제작 대기'), accent: 0x9a6cd8 },
     );
   }
 
@@ -2736,7 +2736,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.24);
     g.fillCircle(x + 9, y + 7, 1.6);
     g.fillCircle(x + w - 12, y + 6, 1.3);
-    g.fillStyle(0x8bdcff, 0.22);
+    g.fillStyle(0xe8d098, 0.22);
     g.fillRoundedRect(x + 27, y + h - 6, Math.max(5, (w - 42) * summary.percent), 3, 2);
     deck.add(this.add.text(x + 12, y + h / 2, '★', {
       fontFamily: 'Georgia, serif',
@@ -2753,7 +2753,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add(this.add.text(x + w - 8, y + 8, `E+ ${summary.rareOwned}`, {
       fontFamily: 'monospace',
       fontSize: '7px',
-      color: '#8bdcff',
+      color: '#e8d098',
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
   }
@@ -2875,7 +2875,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const t = this.theme;
     const readinessPct = Phaser.Math.Clamp(status.readiness / 100, 0, 1);
     const readinessColor = status.readiness >= 80
-      ? 0x44ccaa
+      ? 0x66c08a
       : status.readiness >= 55 ? 0xffc45c : 0xff6b5f;
     const readinessCss = `#${readinessColor.toString(16).padStart(6, '0')}`;
 
@@ -3071,7 +3071,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (items.length === 0) {
       g.fillStyle(0x071812, 0.64);
       g.fillRoundedRect(x, chipY, w, chipH, 7);
-      g.lineStyle(1, 0x44ccaa, 0.38);
+      g.lineStyle(1, 0x66c08a, 0.38);
       g.strokeRoundedRect(x, chipY, w, chipH, 7);
       deck.add(this.add.text(x + w / 2, chipY + chipH / 2, '모든 방이 다음 침공 준비 완료', {
         fontFamily: 'sans-serif',
@@ -3188,7 +3188,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add(bg);
     const draw = (hover = false): void => {
       bg.clear();
-      bg.fillStyle(0x020609, 0.36);
+      bg.fillStyle(0x070503, 0.36);
       bg.fillRoundedRect(x, y + 3, w, h, 7);
       bg.fillStyle(hover ? t.panelBorder : t.stoneDark, hover ? 0.24 : 0.90);
       bg.fillRoundedRect(x, y, w, h, 7);

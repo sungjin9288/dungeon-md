@@ -55,19 +55,19 @@ const ENEMY_THREAT_SCORE: Record<string, number> = {
 };
 
 const CASUAL = {
-  bgTop: 0x182333,
-  bgMid: 0x1d3d39,
-  bgBottom: 0x30213a,
-  card: 0x1e3a43,
-  cardDeep: 0x122634,
-  cream: '#fff4d6',
-  softText: '#c6e8f3',
-  muted: '#89aec0',
-  gold: 0xffd166,
-  coral: 0xff6b8a,
-  sky: 0x4bd5ff,
-  mint: 0x4ee89a,
-  violet: 0xa887ff,
+  bgTop: 0x1f1408,
+  bgMid: 0x2a1f10,
+  bgBottom: 0x2c1810,
+  card: 0x2c1d0d,
+  cardDeep: 0x190f06,
+  cream: '#f0e6c8',
+  softText: '#e8d5aa',
+  muted: '#907a58',
+  gold: 0xe8c468,
+  coral: 0xd9594a,
+  sky: 0x55b88a,
+  mint: 0x5fb854,
+  violet: 0x9a6cd8,
 } as const;
 
 const TRIBE_KO: Record<string, string> = {
@@ -78,9 +78,9 @@ const TRIBE_KO: Record<string, string> = {
 
 const ROOM_STYLE: Record<RoomSlotType | 'empty', { accent: number; bg: number; text: string }> = {
   combat:  { accent: 0xff8a45, bg: 0x382b1f, text: '#ffd3a6' },
-  trap:    { accent: 0x4ee89a, bg: 0x18352a, text: '#b9ffd8' },
-  support: { accent: 0x4bd5ff, bg: 0x173446, text: '#bcefff' },
-  magic:   { accent: 0xa887ff, bg: 0x28264f, text: '#d6ccff' },
+  trap:    { accent: 0x5fb854, bg: 0x18352a, text: '#b9ffd8' },
+  support: { accent: 0x55b88a, bg: 0x2a1c0e, text: '#dce8c8' },
+  magic:   { accent: 0x9a6cd8, bg: 0x28264f, text: '#d6ccff' },
   empty:   { accent: 0x61778d, bg: 0x1a2a38, text: '#9db5c5' },
 };
 
@@ -550,7 +550,7 @@ function drawDefenseActionTargetBadge(
   ring.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 6);
 
   const badge = scene.add.graphics();
-  badge.fillStyle(0x071824, 0.94);
+  badge.fillStyle(0x1f1305, 0.94);
   badge.fillRoundedRect(x + w - badgeW - 8, y + 5, badgeW, 14, 4);
   badge.lineStyle(1, directive.accent, 0.82);
   badge.strokeRoundedRect(x + w - badgeW - 8, y + 5, badgeW, 14, 4);
@@ -558,7 +558,7 @@ function drawDefenseActionTargetBadge(
   const text = scene.add.text(x + w - badgeW / 2 - 8, y + 12, label, {
     fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
     fontSize: '7px',
-    color: '#fff4d6',
+    color: '#f0e6c8',
     fontStyle: 'bold',
   }).setOrigin(0.5);
 
@@ -591,14 +591,14 @@ function drawDefenseQueueBadge(
   const label = `${rank} ${getDefenseQueueBadgeLabel(action)}`;
   const w = label.length > 3 ? 48 : 40;
   const g = scene.add.graphics();
-  g.fillStyle(0x071824, 0.88);
+  g.fillStyle(0x1f1305, 0.88);
   g.fillRoundedRect(x - w, y, w, 14, 4);
   g.lineStyle(1, action.accent, 0.62);
   g.strokeRoundedRect(x - w, y, w, 14, 4);
   scene.add.text(x - w / 2, y + 7, label, {
     fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
     fontSize: '7px',
-    color: '#fff4d6',
+    color: '#f0e6c8',
     fontStyle: 'bold',
   }).setOrigin(0.5);
 }
@@ -613,7 +613,7 @@ function drawDefenseQueuePip(
   const g = scene.add.graphics();
   g.fillStyle(action.accent, 0.92);
   g.fillRoundedRect(x, y, 14, 11, 4);
-  g.lineStyle(1, 0x071824, 0.58);
+  g.lineStyle(1, 0x1f1305, 0.58);
   g.strokeRoundedRect(x, y, 14, 11, 4);
   scene.add.text(x + 7, y + 5.5, String(rank), {
     fontFamily: 'monospace',
@@ -642,7 +642,7 @@ function drawDefenseRouteActionRing(
   const corner = scene.add.graphics();
   corner.fillStyle(accent, 0.92);
   corner.fillTriangle(x + w - 2, y + 2, x + w - 2, y + 12, x + w - 12, y + 2);
-  corner.lineStyle(1, 0x071824, 0.46);
+  corner.lineStyle(1, 0x1f1305, 0.46);
   corner.lineBetween(x + w - 2, y + 12, x + w - 12, y + 2);
 
   const pulse = scene.add.graphics();
@@ -670,7 +670,7 @@ function drawDefenseRoomCardShell(
   highlighted: boolean,
 ): void {
   const ratio = Phaser.Math.Clamp(readinessRatio, 0, 1);
-  g.fillStyle(0x06131d, highlighted ? 0.28 : 0.16);
+  g.fillStyle(0x140c03, highlighted ? 0.28 : 0.16);
   g.fillRoundedRect(x + 4, y + 4, w - 8, h - 8, 6);
   g.lineStyle(highlighted ? 1.6 : 1, accent, highlighted ? 0.84 : 0.38);
   g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 6);
@@ -679,10 +679,10 @@ function drawDefenseRoomCardShell(
   g.fillRoundedRect(x + 8, y + 10, 25, h - 20, 5);
   g.fillStyle(0xffffff, 0.07);
   g.fillRoundedRect(x + 12, y + 15, 17, 7, 3);
-  g.fillStyle(0x071824, 0.5);
+  g.fillStyle(0x1f1305, 0.5);
   g.fillRoundedRect(x + 13, y + h - 23, 15, 10, 4);
 
-  g.fillStyle(0x06131b, 0.76);
+  g.fillStyle(0x140c03, 0.76);
   g.fillRoundedRect(x + 42, y + h - 12, w - 98, 4, 2);
   g.fillStyle(accent, highlighted ? 0.96 : 0.78);
   g.fillRoundedRect(x + 42, y + h - 12, Math.max(4, (w - 98) * ratio), 4, 2);
@@ -691,7 +691,7 @@ function drawDefenseRoomCardShell(
   [[x + w - 14, y + 8], [x + w - 14, y + h - 18], [x + 8, y + 8], [x + 8, y + h - 18]].forEach(([sx, sy]) => {
     g.fillStyle(accent, socketAlpha);
     g.fillRoundedRect(sx, sy, 6, 6, 2);
-    g.fillStyle(0x06131d, 0.52);
+    g.fillStyle(0x140c03, 0.52);
     g.fillRoundedRect(sx + 1, sy + 1, 4, 4, 1);
   });
 }
@@ -732,7 +732,7 @@ export class PreBattleScene extends Phaser.Scene {
 
     // ─ Back button ───────────────────────────────────────────────────────────
     const backBg = this.add.graphics();
-    const drawBack = (fill = 0x20384c, border = 0x4bd5ff): void => {
+    const drawBack = (fill = 0x20384c, border = 0x55b88a): void => {
       backBg.clear();
       backBg.fillStyle(fill, 0.96);
       backBg.fillRoundedRect(10, 10, 70, 28, 7);
@@ -745,7 +745,7 @@ export class PreBattleScene extends Phaser.Scene {
     }).setOrigin(0.5);
     const backZone = this.add.zone(10, 10, 70, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     backZone.on('pointerover', () => {
-      backBtn.setColor('#fff4d6');
+      backBtn.setColor('#f0e6c8');
       drawBack(0x27516a, CASUAL.gold);
     });
     backZone.on('pointerout', () => {
@@ -772,13 +772,13 @@ export class PreBattleScene extends Phaser.Scene {
       shadowOpacity: 0.36,
       shadowOffsetY: 3,
     });
-    ig.fillStyle(0xff6b8a, 0.08);
+    ig.fillStyle(0xd9594a, 0.08);
     ig.fillRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 7);
-    ig.lineStyle(1, 0xffd166, 0.28);
+    ig.lineStyle(1, 0xe8c468, 0.28);
     ig.lineBetween(24, iY + 66, CANVAS_WIDTH - 24, iY + 66);
 
     this.add.text(CANVAS_WIDTH / 2, iY + 18, `🚨  ${cfg?.name ?? '침략 알림'}`, {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '17px', color: '#fff4d6', fontStyle: 'bold',
+      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd6df',
@@ -792,7 +792,7 @@ export class PreBattleScene extends Phaser.Scene {
     const wave1 = cfg?.waves?.[0]?.invaders ?? [];
     wave1.forEach(({ type, count }) => {
       this.add.text(30, ey, `${ENEMY_EMOJI[type] ?? '👥'}  ${ENEMY_NAME[type] ?? type}  ×${count}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#fff4d6',
+        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#f0e6c8',
       });
       ey += 22;
     });
@@ -836,13 +836,13 @@ export class PreBattleScene extends Phaser.Scene {
     dg.fillRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 7);
     dg.lineStyle(1, 0x9eefff, 0.22);
     dg.lineBetween(24, dY + 34, CANVAS_WIDTH - 24, dY + 34);
-    dg.fillStyle(0xffd166, 0.06);
+    dg.fillStyle(0xe8c468, 0.06);
     dg.fillEllipse(CANVAS_WIDTH / 2, dY + 172, CANVAS_WIDTH - 84, 58);
-    dg.fillStyle(0x102538, 0.28);
+    dg.fillStyle(0x221504, 0.28);
     dg.fillRoundedRect(28, dY + 192, CANVAS_WIDTH - 56, 122, 10);
 
     this.add.text(CANVAS_WIDTH / 2, dY + 16, '던전 방어 편성', {
-      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#fff4d6', fontStyle: 'bold',
+      fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '13px', color: '#f0e6c8', fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.add.text(CANVAS_WIDTH - 28, dY + 16, `DM Lv.${gs.dmLevel}`, {
@@ -872,20 +872,20 @@ export class PreBattleScene extends Phaser.Scene {
     this.add.text(72, directiveY + 25, directive.title, {
       fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif',
       fontSize: '11px',
-      color: '#fff4d6',
+      color: '#f0e6c8',
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(72, directiveY + 37, directive.body, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#c6e8f3',
+      color: '#e8d5aa',
       wordWrap: { width: 218 },
     }).setOrigin(0, 0.5);
 
     const readyRatio = Math.max(0, Math.min(1, directive.readiness / 100));
     const readinessText = formatDefenseReadinessPercent(directive.readiness);
     const directiveChip = getDefenseDirectiveDisplayChip(directive);
-    dg.fillStyle(0x102538, 0.86);
+    dg.fillStyle(0x221504, 0.86);
     dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 5);
     dg.lineStyle(1, directive.accent, 0.52);
     dg.strokeRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 5);
@@ -932,7 +932,7 @@ export class PreBattleScene extends Phaser.Scene {
     dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 9);
     dg.lineStyle(1, 0x9eefff, 0.18);
     dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 9);
-    dg.fillStyle(0xffd166, 0.08);
+    dg.fillStyle(0xe8c468, 0.08);
     dg.fillRoundedRect(32, railY + 8, CANVAS_WIDTH - 64, 10, 5);
     this.add.text(32, railY + 13, '침략 루트 작전판', {
       fontFamily: 'sans-serif', fontSize: '8px', color: '#bad9e8', fontStyle: 'bold',
@@ -941,12 +941,12 @@ export class PreBattleScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '8px', color: '#ffdf6e',
     }).setOrigin(1, 0.5);
     this.add.text(railX, railY + 52, '입구', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#89aec0',
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#907a58',
     }).setOrigin(0, 0.5);
     this.add.text(railX + 9 * cellW + 8 * cellGap, railY + 52, '던전 심장', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#89aec0',
+      fontFamily: 'sans-serif', fontSize: '8px', color: '#907a58',
     }).setOrigin(1, 0.5);
-    dg.lineStyle(2, 0xffd166, 0.24);
+    dg.lineStyle(2, 0xe8c468, 0.24);
     dg.lineBetween(railX + cellW / 2, railY + 34, railX + 8 * (cellW + cellGap) + cellW / 2, railY + 34);
     for (let i = 0; i < 9; i++) {
       const slot = gs.dungeonSlots?.[i];
@@ -977,7 +977,7 @@ export class PreBattleScene extends Phaser.Scene {
       if (built && room) {
         const roomTarget = Math.max(35, Math.round((directive.pressure || defenseTotals.totalPower || 1) / Math.max(1, defenseTotals.builtRooms)));
         const roomRatio = Math.max(0, Math.min(1, room.power / roomTarget));
-        dg.fillStyle(0x06131b, 0.85);
+        dg.fillStyle(0x140c03, 0.85);
         dg.fillRoundedRect(cx + 4, cy + cellH - 5, cellW - 8, 3, 2);
         dg.fillStyle(roomRatio >= 1 ? CASUAL.mint : roomRatio >= 0.7 ? CASUAL.gold : CASUAL.coral, 0.9);
         dg.fillRoundedRect(cx + 4, cy + cellH - 5, Math.max(3, (cellW - 8) * roomRatio), 3, 2);
@@ -1034,7 +1034,7 @@ export class PreBattleScene extends Phaser.Scene {
         const btnBg = this.add.graphics();
         const draw = (fillAlpha = 0.90, borderAlpha = 0.76): void => {
           btnBg.clear();
-          btnBg.fillStyle(0x06131d, 0.34);
+          btnBg.fillStyle(0x140c03, 0.34);
           btnBg.fillRoundedRect(x, y + 3, w, h, 7);
           btnBg.fillStyle(accent, fillAlpha);
           btnBg.fillRoundedRect(x, y, w, h, 7);
@@ -1067,7 +1067,7 @@ export class PreBattleScene extends Phaser.Scene {
         ov.add(btnZone);
       };
       const ovBg = this.add.graphics();
-      ovBg.fillStyle(0x102538, 0.97);
+      ovBg.fillStyle(0x221504, 0.97);
       ovBg.fillRoundedRect(-142, -popH / 2, 284, popH, 8);
       ovBg.lineStyle(1.5, room.style.accent, 0.86);
       ovBg.strokeRoundedRect(-142, -popH / 2, 284, popH, 8);
@@ -1085,7 +1085,7 @@ export class PreBattleScene extends Phaser.Scene {
       ov.add(this.add.text(0, -popH / 2 + 73, `장비 ${room.equipment.length}/${room.monsterIds.length}  DEF +${room.equipmentPower}`, {
         fontFamily: 'monospace',
         fontSize: '9px',
-        color: room.equipment.length > 0 ? '#ffdf6e' : '#89aec0',
+        color: room.equipment.length > 0 ? '#ffdf6e' : '#907a58',
       }).setOrigin(0.5));
 
       ov.add(this.add.text(-118, -popH / 2 + 96, `수호자 ${room.monsterIds.length}/${room.capacity.monsters}`, {
@@ -1116,7 +1116,7 @@ export class PreBattleScene extends Phaser.Scene {
         ov.add(this.add.text(-118, equipmentY + 16 + i * 14, line, {
           fontFamily: 'sans-serif',
           fontSize: '8px',
-          color: room.equipment.length > 0 ? '#ffe6a3' : '#89aec0',
+          color: room.equipment.length > 0 ? '#ffe6a3' : '#907a58',
         }));
       });
 
@@ -1183,7 +1183,7 @@ export class PreBattleScene extends Phaser.Scene {
           isActionTarget ? 0.38 : 0.16,
           isActionTarget || Boolean(queueItem),
         );
-        dg.fillStyle(0x071824, 0.64);
+        dg.fillStyle(0x1f1305, 0.64);
         dg.fillRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 5);
         dg.fillStyle(0xffffff, 0.05);
         dg.fillRoundedRect(cx + 10, cy + 13, 22, 8, 3);
@@ -1205,7 +1205,7 @@ export class PreBattleScene extends Phaser.Scene {
         this.add.text(cx + 42, cy + 45, 'M -/- · T -/-', {
           fontFamily: 'monospace', fontSize: '8px', color: '#7f9aad',
         }).setOrigin(0, 0.5);
-        dg.fillStyle(0x102538, 0.72);
+        dg.fillStyle(0x221504, 0.72);
         dg.fillRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 4);
         dg.lineStyle(1, CASUAL.gold, 0.48);
         dg.strokeRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 4);
@@ -1240,7 +1240,7 @@ export class PreBattleScene extends Phaser.Scene {
         cardRatio,
         isActionTarget || Boolean(queueItem),
       );
-      dg.fillStyle(0x071824, 0.58);
+      dg.fillStyle(0x1f1305, 0.58);
       dg.fillRoundedRect(cx + 6, cy + 9, 31, cardH - 18, 6);
       dg.fillStyle(0xffffff, 0.06);
       dg.fillRoundedRect(cx + 42, cy + 10, cardW - 94, 12, 4);
@@ -1267,7 +1267,7 @@ export class PreBattleScene extends Phaser.Scene {
       }
 
       this.add.text(cx + 42, cy + 15, `#${room.index + 1} ${shortenLabel(room.typeName, 6)}`, {
-        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '10px', color: '#fff4d6', fontStyle: 'bold',
+        fontFamily: 'Trebuchet MS, Apple SD Gothic Neo, sans-serif', fontSize: '10px', color: '#f0e6c8', fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       this.add.text(cx + 42, cy + 30, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}`, {
         fontFamily: 'monospace', fontSize: '8px', color: room.style.text,
@@ -1290,9 +1290,9 @@ export class PreBattleScene extends Phaser.Scene {
       }
 
       const trap = room.trapIds[0] ? getTrapDisplay(room.trapIds[0]) : null;
-      dg.fillStyle(0x102538, 0.78);
+      dg.fillStyle(0x221504, 0.78);
       dg.fillRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
-      dg.lineStyle(1, trap ? 0x4ee89a : 0x61778d, trap ? 0.7 : 0.42);
+      dg.lineStyle(1, trap ? 0x5fb854 : 0x61778d, trap ? 0.7 : 0.42);
       dg.strokeRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
       this.add.text(cx + cardW - 28.5, cy + 21, trap ? trap.emoji : 'T -', {
         fontFamily: 'sans-serif', fontSize: trap ? '10px' : '8px', color: trap ? '#b9ffd8' : '#9db5c5',
@@ -1304,7 +1304,7 @@ export class PreBattleScene extends Phaser.Scene {
         fontFamily: 'monospace', fontSize: '7px', color: room.style.text, fontStyle: 'bold',
       }).setOrigin(0.5);
 
-      dg.fillStyle(0x06131b, 0.82);
+      dg.fillStyle(0x140c03, 0.82);
       dg.fillRoundedRect(cx + 42, cy + cardH - 8, cardW - 98, 4, 2);
       dg.fillStyle(cardRatio >= 1 ? CASUAL.mint : cardRatio >= 0.7 ? CASUAL.gold : CASUAL.coral, 0.95);
       dg.fillRoundedRect(cx + 42, cy + cardH - 8, Math.max(4, (cardW - 98) * cardRatio), 4, 2);
@@ -1369,14 +1369,14 @@ export class PreBattleScene extends Phaser.Scene {
             .setName('synTooltip').setDepth(200);
 
           const bg = this.add.graphics();
-          bg.fillStyle(0x102538, 0.97);
+          bg.fillStyle(0x221504, 0.97);
           bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
           bg.lineStyle(1, CASUAL.gold, 0.7);
           bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
           ov.add(bg);
 
           lines.forEach((line, i) => {
-            const color = i === 0 ? '#ffdf6e' : line.startsWith('ⓘ') ? '#89aec0' : '#fff4d6';
+            const color = i === 0 ? '#ffdf6e' : line.startsWith('ⓘ') ? '#907a58' : '#f0e6c8';
             const fs = i === 0 ? '12px' : '10px';
             ov.add(this.add.text(0, -popH + 14 + i * 18, line, {
               fontFamily: 'sans-serif', fontSize: fs, color,
@@ -1393,7 +1393,7 @@ export class PreBattleScene extends Phaser.Scene {
       });
     } else {
       this.add.text(14, synY + 2, '시너지 없음', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#7895a6',
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#907a58',
       }).setOrigin(0, 0);
     }
 
@@ -1403,8 +1403,8 @@ export class PreBattleScene extends Phaser.Scene {
       .filter((s): s is ActiveSkill => s != null);
     if (ownedSkills.length > 0) {
       const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `🎯 스킬 ×${ownedSkills.length}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#0e2a33',
-        backgroundColor: '#4bd5ff', padding: { x: 8, y: 4 },
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#163022',
+        backgroundColor: '#55b88a', padding: { x: 8, y: 4 },
       }).setOrigin(1, 0);
       skillChip.setInteractive({ useHandCursor: true });
       skillChip.on('pointerdown', () => {
@@ -1424,15 +1424,15 @@ export class PreBattleScene extends Phaser.Scene {
           .setName('skillTooltip').setDepth(200);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x102538, 0.97);
+        bg.fillStyle(0x221504, 0.97);
         bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
         bg.lineStyle(1, CASUAL.sky, 0.7);
         bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
         ov.add(bg);
 
         lines.forEach((line, i) => {
-          const color = line.kind === 'title' ? '#7fe3ff'
-            : line.kind === 'name' ? '#fff4d6' : '#89aec0';
+          const color = line.kind === 'title' ? '#e8c468'
+            : line.kind === 'name' ? '#f0e6c8' : '#907a58';
           const fs = line.kind === 'title' ? '12px' : '10px';
           ov.add(this.add.text(0, -popH + 12 + i * 17, line.text, {
             fontFamily: 'sans-serif', fontSize: fs, color,
@@ -1460,7 +1460,7 @@ export class PreBattleScene extends Phaser.Scene {
       : `${defenseTotals.totalPower}`;
 
     const commandBg = this.add.graphics();
-    commandBg.fillStyle(0x06131d, 0.94);
+    commandBg.fillStyle(0x140c03, 0.94);
     commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 12);
     commandBg.lineStyle(1.5, directive.accent, 0.48);
     commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 12);
@@ -1473,7 +1473,7 @@ export class PreBattleScene extends Phaser.Scene {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: '#d7fbff',
+      color: '#f0e6c8',
     }).setOrigin(0, 0.5);
 
     this.add.text(92, commandY + 10, commandStatus, {
@@ -1488,7 +1488,7 @@ export class PreBattleScene extends Phaser.Scene {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: '#fff4d6',
+      color: '#f0e6c8',
     }).setOrigin(1, 0.5);
 
     if (directive.actionLabel) {

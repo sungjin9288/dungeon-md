@@ -36,9 +36,9 @@ const SLOT_TO_COMBAT_ROOM: Record<RoomSlotType, RoomType> = {
 
 const SLOT_VISUAL_ACCENT: Record<RoomSlotType, number> = {
   combat:  0xff8a45,
-  trap:    0x4ee89a,
-  support: 0x4bd5ff,
-  magic:   0xa887ff,
+  trap:    0x5fb854,
+  support: 0x55b88a,
+  magic:   0x9a6cd8,
 };
 
 export interface DungeonSlotDeploymentConfig {
@@ -231,7 +231,7 @@ function drawDungeonDefenseFrame(
   const y = GRID_Y;
   const g = scene.add.graphics().setDepth(-12);
 
-  g.fillStyle(0x020609, 0.38);
+  g.fillStyle(0x070503, 0.38);
   g.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
   g.fillStyle(theme.stoneDark, 0.72);
   g.fillRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
@@ -247,7 +247,7 @@ function drawDungeonDefenseFrame(
       const cellX = x + col * effectiveCellSize;
       const cellY = y + row * effectiveCellSize;
       const inset = 9;
-      const accent = row === 0 ? 0xff8a45 : row === 1 ? 0x4ee89a : 0xa887ff;
+      const accent = row === 0 ? 0xff8a45 : row === 1 ? 0x5fb854 : 0x9a6cd8;
       g.fillStyle(0x07131c, 0.44);
       g.fillRoundedRect(cellX + inset, cellY + inset, effectiveCellSize - inset * 2, effectiveCellSize - inset * 2, 12);
       g.fillStyle(0xffffff, 0.035);
@@ -526,9 +526,9 @@ export function paintWaveButton(
 
   g.fillStyle(0x020711, 0.62);
   g.fillRoundedRect(x - 6, y + 7, w + 12, h + 8, 15);
-  g.fillStyle(0x071824, 0.82);
+  g.fillStyle(0x1f1305, 0.82);
   g.fillRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
-  g.lineStyle(1, 0x4bd5ff, hover ? 0.42 : 0.28);
+  g.lineStyle(1, 0x55b88a, hover ? 0.42 : 0.28);
   g.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
 
   g.fillGradientStyle(fillTop, fillTop, fillBottom, fillBottom, 1, 1, 1, 1);
@@ -542,20 +542,20 @@ export function paintWaveButton(
   g.fillRoundedRect(x + 16, y + 7, w - 32, 4, 2);
   g.fillStyle(0xffffff, hover ? 0.18 : 0.1);
   g.fillRoundedRect(x + 64, y + 15, w - 128, 3, 2);
-  g.fillStyle(0x06131d, 0.32);
+  g.fillStyle(0x140c03, 0.32);
   g.fillRoundedRect(x + 68, y + h - 15, w - 136, 3, 2);
 
-  g.fillStyle(0x06131d, 0.5);
+  g.fillStyle(0x140c03, 0.5);
   g.fillRoundedRect(x + 14, y + 13, 36, h - 26, 9);
   g.lineStyle(1, 0xffffff, 0.18);
   g.strokeRoundedRect(x + 14, y + 13, 36, h - 26, 9);
   g.fillStyle(COLORS.TORCH_GOLD, 0.86);
   g.fillCircle(x + 32, y + h / 2, 7);
-  g.fillStyle(0x06131d, 0.5);
+  g.fillStyle(0x140c03, 0.5);
   g.fillCircle(x + 32, y + h / 2, 3);
 
   const arrowX = x + w - 31;
-  g.fillStyle(0x06131d, 0.38);
+  g.fillStyle(0x140c03, 0.38);
   g.fillCircle(arrowX, y + h / 2, 17);
   g.lineStyle(1.3, 0xffffff, 0.22);
   g.strokeCircle(arrowX, y + h / 2, 17);
@@ -565,7 +565,7 @@ export function paintWaveButton(
   g.fillRoundedRect(x + w - 82, y + 17, 18, 4, 2);
   g.fillRoundedRect(x + w - 82, y + h - 21, 18, 4, 2);
 
-  g.lineStyle(1, 0x06131d, 0.24);
+  g.lineStyle(1, 0x140c03, 0.24);
   g.lineBetween(x + 60, y + h - 10, x + w - 60, y + h - 10);
 }
 

@@ -506,7 +506,7 @@ function buildBattleReturnGrowthSummary(
       value: `+${materialCount.toLocaleString('ko-KR')}`,
       valueColor: '#9be7ff',
       fillColor: 0x061721,
-      borderColor: 0x1f6f8f,
+      borderColor: 0x8a6e30,
       note: '공방에서 수호자 장비를 제작하거나 강화하세요',
       buttonLabel: '공방 준비',
     };
