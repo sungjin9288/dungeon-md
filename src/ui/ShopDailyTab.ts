@@ -148,7 +148,7 @@ function drawItemCard(
   const { scene, contentCtr } = ctx;
   const w = 330, h = 88;
   const bg = scene.add.graphics().setDepth(6);
-  bg.fillStyle(owned ? 0x1a3a1a : 0x1a1a2e, 1);
+  bg.fillStyle(owned ? 0x1a3a1a : 0x1f1305, 1);
   bg.fillRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
   bg.lineStyle(1.5, owned ? 0x44aa44 : COLORS.TORCH_GOLD, 0.5);
   bg.strokeRoundedRect(cx - w / 2, cy - h / 2, w, h, 10);
@@ -180,7 +180,7 @@ function drawItemCard(
     const btnW = 72, btnH = 26;
     const btnX = cx + w / 2 - btnW - 8;
     const btnBg = scene.add.graphics().setDepth(7);
-    btnBg.fillStyle(0x003030, 1);
+    btnBg.fillStyle(0x301d0a, 1);
     btnBg.fillRoundedRect(btnX, cy - btnH / 2, btnW, btnH, 6);
     btnBg.lineStyle(1, 0x44cccc, 0.8);
     btnBg.strokeRoundedRect(btnX, cy - btnH / 2, btnW, btnH, 6);

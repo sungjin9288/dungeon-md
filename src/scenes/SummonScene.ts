@@ -69,7 +69,7 @@ export class SummonScene extends Phaser.Scene {
 
   private drawBackground(): void {
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x0d0010, 1);
+    g.fillStyle(0x100903, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Stars
@@ -157,7 +157,7 @@ export class SummonScene extends Phaser.Scene {
 
     const progress = summary.total > 0 ? summary.owned / summary.total : 0;
     const barW = 92;
-    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x17082b, 0x7755ff);
+    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x2b1a09, 0x7755ff);
     this.add.text(28, 91, '도감 수집', {
       fontFamily: 'sans-serif', fontSize: '10px', color: '#bca8ff',
     }).setDepth(6);
@@ -166,7 +166,7 @@ export class SummonScene extends Phaser.Scene {
     }).setDepth(6);
 
     const pg = this.add.graphics().setDepth(6);
-    pg.fillStyle(0x08020f, 0.85);
+    pg.fillStyle(0x0f0903, 0.85);
     pg.fillRoundedRect(28, 134, barW, 7, 4);
     pg.fillStyle(0xffd45c, 0.95);
     pg.fillRoundedRect(28, 134, Phaser.Math.Clamp(barW * progress, 3, barW), 7, 4);
@@ -219,7 +219,7 @@ export class SummonScene extends Phaser.Scene {
     const chips = recent.slice(0, 3);
     if (chips.length === 0) {
       const emptyG = this.add.graphics().setDepth(5);
-      emptyG.fillStyle(0x13051d, 0.86);
+      emptyG.fillStyle(0x1d1106, 0.86);
       emptyG.fillRoundedRect(CX - 53, y - 1, 106, 20, 10);
       emptyG.lineStyle(1, 0x7a55ff, 0.35);
       emptyG.strokeRoundedRect(CX - 53, y - 1, 106, 20, 10);
@@ -237,7 +237,7 @@ export class SummonScene extends Phaser.Scene {
       const color = RARITY_COLORS[rarityIdx] ?? 0x8866ff;
       const x = startX + i * 42;
       const chipG = this.add.graphics().setDepth(5);
-      chipG.fillStyle(0x11051d, 0.92);
+      chipG.fillStyle(0x1d1106, 0.92);
       chipG.fillRoundedRect(x - 17, y - 2, 34, 24, 9);
       chipG.lineStyle(1.2, color, 0.8);
       chipG.strokeRoundedRect(x - 17, y - 2, 34, 24, 9);
@@ -317,7 +317,7 @@ export class SummonScene extends Phaser.Scene {
 
   private drawTabBar(): void {
     const g = this.add.graphics().setDepth(6);
-    g.fillStyle(0x0a0018, 1);
+    g.fillStyle(0x180e05, 1);
     g.fillRect(0, TAB_Y, CANVAS_WIDTH, 32);
     g.lineStyle(1, 0x4422aa, 0.5);
     g.lineBetween(0, TAB_Y, CANVAS_WIDTH, TAB_Y);
@@ -457,7 +457,7 @@ export class SummonScene extends Phaser.Scene {
       const barY    = cardTop + 144;
 
       const pg = this.add.graphics();
-      pg.fillStyle(0x1a0030, 1);
+      pg.fillStyle(0x1c1208, 1);
       pg.fillRoundedRect(barX, barY, barW, 6, 3);
       pg.fillStyle(def.border, 0.8);
       pg.fillRoundedRect(barX, barY, barW * pct, 6, 3);
@@ -518,13 +518,13 @@ export class SummonScene extends Phaser.Scene {
       Phaser.Math.DegToRad(-92 + 360 * (def.hasPity ? pityPct : isFriendReady ? 1 : highRate / 100)),
     );
     deco.strokePath();
-    deco.fillStyle(0x05020a, 0.82);
+    deco.fillStyle(0x0a0602, 0.82);
     deco.fillRoundedRect(cx - CARD_W / 2 + 9, cardTop + 9, 47, 16, 6);
     deco.fillRoundedRect(cx + CARD_W / 2 - 58, cardTop + 9, 49, 16, 6);
     deco.lineStyle(1, def.border, 0.42);
     deco.strokeRoundedRect(cx - CARD_W / 2 + 9, cardTop + 9, 47, 16, 6);
     deco.strokeRoundedRect(cx + CARD_W / 2 - 58, cardTop + 9, 49, 16, 6);
-    deco.fillStyle(0x05020a, 0.88);
+    deco.fillStyle(0x0a0602, 0.88);
     deco.fillRoundedRect(cx + 34, cardTop + 62, 47, 15, 6);
     deco.lineStyle(1, stateAccent, 0.52);
     deco.strokeRoundedRect(cx + 34, cardTop + 62, 47, 15, 6);
@@ -644,7 +644,7 @@ export class SummonScene extends Phaser.Scene {
     const panelY = (CANVAS_HEIGHT - panelH) / 2;
 
     const panel = this.add.graphics();
-    panel.fillStyle(0x0d0028, 1);
+    panel.fillStyle(0x281808, 1);
     panel.fillRoundedRect(panelX, panelY, panelW, panelH, 12);
     panel.lineStyle(1.5, 0x8866ff, 0.9);
     panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 12);
@@ -743,7 +743,7 @@ export class SummonScene extends Phaser.Scene {
       const fx = 50 + i * 110;
       const isActive = this.historyFilter === f.val;
       const fg = this.add.graphics();
-      fg.fillStyle(isActive ? 0x4422aa : 0x1a0030, 1);
+      fg.fillStyle(isActive ? 0x4422aa : 0x1c1208, 1);
       fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 5);
       fg.lineStyle(1, 0x6644ff, isActive ? 0.9 : 0.3);
       fg.strokeRoundedRect(fx - 40, filterY - 10, 80, 24, 5);
@@ -782,7 +782,7 @@ export class SummonScene extends Phaser.Scene {
         const rbg = this.add.graphics();
         rbg.fillStyle(0x000000, 0.18);
         rbg.fillRoundedRect(rowX + 1, ry + 2, rowW, rowH, 8);
-        rbg.fillStyle(0x0e061a, 0.96);
+        rbg.fillStyle(0x1a1005, 0.96);
         rbg.fillRoundedRect(rowX, ry, rowW, rowH, 8);
         rbg.fillStyle(rarityColor, rec.isNew ? 0.17 : 0.08);
         rbg.fillRoundedRect(rowX + 6, ry + 6, 50, rowH - 12, 8);
@@ -796,11 +796,11 @@ export class SummonScene extends Phaser.Scene {
         rbg.strokeRoundedRect(rowX, ry, rowW, rowH, 8);
         rbg.lineStyle(1, 0xffffff, 0.10);
         rbg.strokeRoundedRect(rowX + 4, ry + 4, rowW - 8, rowH - 8, 6);
-        rbg.fillStyle(0x080211, 0.94);
+        rbg.fillStyle(0x110a03, 0.94);
         rbg.fillRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
         rbg.lineStyle(1, rarityColor, 0.48);
         rbg.strokeRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
-        rbg.fillStyle(rec.isNew ? 0x3b2500 : 0x071816, 0.94);
+        rbg.fillStyle(rec.isNew ? 0x3b2500 : 0x180e05, 0.94);
         rbg.fillRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);
         rbg.lineStyle(1, rec.isNew ? 0xffd45c : 0x44ffcc, rec.isNew ? 0.72 : 0.54);
         rbg.strokeRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);

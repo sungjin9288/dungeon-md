@@ -78,7 +78,7 @@ export function buildEvolutionTab(
       const rarity       = tier.rarity;
 
       const rg = ctx.scene.add.graphics();
-      rg.fillStyle(0x001a10, 1);
+      rg.fillStyle(0x190f06, 1);
       rg.fillRoundedRect(resultX, resultY, slotW, slotH + 18, 6);
       rg.lineStyle(2, TAB_ACCENT['진화'], 0.9);
       rg.strokeRoundedRect(resultX, resultY, slotW, slotH + 18, 6);
@@ -120,7 +120,7 @@ export function buildEvolutionTab(
     }
   } else {
     const g = ctx.scene.add.graphics();
-    g.fillStyle(0x001408, 1);
+    g.fillStyle(0x140d05, 1);
     g.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
     g.lineStyle(1.5, TAB_ACCENT['진화'], 0.3);
     g.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);

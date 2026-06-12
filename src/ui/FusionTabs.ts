@@ -54,7 +54,7 @@ export function drawMonsterSlot(
   c.add(g);
 
   if (monster) {
-    g.fillStyle(0x001408, 1);
+    g.fillStyle(0x140d05, 1);
     g.fillRoundedRect(x, y, w, h, 6);
     g.lineStyle(1.5, accent, 0.7);
     g.strokeRoundedRect(x, y, w, h, 6);
@@ -157,9 +157,9 @@ export function openMonsterPicker(
   c.add(dim);
 
   const sg = ctx.scene.add.graphics();
-  sg.fillStyle(0x000e08, 1);
+  sg.fillStyle(0x0e0a04, 1);
   sg.fillRoundedRect(0, 0, CANVAS_WIDTH, SHEET_H, { tl: 12, tr: 12, bl: 0, br: 0 });
-  sg.lineStyle(1.5, 0x00cc66, 0.4);
+  sg.lineStyle(1.5, 0x55b88a, 0.4);
   sg.strokeRoundedRect(0, 0, CANVAS_WIDTH, SHEET_H, { tl: 12, tr: 12, bl: 0, br: 0 });
   c.add(sg);
 
@@ -183,9 +183,9 @@ export function openMonsterPicker(
     const my  = 40 + row * (cellH + 8);
 
     const mg = ctx.scene.add.graphics();
-    mg.fillStyle(0x001408, 1);
+    mg.fillStyle(0x140d05, 1);
     mg.fillRoundedRect(mx, my, cellW, cellH, 6);
-    mg.lineStyle(1, 0x003322, 0.8);
+    mg.lineStyle(1, 0x2a1f10, 0.8);
     mg.strokeRoundedRect(mx, my, cellW, cellH, 6);
     c.add(mg);
 

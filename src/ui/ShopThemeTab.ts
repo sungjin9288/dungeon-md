@@ -82,8 +82,8 @@ function drawThemeCard(
   }
 
   const RARITY_CONFIG: Record<string, { bg: number; label: string; color: string } | undefined> = {
-    rare:      { bg: 0x002244, label: '레어',   color: '#88aaff' },
-    epic:      { bg: 0x220044, label: '에픽',   color: '#cc88ff' },
+    rare:      { bg: 0x442a0e, label: '레어',   color: '#88aaff' },
+    epic:      { bg: 0x221504, label: '에픽',   color: '#cc88ff' },
     legendary: { bg: 0x221100, label: '전설',   color: '#ffd700' },
   };
   const rarityConfig = RARITY_CONFIG[rarity];
@@ -153,7 +153,7 @@ function drawThemeCard(
     btnBg.lineStyle(1.5, theme.panelBorder, 0.9);
     btnBg.strokeRoundedRect(bx, by, btnW, btnH, 6);
   } else if (canBuy) {
-    btnBg.fillStyle(0x220044, 1);
+    btnBg.fillStyle(0x221504, 1);
     btnBg.fillRoundedRect(bx, by, btnW, btnH, 6);
     btnBg.lineStyle(1.5, 0xaa44ff, 0.8);
     btnBg.strokeRoundedRect(bx, by, btnW, btnH, 6);

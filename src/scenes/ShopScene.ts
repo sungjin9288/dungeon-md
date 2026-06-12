@@ -28,9 +28,9 @@ export class ShopScene extends Phaser.Scene {
 
   private drawBackground(): void {
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x050010, 1);
+    g.fillStyle(0x0b0703, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    g.lineStyle(1, 0x1a1a3a, 0.3);
+    g.lineStyle(1, 0x241808, 0.3);
     for (let y = 80; y < CANVAS_HEIGHT; y += 80) g.lineBetween(0, y, CANVAS_WIDTH, y);
     for (let i = 0; i < 30; i++) {
       const sx = Phaser.Math.Between(0, CANVAS_WIDTH);
@@ -101,9 +101,9 @@ export class ShopScene extends Phaser.Scene {
       const tx = i * tabW;
       const isActive = id === this.activeTab;
 
-      g.fillStyle(isActive ? 0x1a1a3a : 0x0a0a18, 1);
+      g.fillStyle(isActive ? 0x241808 : 0x140c03, 1);
       g.fillRect(tx, tabY, tabW, 28);
-      g.lineStyle(1, isActive ? 0x8866ff : 0x2a2a4a, 0.8);
+      g.lineStyle(1, isActive ? 0x8866ff : 0x2c1d0d, 0.8);
       if (isActive) {
         g.lineBetween(tx, tabY + 27, tx + tabW, tabY + 27);
       }

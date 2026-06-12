@@ -49,7 +49,7 @@ export function buildSkinTab(
 
   filters.forEach(({ id, label }, i) => {
     const isActive = id === skinFilter;
-    fg.fillStyle(isActive ? 0x220044 : 0x0a0010, 1);
+    fg.fillStyle(isActive ? 0x221504 : 0x100903, 1);
     fg.fillRoundedRect(i * fW + 4, TOP, fW - 8, 26, 4);
     if (isActive) {
       fg.lineStyle(1, 0xaa44ff, 0.8);
@@ -104,7 +104,7 @@ export function buildSkinTab(
     const sectY  = START_Y + rows * (CARD_H + 8) + 16;
 
     const divG = scene.add.graphics();
-    divG.lineStyle(1, 0x333355, 0.5);
+    divG.lineStyle(1, 0x553412, 0.5);
     divG.lineBetween(8, sectY, CANVAS_WIDTH - 8, sectY);
     contentCtr.add(divG);
 
@@ -134,7 +134,7 @@ function drawQuestSkinChip(
   isOwned: boolean,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(isOwned ? 0x0a1a08 : 0x110022, 1);
+  g.fillStyle(isOwned ? 0x0a1a08 : 0x221507, 1);
   g.fillRoundedRect(x, y, w, h, 6);
   g.lineStyle(1, isOwned ? 0x44aa44 : 0x553388, 0.75);
   g.strokeRoundedRect(x, y, w, h, 6);
@@ -180,7 +180,7 @@ function drawSkinCard(
   contentCtr.add(shadow);
 
   const g = scene.add.graphics();
-  g.fillStyle(isOwned ? 0x0a1a1a : 0x0d0d22, 1);
+  g.fillStyle(isOwned ? 0x1a1005 : 0x221507, 1);
   g.fillRoundedRect(x, y, w, h, 10);
   g.lineStyle(1.5, isOwned ? 0x44aa88 : (skin.rarity === 'limited' ? 0xcc2222 : 0x4466aa), 0.7);
   g.strokeRoundedRect(x, y, w, h, 10);
@@ -230,7 +230,7 @@ function drawSkinCard(
     contentCtr.add(owBadge);
 
     const btnLabel = equipped ? '해제' : '장착';
-    const btnColor = equipped ? 0x442200 : 0x002244;
+    const btnColor = equipped ? 0x442200 : 0x442a0e;
     const btnBorderColor = equipped ? 0xcc6600 : 0x4488ff;
     const btnW2 = 56, btnH2 = 26;
     const bx = x + w - btnW2 - 8, by = y + h - btnH2 - 10;
@@ -264,7 +264,7 @@ function drawSkinCard(
 
     const pbx = bx - 64, pby = by;
     const pbg = scene.add.graphics();
-    pbg.fillStyle(0x111133, 1);
+    pbg.fillStyle(0x1c1208, 1);
     pbg.fillRoundedRect(pbx, pby, 56, 26, 5);
     pbg.lineStyle(1, 0x6644aa, 0.6);
     pbg.strokeRoundedRect(pbx, pby, 56, 26, 5);
@@ -286,7 +286,7 @@ function drawSkinCard(
 
     const pbx = bx - 64, pby = by;
     const pbg = scene.add.graphics();
-    pbg.fillStyle(0x111133, 1);
+    pbg.fillStyle(0x1c1208, 1);
     pbg.fillRoundedRect(pbx, pby, 56, 26, 5);
     pbg.lineStyle(1, 0x6644aa, 0.6);
     pbg.strokeRoundedRect(pbx, pby, 56, 26, 5);
@@ -299,7 +299,7 @@ function drawSkinCard(
     pz.on('pointerdown', () => showPreviewModal(ctx, skin));
 
     const bbg = scene.add.graphics();
-    bbg.fillStyle(0x220044, 1);
+    bbg.fillStyle(0x221504, 1);
     bbg.fillRoundedRect(bx, by, btnW2, btnH2, 5);
     bbg.lineStyle(1, 0xaa44ff, 0.8);
     bbg.strokeRoundedRect(bx, by, btnW2, btnH2, 5);
@@ -346,7 +346,7 @@ export function showPreviewModal(
   const py = (CANVAS_HEIGHT - ph) / 2;
 
   const panel = scene.add.graphics();
-  panel.fillStyle(0x0d0d2a, 1);
+  panel.fillStyle(0x2a1a09, 1);
   panel.fillRoundedRect(px, py, pw, ph, 14);
   panel.lineStyle(2, 0x8844ff, 0.9);
   panel.strokeRoundedRect(px, py, pw, ph, 14);
@@ -374,7 +374,7 @@ export function showPreviewModal(
   }).setOrigin(0.5));
 
   const skinBg = scene.add.graphics();
-  skinBg.fillStyle(0x080820, 1);
+  skinBg.fillStyle(0x201307, 1);
   skinBg.fillRoundedRect(px + pw / 2 + 10, py + 36, halfW, 180, 8);
   skinBg.lineStyle(1.5, skin.particleColor, 0.8);
   skinBg.strokeRoundedRect(px + pw / 2 + 10, py + 36, halfW, 180, 8);
@@ -425,7 +425,7 @@ export function showPreviewModal(
 
   const actW = 180;
   const actBg = scene.add.graphics();
-  actBg.fillStyle(isOwned ? 0x004422 : 0x220044, 1);
+  actBg.fillStyle(isOwned ? 0x004422 : 0x221504, 1);
   actBg.fillRoundedRect(px + pw - actW - 16, py + ph - 52, actW, 36, 6);
   actBg.lineStyle(1.5, isOwned ? 0x44aa66 : 0xaa44ff, 0.9);
   actBg.strokeRoundedRect(px + pw - actW - 16, py + ph - 52, actW, 36, 6);

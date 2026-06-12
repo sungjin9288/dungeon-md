@@ -68,14 +68,14 @@ export class FusionScene extends Phaser.Scene {
 
   private drawBackground(): void {
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x001a10, 1);
+    g.fillStyle(0x190f06, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    g.lineStyle(1, 0x003322, 0.4);
+    g.lineStyle(1, 0x2a1f10, 0.4);
     for (let y = 0; y < CANVAS_HEIGHT; y += 40) g.lineBetween(0, y, CANVAS_WIDTH, y);
     for (let x = 0; x < CANVAS_WIDTH; x += 40) g.lineBetween(x, 0, x, CANVAS_HEIGHT);
 
     const glow = this.add.graphics().setDepth(-9);
-    glow.fillStyle(0x00cc66, 0.05);
+    glow.fillStyle(0x55b88a, 0.05);
     glow.fillCircle(CANVAS_WIDTH / 2, CONTENT_Y + 130, 140);
   }
 
@@ -87,9 +87,9 @@ export class FusionScene extends Phaser.Scene {
     this.headerContainer = c;
 
     const g = this.add.graphics();
-    g.fillStyle(0x001208, 1);
+    g.fillStyle(0x130d06, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.lineStyle(1, 0x00cc66, 0.25);
+    g.lineStyle(1, 0x55b88a, 0.25);
     g.lineBetween(0, HEADER_H, CANVAS_WIDTH, HEADER_H);
     c.add(g);
 
@@ -159,9 +159,9 @@ export class FusionScene extends Phaser.Scene {
     this.tabUnderlines = [];
 
     const g = this.add.graphics().setDepth(10);
-    g.fillStyle(0x000e08, 1);
+    g.fillStyle(0x0e0a04, 1);
     g.fillRect(0, HEADER_H, CANVAS_WIDTH, TAB_H);
-    g.lineStyle(1, 0x00cc66, 0.2);
+    g.lineStyle(1, 0x55b88a, 0.2);
     g.lineBetween(0, HEADER_H + TAB_H, CANVAS_WIDTH, HEADER_H + TAB_H);
 
     const counts = this.computeTabCounts();
@@ -217,7 +217,7 @@ export class FusionScene extends Phaser.Scene {
     const cy = CONTENT_Y + 118;
 
     const glow = this.add.graphics().setDepth(4);
-    glow.fillStyle(0x00ff88, 0.1);
+    glow.fillStyle(0x7fd8a8, 0.1);
     glow.fillCircle(cx, cy + 14, 42);
 
     this.cauldronEmoji = this.add.text(cx, cy, '🪄', {
@@ -325,7 +325,7 @@ export class FusionScene extends Phaser.Scene {
     const PW = CANVAS_WIDTH - 32, PH = CANVAS_HEIGHT - 120;
     const PX = 16, PY = 60;
     const pg = this.add.graphics();
-    pg.fillStyle(0x000e08, 1);
+    pg.fillStyle(0x0e0a04, 1);
     pg.fillRoundedRect(PX, PY, PW, PH, 10);
     pg.lineStyle(1.5, 0x4488cc, 0.7);
     pg.strokeRoundedRect(PX, PY, PW, PH, 10);
@@ -351,7 +351,7 @@ export class FusionScene extends Phaser.Scene {
       const [a, b] = key.split('+');
 
       const row = this.add.graphics();
-      row.fillStyle(0x001208, 1);
+      row.fillStyle(0x130d06, 1);
       row.fillRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 5);
       ov.add(row);
 

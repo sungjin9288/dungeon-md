@@ -86,7 +86,7 @@ export function buildCombinationTab(
     const hybrid   = hybridId ? HYBRID_DEFS[hybridId] : undefined;
 
     const rg = ctx.scene.add.graphics();
-    rg.fillStyle(0x00080d, 1);
+    rg.fillStyle(0x0b0703, 1);
     rg.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
     rg.lineStyle(1.5, 0x4488cc, hybrid ? 0.9 : 0.3);
     rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);
@@ -110,7 +110,7 @@ export function buildCombinationTab(
     }
   } else {
     const g = ctx.scene.add.graphics();
-    g.fillStyle(0x001408, 1);
+    g.fillStyle(0x140d05, 1);
     g.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
     g.lineStyle(1.5, TAB_ACCENT['조합'], 0.3);
     g.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);
