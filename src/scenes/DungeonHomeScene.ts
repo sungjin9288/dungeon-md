@@ -2365,7 +2365,6 @@ export class DungeonHomeScene extends Phaser.Scene {
       this.commandDeckContainer.destroy();
       this.commandDeckContainer = null;
     }
-    const t = this.theme;
     const deckX = 12;
     const minDeckY = GRID_START_Y + GRID_ROWS_HOME * (SLOT_H + SLOT_PAD_Y) + 8;
     const deckW = CANVAS_WIDTH - deckX * 2;
@@ -2406,45 +2405,41 @@ export class DungeonHomeScene extends Phaser.Scene {
       y: deckY,
       w: deckW,
       h: deckH,
-      radius: 9,
-      fillColor: t.panelDark,
-      borderColor: t.panelBorder,
-      borderAlpha: 0.64,
-      borderWidth: 1.4,
-      accentColor: t.panelBorder,
-      accentAlpha: 0.48,
-      glowColor: t.panelBorder,
-      glowOpacity: 0.08,
-      shadowOpacity: 0.42,
-      shadowOffsetY: 3,
+      radius: 16,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: CASUAL.EDGE_SOFT,
+      accentAlpha: 0.5,
+      glowColor: CASUAL.EDGE_SOFT,
+      glowOpacity: 0.06,
+      shadowOpacity: 0.4,
+      shadowOffsetY: 4,
     });
     deck.add([frame.shadow, frame.panel, frame.glow]);
 
     const g = this.add.graphics();
     deck.add(g);
-    g.fillStyle(0x031314, 0.50);
-    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 66, 7);
-    g.fillStyle(t.panelBorder, 0.08);
-    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 28, 7);
-    g.fillStyle(0x66c08a, 0.10);
-    g.fillRoundedRect(deckX + 9, deckY + 13, 5, deckH - 26, 3);
-    g.fillStyle(0xffc45c, 0.08);
-    g.fillRoundedRect(deckX + deckW - 14, deckY + 13, 5, deckH - 26, 3);
-    g.lineStyle(1, t.panelBorder, 0.22);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 66, 12);
+    g.fillStyle(CASUAL.GOLD, 0.18);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 28, 12);
+    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.45);
     g.lineBetween(deckX + 14, deckY + 80, deckX + deckW - 14, deckY + 80);
     g.lineBetween(deckX + 14, deckY + deckH - 51, deckX + deckW - 14, deckY + deckH - 51);
 
     deck.add(this.add.text(deckX + 16, deckY + 20, '던전 운영실', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '15px',
-      color: t.panelBorderCSS,
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     this.drawHomeCollectionChip(deck, g, deckX + deckW - 172, deckY + 9, 112, 22, collectionSummary);
     deck.add(this.add.text(deckX + deckW - 16, deckY + 20, `DM Lv.${this.gs.dmLevel}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(1, 0.5));
 
     this.drawHomeOpsStatusPanel(
