@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type RoomType } from '../data/rooms';
 import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } from '../data/monsters';
@@ -16,11 +16,23 @@ function inferMonsterType(roomTypes: string[]): MonsterDef['type'] {
   return 'melee';
 }
 
-// Map rarity → accent color
+// Map rarity → saturated casual accent color
 function rarityColor(rarity: number): number {
-  if (rarity >= 4) return 0xffd700;   // gold — legendary
-  if (rarity >= 3) return 0xaa44dd;   // purple — epic
-  return 0x44aacc;                     // blue — rare
+  if (rarity >= 4) return CASUAL.GOLD;     // gold — legendary
+  if (rarity >= 3) return CASUAL.PURPLE;   // purple — epic
+  return CASUAL.BLUE;                       // blue — rare
+}
+
+// Darker companion of a casual accent → candy-button base edge.
+function accentBase(accent: number): number {
+  switch (accent) {
+    case CASUAL.GOLD:   return CASUAL.GOLD_DK;
+    case CASUAL.PURPLE: return CASUAL.PURPLE_DK;
+    case CASUAL.BLUE:   return CASUAL.BLUE_DK;
+    case CASUAL.GREEN:  return CASUAL.GREEN_DK;
+    case CASUAL.RED:    return CASUAL.RED_DK;
+    default:            return CASUAL.EDGE;
+  }
 }
 
 const PANEL_H    = 286;
@@ -32,7 +44,7 @@ const OPEN_MS    = 300;
 const CLOSE_MS   = 250;
 const MAX_VISIBLE_CARDS = 4;
 
-const MONSTER_PANEL_ACCENT = 0x8c35d9;
+const MONSTER_PANEL_ACCENT = CASUAL.PURPLE;
 
 export class MonsterSelectPanel extends Phaser.GameObjects.Container {
   static readonly HEIGHT = PANEL_H;
@@ -117,15 +129,15 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       w: CANVAS_WIDTH,
       h: PANEL_H + 18,
       radius: 16,
-      fillColor: 0x0e0903,
-      borderColor: MONSTER_PANEL_ACCENT,
-      borderAlpha: 0.9,
-      borderWidth: 2,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: MONSTER_PANEL_ACCENT,
-      accentAlpha: 0.95,
-      glowColor: 0xb365ff,
-      glowOpacity: 0.14,
-      shadowOpacity: 0.68,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.4,
       shadowOffsetY: 4,
     });
     this.add(frame.shadow);
@@ -133,30 +145,33 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.add(frame.glow);
 
     const title = this.scene.add.text(18, 16, '몬스터 배치', {
-      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontFamily: 'sans-serif',
       fontSize: '17px',
       fontStyle: 'bold',
-      color: '#d080ff',
+      color: CASUAL_CSS.INK,
+      stroke: '#ffffff',
+      strokeThickness: 3,
     }).setOrigin(0, 0);
     this.add(title);
 
-    const caption = this.scene.add.text(18, 35, '방에 배치할 수호자를 선택', {
+    const caption = this.scene.add.text(18, 36, '방에 배치할 수호자를 선택', {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
     this.add(caption);
 
     this.slotLabel = this.scene.add.text(CANVAS_WIDTH - 86, 18, 'R1 · C1', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CSS.PARCHMENT_DIM,
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);
     this.add(this.slotLabel);
 
     const div = this.scene.add.graphics();
-    div.lineStyle(1, MONSTER_PANEL_ACCENT, 0.4);
+    div.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
     div.lineBetween(12, HEADER_H - 4, CANVAS_WIDTH - 12, HEADER_H - 4);
     this.add(div);
 
@@ -167,11 +182,11 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       h: 30,
       label: '×',
       fontSize: '16px',
-      fillColor: 0x1a1208,
-      hoverFillColor: 0x24170a,
-      borderColor: COLORS.STONE_MID,
-      hoverBorderColor: 0xd080ff,
-      textColor: CSS.PARCHMENT_MUTED,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.PURPLE,
+      textColor: CASUAL_CSS.INK,
       onPress: () => this.close(),
     });
     this.add(closeButton.bg);
@@ -195,12 +210,12 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
 
     if (monsters.length === 0) {
       const empty = this.scene.add.text(CANVAS_WIDTH / 2, PANEL_H / 2, '배치 가능한 몬스터 없음', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
       this.add(empty);
       this.cardGroup.push(empty);
       this.countLabel = this.scene.add.text(CANVAS_WIDTH - 74, 36, '0 / 0', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5, 0);
       this.add(this.countLabel);
       this.cardGroup.push(this.countLabel);
@@ -230,17 +245,17 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       y: cy,
       w: CARD_W,
       h: CARD_H,
-      radius: 8,
-      fillColor: 0x181008,
+      radius: 10,
+      fillColor: CASUAL.PANEL,
       borderColor: accent,
-      borderAlpha: 0.72,
-      borderWidth: 1.5,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: accent,
-      accentAlpha: 0.78,
-      glowColor: accent,
-      glowOpacity: 0.1,
-      shadowOpacity: 0.24,
-      shadowOffsetY: 2,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.3,
+      shadowOffsetY: 3,
     });
     this.add(frame.shadow);
     this.add(frame.panel);
@@ -248,8 +263,8 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.cardGroup.push(frame.shadow, frame.panel, frame.glow);
 
     const stripe = this.scene.add.graphics();
-    stripe.fillStyle(accent, 0.72);
-    stripe.fillRoundedRect(cx + 5, cy + 16, 3, CARD_H - 32, 2);
+    stripe.fillStyle(accent, 0.6);
+    stripe.fillRoundedRect(cx + 5, cy + 18, 3, CARD_H - 34, 2);
     this.add(stripe); this.cardGroup.push(stripe);
 
     const icon = this.scene.add.text(cx + CARD_W / 2, cy + 16, def.emoji, {
@@ -267,10 +282,10 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.add(badge); this.cardGroup.push(badge);
 
     const nameT = this.scene.add.text(cx + CARD_W / 2, cy + 68, def.name, {
-      fontFamily: "Georgia, serif",
+      fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: CSS.PARCHMENT,
+      color: CASUAL_CSS.INK,
       wordWrap: { width: CARD_W - 10 },
       align: 'center',
     }).setOrigin(0.5, 0);
@@ -279,11 +294,12 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     const descT = this.scene.add.text(cx + CARD_W / 2, cy + 88, def.passiveDesc, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CARD_W - 14 },
       align: 'center',
       lineSpacing: 2,
-    }).setOrigin(0.5, 0).setAlpha(0.85);
+    }).setOrigin(0.5, 0).setAlpha(0.95);
     this.add(descT); this.cardGroup.push(descT);
 
     const gs = loadGameState();
@@ -291,9 +307,9 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     if (owned) {
       const atk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills);
       const atkBg = this.scene.add.graphics();
-      atkBg.fillStyle(COLORS.BLACK, 0.28);
+      atkBg.fillStyle(0xffffff, 0.9);
       atkBg.fillRoundedRect(cx + 18, cy + 137, CARD_W - 36, 20, GAME_UI.radius.row);
-      atkBg.lineStyle(1, accent, 0.42);
+      atkBg.lineStyle(2, accent, 0.7);
       atkBg.strokeRoundedRect(cx + 18, cy + 137, CARD_W - 36, 20, GAME_UI.radius.row);
       this.add(atkBg); this.cardGroup.push(atkBg);
 
@@ -301,7 +317,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
         fontFamily: 'sans-serif',
         fontSize: '11px',
         fontStyle: 'bold',
-        color: '#ff9944',
+        color: CASUAL_CSS.RED,
       }).setOrigin(0.5);
       this.add(atkT); this.cardGroup.push(atkT);
     }
@@ -327,8 +343,8 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       fontSize: '12px',
       fillColor: accent,
       hoverFillColor: accent,
-      borderColor: accent,
-      hoverBorderColor: 0xd080ff,
+      borderColor: accentBase(accent),
+      hoverBorderColor: accentBase(accent),
       onPress: assignSelected,
     });
     this.add(button.bg);
@@ -342,7 +358,8 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       `${this.scrollIndex + 1}-${this.scrollIndex + visibleCount} / ${total}`, {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5, 0.5);
     this.add(this.countLabel);
     this.cardGroup.push(this.countLabel);
@@ -357,11 +374,13 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       label: '‹',
       fontSize: '15px',
       enabled: this.scrollIndex > 0,
-      fillColor: 0x1a1208,
-      hoverFillColor: 0x24170a,
-      borderColor: COLORS.STONE_MID,
-      hoverBorderColor: 0xd080ff,
-      textColor: CSS.PARCHMENT_MUTED,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.PURPLE,
+      textColor: CASUAL_CSS.INK,
+      disabledFillColor: CASUAL.PANEL_SOFT,
+      disabledBorderColor: CASUAL.EDGE_SOFT,
       onPress: () => {
         this.scrollIndex = Math.max(0, this.scrollIndex - 1);
         this.renderCards();
@@ -375,11 +394,13 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
       label: '›',
       fontSize: '15px',
       enabled: this.scrollIndex + visibleCount < total,
-      fillColor: 0x1a1208,
-      hoverFillColor: 0x24170a,
-      borderColor: COLORS.STONE_MID,
-      hoverBorderColor: 0xd080ff,
-      textColor: CSS.PARCHMENT_MUTED,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.PURPLE,
+      textColor: CASUAL_CSS.INK,
+      disabledFillColor: CASUAL.PANEL_SOFT,
+      disabledBorderColor: CASUAL.EDGE_SOFT,
       onPress: () => {
         const maxStart = Math.max(0, total - visibleCount);
         this.scrollIndex = Math.min(maxStart, this.scrollIndex + 1);
@@ -403,11 +424,11 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
 
   private getTypeColor(type: MonsterDef['type']): string {
     const colors: Record<string, string> = {
-      melee: '#ff6b5a',
-      ranged: '#76d46b',
-      magic: '#d080ff',
-      support: '#5ec8e8',
+      melee:   CASUAL_CSS.RED,
+      ranged:  CASUAL_CSS.GREEN,
+      magic:   CASUAL_CSS.PURPLE,
+      support: CASUAL_CSS.BLUE,
     };
-    return colors[type] ?? CSS.PARCHMENT_MUTED;
+    return colors[type] ?? CASUAL_CSS.INK_SOFT;
   }
 }

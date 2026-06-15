@@ -1,8 +1,22 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { ROOM_DEFS, type RoomType } from '../data/rooms';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from './GameUiPrimitives';
+
+/** Saturated candy accent per room type (room def colors are too dark for cream cards). */
+interface CasualAccent { readonly cap: number; readonly base: number }
+
+const ROOM_ACCENT: Partial<Record<RoomType, CasualAccent>> = {
+  guardian: { cap: CASUAL.RED,    base: CASUAL.RED_DK },
+  trap:     { cap: CASUAL.PURPLE, base: CASUAL.PURPLE_DK },
+  gold:     { cap: CASUAL.GOLD,   base: CASUAL.GOLD_DK },
+  tower:    { cap: CASUAL.GREEN,  base: CASUAL.GREEN_DK },
+};
+
+function roomAccent(type: RoomType): CasualAccent {
+  return ROOM_ACCENT[type] ?? { cap: CASUAL.GOLD, base: CASUAL.GOLD_DK };
+}
 
 const PANEL_H     = 286;
 const CARD_W      = 90;
@@ -73,15 +87,15 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
       w: CANVAS_WIDTH,
       h: PANEL_H + 18,
       radius: 16,
-      fillColor: 0x0e0903,
-      borderColor: COLORS.TORCH_GOLD,
-      borderAlpha: 0.9,
-      borderWidth: 2,
-      accentColor: COLORS.TORCH_GOLD,
-      accentAlpha: 0.95,
-      glowColor: COLORS.TORCH_AMBER,
-      glowOpacity: 0.14,
-      shadowOpacity: 0.68,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: CASUAL.GOLD,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.4,
       shadowOffsetY: 4,
     });
     this.add(frame.shadow);
@@ -89,30 +103,33 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     this.add(frame.glow);
 
     const title = this.scene.add.text(18, 16, '소환 제단', {
-      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontFamily: 'sans-serif',
       fontSize: '17px',
       fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.INK,
+      stroke: '#ffffff',
+      strokeThickness: 3,
     }).setOrigin(0, 0);
     this.add(title);
 
-    const caption = this.scene.add.text(18, 35, '방 타입을 선택해 빈 슬롯에 배치', {
+    const caption = this.scene.add.text(18, 36, '방 타입을 선택해 빈 슬롯에 배치', {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
     this.add(caption);
 
     this.slotLabel = this.scene.add.text(CANVAS_WIDTH - 86, 18, 'R1 · C1', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CSS.PARCHMENT_DIM,
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);
     this.add(this.slotLabel);
 
     const div = this.scene.add.graphics();
-    div.lineStyle(1, COLORS.TORCH_GOLD, 0.3);
+    div.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
     div.lineBetween(12, HEADER_H - 4, CANVAS_WIDTH - 12, HEADER_H - 4);
     this.add(div);
 
@@ -123,11 +140,11 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
       h: 30,
       label: '×',
       fontSize: '16px',
-      fillColor: 0x1a1208,
-      hoverFillColor: 0x24170a,
-      borderColor: COLORS.STONE_MID,
-      hoverBorderColor: COLORS.TORCH_AMBER,
-      textColor: CSS.PARCHMENT_MUTED,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.RED,
+      textColor: CASUAL_CSS.INK,
       onPress: () => this.close(),
     });
     this.add(closeButton.bg);
@@ -151,23 +168,24 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     const cx        = CARD_START + idx * (CARD_W + CARD_GAP);
     const cy        = HEADER_H;
     const canAfford = playerGold >= def.cost;
+    const accent    = roomAccent(type);
 
     const frame = addFramedPanel(this.scene, {
       x: cx,
       y: cy,
       w: CARD_W,
       h: CARD_H,
-      radius: 8,
-      fillColor: canAfford ? 0x181008 : 0x0b0907,
-      borderColor: canAfford ? def.accentColor : COLORS.STONE_MID,
-      borderAlpha: canAfford ? 0.72 : 0.36,
-      borderWidth: 1.5,
-      accentColor: canAfford ? def.accentColor : COLORS.STONE_MID,
-      accentAlpha: canAfford ? 0.78 : 0.22,
-      glowColor: canAfford ? def.accentColor : COLORS.STONE_MID,
-      glowOpacity: canAfford ? 0.1 : 0.03,
-      shadowOpacity: 0.24,
-      shadowOffsetY: 2,
+      radius: 10,
+      fillColor: canAfford ? CASUAL.PANEL : CASUAL.PANEL_SOFT,
+      borderColor: canAfford ? accent.cap : CASUAL.EDGE_SOFT,
+      borderAlpha: 1,
+      borderWidth: canAfford ? 3 : 2,
+      accentColor: canAfford ? accent.cap : CASUAL.EDGE_SOFT,
+      accentAlpha: canAfford ? 1 : 0.6,
+      glowColor: 0xffffff,
+      glowOpacity: canAfford ? 0.4 : 0.2,
+      shadowOpacity: 0.3,
+      shadowOffsetY: 3,
     });
     this.add(frame.shadow);
     this.add(frame.panel);
@@ -175,37 +193,38 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     this.cardGroup.push(frame.shadow, frame.panel, frame.glow);
 
     const stripe = this.scene.add.graphics();
-    stripe.fillStyle(def.accentColor, canAfford ? 0.7 : 0.18);
-    stripe.fillRoundedRect(cx + 5, cy + 16, 3, CARD_H - 32, 2);
+    stripe.fillStyle(canAfford ? accent.cap : CASUAL.EDGE_SOFT, canAfford ? 0.6 : 0.3);
+    stripe.fillRoundedRect(cx + 5, cy + 18, 3, CARD_H - 34, 2);
     this.add(stripe); this.cardGroup.push(stripe);
 
     const icon = this.scene.add.text(cx + CARD_W / 2, cy + 18, def.emoji, {
       fontSize: '27px',
-    }).setOrigin(0.5, 0).setAlpha(canAfford ? 1 : 0.35);
+    }).setOrigin(0.5, 0).setAlpha(canAfford ? 1 : 0.45);
     this.add(icon); this.cardGroup.push(icon);
 
     const nameT = this.scene.add.text(cx + CARD_W / 2, cy + 58, def.koreanName, {
-      fontFamily: "Georgia, serif",
+      fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: canAfford ? CSS.PARCHMENT : CSS.PARCHMENT_MUTED,
+      color: canAfford ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5, 0);
     this.add(nameT); this.cardGroup.push(nameT);
 
     const descT = this.scene.add.text(cx + CARD_W / 2, cy + 77, def.description, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CARD_W - 14 },
       align: 'center',
       lineSpacing: 2,
-    }).setOrigin(0.5, 0).setAlpha(canAfford ? 0.8 : 0.4);
+    }).setOrigin(0.5, 0).setAlpha(canAfford ? 0.95 : 0.55);
     this.add(descT); this.cardGroup.push(descT);
 
     const costBg = this.scene.add.graphics();
-    costBg.fillStyle(canAfford ? COLORS.BLACK : COLORS.STONE_DARK, canAfford ? 0.28 : 0.42);
+    costBg.fillStyle(0xffffff, canAfford ? 0.9 : 0.5);
     costBg.fillRoundedRect(cx + 15, cy + 123, CARD_W - 30, 20, GAME_UI.radius.row);
-    costBg.lineStyle(1, canAfford ? def.accentColor : COLORS.STONE_MID, canAfford ? 0.45 : 0.25);
+    costBg.lineStyle(2, canAfford ? accent.cap : CASUAL.EDGE_SOFT, canAfford ? 0.7 : 0.4);
     costBg.strokeRoundedRect(cx + 15, cy + 123, CARD_W - 30, 20, GAME_UI.radius.row);
     this.add(costBg); this.cardGroup.push(costBg);
 
@@ -213,7 +232,7 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: canAfford ? CSS.TORCH_AMBER : '#cc4444',
+      color: canAfford ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
     }).setOrigin(0.5);
     this.add(costT); this.cardGroup.push(costT);
 
@@ -240,12 +259,12 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
       label: canAfford ? '선택' : '부족',
       fontSize: '12px',
       enabled: canAfford,
-      fillColor: def.accentColor,
-      hoverFillColor: def.accentColor,
-      borderColor: def.accentColor,
-      hoverBorderColor: COLORS.TORCH_AMBER,
-      disabledFillColor: 0x18100a,
-      disabledBorderColor: COLORS.STONE_MID,
+      fillColor: accent.cap,
+      hoverFillColor: accent.cap,
+      borderColor: accent.base,
+      hoverBorderColor: accent.base,
+      disabledFillColor: CASUAL.PANEL_SOFT,
+      disabledBorderColor: CASUAL.EDGE_SOFT,
       onPress: placeSelected,
     });
     this.add(button.bg);
@@ -264,7 +283,8 @@ export class RoomSelectionPanel extends Phaser.GameObjects.Container {
     });
 
     const flash = this.scene.add.text(CANVAS_WIDTH / 2, 24, '골드 부족!', {
-      fontFamily: "Georgia, serif", fontSize: '13px', color: '#ff4444',
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: CASUAL_CSS.RED, stroke: '#ffffff', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(201);
     this.scene.tweens.add({
       targets: flash, alpha: 0, y: flash.y - 20, duration: 800,

@@ -1,10 +1,26 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import { drawRoomDecoration } from '../art/RoomDecorations';
 import { loadGameState } from '../data/wisdom';
+
+/**
+ * Visual-only reskin: the shared dungeon decoration helper (drawRoomDecoration)
+ * reads stone/glow colors from the theme. To draw decorations in warm CASUAL
+ * tones on the cream chamber WITHOUT mutating the shared theme object, we feed
+ * it an immutable spread with only the decorative stone/glow fields swapped.
+ */
+function casualDecorTheme(theme: DungeonTheme): DungeonTheme {
+  return {
+    ...theme,
+    stoneDark:  CASUAL.EDGE_SOFT,
+    stoneMid:   CASUAL.PANEL_SOFT,
+    stoneLight: CASUAL.EDGE_SOFT,
+    glowColor:  CASUAL.GOLD,
+  };
+}
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
@@ -75,6 +91,7 @@ export class Room extends Phaser.GameObjects.Container {
     this.add(this.outline);
 
     if (state === 'empty') this.addCandle(scene);
+    if (state === 'locked') this.addLockGlyph(scene);
     if (state === 'water') this.drawWaterCell(scene);
 
     // Extend hit area by 14px on each side for finger-friendly touch targets (real device)
@@ -98,50 +115,52 @@ export class Room extends Phaser.GameObjects.Container {
   private drawStone(): void {
     const g = this.bg;
     const s = this.cs;
-    const t = this.theme;
     const inset = 7;
     g.clear();
     if (this.state === 'water') return;
 
-    // Outer cave rock frame
-    g.fillStyle(t.stoneDark, 1);
-    g.fillRect(-s / 2, -s / 2, s, s);
+    // Per-state accent: occupied uses the room's own accent, otherwise warm gold.
+    const accent = this.state === 'occupied' && this.roomData
+      ? ROOM_DEFS[this.roomData.type].accentColor
+      : CASUAL.GOLD;
+    // Cream body fill — brighter PANEL for occupied chambers, PANEL_SOFT otherwise.
+    const bodyFill = this.state === 'occupied' ? CASUAL.PANEL : CASUAL.PANEL_SOFT;
+    const radius = 12;
+    const cw = s - inset * 2;
+    const cx0 = -s / 2 + inset;
+    const cy0 = -s / 2 + inset;
 
-    // Inner cavity
-    g.fillStyle(t.bgPrimary, 1);
-    g.fillRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2);
+    // Warm drop shadow under the cell for depth.
+    g.fillStyle(CASUAL.SHADOW, 0.22);
+    g.fillRoundedRect(cx0 + 1, cy0 + 3, cw, cw, radius);
 
-    // Faint center gradient illusion
-    const ci = inset + 10;
-    g.fillStyle(t.stoneMid, 0.08);
-    g.fillRect(-s / 2 + ci, -s / 2 + ci, s - ci * 2, s - ci * 2);
+    // Cream cell body.
+    g.fillStyle(bodyFill, 1);
+    g.fillRoundedRect(cx0, cy0, cw, cw, radius);
 
-    // Rock edge highlights (subtle, organic)
-    g.fillStyle(t.stoneLight, 0.06);
-    g.fillRect(-s / 2, -s / 2, s, 3);
-    g.fillRect(-s / 2, -s / 2, 3, s);
-    g.fillStyle(0x000000, 0.35);
-    g.fillRect(-s / 2, s / 2 - 3, s, 3);
-    g.fillRect(s / 2 - 3, -s / 2, 3, s);
+    // White top highlight (glossy toy sheen).
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(cx0 + 8, cy0 + 6, cw - 16, 16, 7);
 
-    // Mineral deposit dots (replace gold rivets)
-    const ro = 9;
-    [[-s/2+ro, -s/2+ro], [s/2-ro, -s/2+ro], [-s/2+ro, s/2-ro], [s/2-ro, s/2-ro]].forEach(([cx, cy]) => {
-      g.fillStyle(0x000000, 0.3); g.fillCircle(cx + 1, cy + 1, 2.5);
-      g.fillStyle(t.glowColor, 0.6); g.fillCircle(cx, cy, 2.5);
-      g.fillStyle(0xffffff, 0.15); g.fillCircle(cx - 0.5, cy - 0.5, 1);
-    });
+    // Chunky saturated rounded border.
+    const borderColor = this.state === 'occupied' ? accent : CASUAL.EDGE;
+    g.lineStyle(2.5, borderColor, this.state === 'locked' ? 0.5 : 1);
+    g.strokeRoundedRect(cx0, cy0, cw, cw, radius);
 
-    // Occupied tint + room decoration
+    // Occupied chamber: faint accent wash + saturated bottom strip + decoration.
     if (this.state === 'occupied' && this.roomData) {
-      const def = ROOM_DEFS[this.roomData.type];
-      g.fillStyle(def.accentColor, 0.1);
-      g.fillRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2);
-      drawRoomDecoration(g, this.roomData.type, s, t);
+      g.fillStyle(accent, 0.12);
+      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
+      g.fillStyle(accent, 0.85);
+      g.fillRoundedRect(cx0 + 10, -s / 2 + s - inset - 10, cw - 20, 4, 2);
+      // Warm-tone decoration override (does not mutate the shared theme).
+      drawRoomDecoration(g, this.roomData.type, s, casualDecorTheme(this.theme));
     }
+
+    // Locked cell: muted cream wash so it reads "locked" on the bright field.
     if (this.state === 'locked') {
-      g.fillStyle(0x000000, 0.55);
-      g.fillRect(-s / 2, -s / 2, s, s);
+      g.fillStyle(CASUAL.EDGE_SOFT, 0.32);
+      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
     }
   }
 
@@ -153,7 +172,8 @@ export class Room extends Phaser.GameObjects.Container {
     this.add(this.candleGfx);
 
     this.emptyLabel = scene.add.text(0, 26, '방 추가', {
-      fontFamily: "Georgia, serif", fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: "Georgia, serif", fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
     }).setOrigin(0.5, 0);
     this.add(this.emptyLabel);
 
@@ -168,10 +188,24 @@ export class Room extends Phaser.GameObjects.Container {
   private drawCandle(): void {
     const g = this.candleGfx!;
     g.clear();
-    g.fillStyle(0xd4c8a0, 0.85); g.fillRect(-4, 2, 8, 18);
-    g.fillStyle(0xd4c8a0, 0.35); g.fillRect(-3, 18, 4, 5);
-    g.fillStyle(COLORS.TORCH_GLOW, 0.9); g.fillTriangle(0, -15, -8, 3, 8, 3);
-    g.fillStyle(0xffee44, 0.85);          g.fillTriangle(0, -8,  -4, 3, 4, 3);
+    // Warm-brown candle base (recolored from dark) + bright flame glow kept.
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.9);  g.fillRect(-4, 2, 8, 18);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.45); g.fillRect(-3, 18, 4, 5);
+    g.fillStyle(CASUAL.GOLD, 0.95);      g.fillTriangle(0, -15, -8, 3, 8, 3);
+    g.fillStyle(0xffee44, 0.9);          g.fillTriangle(0, -8,  -4, 3, 4, 3);
+  }
+
+  private addLockGlyph(scene: Phaser.Scene): void {
+    // Lock glyph in soft ink — clearly "locked" on the bright field.
+    const lock = scene.add.text(0, 0, '🔒', {
+      fontSize: '20px',
+    }).setOrigin(0.5).setAlpha(0.55);
+    this.add(lock);
+    const label = scene.add.text(0, 22, '잠김', {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
+    }).setOrigin(0.5, 0).setAlpha(0.75);
+    this.add(label);
   }
 
   // ─── Selection ──────────────────────────────────────────────────────────
@@ -179,16 +213,16 @@ export class Room extends Phaser.GameObjects.Container {
   setHighlight(on: boolean): void {
     this.outline.clear();
     if (on) {
-      this.outline.lineStyle(2, COLORS.TORCH_GOLD, 0.5);
-      this.outline.strokeRect(-this.cs/2 + 2, -this.cs/2 + 2, this.cs - 4, this.cs - 4);
+      this.outline.lineStyle(2.5, CASUAL.GOLD, 0.7);
+      this.outline.strokeRoundedRect(-this.cs/2 + 5, -this.cs/2 + 5, this.cs - 10, this.cs - 10, 11);
     }
   }
 
   select(): void {
     this.isSelected = true;
     this.outline.clear();
-    this.outline.lineStyle(3, COLORS.TORCH_GOLD, 1);
-    this.outline.strokeRect(-this.cs/2 + 2, -this.cs/2 + 2, this.cs - 4, this.cs - 4);
+    this.outline.lineStyle(3, CASUAL.GOLD, 1);
+    this.outline.strokeRoundedRect(-this.cs/2 + 5, -this.cs/2 + 5, this.cs - 10, this.cs - 10, 11);
     this.selectionTween = this.scene.tweens.add({
       targets: this.outline, alpha: { from: 0.6, to: 1.0 },
       duration: 400, yoyo: true, repeat: -1,
@@ -242,7 +276,6 @@ export class Room extends Phaser.GameObjects.Container {
 
     const s = this.cs;
     const accent = options.accentColor;
-    const accentCSS = `#${accent.toString(16).padStart(6, '0')}`;
     const g = this.scene.add.graphics();
     this.slotLoadoutGfx = g;
     this.add(g);
@@ -253,47 +286,51 @@ export class Room extends Phaser.GameObjects.Container {
     const chamberH = s - 54;
     const floorY = chamberY + chamberH - 13;
 
-    g.fillStyle(0x03070c, 0.86);
+    // Cream chamber body + saturated accent border (visual-only reskin).
+    g.fillStyle(CASUAL.PANEL, 0.96);
     g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
-    g.lineStyle(1, accent, 0.28);
+    g.lineStyle(2, accent, 0.85);
     g.strokeRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
 
-    g.fillStyle(0x122336, 0.52);
+    // Back wall — soft cream panel + faint accent wash + white sheen line.
+    g.fillStyle(CASUAL.PANEL_SOFT, 0.85);
     g.fillRoundedRect(chamberX + 5, chamberY + 5, chamberW - 10, chamberH * 0.42, 5);
-    g.fillStyle(accent, 0.08);
+    g.fillStyle(accent, 0.1);
     g.fillRect(chamberX + 7, chamberY + 7, chamberW - 14, Math.max(4, chamberH * 0.18));
-    g.lineStyle(1, 0xffffff, 0.08);
+    g.lineStyle(1, 0xffffff, 0.4);
     g.lineBetween(chamberX + 8, chamberY + 15, chamberX + chamberW - 8, chamberY + 15);
 
-    g.fillStyle(0x0b121a, 0.92);
+    // Floor slab — warmer cream tone.
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillPoints([
       new Phaser.Geom.Point(chamberX + 7, floorY),
       new Phaser.Geom.Point(chamberX + chamberW - 7, floorY),
       new Phaser.Geom.Point(chamberX + chamberW - 3, chamberY + chamberH - 4),
       new Phaser.Geom.Point(chamberX + 3, chamberY + chamberH - 4),
     ], true);
-    g.lineStyle(1, accent, 0.18);
+    g.lineStyle(1, accent, 0.4);
     g.lineBetween(chamberX + 8, floorY, chamberX + chamberW - 8, floorY);
-    g.lineStyle(1, 0x000000, 0.28);
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
     g.lineBetween(chamberX + 14, floorY + 5, chamberX + chamberW - 14, floorY + 5);
 
     const hasGuardian = options.monsterCount > 0;
     const centerY = chamberY + chamberH * 0.52;
-    g.fillStyle(0x000000, 0.42);
+    // Soft warm ground shadow + accent stand pad so the portrait sits grounded.
+    g.fillStyle(CASUAL.SHADOW, 0.28);
     g.fillEllipse(0, floorY + 3, 36, 9);
-    g.fillStyle(hasGuardian ? accent : 0x27394c, hasGuardian ? 0.24 : 0.14);
+    g.fillStyle(hasGuardian ? accent : CASUAL.EDGE_SOFT, hasGuardian ? 0.3 : 0.18);
     g.fillEllipse(0, floorY + 1, 31, 7);
-    g.fillStyle(0x1a2430, 0.96);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.85);
     g.fillRoundedRect(-16, centerY + 10, 32, 7, 4);
-    g.lineStyle(1, accent, hasGuardian ? 0.42 : 0.18);
+    g.lineStyle(1, accent, hasGuardian ? 0.6 : 0.3);
     g.strokeRoundedRect(-16, centerY + 10, 32, 7, 4);
 
     if (options.equipmentCount > 0) {
-      g.lineStyle(2, 0xe8c468, 0.34);
+      g.lineStyle(2, CASUAL.GOLD, 0.55);
       g.strokeCircle(0, centerY + 3, 18);
-      g.lineStyle(1, 0xfff0b0, 0.24);
+      g.lineStyle(1, CASUAL.GOLD, 0.32);
       g.strokeCircle(0, centerY + 3, 22);
-      g.fillStyle(0xe8c468, 0.72);
+      g.fillStyle(CASUAL.GOLD_DK, 0.85);
       g.fillCircle(-19, centerY - 6, 1.8);
       g.fillCircle(19, centerY + 7, 1.6);
       g.fillCircle(8, centerY - 17, 1.5);
@@ -302,25 +339,26 @@ export class Room extends Phaser.GameObjects.Container {
     const trapFixtures = Math.min(4, options.trapCount);
     for (let i = 0; i < trapFixtures; i++) {
       const fixtureX = chamberX + 10 + i * ((chamberW - 20) / Math.max(1, trapFixtures - 1));
-      g.fillStyle(0x5fb854, 0.2);
+      g.fillStyle(CASUAL.GREEN, 0.28);
       g.fillCircle(fixtureX, floorY + 2, 5);
-      g.fillStyle(0x5fb854, 0.78);
+      g.fillStyle(CASUAL.GREEN, 0.95);
       g.fillTriangle(fixtureX - 4, floorY + 5, fixtureX, floorY - 6, fixtureX + 4, floorY + 5);
-      g.lineStyle(1, 0xcaffde, 0.36);
+      g.lineStyle(1, CASUAL.GREEN_DK, 0.55);
       g.lineBetween(fixtureX - 5, floorY + 5, fixtureX + 5, floorY + 5);
     }
 
-    g.lineStyle(2, accent, 0.34);
-    g.strokeRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10);
-    g.fillStyle(accent, 0.22);
+    // Outer accent frame + cream title strip with white sheen.
+    g.lineStyle(2, accent, 0.5);
+    g.strokeRoundedRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10, 11);
+    g.fillStyle(accent, 0.85);
     g.fillRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
-    g.lineStyle(1, 0xffffff, 0.16);
-    g.strokeRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
+    g.fillStyle(0xffffff, 0.3);
+    g.fillRoundedRect(-s / 2 + 20, -s / 2 + 9, s - 40, 5, 3);
 
     const title = this.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
       fontFamily: 'Georgia, serif',
       fontSize: '8px',
-      color: '#f0e6c8',
+      color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.slotLoadoutLabels.push(title);
@@ -330,22 +368,22 @@ export class Room extends Phaser.GameObjects.Container {
     const guardian = this.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
       fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
       fontSize: hasGuardian ? '25px' : '15px',
-      color: hasGuardian ? '#ffffff' : '#47647b',
-      stroke: '#05080c',
+      color: hasGuardian ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+      stroke: hasGuardian ? '#4a3016' : '#8a6238',
       strokeThickness: hasGuardian ? 3 : 1,
     }).setOrigin(0.5);
     this.slotLoadoutLabels.push(guardian);
     this.add(guardian);
 
     if (options.monsterCount > 1) {
-      g.fillStyle(0xff8a45, 0.9);
+      g.fillStyle(CASUAL.RED, 0.95);
       g.fillRoundedRect(10, centerY - 17, 18, 11, 4);
-      g.lineStyle(1, 0xfff0cc, 0.45);
+      g.lineStyle(1, CASUAL.RED_DK, 0.6);
       g.strokeRoundedRect(10, centerY - 17, 18, 11, 4);
       const count = this.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
         fontFamily: 'Georgia, serif',
         fontSize: '7px',
-        color: '#f0e6c8',
+        color: CASUAL_CSS.WHITE,
         fontStyle: 'bold',
       }).setOrigin(0.5);
       this.slotLoadoutLabels.push(count);
@@ -353,33 +391,34 @@ export class Room extends Phaser.GameObjects.Container {
     }
 
     const stripY = s / 2 - 26;
-    g.fillStyle(0x140c03, 0.78);
+    // Loadout strip — cream track + chunky brown border (matches casual chrome).
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
-    g.lineStyle(1, accent, 0.28);
+    g.lineStyle(1.5, CASUAL.EDGE, 0.85);
     g.strokeRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
 
     const drawPips = (startX: number, y: number, count: number, cap: number, fill: number): void => {
       const safeCap = Math.max(1, Math.min(5, cap));
       for (let i = 0; i < safeCap; i++) {
-        g.fillStyle(i < count ? fill : 0x132332, i < count ? 0.95 : 0.9);
+        g.fillStyle(i < count ? fill : CASUAL.PANEL, i < count ? 0.95 : 1);
         g.fillCircle(startX + i * 6, y, 2.2);
-        g.lineStyle(0.6, i < count ? fill : accent, i < count ? 0.55 : 0.22);
+        g.lineStyle(0.8, i < count ? fill : CASUAL.EDGE_SOFT, i < count ? 0.7 : 0.5);
         g.strokeCircle(startX + i * 6, y, 2.2);
       }
     };
 
-    drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, 0xff8a45);
-    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, 0x5fb854);
+    drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, CASUAL.RED);
+    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, CASUAL.GREEN_DK);
 
     if (options.equipmentCount > 0) {
-      g.fillStyle(0xe8c468, 0.2);
+      g.fillStyle(CASUAL.GOLD, 0.35);
       g.fillRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
-      g.lineStyle(1, 0xe8c468, 0.5);
+      g.lineStyle(1, CASUAL.GOLD_DK, 0.7);
       g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
       const equipment = this.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
         fontFamily: 'Georgia, serif',
         fontSize: '7px',
-        color: '#ffe6a3',
+        color: CASUAL_CSS.GOLD,
         fontStyle: 'bold',
       }).setOrigin(0.5);
       this.slotLoadoutLabels.push(equipment);
@@ -392,7 +431,7 @@ export class Room extends Phaser.GameObjects.Container {
     const loadout = this.scene.add.text(0, stripY + 7, loadoutLabel, {
       fontFamily: 'monospace',
       fontSize: '7px',
-      color: accentCSS,
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.slotLoadoutLabels.push(loadout);
@@ -424,9 +463,10 @@ export class Room extends Phaser.GameObjects.Container {
       this.add(this.damageFlash);
     }
     const s = this.cs;
+    const inset = 7;
     this.damageFlash.clear();
-    this.damageFlash.fillStyle(0xff2222, 0.55);
-    this.damageFlash.fillRect(-s / 2, -s / 2, s, s);
+    this.damageFlash.fillStyle(CASUAL.RED, 0.55);
+    this.damageFlash.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
     this.damageFlash.setDepth(this.depth + 4).setAlpha(1);
     this.scene.tweens.add({
       targets: this.damageFlash,
@@ -465,13 +505,15 @@ export class Room extends Phaser.GameObjects.Container {
     const bx   = -bw / 2;
     const by   = s / 2 - 8;
     const pct  = this.roomHpMax > 0 ? this.roomHpValue / this.roomHpMax : 1;
-    // Background
-    g.fillStyle(0x000000, 0.6);
-    g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
-    // Fill — green → yellow → red
-    const col = pct > 0.6 ? 0x44cc44 : pct > 0.3 ? 0xddcc00 : 0xcc2200;
+    // Track — cream with chunky brown border (casual chrome).
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRoundedRect(bx - 1.5, by - 1.5, bw + 3, bh + 3, 3);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(bx, by, bw, bh, 2);
+    // Fill — green → gold → red (saturated CASUAL accents).
+    const col = pct > 0.6 ? CASUAL.GREEN : pct > 0.3 ? CASUAL.GOLD : CASUAL.RED;
     g.fillStyle(col, 1);
-    g.fillRect(bx, by, Math.round(bw * pct), bh);
+    g.fillRoundedRect(bx, by, Math.max(0, Math.round(bw * pct)), bh, 2);
     // Hide bar if full HP
     g.setAlpha(pct < 1 ? 1 : 0);
 
@@ -493,21 +535,22 @@ export class Room extends Phaser.GameObjects.Container {
     this.isDestroyed = true;
     const s = this.cs;
 
-    // Cave rubble overlay — dark crumbled rock
+    // Rubble overlay — muted warm-brown crumbled cream (on the bright field).
     const rubble = this.scene.add.graphics().setDepth(this.depth + 3);
-    rubble.fillStyle(0x1a1e24, 0.92);
-    rubble.fillRect(-s / 2, -s / 2, s, s);
-    // Crack lines (cave-themed — jagged, not clean X)
-    rubble.lineStyle(2, 0x8b0000, 0.9);
+    const inset = 7;
+    rubble.fillStyle(CASUAL.EDGE_SOFT, 0.8);
+    rubble.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
+    // Crack lines (jagged, not clean X) — saturated red danger marks.
+    rubble.lineStyle(2, CASUAL.RED_DK, 0.9);
     rubble.lineBetween(-s / 2 + 10, -s / 2 + 6,  0,  8);
     rubble.lineBetween(0,  8,  s / 2 - 8,  -s / 2 + 14);
     rubble.lineBetween(0,  8,  -6,  s / 2 - 10);
     rubble.lineBetween(-6, s / 2 - 10,  s / 2 - 12,  s / 2 - 5);
-    rubble.lineStyle(1, 0xff2222, 0.35);
-    rubble.strokeRect(-s / 2, -s / 2, s, s);
+    rubble.lineStyle(2.5, CASUAL.RED, 0.7);
+    rubble.strokeRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
     this.add(rubble);
 
-    // Cave smoke particles — small circles drifting up
+    // Dust puff particles — small warm circles drifting up.
     const spawnSmoke = () => {
       if (!this.active) return;
       for (let i = 0; i < 3; i++) {
@@ -515,7 +558,7 @@ export class Room extends Phaser.GameObjects.Container {
         const sy = this.y + (Math.random() - 0.5) * (s * 0.3);
         const smoke = this.scene.add.graphics().setDepth(this.depth + 10);
         const r = 3 + Math.random() * 4;
-        smoke.fillStyle(0x2a2a2a, 0.6);
+        smoke.fillStyle(CASUAL.PANEL_SOFT, 0.7);
         smoke.fillCircle(0, 0, r);
         smoke.setPosition(sx, sy);
         this.scene.tweens.add({
@@ -581,9 +624,10 @@ export class Room extends Phaser.GameObjects.Container {
     const icon = this.scene.add.text(0, -14, def.emoji, { fontSize: '28px' }).setOrigin(0.5);
     this.add(icon);
 
-    // Room name
+    // Room name — dark ink so it reads on the cream chamber.
     const nameLabel = this.scene.add.text(0, 24, def.koreanName, {
-      fontFamily: "Georgia, serif", fontSize: '10px', color: CSS.PARCHMENT,
+      fontFamily: "Georgia, serif", fontSize: '10px', color: CASUAL_CSS.INK,
+      fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add(nameLabel);
 
@@ -612,8 +656,8 @@ export class Room extends Phaser.GameObjects.Container {
 
     // Brief gold flash
     const flash = this.scene.add.graphics();
-    flash.fillStyle(COLORS.TORCH_GOLD, 0.6);
-    flash.fillRect(-this.cs / 2 + 7, -this.cs / 2 + 7, this.cs - 14, this.cs - 14);
+    flash.fillStyle(CASUAL.GOLD, 0.6);
+    flash.fillRoundedRect(-this.cs / 2 + 7, -this.cs / 2 + 7, this.cs - 14, this.cs - 14, 12);
     this.add(flash);
     this.scene.tweens.add({
       targets: flash, alpha: 0, duration: 350,
@@ -657,10 +701,11 @@ export class Room extends Phaser.GameObjects.Container {
     const bx = this.cs / 2 - 14;
     const by = -this.cs / 2 + 6;
     const r  = 8;
-    const col = this.roomData.level === 3 ? COLORS.TORCH_GOLD : 0xa8a8c0;
-    g.fillStyle(COLORS.BLACK, 0.7); g.fillCircle(bx + 1, by + 1, r);
-    g.fillStyle(col, 1);            g.fillCircle(bx, by, r);
-    g.lineStyle(1, 0xffffff, 0.25); g.strokeCircle(bx, by, r);
+    const col = this.roomData.level === 3 ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
+    g.fillStyle(CASUAL.SHADOW, 0.4); g.fillCircle(bx + 1, by + 1, r);
+    g.fillStyle(col, 1);             g.fillCircle(bx, by, r);
+    g.lineStyle(2, CASUAL.EDGE, 0.9); g.strokeCircle(bx, by, r);
+    g.lineStyle(1, 0xffffff, 0.4);   g.strokeCircle(bx, by - 0.5, r - 1.5);
   }
 
   setMonsterBadge(emoji: string | null): void {
@@ -713,26 +758,29 @@ export class Room extends Phaser.GameObjects.Container {
 
   setBrokenState(): void {
     const s  = this.cs;
+    const inset = 7;
 
-    // Dark cave rubble fill
+    // Muted warm rubble fill (lightened from dark; keeps a faint red danger wash).
     const cg = this.scene.add.graphics();
-    cg.fillStyle(0x1a0000, 0.5);
-    cg.fillRect(-s / 2, -s / 2, s, s);
+    cg.fillStyle(CASUAL.EDGE_SOFT, 0.55);
+    cg.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
+    cg.fillStyle(CASUAL.RED, 0.12);
+    cg.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
 
-    // Jagged crack pattern
-    cg.lineStyle(2, 0xff2222, 0.8);
+    // Jagged crack pattern — saturated red danger marks.
+    cg.lineStyle(2, CASUAL.RED_DK, 0.85);
     cg.lineBetween(-s / 2 + 18, -s / 2 + 8,  -4,  4);
     cg.lineBetween(-4,  4,  10, -s / 2 + 12);
     cg.lineBetween(-4,  4,  -8,  s / 2 - 12);
     cg.lineBetween(-8,  s / 2 - 12,  s / 2 - 14,  s / 2 - 6);
-    cg.lineStyle(1, 0xff0000, 0.45);
-    cg.strokeRect(-s / 2, -s / 2, s, s);
+    cg.lineStyle(2.5, CASUAL.RED, 0.6);
+    cg.strokeRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
     this.add(cg);
 
     // Pulsing red glow border
     const glow = this.scene.add.graphics();
-    glow.lineStyle(3, 0xff0000, 0.7);
-    glow.strokeRect(-s / 2 + 2, -s / 2 + 2, s - 4, s - 4);
+    glow.lineStyle(3, CASUAL.RED, 0.8);
+    glow.strokeRoundedRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10, 11);
     this.add(glow);
     this.scene.tweens.add({
       targets: glow, alpha: { from: 0.8, to: 0.15 },
@@ -740,8 +788,8 @@ export class Room extends Phaser.GameObjects.Container {
     });
 
     this.add(this.scene.add.text(0, s / 2 - 10, '파손', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#ff6666',
-      backgroundColor: '#1a0000', padding: { x: 3, y: 1 },
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.WHITE,
+      backgroundColor: CASUAL_CSS.RED, padding: { x: 3, y: 1 },
     }).setOrigin(0.5, 1));
   }
 
@@ -795,11 +843,19 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private drawWaterCell(scene: Phaser.Scene): void {
-    // Dark water background
+    // Bright water cell — blue tint on cream, chunky brown border.
     const s  = this.cs;
+    const inset = 7;
+    const cw = s - inset * 2;
     const wg = scene.add.graphics().setDepth(this.depth + 1);
-    wg.fillStyle(0x001440, 1);
-    wg.fillRect(-s / 2, -s / 2, s, s);
+    wg.fillStyle(CASUAL.PANEL, 1);
+    wg.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, cw, cw, 12);
+    wg.fillStyle(CASUAL.BLUE, 0.35);
+    wg.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, cw, cw, 12);
+    wg.fillStyle(0xffffff, 0.4);
+    wg.fillRoundedRect(-s / 2 + inset + 8, -s / 2 + inset + 6, cw - 16, 16, 7);
+    wg.lineStyle(2.5, CASUAL.EDGE, 1);
+    wg.strokeRoundedRect(-s / 2 + inset, -s / 2 + inset, cw, cw, 12);
     // Animated ripple
     this.waterRipple = scene.add.graphics().setDepth(this.depth + 2);
     this.add(wg);
@@ -813,7 +869,7 @@ export class Room extends Phaser.GameObjects.Container {
         this.waterRipple.clear();
         const t = tween.getValue() as number;
         // Draw 3 sine-wave lines
-        this.waterRipple.lineStyle(1.5, 0x0066cc, 0.5);
+        this.waterRipple.lineStyle(1.5, CASUAL.BLUE_DK, 0.6);
         for (let row = 0; row < 3; row++) {
           const y0 = -s / 2 + 12 + row * 14;
           this.waterRipple.beginPath();
@@ -847,15 +903,15 @@ export class Room extends Phaser.GameObjects.Container {
     const cx  = this.cs / 2 - r - 3;   // bottom-right corner in container-local space
     const cy  = this.cs / 2 - r - 3;
     this.cooldownRing.clear();
-    // Background circle
-    this.cooldownRing.lineStyle(1.5, 0x222222, 0.55);
+    // Background circle — soft brown track on the bright field.
+    this.cooldownRing.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.6);
     this.cooldownRing.strokeCircle(cx, cy, r);
     // Progress arc (clockwise from top)
     if (pct > 0.02) {
       const start = Phaser.Math.DegToRad(-90);
       const end   = start + pct * Phaser.Math.PI2;
-      const color = pct >= 0.95 ? 0xffdd44 : 0xaa6622;
-      this.cooldownRing.lineStyle(2.5, color, 0.9);
+      const color = pct >= 0.95 ? CASUAL.GOLD : CASUAL.GOLD_DK;
+      this.cooldownRing.lineStyle(2.5, color, 0.95);
       this.cooldownRing.beginPath();
       this.cooldownRing.arc(cx, cy, r, start, end, false);
       this.cooldownRing.strokePath();

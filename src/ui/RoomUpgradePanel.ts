@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   ROOM_DEFS, getUpgradeCost, getAttackDamage, MAX_ROOM_LEVEL,
@@ -9,7 +9,6 @@ import {
   addFramedPanel,
   addInfoRow,
   addPrimaryActionButton,
-  GAME_UI,
 } from './GameUiPrimitives';
 
 const PANEL_H     = 360;
@@ -103,7 +102,8 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       onComplete: () => { this.x = 0; },
     });
     const flash = this.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 300 + 24, '골드 부족!', {
-      fontFamily: "Georgia, serif", fontSize: '13px', color: '#ff4444',
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: CASUAL_CSS.RED, stroke: '#ffffff', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(220);
     this.scene.tweens.add({
       targets: flash, alpha: 0, y: flash.y - 22, duration: 800,
@@ -130,15 +130,15 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CANVAS_WIDTH,
       h: PANEL_H + 18,
       radius: 16,
-      fillColor: 0x0e0903,
-      borderColor: COLORS.TORCH_GOLD,
-      borderAlpha: 0.9,
-      borderWidth: 2,
-      accentColor: COLORS.TORCH_GOLD,
-      accentAlpha: 0.95,
-      glowColor: COLORS.TORCH_AMBER,
-      glowOpacity: 0.14,
-      shadowOpacity: 0.68,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: CASUAL.GOLD,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.4,
       shadowOffsetY: 4,
     });
     this.add(frame.shadow);
@@ -146,18 +146,20 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     this.add(frame.glow);
 
     this.title = scene.add.text(CONTENT_X, 16, '', {
-      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontFamily: 'sans-serif',
       fontSize: '17px',
       fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.INK,
+      stroke: '#ffffff',
+      strokeThickness: 3,
     }).setOrigin(0, 0);
     this.add(this.title);
 
-    this.levelLabel = scene.add.text(CONTENT_X, 37, '', {
+    this.levelLabel = scene.add.text(CONTENT_X, 38, '', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: CSS.PARCHMENT_DIM,
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
     this.add(this.levelLabel);
 
@@ -168,11 +170,11 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       h: 30,
       label: '×',
       fontSize: '16px',
-      fillColor: 0x1a1208,
-      hoverFillColor: 0x24170a,
-      borderColor: COLORS.STONE_MID,
-      hoverBorderColor: COLORS.TORCH_AMBER,
-      textColor: CSS.PARCHMENT_MUTED,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.RED,
+      textColor: CASUAL_CSS.INK,
       onPress: () => this.close(),
     });
     this.add(closeButton.bg);
@@ -180,7 +182,7 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     this.add(closeButton.zone);
 
     const div = scene.add.graphics();
-    div.lineStyle(1, COLORS.TORCH_GOLD, 0.3);
+    div.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
     div.lineBetween(12, 54, CANVAS_WIDTH - 12, 54);
     this.add(div);
   }
@@ -208,24 +210,24 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CONTENT_W,
       h: previewH,
       radius: 10,
-      fillColor: GAME_UI.colors.panelFill,
+      fillColor: CASUAL.PANEL,
       borderColor: def.accentColor,
-      borderAlpha: 0.62,
-      borderWidth: 1.5,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: def.accentColor,
-      accentAlpha: 0.72,
-      glowColor: def.accentColor,
-      glowOpacity: 0.08,
-      shadowOpacity: 0.24,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.3,
       shadowOffsetY: 2,
     });
     this.addContent(preview.shadow, preview.panel, preview.glow);
 
-    const header = this.scene.add.text(CONTENT_X + 14, previewY + 14, '업그레이드 미리보기', {
+    const header = this.scene.add.text(CONTENT_X + 14, previewY + 16, '업그레이드 미리보기', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: CSS.PARCHMENT_MUTED,
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
     this.addContent(header);
 
@@ -238,9 +240,9 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
         icon: stat.icon,
         label: stat.label,
         value: stat.value,
-        valueColor: stat.valueColor ?? '#88ff88',
-        fillColor: 0x120c05,
-        borderColor: 0x3a2810,
+        valueColor: stat.valueColor ?? CASUAL_CSS.GREEN,
+        fillColor: CASUAL.PANEL_SOFT,
+        borderColor: CASUAL.EDGE_SOFT,
       });
       this.addContent(refs.bg, refs.iconText, refs.labelText, refs.valueText);
     });
@@ -251,13 +253,13 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CONTENT_W,
       h: 44,
       radius: 9,
-      fillColor: 0x120b03,
-      borderColor: COLORS.TORCH_GOLD,
-      borderAlpha: 0.52,
-      borderWidth: 1,
-      glowColor: COLORS.TORCH_GOLD,
-      glowOpacity: 0.06,
-      shadowOpacity: 0.18,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.GOLD_DK,
+      borderAlpha: 1,
+      borderWidth: 2,
+      glowColor: 0xffffff,
+      glowOpacity: 0.3,
+      shadowOpacity: 0.22,
       shadowOffsetY: 1,
     });
     this.addContent(costPanel.shadow, costPanel.panel, costPanel.glow);
@@ -265,13 +267,14 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     const costLabel = this.scene.add.text(CONTENT_X + 14, costY + 22, '비용', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5);
     const costText = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, costY + 22, `${cost} 골드`, {
       fontFamily: 'sans-serif',
       fontSize: '14px',
       fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.GOLD,
     }).setOrigin(1, 0.5);
     this.addContent(costLabel, costText);
 
@@ -282,11 +285,11 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       h: 44,
       label: '업그레이드',
       fontSize: '15px',
-      fillColor: 0x6a3f00,
-      hoverFillColor: 0x8a5600,
-      borderColor: COLORS.TORCH_GOLD,
-      hoverBorderColor: COLORS.TORCH_AMBER,
-      textColor: CSS.TORCH_AMBER,
+      fillColor: CASUAL.GOLD,
+      hoverFillColor: 0xffd24a,
+      borderColor: CASUAL.GOLD_DK,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: '#ffffff',
       onPress: () => {
         this.onUpgradeCb(row, col);
         this.close();
@@ -306,15 +309,15 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CONTENT_W,
       h: statusH,
       radius: 10,
-      fillColor: GAME_UI.colors.panelFill,
-      borderColor: COLORS.TORCH_GOLD,
-      borderAlpha: 0.65,
-      borderWidth: 1.5,
-      accentColor: COLORS.TORCH_GOLD,
-      accentAlpha: 0.82,
-      glowColor: COLORS.TORCH_AMBER,
-      glowOpacity: 0.1,
-      shadowOpacity: 0.24,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.GOLD_DK,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: CASUAL.GOLD,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.3,
       shadowOffsetY: 2,
     });
     this.addContent(status.shadow, status.panel, status.glow);
@@ -324,15 +327,18 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       fontSize: hasLoadout ? '26px' : '30px',
     }).setOrigin(0.5);
     const title = this.scene.add.text(CANVAS_WIDTH / 2, statusY + 68, '최고 레벨 달성', {
-      fontFamily: "Georgia, serif",
+      fontFamily: 'sans-serif',
       fontSize: '18px',
       fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.INK,
+      stroke: '#ffffff',
+      strokeThickness: 3,
     }).setOrigin(0.5);
     const sub = this.scene.add.text(CANVAS_WIDTH / 2, statusY + 94, '더 이상 업그레이드할 수 없습니다', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: CSS.PARCHMENT_MUTED,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5);
     this.addContent(icon, title, sub);
 
@@ -351,27 +357,27 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CONTENT_W,
       h,
       radius: 10,
-      fillColor: 0x101f2c,
+      fillColor: CASUAL.PANEL,
       borderColor: loadout.accentColor,
-      borderAlpha: 0.7,
-      borderWidth: 1.5,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: loadout.accentColor,
-      accentAlpha: 0.78,
-      glowColor: loadout.accentColor,
-      glowOpacity: 0.08,
-      shadowOpacity: 0.22,
+      accentAlpha: 1,
+      glowColor: 0xffffff,
+      glowOpacity: 0.4,
+      shadowOpacity: 0.28,
       shadowOffsetY: 2,
     });
     this.addContent(frame.shadow, frame.panel, frame.glow);
 
-    const chip = this.scene.add.text(CONTENT_X + 14, y + 17, `${loadout.slotIcon} ${loadout.slotName}`, {
-      fontFamily: 'Georgia, serif',
+    const chip = this.scene.add.text(CONTENT_X + 14, y + 18, `${loadout.slotIcon} ${loadout.slotName}`, {
+      fontFamily: 'sans-serif',
       fontSize: '12px',
       fontStyle: 'bold',
-      color: '#f0e6c8',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
-    const level = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, y + 17, `설계 Lv.${loadout.roomLevel}`, {
-      fontFamily: 'monospace',
+    const level = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, y + 18, `설계 Lv.${loadout.roomLevel}`, {
+      fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
       color: accentCSS,
@@ -381,38 +387,45 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
     const monsterText = this.scene.add.text(CONTENT_X + 14, y + 38, `수호자 ${loadout.monsters.length}/${loadout.monsterCapacity}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#ffd3a6',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.RED,
     }).setOrigin(0, 0.5);
     const monsterNames = this.scene.add.text(CONTENT_X + 86, y + 38, this.formatLoadoutNames(loadout.monsters, '미배치'), {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CSS.PARCHMENT,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
     this.addContent(monsterText, monsterNames);
 
     const trapText = this.scene.add.text(CONTENT_X + 14, y + 54, `함정 ${loadout.traps.length}/${loadout.trapCapacity}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#b9ffd8',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.GREEN,
     }).setOrigin(0, 0.5);
     const trapNames = this.scene.add.text(CONTENT_X + 86, y + 54, this.formatLoadoutNames(loadout.traps, '미설치'), {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CSS.PARCHMENT_DIM,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5);
     this.addContent(trapText, trapNames);
 
     const bar = this.scene.add.graphics();
     const barX = CANVAS_WIDTH - CONTENT_X - 88;
     const barY = y + 48;
-    bar.fillStyle(0x140c03, 0.92);
+    bar.fillStyle(CASUAL.PANEL_SOFT, 1);
     bar.fillRoundedRect(barX, barY, 74, 6, 3);
-    bar.fillStyle(hpPct > 0.6 ? 0x5fb854 : hpPct > 0.3 ? 0xe8c468 : 0xd9594a, 0.95);
+    bar.lineStyle(1, CASUAL.EDGE_SOFT, 0.7);
+    bar.strokeRoundedRect(barX, barY, 74, 6, 3);
+    bar.fillStyle(hpPct > 0.6 ? CASUAL.GREEN : hpPct > 0.3 ? CASUAL.GOLD : CASUAL.RED, 1);
     bar.fillRoundedRect(barX, barY, Math.max(4, 74 * hpPct), 6, 3);
     const hpText = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 14, y + 38, `HP ${Math.round(loadout.hp)}/${Math.round(loadout.maxHp)}`, {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#e8d5aa',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0.5);
     this.addContent(bar, hpText);
   }
@@ -438,13 +451,13 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       w: CONTENT_W,
       h: panelH,
       radius: 8,
-      fillColor: 0x0d0a07,
-      borderColor: COLORS.STONE_MID,
-      borderAlpha: 0.36,
-      borderWidth: 1,
-      glowColor: COLORS.TORCH_AMBER,
-      glowOpacity: 0.04,
-      shadowOpacity: 0.12,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
+      borderAlpha: 1,
+      borderWidth: 2,
+      glowColor: 0xffffff,
+      glowOpacity: 0.3,
+      shadowOpacity: 0.18,
       shadowOffsetY: 1,
     });
     this.addContent(frame.shadow, frame.panel, frame.glow);
@@ -456,12 +469,13 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
         fontFamily: 'sans-serif',
         fontSize: '10px',
         fontStyle: 'bold',
-        color: '#ffcc88',
+        color: CASUAL_CSS.GOLD,
       }).setOrigin(0, 0);
       const desc = this.scene.add.text(CANVAS_WIDTH - CONTENT_X - 12, sy, syn.desc, {
         fontFamily: 'sans-serif',
         fontSize: '10px',
-        color: CSS.PARCHMENT_MUTED,
+        fontStyle: 'bold',
+        color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0);
       this.addContent(name, desc);
     }
@@ -485,14 +499,14 @@ export class RoomUpgradePanel extends Phaser.GameObjects.Container {
       const curG = Math.round(def.goldPerSec * Math.pow(1.5, data.level - 1));
       const nxtG = Math.round(def.goldPerSec * Math.pow(1.5, nextLevel - 1));
       return [
-        { icon: '💰', label: '골드 생산', value: `${curG}/초 → ${nxtG}/초`, valueColor: CSS.TORCH_AMBER },
+        { icon: '💰', label: '골드 생산', value: `${curG}/초 → ${nxtG}/초`, valueColor: CASUAL_CSS.GOLD },
         { icon: '✦', label: '방 레벨', value: `Lv.${data.level} → Lv.${nextLevel}` },
       ];
     }
 
     return [
       { icon: '✦', label: '방 레벨', value: `Lv.${data.level} → Lv.${nextLevel}` },
-      { icon: '◇', label: '지원 효과', value: '효과 강화', valueColor: CSS.TORCH_AMBER },
+      { icon: '◇', label: '지원 효과', value: '효과 강화', valueColor: CASUAL_CSS.GOLD },
     ];
   }
 
