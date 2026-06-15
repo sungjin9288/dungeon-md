@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
@@ -142,18 +143,20 @@ export class StageSelectScene extends Phaser.Scene {
   // ─── Background ─────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x1a0f00, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT + 300);  // extra height for scroll
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    // Fixed to the viewport (scrollFactor 0) so it stays put as the camera scrolls.
+    applyCasualBackground(this);
 
-    // Stone tile texture suggestion
-    const ts = 40;
-    for (let x = 0; x < CANVAS_WIDTH; x += ts) {
-      for (let y = 0; y < CANVAS_HEIGHT + 300; y += ts) {
-        g.fillStyle(0x221508, 0.5);
-        g.fillRect(x, y, ts - 1, ts - 1);
-      }
-    }
+    // Top header band (cream with white top highlight + brown bottom edge).
+    const g = this.add.graphics().setScrollFactor(0).setDepth(-10);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, 124);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRect(0, 124, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, 124 - 3, CANVAS_WIDTH, 3);
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────
@@ -165,18 +168,18 @@ export class StageSelectScene extends Phaser.Scene {
     this.add.text(CANVAS_WIDTH / 2, 84, 'Chapter 1  —  10 스테이지', {
       fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: CSS.PARCHMENT_MUTED,
+      color: CASUAL_CSS.INK_SOFT,
       letterSpacing: 2,
     }).setOrigin(0.5);
 
     // Decorative double divider line
     const div = this.add.graphics();
-    div.lineStyle(1, COLORS.TORCH_GOLD, 0.55);
+    div.lineStyle(1, CASUAL.EDGE, 0.55);
     div.lineBetween(30, 102, CANVAS_WIDTH - 30, 102);
-    div.lineStyle(0.5, COLORS.TORCH_GOLD, 0.25);
+    div.lineStyle(0.5, CASUAL.EDGE_SOFT, 0.4);
     div.lineBetween(30, 105, CANVAS_WIDTH - 30, 105);
     // Center diamond ornament on divider
-    div.fillStyle(COLORS.TORCH_GOLD, 0.85);
+    div.fillStyle(CASUAL.GOLD, 1);
     div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 98);
     div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 108);
 
@@ -189,10 +192,10 @@ export class StageSelectScene extends Phaser.Scene {
    */
   private drawTitleFlourish(cx: number, cy: number, text: string, fontSize: number): void {
     const title = this.add.text(cx, cy, text, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: `${fontSize}px`, fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
-      stroke: '#1a0f00', strokeThickness: 3,
+      color: CASUAL_CSS.INK,
+      stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Measure title bounds to place ornaments
@@ -201,18 +204,18 @@ export class StageSelectScene extends Phaser.Scene {
 
     // Left ornament — small diamond + short line
     const ornL = this.add.graphics();
-    ornL.fillStyle(COLORS.TORCH_GOLD, 0.9);
+    ornL.fillStyle(CASUAL.GOLD, 1);
     const lx = bounds.left - padX;
     ornL.fillTriangle(lx - 5, cy, lx, cy - 4, lx, cy + 4);
-    ornL.lineStyle(1.5, COLORS.TORCH_GOLD, 0.7);
+    ornL.lineStyle(1.5, CASUAL.EDGE, 0.7);
     ornL.lineBetween(lx - 22, cy, lx - 7, cy);
 
     // Right ornament — mirror
     const ornR = this.add.graphics();
-    ornR.fillStyle(COLORS.TORCH_GOLD, 0.9);
+    ornR.fillStyle(CASUAL.GOLD, 1);
     const rx = bounds.right + padX;
     ornR.fillTriangle(rx + 5, cy, rx, cy - 4, rx, cy + 4);
-    ornR.lineStyle(1.5, COLORS.TORCH_GOLD, 0.7);
+    ornR.lineStyle(1.5, CASUAL.EDGE, 0.7);
     ornR.lineBetween(rx + 7, cy, rx + 22, cy);
   }
 
@@ -411,22 +414,12 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
     const btnY = 976;
 
-    const bg = this.add.graphics();
-    bg.fillStyle(0x1a0a2a, 1);
-    bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-    bg.lineStyle(2, 0x7a30c8, 0.85);
-    bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-
-    this.add.text(CANVAS_WIDTH / 2, btnY + btnH / 2, `⛩ 선조의 지혜  💠${crystals}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-      color: '#c070ff',
-    }).setOrigin(0.5);
-
-    const zone = this.add.zone(CANVAS_WIDTH / 2, btnY + btnH / 2, btnW, btnH)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover',  () => { bg.clear(); bg.fillStyle(0x2a1040, 1); bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8); bg.lineStyle(2, COLORS.TORCH_GOLD, 0.7); bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8); });
-    zone.on('pointerout',   () => { bg.clear(); bg.fillStyle(0x1a0a2a, 1); bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8); bg.lineStyle(2, 0x7a30c8, 0.85); bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8); });
-    zone.on('pointerdown',  () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AncestralWisdomScene'); });
+    this.buildCasualButton(
+      btnX, btnY, btnW, btnH,
+      `⛩ 선조의 지혜  💠${crystals}`,
+      CASUAL.PURPLE, CASUAL_CSS.PURPLE,
+      () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AncestralWisdomScene'); },
+    );
   }
 
   // ─── Endless button ──────────────────────────────────────────────────────
@@ -439,53 +432,34 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 - btnW - 4;
     const btnY = 1034;
 
-    const bg = this.add.graphics();
-
     if (stage10Cleared) {
-      bg.fillStyle(0x1a0808, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(2, 0xcc2200, 0.85);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-
-      this.add.text(btnX + btnW / 2, btnY + btnH / 2, '⚔ 무한 던전', {
-        fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold',
-        color: '#ff6644',
-      }).setOrigin(0.5);
-
-      const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerover', () => {
-        bg.clear();
-        bg.fillStyle(0x2a1010, 1);
-        bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-        bg.lineStyle(2, COLORS.TORCH_GOLD, 0.7);
-        bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-      });
-      zone.on('pointerout', () => {
-        bg.clear();
-        bg.fillStyle(0x1a0808, 1);
-        bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-        bg.lineStyle(2, 0xcc2200, 0.85);
-        bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-      });
-      zone.on('pointerdown', () => {
-        this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
-        this.scene.start('DungeonScene');
-      });
+      this.buildCasualButton(
+        btnX, btnY, btnW, btnH,
+        '⚔ 무한 던전',
+        CASUAL.RED, CASUAL_CSS.RED,
+        () => {
+          this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
+          this.scene.start('DungeonScene');
+        },
+        '12px',
+      );
     } else {
-      // Locked — show as greyed-out with lock
-      bg.fillStyle(0x0e0a04, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(1, 0x3a2810, 0.6);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
+      // Locked — muted cream pill with lock
+      const bg = this.add.graphics();
+      bg.fillStyle(CASUAL.SHADOW, 0.18);
+      bg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 12);
+      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
+      bg.lineStyle(3, CASUAL.EDGE_SOFT, 0.85);
+      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 12);
       this.add.text(btnX + btnW / 2, btnY + btnH / 2 - 4, '⛓', {
         fontFamily: 'sans-serif', fontSize: '16px',
       }).setOrigin(0.5);
       this.add.text(btnX + btnW / 2, btnY + btnH - 12, '무한 던전', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#5a3a1a',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
       this.add.text(btnX + btnW / 2, btnY + btnH + 6, 'Ch.1 보스 클리어 후 해금', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#664444',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5, 0);
     }
   }
@@ -497,34 +471,13 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 + 4;
     const btnY = 1034;
 
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0a1a0a, 1);
-    bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-    bg.lineStyle(2, 0x228822, 0.85);
-    bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-
-    this.add.text(btnX + btnW / 2, btnY + btnH / 2, '🏆 업적', {
-      fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold',
-      color: '#88cc44',
-    }).setOrigin(0.5);
-
-    const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => {
-      bg.clear();
-      bg.fillStyle(0x0a2a0a, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(2, COLORS.TORCH_GOLD, 0.7);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
-    zone.on('pointerout', () => {
-      bg.clear();
-      bg.fillStyle(0x0a1a0a, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(2, 0x228822, 0.85);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
-    zone.on('pointerdown', () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AchievementScene'); });
+    this.buildCasualButton(
+      btnX, btnY, btnW, btnH,
+      '🏆 업적',
+      CASUAL.GREEN, CASUAL_CSS.GREEN,
+      () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AchievementScene'); },
+      '12px',
+    );
   }
 
   // ─── Barracks button ─────────────────────────────────────────────────────
@@ -534,34 +487,55 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
     const btnY = 1088;
 
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0a1520, 1);
-    bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-    bg.lineStyle(2, 0x3388cc, 0.85);
-    bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
+    this.buildCasualButton(
+      btnX, btnY, btnW, btnH,
+      '⚔️ 몬스터 막사',
+      CASUAL.BLUE, CASUAL_CSS.BLUE,
+      () => this.scene.start('BarracksScene'),
+    );
+  }
 
-    this.add.text(btnX + btnW / 2, btnY + btnH / 2, '⚔️ 몬스터 막사', {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-      color: '#66aaff',
+  // ─── Casual button helper ─────────────────────────────────────────────────
+  // Cream pill + 3px brown border + saturated semantic accent ring + white
+  // top highlight + soft drop shadow. Mirrors BarracksScene's casual chrome.
+
+  private buildCasualButton(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    label: string,
+    accent: number,
+    labelColor: string,
+    cb: () => void,
+    fontSize = '14px',
+  ): void {
+    const radius = 12;
+    const draw = (pressed: boolean): void => {
+      bg.clear();
+      bg.fillStyle(CASUAL.SHADOW, 0.22);
+      bg.fillRoundedRect(x, y + 4, w, h, radius);
+      bg.fillStyle(pressed ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, w, h, radius);
+      bg.fillStyle(0xffffff, 0.45);
+      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+      bg.lineStyle(3, CASUAL.EDGE, 1);
+      bg.strokeRoundedRect(x, y, w, h, radius);
+      bg.lineStyle(1.5, accent, 0.9);
+      bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, radius - 3);
+    };
+    const bg = this.add.graphics();
+    draw(false);
+
+    this.add.text(x + w / 2, y + h / 2, label, {
+      fontFamily: 'sans-serif', fontSize, fontStyle: 'bold', color: labelColor,
     }).setOrigin(0.5);
 
-    const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
+    const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
       .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => {
-      bg.clear();
-      bg.fillStyle(0x0a2030, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(2, COLORS.TORCH_GOLD, 0.7);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
-    zone.on('pointerout', () => {
-      bg.clear();
-      bg.fillStyle(0x0a1520, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(2, 0x3388cc, 0.85);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
-    zone.on('pointerdown', () => this.scene.start('BarracksScene'));
+    zone.on('pointerover', () => draw(true));
+    zone.on('pointerout', () => draw(false));
+    zone.on('pointerdown', cb);
   }
 
   // ─── Reward Preview Popup ────────────────────────────────────────────────

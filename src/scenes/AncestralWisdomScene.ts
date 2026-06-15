@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, CSS }        from '../constants/colors';
+import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   BRANCH_DEFS, MAX_WISDOM_TIER,
@@ -45,18 +46,8 @@ export class AncestralWisdomScene extends Phaser.Scene {
   // ─── Background ─────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x0d0800, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Subtle stone grid
-    const ts = 44;
-    for (let x = 0; x < CANVAS_WIDTH; x += ts) {
-      for (let y = 0; y < CANVAS_HEIGHT; y += ts) {
-        g.fillStyle(0x110c04, 0.6);
-        g.fillRect(x, y, ts - 1, ts - 1);
-      }
-    }
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
   }
 
   // ─── Mist ────────────────────────────────────────────────────────────────────
@@ -69,7 +60,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const a = Phaser.Math.FloatBetween(0.04, 0.15);
 
       const g = this.add.graphics();
-      g.fillStyle(0x4a0080, a);
+      g.fillStyle(CASUAL.PURPLE, a);
       g.fillCircle(0, 0, r);
       g.x = x;
       g.y = y;
@@ -95,56 +86,78 @@ export class AncestralWisdomScene extends Phaser.Scene {
   // ─── Header ──────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    // Dark top bar
+    // Cream top band with brown bottom edge + white top highlight.
     const hdr = this.add.graphics();
-    hdr.fillStyle(0x0a0600, 0.9);
+    hdr.fillStyle(CASUAL.PANEL, 1);
     hdr.fillRect(0, 0, CANVAS_WIDTH, 80);
-    hdr.lineStyle(1, COLORS.TORCH_GOLD, 0.35);
-    hdr.lineBetween(20, 80, CANVAS_WIDTH - 20, 80);
+    hdr.fillStyle(0xffffff, 0.4);
+    hdr.fillRect(0, 0, CANVAS_WIDTH, 4);
+    hdr.fillStyle(CASUAL.EDGE, 1);
+    hdr.fillRect(0, 80 - 3, CANVAS_WIDTH, 3);
     hdr.setDepth(10);
 
     this.add.text(CANVAS_WIDTH / 2, 22, '선조의 지혜', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '22px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5, 0).setDepth(11);
 
-    // Crystal counter
+    // Crystal counter — cream chip with purple accent.
     const crystalBg = this.add.graphics().setDepth(11);
-    crystalBg.fillStyle(0x1a1008, 0.95);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 6);
-    crystalBg.lineStyle(1, COLORS.MAGIC_GLOW, 0.6);
-    crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 6);
+    crystalBg.fillStyle(CASUAL.SHADOW, 0.18);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50 + 2, 110, 24, 8);
+    crystalBg.fillStyle(CASUAL.PANEL_SOFT, 1);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
+    crystalBg.lineStyle(3, CASUAL.PURPLE, 1);
+    crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
+    crystalBg.fillStyle(0xffffff, 0.4);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 50, 53, 100, 5, 3);
 
     this.crystalText = this.add.text(CANVAS_WIDTH / 2, 62, `💠 ${this.state.soulCrystals} 영혼 수정`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#c070ff',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
     }).setOrigin(0.5).setDepth(12);
 
-    // Back button
-    const backBtn = this.add.text(18, 26, '← 던전으로', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true }).setDepth(11);
+    // Back button — casual pill.
+    this.buildBackButton(
+      18, 26, '← 던전으로',
+      () => this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene'),
+    );
+  }
 
-    backBtn.on('pointerover',  () => backBtn.setColor(CSS.PARCHMENT));
-    backBtn.on('pointerout',   () => backBtn.setColor(CSS.PARCHMENT_MUTED));
-    backBtn.on('pointerdown',  () => this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene'));
+  private buildBackButton(x: number, y: number, label: string, cb: () => void): void {
+    const w = label.length * 8 + 18;
+    const g = this.add.graphics().setDepth(15);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
+    this.add.text(x - 4 + w / 2, y - 1, label, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(16);
+    const zone = this.add.zone(x - 4, y - 14, w, 28).setOrigin(0).setDepth(16)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', cb);
   }
 
   // ─── Altar ───────────────────────────────────────────────────────────────────
 
   private drawAltar(): void {
-    // Outer glow ring
+    // Outer glow ring — soft golden halo readable on cream.
     const glow = this.add.graphics();
-    glow.fillStyle(COLORS.MAGIC_GLOW, 0.06);
+    glow.fillStyle(CASUAL.GOLD, 0.12);
     glow.fillCircle(ALTAR_X, ALTAR_Y, 56);
-    glow.fillStyle(COLORS.MAGIC_GLOW, 0.1);
+    glow.fillStyle(CASUAL.GOLD, 0.2);
     glow.fillCircle(ALTAR_X, ALTAR_Y, 40);
 
-    // Stone circle
+    // Stone circle — keep dark interior, saturated gold rim + soft shadow.
     const stone = this.add.graphics();
+    stone.fillStyle(CASUAL.SHADOW, 0.28);
+    stone.fillCircle(ALTAR_X + 2, ALTAR_Y + 3, 30);
     stone.fillStyle(COLORS.STONE_MID, 1);
     stone.fillCircle(ALTAR_X, ALTAR_Y, 30);
-    stone.lineStyle(2, COLORS.TORCH_GOLD, 0.8);
+    stone.lineStyle(3, CASUAL.GOLD, 1);
     stone.strokeCircle(ALTAR_X, ALTAR_Y, 30);
 
     // Altar icon
@@ -167,9 +180,9 @@ export class AncestralWisdomScene extends Phaser.Scene {
     BRANCH_DEFS.forEach(branch => {
       const { x, y } = branch.position;
 
-      // Static dim line
+      // Static connector line — readable brown on cream.
       const staticLine = this.add.graphics();
-      staticLine.lineStyle(1.5, 0x3a2810, 0.6);
+      staticLine.lineStyle(2.5, CASUAL.EDGE_SOFT, 0.85);
       staticLine.lineBetween(ALTAR_X, ALTAR_Y, x, y);
 
       // Animated gold pulse line (travels from altar to node)
@@ -193,7 +206,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
           const py0 = ALTAR_Y + (y - ALTAR_Y) * t0;
           const px1 = ALTAR_X + (x - ALTAR_X) * t1;
           const py1 = ALTAR_Y + (y - ALTAR_Y) * t1;
-          pulseGfx.lineStyle(2, COLORS.TORCH_GOLD, 0.6);
+          pulseGfx.lineStyle(3, CASUAL.GOLD, 0.95);
           pulseGfx.lineBetween(px0, py0, px1, py1);
         },
       });
@@ -228,34 +241,39 @@ export class AncestralWisdomScene extends Phaser.Scene {
 
     const isMaxed = tier >= MAX_WISDOM_TIER;
     const hasAny  = tier > 0;
-    const fillCol = isMaxed ? COLORS.TORCH_GOLD
-                  : hasAny  ? COLORS.MAGIC_GLOW
+    // Keep dark node interiors; differentiate state via the saturated rim.
+    const fillCol = isMaxed ? 0x3a2a08
+                  : hasAny  ? 0x231038
                   :           COLORS.STONE_DARK;
-    const borderCol = isMaxed ? COLORS.TORCH_AMBER
-                    : hasAny  ? 0x7a30c8
-                    :           0x4a3820;
+    // Unlocked nodes glow with a saturated CASUAL accent; locked nodes muted brown.
+    const borderCol = isMaxed ? CASUAL.GOLD
+                    : hasAny  ? CASUAL.PURPLE
+                    :           CASUAL.EDGE_SOFT;
 
-    // Shadow
+    // Soft drop shadow on cream.
     const shadow = this.add.graphics();
-    shadow.fillStyle(0x000000, 0.4);
-    shadow.fillCircle(2, 3, NODE_R);
+    shadow.fillStyle(CASUAL.SHADOW, 0.35);
+    shadow.fillCircle(2, 4, NODE_R);
     container.add(shadow);
 
-    // Node circle
+    // Glow halo behind unlocked nodes so they pop on cream.
+    if (hasAny) {
+      const glowRing = this.add.graphics();
+      glowRing.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 0.22);
+      glowRing.fillCircle(0, 0, NODE_R + 8);
+      container.add(glowRing);
+    }
+
+    // Node circle — dark interior, chunky saturated rim.
     const circle = this.add.graphics();
     circle.fillStyle(fillCol, 1);
     circle.fillCircle(0, 0, NODE_R);
-    circle.lineStyle(2.5, borderCol, 1);
+    circle.lineStyle(isMaxed ? 3.5 : 3, borderCol, hasAny ? 1 : 0.85);
     circle.strokeCircle(0, 0, NODE_R);
+    // Top highlight sliver.
+    circle.fillStyle(0xffffff, 0.1);
+    circle.fillEllipse(0, -NODE_R * 0.5, NODE_R * 1.1, NODE_R * 0.4);
     container.add(circle);
-
-    // Glow for maxed
-    if (isMaxed) {
-      const glowRing = this.add.graphics();
-      glowRing.fillStyle(COLORS.TORCH_GOLD, 0.18);
-      glowRing.fillCircle(0, 0, NODE_R + 8);
-      container.addAt(glowRing, 0);
-    }
 
     // Icon
     const icon = this.add.text(0, -6, branch.icon, { fontSize: '18px' }).setOrigin(0.5);
@@ -269,24 +287,35 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const dotX = -totalWidth / 2 + i * dotSpacing;
       const dotG = this.add.graphics();
       if (i < tier) {
-        dotG.fillStyle(isMaxed ? COLORS.TORCH_GOLD : COLORS.MAGIC_GLOW, 1);
+        dotG.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 1);
       } else {
-        dotG.fillStyle(0x2a1e10, 0.9);
-        dotG.lineStyle(0.8, 0x5a3820, 0.7);
+        dotG.fillStyle(0x000000, 0.45);
+        dotG.lineStyle(1, 0xffffff, 0.4);
       }
       dotG.fillCircle(dotX, dotY, 3);
       if (i >= tier) dotG.strokeCircle(dotX, dotY, 3);
       container.add(dotG);
     }
 
-    // Cost badge — shown below the node for non-maxed branches
+    // Cost badge — shown below the node for non-maxed branches.
+    // Sits on cream, so wrap in a small cream chip with ink text.
     if (!isMaxed) {
       const nextCost = branch.costPerTier[tier];
       if (nextCost > 0) {
-        const costBadge = this.add.text(0, NODE_R + 12, `💠${nextCost}`, {
+        const badgeText = `💠${nextCost}`;
+        const badgeW = badgeText.length * 7 + 12;
+        const badgeY = NODE_R + 6;
+        const badgeBg = this.add.graphics();
+        badgeBg.fillStyle(CASUAL.PANEL, 1);
+        badgeBg.fillRoundedRect(-badgeW / 2, badgeY, badgeW, 16, 6);
+        badgeBg.lineStyle(2, CASUAL.EDGE, 1);
+        badgeBg.strokeRoundedRect(-badgeW / 2, badgeY, badgeW, 16, 6);
+        container.add(badgeBg);
+        const costBadge = this.add.text(0, badgeY + 8, badgeText, {
           fontFamily: 'sans-serif',
           fontSize: '10px',
-          color: '#88aacc',
+          fontStyle: 'bold',
+          color: CASUAL_CSS.PURPLE,
         }).setOrigin(0.5);
         container.add(costBadge);
       }
@@ -318,15 +347,19 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.panel.setDepth(300);
 
     this.panelBg = this.add.graphics();
-    this.panelBg.fillStyle(0x1a1008, 0.97);
-    this.panelBg.fillRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 14, tr: 14, bl: 0, br: 0 });
-    this.panelBg.lineStyle(2, COLORS.TORCH_GOLD, 0.75);
-    this.panelBg.strokeRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 14, tr: 14, bl: 0, br: 0 });
+    this.panelBg.fillStyle(CASUAL.SHADOW, 0.3);
+    this.panelBg.fillRoundedRect(0, -4, CANVAS_WIDTH, PANEL_H + 4, { tl: 16, tr: 16, bl: 0, br: 0 });
+    this.panelBg.fillStyle(CASUAL.PANEL, 1);
+    this.panelBg.fillRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
+    this.panelBg.lineStyle(3, CASUAL.EDGE, 1);
+    this.panelBg.strokeRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
+    this.panelBg.fillStyle(0xffffff, 0.4);
+    this.panelBg.fillRoundedRect(8, 5, CANVAS_WIDTH - 16, 6, 3);
     this.panel.add(this.panelBg);
 
     // Close button (always visible after open)
     this.panelClose = this.add.text(CANVAS_WIDTH - 18, 18, '✕', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     this.panelClose.on('pointerdown', () => this.closeDetailPanel());
     this.panel.add(this.panelClose);
@@ -371,16 +404,16 @@ export class AncestralWisdomScene extends Phaser.Scene {
 
     // Icon + Name
     const iconT = this.add.text(cx, 22, `${branch.icon} ${branch.name}`, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0.5, 0);
     this.addToPanel(iconT);
 
     // Tier indicator (Roman)
     const roman = ['0', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ'];
     const tierT = this.add.text(cx, 50, isMaxed ? '✨ 최고 등급' : `등급 ${roman[tier]}`, {
-      fontFamily: 'sans-serif', fontSize: '12px',
-      color: isMaxed ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: isMaxed ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5, 0);
     this.addToPanel(tierT);
 
@@ -390,11 +423,13 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const dy = 76;
       const dg = this.add.graphics();
       if (i < tier) {
-        dg.fillStyle(isMaxed ? COLORS.TORCH_GOLD : COLORS.MAGIC_GLOW, 1);
+        dg.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 1);
         dg.fillCircle(dx, dy, 5);
+        dg.lineStyle(1.5, CASUAL.EDGE, 0.6);
+        dg.strokeCircle(dx, dy, 5);
       } else {
-        dg.fillStyle(0x2a1e10, 1);
-        dg.lineStyle(1, 0x5a3820, 0.8);
+        dg.fillStyle(CASUAL.PANEL_SOFT, 1);
+        dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
         dg.fillCircle(dx, dy, 5);
         dg.strokeCircle(dx, dy, 5);
       }
@@ -406,14 +441,14 @@ export class AncestralWisdomScene extends Phaser.Scene {
     const nextVal = branch.getValue(Math.min(tier + 1, MAX_WISDOM_TIER));
     const effectStr = branch.effect.replace('{value}', String(curVal));
     const effectT = this.add.text(cx, 100, effectStr, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT,
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setOrigin(0.5, 0);
     this.addToPanel(effectT);
 
     if (!isMaxed) {
       const nextStr = `→ 다음: ${branch.effect.replace('{value}', String(nextVal))}`;
       const nextT = this.add.text(cx, 122, nextStr, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#88ff88',
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
       }).setOrigin(0.5, 0);
       this.addToPanel(nextT);
 
@@ -421,23 +456,29 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const cost      = branch.costPerTier[tier];
       const canAfford = this.state.soulCrystals >= cost;
       const costT = this.add.text(cx, 154, `업그레이드 비용: 💠 ${cost}`, {
-        fontFamily: 'sans-serif', fontSize: '13px',
-        color: canAfford ? CSS.TORCH_AMBER : '#aa4444',
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: canAfford ? CASUAL_CSS.PURPLE : CASUAL_CSS.RED,
       }).setOrigin(0.5, 0);
       this.addToPanel(costT);
 
-      // Upgrade button
+      // Upgrade button — casual chunky pill.
       const btnW = 210, btnH = 40, btnX = cx - btnW / 2, btnY = 188;
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(canAfford ? 0x5a3800 : 0x2a1a0a, 1);
-      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
-      btnBg.lineStyle(1.5, canAfford ? COLORS.TORCH_GOLD : 0x4a3020, 0.8);
-      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+      btnBg.fillStyle(canAfford ? CASUAL.PURPLE_DK : CASUAL.EDGE, 0.45);
+      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 12);
+      btnBg.fillStyle(canAfford ? CASUAL.PURPLE : CASUAL.PANEL_SOFT, 1);
+      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
+      btnBg.fillStyle(0xffffff, canAfford ? 0.3 : 0.4);
+      btnBg.fillRoundedRect(btnX + 8, btnY + 5, btnW - 16, 6, 3);
+      btnBg.lineStyle(3, canAfford ? CASUAL.PURPLE_DK : CASUAL.EDGE, 1);
+      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 12);
       this.addToPanel(btnBg);
 
       const btnT = this.add.text(cx, btnY + btnH / 2, canAfford ? '업그레이드' : '수정 부족', {
-        fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-        color: canAfford ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
+        color: canAfford ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+        stroke: canAfford ? '#00000033' : undefined,
+        strokeThickness: canAfford ? 3 : 0,
       }).setOrigin(0.5);
       this.addToPanel(btnT);
 
@@ -450,8 +491,8 @@ export class AncestralWisdomScene extends Phaser.Scene {
     } else {
       // Max level celebration text
       const maxT = this.add.text(cx, 160, '모든 잠재력이 해방되었습니다!', {
-        fontFamily: 'Georgia, serif', fontSize: '13px', fontStyle: 'italic',
-        color: CSS.TORCH_AMBER,
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: CASUAL_CSS.GOLD,
       }).setOrigin(0.5, 0);
       this.addToPanel(maxT);
     }
@@ -478,45 +519,73 @@ export class AncestralWisdomScene extends Phaser.Scene {
     const ov = this.add.container(0, 0).setDepth(120).setAlpha(0);
 
     const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.65);
+    dim.fillStyle(0x000000, 0.5);
     dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ov.add(dim);
 
     const bg = this.add.graphics();
-    bg.fillStyle(0x0d0800, 1);
-    bg.fillRoundedRect(OX, OY, OW, OH, 8);
-    bg.lineStyle(2, COLORS.TORCH_GOLD, 0.85);
-    bg.strokeRoundedRect(OX, OY, OW, OH, 8);
+    bg.fillStyle(CASUAL.SHADOW, 0.35);
+    bg.fillRoundedRect(OX, OY + 4, OW, OH, 16);
+    bg.fillStyle(CASUAL.PANEL, 1);
+    bg.fillRoundedRect(OX, OY, OW, OH, 16);
+    bg.lineStyle(3, CASUAL.EDGE, 1);
+    bg.strokeRoundedRect(OX, OY, OW, OH, 16);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(OX + 10, OY + 6, OW - 20, 6, 3);
     ov.add(bg);
 
     ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 28, `${branch.icon} ${branch.name} 업그레이드`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setOrigin(0.5));
     ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 56, `💠 ${cost} 영혼 수정이 소모됩니다.`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b080',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 76, `보유: 💠 ${this.state.soulCrystals}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#886644',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
-    const confirmBtn = this.add.text(CANVAS_WIDTH / 2 - 52, OY + OH - 30, '확인', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
-      backgroundColor: '#2a1400', padding: { x: 20, y: 7 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    confirmBtn.on('pointerdown', () => {
-      ov.destroy(true);
-      this.performUpgrade(branch);
-    });
-    ov.add(confirmBtn);
-
-    const cancelBtn = this.add.text(CANVAS_WIDTH / 2 + 52, OY + OH - 30, '취소', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#666666',
-      backgroundColor: '#111111', padding: { x: 20, y: 7 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    cancelBtn.on('pointerdown', () => ov.destroy(true));
-    ov.add(cancelBtn);
+    this.buildDialogButton(
+      CANVAS_WIDTH / 2 - 56, OY + OH - 30, '확인', CASUAL.PURPLE, CASUAL.PURPLE_DK, CASUAL_CSS.WHITE,
+      () => { ov.destroy(true); this.performUpgrade(branch); },
+      ov,
+    );
+    this.buildDialogButton(
+      CANVAS_WIDTH / 2 + 56, OY + OH - 30, '취소', CASUAL.PANEL_SOFT, CASUAL.EDGE, CASUAL_CSS.INK,
+      () => ov.destroy(true),
+      ov,
+    );
 
     this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
+  }
+
+  private buildDialogButton(
+    cx: number,
+    cy: number,
+    label: string,
+    fill: number,
+    edge: number,
+    textColor: string,
+    cb: () => void,
+    container: Phaser.GameObjects.Container,
+  ): void {
+    const w = 86, h = 34;
+    const bx = cx - w / 2, by = cy - h / 2;
+    const g = this.add.graphics();
+    g.fillStyle(edge, 1);
+    g.fillRoundedRect(bx, by + 3, w, h, 11);
+    g.fillStyle(fill, 1);
+    g.fillRoundedRect(bx, by, w, h, 11);
+    g.fillStyle(0xffffff, 0.35);
+    g.fillRoundedRect(bx + 6, by + 4, w - 12, 5, 3);
+    g.lineStyle(2.5, edge, 1);
+    g.strokeRoundedRect(bx, by, w, h, 11);
+    container.add(g);
+    container.add(this.add.text(cx, cy, label, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: textColor,
+    }).setOrigin(0.5));
+    const zone = this.add.zone(cx, cy, w, h).setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', cb);
+    container.add(zone);
   }
 
   // ─── Upgrade logic ────────────────────────────────────────────────────────────
@@ -532,7 +601,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.crystalText.setText(`💠 ${this.state.soulCrystals} 영혼 수정`);
     const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${result.cost}💠`, {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: '#aa88ff', stroke: '#000000', strokeThickness: 3,
+      color: CASUAL_CSS.PURPLE, stroke: '#ffffff', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(250).setAlpha(0);
     this.tweens.add({
       targets: costFloat, y: 106, alpha: { from: 1, to: 0 },
@@ -552,7 +621,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       this.renderNode(branch, result.nextTier, container);
       // Expanding ring
       const ring = this.add.graphics();
-      ring.lineStyle(3, COLORS.TORCH_GOLD, 0.9);
+      ring.lineStyle(3, CASUAL.GOLD, 0.95);
       ring.strokeCircle(branch.position.x, branch.position.y, NODE_R);
       this.tweens.add({
         targets: ring,
@@ -589,7 +658,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
 
     // Celebration beam overlay
     const overlay = this.add.graphics().setDepth(400);
-    overlay.fillStyle(COLORS.TORCH_GOLD, 0);
+    overlay.fillStyle(CASUAL.GOLD, 0);
     overlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     this.tweens.add({
@@ -600,9 +669,9 @@ export class AncestralWisdomScene extends Phaser.Scene {
     });
 
     const toast = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 선조의 지혜 완전 해방! ✨', {
-      fontFamily: 'Georgia, serif', fontSize: '18px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
-      backgroundColor: '#1a1008',
+      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
+      color: CASUAL_CSS.GOLD, stroke: '#ffffff', strokeThickness: 4,
+      backgroundColor: '#fff6e6',
       padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 

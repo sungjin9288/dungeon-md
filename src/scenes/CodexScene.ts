@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { addSceneHeader } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
@@ -113,18 +114,17 @@ export class CodexScene extends Phaser.Scene {
   // ─── Background ────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
+
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(COLORS.BLACK, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    for (let x = 0; x < CANVAS_WIDTH; x += 36)
-      for (let y = 0; y < CANVAS_HEIGHT; y += 36) {
-        g.lineStyle(0.3, COLORS.STONE_MID, 0.18);
-        g.strokeRect(x, y, 36, 36);
-      }
-    g.fillStyle(COLORS.STONE_DARK, 1);
+    // Top header band (cream with white top highlight + brown bottom edge).
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HDR_H);
-    g.lineStyle(2, COLORS.TORCH_GOLD, 0.6);
-    g.lineBetween(0, HDR_H, CANVAS_WIDTH, HDR_H);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, HDR_H - 3, CANVAS_WIDTH, 3);
   }
 
   // ─── Header ────────────────────────────────────────────────────────────────
@@ -148,13 +148,24 @@ export class CodexScene extends Phaser.Scene {
       const ty = 44;
       const active = this.codexTab === key;
       const tabG = this.add.graphics().setDepth(10);
-      tabG.fillStyle(active ? 0x3a2800 : 0x181818, 1);
-      tabG.fillRoundedRect(tx, ty, tabW, tabH, 5);
-      tabG.lineStyle(1, active ? COLORS.TORCH_GOLD : 0x333333, active ? 0.9 : 0.5);
-      tabG.strokeRoundedRect(tx, ty, tabW, tabH, 5);
+      if (active) {
+        tabG.fillStyle(CASUAL.EDGE, 0.25);
+        tabG.fillRoundedRect(tx, ty + 2, tabW, tabH, 7);
+        tabG.fillStyle(CASUAL.GOLD, 1);
+        tabG.fillRoundedRect(tx, ty, tabW, tabH, 7);
+        tabG.fillStyle(0xffffff, 0.32);
+        tabG.fillRoundedRect(tx + 5, ty + 3, tabW - 10, 5, 3);
+      } else {
+        tabG.fillStyle(CASUAL.PANEL_SOFT, 1);
+        tabG.fillRoundedRect(tx, ty, tabW, tabH, 7);
+      }
+      tabG.lineStyle(2, CASUAL.EDGE, active ? 1 : 0.7);
+      tabG.strokeRoundedRect(tx, ty, tabW, tabH, 7);
       this.add.text(tx + tabW / 2, ty + tabH / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '11px',
-        color: active ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: active ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+        stroke: active ? '#00000033' : undefined,
+        strokeThickness: active ? 3 : 0,
       }).setOrigin(0.5).setDepth(10);
       this.add.zone(tx + tabW / 2, ty + tabH / 2, tabW, tabH)
         .setInteractive({ useHandCursor: true }).setDepth(11)
@@ -173,26 +184,40 @@ export class CodexScene extends Phaser.Scene {
       const owned  = allIds.filter(id => this.isOwned(id)).length;
       const pct    = Math.round((owned / total) * 100);
       this.add.text(CX - 36, 70, `전체 도감: ${owned} / ${total}  (${pct}%)`, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
 
       const bx = PAD, by = 79, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 7;
       const barBg = this.add.graphics().setDepth(10);
-      barBg.fillStyle(COLORS.STONE_MID, 1);
+      barBg.fillStyle(CASUAL.PANEL_SOFT, 1);
       barBg.fillRoundedRect(bx, by, bw, bh, 3);
-      barBg.fillStyle(COLORS.TORCH_GOLD, 1);
+      barBg.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
+      barBg.strokeRoundedRect(bx, by, bw, bh, 3);
+      barBg.fillStyle(CASUAL.GOLD, 1);
       barBg.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 3);
 
       // Filter toggle chip
       const chipX = CANVAS_WIDTH - PAD - 64, chipY = 68, chipW = 60, chipH = 20;
       const toggleBg = this.add.graphics().setDepth(10);
-      toggleBg.fillStyle(this.showOwnedOnly ? 0x226622 : 0x222222, 1);
-      toggleBg.fillRoundedRect(chipX, chipY, chipW, chipH, 4);
-      toggleBg.lineStyle(1, this.showOwnedOnly ? 0x44aa44 : 0x444444, 0.8);
-      toggleBg.strokeRoundedRect(chipX, chipY, chipW, chipH, 4);
+      if (this.showOwnedOnly) {
+        toggleBg.fillStyle(CASUAL.EDGE, 0.25);
+        toggleBg.fillRoundedRect(chipX, chipY + 2, chipW, chipH, 7);
+        toggleBg.fillStyle(CASUAL.GREEN, 1);
+        toggleBg.fillRoundedRect(chipX, chipY, chipW, chipH, 7);
+        toggleBg.fillStyle(0xffffff, 0.32);
+        toggleBg.fillRoundedRect(chipX + 5, chipY + 3, chipW - 10, 5, 3);
+      } else {
+        toggleBg.fillStyle(CASUAL.PANEL_SOFT, 1);
+        toggleBg.fillRoundedRect(chipX, chipY, chipW, chipH, 7);
+      }
+      toggleBg.lineStyle(2, CASUAL.EDGE, this.showOwnedOnly ? 1 : 0.7);
+      toggleBg.strokeRoundedRect(chipX, chipY, chipW, chipH, 7);
       this.add.text(chipX + chipW / 2, chipY + chipH / 2,
         this.showOwnedOnly ? '✓ 소유' : '전체',
-        { fontFamily: 'sans-serif', fontSize: '11px', color: '#cccccc' },
+        { fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+          color: this.showOwnedOnly ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+          stroke: this.showOwnedOnly ? '#00000033' : undefined,
+          strokeThickness: this.showOwnedOnly ? 3 : 0 },
       ).setOrigin(0.5).setDepth(10);
       this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, chipH)
         .setInteractive({ useHandCursor: true }).setDepth(11)
@@ -203,7 +228,7 @@ export class CodexScene extends Phaser.Scene {
     } else {
       const invTotal = Object.keys(INVADER_DEFS).length;
       this.add.text(CX, 72, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: CSS.PARCHMENT_DIM,
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
     }
   }
@@ -268,16 +293,24 @@ export class CodexScene extends Phaser.Scene {
     const g = this.add.graphics();
     this.contentCtr.add(g);
 
-    // background
-    g.fillStyle(expanded ? 0x2a1a08 : 0x1e1408, 1);
+    // cream section band with chunky brown border + tribe-accent header pill
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRoundedRect(PAD, y + 3, CANVAS_WIDTH - PAD * 2, h, 8);
+    g.fillStyle(expanded ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(PAD, y, CANVAS_WIDTH - PAD * 2, h, 8);
-    g.lineStyle(1.5, tribe.color, expanded ? 1 : 0.5);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(PAD + 5, y + 4, CANVAS_WIDTH - PAD * 2 - 10, 5, 3);
+    g.fillStyle(tribe.color, expanded ? 0.9 : 0.55);
+    g.fillRoundedRect(PAD + 6, y + 6, CANVAS_WIDTH - PAD * 2 - 12, 6, 3);
+    g.lineStyle(3, CASUAL.EDGE, expanded ? 1 : 0.8);
     g.strokeRoundedRect(PAD, y, CANVAS_WIDTH - PAD * 2, h, 8);
 
     // progress bar inside header
     const bx = PAD + 8, by = y + h - 10, bw = CANVAS_WIDTH - PAD * 2 - 16, bh = 5;
-    g.fillStyle(COLORS.STONE_MID, 1);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(bx, by, bw, bh, 2);
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
+    g.strokeRoundedRect(bx, by, bw, bh, 2);
     g.fillStyle(tribe.color, 1);
     g.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 2);
 
@@ -289,27 +322,27 @@ export class CodexScene extends Phaser.Scene {
 
     // name + count
     const nameT = this.add.text(PAD + 44, y + 10, `${tribe.name}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-      color: expanded ? CSS.TORCH_AMBER : CSS.PARCHMENT_DIM,
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0);
     this.contentCtr.add(nameT);
 
     const countT = this.add.text(PAD + 44, y + 27, `${owned} / ${total}`,{
-      fontFamily: 'Georgia, serif', fontSize: '10px',
-      color: owned === total ? '#44ff88' : CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: owned === total ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
     this.contentCtr.add(countT);
 
     if (owned === total) {
       const doneT = this.add.text(CANVAS_WIDTH - PAD - 12, y + h / 2 - 6, '✓ 완성', {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#44ff88',
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
       }).setOrigin(1, 0);
       this.contentCtr.add(doneT);
     }
 
     // chevron
     const chevron = this.add.text(CANVAS_WIDTH - PAD - 8, y + 14, expanded ? '▲' : '▼', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0);
     this.contentCtr.add(chevron);
 
@@ -560,24 +593,28 @@ export class CodexScene extends Phaser.Scene {
     const g = this.add.graphics();
     this.contentCtr.add(g);
 
-    g.fillStyle(done ? 0x001a00 : 0x120a00, 1);
-    g.fillRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 6);
-    g.lineStyle(1, done ? 0x44aa44 : 0x2a1800, 1);
-    g.strokeRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 6);
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(PAD + 4, y + 3, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(PAD + 9, y + 4, CANVAS_WIDTH - PAD * 2 - 18, 4, 2);
+    g.lineStyle(3, done ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
+    g.strokeRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
 
-    const labelColor = done ? '#44ff88' : CSS.PARCHMENT_MUTED;
+    const labelColor = done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT;
     const prefix = done
       ? (claimed ? '✓ 세트 효과 활성화! (보상 수령 완료)' : '✓ 세트 효과 활성화!')
       : `세트 효과 (${owned}/${total} 달성 시)`;
     const labelT = this.add.text(PAD + 12, y + 8, prefix, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: labelColor,
     }).setOrigin(0, 0);
     this.contentCtr.add(labelT);
 
     const bonusT = this.add.text(PAD + 12, y + 24, `✦ ${tribe.bonus}`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px',
-      color: done ? '#88ff88' : CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
     }).setOrigin(0, 0);
     this.contentCtr.add(bonusT);
 
@@ -586,15 +623,18 @@ export class CodexScene extends Phaser.Scene {
       const btnW = 120, btnH = 24;
       const btnX = CX - btnW / 2, btnY = y + 40;
       const btnG = this.add.graphics();
-      btnG.fillStyle(0x226622, 1);
-      btnG.fillRoundedRect(btnX, btnY, btnW, btnH, 5);
-      btnG.lineStyle(1, 0x44ff88, 0.8);
-      btnG.strokeRoundedRect(btnX, btnY, btnW, btnH, 5);
+      btnG.fillStyle(CASUAL.GREEN_DK, 1);
+      btnG.fillRoundedRect(btnX, btnY + 2, btnW, btnH, 7);
+      btnG.fillStyle(CASUAL.GREEN, 1);
+      btnG.fillRoundedRect(btnX, btnY, btnW, btnH, 7);
+      btnG.fillStyle(0xffffff, 0.32);
+      btnG.fillRoundedRect(btnX + 5, btnY + 3, btnW - 10, 5, 3);
       this.contentCtr.add(btnG);
 
       const btnLabel = this.add.text(CX, btnY + btnH / 2, `🎁 ${tribe.reward.split(' ')[0]} 수령`, {
-        fontFamily: 'Georgia, serif', fontSize: '11px',
-        color: '#44ff88', fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '11px',
+        color: CASUAL_CSS.WHITE, fontStyle: 'bold',
+        stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5).setInteractive();
       this.contentCtr.add(btnLabel);
 
@@ -605,7 +645,7 @@ export class CodexScene extends Phaser.Scene {
       });
     } else if (!done) {
       const rewardT = this.add.text(CANVAS_WIDTH - PAD - 12, y + 8, tribe.reward, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc8800',
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
       }).setOrigin(1, 0);
       this.contentCtr.add(rewardT);
     }
@@ -648,32 +688,42 @@ export class CodexScene extends Phaser.Scene {
 
   private buildBottomNav(): void {
     const g = this.add.graphics().setDepth(20);
-    g.fillStyle(COLORS.STONE_DARK, 1);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, BOT_H);
-    g.lineStyle(1, COLORS.TORCH_GOLD, 0.4);
-    g.lineBetween(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, CANVAS_HEIGHT - BOT_H);
+    g.fillStyle(0xffffff, 0.5);
+    g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, 1.5);
 
     const btnW = (CANVAS_WIDTH - 24) / 4;
     const btnDefs = [
-      { label: '⚔️ 막사',    action: () => this.scene.start('BarracksScene') },
-      { label: '📖 도감',    action: () => { /* already here */ } },
-      { label: '✨ 소환',    action: () => this.scene.start('SummonScene') },
-      { label: '🏪 상점',    action: () => this.scene.start('ShopScene') },
+      { label: '⚔️ 막사', accent: CASUAL.RED,    action: () => this.scene.start('BarracksScene') },
+      { label: '📖 도감', accent: CASUAL.BLUE,   action: () => { /* already here */ } },
+      { label: '✨ 소환', accent: CASUAL.PURPLE, action: () => this.scene.start('SummonScene') },
+      { label: '🏪 상점', accent: CASUAL.GOLD,   action: () => this.scene.start('ShopScene') },
     ];
 
-    btnDefs.forEach(({ label, action }, i) => {
+    btnDefs.forEach(({ label, accent, action }, i) => {
       const bx = 12 + i * (btnW + 4);
       const by = CANVAS_HEIGHT - 56;
-      const bg = this.add.graphics().setDepth(21);
-      bg.fillStyle(i === 1 ? 0x3a2800 : 0x1a1a1a, 1);
-      bg.fillRoundedRect(bx, by, btnW, 44, 6);
       const isActive = i === 1;
+      const bg = this.add.graphics().setDepth(21);
+      if (isActive) {
+        bg.fillStyle(CASUAL.EDGE, 0.3);
+        bg.fillRoundedRect(bx, by + 3, btnW, 44, 13);
+        bg.fillStyle(accent, 1);
+        bg.fillRoundedRect(bx, by, btnW, 44, 13);
+        bg.fillStyle(0xffffff, 0.3);
+        bg.fillRoundedRect(bx + 6, by + 5, btnW - 12, 7, 3);
+      }
       this.add.text(bx + btnW / 2, by + 22, label, {
-        fontFamily: 'sans-serif', fontSize: '11px',
-        color: isActive ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+        stroke: isActive ? '#00000033' : undefined,
+        strokeThickness: isActive ? 3 : 0,
       }).setOrigin(0.5).setDepth(22);
       const zone = this.add.zone(bx + btnW / 2, by + 22, btnW, 44)
-        .setInteractive().setDepth(23);
+        .setInteractive({ useHandCursor: true }).setDepth(23);
       zone.on('pointerdown', action);
     });
   }
@@ -718,21 +768,27 @@ export class CodexScene extends Phaser.Scene {
       if (!defs) continue;
       const chColor = CH_COLOR[ch] ?? 0x888888;
 
-      // Chapter header
+      // Chapter header — cream band with chunky brown border + chapter accent pill
       const hdrG = this.add.graphics();
       this.contentCtr.add(hdrG);
-      hdrG.fillStyle(0x1a1008, 1);
-      hdrG.fillRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 6);
-      hdrG.lineStyle(1.5, chColor, 0.9);
-      hdrG.strokeRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 6);
+      hdrG.fillStyle(CASUAL.SHADOW, 0.16);
+      hdrG.fillRoundedRect(PAD, cursorY + 3, CANVAS_WIDTH - PAD * 2, 28, 8);
+      hdrG.fillStyle(CASUAL.PANEL, 1);
+      hdrG.fillRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 8);
+      hdrG.fillStyle(0xffffff, 0.4);
+      hdrG.fillRoundedRect(PAD + 5, cursorY + 3, CANVAS_WIDTH - PAD * 2 - 10, 4, 2);
+      hdrG.fillStyle(chColor, 0.85);
+      hdrG.fillRoundedRect(PAD + 6, cursorY + 5, 6, 18, 3);
+      hdrG.lineStyle(3, CASUAL.EDGE, 1);
+      hdrG.strokeRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 8);
 
-      const chLabel = this.add.text(PAD + 12, cursorY + 8, `Chapter ${ch}`, {
-        fontFamily: 'Georgia, serif', fontSize: '13px', fontStyle: 'bold',
-        color: Phaser.Display.Color.IntegerToColor(chColor).rgba,
+      const chLabel = this.add.text(PAD + 18, cursorY + 8, `Chapter ${ch}`, {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: CASUAL_CSS.INK,
       }).setOrigin(0, 0);
       this.contentCtr.add(chLabel);
       const countLabel = this.add.text(CANVAS_WIDTH - PAD - 10, cursorY + 10, `${defs.length}종`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0);
       this.contentCtr.add(countLabel);
       cursorY += 32;

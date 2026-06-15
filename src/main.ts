@@ -18,7 +18,7 @@ import { ForgeScene }            from './scenes/ForgeScene';
 import { CodexScene }            from './scenes/CodexScene';
 import { StageRewardOverlay }    from './scenes/StageRewardOverlay';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants/layout';
-import { applyAmbientBackground } from './ui/AmbientBackground';
+import { applyCasualBackground } from './ui/AmbientBackground';
 import { getUnlockedSlots, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
 import { calculateRoomMetrics } from './data/dungeonMetrics';
 import { getDungeonActionQueue, getRoomActionRecommendation } from './data/roomActionRecommendations';
@@ -578,9 +578,10 @@ function applySceneFadeIn(scene: Phaser.Scene): void {
 }
 
 // ── Ambient atmosphere scene allow-list ──────────────────────────────────────
-// Non-battle scenes get the warm-glow + vignette + dust treatment.
-// Battle scenes (DungeonScene/UIScene) and cinematics own their atmosphere,
-// so we skip them to avoid visual conflicts.
+// Non-battle scenes get the bright casual-toy backdrop (gradient + sun glow +
+// polka dots). Idempotent: scenes that already call applyCasualBackground in
+// their own create() win the first draw, so this is a no-op for them and a
+// backdrop for the rest. Battle scenes/cinematics own their atmosphere.
 const AMBIENT_SCENES = new Set<string>([
   'DungeonHomeScene',
   'StageSelectScene',
@@ -601,12 +602,12 @@ game.events.once(Phaser.Core.Events.READY, () => {
     // Apply immediately if scene was already created before READY fired.
     applyDprCamera(scene);
     if (AMBIENT_SCENES.has(scene.scene.key)) {
-      applyAmbientBackground(scene);
+      applyCasualBackground(scene);
     }
     scene.events.on(Phaser.Scenes.Events.CREATE, () => {
       applyDprCamera(scene);
       if (AMBIENT_SCENES.has(scene.scene.key)) {
-        applyAmbientBackground(scene);
+        applyCasualBackground(scene);
       }
       applySceneFadeIn(scene);
     });

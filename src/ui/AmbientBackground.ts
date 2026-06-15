@@ -38,13 +38,19 @@ export function applyCasualBackground(scene: Phaser.Scene): void {
     scene.data?.set(CASUAL_BG_FLAG, false);
   });
 
-  const bg = scene.add.graphics().setScrollFactor(0).setDepth(-1000);
+  // NOTE: default scrollFactor (1), matching DungeonHomeScene.buildBackground.
+  // The game runs a high-DPR camera (zoom 2 + scroll offset); scrollFactor(0)
+  // misaligns under that transform, so we draw in world space like home does.
+  // Oversize vertically so short-scrolling scenes still show the backdrop.
+  const top = -CANVAS_HEIGHT;
+  const bottom = CANVAS_HEIGHT * 2;
+  const bg = scene.add.graphics().setDepth(-1000);
   bg.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
-  bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  bg.fillRect(0, top, CANVAS_WIDTH, bottom - top);
   bg.fillStyle(0xfff7e4, 0.5);
   bg.fillEllipse(CANVAS_WIDTH / 2, 30, CANVAS_WIDTH * 1.5, 240);
   bg.fillStyle(CASUAL.BG_DOT, 0.16);
-  for (let row = 0, y = 70; y < CANVAS_HEIGHT; y += 60, row++) {
+  for (let row = 0, y = 70; y < bottom; y += 60, row++) {
     for (let x = (row % 2) * 30 + 16; x < CANVAS_WIDTH; x += 60) bg.fillCircle(x, y, 3.5);
   }
 }

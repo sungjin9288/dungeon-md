@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { ZONE_ACCENTS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
 import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { buildSkinTab, type SkinFilter, type ShopSkinTabContext } from '../ui/ShopSkinTab';
@@ -28,17 +29,21 @@ export class ShopScene extends Phaser.Scene {
   // ─── Background ─────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x0b0703, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    g.lineStyle(1, 0x241808, 0.3);
-    for (let y = 80; y < CANVAS_HEIGHT; y += 80) g.lineBetween(0, y, CANVAS_WIDTH, y);
-    for (let i = 0; i < 30; i++) {
-      const sx = Phaser.Math.Between(0, CANVAS_WIDTH);
-      const sy = Phaser.Math.Between(0, CANVAS_HEIGHT);
-      g.fillStyle(0xffffff, Math.random() * 0.15 + 0.05);
-      g.fillCircle(sx, sy, Math.random() + 0.5);
-    }
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
+
+    // Soft cream product tray behind the shop cards (below the tab bar).
+    const trayY = 100;
+    const trayH = CANVAS_HEIGHT - trayY - 12;
+    const g = this.add.graphics().setDepth(-9);
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(8, trayY + 4, CANVAS_WIDTH - 16, trayH, 18);
+    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+    g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(13, trayY + 5, CANVAS_WIDTH - 26, 6, 3);
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────────
@@ -51,10 +56,10 @@ export class ShopScene extends Phaser.Scene {
 
     const gs = loadGameState();
     this.gemsText = this.add.text(CANVAS_WIDTH / 2 - 10, 50, `💎 ${gs.gems}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#88aaff',
+      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(10);
     this.add.text(CANVAS_WIDTH / 2 + 10, 50, `💠 ${gs.soulCrystals}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#44ffcc',
+      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(10);
 
     const msUntilReset = 86_400_000 - (Date.now() % 86_400_000);
@@ -64,7 +69,7 @@ export class ShopScene extends Phaser.Scene {
     const pad = (n: number) => String(n).padStart(2, '0');
     const timerText = this.add.text(CANVAS_WIDTH - 12, 52,
       `🔄 ${pad(h)}:${pad(m)}:${pad(s)}`, {
-      fontFamily: 'monospace', fontSize: '10px', color: '#6688aa',
+      fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(10);
 
     let remaining = Math.floor(msUntilReset / 1000);
@@ -94,8 +99,8 @@ export class ShopScene extends Phaser.Scene {
       y:         66,
       height:    28,
       fontSize:  '11px',
-      accent:    ZONE_ACCENTS.shop,
-      accentCSS: '#cc88ff',
+      accent:    CASUAL.PURPLE,
+      accentCSS: CASUAL_CSS.PURPLE,
       onSelect:  id => { this.activeTab = id; this.scene.restart(); },
     });
   }
@@ -188,8 +193,8 @@ export class ShopScene extends Phaser.Scene {
 
   showToast(msg: string): void {
     const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 50, msg, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#88ffaa',
-      backgroundColor: '#002200', padding: { x: 14, y: 8 },
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
+      backgroundColor: '#2f8f3a', padding: { x: 14, y: 8 },
     }).setOrigin(0.5).setDepth(300);
     this.tweens.add({ targets: t, alpha: 0, duration: 500, delay: 1500, onComplete: () => t.destroy() });
   }

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { addSceneHeader } from '../ui/GameUiPrimitives';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { audioManager } from '../audio/AudioManager';
@@ -69,20 +71,10 @@ export class SummonScene extends Phaser.Scene {
   // ─── Background ─────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x100903, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
 
-    // Stars
-    for (let i = 0; i < 90; i++) {
-      const sx = Phaser.Math.Between(0, CANVAS_WIDTH);
-      const sy = Phaser.Math.Between(0, CANVAS_HEIGHT);
-      const a  = Math.random() * 0.6 + 0.1;
-      g.fillStyle(0xffffff, a);
-      g.fillCircle(sx, sy, Math.random() * 1.2 + 0.3);
-    }
-
-    // Rune particles
+    // Rune particles — summon ambiance over the bright backdrop.
     this.add.particles(CX, CANVAS_HEIGHT / 2, 'dust', {
       x: { min: -CX, max: CX },
       y: { min: -CANVAS_HEIGHT / 2, max: CANVAS_HEIGHT / 2 },
@@ -158,34 +150,34 @@ export class SummonScene extends Phaser.Scene {
 
     const progress = summary.total > 0 ? summary.owned / summary.total : 0;
     const barW = 92;
-    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x2b1a09, 0x7755ff);
+    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x2b1a09, CASUAL.PURPLE);
     this.add.text(28, 91, '도감 수집', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#bca8ff',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setDepth(6);
     this.add.text(28, 109, `${summary.owned}/${summary.total}`, {
-      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffffff',
+      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setDepth(6);
 
     const pg = this.add.graphics().setDepth(6);
-    pg.fillStyle(0x0f0903, 0.85);
+    pg.fillStyle(CASUAL.PANEL_SOFT, 1);
     pg.fillRoundedRect(28, 134, barW, 7, 4);
-    pg.fillStyle(0xffd45c, 0.95);
+    pg.fillStyle(CASUAL.GOLD, 1);
     pg.fillRoundedRect(28, 134, Phaser.Math.Clamp(barW * progress, 3, barW), 7, 4);
-    pg.lineStyle(1, 0xffffff, 0.12);
+    pg.lineStyle(1, CASUAL.EDGE_SOFT, 0.6);
     pg.strokeRoundedRect(28, 134, barW, 7, 4);
 
-    this.drawShowcasePanel(g, CANVAS_WIDTH - 126, 78, 112, 78, 0x261022, 0xff66aa);
+    this.drawShowcasePanel(g, CANVAS_WIDTH - 126, 78, 112, 78, 0x261022, CASUAL.RED);
     this.add.text(CANVAS_WIDTH - 112, 91, '레어 획득', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffc0df',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setDepth(6);
     this.add.text(CANVAS_WIDTH - 112, 111, `E ${summary.epics}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#dd88ff',
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
     }).setDepth(6);
     this.add.text(CANVAS_WIDTH - 60, 111, `L ${summary.legends}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#ffb066',
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
     }).setDepth(6);
     this.add.text(CANVAS_WIDTH - 112, 134, `${summary.totalPulls} pulls`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8aa8',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
     }).setDepth(6);
 
     this.drawRecentPullChips(summary.recent);
@@ -197,24 +189,24 @@ export class SummonScene extends Phaser.Scene {
     y: number,
     w: number,
     h: number,
-    bg: number,
+    _bg: number,
     border: number,
   ): void {
-    g.fillStyle(0x000000, 0.22);
-    g.fillRoundedRect(x + 2, y + 3, w, h, 8);
-    g.fillStyle(bg, 0.84);
-    g.fillRoundedRect(x, y, w, h, 8);
-    g.lineStyle(1, border, 0.55);
-    g.strokeRoundedRect(x, y, w, h, 8);
-    g.lineStyle(1, 0xffffff, 0.08);
-    g.lineBetween(x + 10, y + 2, x + w - 10, y + 2);
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRoundedRect(x + 2, y + 4, w, h, 12);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(x, y, w, h, 12);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(x + 6, y + 5, w - 12, 6, 3);
+    g.lineStyle(3, border, 1);
+    g.strokeRoundedRect(x, y, w, h, 12);
   }
 
   private drawRecentPullChips(recent: NonNullable<ReturnType<typeof loadGameState>['summonHistory']>): void {
     const y = 162;
     const title = recent.length > 0 ? '최근 획득' : '첫 소환 보상 대기';
     this.add.text(CX, y - 12, title, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#9070bb',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setDepth(6);
 
     const chips = recent.slice(0, 3);
@@ -298,10 +290,10 @@ export class SummonScene extends Phaser.Scene {
     // Resource bar
     const gs = loadGameState();
     this.add.text(CX - 10, 47, `💎 ${gs.gems}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#88aaff',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
     }).setOrigin(1, 0.5).setDepth(10);
     this.add.text(CX + 10, 47, `💠 ${gs.soulCrystals}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#44ffcc',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
     }).setOrigin(0, 0.5).setDepth(10);
   }
 
@@ -309,31 +301,61 @@ export class SummonScene extends Phaser.Scene {
 
   private summonTabBtn!: Phaser.GameObjects.Text;
   private historyTabBtn!: Phaser.GameObjects.Text;
+  private tabPillGraphics!: Phaser.GameObjects.Graphics;
+  private readonly tabPillW = 96;
+  private readonly tabPillH = 26;
+  private readonly summonTabAccent = CASUAL.PURPLE;
+  private readonly historyTabAccent = CASUAL.BLUE;
 
   private drawTabBar(): void {
+    // Cream tab band with brown edge + white highlight strip.
     const g = this.add.graphics().setDepth(6);
-    g.fillStyle(0x180e05, 1);
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRect(0, TAB_Y + 32, CANVAS_WIDTH, 3);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, TAB_Y, CANVAS_WIDTH, 32);
-    g.lineStyle(1, 0x4422aa, 0.5);
-    g.lineBetween(0, TAB_Y, CANVAS_WIDTH, TAB_Y);
-    g.lineBetween(0, TAB_Y + 32, CANVAS_WIDTH, TAB_Y + 32);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, TAB_Y, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, TAB_Y + 32 - 3, CANVAS_WIDTH, 3);
+
+    this.tabPillGraphics = this.add.graphics().setDepth(7);
 
     this.summonTabBtn = this.add.text(CX - 60, TAB_Y + 16, '🌀 소환', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#cc88ff',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
     }).setOrigin(0.5).setDepth(10).setInteractive();
     this.summonTabBtn.on('pointerdown', () => this.showTab('summon'));
 
     this.historyTabBtn = this.add.text(CX + 60, TAB_Y + 16, '📜 기록', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#664488',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setDepth(10).setInteractive();
     this.historyTabBtn.on('pointerdown', () => this.showTab('history'));
+  }
+
+  private drawTabPill(cx: number, accent: number): void {
+    const g = this.tabPillGraphics;
+    const x = cx - this.tabPillW / 2;
+    const y = TAB_Y + 16 - this.tabPillH / 2;
+    g.fillStyle(CASUAL.EDGE, 0.3);
+    g.fillRoundedRect(x, y + 2, this.tabPillW, this.tabPillH, 12);
+    g.fillStyle(accent, 1);
+    g.fillRoundedRect(x, y, this.tabPillW, this.tabPillH, 12);
+    g.fillStyle(0xffffff, 0.3);
+    g.fillRoundedRect(x + 6, y + 4, this.tabPillW - 12, 5, 3);
   }
 
   private showTab(tab: 'summon' | 'history'): void {
     this.summonTabContainer.setVisible(tab === 'summon');
     this.historyTabContainer.setVisible(tab === 'history');
-    this.summonTabBtn.setColor(tab === 'summon' ? '#cc88ff' : '#664488');
-    this.historyTabBtn.setColor(tab === 'history' ? '#cc88ff' : '#664488');
+
+    this.tabPillGraphics.clear();
+    const isSummon = tab === 'summon';
+    this.drawTabPill(isSummon ? CX - 60 : CX + 60, isSummon ? this.summonTabAccent : this.historyTabAccent);
+
+    this.summonTabBtn.setColor(isSummon ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
+    this.summonTabBtn.setStroke(isSummon ? '#00000033' : '#00000000', isSummon ? 3 : 0);
+    this.historyTabBtn.setColor(isSummon ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.WHITE);
+    this.historyTabBtn.setStroke(isSummon ? '#00000000' : '#00000033', isSummon ? 0 : 3);
   }
 
   // ─── Summon tab ─────────────────────────────────────────────────────────────
@@ -738,13 +760,26 @@ export class SummonScene extends Phaser.Scene {
       const fx = 50 + i * 110;
       const isActive = this.historyFilter === f.val;
       const fg = this.add.graphics();
-      fg.fillStyle(isActive ? 0x4422aa : 0x1c1208, 1);
-      fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 5);
-      fg.lineStyle(1, 0x6644ff, isActive ? 0.9 : 0.3);
-      fg.strokeRoundedRect(fx - 40, filterY - 10, 80, 24, 5);
+      if (isActive) {
+        fg.fillStyle(CASUAL.EDGE, 0.3);
+        fg.fillRoundedRect(fx - 40, filterY - 8, 80, 24, 11);
+        fg.fillStyle(CASUAL.PURPLE, 1);
+        fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
+        fg.fillStyle(0xffffff, 0.3);
+        fg.fillRoundedRect(fx - 34, filterY - 7, 68, 5, 3);
+      } else {
+        fg.fillStyle(CASUAL.PANEL, 1);
+        fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
+        fg.fillStyle(0xffffff, 0.4);
+        fg.fillRoundedRect(fx - 34, filterY - 7, 68, 5, 3);
+        fg.lineStyle(2.5, CASUAL.EDGE, 1);
+        fg.strokeRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
+      }
       c.add(fg);
       const ft = this.add.text(fx, filterY + 2, f.label, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: isActive ? '#cc88ff' : '#554466',
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+        color: isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+        stroke: isActive ? '#00000033' : '#00000000', strokeThickness: isActive ? 3 : 0,
       }).setOrigin(0.5).setInteractive();
       ft.on('pointerdown', () => { this.historyFilter = f.val; this.rebuildHistory(); });
       c.add(ft);
@@ -758,7 +793,7 @@ export class SummonScene extends Phaser.Scene {
 
     if (filtered.length === 0) {
       c.add(this.add.text(CX, CARDS_Y + 80, '소환 기록이 없습니다', {
-        fontFamily: 'sans-serif', fontSize: '13px', color: '#554466',
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5));
     } else {
       let ry = CARDS_Y + 26;
@@ -850,7 +885,7 @@ export class SummonScene extends Phaser.Scene {
     const epics  = gs.summonHistory?.filter(r => r.rarity === 'epic').length ?? 0;
     const legs   = gs.summonHistory?.filter(r => r.rarity === 'legendary').length ?? 0;
     c.add(this.add.text(CX, CANVAS_HEIGHT - 52, `총 소환: ${total}회  |  에픽: ${epics}회  |  전설: ${legs}회`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#443355',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
   }
 

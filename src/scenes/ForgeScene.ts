@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CSS, ZONE_ACCENTS } from '../constants/colors';
+import { ZONE_ACCENTS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import {
   getBlueprintRecommendation, getMonsterDefForOwned, findMonsterRoom, findOpenMonsterRoom,
   type ForgeRecommendation, type ForgeMonsterDef,
@@ -112,63 +113,23 @@ export class ForgeScene extends Phaser.Scene {
   // ─── Background ──────────────────────────────────────────────────────────
 
   private drawBackground(): void {
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
+
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x0f0803, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    g.fillStyle(0x1c1007, 1);
-    g.fillRoundedRect(10, CONTENT_Y + 8, CANVAS_WIDTH - 20, CANVAS_HEIGHT - CONTENT_Y - 18, 18);
-    g.lineStyle(1, 0x3b2411, 0.42);
-    for (let y = CONTENT_Y + 26; y < CANVAS_HEIGHT - 12; y += 32) {
-      g.lineBetween(18, y, CANVAS_WIDTH - 18, y);
-    }
-    for (let x = 30; x < CANVAS_WIDTH; x += 52) {
-      const offset = Math.floor((x / 52) % 2) * 16;
-      g.lineBetween(x, CONTENT_Y + 8 + offset, x, CANVAS_HEIGHT - 22);
-    }
-    g.lineStyle(3, 0x060301, 0.62);
-    g.strokeRoundedRect(10, CONTENT_Y + 8, CANVAS_WIDTH - 20, CANVAS_HEIGHT - CONTENT_Y - 18, 18);
-
-    const glow = this.add.graphics().setDepth(-9);
-    glow.fillStyle(0xff6b1a, 0.11);
-    glow.fillCircle(CANVAS_WIDTH / 2, CONTENT_Y + 112, 176);
-    glow.fillStyle(0xffc56a, 0.08);
-    glow.fillEllipse(CANVAS_WIDTH / 2, CONTENT_Y + 106, 298, 86);
-    glow.fillStyle(0x51ffd2, 0.035);
-    glow.fillCircle(CANVAS_WIDTH - 76, CONTENT_Y + 236, 118);
-
-    const shop = this.add.graphics().setDepth(-8);
-    const furnaceX = CANVAS_WIDTH / 2;
-    const furnaceY = CONTENT_Y + 20;
-    shop.fillStyle(0x271406, 0.94);
-    shop.fillRoundedRect(furnaceX - 108, furnaceY + 4, 216, 88, 18);
-    shop.lineStyle(2, 0x8a4a12, 0.34);
-    shop.strokeRoundedRect(furnaceX - 108, furnaceY + 4, 216, 88, 18);
-    shop.fillStyle(0x0b0502, 0.96);
-    shop.fillRoundedRect(furnaceX - 48, furnaceY + 30, 96, 34, 10);
-    shop.fillStyle(0xff4a12, 0.58);
-    shop.fillEllipse(furnaceX, furnaceY + 48, 72, 24);
-    shop.fillStyle(0xffc35a, 0.9);
-    shop.fillEllipse(furnaceX, furnaceY + 46, 42, 13);
-    shop.fillStyle(0x16100a, 0.96);
-    shop.fillRoundedRect(furnaceX - 134, furnaceY + 78, 268, 14, 5);
-    shop.lineStyle(2, 0xb96b22, 0.5);
-    shop.lineBetween(36, furnaceY + 96, CANVAS_WIDTH - 36, furnaceY + 96);
-    shop.fillStyle(0x080604, 0.86);
-    shop.fillRoundedRect(38, furnaceY + 44, 48, 54, 8);
-    shop.fillRoundedRect(CANVAS_WIDTH - 86, furnaceY + 44, 48, 54, 8);
-    shop.fillStyle(0xff6b1a, 0.2);
-    shop.fillCircle(62, furnaceY + 60, 23);
-    shop.fillCircle(CANVAS_WIDTH - 62, furnaceY + 60, 23);
-    shop.fillStyle(0xffd37a, 0.78);
-    for (const [sx, sy, r] of [
-      [112, CONTENT_Y + 58, 2],
-      [132, CONTENT_Y + 36, 1.5],
-      [252, CONTENT_Y + 42, 1.8],
-      [274, CONTENT_Y + 68, 1.4],
-      [314, CONTENT_Y + 88, 1.6],
-    ] as const) {
-      shop.fillCircle(sx, sy, r);
-    }
+    // Cream content tray behind craft/dismantle cards.
+    const trayX = 10;
+    const trayY = CONTENT_Y + 8;
+    const trayW = CANVAS_WIDTH - 20;
+    const trayH = CANVAS_HEIGHT - CONTENT_Y - 18;
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 18);
+    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+    g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
   }
 
   // ─── Header ──────────────────────────────────────────────────────────────
@@ -178,15 +139,19 @@ export class ForgeScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(10);
     this.headerContainer = c;
 
+    // Cream header band with brown bottom edge + white top highlight.
     const g = this.add.graphics();
-    g.fillStyle(0x1a0800, 1);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.lineStyle(1, 0xcc6600, 0.35);
-    g.lineBetween(0, HEADER_H, CANVAS_WIDTH, HEADER_H);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
     c.add(g);
 
     c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 - 7, '장비 제작소', {
-      fontFamily: 'Georgia, serif', fontSize: '20px', color: '#ffaa44',
+      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5));
     const gs = loadGameState();
     const focusName = this.getFocusMonsterName(gs);
@@ -194,42 +159,37 @@ export class ForgeScene extends Phaser.Scene {
       ? `${this.focusSourceLabel ?? '선택 수호자'} · ${focusName} 장비 보강`
       : '몬스터 장비를 제작하고 바로 장착';
     c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 + 14, headerSub, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: focusName ? '#ffd9a0' : '#b78a55',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
-    const back = this.add.text(18, HEADER_H / 2, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
-      backgroundColor: '#2d2416', padding: { x: 8, y: 4 },
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
-    back.on('pointerdown', () => {
+    this.buildBtn(c, 14, HEADER_H / 2 - 13, '← 뒤로', () => {
       this.cameras.main.fadeOut(200, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(this.returnScene));
     });
-    c.add(back);
 
     if (this.focusRoomSlotIdx !== null) {
       const returnX = CANVAS_WIDTH - 78;
       const returnY = HEADER_H / 2 - 13;
+      const returnW = 66;
       const returnBg = this.add.graphics();
-      returnBg.fillStyle(0x0c211b, 0.96);
-      returnBg.fillRoundedRect(returnX, returnY, 66, 26, 7);
-      returnBg.lineStyle(1.2, 0xc8e8b0, 0.74);
-      returnBg.strokeRoundedRect(returnX, returnY, 66, 26, 7);
-      returnBg.fillStyle(0xc8e8b0, 0.14);
-      returnBg.fillRoundedRect(returnX + 4, returnY + 4, 58, 18, 5);
+      returnBg.fillStyle(CASUAL.GREEN_DK, 1);
+      returnBg.fillRoundedRect(returnX, returnY + 3, returnW, 26, 13);
+      returnBg.fillStyle(CASUAL.GREEN, 1);
+      returnBg.fillRoundedRect(returnX, returnY, returnW, 26, 13);
+      returnBg.fillStyle(0xffffff, 0.32);
+      returnBg.fillRoundedRect(returnX + 6, returnY + 4, returnW - 12, 5, 3);
       c.add(returnBg);
 
-      const returnText = this.add.text(returnX + 33, returnY + 13, '방 복귀', {
+      const returnText = this.add.text(returnX + returnW / 2, returnY + 13, '방 복귀', {
         fontFamily: 'sans-serif',
         fontSize: '11px',
-        color: '#b8fff0',
+        color: '#ffffff',
         fontStyle: 'bold',
       }).setOrigin(0.5);
-      const returnZone = this.add.zone(returnX, returnY, 66, 26)
+      const returnZone = this.add.zone(returnX, returnY, returnW, 26)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true });
-      returnZone.on('pointerover', () => returnText.setColor('#ffffff'));
-      returnZone.on('pointerout', () => returnText.setColor('#b8fff0'));
       returnZone.on('pointerdown', () => this.returnToFocusedRoom());
       c.add([returnText, returnZone]);
     }
@@ -243,7 +203,7 @@ export class ForgeScene extends Phaser.Scene {
       : '';
     if (matLine && this.focusRoomSlotIdx === null) {
       c.add(this.add.text(CANVAS_WIDTH - 10, 13, matLine, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#d4a36c',
+        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
       }).setOrigin(1, 0.5));
     }
 
@@ -251,9 +211,35 @@ export class ForgeScene extends Phaser.Scene {
     const stones = gs.awakeningStones ?? 0;
     if (this.focusRoomSlotIdx === null) {
       c.add(this.add.text(CANVAS_WIDTH - 12, HEADER_H - 14, `각성석: ${stones}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#cc44cc',
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
       }).setOrigin(1, 1));
     }
+  }
+
+  // Cream pill button (back button), added to the header container.
+  private buildBtn(
+    c: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    label: string,
+    cb: () => void,
+  ): void {
+    const w = label.length * 8 + 18;
+    const g = this.add.graphics();
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRoundedRect(x, y + 3, w, 26, 13);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(x, y, w, 26, 13);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(x + 4, y + 2, w - 8, 5, 3);
+    c.add(g);
+    c.add(this.add.text(x + w / 2, y + 13, label, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    }).setOrigin(0.5));
+    const zone = this.add.zone(x, y, w, 26).setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', cb);
+    c.add(zone);
   }
 
   private consumeReturnScene(): string {
@@ -396,34 +382,33 @@ export class ForgeScene extends Phaser.Scene {
         : null;
 
     const x = 12, y = 10, w = CANVAS_WIDTH - 24, h = 116;
-    const accent = mode === 'craft' ? 0xffa43d : 0xcc5533;
+    const accent = mode === 'craft' ? CASUAL.GOLD : CASUAL.RED;
     const frame = addFramedPanel(this, {
       x,
       y,
       w,
       h,
       radius: 12,
-      fillColor: 0x211207,
-      borderColor: accent,
-      borderAlpha: 0.74,
-      borderWidth: 1.5,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: accent,
-      accentAlpha: 0.46,
-      glowColor: accent,
-      glowOpacity: 0.08,
-      shadowOpacity: 0.46,
-      shadowOffsetY: 4,
+      accentAlpha: 1,
+      shadowOpacity: 0.26,
+      shadowOffsetY: 5,
     });
     c.add([frame.shadow, frame.panel, frame.glow]);
 
+    // Dark trading-card "target portrait" tile (kept dark, bright border).
     const panel = this.add.graphics();
     panel.fillStyle(0x0c1714, 0.94);
     panel.fillRoundedRect(x + 8, y + 10, 86, h - 20, 10);
-    panel.fillStyle(0xff7d1f, 0.07);
+    panel.fillStyle(CASUAL.PANEL_SOFT, 0.7);
     panel.fillRoundedRect(x + 100, y + 8, w - 194, h - 16, 10);
-    panel.fillStyle(mode === 'craft' ? 0x361404 : 0x24100b, 0.92);
+    panel.fillStyle(accent, target ? 0.6 : 0.28);
     panel.fillRoundedRect(x + w - 86, y + 11, 74, h - 22, 10);
-    panel.lineStyle(1, 0xc8e8b0, target ? 0.34 : 0.12);
+    panel.lineStyle(1.5, target ? CASUAL.GREEN : CASUAL.EDGE_SOFT, target ? 0.7 : 0.4);
     panel.strokeRoundedRect(x + 12, y + 14, 78, h - 28, 9);
     c.add(panel);
 
@@ -431,12 +416,12 @@ export class ForgeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: workbenchTarget ? '30px' : '31px',
     }).setOrigin(0.5));
     c.add(this.add.text(x + 51, y + 64, workbenchTarget ? `Lv.${workbenchTarget.level}` : mode === 'craft' ? '제작대' : '분해대', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: workbenchTarget ? '#ffd9a0' : '#e0b276',
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffe9c8',
       fontStyle: workbenchTarget ? 'bold' : 'normal',
     }).setOrigin(0.5));
     if (workbenchTarget) {
       c.add(this.add.text(x + 51, y + 82, this.truncateLabel(workbenchTarget.name, 6), {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#fff0c2',
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#fff6e6',
         fontStyle: 'bold',
       }).setOrigin(0.5));
     }
@@ -455,10 +440,10 @@ export class ForgeScene extends Phaser.Scene {
       : '사용하지 않는 제작 장비를 분해해 다음 장비 재료로 회수하세요.';
 
     c.add(this.add.text(x + 110, y + 19, title, {
-      fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold', color: CSS.PARCHMENT,
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5));
     c.add(this.add.text(x + 110, y + 41, body, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_DIM,
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: sourceLabel ? 142 : 162, useAdvancedWrap: true },
     }).setOrigin(0, 0.5));
 
@@ -472,31 +457,31 @@ export class ForgeScene extends Phaser.Scene {
     const hasPowerRecommendation = mode === 'craft' && recommendation !== null;
     const equipChipW = hasPowerRecommendation ? 112 : 160;
     const equipChip = this.add.graphics();
-    equipChip.fillStyle(currentEquipment ? 0x161308 : 0x0d0a07, 0.92);
+    equipChip.fillStyle(currentEquipment ? CASUAL.GOLD : CASUAL.PANEL, currentEquipment ? 0.32 : 0.9);
     equipChip.fillRoundedRect(x + 110, y + 60, equipChipW, 20, 7);
-    equipChip.lineStyle(1, currentEquipment ? 0xffdf78 : 0x4d3920, 0.55);
+    equipChip.lineStyle(1.5, currentEquipment ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, currentEquipment ? 0.9 : 0.6);
     equipChip.strokeRoundedRect(x + 110, y + 60, equipChipW, 20, 7);
     c.add(equipChip);
     c.add(this.add.text(x + 110 + equipChipW / 2, y + 70, equipLine, {
       fontFamily: 'sans-serif', fontSize: '9px',
-      color: currentEquipment ? '#fff0b8' : '#9e8460',
+      color: currentEquipment ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
       fontStyle: currentEquipment ? 'bold' : 'normal',
     }).setOrigin(0.5));
 
     if (hasPowerRecommendation) {
       const boostX = x + 226;
       const boost = this.add.graphics();
-      boost.fillStyle(recommendation.accent, 0.18);
+      boost.fillStyle(CASUAL.GREEN, 1);
       boost.fillRoundedRect(boostX, y + 60, 54, 20, 7);
-      boost.lineStyle(1, recommendation.accent, 0.72);
+      boost.lineStyle(1.5, CASUAL.GREEN_DK, 1);
       boost.strokeRoundedRect(boostX, y + 60, 54, 20, 7);
-      boost.fillStyle(0xffffff, 0.08);
-      boost.fillRoundedRect(boostX + 5, y + 64, 44, 4, 3);
+      boost.fillStyle(0xffffff, 0.3);
+      boost.fillRoundedRect(boostX + 5, y + 63, 44, 4, 3);
       c.add(boost);
       c.add(this.add.text(boostX + 27, y + 70, `전력 +${recommendation.powerDelta}`, {
         fontFamily: 'sans-serif',
         fontSize: '9px',
-        color: '#b8fff0',
+        color: '#ffffff',
         fontStyle: 'bold',
       }).setOrigin(0.5));
     }
@@ -505,31 +490,31 @@ export class ForgeScene extends Phaser.Scene {
       const chipX = x + w - 76;
       const chipY = y + 14;
       const chip = this.add.graphics();
-      chip.fillStyle(0x071715, 0.96);
+      chip.fillStyle(CASUAL.GREEN, 1);
       chip.fillRoundedRect(chipX, chipY, 58, 20, 7);
-      chip.lineStyle(1.1, 0xc8e8b0, 0.58);
+      chip.lineStyle(1.5, CASUAL.GREEN_DK, 1);
       chip.strokeRoundedRect(chipX, chipY, 58, 20, 7);
-      chip.fillStyle(0xc8e8b0, 0.16);
-      chip.fillRoundedRect(chipX + 5, chipY + 5, 4, 10, 3);
+      chip.fillStyle(0xffffff, 0.3);
+      chip.fillRoundedRect(chipX + 5, chipY + 4, 48, 4, 3);
       c.add(chip);
-      c.add(this.add.text(chipX + 32, chipY + 10, this.truncateLabel(sourceLabel, 5), {
+      c.add(this.add.text(chipX + 29, chipY + 10, this.truncateLabel(sourceLabel, 5), {
         fontFamily: 'sans-serif',
         fontSize: '9px',
-        color: '#b8fff0',
+        color: '#ffffff',
         fontStyle: 'bold',
       }).setOrigin(0.5));
     }
 
-    this.drawWorkbenchStat(c, x + 110, y + 88, 50, '가능', String(craftable.length), 0x8de36d);
-    this.drawWorkbenchStat(c, x + 166, y + 88, 52, '설계도', String(ownedBlueprints.length), 0xffb35c);
-    this.drawWorkbenchStat(c, x + 224, y + 88, 48, '재료', String(materialTypes), 0x8ac7ff);
+    this.drawWorkbenchStat(c, x + 110, y + 88, 50, '가능', String(craftable.length), CASUAL.GREEN_DK);
+    this.drawWorkbenchStat(c, x + 166, y + 88, 52, '설계도', String(ownedBlueprints.length), CASUAL.GOLD_DK);
+    this.drawWorkbenchStat(c, x + 224, y + 88, 48, '재료', String(materialTypes), CASUAL.BLUE_DK);
 
     if (!sourceLabel) {
       const craftedText = mode === 'craft'
         ? `도감 ${craftedCount} · 장착 ${equippedCount}`
         : `보유 ${craftedCount} · 장착 ${equippedCount}`;
       c.add(this.add.text(x + w - 20, y + 22, craftedText, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#b78a55',
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0.5));
     }
 
@@ -558,7 +543,7 @@ export class ForgeScene extends Phaser.Scene {
       fontStyle: 'bold',
     }).setOrigin(0.5));
     c.add(this.add.text(forgeX, forgeY + 37, mode === 'craft' ? '단조' : '회수', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#ffd096', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5));
 
     return WORKBENCH_H;
@@ -574,13 +559,13 @@ export class ForgeScene extends Phaser.Scene {
     accent: number,
   ): void {
     const g = this.add.graphics();
-    g.fillStyle(0x0d0a07, 0.86);
+    g.fillStyle(CASUAL.PANEL, 0.95);
     g.fillRoundedRect(x, y, w, 22, 5);
-    g.lineStyle(1, accent, 0.36);
+    g.lineStyle(1.5, accent, 0.7);
     g.strokeRoundedRect(x, y, w, 22, 5);
     c.add(g);
     c.add(this.add.text(x + 6, y + 7, label, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5));
     c.add(this.add.text(x + w - 6, y + 14, value, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
@@ -954,22 +939,24 @@ export class ForgeScene extends Phaser.Scene {
     variant: 'primary' | 'secondary',
     onClick: () => void,
   ): void {
+    // Candy button: primary = bright accent + white label, secondary = cream pill + ink.
+    const fillColor = variant === 'primary' ? accent : CASUAL.PANEL;
     const g = this.add.graphics();
-    g.fillStyle(0x070503, 0.34);
-    g.fillRoundedRect(x, y + 3, w, h, 7);
-    g.fillStyle(variant === 'primary' ? 0x5a2a00 : 0x160b05, variant === 'primary' ? 1 : 0.96);
-    g.fillRoundedRect(x, y, w, h, 7);
-    g.fillStyle(0xffffff, variant === 'primary' ? 0.12 : 0.04);
-    g.fillRoundedRect(x + 6, y + 5, w - 12, 5, 3);
-    g.lineStyle(1, accent, variant === 'primary' ? 0.82 : 0.42);
-    g.strokeRoundedRect(x, y, w, h, 7);
+    g.fillStyle(variant === 'primary' ? CASUAL.EDGE : CASUAL.EDGE, variant === 'primary' ? 0.6 : 0.45);
+    g.fillRoundedRect(x, y + 3, w, h, 13);
+    g.fillStyle(fillColor, 1);
+    g.fillRoundedRect(x, y, w, h, 13);
+    g.fillStyle(0xffffff, variant === 'primary' ? 0.3 : 0.45);
+    g.fillRoundedRect(x + 6, y + 5, w - 12, 6, 3);
+    g.lineStyle(2, variant === 'primary' ? accent : CASUAL.EDGE, 1);
+    g.strokeRoundedRect(x, y, w, h, 13);
     c.add(g);
 
     c.add(this.add.text(x + w / 2, y + h / 2, label, {
       fontFamily: 'sans-serif',
       fontSize: '13px',
-      color: variant === 'primary' ? '#f0e6c8' : '#b78a55',
-      fontStyle: variant === 'primary' ? 'bold' : 'normal',
+      color: variant === 'primary' ? '#ffffff' : CASUAL_CSS.INK,
+      fontStyle: 'bold',
     }).setOrigin(0.5));
 
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
@@ -994,26 +981,27 @@ export class ForgeScene extends Phaser.Scene {
     const w = CANVAS_WIDTH - LIST_PAD * 2;
     const h = 58;
     const bg = this.add.graphics();
-    bg.fillStyle(0x0f0a06, 0.96);
+    bg.fillStyle(CASUAL.SHADOW, 0.14);
+    bg.fillRoundedRect(x, y + 3, w, h, 10);
+    bg.fillStyle(CASUAL.PANEL, 1);
     bg.fillRoundedRect(x, y, w, h, 10);
-    bg.fillStyle(0xffa43d, 0.08);
-    bg.fillRoundedRect(x + 7, y + 8, w - 14, 17, 7);
-    bg.lineStyle(1.2, 0xffa43d, 0.42);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
+    bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(x, y, w, h, 10);
-    bg.lineStyle(1, 0xffffff, 0.08);
-    bg.lineBetween(x + 8, y + 27, x + w - 8, y + 27);
     c.add(bg);
 
     c.add(this.add.text(x + 12, y + 16, '추천 장착 대상', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#ffd096',
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     c.add(this.add.text(x + w - 12, y + 16, '칩 선택 시 추천 갱신', {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#a8794d',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0.5));
 
     const chipW = Math.floor((w - 28) / 3);
@@ -1022,11 +1010,11 @@ export class ForgeScene extends Phaser.Scene {
       const chipY = y + 31;
       const active = this.focusMonsterId === target.monsterId;
       const chip = this.add.graphics();
-      chip.fillStyle(active ? 0x0c211b : 0x150d07, 0.98);
+      chip.fillStyle(active ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
       chip.fillRoundedRect(chipX, chipY, chipW, 22, 7);
-      chip.fillStyle(target.accent, active ? 0.20 : 0.10);
+      chip.fillStyle(0xffffff, active ? 0.28 : 0.18);
       chip.fillRoundedRect(chipX + 4, chipY + 4, 22, 14, 5);
-      chip.lineStyle(1.1, active ? 0xc8e8b0 : target.accent, active ? 0.82 : 0.42);
+      chip.lineStyle(2, active ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
       chip.strokeRoundedRect(chipX, chipY, chipW, 22, 7);
       c.add(chip);
 
@@ -1037,18 +1025,18 @@ export class ForgeScene extends Phaser.Scene {
       c.add(this.add.text(chipX + 30, chipY + 7, this.truncateLabel(target.monsterName, 5), {
         fontFamily: 'sans-serif',
         fontSize: '8px',
-        color: active ? '#b8fff0' : '#f0d4a8',
+        color: active ? '#ffffff' : CASUAL_CSS.INK,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5));
       c.add(this.add.text(chipX + 30, chipY + 16, this.truncateLabel(target.needLabel, 6), {
         fontFamily: 'sans-serif',
         fontSize: '7px',
-        color: '#a8794d',
+        color: active ? '#eafff0' : CASUAL_CSS.INK_SOFT,
       }).setOrigin(0, 0.5));
       c.add(this.add.text(chipX + chipW - 5, chipY + 11, target.roomLabel, {
         fontFamily: 'sans-serif',
         fontSize: '7px',
-        color: `#${target.accent.toString(16).padStart(6, '0')}`,
+        color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(1, 0.5));
 
@@ -1123,7 +1111,7 @@ export class ForgeScene extends Phaser.Scene {
 
     if (owned.length === 0) {
       c.add(this.add.text(CANVAS_WIDTH / 2, listStartY + 18, '보유한 설계도가 없습니다.\n전투에서 설계도를 획득하세요.', {
-        fontFamily: 'sans-serif', fontSize: '13px', color: '#886633',
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
         align: 'center', lineSpacing: 6,
       }).setOrigin(0.5, 0));
       return;
@@ -1260,20 +1248,21 @@ export class ForgeScene extends Phaser.Scene {
       const btnX = CANVAS_WIDTH - pad * 2 - btnW + 2;
       const btnY = oy + (rowH - 4 - btnH) / 2;
 
+      // Bright candy "제작" button (green) when craftable; muted cream pill otherwise.
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(0x070503, 0.34);
-      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 6);
-      btnBg.fillStyle(canCraft ? 0xd35f16 : 0x2a1a00, 1);
-      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
-      btnBg.fillStyle(0xffffff, canCraft ? 0.12 : 0.04);
-      btnBg.fillRoundedRect(btnX + 5, btnY + 5, btnW - 10, 5, 3);
-      btnBg.lineStyle(1, canCraft ? 0xffc16a : 0x53321c, 0.82);
-      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+      btnBg.fillStyle(canCraft ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, canCraft ? 1 : 0.5);
+      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
+      btnBg.fillStyle(canCraft ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
+      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
+      btnBg.fillStyle(0xffffff, canCraft ? 0.32 : 0.2);
+      btnBg.fillRoundedRect(btnX + 6, btnY + 5, btnW - 12, 6, 3);
+      btnBg.lineStyle(2, canCraft ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, 1);
+      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 13);
       c.add(btnBg);
 
       const btnT = this.add.text(btnX + btnW / 2, btnY + btnH / 2, canCraft ? '제작' : '재료 부족', {
         fontFamily: 'sans-serif', fontSize: canCraft ? '12px' : '10px', fontStyle: 'bold',
-        color: canCraft ? '#ffffff' : '#664433',
+        color: canCraft ? '#ffffff' : CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
       c.add(btnT);
 
@@ -1667,7 +1656,7 @@ export class ForgeScene extends Phaser.Scene {
 
     if (crafted.length === 0) {
       c.add(this.add.text(CANVAS_WIDTH / 2, listStartY + 18, '분해할 장비가 없습니다.\n먼저 장비를 제작하세요.', {
-        fontFamily: 'sans-serif', fontSize: '13px', color: '#886633',
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
         align: 'center', lineSpacing: 6,
       }).setOrigin(0.5, 0));
       return;
@@ -1771,18 +1760,23 @@ export class ForgeScene extends Phaser.Scene {
       const btnX = CANVAS_WIDTH - pad * 2 - btnW + 2;
       const btnY = oy + (rowH - 4 - btnH) / 2;
 
+      // Bright candy "분해" button — RED (destructive) for equipped, GOLD otherwise.
+      const dismantleFill = holder ? CASUAL.RED : CASUAL.GOLD;
+      const dismantleEdge = holder ? CASUAL.RED_DK : CASUAL.GOLD_DK;
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(0x070503, 0.34);
-      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 5);
-      btnBg.fillStyle(holder ? 0x5a1e0c : 0x4a1800, 1);
-      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 5);
-      btnBg.lineStyle(1, holder ? 0xff7744 : 0xffaa44, 0.58);
-      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 5);
+      btnBg.fillStyle(dismantleEdge, 1);
+      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
+      btnBg.fillStyle(dismantleFill, 1);
+      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
+      btnBg.fillStyle(0xffffff, 0.32);
+      btnBg.fillRoundedRect(btnX + 6, btnY + 5, btnW - 12, 6, 3);
+      btnBg.lineStyle(2, dismantleEdge, 1);
+      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 13);
       c.add(btnBg);
 
       c.add(this.add.text(btnX + btnW / 2, btnY + btnH / 2, '분해', {
-        fontFamily: 'sans-serif', fontSize: '12px',
-        color: holder ? '#ffcfba' : '#ffaa44',
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+        color: '#ffffff',
       }).setOrigin(0.5));
 
       const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
@@ -1931,22 +1925,12 @@ export class ForgeScene extends Phaser.Scene {
       }).setOrigin(0.5));
     }
 
-    const cancelBtn = this.add.text(cx - 60, cy + ph / 2 - 26, '취소', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#886633',
-      backgroundColor: '#1a0a00', padding: { x: 18, y: 8 },
-    }).setOrigin(0.5).setInteractive();
-    cancelBtn.on('pointerdown', () => ov.destroy());
-    ov.add(cancelBtn);
-
-    const confirmBtn = this.add.text(cx + 60, cy + ph / 2 - 26, '분해', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#ff4400',
-      backgroundColor: '#2a0a00', padding: { x: 18, y: 8 },
-    }).setOrigin(0.5).setInteractive();
-    confirmBtn.on('pointerdown', () => {
+    const buttonY = cy + ph / 2 - 40;
+    this.addModalButton(ov, cx - 112, buttonY, 96, 30, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
+    this.addModalButton(ov, cx + 16, buttonY, 96, 30, '분해', CASUAL.RED, 'primary', () => {
       ov.destroy();
       this.executeDismantle(idx, bp);
     });
-    ov.add(confirmBtn);
 
     ov.setAlpha(0);
     this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
