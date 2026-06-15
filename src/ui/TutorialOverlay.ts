@@ -28,10 +28,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     stage:     2,
     title:     '👹 몬스터를 배치하세요!',
-    body:      '방에 몬스터를 배치하면\n방의 전투력이 올라갑니다.\n병영 탭에서 보유한 몬스터를\n방으로 드래그하거나 탭하세요.',
-    highlight: { x: 0, y: 770, w: 78, h: 74 },       // 병영 bottom nav tab
-    arrowFrom: { x: 195, y: 660 },
-    arrowTo:   { x: 39, y: 773 },
+    body:      '방을 누르면 아래에 배치 트레이가 열려요.\n\'몬스터\' 탭에서 보유 몬스터를 탭해\n바로 배치할 수 있습니다.\n\'✨ 추천 배치\'로 한 번에 채우기도 가능!',
+    highlight: { x: 8, y: 88, w: 122, h: 116 },      // first dungeon room (tap to open tray)
+    arrowFrom: { x: 200, y: 320 },
+    arrowTo:   { x: 72, y: 210 },
     btnLabel:  '확인!',
   },
   {
