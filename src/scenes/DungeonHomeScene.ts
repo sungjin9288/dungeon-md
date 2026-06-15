@@ -2504,33 +2504,41 @@ export class DungeonHomeScene extends Phaser.Scene {
     h: number,
     summary: { owned: number; total: number; rareOwned: number; percent: number },
   ): void {
-    g.fillStyle(0x120b25, 0.88);
+    // Codex chip keeps its pink semantic accent on a cream casual card.
+    const PINK = 0xe85fc0;
+    const PINK_CSS = '#a82f88';
+    g.fillStyle(CASUAL.SHADOW, 0.22);
+    g.fillRoundedRect(x, y + 2, w, h, 8);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, w, h, 8);
-    g.lineStyle(1, 0xff9adf, 0.60);
+    g.lineStyle(2, PINK, 0.85);
     g.strokeRoundedRect(x, y, w, h, 8);
-    g.fillStyle(0xff9adf, 0.17);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
+    g.fillStyle(PINK, 0.9);
     g.fillCircle(x + 12, y + h / 2, 8);
-    g.fillStyle(0xffffff, 0.24);
-    g.fillCircle(x + 9, y + 7, 1.6);
-    g.fillCircle(x + w - 12, y + 6, 1.3);
-    g.fillStyle(0xe8d098, 0.22);
-    g.fillRoundedRect(x + 27, y + h - 6, Math.max(5, (w - 42) * summary.percent), 3, 2);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillCircle(x + 10, y + h / 2 - 3, 2);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(x + 27, y + h - 7, w - 42, 4, 2);
+    g.fillStyle(PINK, 0.9);
+    g.fillRoundedRect(x + 27, y + h - 7, Math.max(5, (w - 42) * summary.percent), 4, 2);
     deck.add(this.add.text(x + 12, y + h / 2, '★', {
       fontFamily: 'Georgia, serif',
       fontSize: '12px',
-      color: '#ffe6ff',
+      color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5));
     deck.add(this.add.text(x + 27, y + 8, `도감 ${summary.owned}/${summary.total}`, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#ffd6f6',
+      color: PINK_CSS,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     deck.add(this.add.text(x + w - 8, y + 8, `E+ ${summary.rareOwned}`, {
       fontFamily: 'monospace',
       fontSize: '7px',
-      color: '#e8d098',
+      color: CASUAL_CSS.GOLD,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
   }
@@ -2649,24 +2657,35 @@ export class DungeonHomeScene extends Phaser.Scene {
     h: number,
     status: HomeOpsStatus,
   ): void {
-    const t = this.theme;
     const readinessPct = Phaser.Math.Clamp(status.readiness / 100, 0, 1);
+    // Saturated casual semantic accent: green good / gold mid / red low.
     const readinessColor = status.readiness >= 80
-      ? 0x66c08a
-      : status.readiness >= 55 ? 0xffc45c : 0xff6b5f;
-    const readinessCss = `#${readinessColor.toString(16).padStart(6, '0')}`;
+      ? CASUAL.GREEN
+      : status.readiness >= 55 ? CASUAL.GOLD : CASUAL.RED;
+    const readinessColorDk = status.readiness >= 80
+      ? CASUAL.GREEN_DK
+      : status.readiness >= 55 ? CASUAL.GOLD_DK : CASUAL.RED_DK;
+    const readinessCss = status.readiness >= 80
+      ? CASUAL_CSS.GREEN
+      : status.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
 
-    g.fillStyle(0x02090b, 0.72);
+    g.fillStyle(CASUAL.SHADOW, 0.2);
+    g.fillRoundedRect(x, y + 2, w, h, 7);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, w, h, 7);
-    g.lineStyle(1, readinessColor, 0.34);
+    g.lineStyle(2, CASUAL.EDGE, 0.85);
     g.strokeRoundedRect(x, y, w, h, 7);
-    g.fillStyle(readinessColor, 0.13);
-    g.fillRoundedRect(x + 5, y + 5, 72, h - 10, 6);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
+    g.fillStyle(readinessColor, 0.18);
+    g.fillRoundedRect(x + 5, y + 6, 72, h - 12, 6);
+    g.lineStyle(1.5, readinessColor, 0.7);
+    g.strokeRoundedRect(x + 5, y + 6, 72, h - 12, 6);
 
     deck.add(this.add.text(x + 12, y + 12, '운영도', {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     deck.add(this.add.text(x + 70, y + 20, `${status.readiness}%`, {
@@ -2679,40 +2698,45 @@ export class DungeonHomeScene extends Phaser.Scene {
     const barX = x + 86;
     const barY = y + 10;
     const barW = w - 96;
-    g.fillStyle(0x030506, 0.95);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(barX, barY, barW, 7, 4);
-    g.fillStyle(readinessColor, 0.95);
-    g.fillRoundedRect(barX, barY, Math.max(6, barW * readinessPct), 7, 4);
-    g.lineStyle(1, 0xffffff, 0.14);
-    g.lineBetween(barX + 4, barY + 2, barX + Math.max(6, barW * readinessPct) - 4, barY + 2);
+    g.lineStyle(1.5, CASUAL.EDGE, 0.7);
+    g.strokeRoundedRect(barX, barY, barW, 7, 4);
+    const fillW = Math.max(6, barW * readinessPct);
+    g.fillStyle(readinessColorDk, 1);
+    g.fillRoundedRect(barX, barY, fillW, 7, 4);
+    g.fillStyle(readinessColor, 1);
+    g.fillRoundedRect(barX, barY, fillW, 5, 3);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(barX + 2, barY + 1.5, Math.max(4, fillW - 4), 2, 1);
 
     const chipY = y + 23;
     const chips = [
-      { label: '방', value: `${status.builtRooms}/${status.unlockedSlots}`, accent: t.panelBorder },
+      { label: '방', value: `${status.builtRooms}/${status.unlockedSlots}`, accent: CASUAL.BLUE, accentDk: CASUAL.BLUE_DK },
       {
         label: '수호',
         value: status.monsterCapacity > 0 ? `${status.assignedMonsters}/${status.monsterCapacity}` : '-',
-        accent: 0xff8a45,
+        accent: CASUAL.RED, accentDk: CASUAL.RED_DK,
       },
       {
         label: '함정',
         value: status.trapCapacity > 0 ? `${status.installedTraps}/${status.trapCapacity}` : '-',
-        accent: 0xc8921a,
+        accent: CASUAL.GOLD, accentDk: CASUAL.GOLD_DK,
       },
     ];
     const chipGap = 4;
     const chipW = (barW - chipGap * (chips.length - 1)) / chips.length;
     chips.forEach((chip, i) => {
       const chipX = barX + i * (chipW + chipGap);
-      const chipCss = `#${chip.accent.toString(16).padStart(6, '0')}`;
-      g.fillStyle(chip.accent, 0.12);
+      const chipCss = `#${chip.accentDk.toString(16).padStart(6, '0')}`;
+      g.fillStyle(CASUAL.PANEL_SOFT, 1);
       g.fillRoundedRect(chipX, chipY, chipW, 12, 4);
-      g.lineStyle(1, chip.accent, 0.28);
+      g.lineStyle(1.5, chip.accent, 0.85);
       g.strokeRoundedRect(chipX, chipY, chipW, 12, 4);
       deck.add(this.add.text(chipX + 4, chipY + 6, chip.label, {
         fontFamily: 'sans-serif',
         fontSize: '7px',
-        color: t.textSecondary,
+        color: CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5));
       deck.add(this.add.text(chipX + chipW - 4, chipY + 6, chip.value, {
@@ -2732,23 +2756,27 @@ export class DungeonHomeScene extends Phaser.Scene {
     h: number,
     directive: HomeDirective,
   ): void {
-    const t = this.theme;
     const accentCss = `#${directive.accent.toString(16).padStart(6, '0')}`;
     const bg = this.add.graphics();
     deck.add(bg);
-    bg.fillStyle(directive.accent, 0.11);
+    // Cream casual card, accent-bordered, with a candy accent icon cap.
+    bg.fillStyle(CASUAL.SHADOW, 0.22);
+    bg.fillRoundedRect(x, y + 2, w, h, 7);
+    bg.fillStyle(CASUAL.PANEL, 1);
     bg.fillRoundedRect(x, y, w, h, 7);
-    bg.fillStyle(t.stoneDark, 0.72);
-    bg.fillRoundedRect(x + 1, y + 1, w - 2, h - 2, 7);
-    bg.lineStyle(1.3, directive.accent, 0.58);
+    bg.lineStyle(2.5, directive.accent, 0.9);
     bg.strokeRoundedRect(x, y, w, h, 7);
-    bg.fillStyle(directive.accent, 0.26);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
+    bg.fillStyle(directive.accent, 0.95);
     bg.fillRoundedRect(x + 6, y + 6, 24, h - 12, 6);
+    bg.fillStyle(0xffffff, 0.35);
+    bg.fillRoundedRect(x + 8, y + 8, 20, 4, 2);
 
     deck.add(this.add.text(x + 18, y + h / 2, directive.icon, {
       fontFamily: 'Georgia, serif',
       fontSize: '14px',
-      color: accentCss,
+      color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5));
 
@@ -2761,13 +2789,13 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add(this.add.text(x + 38, y + 24, directive.body, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: Math.max(120, w - 164), useAdvancedWrap: true },
     }).setOrigin(0, 0.5));
     deck.add(this.add.text(x + w - 104, y + 10, directive.statLabel, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     deck.add(this.add.text(x + w - 104, y + 24, directive.statValue, {
       fontFamily: 'Georgia, serif',
@@ -2782,11 +2810,16 @@ export class DungeonHomeScene extends Phaser.Scene {
     const ctaH = h - 10;
     const ctaBg = this.add.graphics();
     deck.add(ctaBg);
+    // Saturated candy pill — accent cap over the same accent base, white label.
     const drawCta = (hover = false): void => {
       ctaBg.clear();
-      ctaBg.fillStyle(directive.accent, hover ? 0.35 : 0.22);
+      ctaBg.fillStyle(CASUAL.SHADOW, hover ? 0.3 : 0.22);
+      ctaBg.fillRoundedRect(ctaX, ctaY + 2, ctaW, ctaH, 6);
+      ctaBg.fillStyle(directive.accent, hover ? 1 : 0.92);
       ctaBg.fillRoundedRect(ctaX, ctaY, ctaW, ctaH, 6);
-      ctaBg.lineStyle(1.2, directive.accent, hover ? 0.9 : 0.58);
+      ctaBg.fillStyle(0xffffff, hover ? 0.5 : 0.38);
+      ctaBg.fillRoundedRect(ctaX + 5, ctaY + 4, ctaW - 10, 5, 3);
+      ctaBg.lineStyle(1.5, directive.accent, 1);
       ctaBg.strokeRoundedRect(ctaX, ctaY, ctaW, ctaH, 6);
     };
     drawCta(false);
@@ -2794,7 +2827,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const ctaText = this.add.text(ctaX + ctaW / 2, ctaY + ctaH / 2, directive.ctaLabel, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: t.textPrimary,
+      color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     const zone = this.add.zone(ctaX, ctaY, ctaW, ctaH)
@@ -2803,11 +2836,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add([ctaText, zone]);
     zone.on('pointerover', () => {
       drawCta(true);
-      ctaText.setColor(accentCss);
     });
     zone.on('pointerout', () => {
       drawCta(false);
-      ctaText.setColor(t.textPrimary);
       ctaText.setScale(1);
     });
     zone.on('pointerdown', () => {
@@ -2825,7 +2856,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     w: number,
     actions: readonly RoomActionRecommendation[],
   ): number {
-    const t = this.theme;
     const rowH = 44;
     const chipY = y + 11;
     const chipH = 33;
@@ -2835,25 +2865,29 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add(this.add.text(x + 2, y + 3, '다음 명령', {
       fontFamily: 'Georgia, serif',
       fontSize: '10px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     deck.add(this.add.text(x + w - 2, y + 3, items.length > 0 ? `대기 ${items.length}` : '완비', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: items.length > 0 ? '#b8fff0' : t.textSecondary,
+      color: items.length > 0 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
 
     if (items.length === 0) {
-      g.fillStyle(0x071812, 0.64);
+      g.fillStyle(CASUAL.SHADOW, 0.2);
+      g.fillRoundedRect(x, chipY + 2, w, chipH, 7);
+      g.fillStyle(CASUAL.PANEL, 1);
       g.fillRoundedRect(x, chipY, w, chipH, 7);
-      g.lineStyle(1, 0x66c08a, 0.38);
+      g.lineStyle(2, CASUAL.GREEN, 0.85);
       g.strokeRoundedRect(x, chipY, w, chipH, 7);
+      g.fillStyle(0xffffff, 0.4);
+      g.fillRoundedRect(x + 5, chipY + 3, w - 10, 4, 2);
       deck.add(this.add.text(x + w / 2, chipY + chipH / 2, '모든 방이 다음 침공 준비 완료', {
         fontFamily: 'sans-serif',
         fontSize: '10px',
-        color: '#b8fff0',
+        color: CASUAL_CSS.GREEN,
         fontStyle: 'bold',
       }).setOrigin(0.5));
       return rowH;
@@ -2866,17 +2900,24 @@ export class DungeonHomeScene extends Phaser.Scene {
       const statLabel = targetHint
         ? `${targetHint} ${action.statValue}`
         : action.statValue;
+      const accentCss = `#${action.accent.toString(16).padStart(6, '0')}`;
       const bg = this.add.graphics();
       deck.add(bg);
       const draw = (hover = false): void => {
         bg.clear();
-        bg.fillStyle(0x040908, hover ? 0.94 : 0.82);
+        bg.fillStyle(CASUAL.SHADOW, hover ? 0.28 : 0.2);
+        bg.fillRoundedRect(chipX, chipY + 2, chipW, chipH, 7);
+        bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
         bg.fillRoundedRect(chipX, chipY, chipW, chipH, 7);
-        bg.lineStyle(1.2, action.accent, hover ? 0.88 : 0.54);
+        bg.lineStyle(hover ? 2.5 : 2, action.accent, hover ? 1 : 0.85);
         bg.strokeRoundedRect(chipX, chipY, chipW, chipH, 7);
-        bg.fillStyle(action.accent, hover ? 0.28 : 0.18);
+        bg.fillStyle(0xffffff, hover ? 0.45 : 0.35);
+        bg.fillRoundedRect(chipX + 4, chipY + 3, chipW - 8, 3, 2);
+        bg.fillStyle(action.accent, hover ? 1 : 0.92);
         bg.fillRoundedRect(chipX + 4, chipY + 4, 24, chipH - 8, 6);
-        bg.fillStyle(action.accent, hover ? 0.26 : 0.16);
+        bg.fillStyle(0xffffff, 0.3);
+        bg.fillRoundedRect(chipX + 6, chipY + 6, 20, 3, 2);
+        bg.fillStyle(action.accent, hover ? 0.32 : 0.22);
         bg.fillRoundedRect(chipX + 32, chipY + 5, chipW - 42, 5, 3);
       };
       draw(false);
@@ -2885,9 +2926,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       deck.add(rankBg);
       const drawRank = (hover = false): void => {
         rankBg.clear();
-        rankBg.fillStyle(action.accent, hover ? 1 : 0.9);
+        rankBg.fillStyle(action.accent, hover ? 1 : 0.92);
         rankBg.fillRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
-        rankBg.lineStyle(1, 0x04100c, hover ? 0.72 : 0.44);
+        rankBg.lineStyle(1, 0xffffff, hover ? 0.55 : 0.35);
         rankBg.strokeRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
       };
       drawRank(false);
@@ -2899,18 +2940,18 @@ export class DungeonHomeScene extends Phaser.Scene {
       const labelText = this.add.text(chipX + 33, chipY + 14, `B${action.slotIdx + 1} ${action.label}`, {
         fontFamily: 'sans-serif',
         fontSize: '10px',
-        color: '#fff0c2',
+        color: accentCss,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       const statText = this.add.text(chipX + 33, chipY + 26, statLabel, {
         fontFamily: 'monospace',
         fontSize: '9px',
-        color: targetHint ? '#b8fff0' : t.textSecondary,
+        color: targetHint ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       }).setOrigin(0, 0.5);
       const rankText = this.add.text(chipX + chipW - 14, chipY + 12, String(i + 1), {
         fontFamily: 'monospace',
         fontSize: '9px',
-        color: '#04100c',
+        color: CASUAL_CSS.WHITE,
         fontStyle: 'bold',
       }).setOrigin(0.5);
       deck.add([iconText, labelText, statText, rankText]);
@@ -2922,12 +2963,12 @@ export class DungeonHomeScene extends Phaser.Scene {
       zone.on('pointerover', () => {
         draw(true);
         drawRank(true);
-        labelText.setColor('#fff8d8');
+        labelText.setColor(CASUAL_CSS.INK);
       });
       zone.on('pointerout', () => {
         draw(false);
         drawRank(false);
-        labelText.setColor('#fff0c2');
+        labelText.setColor(accentCss);
         iconText.setScale(1);
         labelText.setScale(1);
         statText.setScale(1);
@@ -2959,22 +3000,24 @@ export class DungeonHomeScene extends Phaser.Scene {
     onPress: () => void,
     hint?: HomeCommandButtonHint,
   ): void {
-    const t = this.theme;
     const bg = this.add.graphics();
     const h = hint ? 40 : 36;
     deck.add(bg);
+    // Cream casual button; brightens to PANEL_SOFT on hover, accent border stays.
     const draw = (hover = false): void => {
       bg.clear();
-      bg.fillStyle(0x070503, 0.36);
+      bg.fillStyle(CASUAL.SHADOW, hover ? 0.28 : 0.2);
       bg.fillRoundedRect(x, y + 3, w, h, 7);
-      bg.fillStyle(hover ? t.panelBorder : t.stoneDark, hover ? 0.24 : 0.90);
+      bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, w, h, 7);
-      bg.lineStyle(1.2, t.panelBorder, hover ? 0.9 : 0.52);
+      bg.lineStyle(hover ? 2.5 : 2, CASUAL.EDGE, hover ? 1 : 0.85);
       bg.strokeRoundedRect(x, y, w, h, 7);
-      bg.lineStyle(1, 0xffffff, hover ? 0.18 : 0.10);
-      bg.lineBetween(x + 10, y + 6, x + w - 10, y + 6);
+      bg.fillStyle(0xffffff, hover ? 0.5 : 0.4);
+      bg.fillRoundedRect(x + 6, y + 4, w - 12, 4, 2);
       if (hint) {
-        bg.fillStyle(hint.accent, hover ? 0.3 : 0.2);
+        bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+        bg.fillRoundedRect(x + 7, y + h - 9, w - 14, 5, 3);
+        bg.fillStyle(hint.accent, hover ? 1 : 0.9);
         bg.fillRoundedRect(x + 7, y + h - 9, w - 14, 5, 3);
       }
     };
@@ -2983,12 +3026,12 @@ export class DungeonHomeScene extends Phaser.Scene {
     const iconT = this.add.text(x + 16, y + h / 2, icon, {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
-      color: t.panelBorderCSS,
+      color: CASUAL_CSS.INK,
     }).setOrigin(0.5);
     const labelT = this.add.text(x + 31, y + (hint ? 13 : h / 2), label, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: t.textSecondary,
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     const children: Phaser.GameObjects.GameObject[] = [iconT, labelT];
@@ -2998,7 +3041,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       hintT = this.add.text(x + 31, y + 27, hint.text, {
         fontFamily: 'sans-serif',
         fontSize: '8px',
-        color: '#b8fff0',
+        color: CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       children.push(hintT);
@@ -3010,13 +3053,13 @@ export class DungeonHomeScene extends Phaser.Scene {
     deck.add([...children, zone]);
     zone.on('pointerover', () => {
       draw(true);
-      labelT.setColor(t.panelBorderCSS);
-      hintT?.setColor('#fff0c2');
+      labelT.setColor(CASUAL_CSS.INK);
+      hintT?.setColor(CASUAL_CSS.INK);
     });
     zone.on('pointerout', () => {
       draw(false);
-      labelT.setColor(t.textSecondary);
-      hintT?.setColor('#b8fff0');
+      labelT.setColor(CASUAL_CSS.INK);
+      hintT?.setColor(CASUAL_CSS.INK_SOFT);
       iconT.setScale(1);
       labelT.setScale(1);
       hintT?.setScale(1);

@@ -4,6 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   getDailyDungeon,
   getWeeklyBoss,
@@ -33,27 +34,27 @@ function drawEventTileShell(
   x: number,
   y: number,
   opts: {
-    readonly fillColor: number;
-    readonly borderColor: number;
     readonly accentColor: number;
     readonly done?: boolean;
   },
 ): void {
+  // Cream casual tile; the per-tile semantic accent drives the border + cap.
+  const accent = opts.done ? CASUAL.GREEN : opts.accentColor;
   const { shadow, panel, glow } = addFramedPanel(scene, {
     x,
     y,
     w: EVENT_TILE_SIZE,
     h: EVENT_TILE_SIZE,
-    radius: 8,
-    fillColor: opts.fillColor,
-    borderColor: opts.done ? 0x44cc44 : opts.borderColor,
-    borderAlpha: opts.done ? 0.9 : 0.78,
-    borderWidth: 1.5,
-    accentColor: opts.done ? 0x44cc44 : opts.accentColor,
-    accentAlpha: opts.done ? 0.75 : 0.62,
-    glowColor: opts.done ? 0x44cc44 : opts.accentColor,
-    glowOpacity: opts.done ? 0.09 : 0.07,
-    shadowOpacity: 0.42,
+    radius: 10,
+    fillColor: CASUAL.PANEL,
+    borderColor: accent,
+    borderAlpha: 1,
+    borderWidth: 2.5,
+    accentColor: accent,
+    accentAlpha: 1,
+    glowColor: accent,
+    glowOpacity: 0.06,
+    shadowOpacity: 0.26,
     shadowOffsetY: 3,
   });
   shadow.setDepth(9);
@@ -84,18 +85,16 @@ export function buildDailyContentPanel(
     fire: '화염', frost: '빙결', lightning: '뇌전', dark: '암흑', holy: '신성',
   };
   const RULE_LABELS: Record<string, { text: string; color: string }> = {
-    element_restrict: { text: ELEMENT_KR[daily.elementRestrict ?? ''] ?? '속성', color: '#88ccff' },
-    gold_rush:        { text: '골드 3×',   color: '#ffdd44' },
-    speed_run:        { text: '스피드',     color: '#ff8844' },
-    boss_rush:        { text: '보스전',     color: '#ff4466' },
+    element_restrict: { text: ELEMENT_KR[daily.elementRestrict ?? ''] ?? '속성', color: CASUAL_CSS.BLUE },
+    gold_rush:        { text: '골드 3×',   color: CASUAL_CSS.GOLD },
+    speed_run:        { text: '스피드',     color: CASUAL_CSS.RED },
+    boss_rush:        { text: '보스전',     color: CASUAL_CSS.RED },
   };
-  const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: '#aaaaaa' };
+  const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: CASUAL_CSS.INK_SOFT };
 
   // Daily dungeon button
   drawEventTileShell(scene, btnX, btnY, {
-    fillColor: dailyDone ? 0x102810 : 0x261006,
-    borderColor: 0xc8921a,
-    accentColor: 0xc8921a,
+    accentColor: CASUAL.GOLD,
     done: dailyDone,
   });
 
@@ -112,7 +111,7 @@ export function buildDailyContentPanel(
     const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
     let secs = Math.max(0, Math.floor((midnight.getTime() - Date.now()) / 1000));
     const cdT = scene.add.text(btnX + tileCenter, btnY + 30, '', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#44aa44',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.GREEN,
     }).setOrigin(0.5).setDepth(11);
     const fmtHms = (s: number) =>
       `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -145,9 +144,7 @@ export function buildDailyContentPanel(
   const weekBtnY = btnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
   const weeklyDone = gs.weeklyBossResetDate === getThisWeekMonday();
   drawEventTileShell(scene, btnX, weekBtnY, {
-    fillColor: weeklyDone ? 0x102810 : 0x19051f,
-    borderColor: 0xaa44ff,
-    accentColor: 0xaa44ff,
+    accentColor: CASUAL.PURPLE,
     done: weeklyDone,
   });
 
@@ -159,7 +156,7 @@ export function buildDailyContentPanel(
   if (!weeklyDone) {
     const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
     scene.add.text(btnX + tileCenter, weekBtnY + 30, bossShort, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#cc99ff',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11);
   } else {
     const now2 = new Date();
@@ -168,7 +165,7 @@ export function buildDailyContentPanel(
     nextMon.setDate(now2.getDate() + daysUntil); nextMon.setHours(0, 0, 0, 0);
     let wSecs = Math.max(0, Math.floor((nextMon.getTime() - now2.getTime()) / 1000));
     const wCdT = scene.add.text(btnX + tileCenter, weekBtnY + 30, '', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#44aa44',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.GREEN,
     }).setOrigin(0.5).setDepth(11);
     const fmtDhm = (s: number) => {
       const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
@@ -211,9 +208,7 @@ export function buildDailyContentPanel(
   const completedCount = dailyView.completedCount;
 
   drawEventTileShell(scene, btnX, chalBtnY, {
-    fillColor: 0x041f20,
-    borderColor: 0x44cccc,
-    accentColor: 0x44cccc,
+    accentColor: CASUAL.BLUE,
   });
 
   scene.add.text(btnX + tileCenter, chalBtnY + 14, '🎯', {
@@ -221,7 +216,7 @@ export function buildDailyContentPanel(
   }).setOrigin(0.5).setDepth(11);
 
   scene.add.text(btnX + tileCenter, chalBtnY + 30, `${completedCount}/3`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#44cccc',
+    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(11);
 
   // Mini dot indicators — one per challenge
@@ -229,7 +224,9 @@ export function buildDailyContentPanel(
   dotStates.forEach((st, di) => {
     const completed  = st?.completed ?? false;
     const inProgress = !completed && (st?.progress ?? 0) > 0;
-    const dotColor   = completed ? '#44ff88' : inProgress ? '#ffcc44' : '#336666';
+    const dotColor   = completed
+      ? CASUAL_CSS.GREEN
+      : inProgress ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT;
     const dotX = btnX + 10 + di * 11;
     scene.add.text(dotX, chalBtnY + 37, '●', {
       fontFamily: 'sans-serif', fontSize: '7px', color: dotColor,
