@@ -14,10 +14,13 @@ import { MONSTER_DEFS } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
+  ensureDungeonSlot,
   removeMonsterFromRoomSlot, removeTrapFromRoomSlot,
   upgradeRoomSlot, getRoomUpgradeCost,
   repairRoomSlot, getRoomRepairCost,
 } from '../data/roomSlotTransactions';
+import { getRoomDesignRecommendation } from '../data/roomDesignRecommendations';
+import { getMonsterLoadoutRecommendation, getTrapLoadoutRecommendation } from '../data/roomLoadoutRecommendations';
 import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
 
 export interface PlacementTrayCtx {
@@ -70,6 +73,49 @@ function firstEmpty(arr: (string | undefined)[], cap: number): number {
   return 0; // full → replace first
 }
 
+function firstEmptyStrict(arr: (string | undefined)[], cap: number): number {
+  for (let i = 0; i < cap; i++) if (!arr[i]) return i;
+  return -1; // no empty slot
+}
+
+// One-tap recommended loadout: design (if needed) → fill empty monster slots
+// with best-fit owned monsters → top up traps while gold allows. Single commit.
+function applyRecommendedLoadout(): void {
+  if (!ctxRef) return;
+  let state = ctxRef.getGameState();
+  let slot = state.dungeonSlots?.[activeSlot];
+
+  if (!slot?.roomType) {
+    const rec = getRoomDesignRecommendation(state, activeSlot);
+    state = ensureDungeonSlot(state, activeSlot).state;
+    const r = changeRoomSlotType(state, activeSlot, rec.roomType);
+    if (r.ok) state = r.state;
+  }
+  for (let guard = 0; guard < 6; guard++) {
+    slot = state.dungeonSlots?.[activeSlot];
+    const cap = getRoomSlotCapacity(slot?.roomLevel ?? 1, slot?.roomType);
+    const mIdx = firstEmptyStrict(slot?.monsterIds ?? [], cap.monsters);
+    if (mIdx < 0) break;
+    const rec = getMonsterLoadoutRecommendation(state, activeSlot);
+    if (!rec) break;
+    const r = assignMonsterToRoomSlot(state, activeSlot, mIdx, rec.monsterId);
+    if (!r.ok) break;
+    state = r.state;
+  }
+  for (let guard = 0; guard < 4; guard++) {
+    slot = state.dungeonSlots?.[activeSlot];
+    const cap = getRoomSlotCapacity(slot?.roomLevel ?? 1, slot?.roomType);
+    const tIdx = firstEmptyStrict(slot?.trapIds ?? [], cap.traps);
+    if (tIdx < 0) break;
+    const rec = getTrapLoadoutRecommendation(state, activeSlot);
+    if (!rec) break;
+    const r = installTrapInRoomSlot(state, activeSlot, tIdx, rec.trapId);
+    if (!r.ok) break;
+    state = r.state;
+  }
+  commit(state);
+}
+
 function render(): void {
   if (!ctxRef) return;
   const { scene } = ctxRef;
@@ -117,12 +163,28 @@ function render(): void {
     onClose?.();
   });
 
-  // ── Header row 2: capacity counters + room upgrade ───────────────────────
+  // ── Header row 2: 추천 배치 · capacity counters · upgrade/repair ──────────
   const cap = getRoomSlotCapacity(lv, slot?.roomType);
   const mFilled = (slot?.monsterIds ?? []).filter(Boolean).length;
   const tFilled = (slot?.trapIds ?? []).filter(Boolean).length;
-  c.add(scene.add.text(20, TRAY_Y + 36, `Lv.${lv}   👊 ${mFilled}/${cap.monsters}   🕸 ${tFilled}/${cap.traps}`, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b890',
+  // One-tap recommend button (left)
+  {
+    const bw = 92, bx = 18, by = TRAY_Y + 31;
+    const bg = scene.add.graphics().setDepth(121);
+    bg.fillStyle(0x3a2e5a, 0.95);
+    bg.fillRoundedRect(bx, by, bw, 22, 6);
+    bg.lineStyle(1, 0x9a7fd0, 1);
+    bg.strokeRoundedRect(bx, by, bw, 22, 6);
+    c.add(bg);
+    c.add(scene.add.text(bx + bw / 2, by + 11, '✨ 추천 배치', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#e8dcff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(122));
+    const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+    z.on('pointerdown', () => applyRecommendedLoadout());
+    c.add(z);
+  }
+  c.add(scene.add.text(118, TRAY_Y + 36, `Lv.${lv} 👊${mFilled}/${cap.monsters} 🕸${tFilled}/${cap.traps}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#c8b890',
   }).setDepth(122));
   const damaged = !!slot && slot.hp < slot.maxHp;
   if (damaged) {
@@ -223,7 +285,8 @@ function renderTypeStrip(c: Phaser.GameObjects.Container, slot: DungeonSlot | un
     addText(inner, x + cardW / 2, h / 2 - 12, def.icon, '26px', '#ffffff', false, 0.5);
     addText(inner, x + cardW / 2, h - 18, def.name, '12px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
     z.on('pointerdown', () => {
-      const r = changeRoomSlotType(ctxRef!.getGameState(), activeSlot, def.id as RoomSlotType);
+      const ensured = ensureDungeonSlot(ctxRef!.getGameState(), activeSlot);
+      const r = changeRoomSlotType(ensured.state, activeSlot, def.id as RoomSlotType);
       if (r.ok) commit(r.state);
     });
     x += cardW + gap;
