@@ -7,13 +7,15 @@ import Phaser from 'phaser';
 import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
-  ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity,
+  ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel,
   type GameState, type DungeonSlot, type RoomSlotType,
 } from '../data/wisdom';
 import { MONSTER_DEFS } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
+  removeMonsterFromRoomSlot, removeTrapFromRoomSlot,
+  upgradeRoomSlot, getRoomUpgradeCost,
 } from '../data/roomSlotTransactions';
 import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
 
@@ -29,7 +31,7 @@ export interface PlacementTrayCtx {
 type TrayTab = 'type' | 'monster' | 'trap';
 
 const TAB_BAR_H = 64;
-const TRAY_H    = 210;
+const TRAY_H    = 238;
 const TRAY_Y    = CANVAS_HEIGHT - TAB_BAR_H - TRAY_H;
 const PANEL_BG     = 0x12100a;
 const PANEL_BG_TOP = 0x1c1810;
@@ -97,21 +99,59 @@ function render(): void {
   g.strokeRoundedRect(VIEW_X, TRAY_Y, VIEW_W, TRAY_H, 14);
   c.add(g);
 
-  // ── Header ───────────────────────────────────────────────────────────────
-  c.add(scene.add.text(20, TRAY_Y + 12, `방 #${activeSlot + 1}  ·  ${typeDef ? typeDef.name : '미설계'}`, {
+  // ── Header row 1: title + 상세/닫기 ──────────────────────────────────────
+  const lv = slot?.roomLevel ?? 1;
+  c.add(scene.add.text(20, TRAY_Y + 11, `방 #${activeSlot + 1}  ·  ${typeDef ? typeDef.name : '미설계'}`, {
     fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f0e6c8', fontStyle: 'bold',
   }).setDepth(122));
-  addTextButton(c, CANVAS_WIDTH - 100, TRAY_Y + 11, '상세 ▸', '#9a8a6a', () => {
+  addTextButton(c, CANVAS_WIDTH - 100, TRAY_Y + 10, '상세 ▸', '#9a8a6a', () => {
     const idx = activeSlot;
     const open = ctxRef?.openDetail;
     closePlacementTray();
     open?.(idx);
   });
-  addTextButton(c, CANVAS_WIDTH - 36, TRAY_Y + 11, '✕', '#cc8a6a', () => {
+  addTextButton(c, CANVAS_WIDTH - 36, TRAY_Y + 10, '✕', '#cc8a6a', () => {
     const onClose = ctxRef?.onClose;
     closePlacementTray();
     onClose?.();
   });
+
+  // ── Header row 2: capacity counters + room upgrade ───────────────────────
+  const cap = getRoomSlotCapacity(lv, slot?.roomType);
+  const mFilled = (slot?.monsterIds ?? []).filter(Boolean).length;
+  const tFilled = (slot?.trapIds ?? []).filter(Boolean).length;
+  c.add(scene.add.text(20, TRAY_Y + 36, `Lv.${lv}   👊 ${mFilled}/${cap.monsters}   🕸 ${tFilled}/${cap.traps}`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b890',
+  }).setDepth(122));
+  if (slot) {
+    const maxLv = Math.min(5, getMaxRoomLevel(gs.dmLevel));
+    if (lv >= maxLv) {
+      c.add(scene.add.text(CANVAS_WIDTH - 22, TRAY_Y + 36, '강화 최대', {
+        fontFamily: 'sans-serif', fontSize: '12px', color: '#6a6052',
+      }).setOrigin(1, 0).setDepth(122));
+    } else {
+      const cost = getRoomUpgradeCost(lv);
+      const afford = (gs.homeGold ?? 0) >= cost;
+      const bw = 96, bx = CANVAS_WIDTH - 22 - bw, by = TRAY_Y + 31;
+      const bg = scene.add.graphics().setDepth(121);
+      bg.fillStyle(afford ? COLORS.JADE_DEEP : 0x2a2418, 0.95);
+      bg.fillRoundedRect(bx, by, bw, 22, 6);
+      bg.lineStyle(1, afford ? COLORS.JADE : 0x4a3d28, 1);
+      bg.strokeRoundedRect(bx, by, bw, 22, 6);
+      c.add(bg);
+      c.add(scene.add.text(bx + bw / 2, by + 11, `방 강화 ${cost}💰`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#f0e6c8' : '#7a6f58', fontStyle: 'bold',
+      }).setOrigin(0.5).setDepth(122));
+      if (afford) {
+        const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+        z.on('pointerdown', () => {
+          const r = upgradeRoomSlot(ctxRef!.getGameState(), activeSlot);
+          if (r.ok) commit(r.state);
+        });
+        c.add(z);
+      }
+    }
+  }
 
   // ── Tabs ─────────────────────────────────────────────────────────────────
   const tabs: { id: TrayTab; label: string }[] = [
@@ -119,7 +159,7 @@ function render(): void {
     { id: 'monster', label: '몬스터' },
     { id: 'trap', label: '함정' },
   ];
-  const tabW = 108, tabGap = 6, tabY = TRAY_Y + 46;
+  const tabW = 108, tabGap = 6, tabY = TRAY_Y + 62;
   let tx = (CANVAS_WIDTH - (tabs.length * tabW + (tabs.length - 1) * tabGap)) / 2;
   for (const t of tabs) {
     const on = t.id === activeTab;
@@ -185,12 +225,19 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
     addMonsterPortrait(ctxRef!.scene, inner, x + itemW / 2, 28, om.id, {
       size: 38, depth: 122, frameColor: on ? COLORS.JADE : 0xc8921a,
     });
-    addText(inner, x + itemW / 2, h - 14, `Lv.${om.level}`, '10px', on ? '#9fe1cb' : '#c8b890', false, 0.5, 'monospace');
+    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : `Lv.${om.level}`, '10px', on ? '#9fe1cb' : '#c8b890', false, 0.5, on ? 'sans-serif' : 'monospace');
     z.on('pointerdown', () => {
-      const cap = getRoomSlotCapacity(slot?.roomLevel ?? 1, slot?.roomType);
-      const mIdx = firstEmpty(slot?.monsterIds ?? [], cap.monsters);
-      const r = assignMonsterToRoomSlot(ctxRef!.getGameState(), activeSlot, mIdx, om.id);
-      if (r.ok) commit(r.state);
+      const gsNow = ctxRef!.getGameState();
+      const cur = gsNow.dungeonSlots?.[activeSlot];
+      if (on) {
+        const mIdx = (cur?.monsterIds ?? []).indexOf(om.id);
+        if (mIdx >= 0) { const r = removeMonsterFromRoomSlot(gsNow, activeSlot, mIdx); if (r.ok) commit(r.state); }
+      } else {
+        const cap2 = getRoomSlotCapacity(cur?.roomLevel ?? 1, cur?.roomType);
+        const mIdx = firstEmpty(cur?.monsterIds ?? [], cap2.monsters);
+        const r = assignMonsterToRoomSlot(gsNow, activeSlot, mIdx, om.id);
+        if (r.ok) commit(r.state);
+      }
     });
     x += itemW + gap;
   }
@@ -210,13 +257,21 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     const z = chipBase(inner, x, 0, itemW, h, on, accent);
     addText(inner, x + itemW / 2, 20, trap.emoji, '22px', '#ffffff', false, 0.5).setAlpha(locked ? 0.35 : 1);
     addText(inner, x + itemW / 2, h - 30, trap.name, '11px', locked ? '#6a6052' : '#f0e6c8', false, 0.5);
-    addText(inner, x + itemW / 2, h - 14, locked ? `Lv.${trap.unlockLv} 해금` : `${trap.cost}💰`,
-      '10px', locked ? '#6a6052' : afford ? '#c8b890' : '#cc6a5a', false, 0.5, 'monospace');
-    if (!locked && afford) {
+    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : `${trap.cost}💰`,
+      '10px', on ? '#9fe1cb' : locked ? '#6a6052' : afford ? '#c8b890' : '#cc6a5a', false, 0.5, on ? 'sans-serif' : 'monospace');
+    if (on) {
       z.on('pointerdown', () => {
-        const cap = getRoomSlotCapacity(slot?.roomLevel ?? 1, slot?.roomType);
-        const tIdx = firstEmpty(slot?.trapIds ?? [], cap.traps);
-        const r = installTrapInRoomSlot(ctxRef!.getGameState(), activeSlot, tIdx, trap.id);
+        const cur = ctxRef!.getGameState().dungeonSlots?.[activeSlot];
+        const tIdx = (cur?.trapIds ?? []).indexOf(trap.id);
+        if (tIdx >= 0) { const r = removeTrapFromRoomSlot(ctxRef!.getGameState(), activeSlot, tIdx); if (r.ok) commit(r.state); }
+      });
+    } else if (!locked && afford) {
+      z.on('pointerdown', () => {
+        const gsNow = ctxRef!.getGameState();
+        const cur = gsNow.dungeonSlots?.[activeSlot];
+        const cap2 = getRoomSlotCapacity(cur?.roomLevel ?? 1, cur?.roomType);
+        const tIdx = firstEmpty(cur?.trapIds ?? [], cap2.traps);
+        const r = installTrapInRoomSlot(gsNow, activeSlot, tIdx, trap.id);
         if (r.ok) commit(r.state);
       });
     }
