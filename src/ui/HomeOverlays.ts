@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
 import { getUnlockedSlots } from '../data/wisdom';
@@ -88,23 +88,26 @@ export function buildTopBar(
 ): TopBarRefs {
   const t = theme;
   const g = scene.add.graphics().setDepth(5);
-  g.fillStyle(t.panelDark, 1);
+  // Chunky cream header bar with brown bottom edge
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRect(0, 0, CANVAS_WIDTH, topH);
-  g.lineStyle(2, t.panelBorder, 1);
-  g.lineBetween(0, topH - 1, CANVAS_WIDTH, topH - 1);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRect(0, 0, CANVAS_WIDTH, 3);
+  g.fillStyle(CASUAL.EDGE, 1);
+  g.fillRect(0, topH - 4, CANVAS_WIDTH, 4);
 
-  // DM avatar — stone base + double ring
-  g.fillStyle(t.stoneDark, 1);
+  // DM avatar — cream base + chunky brown ring
+  g.fillStyle(CASUAL.GOLD, 1);
   g.fillCircle(36, 32, 22);
-  g.lineStyle(2, t.panelBorder, 0.8);
+  g.lineStyle(3, CASUAL.EDGE, 1);
   g.strokeCircle(36, 32, 22);
-  g.lineStyle(1, t.panelBorder, 0.3);
-  g.strokeCircle(36, 32, 26);
+  g.fillStyle(0xffffff, 0.25);
+  g.fillCircle(36, 26, 12);
 
   // Pulsing glow aura
   const glowRing = scene.add.graphics().setDepth(4);
   glowRing.setPosition(36, 32);
-  glowRing.fillStyle(t.panelBorder, 0.22);
+  glowRing.fillStyle(CASUAL.GOLD, 0.3);
   glowRing.fillCircle(0, 0, 30);
   scene.tweens.add({
     targets: glowRing,
@@ -132,8 +135,8 @@ export function buildTopBar(
   const xpBarX = 66, xpBarY = earnedTitleKey ? 38 : 30, xpBarW = 150, xpBarH = 8;
 
   const dmLevelText = scene.add.text(66, nameLineY, `던전 마스터  Lv.${gs.dmLevel}`, {
-    fontFamily: 'Georgia, serif', fontSize: '13px',
-    color: t.panelBorderCSS, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '13px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
   }).setDepth(6);
 
   if (earnedTitleKey) {
@@ -143,17 +146,17 @@ export function buildTopBar(
     }).setDepth(6);
   }
   const xpPct  = Math.min(gs.dmXP / xpForLevel(gs.dmLevel), 1);
-  g.fillStyle(t.stoneDark, 1);
-  g.fillRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 3);
+  g.fillStyle(0xe9d3ad, 1);
+  g.fillRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 4);
   const xpFill = scene.add.graphics().setDepth(5.5);
   if (xpPct > 0) {
-    xpFill.fillStyle(t.panelBorder, 1);
-    xpFill.fillRoundedRect(xpBarX + 1, xpBarY + 1, Math.floor((xpBarW - 2) * xpPct), xpBarH - 2, 2);
+    xpFill.fillStyle(CASUAL.GREEN, 1);
+    xpFill.fillRoundedRect(xpBarX + 1, xpBarY + 1, Math.floor((xpBarW - 2) * xpPct), xpBarH - 2, 3);
   }
-  g.lineStyle(1, t.stoneMid, 0.7);
-  g.strokeRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 3);
+  g.lineStyle(1.5, CASUAL.EDGE, 0.8);
+  g.strokeRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 4);
   const xpText = scene.add.text(xpBarX + xpBarW / 2, xpBarY + 4, `${gs.dmXP} / ${xpForLevel(gs.dmLevel)} XP`, {
-    fontFamily: 'sans-serif', fontSize: '8px', color: t.textSecondary,
+    fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(6);
 
   // 📜 Quest log button
@@ -219,7 +222,7 @@ export function buildTopBar(
     scene.add.text(x, 10, icon, { fontFamily: 'sans-serif', fontSize: '14px' })
       .setOrigin(0.5, 0).setDepth(6);
     const valT = scene.add.text(x, 28, val.toLocaleString('ko-KR'), {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#e8d090',
+      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5, 0).setDepth(6);
     currencyTexts.push(valT);
   }
@@ -234,8 +237,8 @@ export function buildTopBar(
       y: xpBarY + 1,
       w: xpBarW - 2,
       h: xpBarH - 2,
-      radius: 2,
-      color: t.panelBorder,
+      radius: 3,
+      color: CASUAL.GREEN,
     },
   };
 }
