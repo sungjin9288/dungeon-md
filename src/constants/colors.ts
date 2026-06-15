@@ -48,3 +48,37 @@ export const CSS = {
   BLOOD_RED:       '#8b0000',
   BLOOD_GLOW:      '#cc2200',
 } as const;
+
+// ─── CASUAL: 선명한 캐주얼 토이 룩 (클래시/로얄매치/쿠키런 결) ──────────────────
+// 밝은 따뜻한 배경 + 크림 카드 + 통통한 갈색 테두리 + 채도 높은 액센트.
+// Graphics용 hex.
+export const CASUAL = {
+  BG_TOP:      0xffe7c2,   // 밝은 따뜻한 상단
+  BG_BOTTOM:   0xf4c483,   // 따뜻한 모래빛 하단
+  BG_DOT:      0xffffff,   // 패턴 점
+  PANEL:       0xfff6e6,   // 크림 카드
+  PANEL_SOFT:  0xffe9c8,   // 카드 보조면
+  EDGE:        0x7a4a22,   // 통통한 갈색 테두리
+  EDGE_SOFT:   0xb98a52,   // 보조 테두리
+  SHADOW:      0x6a4420,   // 카드 그림자
+  INK:         0x4a3016,   // 밝은 면 위 진한 글자
+  INK_SOFT:    0x8a6238,   // 보조 글자
+  GREEN:       0x5fc760,  GREEN_DK: 0x2f8f3a,   // 실행/긍정
+  GOLD:        0xffc63a,  GOLD_DK:  0xd9971f,   // 재화/보상
+  BLUE:        0x4aa8ee,  BLUE_DK:  0x2470c0,   // 정보
+  RED:         0xf2624c,  RED_DK:   0xc23a2c,   // 경고/위험
+  PURPLE:      0xb070e8,  PURPLE_DK: 0x7a3fc0,  // 특수/소환
+} as const;
+
+/** CASUAL CSS strings for Text */
+export const CASUAL_CSS = {
+  INK:      '#4a3016',
+  INK_SOFT: '#8a6238',
+  WHITE:    '#ffffff',
+  CREAM:    '#fff6e6',
+  GREEN:    '#1f7a2a',
+  GOLD:     '#9a6810',
+  BLUE:     '#1f5fa8',
+  RED:      '#b8331f',
+  PURPLE:   '#6a2fb0',
+} as const;
