@@ -16,6 +16,7 @@ import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
   removeMonsterFromRoomSlot, removeTrapFromRoomSlot,
   upgradeRoomSlot, getRoomUpgradeCost,
+  repairRoomSlot, getRoomRepairCost,
 } from '../data/roomSlotTransactions';
 import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
 
@@ -123,7 +124,30 @@ function render(): void {
   c.add(scene.add.text(20, TRAY_Y + 36, `Lv.${lv}   👊 ${mFilled}/${cap.monsters}   🕸 ${tFilled}/${cap.traps}`, {
     fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b890',
   }).setDepth(122));
-  if (slot) {
+  const damaged = !!slot && slot.hp < slot.maxHp;
+  if (damaged) {
+    // Damaged/broken room → repair takes priority over upgrade
+    const cost = getRoomRepairCost(slot!);
+    const afford = (gs.homeGold ?? 0) >= cost;
+    const bw = 104, bx = CANVAS_WIDTH - 22 - bw, by = TRAY_Y + 31;
+    const bg = scene.add.graphics().setDepth(121);
+    bg.fillStyle(afford ? 0x6e2e2e : 0x2a2418, 0.95);
+    bg.fillRoundedRect(bx, by, bw, 22, 6);
+    bg.lineStyle(1, afford ? 0xcc6a5a : 0x4a3d28, 1);
+    bg.strokeRoundedRect(bx, by, bw, 22, 6);
+    c.add(bg);
+    c.add(scene.add.text(bx + bw / 2, by + 11, `방 수리 ${cost}💰`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#ffd8c8' : '#7a6f58', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(122));
+    if (afford) {
+      const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+      z.on('pointerdown', () => {
+        const r = repairRoomSlot(ctxRef!.getGameState(), activeSlot);
+        if (r.ok) commit(r.state);
+      });
+      c.add(z);
+    }
+  } else if (slot) {
     const maxLv = Math.min(5, getMaxRoomLevel(gs.dmLevel));
     if (lv >= maxLv) {
       c.add(scene.add.text(CANVAS_WIDTH - 22, TRAY_Y + 36, '강화 최대', {
