@@ -1,36 +1,36 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { addInnerGlow, addPanelShadow } from './PanelDepth';
 
 export const GAME_UI = {
   radius: {
-    panel: 8,
-    button: 8,
-    row: 6,
+    panel: 16,
+    button: 14,
+    row: 11,
   },
   touch: {
     primaryHeight: 48,
     compactHeight: 34,
   },
-  /** 타이포 3계층 — 타이틀=serif, 본문=sans, 수치/타이머=mono */
+  /** 타이포 3계층 — 캐주얼 토이: 전부 굵은 sans (제목은 약간 더 큼) */
   fonts: {
-    title:   'Georgia, serif',
+    title:   'sans-serif',
     body:    'sans-serif',
-    numeric: 'monospace',
+    numeric: 'sans-serif',
   },
   colors: {
-    panelFill: 0x1f1305,
-    rowFill: 0x2c1d0d,
-    rowBorder: 0x55b88a,
-    primaryFill: 0x1b9f71,
-    primaryHoverFill: 0x24bd86,
-    primaryBorder: 0x8cffc1,
-    primaryHoverBorder: 0xffdf6e,
-    mutedText: '#c8b896',
-    bevelLight: 0xf5e8c8,
-    shadowFill: 0x070503,
-    valueChipFill: 0x140c03,
+    panelFill: CASUAL.PANEL,
+    rowFill: CASUAL.PANEL_SOFT,
+    rowBorder: CASUAL.EDGE_SOFT,
+    primaryFill: CASUAL.GREEN,
+    primaryHoverFill: 0x6fdc70,
+    primaryBorder: CASUAL.GREEN_DK,
+    primaryHoverBorder: CASUAL.GREEN_DK,
+    mutedText: CASUAL_CSS.INK_SOFT,
+    bevelLight: 0xffffff,
+    shadowFill: CASUAL.SHADOW,
+    valueChipFill: CASUAL.PANEL_SOFT,
   },
 } as const;
 
@@ -69,54 +69,45 @@ export function addFramedPanel(
     h,
     radius = GAME_UI.radius.panel,
     fillColor = GAME_UI.colors.panelFill,
-    borderColor = COLORS.TORCH_GOLD,
-    borderAlpha = 0.85,
-    borderWidth = 2,
+    borderColor = CASUAL.EDGE,
+    borderAlpha = 1,
+    borderWidth = 3,
     accentColor,
-    accentAlpha = 0.75,
+    accentAlpha = 1,
     glowColor = borderColor,
-    glowOpacity = 0.12,
-    shadowOpacity = 0.55,
-    shadowOffsetY = 4,
+    glowOpacity = 0,
+    shadowOpacity = 0.28,
+    shadowOffsetY = 5,
   } = options;
 
+  // Chunky drop shadow (casual toy depth)
   const shadow = addPanelShadow(scene, x, y, w, h, radius, {
     offsetY: shadowOffsetY,
     opacity: shadowOpacity,
   });
 
   const panel = scene.add.graphics();
-  panel.fillStyle(0x070503, 0.38);
-  panel.fillRoundedRect(x + 2, y + h - 8, w - 4, 9, Math.max(3, radius - 2));
+  // warm bottom edge — gives the card a printed-sticker thickness
+  panel.fillStyle(CASUAL.SHADOW, 0.22);
+  panel.fillRoundedRect(x, y + 4, w, h, radius);
+  // cream body
   panel.fillStyle(fillColor, 1);
   panel.fillRoundedRect(x, y, w, h, radius);
-  panel.fillStyle(0xffffff, 0.045);
-  panel.fillRoundedRect(x + 4, y + 4, w - 8, Math.min(28, h - 8), Math.max(4, radius - 2));
-  panel.fillStyle(0x000000, 0.12);
-  panel.fillRoundedRect(x + 4, y + h - Math.min(22, h / 3), w - 8, Math.min(18, h - 8), Math.max(4, radius - 2));
+  // glossy white top highlight band
+  panel.fillStyle(0xffffff, 0.5);
+  panel.fillRoundedRect(x + 5, y + 4, w - 10, Math.min(20, h * 0.34), Math.max(6, radius - 4));
+  // soft warm shading toward the bottom
+  panel.fillStyle(CASUAL.PANEL_SOFT, 0.55);
+  panel.fillRoundedRect(x + 5, y + h * 0.55, w - 10, h * 0.45 - 5, Math.max(6, radius - 4));
+  // thick rounded brown border
   panel.lineStyle(borderWidth, borderColor, borderAlpha);
   panel.strokeRoundedRect(x, y, w, h, radius);
-  panel.lineStyle(1, 0xffffff, Math.min(0.22, borderAlpha * 0.28));
-  panel.strokeRoundedRect(x + 4, y + 4, w - 8, h - 8, Math.max(3, radius - 2));
 
+  // optional accent header pill (saturated cap across the top)
   if (accentColor !== undefined) {
     panel.fillStyle(accentColor, accentAlpha);
-    panel.fillRoundedRect(x + 16, y + 5, Math.max(8, w - 32), 3, 2);
-    panel.fillStyle(accentColor, Math.max(0.08, accentAlpha * 0.24));
-    panel.fillRoundedRect(x + 6, y + 12, 4, Math.max(10, h - 24), 3);
+    panel.fillRoundedRect(x + 6, y + 6, Math.max(8, w - 12), Math.min(8, h * 0.16), 4);
   }
-
-  const rivetColor = accentColor ?? borderColor;
-  panel.fillStyle(0x070503, 0.62);
-  panel.fillCircle(x + 10, y + 10, 2.4);
-  panel.fillCircle(x + w - 10, y + 10, 2.4);
-  panel.fillCircle(x + 10, y + h - 10, 2.4);
-  panel.fillCircle(x + w - 10, y + h - 10, 2.4);
-  panel.fillStyle(rivetColor, 0.54);
-  panel.fillCircle(x + 10, y + 10, 1.25);
-  panel.fillCircle(x + w - 10, y + 10, 1.25);
-  panel.fillCircle(x + 10, y + h - 10, 1.25);
-  panel.fillCircle(x + w - 10, y + h - 10, 1.25);
 
   const glow = addInnerGlow(scene, x, y, w, h, radius, glowColor, glowOpacity);
   return { shadow, panel, glow };
@@ -151,31 +142,32 @@ export function addInfoRow(
     x,
     y,
     w,
-    h = 21,
+    h = 22,
     icon,
     label,
     value,
-    valueColor = CSS.PARCHMENT_DIM,
+    valueColor = CASUAL_CSS.INK,
     fillColor = GAME_UI.colors.rowFill,
     borderColor = GAME_UI.colors.rowBorder,
     labelColor = GAME_UI.colors.mutedText,
   } = options;
 
   const bg = scene.add.graphics();
-  bg.fillStyle(GAME_UI.colors.shadowFill, 0.34);
-  bg.fillRoundedRect(x + 1, y + 2, w - 2, h, GAME_UI.radius.row);
-  bg.fillStyle(fillColor, 0.96);
+  // soft cream pill row
+  bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  bg.fillStyle(0xffffff, 0.045);
+  bg.fillStyle(0xffffff, 0.4);
   bg.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
-  bg.lineStyle(1, borderColor, 0.55);
+  bg.lineStyle(2, borderColor, 0.9);
   bg.strokeRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  bg.fillStyle(borderColor, 0.18);
-  bg.fillRoundedRect(x + 4, y + 4, 20, h - 8, 5);
+  // icon disc
+  bg.fillStyle(0xffffff, 0.7);
+  bg.fillCircle(x + 14, y + h / 2, 9);
+  // value chip (white rounded)
   const valueChipW = Math.max(24, Math.min(64, w - 40));
   const valueChipX = x + Math.max(30, w - valueChipW - 6);
-  bg.fillStyle(GAME_UI.colors.valueChipFill, 0.72);
-  bg.fillRoundedRect(valueChipX, y + 4, valueChipW, h - 8, 5);
+  bg.fillStyle(0xffffff, 0.85);
+  bg.fillRoundedRect(valueChipX, y + 4, valueChipW, h - 8, 6);
 
   const iconText = scene.add.text(x + 14, y + h / 2, icon, {
     fontFamily: 'sans-serif',
@@ -185,6 +177,7 @@ export function addInfoRow(
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: labelColor,
+    fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   const valueText = scene.add.text(x + w - 10, y + h / 2, value, {
     fontFamily: 'sans-serif',
@@ -241,45 +234,41 @@ export function addPrimaryActionButton(
     hoverFillColor = GAME_UI.colors.primaryHoverFill,
     borderColor = GAME_UI.colors.primaryBorder,
     hoverBorderColor = GAME_UI.colors.primaryHoverBorder,
-    disabledFillColor = 0x1b2630,
-    disabledBorderColor = 0x395168,
-    textColor = '#fff8d8',
+    disabledFillColor = CASUAL.PANEL_SOFT,
+    disabledBorderColor = CASUAL.EDGE_SOFT,
+    textColor = '#ffffff',
     disabledTextColor = GAME_UI.colors.mutedText,
     onPress,
   } = options;
 
+  const r = GAME_UI.radius.button;
   const bg = scene.add.graphics();
   const draw = (fill: number, border: number): void => {
     bg.clear();
-    bg.fillStyle(GAME_UI.colors.shadowFill, 0.42);
-    bg.fillRoundedRect(x, y + 5, w, h, GAME_UI.radius.button);
-    bg.fillStyle(border, 0.22);
-    bg.fillRoundedRect(x - 1, y - 1, w + 2, h + 2, GAME_UI.radius.button + 1);
+    // thick colored bottom edge (the candy-button base)
+    bg.fillStyle(border, 1);
+    bg.fillRoundedRect(x, y + 4, w, h, r);
+    // bright cap
     bg.fillStyle(fill, 1);
-    bg.fillRoundedRect(x, y, w, h, GAME_UI.radius.button);
-    bg.fillStyle(0xffffff, 0.10);
-    bg.fillRoundedRect(x + 5, y + 5, w - 10, Math.min(12, h - 10), 5);
-    bg.fillStyle(0x000000, 0.15);
-    bg.fillRoundedRect(x + 5, y + h - 13, w - 10, 8, 4);
-    bg.fillStyle(border, 0.18);
-    bg.fillRoundedRect(x + 7, y + 7, 5, h - 14, 3);
-    bg.lineStyle(1.5, border, 0.92);
-    bg.strokeRoundedRect(x, y, w, h, GAME_UI.radius.button);
-    bg.lineStyle(1, 0xffffff, 0.24);
-    bg.lineBetween(x + 14, y + 7, x + w - 14, y + 7);
-    if (w >= 92) {
-      bg.fillStyle(0xffffff, 0.26);
-      bg.fillTriangle(x + w - 17, y + h / 2, x + w - 24, y + h / 2 - 4, x + w - 24, y + h / 2 + 4);
+    bg.fillRoundedRect(x, y, w, h - 2, r);
+    // glossy top highlight
+    bg.fillStyle(0xffffff, 0.32);
+    bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), Math.max(5, r - 4));
+    if (w >= 92 && enabled) {
+      bg.fillStyle(0xffffff, 0.85);
+      bg.fillTriangle(x + w - 16, y + h / 2 - 1, x + w - 24, y + h / 2 - 6, x + w - 24, y + h / 2 + 4);
     }
   };
   draw(enabled ? fillColor : disabledFillColor, enabled ? borderColor : disabledBorderColor);
 
-  const text = scene.add.text(x + w / 2, y + h / 2, label, {
-    fontFamily: 'Georgia, serif',
+  const text = scene.add.text(x + w / 2, y + h / 2 - 1, label, {
+    fontFamily: 'sans-serif',
     fontSize,
     color: enabled ? textColor : disabledTextColor,
     fontStyle: 'bold',
     align,
+    stroke: enabled ? '#00000033' : undefined,
+    strokeThickness: enabled ? 3 : 0,
   }).setOrigin(0.5);
 
   const zone = scene.add.zone(x, y, w, h).setOrigin(0, 0);
@@ -341,10 +330,10 @@ export function addProgressBar(
     w,
     h = 10,
     ratio,
-    fillColor = COLORS.TORCH_GOLD,
-    trackColor = 0x0a0600,
-    borderColor = 0x664400,
-    borderAlpha = 0.6,
+    fillColor = CASUAL.GOLD,
+    trackColor = CASUAL.PANEL_SOFT,
+    borderColor = CASUAL.EDGE_SOFT,
+    borderAlpha = 0.9,
     animate = true,
     delay = 0,
     duration = 420,
@@ -353,14 +342,10 @@ export function addProgressBar(
   const targetW = clamped <= 0 ? 0 : Math.max(2, w * clamped);
 
   const track = scene.add.graphics();
-  track.fillStyle(0x000000, 0.28);
-  track.fillRoundedRect(x, y + 1, w, h, Math.max(2, h / 2));
   track.fillStyle(trackColor, 1);
   track.fillRoundedRect(x, y, w, h, Math.max(2, h / 2));
-  track.lineStyle(0.5, borderColor, borderAlpha);
+  track.lineStyle(2, borderColor, borderAlpha);
   track.strokeRoundedRect(x, y, w, h, Math.max(2, h / 2));
-  track.lineStyle(1, 0xffffff, 0.10);
-  track.lineBetween(x + 3, y + 2, x + w - 3, y + 2);
 
   const fill = scene.add.rectangle(x, y, animate && targetW > 0 ? 1 : targetW, h, fillColor)
     .setOrigin(0, 0);
@@ -409,22 +394,40 @@ export function addSceneHeader(
   const depth = o.depth ?? 10;
   const container = scene.add.container(0, 0).setDepth(depth);
 
-  const back = scene.add.text(18, y, o.backLabel ?? '← 뒤로', {
-    fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
-    backgroundColor: '#2d2416', padding: { x: 8, y: 4 },
-  }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
-  back.on('pointerdown', o.onBack);
+  // chunky cream back pill
+  const backW = 58;
+  const backX = 14;
+  const backG = scene.add.graphics();
+  backG.fillStyle(CASUAL.SHADOW, 0.2);
+  backG.fillRoundedRect(backX, y - 13 + 3, backW, 26, 13);
+  backG.fillStyle(CASUAL.PANEL, 1);
+  backG.fillRoundedRect(backX, y - 13, backW, 26, 13);
+  backG.fillStyle(0xffffff, 0.45);
+  backG.fillRoundedRect(backX + 4, y - 11, backW - 8, 5, 3);
+  backG.lineStyle(2.5, CASUAL.EDGE, 1);
+  backG.strokeRoundedRect(backX, y - 13, backW, 26, 13);
+  container.add(backG);
+
+  const back = scene.add.text(backX + backW / 2, y, o.backLabel ?? '← 뒤로', {
+    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0.5);
   container.add(back);
 
+  const backZone = scene.add.zone(backX, y - 13, backW, 26).setOrigin(0)
+    .setInteractive({ useHandCursor: true });
+  backZone.on('pointerdown', o.onBack);
+  container.add(backZone);
+
   const title = scene.add.text(CANVAS_WIDTH / 2, y, o.title, {
-    fontFamily: 'Georgia, serif', fontSize: '20px',
-    color: o.titleCSS ?? CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '21px', fontStyle: 'bold',
+    color: o.titleCSS ?? CASUAL_CSS.INK,
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5);
   container.add(title);
 
   if (o.subtitle) {
     container.add(scene.add.text(title.x, y + 18, o.subtitle, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
@@ -466,52 +469,59 @@ export function addTabBar<T extends string>(
   scene: Phaser.Scene,
   o: TabBarOptions<T>,
 ): TabBarRefs {
-  const height  = o.height ?? 32;
+  const height  = o.height ?? 38;
   const depth   = o.depth ?? 10;
   const width   = o.width ?? CANVAS_WIDTH;
-  const accent  = o.accent ?? COLORS.TORCH_AMBER;
-  const accentCSS = o.accentCSS ?? CSS.TORCH_AMBER;
+  const accent  = o.accent ?? CASUAL.GOLD;
   const fontSize  = o.fontSize ?? '13px';
 
   const container = scene.add.container(0, o.y).setDepth(depth);
 
   const bg = scene.add.graphics();
-  bg.fillStyle(COLORS.PANEL_DEEP, 1);
+  bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, 0, width, height);
-  bg.lineStyle(1, COLORS.STONE_MID, 0.6);
-  bg.lineBetween(0, height, width, height);
+  bg.fillStyle(0xffffff, 0.4);
+  bg.fillRect(0, 0, width, 3);
+  bg.fillStyle(CASUAL.EDGE, 1);
+  bg.fillRect(0, height - 3, width, 3);
   container.add(bg);
 
   const tabW = width / o.tabs.length;
   o.tabs.forEach((tab, i) => {
     const isActive = tab.id === o.active;
     const tabAccent    = tab.accent    ?? accent;
-    const tabAccentCSS = tab.accentCSS ?? accentCSS;
     const cx = i * tabW + tabW / 2;
 
     if (isActive) {
+      // saturated rounded active pill
       const fill = scene.add.graphics();
-      fill.fillStyle(COLORS.CARD_BG, 1);
-      fill.fillRect(i * tabW, 0, tabW, height);
-      fill.lineStyle(2, tabAccent, 1);
-      fill.lineBetween(i * tabW + 6, height - 1, (i + 1) * tabW - 6, height - 1);
+      fill.fillStyle(CASUAL.EDGE, 0.25);
+      fill.fillRoundedRect(i * tabW + 5, 5 + 2, tabW - 10, height - 12, 11);
+      fill.fillStyle(tabAccent, 1);
+      fill.fillRoundedRect(i * tabW + 5, 5, tabW - 10, height - 12, 11);
+      fill.fillStyle(0xffffff, 0.32);
+      fill.fillRoundedRect(i * tabW + 9, 8, tabW - 18, 6, 3);
       container.add(fill);
     }
 
     container.add(scene.add.text(cx, height / 2, tab.label, {
-      fontFamily: 'Georgia, serif', fontSize,
-      color: isActive ? tabAccentCSS : CSS.PARCHMENT_MUTED,
-      fontStyle: isActive ? 'bold' : 'normal',
+      fontFamily: 'sans-serif', fontSize,
+      color: isActive ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
+      stroke: isActive ? '#00000033' : undefined,
+      strokeThickness: isActive ? 3 : 0,
     }).setOrigin(0.5));
 
     if (tab.badge && tab.badge > 0) {
-      const bx = (i + 1) * tabW - 10;
+      const bx = (i + 1) * tabW - 12;
       const badge = scene.add.graphics();
-      badge.fillStyle(COLORS.BLOOD_GLOW, 1);
-      badge.fillCircle(bx, 8, 7);
+      badge.fillStyle(CASUAL.RED, 1);
+      badge.fillCircle(bx, 9, 8);
+      badge.lineStyle(2, 0xffffff, 1);
+      badge.strokeCircle(bx, 9, 8);
       container.add(badge);
-      container.add(scene.add.text(bx, 8, tab.badge > 9 ? '9+' : String(tab.badge), {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
+      container.add(scene.add.text(bx, 9, tab.badge > 9 ? '9+' : String(tab.badge), {
+        fontFamily: 'sans-serif', fontSize: '9px', color: '#ffffff', fontStyle: 'bold',
       }).setOrigin(0.5));
     }
 

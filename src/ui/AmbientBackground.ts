@@ -21,8 +21,33 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL } from '../constants/colors';
 
 const AMBIENT_FLAG = 'ambientApplied';
+const CASUAL_BG_FLAG = 'casualBgApplied';
+
+/**
+ * Bright casual-toy backdrop — warm vertical gradient, soft sun glow, and
+ * playful polka dots. Matches the home scene's buildBackground so every scene
+ * shares the same friendly storybook frame. Idempotent per scene instance.
+ */
+export function applyCasualBackground(scene: Phaser.Scene): void {
+  if (scene.data?.get(CASUAL_BG_FLAG)) return;
+  scene.data?.set(CASUAL_BG_FLAG, true);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    scene.data?.set(CASUAL_BG_FLAG, false);
+  });
+
+  const bg = scene.add.graphics().setScrollFactor(0).setDepth(-1000);
+  bg.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
+  bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  bg.fillStyle(0xfff7e4, 0.5);
+  bg.fillEllipse(CANVAS_WIDTH / 2, 30, CANVAS_WIDTH * 1.5, 240);
+  bg.fillStyle(CASUAL.BG_DOT, 0.16);
+  for (let row = 0, y = 70; y < CANVAS_HEIGHT; y += 60, row++) {
+    for (let x = (row % 2) * 30 + 16; x < CANVAS_WIDTH; x += 60) bg.fillCircle(x, y, 3.5);
+  }
+}
 
 // Reset flag on shutdown so subsequent CREATE re-applies atmosphere.
 function bindShutdownReset(scene: Phaser.Scene): void {

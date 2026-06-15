@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import {
   loadGameState,
   getRoomSlotCapacity,
@@ -144,39 +145,34 @@ export class BarracksScene extends Phaser.Scene {
   // ─── Background ──────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
+
     const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(COLORS.BLACK, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    // Stone tile grid
-    for (let x = 0; x < CANVAS_WIDTH; x += 36)
-      for (let y = 0; y < CANVAS_HEIGHT; y += 36) {
-        g.lineStyle(0.3, COLORS.STONE_MID, 0.2);
-        g.strokeRect(x, y, 36, 36);
-      }
-    // Training hall floor behind the roster.
-    g.fillStyle(0x17120c, 0.64);
-    g.fillRoundedRect(8, CARD_START_Y - 10, CANVAS_WIDTH - 16, CANVAS_HEIGHT - CARD_START_Y - 86, 12);
-    g.lineStyle(1, COLORS.STONE_LIGHT, 0.16);
-    for (let y = CARD_START_Y + 22; y < CANVAS_HEIGHT - 92; y += 46) {
-      g.lineBetween(18, y, CANVAS_WIDTH - 18, y);
-    }
-    for (const x of [42, CANVAS_WIDTH - 42]) {
-      g.fillStyle(COLORS.TORCH_GLOW, 0.14);
-      g.fillCircle(x, 142, 38);
-      g.fillStyle(COLORS.TORCH_AMBER, 0.74);
-      g.fillCircle(x, 142, 4);
-    }
-    // Top accent bar
-    g.fillStyle(COLORS.STONE_DARK, 1);
+    // Soft cream roster tray behind the cards.
+    const trayY = CARD_START_Y - 10;
+    const trayH = CANVAS_HEIGHT - CARD_START_Y - 86;
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(8, trayY + 4, CANVAS_WIDTH - 16, trayH, 18);
+    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+    g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(13, trayY + 5, CANVAS_WIDTH - 26, 6, 3);
+    // Top header band (cream with brown bottom edge).
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 88);
-    g.lineStyle(2, COLORS.TORCH_GOLD, 0.6);
-    g.lineBetween(0, 88, CANVAS_WIDTH, 88);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, 88 - 3, CANVAS_WIDTH, 3);
   }
 
   private drawHeader(): void {
     this.add.text(CANVAS_WIDTH / 2, 24, '몬스터 성장소', {
-      fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
 
     const power = this.gs.ownedMonsters.reduce((s, m) => {
@@ -185,7 +181,7 @@ export class BarracksScene extends Phaser.Scene {
     }, 0);
 
     this.add.text(CANVAS_WIDTH / 2, 52, `총 전투력 ${power}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10);
 
     if (this.focusSourceLabel) {
@@ -322,17 +318,15 @@ export class BarracksScene extends Phaser.Scene {
       y,
       w,
       h,
-      radius: 10,
-      fillColor: 0x1a1712,
-      borderColor: directive.accent,
-      borderAlpha: 0.74,
-      borderWidth: 1.5,
+      radius: 14,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: directive.accent,
-      accentAlpha: 0.52,
-      glowColor: directive.accent,
-      glowOpacity: 0.09,
-      shadowOpacity: 0.46,
-      shadowOffsetY: 4,
+      accentAlpha: 1,
+      shadowOpacity: 0.26,
+      shadowOffsetY: 5,
     });
     frame.shadow.setDepth(7);
     frame.panel.setDepth(8);
@@ -343,13 +337,13 @@ export class BarracksScene extends Phaser.Scene {
     this.drawTrainingFocusStage(displayMonster, x + 12, y + 12, 78, h - 24, directive.accent);
 
     this.add.text(x + 94, y + 17, this.focusSourceLabel ? this.focusSourceLabel : '성장 지휘', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#89d6c2',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5).setDepth(11);
     this.add.text(x + 94, y + 34, directive.title, {
-      fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold', color: CSS.PARCHMENT,
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5).setDepth(11);
     this.add.text(x + 94, y + 52, directive.body, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_DIM,
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5).setDepth(11);
 
     const opsScore = this.getTrainingOpsScore(stats);
@@ -1662,41 +1656,41 @@ export class BarracksScene extends Phaser.Scene {
 
   private buildBottomNav(): void {
     const navBg = this.add.graphics().setDepth(20);
-    navBg.fillStyle(0x10130f, 1);
+    navBg.fillStyle(CASUAL.PANEL, 1);
     navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 72);
-    navBg.fillStyle(COLORS.TORCH_GOLD, 0.08);
-    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 3);
-    navBg.lineStyle(1, COLORS.TORCH_GOLD, 0.42);
-    navBg.lineBetween(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, CANVAS_HEIGHT - 72);
+    navBg.fillStyle(0xffffff, 0.5);
+    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 4);
+    navBg.fillStyle(CASUAL.EDGE, 1);
+    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 1.5);
 
     const btnW = (CANVAS_WIDTH - 28) / 5;
     const btnDefs = [
-      { label: '⚔️ 막사',  active: true,  action: () => { /* already here */ } },
-      { label: '📖 도감',  active: false, action: () => { this.registry.set('previousScene', 'BarracksScene'); this.scene.start('CodexScene'); } },
-      { label: '✨ 소환',  active: false, action: () => this.scene.start('SummonScene') },
-      { label: '🛒 스킬',  active: false, action: () => this.showSkillShop() },
-      { label: '🏪 상점',  active: false, action: () => this.scene.start('ShopScene') },
+      { label: '⚔️ 막사', accent: CASUAL.RED,    active: true,  action: () => { /* already here */ } },
+      { label: '📖 도감', accent: CASUAL.BLUE,   active: false, action: () => { this.registry.set('previousScene', 'BarracksScene'); this.scene.start('CodexScene'); } },
+      { label: '✨ 소환', accent: CASUAL.PURPLE, active: false, action: () => this.scene.start('SummonScene') },
+      { label: '🛒 스킬', accent: CASUAL.GREEN,  active: false, action: () => this.showSkillShop() },
+      { label: '🏪 상점', accent: CASUAL.GOLD,   active: false, action: () => this.scene.start('ShopScene') },
     ];
 
-    btnDefs.forEach(({ label, active, action }, i) => {
+    btnDefs.forEach(({ label, accent, active, action }, i) => {
       const bx = 12 + i * (btnW + 4);
-      const by = CANVAS_HEIGHT - 56;
+      const by = CANVAS_HEIGHT - 58;
       const bg = this.add.graphics().setDepth(21);
-      bg.fillStyle(0x070503, 0.36);
-      bg.fillRoundedRect(bx, by + 3, btnW, 44, 7);
-      bg.fillStyle(active ? 0x3a2800 : 0x151817, active ? 1 : 0.92);
-      bg.fillRoundedRect(bx, by, btnW, 44, 7);
-      bg.lineStyle(1, active ? COLORS.TORCH_GOLD : COLORS.STONE_MID, active ? 0.82 : 0.34);
-      bg.strokeRoundedRect(bx, by, btnW, 44, 7);
       if (active) {
-        bg.fillStyle(COLORS.TORCH_GOLD, 0.18);
-        bg.fillRoundedRect(bx + 7, by + 5, btnW - 14, 4, 2);
+        bg.fillStyle(CASUAL.EDGE, 0.3);
+        bg.fillRoundedRect(bx, by + 3, btnW, 46, 13);
+        bg.fillStyle(accent, 1);
+        bg.fillRoundedRect(bx, by, btnW, 46, 13);
+        bg.fillStyle(0xffffff, 0.3);
+        bg.fillRoundedRect(bx + 6, by + 5, btnW - 12, 7, 3);
       }
-      this.add.text(bx + btnW / 2, by + 22, label, {
-        fontFamily: 'sans-serif', fontSize: '11px',
-        color: active ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+      this.add.text(bx + btnW / 2, by + 23, label, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+        stroke: active ? '#00000033' : undefined,
+        strokeThickness: active ? 3 : 0,
       }).setOrigin(0.5).setDepth(22);
-      const zone = this.add.zone(bx + btnW / 2, by + 22, btnW, 44)
+      const zone = this.add.zone(bx + btnW / 2, by + 23, btnW, 46)
         .setInteractive({ useHandCursor: true })
         .setDepth(23);
       zone.on('pointerdown', action);
@@ -1737,17 +1731,20 @@ export class BarracksScene extends Phaser.Scene {
 
   // ─── Utility ─────────────────────────────────────────────────────────────────
 
-  private buildBtn(x: number, y: number, label: string, bg: number, cb: () => void): void {
+  private buildBtn(x: number, y: number, label: string, _bg: number, cb: () => void): void {
+    const w = label.length * 8 + 18;
     const g = this.add.graphics().setDepth(15);
-    g.fillStyle(0x070503, 0.36);
-    g.fillRoundedRect(x - 4, y - 11, label.length * 8 + 16, 28, 6);
-    g.fillStyle(bg, 1);
-    g.fillRoundedRect(x - 4, y - 14, label.length * 8 + 16, 28, 6);
-    g.lineStyle(1, COLORS.TORCH_GOLD, 0.36);
-    g.strokeRoundedRect(x - 4, y - 14, label.length * 8 + 16, 28, 6);
-    const t = this.add.text(x + 4, y, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
-    }).setOrigin(0, 0.5).setDepth(16).setInteractive({ useHandCursor: true });
-    t.on('pointerdown', cb);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
+    this.add.text(x - 4 + w / 2, y - 1, label, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(16);
+    const zone = this.add.zone(x - 4, y - 14, w, 28).setOrigin(0).setDepth(16)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', cb);
   }
 }
