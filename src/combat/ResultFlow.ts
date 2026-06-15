@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
-import { COLORS } from '../constants/colors';
+import { CASUAL } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_Y } from '../constants/layout';
 import { startPrepCountdown } from './WaveLifecycle';
 import type { RoomData } from '../data/rooms';
@@ -98,7 +98,7 @@ export function showWaveClear(ctx: ResultFlowContext): void {
   const dailyGold = ctx.dailyMode?.modifiers.goldMult ?? 1;
   const reward = Math.round((waveCfgReward ?? fallback) * ctx.wisdomBonuses.waveRewardMult * ctx.waveGoldMult * dailyGold);
   ctx.setGold(ctx.gold + reward);
-  ctx.showFloatText(CANVAS_WIDTH / 2, GRID_Y + 30, `+${reward} 골드`, '#ffcc44');
+  ctx.showFloatText(CANVAS_WIDTH / 2, GRID_Y + 30, `+${reward} 골드`, '#ffc63a');
   audioManager.playSfx('wave_clear');
 
   const stars = ctx.dungeonHp / ctx.maxHp > 0.8 ? 3
@@ -118,7 +118,7 @@ export function showWaveClear(ctx: ResultFlowContext): void {
 function _spawnWaveClearFlair(scene: Phaser.Scene, reward: number): void {
   // Golden border flash that pulses and fades
   const border = scene.add.graphics().setDepth(295).setAlpha(0);
-  border.lineStyle(6, COLORS.TORCH_GOLD, 1);
+  border.lineStyle(6, CASUAL.GOLD, 1);
   border.strokeRect(3, 3, CANVAS_WIDTH - 6, CANVAS_HEIGHT - 6);
   scene.tweens.add({
     targets: border,
@@ -135,7 +135,7 @@ function _spawnWaveClearFlair(scene: Phaser.Scene, reward: number): void {
   const coinCount  = Math.min(4, 2 + Math.floor(reward / 100));
   for (let i = 0; i < coinCount; i++) {
     const coin = scene.add.graphics().setDepth(290);
-    coin.fillStyle(COLORS.TORCH_GOLD, 1);
+    coin.fillStyle(CASUAL.GOLD, 1);
     coin.fillCircle(0, 0, 4.5);
     coin.fillStyle(0xffe066, 0.6);
     coin.fillCircle(-1.5, -1.5, 2);
@@ -170,7 +170,7 @@ export function triggerWaveFail(ctx: ResultFlowContext): void {
 
   // Red vignette
   const vig = ctx.scene.add.graphics().setDepth(290);
-  vig.fillStyle(COLORS.BLOOD_RED, 0.5);
+  vig.fillStyle(CASUAL.RED, 0.5);
   vig.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ctx.scene.tweens.add({ targets: vig, alpha: 0, duration: 600 });
 

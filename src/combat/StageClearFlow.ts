@@ -3,7 +3,7 @@
 // Full-game-clear (stageNumber 80) delegates immediately to GameCompleteFlow.
 
 import { audioManager } from '../audio/AudioManager';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { MATERIAL_DEFS } from '../data/fusion';
 import { MONSTER_DEFS } from '../data/monsters';
@@ -58,7 +58,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   const ov = scene.add.container(0, 0).setDepth(310);
 
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.85);
+  dim.fillStyle(CASUAL.SHADOW, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setAlpha(0);
   ov.add(dim);
@@ -69,10 +69,18 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   const cx = CANVAS_WIDTH / 2 - cw / 2;
   const cy = CANVAS_HEIGHT / 2 - ch / 2;
   const card = scene.add.graphics();
-  card.fillStyle(COLORS.STONE_DARK, 1);
-  card.fillRoundedRect(cx, cy, cw, ch, 12);
-  card.lineStyle(2, COLORS.TORCH_GOLD, 0.9);
-  card.strokeRoundedRect(cx, cy, cw, ch, 12);
+  // chunky drop shadow
+  card.fillStyle(CASUAL.SHADOW, 0.22);
+  card.fillRoundedRect(cx, cy + 5, cw, ch, 16);
+  // cream body
+  card.fillStyle(CASUAL.PANEL, 1);
+  card.fillRoundedRect(cx, cy, cw, ch, 16);
+  // glossy white top highlight band
+  card.fillStyle(0xffffff, 0.4);
+  card.fillRoundedRect(cx + 6, cy + 6, cw - 12, 18, 8);
+  // thick rounded brown border
+  card.lineStyle(3, CASUAL.EDGE, 1);
+  card.strokeRoundedRect(cx, cy, cw, ch, 16);
   card.setY(-60).setAlpha(0);
   ov.add(card);
   scene.tweens.add({ targets: card, y: 0, alpha: 1, duration: 500, ease: 'Power2.easeOut', delay: 200 });
@@ -93,7 +101,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     ? '🛡️  침략 방어 성공!'
     : `🎉  ${chLabel} 클리어!`;
   const title = scene.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
-    fontFamily: "Georgia, serif", fontSize: '24px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '24px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(title);
   scene.tweens.add({ targets: title, alpha: 1, duration: 300, delay: 500 });
@@ -107,7 +116,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       cy + 78,
       isFilled ? '★' : '☆',
       { fontFamily: 'sans-serif', fontSize: '26px',
-        color: isFilled ? CSS.TORCH_AMBER : '#554433' },
+        color: isFilled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
     ).setOrigin(0.5).setScale(0).setAlpha(0);
     ov.add(starT);
     scene.tweens.add({
@@ -118,7 +127,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   }
 
   const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💠`, {
-    fontFamily: 'sans-serif', fontSize: '14px', color: '#88aaff',
+    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(crystalT);
   scene.tweens.add({ targets: crystalT, alpha: 1, duration: 300, delay: 780 });
@@ -127,7 +136,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   if (ctx.dailyMode) {
     const dailyCrystals = ctx.dailyMode.rewards.crystals;
     const dailyT = scene.add.text(CANVAS_WIDTH / 2, cy + 148, `일일 보상  +${dailyCrystals} 💠  재료 ×${ctx.dailyMode.rewards.materials.length}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: '#44ffcc',
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(dailyT);
     scene.tweens.add({ targets: dailyT, alpha: 1, duration: 300, delay: 880 });
@@ -136,7 +145,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Stats row: gold + kills + waves
   const statsStr = `💰 ${ctx.gold}골드   💀 ${ctx.killsThisRun}킬   ⚔ ${ctx.wave}웨이브`;
   const killT = scene.add.text(CANVAS_WIDTH / 2, cy + 152, statsStr, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(killT);
   scene.tweens.add({ targets: killT, alpha: 1, duration: 300, delay: 880 });
@@ -149,7 +158,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${q}`;
     }).join('  ');
     const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170, matStr, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8844',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(matT);
     scene.tweens.add({ targets: matT, alpha: 1, duration: 300, delay: 940 });
@@ -172,18 +181,20 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       const atk = def ? getMonsterAtk(def.baseDamage, m.level, m.spentSkills) : 0;
       const cx2 = chipStartX + mi * (chipW + 4);
       const chipBg = scene.add.graphics().setAlpha(0);
-      chipBg.fillStyle(0x1a1200, 1);
-      chipBg.fillRoundedRect(cx2, chipRowY, chipW, 26, 4);
-      chipBg.lineStyle(1, 0x5a3a10, 0.6);
-      chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 26, 4);
+      chipBg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      chipBg.fillRoundedRect(cx2, chipRowY, chipW, 26, 6);
+      chipBg.fillStyle(0xffffff, 0.4);
+      chipBg.fillRoundedRect(cx2 + 3, chipRowY + 3, chipW - 6, 3, 2);
+      chipBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
+      chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 26, 6);
       ov.add(chipBg);
       const nameLine = def?.name ? def.name.slice(0, 4) : m.id.slice(0, 4);
       const chipT = scene.add.text(cx2 + chipW / 2, chipRowY + 7, `${nameLine}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#c8921a',
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(chipT);
       const lvT = scene.add.text(cx2 + chipW / 2, chipRowY + 16, `Lv.${m.level}  ATK ${atk}`, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#88ccaa',
+        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(lvT);
       const delay = 950 + mi * 60;
@@ -194,7 +205,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Divider
   const divY = chipsSource.length > 0 ? cy + 214 : cy + 178;
   const divG = scene.add.graphics();
-  divG.lineStyle(1, COLORS.STONE_MID, 0.5);
+  divG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
   divG.lineBetween(cx + 20, divY, cx + cw - 20, divY);
   divG.setAlpha(0);
   ov.add(divG);
@@ -253,21 +264,30 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   ];
   btnData.forEach(({ label, action, enabled }, i) => {
     const btnY = divY + 22 + i * 48;
+    const bw = cw - 40, bh = 36, bx = cx + 20, br = 12;
+    // i===0 primary green candy; i===1 secondary cream; disabled cream-muted
+    const isPrimary = enabled && i === 0;
+    const capColor  = !enabled ? CASUAL.PANEL_SOFT : i === 0 ? CASUAL.GREEN : CASUAL.PANEL;
+    const baseColor = !enabled ? CASUAL.EDGE_SOFT  : i === 0 ? CASUAL.GREEN_DK : CASUAL.EDGE;
     const btnBg = scene.add.graphics();
-    const bgColor = !enabled ? COLORS.STONE_DARK : i === 0 ? 0x1a6040 : COLORS.BLOOD_RED;
-    btnBg.fillStyle(bgColor, enabled ? 0.85 : 0.5);
-    btnBg.fillRoundedRect(cx + 20, btnY, cw - 40, 36, 5);
-    if (enabled && i === 0) {
-      btnBg.lineStyle(1, 0x44ff88, 0.5);
-      btnBg.strokeRoundedRect(cx + 20, btnY, cw - 40, 36, 5);
-    }
+    // thick colored bottom edge (candy-button base)
+    btnBg.fillStyle(baseColor, 1);
+    btnBg.fillRoundedRect(bx, btnY + 3, bw, bh, br);
+    // bright cap
+    btnBg.fillStyle(capColor, 1);
+    btnBg.fillRoundedRect(bx, btnY, bw, bh - 1, br);
+    // glossy top highlight
+    btnBg.fillStyle(0xffffff, isPrimary ? 0.3 : 0.5);
+    btnBg.fillRoundedRect(bx + 5, btnY + 3, bw - 10, 11, 5);
     btnBg.setAlpha(0);
     ov.add(btnBg);
     scene.tweens.add({ targets: btnBg, alpha: 1, duration: 250, delay: 1000 + i * 120 });
 
     const btnT = scene.add.text(CANVAS_WIDTH / 2, btnY + 18, label, {
-      fontFamily: "Georgia, serif", fontSize: '13px',
-      color: enabled ? CSS.PARCHMENT : '#666666',
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: !enabled ? CASUAL_CSS.INK_SOFT : isPrimary ? CASUAL_CSS.WHITE : CASUAL_CSS.INK,
+      stroke: isPrimary ? '#00000033' : undefined,
+      strokeThickness: isPrimary ? 3 : 0,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(btnT);
     scene.tweens.add({ targets: btnT, alpha: 1, duration: 250, delay: 1000 + i * 120 });
