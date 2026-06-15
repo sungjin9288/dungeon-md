@@ -1743,14 +1743,24 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.lineStyle(1, 0xffffff, 0.12);
     g.lineBetween(x - 9, y - 17, x - 9, y + 18);
     g.lineBetween(x + 9, y - 17, x + 9, y + 18);
-    g.fillStyle(accent, 0.22);
+    // Threat glow + entry-direction chevrons (invaders pour in here)
+    g.fillStyle(accent, 0.16);
+    g.fillCircle(x, y + 2, 14);
+    g.fillStyle(accent, 0.30);
     g.fillCircle(x, y + 7, 3);
-    c.add(this.add.text(x, y - 35, '침입문', {
+    g.lineStyle(2, accent, 0.7);
+    for (let k = 0; k < 2; k++) {
+      const cy2 = y + 2 + k * 8;
+      g.lineBetween(x - 7, cy2, x, cy2 + 5);
+      g.lineBetween(x + 7, cy2, x, cy2 + 5);
+    }
+    c.add(this.add.text(x, y - 36, '침입문', {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '11px',
       color: '#d8f7ff',
       fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setAlpha(0.88));
+      stroke: '#02141a', strokeThickness: 3,
+    }).setOrigin(1, 0.5).setAlpha(0.95));
   }
 
   private drawDungeonHeartCore(
@@ -1760,24 +1770,30 @@ export class DungeonHomeScene extends Phaser.Scene {
     y: number,
     accent: number,
   ): void {
+    // Protected core — concentric glow so it reads as the thing under threat
     g.fillStyle(0x050302, 0.86);
     g.fillCircle(x, y, 25);
-    g.fillStyle(accent, 0.12);
+    g.fillStyle(accent, 0.08);
+    g.fillCircle(x, y, 38);
+    g.fillStyle(accent, 0.14);
     g.fillCircle(x, y, 31);
-    g.lineStyle(1.4, accent, 0.68);
+    g.lineStyle(1.4, accent, 0.72);
     g.strokeCircle(x, y, 23);
-    g.lineStyle(1, 0xffffff, 0.14);
+    g.lineStyle(1, 0xffffff, 0.16);
     g.strokeCircle(x, y, 14);
-    g.fillStyle(accent, 0.58);
-    g.fillCircle(x, y, 5);
+    g.fillStyle(accent, 0.72);
+    g.fillCircle(x, y, 6);
+    g.fillStyle(0xffffff, 0.3);
+    g.fillCircle(x, y, 2.5);
     g.fillStyle(accent, 0.20);
     g.fillTriangle(x, y - 18, x + 15, y + 10, x - 15, y + 10);
-    c.add(this.add.text(x, y + 35, '심장부', {
+    c.add(this.add.text(x, y + 36, '심장부', {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '11px',
       color: '#fff0b8',
       fontStyle: 'bold',
-    }).setOrigin(0.5).setAlpha(0.9));
+      stroke: '#1a1002', strokeThickness: 3,
+    }).setOrigin(0.5).setAlpha(0.95));
   }
 
   private drawDungeonMapBackdrop(
