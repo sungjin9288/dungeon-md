@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { COLORS } from '../constants/colors';
 import {
   loadGameState, saveGameState,
   getUnlockedSlots,
@@ -50,6 +51,10 @@ import {
   type RoomDetailState,
   type RoomDetailCallbacks,
 } from '../ui/RoomDetailOverlay';
+import {
+  openPlacementTray,
+  closePlacementTray,
+} from '../ui/DungeonPlacementTray';
 import {
   type RoomSlotContext,
   drawBattleSlot as _drawBattleSlot,
@@ -185,6 +190,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   private dungeonBlueprintContainer: Phaser.GameObjects.Container | null = null;
   private commandDeckContainer: Phaser.GameObjects.Container | null = null;
   private recentlyChangedRoomIdx: number | null = null;
+  private selectedRoomIdx: number | null = null;
   private pendingRoomFeedback: HomeRoomFeedback | null = null;
   private roomFocusTransitionActive = false;
 
@@ -269,6 +275,12 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.dungeonBlueprintContainer = null;
     this.commandDeckContainer = null;
     this.recentlyChangedRoomIdx = null;
+    this.selectedRoomIdx = null;
+    closePlacementTray();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      closePlacementTray();
+      this.selectedRoomIdx = null;
+    });
     this.pendingRoomFeedback = this.consumeHomeRoomFeedback();
     this.roomFocusTransitionActive = false;
     if (this.pendingRoomFeedback) this.recentlyChangedRoomIdx = this.pendingRoomFeedback.slotIdx;
@@ -683,6 +695,29 @@ export class DungeonHomeScene extends Phaser.Scene {
     }
   }
 
+  // ─── Direct-placement board: select a room → bottom tray ─────────────────────
+
+  private selectRoomForPlacement(slotIdx: number): void {
+    if (this.roomFocusTransitionActive) return;
+    this.selectedRoomIdx = slotIdx;
+    this.rebuildDungeonSlots();
+    openPlacementTray({
+      scene: this,
+      getGameState: () => this.gs,
+      persist: (state) => this.persistGameState(state),
+      rebuildSlots: () => this.rebuildDungeonSlots(),
+      openDetail: (idx) => {
+        this.selectedRoomIdx = null;
+        this.rebuildDungeonSlots();
+        this.openDungeonSlot(idx);
+      },
+      onClose: () => {
+        this.selectedRoomIdx = null;
+        this.rebuildDungeonSlots();
+      },
+    }, slotIdx);
+  }
+
   // ─── Room Detail Overlay (delegated to RoomDetailOverlay.ts) ─────────────────
 
   private openRoomDetail(slotIdx: number, cellX: number, cellY: number): void {
@@ -946,6 +981,14 @@ export class DungeonHomeScene extends Phaser.Scene {
         const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
         this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
         if (idx === changedIdx && isUnlocked) this.addRoomChangedPulse(c, sx, sy, idx);
+        if (idx === this.selectedRoomIdx && isUnlocked) {
+          const hl = this.add.graphics().setDepth(9);
+          hl.lineStyle(3, COLORS.JADE, 1);
+          hl.strokeRoundedRect(sx - 2, sy - 2, SLOT_W + 4, SLOT_H + 4, 10);
+          hl.lineStyle(6, COLORS.JADE, 0.25);
+          hl.strokeRoundedRect(sx - 2, sy - 2, SLOT_W + 4, SLOT_H + 4, 10);
+          c.add(hl);
+        }
 
         if (isUnlocked) {
           const _sx = sx, _sy = sy, _idx = idx;
@@ -956,7 +999,7 @@ export class DungeonHomeScene extends Phaser.Scene {
           zone.on('pointerout', () => focusAffordance.setHover(false));
           zone.on('pointerdown', () => {
             focusAffordance.pulse();
-            this.openRoomDetail(_idx, _sx, _sy);
+            this.selectRoomForPlacement(_idx);
           });
           c.add(zone);
         }
