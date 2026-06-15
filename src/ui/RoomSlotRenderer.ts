@@ -539,129 +539,37 @@ function drawLockedExcavationFace(
   t: DungeonTheme,
   seed: number,
 ): void {
+  // Clean "sealed chamber" — a recessed dark panel with a thin frame and
+  // corner ticks. Minimal on purpose so unlocked/occupied rooms carry the eye.
+  void seed;
   const cx = x + SLOT_W / 2;
   const cy = y + SLOT_H / 2;
-  const rockPath = [
-    { px: 10, py: 32 },
-    { px: 18, py: 16 },
-    { px: 35, py: 9 },
-    { px: 63, py: 10 },
-    { px: 82, py: 17 },
-    { px: 91, py: 33 },
-    { px: 94, py: 79 },
-    { px: 77, py: 90 },
-    { px: 23, py: 91 },
-    { px: 6, py: 80 },
-  ];
-  const traceRockPath = (offset: number): void => {
-    g.beginPath();
-    rockPath.forEach((p, idx) => {
-      const ox = p.px < SLOT_W / 2 ? -offset : offset;
-      const oy = p.py < SLOT_H / 2 ? -offset : offset;
-      const px = x + p.px + ox;
-      const py = y + p.py + oy;
-      if (idx === 0) g.moveTo(px, py);
-      else g.lineTo(px, py);
-    });
-    g.closePath();
-  };
 
-  g.fillStyle(0x050302, 0.82);
-  traceRockPath(3);
-  g.fillPath();
-  g.fillStyle(t.stoneDark, 0.84);
-  traceRockPath(0);
-  g.fillPath();
-  g.fillStyle(0x050909, 0.78);
-  g.beginPath();
-  g.moveTo(x + 19, y + 43);
-  g.lineTo(x + 27, y + 27);
-  g.lineTo(x + 41, y + 22);
-  g.lineTo(x + 60, y + 22);
-  g.lineTo(x + 75, y + 28);
-  g.lineTo(x + 83, y + 43);
-  g.lineTo(x + 80, y + 68);
-  g.lineTo(x + 20, y + 68);
-  g.closePath();
-  g.fillPath();
+  // Recessed interior
+  g.fillStyle(0x080a09, 0.66);
+  g.fillRoundedRect(x + 9, y + 9, SLOT_W - 18, SLOT_H - 18, 8);
+  g.fillStyle(t.stoneDark, 0.4);
+  g.fillRoundedRect(x + 9, y + 9, SLOT_W - 18, (SLOT_H - 18) * 0.5, { tl: 8, tr: 8, bl: 0, br: 0 });
 
-  g.fillStyle(0x010202, 0.72);
-  g.fillCircle(cx, y + 43, 25);
-  g.fillRoundedRect(cx - 25, y + 42, 50, 28, 7);
-  g.fillStyle(t.stoneMid, 0.18);
-  g.fillCircle(cx, y + 43, 18);
-  g.fillRoundedRect(cx - 18, y + 44, 36, 17, 6);
-  g.lineStyle(1.2, t.panelBorder, 0.24);
-  g.strokeCircle(cx, y + 43, 23);
-  g.lineStyle(1, t.stoneLight, 0.10);
-  g.lineBetween(cx, y + 23, cx, y + 66);
-  g.lineBetween(cx - 18, y + 43, cx + 18, y + 43);
-  g.fillStyle(0x060403, 0.84);
-  g.fillRoundedRect(cx - 9, y + 42, 18, 18, 5);
-  g.lineStyle(1, 0xffc86a, 0.36);
-  g.strokeRoundedRect(cx - 9, y + 42, 18, 18, 5);
-  g.fillStyle(0xffd978, 0.30);
-  g.fillCircle(cx, y + 50, 3.2);
+  // Thin inset frame
+  g.lineStyle(1, t.panelBorder, 0.35);
+  g.strokeRoundedRect(x + 12, y + 12, SLOT_W - 24, SLOT_H - 24, 6);
 
-  const rocks = [
-    { px: 15, py: 23, w: 21, h: 18, c: t.stoneMid },
-    { px: 35, py: 17, w: 20, h: 15, c: t.slotLocked },
-    { px: 56, py: 21, w: 25, h: 19, c: t.stoneMid },
-    { px: 21, py: 46, w: 19, h: 20, c: t.slotLocked },
-    { px: 63, py: 47, w: 21, h: 20, c: t.stoneDark },
-    { px: 36, py: 61, w: 30, h: 17, c: t.stoneMid },
-  ];
-  for (const [i, rock] of rocks.entries()) {
-    const jitter = (seed + i * 11) % 5;
-    g.fillStyle(rock.c, 0.22 + (i % 3) * 0.05);
-    g.fillRoundedRect(x + rock.px, y + rock.py + jitter * 0.3, rock.w, rock.h, 5);
-    g.lineStyle(1, t.stoneLight, 0.08);
-    g.lineBetween(x + rock.px + 3, y + rock.py + 4, x + rock.px + rock.w - 4, y + rock.py + rock.h - 5);
-  }
+  // Corner ticks (locked-frame motif)
+  const m = 17, len = 8;
+  g.lineStyle(1.5, t.slotLocked, 0.55);
+  g.lineBetween(x + m, y + m, x + m + len, y + m);
+  g.lineBetween(x + m, y + m, x + m, y + m + len);
+  g.lineBetween(x + SLOT_W - m, y + m, x + SLOT_W - m - len, y + m);
+  g.lineBetween(x + SLOT_W - m, y + m, x + SLOT_W - m, y + m + len);
+  g.lineBetween(x + m, y + SLOT_H - m, x + m + len, y + SLOT_H - m);
+  g.lineBetween(x + m, y + SLOT_H - m, x + m, y + SLOT_H - m - len);
+  g.lineBetween(x + SLOT_W - m, y + SLOT_H - m, x + SLOT_W - m - len, y + SLOT_H - m);
+  g.lineBetween(x + SLOT_W - m, y + SLOT_H - m, x + SLOT_W - m, y + SLOT_H - m - len);
 
-  g.fillStyle(t.stoneMid, 0.16);
-  g.fillTriangle(x + 12, y + 79, x + 31, y + 58, x + 52, y + 79);
-  g.fillTriangle(x + 45, y + 82, x + 70, y + 55, x + 88, y + 82);
-  g.fillStyle(0x050302, 0.55);
-  g.fillEllipse(cx, y + SLOT_H - 15, SLOT_W - 24, 18);
-
-  g.lineStyle(3, 0x7a4522, 0.62);
-  g.lineBetween(x + 23, y + 28, x + 76, y + 73);
-  g.lineBetween(x + 77, y + 28, x + 24, y + 73);
-  g.lineStyle(2.4, 0x1c1712, 0.72);
-  g.lineBetween(x + 19, y + 39, x + 81, y + 54);
-  g.lineBetween(x + 21, y + 57, x + 79, y + 39);
-  g.lineStyle(1, 0xffcf72, 0.18);
-  for (let i = 0; i < 4; i++) {
-    const linkX = x + 27 + i * 15;
-    g.strokeCircle(linkX, y + 42 + (i % 2) * 4, 3.2);
-    g.strokeCircle(linkX + 4, y + 44 + (i % 2) * 4, 3.2);
-  }
-  g.lineStyle(1, 0xffc86a, 0.28);
-  g.lineBetween(x + 25, y + 27, x + 78, y + 72);
-  g.lineBetween(x + 79, y + 27, x + 26, y + 72);
-  g.lineStyle(2, 0x8f5b2b, 0.58);
-  g.lineBetween(x + 18, y + 70, x + 82, y + 70);
-  g.lineStyle(1, t.stoneLight, 0.12);
-  g.lineBetween(x + 22, y + 33, x + SLOT_W - 23, y + 58);
-  g.lineBetween(x + SLOT_W - 31, y + 20, x + 23, y + 41);
-  g.lineBetween(x + 34, y + 18, x + 22, y + 31);
-  g.lineBetween(x + SLOT_W - 37, y + 60, x + SLOT_W - 22, y + 78);
-
-  g.fillStyle(0xffcf72, 0.15);
-  g.fillCircle(x + 18, y + 31, 6);
-  g.fillCircle(x + SLOT_W - 18, y + 31, 6);
-  g.fillStyle(0x55b88a, 0.10);
-  g.fillCircle(cx, y + 43, 31);
-  g.fillStyle(0xffd978, 0.48);
-  g.fillCircle(x + 18, y + 31, 2);
-  g.fillCircle(x + SLOT_W - 18, y + 31, 2);
-  g.lineStyle(1, t.panelBorder, 0.24);
-  traceRockPath(0);
-  g.strokePath();
-
-  g.fillStyle(0x000000, 0.28);
-  g.fillCircle(cx, cy - 4, 15);
+  // Soft vignette behind the lock glyph (drawn by caller)
+  g.fillStyle(0x000000, 0.22);
+  g.fillCircle(cx, cy - 4, 16);
 }
 
 function drawConstructionScaffold(
