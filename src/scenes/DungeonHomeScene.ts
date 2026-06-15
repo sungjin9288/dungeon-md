@@ -1120,7 +1120,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => {
       audioManager.playSfx('button_click');
-      this.openDungeonSlot(pin.slotIdx);
+      this.selectRoomForPlacement(pin.slotIdx);
     });
     pinContainer.add(zone);
     c.add(pinContainer);
@@ -1196,7 +1196,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       zone.on('pointerout', () => marker.setScale(1));
       zone.on('pointerdown', () => {
         audioManager.playSfx('button_click');
-        this.openDungeonSlot(action.slotIdx);
+        this.selectRoomForPlacement(action.slotIdx);
       });
       marker.add(zone);
       c.add(marker);
@@ -1315,7 +1315,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       zone.on('pointerout', () => badge.setScale(1));
       zone.on('pointerdown', () => {
         audioManager.playSfx('button_click');
-        this.openDungeonSlot(action.slotIdx);
+        this.selectRoomForPlacement(action.slotIdx);
       });
       badge.add([labelText, statText, zone]);
       c.add(badge);
@@ -2861,7 +2861,7 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     const broken = entries.find(({ slot }) => !!slot?.roomType && slot.hp <= 0);
     if (broken) {
-      return buildRoomActionDirective(broken.idx, () => this.openDungeonSlot(broken.idx));
+      return buildRoomActionDirective(broken.idx, () => this.selectRoomForPlacement(broken.idx));
     }
 
     const monsterGap = entries.find(({ slot }) => {
@@ -2870,7 +2870,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       return (slot.monsterIds ?? []).filter(Boolean).length < cap.monsters;
     });
     if (monsterGap?.slot) {
-      return buildRoomActionDirective(monsterGap.idx, () => this.openDungeonSlot(monsterGap.idx));
+      return buildRoomActionDirective(monsterGap.idx, () => this.selectRoomForPlacement(monsterGap.idx));
     }
 
     const trapGap = entries.find(({ slot }) => {
@@ -2879,12 +2879,12 @@ export class DungeonHomeScene extends Phaser.Scene {
       return (slot.trapIds ?? []).filter(Boolean).length < cap.traps;
     });
     if (trapGap?.slot) {
-      return buildRoomActionDirective(trapGap.idx, () => this.openDungeonSlot(trapGap.idx));
+      return buildRoomActionDirective(trapGap.idx, () => this.selectRoomForPlacement(trapGap.idx));
     }
 
     const empty = entries.find(({ slot }) => !slot?.roomType);
     if (empty) {
-      return buildRoomActionDirective(empty.idx, () => this.openDungeonSlot(empty.idx));
+      return buildRoomActionDirective(empty.idx, () => this.selectRoomForPlacement(empty.idx));
     }
 
     if (skillReady > 0) {
@@ -3224,7 +3224,7 @@ export class DungeonHomeScene extends Phaser.Scene {
           yoyo: true,
           duration: 80,
         });
-        this.openDungeonSlot(action.slotIdx);
+        this.selectRoomForPlacement(action.slotIdx);
       });
     });
 
@@ -3314,7 +3314,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const unlockedSlots = getUnlockedSlots(this.gs.dmLevel);
     const queuedAction = getDungeonActionQueue(this.gs, unlockedSlots)[0];
     if (queuedAction) {
-      this.openDungeonSlot(queuedAction.slotIdx);
+      this.selectRoomForPlacement(queuedAction.slotIdx);
       return;
     }
 
@@ -3328,7 +3328,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         break;
       }
     }
-    this.openDungeonSlot(idx);
+    this.selectRoomForPlacement(idx);
   }
 
   private openFocusedMonsterGrowth(): void {
