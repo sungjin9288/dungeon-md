@@ -851,69 +851,34 @@ export class DungeonHomeScene extends Phaser.Scene {
   // ─── Dungeon grid ────────────────────────────────────────────────────────────
 
   private buildDungeonGrid(): void {
-    const t  = this.theme;
     const bg = this.add.graphics().setDepth(1);
-    bg.fillStyle(t.bgPrimary, 1);
+    // Warm light dungeon board surface (matches the casual battlefield floor).
+    bg.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
     bg.fillRect(0, TOP_H, CANVAS_WIDTH, BOT_Y - TOP_H);
 
     const gridCaveY = GRID_START_Y - 8;
     const gridCaveH = GRID_ROWS_HOME * SLOT_H + (GRID_ROWS_HOME - 1) * SLOT_PAD_Y + 16;
-    bg.fillStyle(t.stoneDark, 0.34);
-    bg.fillRoundedRect(8, gridCaveY, CANVAS_WIDTH - 16, gridCaveH, 12);
-    bg.lineStyle(1.5, t.panelBorder, 0.18);
-    bg.strokeRoundedRect(8, gridCaveY, CANVAS_WIDTH - 16, gridCaveH, 12);
-    bg.fillStyle(t.panelBorder, 0.05);
+    // Soft floor-tile texture under the play area.
+    bg.lineStyle(1, CASUAL.EDGE_SOFT, 0.1);
     for (let row = 0; row < GRID_ROWS_HOME; row++) {
       const tunnelY = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2 - 5;
-      bg.fillRoundedRect(24, tunnelY, CANVAS_WIDTH - 48, 10, 5);
-    }
-    for (let col = 0; col < GRID_COLS_HOME; col++) {
-      const tunnelX = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2 - 5;
-      bg.fillRoundedRect(tunnelX, GRID_START_Y + 18, 10, gridCaveH - 36, 5);
+      bg.lineBetween(24, tunnelY + 5, CANVAS_WIDTH - 24, tunnelY + 5);
     }
 
     const lowerCavernY = gridCaveY + gridCaveH - 5;
     const lowerCavernH = Math.max(70, BOT_Y - lowerCavernY - 24);
-    bg.fillStyle(0x010405, 0.48);
+    // Lower floor band — slightly deeper warm tone with a soft top seam.
+    bg.fillStyle(CASUAL.BG_BOTTOM, 0.5);
     bg.fillRect(0, lowerCavernY, CANVAS_WIDTH, lowerCavernH);
-    bg.fillStyle(t.stoneDark, 0.30);
-    bg.beginPath();
-    bg.moveTo(0, lowerCavernY + 17);
-    bg.lineTo(35, lowerCavernY + 5);
-    bg.lineTo(102, lowerCavernY + 14);
-    bg.lineTo(176, lowerCavernY + 3);
-    bg.lineTo(252, lowerCavernY + 16);
-    bg.lineTo(337, lowerCavernY + 6);
-    bg.lineTo(CANVAS_WIDTH, lowerCavernY + 18);
-    bg.lineTo(CANVAS_WIDTH, lowerCavernY + lowerCavernH);
-    bg.lineTo(0, lowerCavernY + lowerCavernH);
-    bg.closePath();
-    bg.fillPath();
-    bg.fillStyle(0x000000, 0.22);
-    bg.fillEllipse(CANVAS_WIDTH / 2, lowerCavernY + 20, CANVAS_WIDTH - 36, 24);
-    bg.lineStyle(1, t.stoneLight, 0.08);
-    for (let i = 0; i < 7; i++) {
-      const x = 18 + i * 58;
-      const topY = lowerCavernY + 16 + (i % 2) * 9;
-      bg.lineBetween(x, topY, x + 18, topY + 54);
-      bg.lineBetween(x + 20, topY + 8, x + 9, topY + 70);
-    }
-    bg.fillStyle(t.panelBorder, 0.07);
-    for (let i = 0; i < 4; i++) {
-      const x = 50 + i * 87;
-      bg.fillRoundedRect(x, lowerCavernY + 18, 10, lowerCavernH - 20, 5);
-      bg.fillStyle(0x000000, 0.20);
-      bg.fillRoundedRect(x + 4, lowerCavernY + 24, 5, lowerCavernH - 34, 3);
-      bg.fillStyle(t.panelBorder, 0.07);
-    }
-    bg.fillStyle(t.stoneMid, 0.20);
-    for (let i = 0; i < 8; i++) {
-      const x = 19 + i * 49;
-      const h = 12 + (i % 3) * 6;
-      bg.fillTriangle(x, BOT_Y - 29, x + 8, BOT_Y - 29 - h, x + 17, BOT_Y - 29);
-    }
-    bg.lineStyle(1, t.panelBorder, 0.09);
+    bg.fillStyle(0xffffff, 0.18);
+    bg.fillRect(0, lowerCavernY, CANVAS_WIDTH, 2);
+    bg.lineStyle(1, CASUAL.EDGE_SOFT, 0.12);
     bg.lineBetween(16, lowerCavernY + lowerCavernH - 18, CANVAS_WIDTH - 16, lowerCavernY + lowerCavernH - 24);
+    // Soft polka dots to match the global casual backdrop.
+    bg.fillStyle(CASUAL.BG_DOT, 0.14);
+    for (let r = 0, y = lowerCavernY + 18; y < lowerCavernY + lowerCavernH - 8; y += 30, r++) {
+      for (let x = (r % 2) * 26 + 22; x < CANVAS_WIDTH - 12; x += 52) bg.fillCircle(x, y, 3);
+    }
 
     if (BLUEPRINT_H > 0) {
       this.rebuildDungeonBlueprintPanel();
@@ -921,12 +886,14 @@ export class DungeonHomeScene extends Phaser.Scene {
       // Simulation button
       const simBtnX = CANVAS_WIDTH - 66, simBtnY = BLUEPRINT_Y + 8;
       const simBg = this.add.graphics().setDepth(5);
-      simBg.fillStyle(t.panelDark, 1);
-      simBg.fillRoundedRect(simBtnX, simBtnY, 56, 24, 5);
-      simBg.lineStyle(1, t.panelBorder, 0.7);
-      simBg.strokeRoundedRect(simBtnX, simBtnY, 56, 24, 5);
-      const simTxt = this.add.text(simBtnX + 28, simBtnY + 12, '⚗ 예측', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: t.panelBorderCSS,
+      simBg.fillStyle(CASUAL.EDGE, 1);
+      simBg.fillRoundedRect(simBtnX, simBtnY + 2, 56, 24, 12);
+      simBg.fillStyle(CASUAL.PANEL, 1);
+      simBg.fillRoundedRect(simBtnX, simBtnY, 56, 23, 12);
+      simBg.fillStyle(0xffffff, 0.45);
+      simBg.fillRoundedRect(simBtnX + 4, simBtnY + 3, 48, 5, 3);
+      const simTxt = this.add.text(simBtnX + 28, simBtnY + 11, '⚗ 예측', {
+        fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK, fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(6).setInteractive();
       simTxt.on('pointerdown', () => openSimulationModal(this, this.gs, this.theme));
     }
@@ -1809,7 +1776,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     to: { x: number; y: number },
     index: number,
   ): void {
-    const t = this.theme;
     const passage = this.getRoutePassage(from, to);
     const dx = passage.to.x - passage.from.x;
     const dy = passage.to.y - passage.from.y;
@@ -1829,9 +1795,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       const sy = cy + py * offset;
       const stoneW = Math.abs(dx) >= Math.abs(dy) ? 11 : 7;
       const stoneH = Math.abs(dx) >= Math.abs(dy) ? 6 : 11;
-      g.fillStyle(t.stoneMid, 0.17 + (index % 2) * 0.03);
+      g.fillStyle(CASUAL.EDGE_SOFT, 0.22 + (index % 2) * 0.04);
       g.fillRoundedRect(sx - stoneW / 2, sy - stoneH / 2, stoneW, stoneH, 3);
-      g.lineStyle(1, t.stoneLight, 0.06);
+      g.lineStyle(1, 0xffffff, 0.18);
       g.lineBetween(sx - px * 3 - ux * 2, sy - py * 3 - uy * 2, sx + px * 3 + ux * 2, sy + py * 3 + uy * 2);
     }
   }
@@ -1852,8 +1818,8 @@ export class DungeonHomeScene extends Phaser.Scene {
         this.getSlotCenter(route[i]),
         this.getSlotCenter(route[i + 1]),
         31,
-        0x030201,
-        0.46,
+        CASUAL.EDGE,
+        0.5,
         i,
       );
     }
@@ -1864,8 +1830,8 @@ export class DungeonHomeScene extends Phaser.Scene {
         this.getSlotCenter(route[i]),
         this.getSlotCenter(route[i + 1]),
         23,
-        t.stoneDark,
-        0.68,
+        CASUAL.EDGE_SOFT,
+        0.85,
         i + 1,
       );
     }
@@ -1876,8 +1842,8 @@ export class DungeonHomeScene extends Phaser.Scene {
         this.getSlotCenter(route[i]),
         this.getSlotCenter(route[i + 1]),
         12,
-        t.stoneMid,
-        0.34,
+        CASUAL.PANEL_SOFT,
+        0.6,
         i + 2,
       );
     }

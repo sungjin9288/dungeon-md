@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CASUAL } from '../constants/colors';
 import type { RoomLoadoutStatus } from '../data/dungeonMetrics';
 
 export interface RoomLoadoutRailOptions {
@@ -10,9 +11,10 @@ export interface RoomLoadoutRailOptions {
   readonly showLabels?: boolean;
 }
 
-const MONSTER_PIP_COLOR = 0xc4e4b8;
-const TRAP_PIP_COLOR = 0xffc45f;
-const EQUIPMENT_PIP_COLOR = 0xe8c468;
+const MONSTER_PIP_COLOR = CASUAL.GREEN_DK;
+const TRAP_PIP_COLOR = CASUAL.GOLD_DK;
+const EQUIPMENT_PIP_COLOR = CASUAL.PURPLE_DK;
+const EMPTY_PIP_COLOR = CASUAL.EDGE_SOFT;
 
 export function drawRoomLoadoutRail(
   scene: Phaser.Scene,
@@ -34,13 +36,15 @@ export function drawRoomLoadoutRail(
   const totalLoadout = Math.max(1, status.monsterCapacity + status.trapCapacity + equipmentCapacity);
   const loadoutRatio = Phaser.Math.Clamp(filledLoadout / totalLoadout, 0, 1);
 
-  g.fillStyle(0x070503, 0.9);
-  g.fillRoundedRect(x, y, w, h, 6);
-  g.lineStyle(1, accent, 0.42);
-  g.strokeRoundedRect(x, y, w, h, 6);
-  g.fillStyle(accent, 0.12);
-  g.fillRoundedRect(x + 2, y + 2, 5, h - 4, 4);
-  g.fillStyle(accent, 0.16);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillRoundedRect(x, y, w, h, 7);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 3, y + 2, w - 6, 3, 2);
+  g.lineStyle(1.5, CASUAL.EDGE, 0.85);
+  g.strokeRoundedRect(x, y, w, h, 7);
+  g.fillStyle(accent, 0.9);
+  g.fillRoundedRect(x + 2, y + 3, 4, h - 6, 2);
+  g.fillStyle(accent, 0.5);
   g.fillRoundedRect(x + 7, y + h - 4, Math.max(5, (w - 12) * loadoutRatio), 2, 1);
 
   if (showLabels) {
@@ -85,12 +89,12 @@ function drawLoadoutPipRow(
     const px = startX + i * 6;
     const filled = i < count;
     if (shape === 'circle') {
-      g.fillStyle(filled ? color : 0x1c1208, filled ? 0.92 : 0.7);
+      g.fillStyle(filled ? color : EMPTY_PIP_COLOR, filled ? 1 : 0.55);
       g.fillCircle(px, y, 2.3);
       g.lineStyle(1, color, filled ? 0.34 : 0.22);
       g.strokeCircle(px, y, 2.6);
     } else {
-      g.fillStyle(filled ? color : 0x1c1208, filled ? 0.92 : 0.7);
+      g.fillStyle(filled ? color : EMPTY_PIP_COLOR, filled ? 1 : 0.55);
       g.fillTriangle(px - 2.6, y + 2.3, px, y - 2.7, px + 2.6, y + 2.3);
       g.lineStyle(1, color, filled ? 0.32 : 0.2);
       g.strokeTriangle(px - 2.9, y + 2.6, px, y - 3, px + 2.9, y + 2.6);
@@ -127,7 +131,7 @@ function drawEquipmentDiamond(
   y: number,
   filled: boolean,
 ): void {
-  g.fillStyle(filled ? EQUIPMENT_PIP_COLOR : 0x1c1208, filled ? 0.92 : 0.68);
+  g.fillStyle(filled ? EQUIPMENT_PIP_COLOR : EMPTY_PIP_COLOR, filled ? 1 : 0.55);
   g.beginPath();
   g.moveTo(x, y - 3.7);
   g.lineTo(x + 3.7, y);
