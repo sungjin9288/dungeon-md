@@ -12,6 +12,7 @@ import {
 import { applyFusionEvolution } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   type FusionTabContext, TAB_ACCENT,
   drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast, showConfirmDialog,
@@ -33,7 +34,7 @@ export function buildEvolutionTab(
   const sx0   = (CANVAS_WIDTH - totalW) / 2;
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY - 26, '같은 몬스터 3마리 → 진화', {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#66aa77',
+    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
 
   for (let i = 0; i < 3; i++) {
@@ -54,13 +55,13 @@ export function buildEvolutionTab(
 
   [sx0 + slotW, sx0 + slotW * 2 + 10].forEach(px => {
     c.add(ctx.scene.add.text(px + 5, LY + slotH / 2, '+', {
-      fontFamily: 'Georgia, serif', fontSize: '18px', color: '#335544',
+      fontFamily: 'sans-serif', fontSize: '18px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   });
 
   const arrowY = LY + slotH + 20;
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, arrowY, '▼', {
-    fontFamily: 'sans-serif', fontSize: '16px', color: '#44cc66',
+    fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   const resultX  = (CANVAS_WIDTH - slotW) / 2;
@@ -78,10 +79,14 @@ export function buildEvolutionTab(
       const rarity       = tier.rarity;
 
       const rg = ctx.scene.add.graphics();
-      rg.fillStyle(0x190f06, 1);
-      rg.fillRoundedRect(resultX, resultY, slotW, slotH + 18, 6);
-      rg.lineStyle(2, TAB_ACCENT['진화'], 0.9);
-      rg.strokeRoundedRect(resultX, resultY, slotW, slotH + 18, 6);
+      rg.fillStyle(CASUAL.SHADOW, 0.18);
+      rg.fillRoundedRect(resultX, resultY + 3, slotW, slotH + 18, 12);
+      rg.fillStyle(CASUAL.PANEL, 1);
+      rg.fillRoundedRect(resultX, resultY, slotW, slotH + 18, 12);
+      rg.fillStyle(0xffffff, 0.4);
+      rg.fillRoundedRect(resultX + 4, resultY + 4, slotW - 8, 6, 3);
+      rg.lineStyle(3, TAB_ACCENT['진화'], 1);
+      rg.strokeRoundedRect(resultX, resultY, slotW, slotH + 18, 12);
       c.add(rg);
 
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 20, evolvedEmoji, {
@@ -91,16 +96,16 @@ export function buildEvolutionTab(
         fontFamily: 'sans-serif', fontSize: '10px',
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 62, evolvedName, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[rarity],
+        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[rarity], fontStyle: 'bold',
         wordWrap: { width: slotW - 4 },
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 76, `ATK: ${baseAtk}→${newAtk}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#44cc66',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
       }).setOrigin(0.5));
 
       const execBtn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 30, '✨ 진화 실행', {
-        fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cc66', fontStyle: 'bold',
-        backgroundColor: '#002a14', padding: { x: 28, y: 10 },
+        fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
+        backgroundColor: CASUAL_CSS.GREEN, padding: { x: 28, y: 10 },
       }).setOrigin(0.5).setInteractive();
       ctx.scene.tweens.add({
         targets: execBtn, alpha: { from: 0.8, to: 1.0 },
@@ -120,22 +125,22 @@ export function buildEvolutionTab(
     }
   } else {
     const g = ctx.scene.add.graphics();
-    g.fillStyle(0x140d05, 1);
-    g.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
-    g.lineStyle(1.5, TAB_ACCENT['진화'], 0.3);
-    g.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
     c.add(g);
     c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + slotH / 2, '?', {
-      fontFamily: 'Georgia, serif', fontSize: '26px', color: '#1a3322',
+      fontFamily: 'sans-serif', fontSize: '26px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 30, '슬롯을 채우세요', {
-      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#335544',
-      backgroundColor: '#001208', padding: { x: 28, y: 10 },
+      fontFamily: 'sans-serif', fontSize: '15px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      backgroundColor: CASUAL_CSS.CREAM, padding: { x: 28, y: 10 },
     }).setOrigin(0.5));
   }
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50, '진화 성공 시: 능력치 +30%, 희귀도 ↑', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#336644',
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
 }
 

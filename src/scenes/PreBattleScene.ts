@@ -20,6 +20,8 @@ import { TRAP_DEFS } from '../data/traps';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { addMonsterPortrait, resolveMonsterTypeId } from '../ui/MonsterPortraitView';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 
 // Map invasion invader type names → DungeonScene InvaderType
 const INVASION_TYPE_MAP: Record<string, InvaderType> = {
@@ -54,20 +56,12 @@ const ENEMY_THREAT_SCORE: Record<string, number> = {
   primordial_titan: 110,
 };
 
-const CASUAL = {
-  bgTop: 0x1f1408,
-  bgMid: 0x2a1f10,
-  bgBottom: 0x2c1810,
-  card: 0x2c1d0d,
-  cardDeep: 0x190f06,
-  cream: '#f0e6c8',
-  softText: '#e8d5aa',
-  muted: '#907a58',
-  gold: 0xe8c468,
-  coral: 0xd9594a,
-  sky: 0x55b88a,
-  mint: 0x5fb854,
-  violet: 0x9a6cd8,
+// Saturated accent palette (kept vivid on the bright casual bg).
+const ACCENT = {
+  gold: CASUAL.GOLD,
+  coral: CASUAL.RED,
+  sky: CASUAL.BLUE,
+  mint: CASUAL.GREEN,
 } as const;
 
 const TRIBE_KO: Record<string, string> = {
@@ -718,38 +712,33 @@ export class PreBattleScene extends Phaser.Scene {
     const questId = this.registry.get('questId')        as string        | undefined;
     const gs      = loadGameState();
 
-    // ─ Casual dungeon-map background ─────────────────────────────────────────
-    const bg = this.add.graphics();
-    bg.fillGradientStyle(CASUAL.bgTop, CASUAL.bgTop, CASUAL.bgBottom, CASUAL.bgBottom, 1);
-    bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    bg.fillStyle(CASUAL.bgMid, 0.42);
-    for (let y = 0; y < CANVAS_HEIGHT; y += 56) {
-      bg.fillRoundedRect(-18, y + 18, CANVAS_WIDTH + 36, 20, 6);
-    }
-    bg.lineStyle(1, 0x6fdcff, 0.09);
-    for (let y = 0; y < CANVAS_HEIGHT; y += 28) bg.lineBetween(0, y, CANVAS_WIDTH, y);
-    for (let x = 0; x < CANVAS_WIDTH; x += 56) bg.lineBetween(x, 0, x, CANVAS_HEIGHT);
+    // ─ Bright casual storybook background (gradient + sun glow + polka dots) ──
+    applyCasualBackground(this);
 
-    // ─ Back button ───────────────────────────────────────────────────────────
+    // ─ Back button — cream candy pill ────────────────────────────────────────
     const backBg = this.add.graphics();
-    const drawBack = (fill = 0x20384c, border = 0x55b88a): void => {
+    const drawBack = (fill: number = CASUAL.PANEL, border: number = CASUAL.EDGE): void => {
       backBg.clear();
-      backBg.fillStyle(fill, 0.96);
-      backBg.fillRoundedRect(10, 10, 70, 28, 7);
-      backBg.lineStyle(1, border, 0.65);
-      backBg.strokeRoundedRect(10, 10, 70, 28, 7);
+      backBg.fillStyle(CASUAL.EDGE, 1);
+      backBg.fillRoundedRect(10, 12, 70, 28, 13);
+      backBg.fillStyle(fill, 1);
+      backBg.fillRoundedRect(10, 10, 70, 26, 13);
+      backBg.fillStyle(0xffffff, 0.45);
+      backBg.fillRoundedRect(14, 12, 62, 5, 3);
+      backBg.lineStyle(2, border, 1);
+      backBg.strokeRoundedRect(10, 10, 70, 26, 13);
     };
     drawBack();
-    const backBtn = this.add.text(45, 24, '← 취소', {
-      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#d8f7ff',
+    const backBtn = this.add.text(45, 23, '← 취소', {
+      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5);
     const backZone = this.add.zone(10, 10, 70, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     backZone.on('pointerover', () => {
-      backBtn.setColor('#f0e6c8');
-      drawBack(0x27516a, CASUAL.gold);
+      backBtn.setColor(CASUAL_CSS.INK_SOFT);
+      drawBack(CASUAL.PANEL_SOFT, CASUAL.GOLD_DK);
     });
     backZone.on('pointerout', () => {
-      backBtn.setColor('#d8f7ff');
+      backBtn.setColor(CASUAL_CSS.INK);
       drawBack();
     });
     backZone.on('pointerdown', () => this.scene.start('DungeonHomeScene'));
@@ -761,49 +750,52 @@ export class PreBattleScene extends Phaser.Scene {
       y: iY,
       w: CANVAS_WIDTH - 24,
       h: iH,
-      radius: 8,
-      fillColor: 0x35243c,
-      borderColor: CASUAL.coral,
-      borderAlpha: 0.86,
-      accentColor: CASUAL.gold,
-      accentAlpha: 0.9,
-      glowColor: CASUAL.coral,
+      radius: 12,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: ACCENT.coral,
+      accentAlpha: 1,
+      glowColor: ACCENT.coral,
       glowOpacity: 0.12,
-      shadowOpacity: 0.36,
-      shadowOffsetY: 3,
+      shadowOpacity: 0.28,
+      shadowOffsetY: 4,
     });
-    ig.fillStyle(0xd9594a, 0.08);
-    ig.fillRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 7);
-    ig.lineStyle(1, 0xe8c468, 0.28);
-    ig.lineBetween(24, iY + 66, CANVAS_WIDTH - 24, iY + 66);
+    // soft inner cream tray under the enemy roster
+    ig.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+    ig.fillRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 8);
+    ig.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
+    ig.strokeRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 8);
 
     this.add.text(CANVAS_WIDTH / 2, iY + 18, `🚨  ${cfg?.name ?? '침략 알림'}`, {
-      fontFamily: 'Georgia, serif', fontSize: '17px', color: '#f0e6c8', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '17px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
     this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd6df',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.add.text(22, iY + 76, '예상 적군:', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ffdf6e', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     });
 
     let ey = iY + 96;
     const wave1 = cfg?.waves?.[0]?.invaders ?? [];
     wave1.forEach(({ type, count }) => {
       this.add.text(30, ey, `${ENEMY_EMOJI[type] ?? '👥'}  ${ENEMY_NAME[type] ?? type}  ×${count}`, {
-        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e6c8',
+        fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
       });
       ey += 22;
     });
     if ((cfg?.waves?.length ?? 0) > 1) {
       this.add.text(30, ey, `+ ${cfg!.waves.length - 1}개 추가 웨이브`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#ffb8c9',
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       });
       ey += 20;
     }
     this.add.text(CANVAS_WIDTH / 2, ey + 10, '⚠️  이 침략은 건너뛸 수 없습니다', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffdf6e',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // ─ MIDDLE: Dungeon defense loadout ───────────────────────────────────────
@@ -820,97 +812,99 @@ export class PreBattleScene extends Phaser.Scene {
       y: dY,
       w: CANVAS_WIDTH - 24,
       h: dH,
-      radius: 8,
-      fillColor: CASUAL.cardDeep,
-      borderColor: CASUAL.sky,
-      borderAlpha: 0.62,
-      borderWidth: 1.5,
-      accentColor: CASUAL.gold,
-      accentAlpha: 0.78,
-      glowColor: CASUAL.sky,
-      glowOpacity: 0.12,
-      shadowOpacity: 0.34,
-      shadowOffsetY: 3,
+      radius: 12,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      accentColor: ACCENT.sky,
+      accentAlpha: 1,
+      glowColor: ACCENT.sky,
+      glowOpacity: 0.1,
+      shadowOpacity: 0.28,
+      shadowOffsetY: 4,
     });
-    dg.fillStyle(CASUAL.card, 0.38);
-    dg.fillRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 7);
-    dg.lineStyle(1, 0x9eefff, 0.22);
-    dg.lineBetween(24, dY + 34, CANVAS_WIDTH - 24, dY + 34);
-    dg.fillStyle(0xe8c468, 0.06);
-    dg.fillEllipse(CANVAS_WIDTH / 2, dY + 172, CANVAS_WIDTH - 84, 58);
-    dg.fillStyle(0x221504, 0.28);
-    dg.fillRoundedRect(28, dY + 192, CANVAS_WIDTH - 56, 122, 10);
+    // inner cream tray housing the loadout board + cards
+    dg.fillStyle(CASUAL.PANEL_SOFT, 0.9);
+    dg.fillRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 9);
+    dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.6);
+    dg.strokeRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 9);
 
     this.add.text(CANVAS_WIDTH / 2, dY + 16, '던전 방어 편성', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0e6c8', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '14px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
 
     this.add.text(CANVAS_WIDTH - 28, dY + 16, `DM Lv.${gs.dmLevel}`, {
-      fontFamily: 'monospace', fontSize: '9px', color: '#a8dff2',
+      fontFamily: 'monospace', fontSize: '9px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(1, 0.5);
 
     const directiveY = dY + 42;
     const directiveIcon = directive.severity === 'ready' ? '✓' : directive.severity === 'warning' ? '!' : '!';
-    dg.fillStyle(directive.fill, 0.98);
-    dg.fillRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 7);
-    dg.lineStyle(1.2, directive.accent, 0.72);
-    dg.strokeRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 7);
-    dg.fillStyle(directive.accent, 0.22);
-    dg.fillRoundedRect(32, directiveY + 8, 30, 30, 6);
+    dg.fillStyle(CASUAL.PANEL, 1);
+    dg.fillRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 8);
+    dg.fillStyle(0xffffff, 0.4);
+    dg.fillRoundedRect(28, directiveY + 4, CANVAS_WIDTH - 56, 4, 2);
+    dg.lineStyle(2.5, directive.accent, 1);
+    dg.strokeRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 8);
+    dg.fillStyle(directive.accent, 1);
+    dg.fillRoundedRect(32, directiveY + 8, 30, 30, 7);
     this.add.text(47, directiveY + 23, directiveIcon, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '17px',
-      color: `#${directive.accent.toString(16).padStart(6, '0')}`,
+      color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add.text(72, directiveY + 12, '전투 지휘', {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#bad9e8',
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(72, directiveY + 25, directive.title, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: '#f0e6c8',
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(72, directiveY + 37, directive.body, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#e8d5aa',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: 218 },
     }).setOrigin(0, 0.5);
 
     const readyRatio = Math.max(0, Math.min(1, directive.readiness / 100));
     const readinessText = formatDefenseReadinessPercent(directive.readiness);
     const directiveChip = getDefenseDirectiveDisplayChip(directive);
-    dg.fillStyle(0x221504, 0.86);
-    dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 5);
-    dg.lineStyle(1, directive.accent, 0.52);
-    dg.strokeRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 5);
+    dg.fillStyle(CASUAL.PANEL_SOFT, 1);
+    dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
+    dg.lineStyle(1.5, directive.accent, 0.9);
+    dg.strokeRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
     this.add.text(CANVAS_WIDTH - 63, directiveY + 20, `${directiveChip} ${readinessText}`, {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: `#${directive.accent.toString(16).padStart(6, '0')}`,
       fontStyle: 'bold',
     }).setOrigin(0.5);
-    dg.fillStyle(0x0b1a26, 0.86);
+    dg.fillStyle(CASUAL.EDGE_SOFT, 0.45);
     dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 34, 50, 4, 2);
     if (readyRatio > 0) {
-      dg.fillStyle(directive.accent, 0.9);
+      dg.fillStyle(directive.accent, 1);
       dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 34, Math.max(3, 50 * readyRatio), 4, 2);
     }
 
     const statY = dY + 98;
     const drawStatPill = (x: number, label: string, value: string, color: number): void => {
       const w = 66, h = 24;
-      dg.fillStyle(0x20384c, 0.98);
-      dg.fillRoundedRect(x, statY, w, h, 5);
-      dg.lineStyle(1, color, 0.42);
-      dg.strokeRoundedRect(x, statY, w, h, 5);
+      dg.fillStyle(CASUAL.PANEL, 1);
+      dg.fillRoundedRect(x, statY, w, h, 7);
+      dg.fillStyle(0xffffff, 0.4);
+      dg.fillRoundedRect(x + 3, statY + 3, w - 6, 3, 2);
+      dg.lineStyle(2, color, 0.9);
+      dg.strokeRoundedRect(x, statY, w, h, 7);
       this.add.text(x + 8, statY + 7, label, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#bad9e8',
+        fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       this.add.text(x + w - 8, statY + 15, value, {
         fontFamily: 'monospace', fontSize: '10px', color: `#${color.toString(16).padStart(6, '0')}`,
@@ -918,35 +912,35 @@ export class PreBattleScene extends Phaser.Scene {
       }).setOrigin(1, 0.5);
     };
 
-    drawStatPill(24,  '방',   `${defenseTotals.builtRooms}/${defenseTotals.unlockedSlots}`, 0xe46d3c);
-    drawStatPill(94,  '수호', `${defenseTotals.monsterCount}`, 0xc8921a);
-    drawStatPill(164, '장비', `${defenseTotals.equipmentCount}`, CASUAL.gold);
-    drawStatPill(234, '함정', `${defenseTotals.trapCount}`, 0x62c66e);
-    drawStatPill(304, 'DEF',  `${defenseTotals.totalPower}`, 0x8f7cff);
+    drawStatPill(24,  '방',   `${defenseTotals.builtRooms}/${defenseTotals.unlockedSlots}`, CASUAL.RED_DK);
+    drawStatPill(94,  '수호', `${defenseTotals.monsterCount}`, CASUAL.GOLD_DK);
+    drawStatPill(164, '장비', `${defenseTotals.equipmentCount}`, CASUAL.GOLD_DK);
+    drawStatPill(234, '함정', `${defenseTotals.trapCount}`, CASUAL.GREEN_DK);
+    drawStatPill(304, 'DEF',  `${defenseTotals.totalPower}`, CASUAL.PURPLE_DK);
 
     const roomByIndex = new Map(defenseRooms.map(room => [room.index, room]));
     const railY = dY + 134;
     const cellW = 29, cellH = 28, cellGap = 5;
     const railX = Math.floor((CANVAS_WIDTH - (9 * cellW + 8 * cellGap)) / 2);
-    dg.fillStyle(0x0b1a26, 0.76);
-    dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 9);
-    dg.lineStyle(1, 0x9eefff, 0.18);
-    dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 9);
-    dg.fillStyle(0xe8c468, 0.08);
-    dg.fillRoundedRect(32, railY + 8, CANVAS_WIDTH - 64, 10, 5);
+    dg.fillStyle(CASUAL.PANEL, 1);
+    dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
+    dg.fillStyle(0xffffff, 0.4);
+    dg.fillRoundedRect(28, railY + 4, CANVAS_WIDTH - 56, 4, 2);
+    dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
+    dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
     this.add.text(32, railY + 13, '침략 루트 작전판', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#bad9e8', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(CANVAS_WIDTH - 32, railY + 13, `권장 DEF ${directive.pressure || '-'}`, {
-      fontFamily: 'monospace', fontSize: '8px', color: '#ffdf6e',
+      fontFamily: 'monospace', fontSize: '8px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
     }).setOrigin(1, 0.5);
     this.add.text(railX, railY + 52, '입구', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#907a58',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     this.add.text(railX + 9 * cellW + 8 * cellGap, railY + 52, '던전 심장', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#907a58',
+      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(1, 0.5);
-    dg.lineStyle(2, 0xe8c468, 0.24);
+    dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
     dg.lineBetween(railX + cellW / 2, railY + 34, railX + 8 * (cellW + cellGap) + cellW / 2, railY + 34);
     for (let i = 0; i < 9; i++) {
       const slot = gs.dungeonSlots?.[i];
@@ -959,27 +953,32 @@ export class PreBattleScene extends Phaser.Scene {
       const isActionTarget = directive.actionSlotIdx === i && Boolean(directive.actionLabel);
       const cx = railX + i * (cellW + cellGap);
       const cy = railY + 21;
-      dg.fillStyle(built ? style.bg : unlocked ? 0x20384c : 0x121f2c, 1);
-      dg.fillRoundedRect(cx, cy, cellW, cellH, 5);
+      // built → dark content tile w/ bright border; empty unlocked → cream-rimmed; locked → dim
+      dg.fillStyle(built ? style.bg : unlocked ? CASUAL.PANEL_SOFT : 0x121f2c, 1);
+      dg.fillRoundedRect(cx, cy, cellW, cellH, 6);
       if (built) {
         dg.fillStyle(0xffffff, 0.05);
         dg.fillRoundedRect(cx + 3, cy + 4, cellW - 6, 8, 3);
         dg.fillStyle(style.accent, 0.16);
         dg.fillRoundedRect(cx + 4, cy + cellH - 7, cellW - 8, 3, 2);
+      } else if (unlocked) {
+        dg.fillStyle(0xffffff, 0.45);
+        dg.fillRoundedRect(cx + 3, cy + 3, cellW - 6, 4, 2);
       }
-      dg.lineStyle(1, built ? style.accent : unlocked ? 0x4b6b7d : 0x223344, built ? 0.72 : 0.48);
-      dg.strokeRoundedRect(cx, cy, cellW, cellH, 5);
+      dg.lineStyle(built ? 1.5 : 2, built ? style.accent : unlocked ? CASUAL.EDGE : 0x223344, built ? 0.85 : unlocked ? 0.9 : 0.48);
+      dg.strokeRoundedRect(cx, cy, cellW, cellH, 6);
       this.add.text(cx + cellW / 2, cy + 12, built ? meta.icon : String(i + 1), {
         fontFamily: 'sans-serif',
         fontSize: built ? '12px' : '8px',
-        color: built ? style.text : unlocked ? '#c1d8e8' : '#526677',
+        color: built ? style.text : unlocked ? CASUAL_CSS.INK : '#526677',
+        fontStyle: 'bold',
       }).setOrigin(0.5);
       if (built && room) {
         const roomTarget = Math.max(35, Math.round((directive.pressure || defenseTotals.totalPower || 1) / Math.max(1, defenseTotals.builtRooms)));
         const roomRatio = Math.max(0, Math.min(1, room.power / roomTarget));
         dg.fillStyle(0x140c03, 0.85);
         dg.fillRoundedRect(cx + 4, cy + cellH - 5, cellW - 8, 3, 2);
-        dg.fillStyle(roomRatio >= 1 ? CASUAL.mint : roomRatio >= 0.7 ? CASUAL.gold : CASUAL.coral, 0.9);
+        dg.fillStyle(roomRatio >= 1 ? ACCENT.mint : roomRatio >= 0.7 ? ACCENT.gold : ACCENT.coral, 0.9);
         dg.fillRoundedRect(cx + 4, cy + cellH - 5, Math.max(3, (cellW - 8) * roomRatio), 3, 2);
       }
       if (queueItem) {
@@ -1076,7 +1075,7 @@ export class PreBattleScene extends Phaser.Scene {
       ov.add(ovBg);
 
       ov.add(this.add.text(0, -popH / 2 + 29, `#${room.index + 1} ${room.typeIcon} ${room.typeName}`, {
-        fontFamily: 'Georgia, serif', fontSize: '14px', color: CASUAL.cream, fontStyle: 'bold',
+        fontFamily: 'Georgia, serif', fontSize: '14px', color: CASUAL_CSS.CREAM, fontStyle: 'bold',
       }).setOrigin(0.5));
       ov.add(this.add.text(0, -popH / 2 + 58, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}  DEF ${room.power}`, {
         fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
@@ -1170,47 +1169,37 @@ export class PreBattleScene extends Phaser.Scene {
       const isActionTarget = directive.actionSlotIdx === index && Boolean(directive.actionLabel);
 
       if (!room) {
-        const style = ROOM_STYLE.empty;
-        dg.fillStyle(style.bg, 1);
-        dg.fillRoundedRect(cx, cy, cardW, cardH, 6);
-        drawDefenseRoomCardShell(
-          dg,
-          cx,
-          cy,
-          cardW,
-          cardH,
-          isActionTarget ? directive.accent : style.accent,
-          isActionTarget ? 0.38 : 0.16,
-          isActionTarget || Boolean(queueItem),
-        );
-        dg.fillStyle(0x1f1305, 0.64);
-        dg.fillRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 5);
-        dg.fillStyle(0xffffff, 0.05);
-        dg.fillRoundedRect(cx + 10, cy + 13, 22, 8, 3);
-        dg.fillStyle(style.accent, 0.12);
-        dg.fillRoundedRect(cx + 9, cy + cardH - 16, 24, 5, 3);
-        dg.lineStyle(isActionTarget ? 1.6 : 1.1, isActionTarget ? directive.accent : style.accent, isActionTarget ? 0.82 : 0.46);
-        dg.strokeRoundedRect(cx, cy, cardW, cardH, 6);
-        dg.fillStyle(isActionTarget ? directive.accent : style.accent, isActionTarget ? 0.34 : 0.24);
-        dg.fillRoundedRect(cx + 7, cy + 5, cardW - 14, 3, 2);
+        const slotAccent = isActionTarget ? directive.accent : CASUAL.EDGE;
+        // cream-rimmed empty slot
+        dg.fillStyle(CASUAL.PANEL_SOFT, 1);
+        dg.fillRoundedRect(cx, cy, cardW, cardH, 8);
+        dg.fillStyle(0xffffff, 0.4);
+        dg.fillRoundedRect(cx + 5, cy + 4, cardW - 10, 5, 3);
+        // inner glyph well (cream sub-tile)
+        dg.fillStyle(CASUAL.PANEL, 1);
+        dg.fillRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 6);
+        dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
+        dg.strokeRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 6);
+        dg.lineStyle(isActionTarget ? 3 : 2.5, slotAccent, 1);
+        dg.strokeRoundedRect(cx, cy, cardW, cardH, 8);
         this.add.text(cx + 21, cy + 32, '+', {
-          fontFamily: 'sans-serif', fontSize: '20px', color: '#ffd166',
+          fontFamily: 'sans-serif', fontSize: '22px', color: CASUAL_CSS.INK, fontStyle: 'bold',
         }).setOrigin(0.5);
         this.add.text(cx + 42, cy + 15, `#${index + 1} 미설계`, {
-          fontFamily: 'Georgia, serif', fontSize: '10px', color: '#cfe8f5', fontStyle: 'bold',
+          fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
         }).setOrigin(0, 0.5);
         this.add.text(cx + 42, cy + 30, '방 타입 선택 필요', {
-          fontFamily: 'sans-serif', fontSize: '8px', color: '#9db5c5',
+          fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
         }).setOrigin(0, 0.5);
         this.add.text(cx + 42, cy + 45, 'M -/- · T -/-', {
-          fontFamily: 'monospace', fontSize: '8px', color: '#7f9aad',
+          fontFamily: 'monospace', fontSize: '8px', color: CASUAL_CSS.INK_SOFT,
         }).setOrigin(0, 0.5);
-        dg.fillStyle(0x221504, 0.72);
-        dg.fillRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 4);
-        dg.lineStyle(1, CASUAL.gold, 0.48);
-        dg.strokeRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 4);
+        dg.fillStyle(CASUAL.GOLD, 1);
+        dg.fillRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 6);
+        dg.lineStyle(1.5, CASUAL.GOLD_DK, 1);
+        dg.strokeRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 6);
         this.add.text(cx + cardW - 32, cy + 30.5, '바로 설계', {
-          fontFamily: 'sans-serif', fontSize: '7px', color: '#ffdf6e',
+          fontFamily: 'sans-serif', fontSize: '7px', color: CASUAL_CSS.INK, fontStyle: 'bold',
         }).setOrigin(0.5);
         const emptyHitZone = this.add.zone(cx, cy, cardW, cardH)
           .setOrigin(0).setInteractive({ useHandCursor: true });
@@ -1277,9 +1266,9 @@ export class PreBattleScene extends Phaser.Scene {
       }).setOrigin(0, 0.5);
 
       if (room.equipment.length > 0) {
-        dg.fillStyle(CASUAL.gold, 0.2);
+        dg.fillStyle(ACCENT.gold, 0.2);
         dg.fillRoundedRect(cx + 7, cy + cardH - 16, 30, 11, 4);
-        dg.lineStyle(1, CASUAL.gold, 0.5);
+        dg.lineStyle(1, ACCENT.gold, 0.5);
         dg.strokeRoundedRect(cx + 7, cy + cardH - 16, 30, 11, 4);
         this.add.text(cx + 22, cy + cardH - 10.5, `⚙${room.equipment.length}`, {
           fontFamily: 'Georgia, serif',
@@ -1306,7 +1295,7 @@ export class PreBattleScene extends Phaser.Scene {
 
       dg.fillStyle(0x140c03, 0.82);
       dg.fillRoundedRect(cx + 42, cy + cardH - 8, cardW - 98, 4, 2);
-      dg.fillStyle(cardRatio >= 1 ? CASUAL.mint : cardRatio >= 0.7 ? CASUAL.gold : CASUAL.coral, 0.95);
+      dg.fillStyle(cardRatio >= 1 ? ACCENT.mint : cardRatio >= 0.7 ? ACCENT.gold : ACCENT.coral, 0.95);
       dg.fillRoundedRect(cx + 42, cy + cardH - 8, Math.max(4, (cardW - 98) * cardRatio), 4, 2);
 
       if (isActionTarget) {
@@ -1342,8 +1331,8 @@ export class PreBattleScene extends Phaser.Scene {
       activeSynergies.forEach(([tribe, count]) => {
         const label = `✨ ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
         const chip = this.add.text(chipX, synY, label, {
-          fontFamily: 'sans-serif', fontSize: '10px', color: '#2b2136',
-          backgroundColor: '#ffdf6e', padding: { x: 8, y: 4 },
+          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          backgroundColor: '#ffc63a', padding: { x: 8, y: 4 },
         });
         chip.setInteractive({ useHandCursor: true });
         chip.on('pointerdown', () => {
@@ -1371,7 +1360,7 @@ export class PreBattleScene extends Phaser.Scene {
           const bg = this.add.graphics();
           bg.fillStyle(0x221504, 0.97);
           bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
-          bg.lineStyle(1, CASUAL.gold, 0.7);
+          bg.lineStyle(1, ACCENT.gold, 0.7);
           bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
           ov.add(bg);
 
@@ -1393,7 +1382,7 @@ export class PreBattleScene extends Phaser.Scene {
       });
     } else {
       this.add.text(14, synY + 2, '시너지 없음', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#907a58',
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0, 0);
     }
 
@@ -1403,8 +1392,8 @@ export class PreBattleScene extends Phaser.Scene {
       .filter((s): s is ActiveSkill => s != null);
     if (ownedSkills.length > 0) {
       const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `🎯 스킬 ×${ownedSkills.length}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#163022',
-        backgroundColor: '#55b88a', padding: { x: 8, y: 4 },
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
+        backgroundColor: '#2f8f3a', padding: { x: 8, y: 4 },
       }).setOrigin(1, 0);
       skillChip.setInteractive({ useHandCursor: true });
       skillChip.on('pointerdown', () => {
@@ -1426,7 +1415,7 @@ export class PreBattleScene extends Phaser.Scene {
         const bg = this.add.graphics();
         bg.fillStyle(0x221504, 0.97);
         bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
-        bg.lineStyle(1, CASUAL.sky, 0.7);
+        bg.lineStyle(1, ACCENT.sky, 0.7);
         bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
         ov.add(bg);
 
@@ -1460,38 +1449,45 @@ export class PreBattleScene extends Phaser.Scene {
       : `${defenseTotals.totalPower}`;
 
     const commandBg = this.add.graphics();
-    commandBg.fillStyle(0x140c03, 0.94);
-    commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 12);
-    commandBg.lineStyle(1.5, directive.accent, 0.48);
-    commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 12);
-    commandBg.fillStyle(directive.accent, 0.14);
+    // chunky cream command tray
+    commandBg.fillStyle(CASUAL.SHADOW, 0.22);
+    commandBg.fillRoundedRect(10, commandY + 4, CANVAS_WIDTH - 20, commandH, 14);
+    commandBg.fillStyle(CASUAL.PANEL, 1);
+    commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);
+    commandBg.fillStyle(0xffffff, 0.5);
+    commandBg.fillRoundedRect(16, commandY + 5, CANVAS_WIDTH - 32, 5, 3);
+    commandBg.lineStyle(3, CASUAL.EDGE, 1);
+    commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);
+    // status strip (soft cream sub-band)
+    commandBg.fillStyle(CASUAL.PANEL_SOFT, 1);
     commandBg.fillRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 15, 7);
-    commandBg.lineStyle(1, 0xffffff, 0.12);
+    commandBg.lineStyle(1.5, directive.accent, 0.85);
     commandBg.strokeRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 15, 7);
 
     this.add.text(24, commandY + 10, '출격 명령', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: '#f0e6c8',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
 
     this.add.text(92, commandY + 10, commandStatus, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: directive.severity === 'ready' ? '#8cffc1' :
-        directive.severity === 'warning' ? '#ffe58a' : '#ffbd8a',
+      color: directive.severity === 'ready' ? CASUAL_CSS.GREEN :
+        directive.severity === 'warning' ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
     }).setOrigin(0, 0.5);
 
     this.add.text(CANVAS_WIDTH - 24, commandY + 10, `DEF ${pressureText} · 준비 ${readinessText}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: '#f0e6c8',
+      color: CASUAL_CSS.INK,
     }).setOrigin(1, 0.5);
 
     if (directive.actionLabel) {
+      // secondary "go fix it" → cream pill
       addPrimaryActionButton(this, {
         x: 14,
         y: startY,
@@ -1499,11 +1495,11 @@ export class PreBattleScene extends Phaser.Scene {
         h: 48,
         label: getDefenseActionButtonLabel(directive),
         fontSize: '13px',
-        fillColor: 0x24435a,
-        hoverFillColor: 0x2d5874,
-        borderColor: CASUAL.sky,
-        hoverBorderColor: CASUAL.gold,
-        textColor: '#d8f7ff',
+        fillColor: CASUAL.PANEL,
+        hoverFillColor: CASUAL.PANEL_SOFT,
+        borderColor: CASUAL.EDGE,
+        hoverBorderColor: CASUAL.GOLD_DK,
+        textColor: CASUAL_CSS.INK,
         onPress: () => {
           if (directive.actionSlotIdx === undefined) {
             this.scene.start('DungeonHomeScene');
@@ -1512,6 +1508,7 @@ export class PreBattleScene extends Phaser.Scene {
           this.returnToDungeonRoom(directive.actionSlotIdx);
         },
       });
+      // primary "방어 시작" → bright candy button (GREEN normal, RED if risky)
       addPrimaryActionButton(this, {
         x: 148,
         y: startY,
@@ -1519,26 +1516,27 @@ export class PreBattleScene extends Phaser.Scene {
         h: 48,
         label: '🛡️  방어 시작',
         fontSize: '15px',
-        fillColor: directive.severity === 'danger' ? 0x9b4a28 : 0x1fae73,
-        hoverFillColor: directive.severity === 'danger' ? 0xb45a32 : 0x25c884,
-        borderColor: directive.severity === 'danger' ? 0xffb06a : 0x8cffc1,
-        hoverBorderColor: CASUAL.gold,
-        textColor: '#fff8d8',
+        fillColor: directive.severity === 'danger' ? CASUAL.RED : CASUAL.GREEN,
+        hoverFillColor: directive.severity === 'danger' ? 0xff7a64 : 0x6fdc70,
+        borderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
+        hoverBorderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
+        textColor: CASUAL_CSS.WHITE,
         once: true,
         onPress: () => this.launchBattle(cfg, questId),
       });
     } else {
+      // primary "방어 시작!" → bright GREEN candy button
       addPrimaryActionButton(this, {
         x: CANVAS_WIDTH / 2 - 146,
         y: startY,
         w: 292,
         h: 48,
         label: '🛡️   방어 시작!',
-        fillColor: 0x1fae73,
-        hoverFillColor: 0x25c884,
-        borderColor: 0x8cffc1,
-        hoverBorderColor: CASUAL.gold,
-        textColor: '#fff8d8',
+        fillColor: CASUAL.GREEN,
+        hoverFillColor: 0x6fdc70,
+        borderColor: CASUAL.GREEN_DK,
+        hoverBorderColor: CASUAL.GREEN_DK,
+        textColor: CASUAL_CSS.WHITE,
         once: true,
         onPress: () => this.launchBattle(cfg, questId),
       });

@@ -8,6 +8,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { loadGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import {
@@ -54,15 +55,19 @@ export function drawMonsterSlot(
   c.add(g);
 
   if (monster) {
-    g.fillStyle(0x140d05, 1);
-    g.fillRoundedRect(x, y, w, h, 6);
-    g.lineStyle(1.5, accent, 0.7);
-    g.strokeRoundedRect(x, y, w, h, 6);
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRoundedRect(x, y + 3, w, h, 12);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(x, y, w, h, 12);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(x + 4, y + 4, w - 8, 6, 3);
+    g.lineStyle(3, accent, 1);
+    g.strokeRoundedRect(x, y, w, h, 12);
     c.add(ctx.scene.add.text(x + w / 2, y + h / 2 - 12, getMonsterEmoji(monster.id), {
       fontFamily: 'sans-serif', fontSize: '26px',
     }).setOrigin(0.5));
     c.add(ctx.scene.add.text(x + w / 2, y + h / 2 + 12, `Lv.${monster.level}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#669977',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
     const rarity = monster.rarity ?? getMonsterRarity(monster.id);
     if (rarity > 0) {
@@ -71,16 +76,16 @@ export function drawMonsterSlot(
       }).setOrigin(0.5));
     }
   } else {
-    g.fillStyle(0x000e06, 1);
-    g.fillRoundedRect(x, y, w, h, 6);
-    g.lineStyle(1, 0x1a3322, 0.8);
-    g.strokeRoundedRect(x, y, w, h, 6);
-    g.lineStyle(1, 0x1a3322, 0.5);
-    g.lineBetween(x + 8, y + h / 2, x + w - 8, y + h / 2);
-    g.lineBetween(x + w / 2, y + 8, x + w / 2, y + h - 8);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(x, y, w, h, 12);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(x, y, w, h, 12);
+    g.lineStyle(2, CASUAL.EDGE_SOFT, 0.6);
+    g.lineBetween(x + 12, y + h / 2, x + w - 12, y + h / 2);
+    g.lineBetween(x + w / 2, y + 12, x + w / 2, y + h - 12);
     c.add(ctx.scene.add.text(x + w / 2, y + h / 2, '+', {
-      fontFamily: 'sans-serif', fontSize: '20px', color: accentCSS,
-    }).setOrigin(0.5).setAlpha(0.4));
+      fontFamily: 'sans-serif', fontSize: '24px', color: accentCSS, fontStyle: 'bold',
+    }).setOrigin(0.5).setAlpha(0.85));
   }
 
   const zone = ctx.scene.add.zone(x, y, w, h).setOrigin(0).setInteractive();

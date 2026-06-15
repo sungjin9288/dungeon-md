@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { SKIN_DATA } from '../data/monsters';
@@ -99,16 +100,17 @@ export class AchievementScene extends Phaser.Scene {
   // ─── Background ────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x0d0a04, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    const ts = 40;
-    for (let x = 0; x < CANVAS_WIDTH; x += ts) {
-      for (let y = 0; y < CANVAS_HEIGHT; y += ts) {
-        g.fillStyle(0x1a1208, 0.4);
-        g.fillRect(x, y, ts - 1, ts - 1);
-      }
-    }
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
+
+    // Top header band (cream with white top highlight + brown bottom edge).
+    const g = this.add.graphics().setDepth(-10);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, 104);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, 104 - 3, CANVAS_WIDTH, 3);
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────────
@@ -122,32 +124,28 @@ export class AchievementScene extends Phaser.Scene {
     this.headerContainer = this.add.container(0, 0);
 
     const title = this.add.text(CANVAS_WIDTH / 2, 36, '🏆 업적', {
-      fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
 
     const counter = this.add.text(CANVAS_WIDTH / 2, 68, `${unlockedCount} / ${totalCount}`, {
-      fontFamily: 'sans-serif', fontSize: '13px',
-      color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0.5);
 
-    // Progress bar
+    // Progress bar — gold fill on a soft cream track
     const pbg = this.add.graphics();
-    pbg.fillStyle(0x1a1208, 1);
+    pbg.fillStyle(CASUAL.PANEL_SOFT, 1);
     pbg.fillRoundedRect(30, 86, CANVAS_WIDTH - 60, 8, 4);
-    pbg.lineStyle(1, 0x4a3820, 0.7);
+    pbg.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
     pbg.strokeRoundedRect(30, 86, CANVAS_WIDTH - 60, 8, 4);
 
     const pct  = totalCount > 0 ? unlockedCount / totalCount : 0;
     const pfill = this.add.graphics();
-    pfill.fillStyle(COLORS.TORCH_GOLD, 0.8);
+    pfill.fillStyle(CASUAL.GOLD, 1);
     pfill.fillRoundedRect(31, 87, Math.max(0, (CANVAS_WIDTH - 62) * pct), 6, 3);
 
-    const div = this.add.graphics();
-    div.lineStyle(1, COLORS.TORCH_GOLD, 0.25);
-    div.lineBetween(20, 104, CANVAS_WIDTH - 20, 104);
-
-    this.headerContainer.add([title, counter, pbg, pfill, div]);
+    this.headerContainer.add([title, counter, pbg, pfill]);
   }
 
   // ─── Tabs ────────────────────────────────────────────────────────────────────
@@ -163,17 +161,24 @@ export class AchievementScene extends Phaser.Scene {
       const isActive = tab.category === this.activeTab;
 
       const bg = this.add.graphics();
-      bg.fillStyle(isActive ? 0x3d3020 : 0x1a1208, 1);
+      bg.fillStyle(CASUAL.PANEL, 1);
       bg.fillRect(x, 0, tabW - 1, 40);
       if (isActive) {
-        bg.lineStyle(2, COLORS.TORCH_GOLD, 0.6);
-        bg.lineBetween(x, 40, x + tabW - 1, 40);
+        // saturated rounded active pill with white top highlight
+        bg.fillStyle(CASUAL.EDGE, 0.25);
+        bg.fillRoundedRect(x + 4, 6 + 2, tabW - 9, 30, 9);
+        bg.fillStyle(CASUAL.GOLD, 1);
+        bg.fillRoundedRect(x + 4, 6, tabW - 9, 30, 9);
+        bg.fillStyle(0xffffff, 0.32);
+        bg.fillRoundedRect(x + 8, 9, tabW - 17, 5, 3);
       }
 
       const txt = this.add.text(x + tabW / 2, 20, `${tab.icon}\n${tab.label}`, {
-        fontFamily: 'sans-serif', fontSize: '9px',
-        color: isActive ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+        color: isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
         align: 'center',
+        stroke: isActive ? '#00000033' : undefined,
+        strokeThickness: isActive ? 2 : 0,
       }).setOrigin(0.5);
 
       const zone = this.add.zone(x + tabW / 2, 20, tabW - 1, 40)
@@ -251,30 +256,41 @@ export class AchievementScene extends Phaser.Scene {
 
     const canClaim = unlocked && !rewardClaimed;
 
-    // Card bg
+    // Card bg — cream pill with chunky brown border, white top highlight + drop shadow.
     const bg = this.add.graphics();
+    // drop shadow
+    bg.fillStyle(CASUAL.SHADOW, canClaim ? 0.22 : unlocked ? 0.2 : 0.14);
+    bg.fillRoundedRect(x, y + 3, CARD_W, CARD_H, 8);
     if (canClaim) {
-      bg.fillStyle(0x1a2a10, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 6);
-      bg.lineStyle(2, 0x44cc44, 0.8);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 6);
+      // completed/claimable → bright green accent border on cream
+      bg.fillStyle(CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
+      bg.fillStyle(0xffffff, 0.45);
+      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
+      bg.lineStyle(3, CASUAL.GREEN_DK, 1);
+      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
     } else if (unlocked) {
-      bg.fillStyle(0x2a2010, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 6);
-      bg.lineStyle(1.5, COLORS.TORCH_GOLD, 0.65);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 6);
+      bg.fillStyle(CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
+      bg.fillStyle(0xffffff, 0.4);
+      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
+      bg.lineStyle(3, CASUAL.EDGE, 1);
+      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
     } else {
-      bg.fillStyle(0x141008, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 6);
-      bg.lineStyle(1, 0x3a2810, 0.5);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 6);
+      // locked → muted soft cream
+      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
+      bg.fillStyle(0xffffff, 0.28);
+      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
+      bg.lineStyle(3, CASUAL.EDGE_SOFT, 1);
+      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
     }
 
     // Pulsing glow ring + "NEW" badge for claimable cards
     if (canClaim) {
       const glowRing = this.add.graphics();
-      glowRing.lineStyle(3, 0x44ff88, 0.6);
-      glowRing.strokeRoundedRect(x - 2, y - 2, CARD_W + 4, CARD_H + 4, 9);
+      glowRing.lineStyle(3, CASUAL.GREEN, 0.7);
+      glowRing.strokeRoundedRect(x - 2, y - 2, CARD_W + 4, CARD_H + 4, 11);
       this.tweens.add({
         targets: glowRing,
         alpha: { from: 0.25, to: 0.85 },
@@ -285,8 +301,10 @@ export class AchievementScene extends Phaser.Scene {
       });
 
       const badgeBg = this.add.graphics();
-      badgeBg.fillStyle(0x22aa44, 1);
-      badgeBg.fillRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 3);
+      badgeBg.fillStyle(CASUAL.GREEN, 1);
+      badgeBg.fillRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 4);
+      badgeBg.lineStyle(2, 0xffffff, 1);
+      badgeBg.strokeRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 4);
 
       const badgeLabel = this.add.text(x + CARD_W - 17, y, 'NEW', {
         fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold',
@@ -303,14 +321,14 @@ export class AchievementScene extends Phaser.Scene {
 
     // Name
     const nameT = this.add.text(x + 42, y + 13, name, {
-      fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold',
-      color: canClaim ? '#88ff88' : unlocked ? CSS.TORCH_AMBER : CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: canClaim ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
 
     // Description
     const descT = this.add.text(x + 42, y + 29, desc, {
       fontFamily: 'sans-serif', fontSize: '9px',
-      color: unlocked ? CSS.PARCHMENT : '#5a4020',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CARD_W - 130 },
     }).setOrigin(0, 0.5);
 
@@ -320,8 +338,8 @@ export class AchievementScene extends Phaser.Scene {
     if (reward.soulCrystals) rewardParts.push(`💠${reward.soulCrystals}`);
     const rewardStr = rewardParts.join(' ');
     const rewardT = this.add.text(x + CARD_W - 8, y + 13, rewardStr, {
-      fontFamily: 'sans-serif', fontSize: '9px',
-      color: canClaim ? '#88ff88' : rewardClaimed ? '#445544' : CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+      color: canClaim ? CASUAL_CSS.BLUE : rewardClaimed ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.BLUE,
     }).setOrigin(1, 0.5);
 
     // Progress bar
@@ -330,17 +348,19 @@ export class AchievementScene extends Phaser.Scene {
     const pbw = CARD_W - 130;
 
     const pbg2 = this.add.graphics();
-    pbg2.fillStyle(0x0a0804, 1);
+    pbg2.fillStyle(CASUAL.PANEL_SOFT, 1);
     pbg2.fillRoundedRect(pbx, pby, pbw, 6, 3);
+    pbg2.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
+    pbg2.strokeRoundedRect(pbx, pby, pbw, 6, 3);
 
     const pfill = this.add.graphics();
-    pfill.fillStyle(unlocked ? COLORS.TORCH_GOLD : 0x6a5030, unlocked ? 0.85 : 0.7);
+    pfill.fillStyle(unlocked ? CASUAL.GREEN : CASUAL.GOLD, 1);
     pfill.fillRoundedRect(pbx, pby, pbw * pct, 6, 3);
 
     const progressTxt = unlocked ? '완료!' : `${current} / ${target}`;
     const progressT = this.add.text(x + 42 + pbw + 4, y + CARD_H - 13, progressTxt, {
-      fontFamily: 'sans-serif', fontSize: '9px',
-      color: unlocked ? CSS.TORCH_AMBER : '#5a4020',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+      color: unlocked ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5);
 
     // Claim button OR claimed badge
@@ -349,21 +369,24 @@ export class AchievementScene extends Phaser.Scene {
     const by = y + CARD_H - btnH - 8;
 
     if (canClaim) {
+      // bright green candy claim button
       const btnBg = this.add.graphics();
-      btnBg.fillStyle(0x1a4a00, 1);
-      btnBg.fillRoundedRect(bx, by, btnW, btnH, 5);
-      btnBg.lineStyle(1.5, 0x44dd44, 0.9);
-      btnBg.strokeRoundedRect(bx, by, btnW, btnH, 5);
+      btnBg.fillStyle(CASUAL.GREEN_DK, 1);
+      btnBg.fillRoundedRect(bx, by + 2, btnW, btnH, 7);
+      btnBg.fillStyle(CASUAL.GREEN, 1);
+      btnBg.fillRoundedRect(bx, by, btnW, btnH, 7);
+      btnBg.fillStyle(0xffffff, 0.32);
+      btnBg.fillRoundedRect(bx + 5, by + 3, btnW - 10, 5, 3);
       const claimT = this.add.text(bx + btnW / 2, by + btnH / 2, '수령', {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-        color: '#88ff88',
+        color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5);
       const zone = this.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH).setInteractive();
       zone.on('pointerdown', () => this.claimReward(def.id, reward));
       this.listContainer.add([btnBg, claimT, zone]);
     } else if (rewardClaimed) {
       const claimedT = this.add.text(x + CARD_W - 10, y + CARD_H - 13, '✓ 수령', {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#445544',
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0.5);
       this.listContainer.add([claimedT]);
     }
@@ -392,8 +415,8 @@ export class AchievementScene extends Phaser.Scene {
   private showRewardToast(msg: string): void {
     const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60, msg, {
       fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
-      color: '#88ff88',
-      backgroundColor: '#0a2a0a',
+      color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
+      backgroundColor: '#2f8f3a',
       padding: { x: 14, y: 8 },
     }).setOrigin(0.5).setDepth(500);
     this.tweens.add({
@@ -437,33 +460,28 @@ export class AchievementScene extends Phaser.Scene {
     const btnX = (CANVAS_WIDTH - btnW) / 2;
     const btnY = CANVAS_HEIGHT - 50;
 
+    // Casual cream pill (matches BarracksScene.buildBtn look).
+    const drawPill = (hover: boolean): void => {
+      bg.clear();
+      bg.fillStyle(CASUAL.EDGE, 1);
+      bg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
+      bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
+      bg.fillStyle(0xffffff, 0.45);
+      bg.fillRoundedRect(btnX + 6, btnY + 4, btnW - 12, 5, 3);
+    };
     const bg = this.add.graphics();
-    bg.fillStyle(0x1a1208, 1);
-    bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-    bg.lineStyle(1.5, 0x6a5030, 0.7);
-    bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
+    drawPill(false);
 
     this.add.text(btnX + btnW / 2, btnY + btnH / 2, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK,
     }).setOrigin(0.5);
 
     const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
       .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => {
-      bg.clear();
-      bg.fillStyle(0x2a2010, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(1.5, COLORS.TORCH_GOLD, 0.6);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
-    zone.on('pointerout', () => {
-      bg.clear();
-      bg.fillStyle(0x1a1208, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 8);
-      bg.lineStyle(1.5, 0x6a5030, 0.7);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 8);
-    });
+    zone.on('pointerover', () => drawPill(true));
+    zone.on('pointerout', () => drawPill(false));
     zone.on('pointerdown', () => this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene'));
   }
 }

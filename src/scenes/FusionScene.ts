@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import {
   HYBRID_DEFS, COMBINATION_TABLE,
-  RARITY_STARS, RARITY_COLORS,
+  RARITY_STARS,
   getBaseId,
 } from '../data/fusion';
 import { logger } from '../utils/logger';
@@ -67,16 +69,23 @@ export class FusionScene extends Phaser.Scene {
   // ─── Background ──────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x190f06, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    g.lineStyle(1, 0x2a1f10, 0.4);
-    for (let y = 0; y < CANVAS_HEIGHT; y += 40) g.lineBetween(0, y, CANVAS_WIDTH, y);
-    for (let x = 0; x < CANVAS_WIDTH; x += 40) g.lineBetween(x, 0, x, CANVAS_HEIGHT);
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
 
-    const glow = this.add.graphics().setDepth(-9);
-    glow.fillStyle(0x55b88a, 0.05);
-    glow.fillCircle(CANVAS_WIDTH / 2, CONTENT_Y + 130, 140);
+    const g = this.add.graphics().setDepth(-10);
+    // Cream content tray behind the fusion slots / tab content.
+    const trayX = 10;
+    const trayY = CONTENT_Y + 8;
+    const trayW = CANVAS_WIDTH - 20;
+    const trayH = CANVAS_HEIGHT - CONTENT_Y - 18;
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 18);
+    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+    g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
   }
 
   // ─── Header ──────────────────────────────────────────────────────────────
@@ -86,11 +95,14 @@ export class FusionScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(10);
     this.headerContainer = c;
 
+    // Cream header band with brown bottom edge + white top highlight.
     const g = this.add.graphics();
-    g.fillStyle(0x130d06, 1);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.lineStyle(1, 0x55b88a, 0.25);
-    g.lineBetween(0, HEADER_H, CANVAS_WIDTH, HEADER_H);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRect(0, 0, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
     c.add(g);
 
     const header = addSceneHeader(this, {
@@ -106,8 +118,8 @@ export class FusionScene extends Phaser.Scene {
     const gs = loadGameState();
     const discovered = gs.discoveredCombinations?.length ?? 0;
     const codexBtn = this.add.text(CANVAS_WIDTH - 14, HEADER_H / 2, `조합 도감 [${discovered}/10]`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#4488cc',
-      backgroundColor: '#001020', padding: { x: 6, y: 3 },
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
+      backgroundColor: CASUAL_CSS.BLUE, padding: { x: 7, y: 4 },
     }).setOrigin(1, 0.5).setInteractive();
     codexBtn.on('pointerdown', () => this.openCodex());
     c.add(codexBtn);
@@ -279,7 +291,7 @@ export class FusionScene extends Phaser.Scene {
 
     const ov = this.add.container(0, 0).setDepth(70);
     const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.85);
+    dim.fillStyle(0x000000, 0.5);
     dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     dim.setInteractive();
     dim.on('pointerdown', () => ov.destroy(true));
@@ -287,19 +299,25 @@ export class FusionScene extends Phaser.Scene {
 
     const PW = CANVAS_WIDTH - 32, PH = CANVAS_HEIGHT - 120;
     const PX = 16, PY = 60;
+    // Cream modal tray: brown drop shadow + cream fill + chunky brown rim + white highlight.
     const pg = this.add.graphics();
-    pg.fillStyle(0x0e0a04, 1);
-    pg.fillRoundedRect(PX, PY, PW, PH, 10);
-    pg.lineStyle(1.5, 0x4488cc, 0.7);
-    pg.strokeRoundedRect(PX, PY, PW, PH, 10);
+    pg.fillStyle(CASUAL.SHADOW, 0.3);
+    pg.fillRoundedRect(PX, PY + 5, PW, PH, 14);
+    pg.fillStyle(CASUAL.PANEL, 1);
+    pg.fillRoundedRect(PX, PY, PW, PH, 14);
+    pg.fillStyle(0xffffff, 0.4);
+    pg.fillRoundedRect(PX + 6, PY + 5, PW - 12, 6, 3);
+    pg.lineStyle(3, CASUAL.EDGE, 1);
+    pg.strokeRoundedRect(PX, PY, PW, PH, 14);
     ov.add(pg);
 
     ov.add(this.add.text(CANVAS_WIDTH / 2, PY + 22, `조합 도감 [${discovered.length}/${total}]`, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#4488cc', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5));
 
     const closeX = this.add.text(PX + PW - 10, PY + 10, '✕', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#224422',
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0).setInteractive();
     closeX.on('pointerdown', () => ov.destroy(true));
     ov.add(closeX);
@@ -314,22 +332,24 @@ export class FusionScene extends Phaser.Scene {
       const [a, b] = key.split('+');
 
       const row = this.add.graphics();
-      row.fillStyle(0x130d06, 1);
-      row.fillRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 5);
+      row.fillStyle(CASUAL.PANEL_SOFT, isKnown ? 1 : 0.6);
+      row.fillRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 6);
+      row.lineStyle(2, CASUAL.EDGE, isKnown ? 0.9 : 0.4);
+      row.strokeRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 6);
       ov.add(row);
 
       if (isKnown) {
         ov.add(this.add.text(PX + rowPad + 12, ry + (rowH - 4) / 2,
           `${a} + ${b} → ${hybrid.emoji} ${hybrid.name}`, {
-            fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[hybrid.rarity],
+            fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
           }).setOrigin(0, 0.5));
         ov.add(this.add.text(PX + PW - rowPad - 8, ry + (rowH - 4) / 2,
           RARITY_STARS[hybrid.rarity], {
-            fontFamily: 'sans-serif', fontSize: '9px',
+            fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.GOLD,
           }).setOrigin(1, 0.5));
       } else {
         ov.add(this.add.text(PX + rowPad + 12, ry + (rowH - 4) / 2, '??? + ??? → ???', {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#1a3322',
+          fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
         }).setOrigin(0, 0.5));
       }
       ry += rowH;

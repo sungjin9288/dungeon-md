@@ -12,6 +12,7 @@ import {
 import { FUSION_COMBINATION_COST, applyFusionCombination } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   type FusionTabContext, TAB_ACCENT,
   drawMonsterSlot, openMonsterPicker,
@@ -36,7 +37,7 @@ export function buildCombinationTab(
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY - 26,
     `서로 다른 몬스터 2마리 + 💠 ${FUSION_COMBINATION_COST} → 혼종 탄생`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#4488cc',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CANVAS_WIDTH - 40 }, align: 'center',
     }).setOrigin(0.5));
 
@@ -48,7 +49,7 @@ export function buildCombinationTab(
     });
   });
   c.add(ctx.scene.add.text(sx0 + slotW + gap / 2, LY + slotH / 2, '+', {
-    fontFamily: 'Georgia, serif', fontSize: '22px', color: '#4488cc',
+    fontFamily: 'sans-serif', fontSize: '22px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
   }).setOrigin(0.5));
   // Slot B
   drawMonsterSlot(ctx, c, sx0 + slotW + gap, LY, slotW, slotH, state.combineSlots[1] ?? null, '조합', () => {
@@ -67,13 +68,13 @@ export function buildCombinationTab(
   const gs = loadGameState();
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY + slotH + 14,
     `💠 보유 수정: ${gs.soulCrystals} / 필요: ${FUSION_COMBINATION_COST}`, {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: gs.soulCrystals >= FUSION_COMBINATION_COST ? '#4488cc' : '#aa2222',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: gs.soulCrystals >= FUSION_COMBINATION_COST ? CASUAL_CSS.BLUE : CASUAL_CSS.RED,
     }).setOrigin(0.5));
 
   const arrowY  = LY + slotH + 42;
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, arrowY, '▼', {
-    fontFamily: 'sans-serif', fontSize: '16px', color: '#4488cc',
+    fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   const resultX   = (CANVAS_WIDTH - slotW) / 2;
@@ -86,10 +87,21 @@ export function buildCombinationTab(
     const hybrid   = hybridId ? HYBRID_DEFS[hybridId] : undefined;
 
     const rg = ctx.scene.add.graphics();
-    rg.fillStyle(0x0b0703, 1);
-    rg.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
-    rg.lineStyle(1.5, 0x4488cc, hybrid ? 0.9 : 0.3);
-    rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);
+    if (hybrid) {
+      rg.fillStyle(CASUAL.SHADOW, 0.18);
+      rg.fillRoundedRect(resultX, resultY + 3, slotW, slotH, 12);
+      rg.fillStyle(CASUAL.PANEL, 1);
+      rg.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
+      rg.fillStyle(0xffffff, 0.4);
+      rg.fillRoundedRect(resultX + 4, resultY + 4, slotW - 8, 6, 3);
+      rg.lineStyle(3, TAB_ACCENT['조합'], 1);
+      rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
+    } else {
+      rg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      rg.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
+      rg.lineStyle(3, CASUAL.EDGE, 0.9);
+      rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
+    }
     c.add(rg);
 
     if (hybrid) {
@@ -100,32 +112,32 @@ export function buildCombinationTab(
         fontFamily: 'sans-serif', fontSize: '10px',
       }).setOrigin(0.5));
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 62, hybrid.name, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[hybrid.rarity],
+        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[hybrid.rarity], fontStyle: 'bold',
         wordWrap: { width: slotW - 4 },
       }).setOrigin(0.5));
     } else {
       c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + slotH / 2, '?', {
-        fontFamily: 'Georgia, serif', fontSize: '26px', color: '#1a3322',
+        fontFamily: 'sans-serif', fontSize: '26px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0.5));
     }
   } else {
     const g = ctx.scene.add.graphics();
-    g.fillStyle(0x140d05, 1);
-    g.fillRoundedRect(resultX, resultY, slotW, slotH, 6);
-    g.lineStyle(1.5, TAB_ACCENT['조합'], 0.3);
-    g.strokeRoundedRect(resultX, resultY, slotW, slotH, 6);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
+    g.lineStyle(3, CASUAL.EDGE, 0.9);
+    g.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
     c.add(g);
     c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + slotH / 2, '?', {
-      fontFamily: 'Georgia, serif', fontSize: '26px', color: '#1a3322',
+      fontFamily: 'sans-serif', fontSize: '26px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
   const allReady = bothFilled && gs.soulCrystals >= FUSION_COMBINATION_COST;
   const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 28,
     allReady ? `🧪 조합 시도 (-💠 ${FUSION_COMBINATION_COST})` : bothFilled ? `💠 부족 (${FUSION_COMBINATION_COST} 필요)` : '조건 미충족', {
-      fontFamily: 'Georgia, serif', fontSize: '14px',
-      color: allReady ? '#4488cc' : '#2a3a55', fontStyle: 'bold',
-      backgroundColor: allReady ? '#001433' : '#000810',
+      fontFamily: 'sans-serif', fontSize: '14px',
+      color: allReady ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      backgroundColor: allReady ? CASUAL_CSS.BLUE : CASUAL_CSS.CREAM,
       padding: { x: 20, y: 10 },
     }).setOrigin(0.5);
   if (allReady) btn.setInteractive().on('pointerdown', () => {

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { applyCasualBackground } from '../ui/AmbientBackground';
+import { CANVAS_WIDTH } from '../constants/layout';
 
 // ─── EndlessResultScene ───────────────────────────────────────────────────────
 //
@@ -45,17 +46,8 @@ export class EndlessResultScene extends Phaser.Scene {
   // ─── Background ────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    const g = this.add.graphics();
-    g.fillStyle(0x080412, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    // Subtle grid overlay
-    const ts = 40;
-    for (let x = 0; x < CANVAS_WIDTH; x += ts) {
-      for (let y = 0; y < CANVAS_HEIGHT; y += ts) {
-        g.fillStyle(0x120820, 0.5);
-        g.fillRect(x, y, ts - 1, ts - 1);
-      }
-    }
+    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
+    applyCasualBackground(this);
   }
 
   // ─── Stone tablet ──────────────────────────────────────────────────────────
@@ -65,33 +57,38 @@ export class EndlessResultScene extends Phaser.Scene {
     const tx = (CANVAS_WIDTH - tw) / 2;
     const ty = 80;
 
-    // Stone tablet body
+    // Cream result card
     const g = this.add.graphics();
-    g.fillStyle(0x2a2018, 1);
-    g.fillRoundedRect(tx, ty, tw, th, 12);
-    g.lineStyle(2.5, COLORS.TORCH_GOLD, 0.5);
-    g.strokeRoundedRect(tx, ty, tw, th, 12);
-    // Inner border
-    g.lineStyle(1, 0x6a5030, 0.4);
-    g.strokeRoundedRect(tx + 8, ty + 8, tw - 16, th - 16, 8);
+    g.fillStyle(CASUAL.SHADOW, 0.22);
+    g.fillRoundedRect(tx, ty + 6, tw, th, 16);
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(tx, ty, tw, th, 16);
+    g.lineStyle(3, CASUAL.EDGE, 1);
+    g.strokeRoundedRect(tx, ty, tw, th, 16);
+    // White top highlight
+    g.fillStyle(0xffffff, 0.4);
+    g.fillRoundedRect(tx + 6, ty + 6, tw - 12, 7, 4);
+    // Soft inner border
+    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
+    g.strokeRoundedRect(tx + 8, ty + 8, tw - 16, th - 16, 11);
 
     // Title
     const cx = CANVAS_WIDTH / 2;
     this.add.text(cx, ty + 36, '무한 던전 결과', {
-      fontFamily: 'Georgia, serif', fontSize: '20px', fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Divider
     const dg = this.add.graphics();
-    dg.lineStyle(1, COLORS.TORCH_GOLD, 0.35);
+    dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
     dg.lineBetween(tx + 20, ty + 56, tx + tw - 20, ty + 56);
 
     // New record flash
     if (result.isNewRecord) {
       const flash = this.add.text(cx, ty + 76, '★ 신기록 ★', {
-        fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold',
-        color: '#ffdd00',
+        fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold',
+        color: CASUAL_CSS.GOLD, stroke: '#ffffff', strokeThickness: 3,
       }).setOrigin(0.5);
       this.tweens.add({
         targets: flash,
@@ -105,14 +102,14 @@ export class EndlessResultScene extends Phaser.Scene {
 
     const rowY = result.isNewRecord ? ty + 108 : ty + 84;
 
-    this.drawStat(cx, rowY,       '⚔ 도달 웨이브',  String(result.wave),          CSS.PARCHMENT);
-    this.drawStat(cx, rowY + 56,  '💀 처치 수',      result.kills.toLocaleString(), CSS.PARCHMENT);
-    this.drawStat(cx, rowY + 112, '🪙 획득 골드',    result.goldEarned.toLocaleString(), '#f0d060');
-    this.drawStat(cx, rowY + 168, '💠 획득 수정',    String(result.crystalsEarned), '#cc88ff');
+    this.drawStat(cx, rowY,       '⚔ 도달 웨이브',  String(result.wave),          CASUAL_CSS.INK);
+    this.drawStat(cx, rowY + 56,  '💀 처치 수',      result.kills.toLocaleString(), CASUAL_CSS.INK);
+    this.drawStat(cx, rowY + 112, '🪙 획득 골드',    result.goldEarned.toLocaleString(), CASUAL_CSS.GOLD);
+    this.drawStat(cx, rowY + 168, '💠 획득 수정',    String(result.crystalsEarned), CASUAL_CSS.PURPLE);
 
     // Crystal formula hint
     this.add.text(cx, rowY + 215, `(웨이브÷5 + 마일스톤 보너스 × 선조의 지혜)`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#7a5090',
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5);
 
     // Previous best comparison
@@ -124,10 +121,10 @@ export class EndlessResultScene extends Phaser.Scene {
         : delta === 0
         ? `= 이전 기록 타이`
         : `▼ ${Math.abs(delta)}웨이브 (이전: ${result.previousBest}파)`;
-      const deltaColor = delta > 0 ? '#44ff88' : delta === 0 ? '#ffcc44' : '#ff6666';
+      const deltaColor = delta > 0 ? CASUAL_CSS.GREEN : delta === 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
 
       this.add.text(cx, compY, `이전 최고: ${result.previousBest}파`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#886644',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
 
       this.add.text(cx, compY + 18, deltaText, {
@@ -138,10 +135,10 @@ export class EndlessResultScene extends Phaser.Scene {
 
   private drawStat(cx: number, y: number, label: string, value: string, valueColor: string): void {
     this.add.text(cx, y, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5);
     this.add.text(cx, y + 24, value, {
-      fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '26px', fontStyle: 'bold',
       color: valueColor,
     }).setOrigin(0.5);
   }
@@ -153,22 +150,22 @@ export class EndlessResultScene extends Phaser.Scene {
     const by  = 548;
     const bw  = 130, bh = 44;
 
-    // [다시 도전] — retry endless
+    // [다시 도전] — retry endless (primary: green candy)
     this.makeButton(
       cx - bw / 2 - 6, by, bw, bh,
       '다시 도전',
-      0x1a0808, 0xcc2200, '#ff6644',
+      CASUAL.GREEN, CASUAL.GREEN_DK, CASUAL_CSS.WHITE, true,
       () => {
         this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
         this.scene.start('DungeonScene');
       },
     );
 
-    // [스테이지 선택으로]
+    // [스테이지 선택으로] (secondary: cream pill)
     this.makeButton(
       cx + 6, by, bw, bh,
       '스테이지 선택',
-      0x141008, 0x7a5820, CSS.PARCHMENT,
+      CASUAL.PANEL, CASUAL.EDGE, CASUAL_CSS.INK, false,
       () => this.scene.start('StageSelectScene'),
     );
   }
@@ -176,22 +173,35 @@ export class EndlessResultScene extends Phaser.Scene {
   private makeButton(
     x: number, y: number, w: number, h: number,
     label: string,
-    fillColor: number, borderColor: number, textColor: string,
+    capColor: number, baseColor: number, textColor: string, primary: boolean,
     onClick: () => void,
   ): void {
+    const r = 12;
     const bg = this.add.graphics();
     const draw = (hovered: boolean) => {
       bg.clear();
-      bg.fillStyle(hovered ? 0x2a2010 : fillColor, 1);
-      bg.fillRoundedRect(x, y, w, h, 8);
-      bg.lineStyle(2, hovered ? COLORS.TORCH_GOLD : borderColor, 0.85);
-      bg.strokeRoundedRect(x, y, w, h, 8);
+      // thick colored bottom edge (candy-button base)
+      bg.fillStyle(baseColor, 1);
+      bg.fillRoundedRect(x, y + 4, w, h, r);
+      // bright cap
+      bg.fillStyle(capColor, 1);
+      bg.fillRoundedRect(x, y, w, h - 2, r);
+      // glossy top highlight
+      bg.fillStyle(0xffffff, primary ? 0.32 : 0.5);
+      bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), Math.max(5, r - 4));
+      // hover: bright outline
+      if (hovered) {
+        bg.lineStyle(2, 0xffffff, 0.6);
+        bg.strokeRoundedRect(x, y, w, h - 2, r);
+      }
     };
     draw(false);
 
-    this.add.text(x + w / 2, y + h / 2, label, {
-      fontFamily: 'Georgia, serif', fontSize: '12px', fontStyle: 'bold',
+    this.add.text(x + w / 2, y + (h - 2) / 2, label, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
       color: textColor,
+      stroke: primary ? '#00000033' : undefined,
+      strokeThickness: primary ? 3 : 0,
     }).setOrigin(0.5);
 
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h)

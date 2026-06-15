@@ -11,6 +11,7 @@ import {
 } from '../data/fusion';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   type FusionTabContext,
   showFusionAnimation, showResultToast,
@@ -28,13 +29,13 @@ export function buildAwakeningTab(
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 22,
     `친밀도 100 + 각성석 1개 → 몬스터 각성   🪨 보유: ${gs.awakeningStones ?? 0}개`, {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc44cc',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
     }).setOrigin(0.5));
 
   const monsters = gs.ownedMonsters;
   if (!monsters.length) {
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y + 50, '보유 몬스터 없음', {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: '#442244',
+      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     return;
   }
@@ -47,11 +48,15 @@ export function buildAwakeningTab(
     const eligible = affinity >= 100 && !awakened && stones >= 1;
 
     const rg = ctx.scene.add.graphics().setDepth(3);
-    const borderCol = awakened ? 0xcc44cc : eligible ? 0x663366 : 0x1a0a1a;
-    rg.fillStyle(0x0d040d, 1);
-    rg.fillRoundedRect(PAD, ry, rowW, rowH - 4, 6);
-    rg.lineStyle(1.5, borderCol, awakened ? 1 : 0.7);
-    rg.strokeRoundedRect(PAD, ry, rowW, rowH - 4, 6);
+    const borderCol = awakened ? CASUAL.PURPLE : eligible ? CASUAL.PURPLE_DK : CASUAL.EDGE;
+    rg.fillStyle(CASUAL.SHADOW, 0.18);
+    rg.fillRoundedRect(PAD, ry + 3, rowW, rowH - 4, 12);
+    rg.fillStyle(awakened ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
+    rg.fillRoundedRect(PAD, ry, rowW, rowH - 4, 12);
+    rg.fillStyle(0xffffff, 0.4);
+    rg.fillRoundedRect(PAD + 4, ry + 4, rowW - 8, 6, 3);
+    rg.lineStyle(3, borderCol, awakened ? 1 : 0.9);
+    rg.strokeRoundedRect(PAD, ry, rowW, rowH - 4, 12);
     c.add(rg);
 
     c.add(ctx.scene.add.text(PAD + 24, ry + (rowH - 4) / 2, getMonsterEmoji(m.id), {
@@ -59,41 +64,41 @@ export function buildAwakeningTab(
     }).setOrigin(0.5));
 
     c.add(ctx.scene.add.text(PAD + 48, ry + 10, getMonsterDisplayName(m.id), {
-      fontFamily: 'Georgia, serif', fontSize: '12px',
-      color: awakened ? '#cc44cc' : '#c8b090',
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: awakened ? CASUAL_CSS.PURPLE : CASUAL_CSS.INK,
     }));
     c.add(ctx.scene.add.text(PAD + 48, ry + 26, `Lv.${m.level}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#664466',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
     }));
 
     // Affinity bar
     const barX = PAD + 48, barY = ry + 40, barW = 120, barH = 6;
     const barBg = ctx.scene.add.graphics();
-    barBg.fillStyle(0x220022, 1);
-    barBg.fillRoundedRect(barX, barY, barW, barH, 2);
+    barBg.fillStyle(CASUAL.EDGE_SOFT, 0.4);
+    barBg.fillRoundedRect(barX, barY, barW, barH, 3);
     if (affinity > 0) {
-      barBg.fillStyle(0xcc44cc, 1);
-      barBg.fillRoundedRect(barX, barY, Math.round(barW * affinity / 100), barH, 2);
+      barBg.fillStyle(CASUAL.PURPLE, 1);
+      barBg.fillRoundedRect(barX, barY, Math.round(barW * affinity / 100), barH, 3);
     }
     c.add(barBg);
     c.add(ctx.scene.add.text(barX + barW + 4, barY + 3, `${affinity}/100`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#884488',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
 
     if (awakened) {
       c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, '✨ 각성 완료', {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#cc44cc',
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
       }).setOrigin(1, 0.5));
       const ap = AWAKENED_PASSIVES[getBaseId(m.id)];
       if (ap) {
         c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2 + 14, ap.desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#884488',
+          fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
         }).setOrigin(1, 0.5));
       }
     } else if (eligible) {
       const awakBtn = ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, '⚡ 각성 실행', {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc44cc', fontStyle: 'bold',
-        backgroundColor: '#2a003a', padding: { x: 8, y: 4 },
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
+        backgroundColor: CASUAL_CSS.PURPLE, padding: { x: 8, y: 4 },
       }).setOrigin(1, 0.5).setInteractive();
       awakBtn.on('pointerdown', () => confirmAwakening(ctx, m));
       c.add(awakBtn);
@@ -102,7 +107,7 @@ export function buildAwakeningTab(
       if (affinity < 100) reasons.push(`친밀도 ${affinity}/100`);
       if (stones < 1)     reasons.push('각성석 필요');
       c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, reasons.join(' · '), {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#442244',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0.5));
     }
   });

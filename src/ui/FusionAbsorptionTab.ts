@@ -11,6 +11,7 @@ import {
 import { applyFusionAbsorption } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   type FusionTabContext,
   drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast, showConfirmDialog,
@@ -33,13 +34,13 @@ export function buildAbsorptionTab(
   let   y     = ctx.contentY + 240;
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 22, '희생 몬스터 → XP 전환  |  같은 종류: +5% ATK 스택', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8844',
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
     align: 'center', wordWrap: { width: CANVAS_WIDTH - 40 },
   }).setOrigin(0.5));
 
   // Target (베이스) slot
   c.add(ctx.scene.add.text(PAD + slotW / 2, y - 6, '베이스', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
+    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
   }).setOrigin(0.5));
   drawMonsterSlot(ctx, c, PAD, y, slotW, slotH, state.absorbTarget, '흡수', () => {
     openMonsterPicker(ctx, undefined, (m) => {
@@ -51,7 +52,7 @@ export function buildAbsorptionTab(
   // Sacrifice slots
   const sacrificeX = PAD + slotW + 18;
   c.add(ctx.scene.add.text(sacrificeX, y - 6, '희생 (최대 5)', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#885533',
+    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }));
 
   const maxSacs = 5;
@@ -64,10 +65,14 @@ export function buildAbsorptionTab(
 
     if (sac) {
       const sg = ctx.scene.add.graphics();
-      sg.fillStyle(0x200a00, 1);
-      sg.fillRoundedRect(sx, y, sacW, sacH, 5);
-      sg.lineStyle(1.5, 0xcc8844, 0.7);
-      sg.strokeRoundedRect(sx, y, sacW, sacH, 5);
+      sg.fillStyle(CASUAL.SHADOW, 0.18);
+      sg.fillRoundedRect(sx, y + 3, sacW, sacH, 10);
+      sg.fillStyle(CASUAL.PANEL, 1);
+      sg.fillRoundedRect(sx, y, sacW, sacH, 10);
+      sg.fillStyle(0xffffff, 0.4);
+      sg.fillRoundedRect(sx + 4, y + 4, sacW - 8, 5, 3);
+      sg.lineStyle(3, CASUAL.GOLD, 1);
+      sg.strokeRoundedRect(sx, y, sacW, sacH, 10);
       c.add(sg);
       c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH / 2 - 10, getMonsterEmoji(sac.id), {
         fontFamily: 'sans-serif', fontSize: '22px',
@@ -75,10 +80,10 @@ export function buildAbsorptionTab(
       const rarityVal = sac.rarity ?? getMonsterRarity(sac.id);
       const xpVal = RARITY_XP_VALUES[rarityVal] ?? 30;
       c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH - 12, `+${xpVal} XP`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
       }).setOrigin(0.5));
       const xBtn = ctx.scene.add.text(sx + sacW - 3, y + 3, '×', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: '#aa4422',
+        fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.RED, fontStyle: 'bold',
       }).setOrigin(1, 0).setInteractive();
       const fi = i;
       xBtn.on('pointerdown', () => {
@@ -90,13 +95,13 @@ export function buildAbsorptionTab(
       c.add(xBtn);
     } else if (state.absorbSacrifices.length < maxSacs) {
       const sg = ctx.scene.add.graphics();
-      sg.fillStyle(0x0d0600, 1);
-      sg.fillRoundedRect(sx, y, sacW, sacH, 5);
-      sg.lineStyle(1, 0x331a00, 0.8);
-      sg.strokeRoundedRect(sx, y, sacW, sacH, 5);
+      sg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      sg.fillRoundedRect(sx, y, sacW, sacH, 10);
+      sg.lineStyle(3, CASUAL.EDGE, 0.9);
+      sg.strokeRoundedRect(sx, y, sacW, sacH, 10);
       c.add(sg);
       c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH / 2, '+', {
-        fontFamily: 'sans-serif', fontSize: '20px', color: '#331a00',
+        fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0.5));
       const addZone = ctx.scene.add.zone(sx, y, sacW, sacH).setOrigin(0).setInteractive();
       addZone.on('pointerdown', () => {
@@ -129,12 +134,12 @@ export function buildAbsorptionTab(
     const newStacks     = Math.min(currentStacks + sameTypeCount, 10);
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y,
       `XP 획득: +${totalXP}  /  같은 종류 보너스: ${currentStacks}스택 → ${newStacks}스택`, {
-        fontFamily: 'Georgia, serif', fontSize: '11px', color: '#cc8844', align: 'center',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold', align: 'center',
         wordWrap: { width: CANVAS_WIDTH - 40 },
       }).setOrigin(0.5));
     if (sameTypeCount > 0) {
       c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y + 18, `ATK +${newStacks * 5}% (스택 ×${newStacks})`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#ffaa44',
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
       }).setOrigin(0.5));
     }
     y += 40;
@@ -143,9 +148,9 @@ export function buildAbsorptionTab(
   // Execute button
   const canExec = state.absorbTarget !== null && state.absorbSacrifices.length > 0;
   const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, y + 10, canExec ? '🍴 흡수 실행' : '슬롯을 채우세요', {
-    fontFamily: 'Georgia, serif', fontSize: '15px',
-    color: canExec ? '#cc8844' : '#553322', fontStyle: 'bold',
-    backgroundColor: canExec ? '#2a1400' : '#0d0800',
+    fontFamily: 'sans-serif', fontSize: '15px',
+    color: canExec ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    backgroundColor: canExec ? CASUAL_CSS.GOLD : CASUAL_CSS.CREAM,
     padding: { x: 28, y: 10 },
   }).setOrigin(0.5);
   if (canExec) btn.setInteractive().on('pointerdown', () => {
@@ -162,7 +167,7 @@ export function buildAbsorptionTab(
 
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50,
     '같은 속성 희생 시 ATK 스택 +5% (최대 ×10)', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#553322',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 }
 
