@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { Torch } from '../objects/Torch';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS, CSS, CASUAL } from '../constants/colors';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   GRID_ROWS, GRID_X, GRID_Y,
@@ -166,6 +166,23 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
 
 // ─── Background ───────────────────────────────────────────────────────────────
 
+/**
+ * Build a signature-safe warm-stone override of the (dark) theme so the shared
+ * decoration helpers (drawStalactites/drawStalagmites/drawCaveWallTexture) —
+ * which read stone/glow colors from the theme internally — draw in the bright
+ * CASUAL palette without us editing the shared theme object. Immutable spread:
+ * only the decorative stone/glow fields are swapped.
+ */
+function casualDecorTheme(theme: DungeonTheme): DungeonTheme {
+  return {
+    ...theme,
+    stoneDark:  CASUAL.EDGE_SOFT,
+    stoneMid:   CASUAL.PANEL_SOFT,
+    stoneLight: CASUAL.EDGE_SOFT,
+    glowColor:  CASUAL.GOLD,
+  };
+}
+
 export function drawDungeonBackground(
   scene:             Phaser.Scene,
   theme:             DungeonTheme,
@@ -173,55 +190,59 @@ export function drawDungeonBackground(
   effectiveCellSize: number,
 ): void {
   const t = theme;
+  // Warm-stone override fed to the shared decoration helpers (visual-only).
+  const decorTheme = casualDecorTheme(t);
   const g = scene.add.graphics().setDepth(-20);
-  g.fillStyle(t.bgPrimary, 1);
+
+  // Base — warm light vertical gradient (replaces the dark cave fill).
+  g.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
   g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // Cave rock grid
+  // Subtle floor-tile grid — soft warm brown on cream, very low alpha.
   const ts = 40;
   for (let x = 0; x < CANVAS_WIDTH; x += ts)
     for (let y = TOP_BAR_HEIGHT; y < CANVAS_HEIGHT; y += ts) {
-      g.lineStyle(0.4, t.stoneDark, 0.18);
+      g.lineStyle(0.4, CASUAL.EDGE_SOFT, 0.12);
       g.strokeRect(x, y, ts, ts);
     }
 
-  // Upper area — cave ceiling
-  g.fillStyle(t.stoneDark, 1);
+  // Upper area — soft warm "ceiling" band.
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRect(0, TOP_BAR_HEIGHT, CANVAS_WIDTH, GRID_Y - TOP_BAR_HEIGHT);
   for (let y = TOP_BAR_HEIGHT + 8; y < GRID_Y; y += 14) {
-    g.fillStyle(t.bgPrimary, 0.4); g.fillRect(0, y, CANVAS_WIDTH, 2);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, CANVAS_WIDTH, 2);
   }
 
-  // Stalactites at grid top
+  // Stalactites at grid top — warm-brown decorative, not gloomy.
   if (t.decorations.includes('stalactites')) {
-    drawStalactites(g, t, GRID_Y - 4, CANVAS_WIDTH, 31);
+    drawStalactites(g, decorTheme, GRID_Y - 4, CANVAS_WIDTH, 31);
   }
 
-  // Grid separator line — mineral vein
-  g.fillStyle(t.panelBorder, 0.2);
+  // Grid separator line — warm seam.
+  g.fillStyle(CASUAL.EDGE_SOFT, 0.25);
   g.fillRect(GRID_X - 4, GRID_Y - 2, effectiveCols * effectiveCellSize + 8, 2);
 
-  // Floor area
+  // Floor area — slightly deeper warm band, low contrast.
   const floorY = GRID_Y + GRID_ROWS * effectiveCellSize + 4;
-  g.fillStyle(t.stoneDark, 0.25);
+  g.fillStyle(CASUAL.BG_BOTTOM, 0.55);
   g.fillRect(0, floorY, CANVAS_WIDTH, CANVAS_HEIGHT - floorY);
   for (let y = floorY; y < CANVAS_HEIGHT; y += 8) {
-    g.fillStyle(t.bgPrimary, 0.3); g.fillRect(0, y, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, CANVAS_WIDTH, 4);
   }
 
-  // Stalagmites at bottom
+  // Stalagmites at bottom — warm-brown decorative.
   if (t.decorations.includes('stalagmites')) {
-    drawStalagmites(g, t, floorY + 2, CANVAS_WIDTH, 88);
+    drawStalagmites(g, decorTheme, floorY + 2, CANVAS_WIDTH, 88);
   }
 
-  // Rock strata texture
-  drawCaveWallTexture(g, t, 0, TOP_BAR_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
+  // Faint warm rock strata texture (uses CASUAL.EDGE_SOFT via override theme).
+  drawCaveWallTexture(g, decorTheme, 0, TOP_BAR_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
   drawDungeonDefenseFrame(scene, t, effectiveCols, effectiveCellSize);
 }
 
 function drawDungeonDefenseFrame(
   scene: Phaser.Scene,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,   // visual-only reskin ignores the dark theme; uses CASUAL palette
   effectiveCols: number,
   effectiveCellSize: number,
 ): void {
@@ -231,15 +252,16 @@ function drawDungeonDefenseFrame(
   const y = GRID_Y;
   const g = scene.add.graphics().setDepth(-12);
 
-  g.fillStyle(0x070503, 0.38);
+  // Play-area panel — cream body, brown rounded border, warm drop shadow.
+  g.fillStyle(CASUAL.SHADOW, 0.4);
   g.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
-  g.fillStyle(theme.stoneDark, 0.72);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
-  g.fillStyle(theme.bgPrimary, 0.34);
-  g.fillRoundedRect(x - 8, y - 9, gridW + 16, gridH + 18, 11);
-  g.lineStyle(2, theme.panelBorder, 0.34);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x - 12, y - 14, gridW + 24, 12, 9);
+  g.lineStyle(3, CASUAL.EDGE, 1);
   g.strokeRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
-  g.lineStyle(1, COLORS.TORCH_GOLD, 0.16);
+  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
   g.strokeRoundedRect(x - 7, y - 8, gridW + 14, gridH + 16, 10);
 
   for (let row = 0; row < GRID_ROWS; row++) {
@@ -247,44 +269,51 @@ function drawDungeonDefenseFrame(
       const cellX = x + col * effectiveCellSize;
       const cellY = y + row * effectiveCellSize;
       const inset = 9;
-      const accent = row === 0 ? 0xff8a45 : row === 1 ? 0x5fb854 : 0x9a6cd8;
-      g.fillStyle(0x07131c, 0.44);
-      g.fillRoundedRect(cellX + inset, cellY + inset, effectiveCellSize - inset * 2, effectiveCellSize - inset * 2, 12);
-      g.fillStyle(0xffffff, 0.035);
-      g.fillRoundedRect(cellX + inset + 8, cellY + inset + 8, effectiveCellSize - inset * 2 - 16, 18, 7);
-      g.lineStyle(1, accent, 0.16);
-      g.strokeRoundedRect(cellX + inset, cellY + inset, effectiveCellSize - inset * 2, effectiveCellSize - inset * 2, 12);
-      g.fillStyle(accent, 0.12);
-      g.fillRoundedRect(cellX + inset + 10, cellY + effectiveCellSize - inset - 10, effectiveCellSize - inset * 2 - 20, 4, 2);
+      const accent = row === 0 ? CASUAL.GOLD : row === 1 ? CASUAL.GREEN : CASUAL.PURPLE;
+      const cw = effectiveCellSize - inset * 2;
+      // Cream cell body + white top highlight.
+      g.fillStyle(CASUAL.PANEL, 1);
+      g.fillRoundedRect(cellX + inset, cellY + inset, cw, cw, 12);
+      g.fillStyle(0xffffff, 0.55);
+      g.fillRoundedRect(cellX + inset + 8, cellY + inset + 8, cw - 16, 18, 7);
+      // Chunky saturated per-row border.
+      g.lineStyle(2.5, accent, 0.9);
+      g.strokeRoundedRect(cellX + inset, cellY + inset, cw, cw, 12);
+      // Saturated bottom accent strip.
+      g.fillStyle(accent, 0.85);
+      g.fillRoundedRect(cellX + inset + 10, cellY + effectiveCellSize - inset - 10, cw - 20, 4, 2);
     }
   }
 
+  // Entry gate — bright red nub on cream.
   const gateY = y + effectiveCellSize / 2;
-  g.fillStyle(0x06090d, 0.82);
+  g.fillStyle(0xffffff, 0.95);
   g.fillRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
-  g.lineStyle(1.5, COLORS.BLOOD_GLOW, 0.48);
+  g.lineStyle(2.5, CASUAL.RED, 1);
   g.strokeRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
-  g.fillStyle(COLORS.BLOOD_RED, 0.36);
+  g.fillStyle(CASUAL.RED, 0.9);
   g.fillTriangle(x + gridW + 12, gateY, x + gridW + 2, gateY - 9, x + gridW + 2, gateY + 9);
 
+  // Core "heart" — gold on a cream circle with brown ring.
   const heartX = x - 14;
   const heartY = y + gridH - effectiveCellSize / 2;
-  g.fillStyle(0x06090d, 0.84);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillCircle(heartX, heartY, 18);
-  g.lineStyle(1.5, COLORS.TORCH_GOLD, 0.58);
+  g.lineStyle(2.5, CASUAL.EDGE, 1);
   g.strokeCircle(heartX, heartY, 18);
-  g.fillStyle(COLORS.TORCH_GOLD, 0.24);
+  g.fillStyle(CASUAL.GOLD, 0.35);
   g.fillCircle(heartX, heartY, 10);
-  g.fillStyle(COLORS.TORCH_GOLD, 0.74);
+  g.fillStyle(CASUAL.GOLD, 1);
   g.fillTriangle(heartX, heartY - 8, heartX - 8, heartY, heartX, heartY + 8);
   g.fillTriangle(heartX, heartY - 8, heartX + 8, heartY, heartX, heartY + 8);
 
+  // Corner studs — cream circles, brown ring, gold center.
   [[x - 14, y - 16], [x + gridW + 14, y - 16], [x - 14, y + gridH + 16], [x + gridW + 14, y + gridH + 16]].forEach(([sx, sy]) => {
-    g.fillStyle(0x06090d, 0.88);
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillCircle(sx, sy, 8);
-    g.lineStyle(1, theme.panelBorder, 0.5);
+    g.lineStyle(2, CASUAL.EDGE, 1);
     g.strokeCircle(sx, sy, 8);
-    g.fillStyle(COLORS.TORCH_GOLD, 0.38);
+    g.fillStyle(CASUAL.GOLD, 1);
     g.fillCircle(sx, sy, 3);
   });
 }

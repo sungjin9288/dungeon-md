@@ -10,7 +10,7 @@ import {
   CANVAS_HEIGHT, CANVAS_WIDTH,
   GRID_COLS, GRID_ROWS, CELL_SIZE, GRID_Y,
 } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { type RoomData, type RoomType } from '../data/rooms';
 import { resolveMonsterDef, type MonsterId } from '../data/monsters';
 import type { InvaderType, InvaderDef } from '../data/invaders';
@@ -468,8 +468,8 @@ export class DungeonScene extends Phaser.Scene {
       {
         fontFamily: 'Georgia, serif',
         fontSize: '11px',
-        color: summary.brokenRooms > 0 ? '#ffb06a' : '#d8f7ff',
-        backgroundColor: '#102538dd',
+        color: summary.brokenRooms > 0 ? CASUAL_CSS.RED : CASUAL_CSS.INK,
+        backgroundColor: CASUAL_CSS.CREAM,
         padding: { x: 10, y: 5 },
       },
     ).setOrigin(0.5).setDepth(120).setAlpha(0);
@@ -501,37 +501,44 @@ export class DungeonScene extends Phaser.Scene {
         : durability < 50
           ? '수리'
           : '준비';
-    const warningColor = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0
-      ? 0xff6b45
-      : 0x5fb854;
+    const isWarning = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0;
+    const warningColor = isWarning ? CASUAL.RED : CASUAL.GREEN;
 
     const y = GRID_Y - 8;
     const strip = this.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
     const g = this.add.graphics();
     const w = CANVAS_WIDTH - 24;
     const h = 22;
-    g.fillStyle(0x140c03, 0.88);
-    g.fillRoundedRect(-w / 2, -h / 2, w, h, 7);
-    g.lineStyle(1.2, COLORS.TORCH_GOLD, 0.48);
-    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 7);
-    g.fillStyle(COLORS.TORCH_GOLD, 0.12);
-    g.fillRoundedRect(-w / 2 + 8, -h / 2 + 4, w - 16, 3, 2);
+    // Cream strip with chunky brown edge + white top highlight (casual toy look).
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRoundedRect(-w / 2, -h / 2 + 3, w, h, 8);
+    g.fillStyle(CASUAL.PANEL, 0.98);
+    g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
+    g.lineStyle(2, CASUAL.EDGE, 0.92);
+    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(-w / 2 + 6, -h / 2 + 3, w - 12, 3, 2);
     strip.add(g);
 
     const title = this.add.text(-w / 2 + 12, 0, '방어 진형', {
       fontFamily: 'Georgia, serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
     strip.add(title);
 
-    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, 0x55b88a);
-    this.addCommandStripChip(strip, -50, `수호${summary.assignedMonsters}`, 0xff8a45);
-    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, 0x5fb854);
-    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`, summary.equippedMonsters > 0 ? 0xe8c468 : 0x61778d);
-    this.addCommandStripChip(strip, 115, `내구${durability}%`, durability < 50 ? 0xff6b45 : 0xe8c468);
-    this.addCommandStripChip(strip, 172, warning, warningColor, true);
+    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, CASUAL.BLUE, CASUAL_CSS.BLUE);
+    this.addCommandStripChip(strip, -50, `수호${summary.assignedMonsters}`, CASUAL.RED, CASUAL_CSS.RED);
+    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, CASUAL.GREEN, CASUAL_CSS.GREEN);
+    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`,
+      summary.equippedMonsters > 0 ? CASUAL.GOLD : CASUAL.EDGE_SOFT,
+      summary.equippedMonsters > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
+    this.addCommandStripChip(strip, 115, `내구${durability}%`,
+      durability < 50 ? CASUAL.RED : CASUAL.GOLD,
+      durability < 50 ? CASUAL_CSS.RED : CASUAL_CSS.GOLD);
+    this.addCommandStripChip(strip, 172, warning, warningColor,
+      isWarning ? CASUAL_CSS.RED : CASUAL_CSS.WHITE, true, !isWarning);
 
     this.commandStrip = strip;
     this.tweens.add({
@@ -547,23 +554,43 @@ export class DungeonScene extends Phaser.Scene {
     strip: Phaser.GameObjects.Container,
     x: number,
     label: string,
-    color: number,
+    accent: number,
+    textColor: string,
     alignRight = false,
+    candy = false,
   ): void {
     const text = this.add.text(x, 0, label, {
       fontFamily: 'Georgia, serif',
       fontSize: '9px',
       fontStyle: 'bold',
-      color: '#f0e6c8',
+      // Candy "ready" pill gets white-on-saturated text; stat pills get their
+      // saturated accent value as the label color over a cream body.
+      color: candy ? CASUAL_CSS.WHITE : textColor,
     }).setOrigin(alignRight ? 1 : 0.5, 0.5);
     const b = text.getBounds();
     const padX = 8;
+    const chipW = b.width + padX * 2;
     const chipX = alignRight ? x - b.width - padX * 2 : x - b.width / 2 - padX;
     const bg = this.add.graphics();
-    bg.fillStyle(color, 0.16);
-    bg.fillRoundedRect(chipX, -8, b.width + padX * 2, 16, 5);
-    bg.lineStyle(1, color, 0.42);
-    bg.strokeRoundedRect(chipX, -8, b.width + padX * 2, 16, 5);
+    if (candy) {
+      // Bright saturated candy pill (GREEN/GOLD when ready) with white highlight.
+      bg.fillStyle(CASUAL.SHADOW, 0.22);
+      bg.fillRoundedRect(chipX, -7, chipW, 16, 6);
+      bg.fillStyle(accent, 1);
+      bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
+      bg.lineStyle(2, CASUAL.EDGE, 0.85);
+      bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
+      bg.fillStyle(0xffffff, 0.4);
+      bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
+    } else {
+      // Cream stat pill: PANEL_SOFT body + 2px EDGE border + white top highlight.
+      bg.fillStyle(CASUAL.PANEL_SOFT, 0.98);
+      bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
+      bg.lineStyle(2, CASUAL.EDGE, 0.55);
+      bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
+      bg.fillStyle(0xffffff, 0.5);
+      bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
+    }
     strip.add(bg);
     strip.add(text);
   }

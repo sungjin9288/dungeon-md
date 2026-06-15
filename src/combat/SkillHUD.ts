@@ -7,7 +7,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { ACTIVE_SKILLS, type ActiveSkill } from '../data/barracks';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 
@@ -52,28 +52,22 @@ export class SkillHUD {
       w: barW,
       h: HUD_H,
       radius: 12,
-      fillColor: 0x0d0a07,
-      borderColor: COLORS.TORCH_GOLD,
-      borderAlpha: 0.58,
-      borderWidth: 1.5,
-      accentColor: COLORS.TORCH_GOLD,
-      accentAlpha: 0.72,
-      glowColor: COLORS.TORCH_AMBER,
-      glowOpacity: 0.08,
-      shadowOpacity: 0.46,
-      shadowOffsetY: 3,
+      fillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
+      shadowOpacity: 0.32,
+      shadowOffsetY: 4,
     });
     this.container.add(dock.shadow);
     this.container.add(dock.panel);
     this.container.add(dock.glow);
     this.container.add(drawSkillDockOrnaments(scene, barX, HUD_Y, barW, HUD_H));
     this.container.add(scene.add.text(CANVAS_WIDTH / 2, HUD_Y + 9, '전술 스킬', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '8px',
       fontStyle: 'bold',
-      color: '#ffdf8a',
-      stroke: '#050301',
-      strokeThickness: 2,
+      color: CASUAL_CSS.INK,
     }).setOrigin(0.5));
 
     // Create skill slots
@@ -152,19 +146,23 @@ function drawSkillDockOrnaments(
   h: number,
 ): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
-  g.fillStyle(0x140c03, 0.52);
+  // soft header rail behind the label
+  g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
   g.fillRoundedRect(x + 10, y + 6, w - 20, 8, 4);
-  g.fillStyle(COLORS.TORCH_GOLD, 0.52);
+  g.fillStyle(CASUAL.EDGE_SOFT, 0.5);
   g.fillRoundedRect(x + 24, y + 8, w - 48, 2, 1);
-  g.fillStyle(0xffffff, 0.08);
+  // warm bottom shading hint
+  g.fillStyle(CASUAL.SHADOW, 0.1);
   g.fillRoundedRect(x + 12, y + h - 10, w - 24, 3, 2);
-  g.lineStyle(1, COLORS.TORCH_GOLD, 0.34);
+  // side rails
+  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
   g.lineBetween(x + 8, y + 18, x + 8, y + h - 16);
   g.lineBetween(x + w - 8, y + 18, x + w - 8, y + h - 16);
-  g.fillStyle(0x070503, 0.7);
+  // corner studs
+  g.fillStyle(CASUAL.EDGE, 0.9);
   g.fillCircle(x + 11, y + 12, 3);
   g.fillCircle(x + w - 11, y + 12, 3);
-  g.fillStyle(COLORS.TORCH_GOLD, 0.48);
+  g.fillStyle(CASUAL.GOLD, 0.95);
   g.fillCircle(x + 11, y + 12, 1.4);
   g.fillCircle(x + w - 11, y + 12, 1.4);
   return g;
@@ -206,10 +204,10 @@ class SkillSlot {
     this.cooldownArc.setPosition(x, y);
 
     this.badgeText = scene.add.text(x + 8, y + 7, `${slotNumber}`, {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
-      color: skill ? CSS.PARCHMENT_MUTED : '#5a4a36',
+      color: skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5);
     this.container.add(this.badgeText);
 
@@ -219,23 +217,25 @@ class SkillSlot {
       fontFamily: 'sans-serif',
       fontSize: '21px',
     }).setOrigin(0.5).setAlpha(skill ? 1 : 0.3);
-    this.iconText.setShadow(0, 2, '#000000', 0.36, true, true);
+    this.iconText.setShadow(0, 2, '#00000055', 0.36, true, true);
     this.container.add(this.iconText);
 
     this.categoryText = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE - 7, getCategoryLabel(skill?.category), {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '6px',
       fontStyle: 'bold',
-      color: getCategoryCss(skill?.category),
-    }).setOrigin(0.5).setAlpha(skill ? 0.92 : 0.38);
+      color: skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+      stroke: skill ? '#00000033' : undefined,
+      strokeThickness: skill ? 2 : 0,
+    }).setOrigin(0.5).setAlpha(skill ? 1 : 0.6);
     this.container.add(this.categoryText);
 
     this.container.add(this.cooldownArc);
 
     // Cooldown seconds label
     this.cdLabel = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE / 2, '', {
-      fontFamily: 'monospace', fontSize: '13px', color: '#ffffff', fontStyle: 'bold',
-      stroke: '#000000', strokeThickness: 2,
+      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      stroke: '#ffffff', strokeThickness: 2,
     }).setOrigin(0.5).setVisible(false);
     this.container.add(this.cdLabel);
 
@@ -249,48 +249,71 @@ class SkillSlot {
 
   private drawBg(): void {
     this.bg.clear();
-    const accent = this.skill ? getCategoryAccent(this.skill.category) : COLORS.STONE_MID;
-    const fill = this.highlight ? 0x251708 : 0x111820;
-    const border = this.highlight ? COLORS.TORCH_AMBER : accent;
-    const borderAlpha = this.skill ? (this.highlight ? 0.95 : 0.68) : 0.28;
+    const r = 11;
+    const accent = this.skill ? getCategoryAccent(this.skill.category) : CASUAL.PANEL_SOFT;
+    const accentDk = this.skill ? getCategoryAccentDark(this.skill.category) : CASUAL.EDGE_SOFT;
 
+    // selection halo (active targeting glow)
     if (this.highlight) {
-      this.bg.fillStyle(COLORS.TORCH_GOLD, 0.16);
+      this.bg.fillStyle(CASUAL.GOLD, 0.22);
       this.bg.fillRoundedRect(-4, -4, SLOT_SIZE + 8, SLOT_SIZE + 8, 13);
-      this.bg.lineStyle(1.5, 0xfff0b0, 0.42);
+      this.bg.lineStyle(2, CASUAL.GOLD_DK, 0.9);
       this.bg.strokeRoundedRect(-3, -3, SLOT_SIZE + 6, SLOT_SIZE + 6, 12);
     }
 
-    this.bg.fillStyle(0x070503, 0.56);
-    this.bg.fillRoundedRect(1, 3, SLOT_SIZE, SLOT_SIZE - 1, 10);
-    this.bg.fillStyle(fill, this.skill ? 0.98 : 0.7);
-    this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE, 10);
-    this.bg.fillStyle(0xffffff, this.skill ? 0.075 : 0.03);
-    this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 17, 7);
-    this.bg.fillStyle(0x000000, this.skill ? 0.2 : 0.12);
-    this.bg.fillRoundedRect(4, SLOT_SIZE - 17, SLOT_SIZE - 8, 13, 7);
-    this.bg.lineStyle(this.highlight ? 2 : 1.25, border, borderAlpha);
-    this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE, 10);
+    if (this.skill && !this.cooldownActive) {
+      // ─── ready: bright candy button (mirrors addPrimaryActionButton) ───
+      // chunky colored bottom edge (the candy base)
+      this.bg.fillStyle(accentDk, 1);
+      this.bg.fillRoundedRect(0, 4, SLOT_SIZE, SLOT_SIZE - 2, r);
+      // saturated bright cap
+      this.bg.fillStyle(accent, 1);
+      this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
+      // glossy white top highlight
+      this.bg.fillStyle(0xffffff, 0.32);
+      this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 16, 7);
+      // thick rounded brown border
+      this.bg.lineStyle(this.highlight ? 2.5 : 2, CASUAL.EDGE, 1);
+      this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
+    } else {
+      // ─── cooldown / disabled / empty: muted cream pill ───
+      const fillAlpha = this.skill ? 1 : 0.7;
+      this.bg.fillStyle(CASUAL.SHADOW, 0.18);
+      this.bg.fillRoundedRect(0, 4, SLOT_SIZE, SLOT_SIZE - 2, r);
+      this.bg.fillStyle(CASUAL.PANEL_SOFT, fillAlpha);
+      this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
+      this.bg.fillStyle(0xffffff, this.skill ? 0.4 : 0.25);
+      this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 4, 3);
+      this.bg.lineStyle(2, CASUAL.EDGE_SOFT, this.skill ? 1 : 0.7);
+      this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
+    }
 
     if (this.skill) {
-      this.bg.fillStyle(0x070503, 0.68);
+      // slot-number disc (top-left)
+      this.bg.fillStyle(CASUAL.EDGE, 0.92);
       this.bg.fillCircle(8, 7, 5.4);
-      this.bg.lineStyle(1, accent, this.highlight ? 0.82 : 0.48);
+      this.bg.lineStyle(1, 0xffffff, 0.5);
       this.bg.strokeCircle(8, 7, 5.4);
 
-      this.bg.fillStyle(accent, this.highlight ? 0.95 : 0.78);
+      // accent rail under the top edge
+      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : accentDk, this.cooldownActive ? 0.6 : 0.85);
       this.bg.fillRoundedRect(8, 4, SLOT_SIZE - 16, 3, 2);
-      this.bg.fillStyle(this.cooldownActive ? COLORS.BLOOD_RED : 0x36c46a, this.cooldownActive ? 0.82 : 0.9);
-      this.bg.fillCircle(SLOT_SIZE - 8, 8, 3);
 
-      this.bg.fillStyle(accent, this.cooldownActive ? 0.24 : 0.44);
-      this.bg.fillRoundedRect(8, SLOT_SIZE - 6, SLOT_SIZE - 16, 3, 2);
+      // ready-indicator dot (top-right): GREEN = ready, EDGE_SOFT = charging
+      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : CASUAL.GREEN, 1);
+      this.bg.fillCircle(SLOT_SIZE - 8, 8, 3);
+      this.bg.lineStyle(1, this.cooldownActive ? CASUAL.EDGE : CASUAL.GREEN_DK, 0.9);
+      this.bg.strokeCircle(SLOT_SIZE - 8, 8, 3);
+
+      // bottom charge pip rail
+      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : CASUAL.GREEN, this.cooldownActive ? 0.45 : 0.7);
+      this.bg.fillRoundedRect(8, SLOT_SIZE - 8, SLOT_SIZE - 16, 3, 2);
       if (!this.cooldownActive) {
-        this.bg.fillStyle(0xffffff, 0.12);
+        this.bg.fillStyle(0xffffff, 0.42);
         this.bg.fillTriangle(SLOT_SIZE - 12, 14, SLOT_SIZE - 6, 14, SLOT_SIZE - 6, 20);
       }
     } else {
-      this.bg.fillStyle(0xffffff, 0.04);
+      this.bg.fillStyle(CASUAL.EDGE_SOFT, 0.4);
       this.bg.fillRoundedRect(14, 21, SLOT_SIZE - 28, 2, 1);
     }
   }
@@ -299,7 +322,7 @@ class SkillSlot {
     if (this.highlight === on) return;
     this.highlight = on;
     this.iconText.setScale(on ? 1.08 : 1);
-    this.badgeText.setColor(on ? '#fff0b0' : (this.skill ? CSS.PARCHMENT_MUTED : '#5a4a36'));
+    this.badgeText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
     this.drawBg();
   }
 
@@ -309,7 +332,10 @@ class SkillSlot {
       if (this.cooldownActive) {
         this.cooldownActive = false;
         this.iconText.setAlpha(this.skill ? 1 : 0.3);
-        this.categoryText.setAlpha(this.skill ? 0.92 : 0.38);
+        this.categoryText.setAlpha(this.skill ? 1 : 0.6);
+        // ready again → label rides the saturated cap as white
+        this.categoryText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
+        this.badgeText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
         this.drawBg();
       }
       this.cdLabel.setVisible(false);
@@ -318,8 +344,11 @@ class SkillSlot {
 
     if (!this.cooldownActive) {
       this.cooldownActive = true;
-      this.iconText.setAlpha(0.46);
-      this.categoryText.setAlpha(0.46);
+      this.iconText.setAlpha(0.5);
+      this.categoryText.setAlpha(0.85);
+      // charging → cream pill, so label reads as INK
+      this.categoryText.setColor(CASUAL_CSS.INK_SOFT);
+      this.badgeText.setColor(CASUAL_CSS.INK_SOFT);
       this.drawBg();
     }
 
@@ -328,38 +357,53 @@ class SkillSlot {
     const cy = SLOT_SIZE / 2;
     const r  = SLOT_SIZE / 2 - 2;
 
-    // Semi-transparent dark overlay proportional to remaining cooldown
-    this.cooldownArc.fillStyle(0x000000, 0.5 * pct);
-    this.cooldownArc.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE, 10);
+    // Soft "charging" darkening sweep proportional to remaining cooldown
+    this.cooldownArc.fillStyle(CASUAL.SHADOW, 0.42 * pct);
+    this.cooldownArc.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, 11);
 
-    // Arc
+    // Charging arc
     const startAngle = -Math.PI / 2;
     const endAngle   = startAngle + Math.PI * 2 * pct;
-    this.cooldownArc.lineStyle(2.25, COLORS.BLOOD_RED, 0.85);
+    this.cooldownArc.lineStyle(2.5, CASUAL.GOLD, 0.95);
     this.cooldownArc.beginPath();
     this.cooldownArc.arc(cx, cy, r, startAngle, endAngle, false);
     this.cooldownArc.strokePath();
 
-    // Remaining seconds
+    // Remaining seconds — cream chip
     const secs = Math.ceil(remainingMs / 1000);
-    this.cooldownArc.fillStyle(0x050301, 0.74);
+    this.cooldownArc.fillStyle(CASUAL.PANEL, 0.96);
     this.cooldownArc.fillRoundedRect(cx - 13, cy - 9, 26, 18, 7);
-    this.cooldownArc.lineStyle(1, 0xffffff, 0.14);
+    this.cooldownArc.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.9);
     this.cooldownArc.strokeRoundedRect(cx - 13, cy - 9, 26, 18, 7);
     this.cdLabel.setText(`${secs}`).setVisible(true);
   }
 }
 
+/** Bright candy-cap accent per skill category. */
 function getCategoryAccent(category: ActiveSkill['category'] | undefined): number {
   switch (category) {
     case 'combat':
-      return COLORS.BLOOD_GLOW;
+      return CASUAL.RED;
     case 'defense':
-      return 0x4a9cff;
+      return CASUAL.BLUE;
     case 'support':
-      return COLORS.MOSS_LIGHT;
+      return CASUAL.PURPLE;
     default:
-      return COLORS.TORCH_GOLD;
+      return CASUAL.GOLD;
+  }
+}
+
+/** Darker base of the same hue (candy-button bottom edge). */
+function getCategoryAccentDark(category: ActiveSkill['category'] | undefined): number {
+  switch (category) {
+    case 'combat':
+      return CASUAL.RED_DK;
+    case 'defense':
+      return CASUAL.BLUE_DK;
+    case 'support':
+      return CASUAL.PURPLE_DK;
+    default:
+      return CASUAL.GOLD_DK;
   }
 }
 
@@ -373,18 +417,5 @@ function getCategoryLabel(category: ActiveSkill['category'] | undefined): string
       return 'SUP';
     default:
       return 'LOCK';
-  }
-}
-
-function getCategoryCss(category: ActiveSkill['category'] | undefined): string {
-  switch (category) {
-    case 'combat':
-      return '#ffb8a0';
-    case 'defense':
-      return '#dce8c8';
-    case 'support':
-      return '#b9ffd8';
-    default:
-      return '#5a4a36';
   }
 }
