@@ -532,43 +532,68 @@ function drawDungeonRoomShell(
   }
 }
 
+// Deterministic 0..1 from an integer seed (stable per slot, no Math.random).
+function seededUnit(seed: number, salt: number): number {
+  const v = Math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return v - Math.floor(v);
+}
+
 function drawLockedExcavationFace(
   g: Phaser.GameObjects.Graphics,
   x: number,
   y: number,
   seed: number,
 ): void {
-  // Muted-cream "sealed chamber" — a soft recessed panel with a thin brown frame
-  // and corner ticks. Reads as locked while staying on the bright board.
-  void seed;
-  const cx = x + SLOT_W / 2;
-  const cy = y + SLOT_H / 2;
+  // Unexcavated rock — a craggy earth/stone face the player will dig out.
+  // Reads as "solid rock to excavate" so locked slots feel like dungeon
+  // expansion, not just sealed panels. (README: 잠긴 칸 = 파내는 암반)
+  const ix = x + 8, iy = y + 8, iw = SLOT_W - 16, ih = SLOT_H - 16;
 
-  // Recessed cream interior + warm top shade.
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
-  g.fillRoundedRect(x + 9, y + 9, SLOT_W - 18, SLOT_H - 18, 8);
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.25);
-  g.fillRoundedRect(x + 9, y + 9, SLOT_W - 18, (SLOT_H - 18) * 0.5, { tl: 8, tr: 8, bl: 0, br: 0 });
+  // Raw rock fill — earthy dark stone, darker than the lit rooms.
+  g.fillStyle(0x1c150b, 1);
+  g.fillRoundedRect(ix, iy, iw, ih, 7);
+  // Top-lit rock shelf + deep lower shadow for carved-into-earth depth.
+  g.fillStyle(0x2a2012, 0.9);
+  g.fillRoundedRect(ix, iy, iw, ih * 0.42, { tl: 7, tr: 7, bl: 0, br: 0 });
+  g.fillStyle(0x000000, 0.28);
+  g.fillRoundedRect(ix, iy + ih * 0.62, iw, ih * 0.38, { tl: 0, tr: 0, bl: 7, br: 7 });
 
-  // Thin inset frame.
-  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
-  g.strokeRoundedRect(x + 12, y + 12, SLOT_W - 24, SLOT_H - 24, 6);
+  // Embedded boulders (deterministic lumps).
+  for (let i = 0; i < 5; i++) {
+    const bx = ix + 8 + seededUnit(seed, i) * (iw - 16);
+    const by = iy + 10 + seededUnit(seed, i + 9) * (ih - 22);
+    const r = 4 + seededUnit(seed, i + 3) * 5;
+    g.fillStyle(0x342819, 0.8);
+    g.fillCircle(bx, by, r);
+    g.fillStyle(0x120d06, 0.5);
+    g.fillCircle(bx + 1.5, by + 1.8, r * 0.7);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.22);
+    g.fillCircle(bx - r * 0.4, by - r * 0.45, r * 0.4);
+  }
 
-  // Corner ticks (locked-frame motif).
-  const m = 17, len = 8;
-  g.lineStyle(1.5, CASUAL.EDGE, 0.6);
-  g.lineBetween(x + m, y + m, x + m + len, y + m);
-  g.lineBetween(x + m, y + m, x + m, y + m + len);
-  g.lineBetween(x + SLOT_W - m, y + m, x + SLOT_W - m - len, y + m);
-  g.lineBetween(x + SLOT_W - m, y + m, x + SLOT_W - m, y + m + len);
-  g.lineBetween(x + m, y + SLOT_H - m, x + m + len, y + SLOT_H - m);
-  g.lineBetween(x + m, y + SLOT_H - m, x + m, y + SLOT_H - m - len);
-  g.lineBetween(x + SLOT_W - m, y + SLOT_H - m, x + SLOT_W - m - len, y + SLOT_H - m);
-  g.lineBetween(x + SLOT_W - m, y + SLOT_H - m, x + SLOT_W - m, y + SLOT_H - m - len);
+  // Cracks splitting the rock.
+  g.lineStyle(1.5, 0x0c0804, 0.7);
+  const mx = ix + iw / 2;
+  g.lineBetween(mx, iy + 6, mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5);
+  g.lineBetween(mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5, ix + 10, iy + ih - 6);
+  g.lineBetween(mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5, ix + iw - 12, iy + ih - 8);
+  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.18);
+  g.lineBetween(mx + 1, iy + 6, mx - 5 + seededUnit(seed, 1) * 12, iy + ih * 0.5);
 
-  // Soft warm vignette behind the lock glyph (drawn by caller).
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.18);
-  g.fillCircle(cx, cy - 4, 16);
+  // Ore / gem glints — hints of reward buried in the rock.
+  const oreColors = [CASUAL.GOLD, CASUAL.BLUE, CASUAL.PURPLE];
+  for (let i = 0; i < 3; i++) {
+    const ox = ix + 12 + seededUnit(seed, i + 20) * (iw - 24);
+    const oy = iy + 14 + seededUnit(seed, i + 27) * (ih - 28);
+    g.fillStyle(oreColors[i % oreColors.length], 0.55);
+    g.fillCircle(ox, oy, 1.8);
+    g.fillStyle(0xffffff, 0.5);
+    g.fillCircle(ox - 0.6, oy - 0.6, 0.7);
+  }
+
+  // Chiseled rock rim.
+  g.lineStyle(2, CASUAL.EDGE, 0.5);
+  g.strokeRoundedRect(ix, iy, iw, ih, 7);
 }
 
 function drawConstructionScaffold(
@@ -657,20 +682,23 @@ export function drawBattleSlot(
   const { scene, gs } = ctx;
 
   if (!unlocked) {
-    // Locked slots read as muted-cream sealed plots on the bright board.
-    drawRoughEdgeRect(g, CASUAL.PANEL_SOFT, 0.9, x, y, SLOT_W, SLOT_H, index * 17);
-    strokeRoughEdgeRect(g, CASUAL.EDGE_SOFT, 0.85, 2.5, x, y, SLOT_W, SLOT_H, index * 17);
+    // Locked slots read as raw rock to be excavated — dungeon expansion.
+    drawRoughEdgeRect(g, 0x1c150b, 1, x, y, SLOT_W, SLOT_H, index * 17);
+    strokeRoughEdgeRect(g, CASUAL.EDGE, 0.7, 2.5, x, y, SLOT_W, SLOT_H, index * 17);
     drawLockedExcavationFace(g, x, y, index * 17);
     const cx = x + SLOT_W / 2;
     const cy = y + SLOT_H / 2;
-    c.add(scene.add.text(cx, cy - 8, '🔒', { fontSize: '17px' }).setOrigin(0.5).setAlpha(0.7));
+    // Pickaxe affordance — "dig this out".
+    g.fillStyle(0x000000, 0.3);
+    g.fillCircle(cx, cy - 8, 15);
+    c.add(scene.add.text(cx, cy - 8, '⛏', { fontSize: '18px' }).setOrigin(0.5).setAlpha(0.92));
     const reqLv = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
-    g.fillStyle(CASUAL.PANEL, 0.96);
-    g.fillRoundedRect(cx - 20, cy + 10, 40, 16, 5);
-    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.85);
-    g.strokeRoundedRect(cx - 20, cy + 10, 40, 16, 5);
-    c.add(scene.add.text(cx, cy + 18, `Lv.${reqLv}`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+    g.fillStyle(CASUAL.PANEL, 0.98);
+    g.fillRoundedRect(cx - 26, cy + 10, 52, 17, 6);
+    g.lineStyle(1.5, CASUAL.GOLD_DK, 0.8);
+    g.strokeRoundedRect(cx - 26, cy + 10, 52, 17, 6);
+    c.add(scene.add.text(cx, cy + 18, `Lv.${reqLv} 굴착`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.GOLD,
       fontStyle: 'bold',
     }).setOrigin(0.5));
     return;
