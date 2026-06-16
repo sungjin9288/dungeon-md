@@ -16,6 +16,7 @@ import { resolveMonsterDef, type MonsterId } from '../data/monsters';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
+import { computeDecorationBonuses, EMPTY_BONUSES, type DecorationBonuses } from '../data/decorations';
 import { type EquipmentStats } from '../data/barracks';
 import { applyDailyChallengeTick, type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import type { ObjectiveType } from '../data/quests';
@@ -163,6 +164,8 @@ export class DungeonScene extends Phaser.Scene {
   gems      = 0;   // loaded from GameState in create() — revive spends REAL gems
   dungeonHp = 1000;
   maxHp     = 1000;
+  /** Decoration set bonuses (dungeon HP / trap damage) active this battle. */
+  decorationBonuses: DecorationBonuses = EMPTY_BONUSES;
 
   // ── Wave state ─────────────────────────────────────────────────────────────
   wave         = 0;
@@ -232,6 +235,7 @@ export class DungeonScene extends Phaser.Scene {
     this.prestigeDmgMult  = getPrestigeDmgMult(gameState);
     this.synergyManager   = new SynergyManager(this);
     this.dungeonTrapSlots = gameState.dungeonSlots ?? [];
+    this.decorationBonuses = computeDecorationBonuses(gameState.placedDecorations);
 
     // Build monster → equipment stats lookup
     this.equipmentMap = buildEquipmentMap(gameState);
@@ -262,8 +266,9 @@ export class DungeonScene extends Phaser.Scene {
     this.gold             = Math.max(setup.stageStartGold, 300) + this.wisdomBonuses.startingGold;
     this.startGold        = this.gold;
 
-    // Apply dungeon HP bonus
-    this.maxHp            = setup.stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus + this.wisdomBonuses.fortressHp;
+    // Apply dungeon HP bonus (+ 수호의 진영 decoration set bonus)
+    const baseMaxHp       = setup.stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus + this.wisdomBonuses.fortressHp;
+    this.maxHp            = Math.round(baseMaxHp * (1 + this.decorationBonuses.dungeonHpPct / 100));
     this.dungeonHp        = this.maxHp;
 
     // Reset per-battle state — Phaser는 씬 인스턴스를 재사용하므로 클래스 필드

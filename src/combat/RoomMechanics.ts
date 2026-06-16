@@ -64,6 +64,9 @@ export interface RoomMechanicsContext {
   /** Per-slot trap synergy multiplier map. */
   readonly slotTrapSynergyMult: Map<number, number>;
 
+  /** 함정술사 decoration set trap-damage multiplier (1.0 / undefined = no bonus). */
+  readonly decorationTrapMult?: number;
+
   /** Extra monster attack cooldowns. */
   readonly extraMonsterCooldowns: Map<string, number>;
 

@@ -378,6 +378,7 @@ export function buildRoomMechanicsCtx(ds: DungeonScene): RoomMechanicsContext {
     get maxHp() { return ds.maxHp; },
     dungeonTrapSlots: ds.dungeonTrapSlots,
     slotTrapSynergyMult: ds.slotTrapSynergyMult,
+    decorationTrapMult: 1 + (ds.decorationBonuses?.trapDmgPct ?? 0) / 100,
     extraMonsterCooldowns: ds.extraMonsterCooldowns,
     get tauntBoostActiveUntil() { return ds.tauntBoostActiveUntil; },
     get speedMult() { return ds.speedMult; },

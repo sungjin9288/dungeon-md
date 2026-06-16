@@ -91,10 +91,10 @@ export function applyTrapToInvader(
   now: number,
 ): void {
   if (!trapId || slot.hp <= 0) return;   // broken rooms don't trigger traps
-  // Trap room bonus: +20% trap damage + synergy bonus
+  // Trap room bonus: +20% trap damage + synergy bonus + 함정술사 set bonus
   const trapRoomMult  = slot.roomType === 'trap' ? 1.2 : 1.0;
   const synergyMult   = ctx.slotTrapSynergyMult.get(slotIdx) ?? 1.0;
-  const dmgMult = slot.roomLevel * trapRoomMult * synergyMult;
+  const dmgMult = slot.roomLevel * trapRoomMult * synergyMult * (ctx.decorationTrapMult ?? 1);
   switch (trapId) {
     case 'spike_trap': {
       const dmg = 20 * dmgMult;
