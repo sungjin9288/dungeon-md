@@ -98,33 +98,46 @@ export function buildDungeonBoardLayout(input: BoardLayoutInput): DungeonBoardLa
 // ─── Vertical-cutaway implementation ─────────────────────────────────────────
 
 /**
- * Phase B: Vertical dungeon cross-section.
+ * Phase B/D: Vertical dungeon cross-section.
  *
  * Layout (top→bottom within regionTop..regionBottom):
- *   [Entrance strip ~30px] → [Band B1 ~84px] → [gap 4px] → [Band B2] → [gap] → [Band B3] → [Heart strip ~34px]
+ *   [Entrance strip ~38px] → [Band B1] → [gap 6px] → [Band B2] → [gap] → [Band B3] → [Heart strip ~42px]
  *
- * Cells are compressed to fit — 3 per band row, sized to fill the available width.
- * Route is row-major (0,1,2…8) top→bottom (not INVASION_ORDER).
+ * With the expanded regionBottom (~578) the region height is ~482px, giving:
+ *   bandsH ≈ 402px  →  bandH ≈ 130px  →  cellH ≈ 118px  (generous, square-ish)
+ *
+ * Route polyline (Phase D): clean descending SPINE through centre column,
+ * with short horizontal stubs to left/right cells.  The spine points are:
+ *   entrance → bandEntry[0] → bandEntry[1] → bandEntry[2] → heart
+ * where bandEntry[row] is the centre-column cell's horizontal centre, at the
+ * vertical midpoint of that band.  Left/right cell connections branch off the
+ * spine at each band's entry Y — stored in the returned routePolyline as
+ *     spine[0]=entrance, spine[1]=band0Entry, ... spine[3]=band2Entry, spine[4]=heart
+ * plus  sidePolylines[row][col] for stub rendering (exposed via floors[].cells[].center).
+ *
+ * Consumers that iterate routePolyline get a purely vertical chain; the route
+ * renderer calls drawRouteInfrastructureSegment per *cell* pair which are
+ * already correctly positioned.
  */
 function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
   const { unlockedSlots, totalSlots, regionTop, regionBottom, canvasWidth } = input;
 
   // ── Geometry constants ────────────────────────────────────────────────────
-  const ENTRANCE_H = 30;   // entrance strip height
-  const HEART_H    = 34;   // heart strip height
+  const ENTRANCE_H = 38;   // entrance strip height (Phase D: bigger)
+  const HEART_H    = 42;   // heart strip height (Phase D: bigger)
   const SIDE_GUT   = 8;    // left+right gutter (per side)
   const CELL_GAP_X = 6;    // horizontal gap between cells within a band
-  const BAND_GAP   = 4;    // vertical gap between bands
-  const CELL_PAD_Y = 5;    // top+bottom padding inside band → cell starts PAD_Y below band top
+  const BAND_GAP   = 6;    // vertical gap between bands
+  const CELL_PAD_Y = 6;    // top+bottom padding inside band
   const numBands   = 3;
   const numCols    = 3;
 
-  const regionH      = regionBottom - regionTop;            // 324px
-  const bandsH       = regionH - ENTRANCE_H - HEART_H;      // 260px
-  const bandH        = (bandsH - (numBands - 1) * BAND_GAP) / numBands;  // 84px
-  const cellH        = bandH - 2 * CELL_PAD_Y;              // 74px
-  const availW       = canvasWidth - 2 * SIDE_GUT;          // 374px
-  const cellW        = (availW - (numCols - 1) * CELL_GAP_X) / numCols;  // ~120px
+  const regionH      = regionBottom - regionTop;
+  const bandsH       = regionH - ENTRANCE_H - HEART_H;
+  const bandH        = Math.floor((bandsH - (numBands - 1) * BAND_GAP) / numBands);
+  const cellH        = bandH - 2 * CELL_PAD_Y;
+  const availW       = canvasWidth - 2 * SIDE_GUT;
+  const cellW        = Math.floor((availW - (numCols - 1) * CELL_GAP_X) / numCols);
 
   const boardX  = SIDE_GUT;
   const boardY  = regionTop;
@@ -157,28 +170,34 @@ function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
   const cellsByIdx = new Map<number, BoardCell>(allCells.map(c => [c.slotIdx, c]));
 
   // ── Route: row-major top→bottom (0,1,2,3,…8) ─────────────────────────────
-  // For vertical-cutaway we use descent order, NOT INVASION_ORDER,
-  // so the visible flow goes straight down through the bands.
+  // Descent order — visible flow straight down through the bands.
   const route = Array.from({ length: numCols * numBands }, (_, idx) => idx)
     .filter(idx => idx < unlockedSlots);
 
   // ── Entrance & heart strip centers ───────────────────────────────────────
+  const midX = canvasWidth / 2;
   const entrance: Point = {
-    x: canvasWidth / 2,
+    x: midX,
     y: regionTop + ENTRANCE_H / 2,
   };
   const heart: Point = {
-    x: canvasWidth / 2,
+    x: midX,
     y: regionTop + ENTRANCE_H + numBands * bandH + (numBands - 1) * BAND_GAP + HEART_H / 2,
   };
 
-  // ── Route polyline: entrance → each unlocked cell center (row-major) → heart ──
-  // We route through the center column shaft for a clean vertical descent,
-  // then out horizontally to each cell within the band.
+  // ── Route polyline: clean vertical SPINE  (Phase D) ──────────────────────
+  // Spine: entrance → centre of each band → heart.
+  // This keeps the animated tunnel/shaft running straight down the centre
+  // column; cell connections branch off per-band via drawRouteInfrastructure.
   const routePolyline: Point[] = [entrance];
-  for (const idx of route) {
-    const cell = cellsByIdx.get(idx);
-    if (cell) routePolyline.push(cell.center);
+  for (let row = 0; row < numBands; row++) {
+    const bandTop    = regionTop + ENTRANCE_H + row * (bandH + BAND_GAP);
+    const bandCentreY = bandTop + bandH / 2;
+    // Only include band spine point if any cell in this row is unlocked
+    const rowUnlocked = route.some(idx => Math.floor(idx / numCols) === row);
+    if (rowUnlocked) {
+      routePolyline.push({ x: midX, y: bandCentreY });
+    }
   }
   routePolyline.push(heart);
 
@@ -187,8 +206,12 @@ function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
   for (let row = 0; row < numBands; row++) {
     const bandTop    = regionTop + ENTRANCE_H + row * (bandH + BAND_GAP);
     const bandRect: Rect = { x: boardX, y: bandTop, w: boardW, h: bandH };
-    // Label chip: left gutter, vertically centred in the band
-    const labelPos: Point = { x: boardX + 22, y: bandTop + bandH / 2 };
+    // Label chip: centred near the LEFT of the band at the TOP seam, above cell content.
+    // bandTop is the gap/seam area; cells start at bandTop+CELL_PAD_Y (6px lower).
+    // The chip is tiny (36×22) and sits at the band top-seam, centred on a side stub.
+    // labelPos.x = boardX + chipW/2 + 4  so chip left edge is at boardX+4 (inside board).
+    // labelPos.y = bandTop − 1  (centred on the top seam line between entrance/previous band).
+    const labelPos: Point = { x: boardX + 22, y: bandTop };
 
     const bandCells = allCells.filter(c => c.floor === row);
 
