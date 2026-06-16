@@ -113,6 +113,43 @@ describe('collectIdleIncome', () => {
   });
 });
 
+describe('computeIdleReward with production facilities', () => {
+  it('adds facility materials + treasury gold over the credited window', () => {
+    const state = makeState({
+      dungeonSlots: [],                          // no operation gold
+      productionFacilities: { mine: 1, treasury: 1 },
+      lastIdleCollect: 1_000_000,
+    });
+    const now = state.lastIdleCollect + 60 * 60_000;   // 1 hour
+    const r = computeIdleReward(state, now);
+    expect(r.materials.common_ore).toBe(2);   // mine lvl1 = 2/hr
+    expect(r.gold).toBe(100);                  // treasury lvl1 = 100/hr (no operation gold)
+  });
+
+  it('facility production also respects the cap', () => {
+    const state = makeState({ productionFacilities: { mine: 1 }, lastIdleCollect: 1_000_000 });
+    const now = state.lastIdleCollect + IDLE_CAP_MS * 5;
+    const r = computeIdleReward(state, now);
+    expect(r.materials.common_ore).toBe(Math.floor(2 * (IDLE_CAP_MS / 3_600_000)));
+  });
+});
+
+describe('collectIdleIncome credits materials', () => {
+  it('merges produced materials into gs.materials', () => {
+    const before = makeState({
+      homeGold: 0,
+      materials: { common_ore: 5 },
+      productionFacilities: { mine: 2 },        // 4/hr
+      lastIdleCollect: 1_000_000,
+    });
+    const now = before.lastIdleCollect + 60 * 60_000;
+    const { state, reward } = collectIdleIncome(before, now);
+    expect(reward.materials.common_ore).toBe(4);
+    expect(state.materials.common_ore).toBe(5 + 4);
+    expect(before.materials.common_ore).toBe(5);   // input untouched
+  });
+});
+
 describe('startIdleClock', () => {
   it('initializes an unset clock', () => {
     expect(startIdleClock(makeState({ lastIdleCollect: 0 }), 12345).lastIdleCollect).toBe(12345);

@@ -484,15 +484,26 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   private drawAbyssButton(): void {
-    const btnW = 240, btnH = 48;
-    const btnX = CANVAS_WIDTH / 2 - btnW / 2;
+    // Two resource-gathering destinations side by side: Abyss (active farming)
+    // + Production facilities (passive idle generation).
+    const gap = 12, totalW = 330, btnH = 48;
+    const btnW = (totalW - gap) / 2;
+    const startX = CANVAS_WIDTH / 2 - totalW / 2;
     const btnY = 1142;
 
     this.buildCasualButton(
-      btnX, btnY, btnW, btnH,
-      '🕳 심연 (재료 파밍)',
+      startX, btnY, btnW, btnH,
+      '🕳 심연',
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
       () => this.scene.start('AbyssScene'),
+      '15px',
+    );
+    this.buildCasualButton(
+      startX + btnW + gap, btnY, btnW, btnH,
+      '🏭 생산 시설',
+      CASUAL.GOLD, CASUAL_CSS.GOLD,
+      () => this.scene.start('ProductionScene'),
+      '14px',
     );
   }
 

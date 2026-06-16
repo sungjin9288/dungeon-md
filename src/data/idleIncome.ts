@@ -14,6 +14,7 @@
  */
 
 import type { GameState, DungeonSlot } from './wisdom';
+import { facilityProductionOverMs } from './production';
 
 // ─── Tunable rate constants (gold per minute) ────────────────────────────────
 export const IDLE_BASE_PER_MIN     = 1;     // a staffed dungeon ticks over at all
@@ -25,16 +26,23 @@ export const IDLE_CAP_HOURS        = 8;     // max accumulation window
 export const IDLE_CAP_MS           = IDLE_CAP_HOURS * 60 * 60 * 1000;
 
 export interface IdleReward {
-  /** Gold earned (already floored to an integer). */
+  /** Total gold earned — dungeon operation + treasury facility (floored). */
   readonly gold: number;
+  /** Materials produced by 생산 시설 over the credited window (floored per id). */
+  readonly materials: Record<string, number>;
   /** Real elapsed time since last collection, in ms (uncapped). */
   readonly elapsedMs: number;
   /** Elapsed time actually paid out, in ms (capped at IDLE_CAP_MS). */
   readonly creditedMs: number;
   /** Whether the elapsed time hit the accumulation cap. */
   readonly capped: boolean;
-  /** The dungeon's current gold-per-minute production rate. */
+  /** The dungeon's current operation gold-per-minute rate (excludes facilities). */
   readonly ratePerMin: number;
+}
+
+/** Whether a reward actually contains anything worth claiming. */
+export function hasIdlePayout(reward: IdleReward): boolean {
+  return reward.gold > 0 || Object.keys(reward.materials).length > 0;
 }
 
 function definedCount(ids: readonly (string | undefined | null)[] | undefined): number {
@@ -82,14 +90,24 @@ export function computeIdleReward(state: Readonly<GameState>, now: number): Idle
   const last = state.lastIdleCollect ?? 0;
 
   if (last <= 0 || now <= last) {
-    return { gold: 0, elapsedMs: 0, creditedMs: 0, capped: false, ratePerMin };
+    return { gold: 0, materials: {}, elapsedMs: 0, creditedMs: 0, capped: false, ratePerMin };
   }
 
   const elapsedMs  = now - last;
   const creditedMs = Math.min(elapsedMs, IDLE_CAP_MS);
-  const gold       = Math.floor(ratePerMin * (creditedMs / 60000));
+  const operationGold = Math.floor(ratePerMin * (creditedMs / 60000));
 
-  return { gold, elapsedMs, creditedMs, capped: elapsedMs > IDLE_CAP_MS, ratePerMin };
+  // Production facilities yield materials + treasury gold over the same window.
+  const production = facilityProductionOverMs(state.productionFacilities, creditedMs);
+
+  return {
+    gold: operationGold + production.gold,
+    materials: production.materials,
+    elapsedMs,
+    creditedMs,
+    capped: elapsedMs > IDLE_CAP_MS,
+    ratePerMin,
+  };
 }
 
 /**
@@ -102,10 +120,15 @@ export function collectIdleIncome(
   now: number,
 ): { state: GameState; reward: IdleReward } {
   const reward = computeIdleReward(state, now);
+  const materials = { ...(state.materials ?? {}) };
+  for (const [id, qty] of Object.entries(reward.materials)) {
+    materials[id] = (materials[id] ?? 0) + qty;
+  }
   return {
     state: {
       ...state,
       homeGold: state.homeGold + reward.gold,
+      materials,
       lastIdleCollect: now,
     },
     reward,

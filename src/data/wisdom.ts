@@ -271,6 +271,7 @@ export interface GameState {
   craftedEquipment:  Array<{ id: string; name: string; type: string; rarity: number; emoji: string; stats: Record<string, number> }>;
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
+  productionFacilities: Record<string, number>;  // 생산 시설 facilityId → level (0/absent = not built)
   // Summon system (Phase 5)
   summonPity: {
     normal:  { count: number; guaranteed: number };
@@ -348,6 +349,7 @@ function defaultGameState(): GameState {
     craftedEquipment:  [],
     dungeonSlots:      [],
     lastIdleCollect:   0,
+    productionFacilities: {},
     summonPity:        { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } },
     summonHistory:     [],
     friendshipPoints:  10,

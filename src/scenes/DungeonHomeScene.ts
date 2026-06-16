@@ -76,9 +76,10 @@ import {
 import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import {
-  computeIdleReward, collectIdleIncome, startIdleClock, IDLE_CAP_HOURS,
+  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, IDLE_CAP_HOURS,
   type IdleReward,
 } from '../data/idleIncome';
+import { MATERIAL_DEFS } from '../data/fusion';
 import {
   type TopBarRefs,
   buildTopBar,
@@ -338,7 +339,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       return;
     }
     const reward = computeIdleReward(this.gs, now);
-    if (reward.gold <= 0) return;   // nothing meaningful accrued yet — keep accruing
+    if (!hasIdlePayout(reward)) return;   // nothing meaningful accrued yet — keep accruing
     this.time.delayedCall(550, () => this.showIdleIncomePanel(reward));
   }
 
@@ -353,7 +354,9 @@ export class DungeonHomeScene extends Phaser.Scene {
   private showIdleIncomePanel(reward: IdleReward): void {
     if (!this.scene.isActive()) return;
     const cx = CANVAS_WIDTH / 2;
-    const w = 300, h = 224;
+    const matParts = Object.entries(reward.materials)
+      .map(([id, q]) => `${MATERIAL_DEFS[id]?.emoji ?? '❔'}${q}`);
+    const w = 300, h = matParts.length ? 256 : 224;
     const px = cx - w / 2;
     const py = CANVAS_HEIGHT / 2 - h / 2;
 
@@ -386,12 +389,23 @@ export class DungeonHomeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
-    overlay.add(this.add.text(cx, py + 100, `💰 +${reward.gold.toLocaleString('ko-KR')}`, {
-      fontFamily: 'sans-serif', fontSize: '30px', fontStyle: 'bold',
-      color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 4,
-    }).setOrigin(0.5));
+    let cy = py + 96;
+    if (reward.gold > 0) {
+      overlay.add(this.add.text(cx, cy, `💰 +${reward.gold.toLocaleString('ko-KR')}`, {
+        fontFamily: 'sans-serif', fontSize: '30px', fontStyle: 'bold',
+        color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 4,
+      }).setOrigin(0.5));
+      cy += 34;
+    }
+    if (matParts.length) {
+      overlay.add(this.add.text(cx, cy, `🏭 ${matParts.join('  ')}`, {
+        fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
+        color: CASUAL_CSS.INK, stroke: '#000000', strokeThickness: 2,
+      }).setOrigin(0.5));
+      cy += 26;
+    }
 
-    overlay.add(this.add.text(cx, py + 134, `던전 운영 수익  ${Math.round(reward.ratePerMin)} 골드/분 · 최대 ${IDLE_CAP_HOURS}시간`, {
+    overlay.add(this.add.text(cx, cy + 6, `던전 운영 ${Math.round(reward.ratePerMin)} 골드/분 · 생산 시설 + 최대 ${IDLE_CAP_HOURS}시간`, {
       fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
