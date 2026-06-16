@@ -78,11 +78,30 @@ function drawActionHintBadge(
 ): void {
   const cx = x + SLOT_W - 18;
   const cy = y + 26;
-  g.fillStyle(CASUAL.PANEL, 0.96);
+
+  // Pulsing attention ring — draws the eye to a room that needs managing.
+  // Circle at local (0,0) + object positioned at the badge so it scales about
+  // the badge centre (Phaser scales graphics about their local origin).
+  const pulse = scene.add.graphics();
+  pulse.lineStyle(2, hint.color, 0.85);
+  pulse.strokeCircle(0, 0, 13);
+  pulse.setPosition(cx, cy);
+  c.add(pulse);
+  scene.tweens.add({
+    targets: pulse,
+    alpha: { from: 0.85, to: 0.12 },
+    scaleX: { from: 1, to: 1.5 },
+    scaleY: { from: 1, to: 1.5 },
+    duration: 1100,
+    repeat: -1,
+    ease: 'Sine.easeOut',
+  });
+
+  g.fillStyle(CASUAL.PANEL, 0.98);
   g.fillCircle(cx, cy, 11);
-  g.lineStyle(2, hint.color, 0.9);
+  g.lineStyle(2, hint.color, 1);
   g.strokeCircle(cx, cy, 11);
-  g.fillStyle(hint.color, 0.22);
+  g.fillStyle(hint.color, 0.3);
   g.fillCircle(cx, cy, 7);
   g.fillStyle(0xffffff, 0.12);
   g.fillCircle(cx - 3, cy - 4, 2.4);
