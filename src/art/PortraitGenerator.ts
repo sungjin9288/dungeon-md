@@ -6,6 +6,7 @@
  * as Phaser textures.
  */
 
+import Phaser from 'phaser';
 import type { MonsterId, TribeId, RarityId } from '../data/monsters';
 import { MONSTER_DEFS } from '../data/monsters';
 import { TRIBE_PALETTES, getMonsterSpriteData, type Palette } from './PixelMonsters';
@@ -195,42 +196,27 @@ export function generatePortrait(
   const ctx = canvas.getContext('2d');
   if (!ctx) return key;
 
-  // Check if an AI image is pre-loaded for this monster
-  const aiKey = `monster-ai-${monsterId}`;
-  const aiTex = scene.textures.exists(aiKey) ? scene.textures.get(aiKey) : null;
-  const aiImg = aiTex?.getSourceImage() as HTMLImageElement | null;
-  const hasAI = !!(aiImg && aiImg.naturalWidth > 0);
+  // Pixel-art portrait (art direction: 픽셀 디자인 — cuter, cohesive). Crisp
+  // pixels, no smoothing. AI illustrations are intentionally not used here.
+  ctx.imageSmoothingEnabled = false;
 
-  // 1. Background gradient
+  // 1. Background gradient + tribe insignia
   ctx.fillStyle = getTribeGradient(ctx, def.tribe);
   ctx.fillRect(0, 0, 64, 64);
+  drawTribeInsignia(ctx, def.tribe);
 
-  if (hasAI) {
-    // 2a. Draw AI image (white-bg removed via pixel loop) fitted in 4px inset
-    const tmpCanvas = document.createElement('canvas');
-    tmpCanvas.width = 64; tmpCanvas.height = 64;
-    const tmpCtx = tmpCanvas.getContext('2d')!;
-    tmpCtx.drawImage(aiImg!, 4, 4, 56, 56);
-    const id = tmpCtx.getImageData(0, 0, 64, 64);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i] > 215 && d[i + 1] > 215 && d[i + 2] > 215) d[i + 3] = 0;
-    }
-    tmpCtx.putImageData(id, 0, 0);
-    ctx.drawImage(tmpCanvas, 0, 0);
-  } else {
-    // 2b. Procedural: tribe insignia + pixel body + face detail
-    drawTribeInsignia(ctx, def.tribe);
-    drawScaledBody(ctx, monsterId, def.tribe, def.type, def.rarityTier);
-    const palette = def.tribe ? TRIBE_PALETTES[def.tribe] : [0, 0x333333, 0x888888, 0xaaaaaa, 0xdddddd, 0x111111] as Palette;
-    drawFaceDetail(ctx, palette);
-  }
+  // 2. Pixel sprite body + face detail
+  drawScaledBody(ctx, monsterId, def.tribe, def.type, def.rarityTier);
+  const palette = def.tribe ? TRIBE_PALETTES[def.tribe] : [0, 0x333333, 0x888888, 0xaaaaaa, 0xdddddd, 0x111111] as Palette;
+  drawFaceDetail(ctx, palette);
 
-  // 3. Rarity border + glow (always applied)
+  // 3. Rarity border + glow
   drawRarityBorder(ctx, def.rarityTier);
 
-  // 4. Register as Phaser texture
+  // 4. Register as Phaser texture — NEAREST filter so pixels stay crisp
+  // (global config is antialias/LINEAR for the smooth vector UI).
   scene.textures.addCanvas(key, canvas);
+  scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
   generated.add(key);
 
   return key;
