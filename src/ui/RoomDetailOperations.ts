@@ -23,6 +23,10 @@ import {
   getTrapLoadoutRecommendation } from '../data/roomLoadoutRecommendations';
 import {
   getRoomRepairCost } from '../data/roomSlotTransactions';
+import {
+  getReadinessDirectiveCopy,
+  type ReadinessDirectiveKind,
+  type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
@@ -41,7 +45,7 @@ import {
   navigateToFocusedForge, navigateToFocusedMonster } from './RoomDetailInterior';
 
 import {
-  ROOM_DETAIL_CLOSE_MS, ROOM_TYPE_ACCENT, RoomDetailNextActionEntry, RoomDirective, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks, navigateFromRoomDetail } from './RoomDetailShared';
+  ROOM_DETAIL_CLOSE_MS, ROOM_TYPE_ACCENT, RoomDetailNextActionEntry, RoomDirective, RoomDirectiveTarget, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks, navigateFromRoomDetail } from './RoomDetailShared';
 import {
   drawSectionTargetPulse, applyRoomRepairAction, applyRecommendedRoomDesign, applyRecommendedMonsterPlacement, applyRecommendedTrapPlacement } from './RoomDetailFeedback';
 
@@ -201,6 +205,60 @@ export function buildRoomOperationsPanel(
   return panelH;
 }
 
+// ─── Directive fill/text helpers ─────────────────────────────────────────────
+
+function roomDirectiveFill(severity: ReadinessDirectiveSeverity): number {
+  if (severity === 'danger') return 0x22100c;
+  if (severity === 'warning') return 0x0b1b14;
+  return 0x071812;
+}
+
+function roomDirectiveTextColor(severity: ReadinessDirectiveSeverity): string {
+  if (severity === 'danger') return '#ffb09a';
+  if (severity === 'warning') return '#c8ffe0';
+  return '#b7ffe8';
+}
+
+// ─── Target helper ───────────────────────────────────────────────────────────
+
+function roomDirectiveTarget(
+  kind: 'room-design' | 'room-repair' | 'assign-monster' | 'install-trap' | 'grow-monster' | 'forge-equipment' | 'power-risk' | 'battle-ready',
+): RoomDirectiveTarget {
+  switch (kind) {
+    case 'room-design':    return 'type';
+    case 'room-repair':    return 'repair';
+    case 'assign-monster': return 'monster';
+    case 'install-trap':   return 'trap';
+    case 'grow-monster':   return 'growth';
+    case 'forge-equipment':return 'growth';
+    case 'power-risk':     return 'growth';
+    case 'battle-ready':   return 'none';
+  }
+}
+
+// ─── Directive builder ───────────────────────────────────────────────────────
+
+function buildRoomDirective(
+  kind: ReadinessDirectiveKind,
+  ctx: Parameters<typeof getReadinessDirectiveCopy>[1],
+  onPress?: () => void,
+  overrides?: { body?: string; ctaLabel?: string; accent?: number; enabled?: boolean },
+): RoomDirective {
+  const copy = getReadinessDirectiveCopy(kind, ctx);
+  const severity = copy.severity;
+  return {
+    title: copy.title,
+    body: overrides?.body ?? copy.body,
+    ctaLabel: overrides?.ctaLabel ?? copy.ctaLabel,
+    target: roomDirectiveTarget(kind),
+    accent: overrides?.accent ?? copy.accent,
+    fillColor: roomDirectiveFill(severity),
+    textColor: roomDirectiveTextColor(severity),
+    enabled: overrides?.enabled,
+    onPress,
+  };
+}
+
 export function getRoomDirective(
   scene: Phaser.Scene,
   state: RoomDetailState,
@@ -218,194 +276,181 @@ export function getRoomDirective(
   const firstTrapSlot = findFirstEmptySlot(slot.trapIds, cap.traps);
   const gs = cb.getGameState();
   const recommendation = !slot.roomType ? getRoomDesignRecommendation(gs, slotIdx) : null;
+  const roomLabel = `방 #${slotIdx + 1}`;
 
+  // 1. Broken room — room-repair
   if (slot.roomType && slot.hp <= 0) {
     const repairCost = getRoomRepairCost(slot);
     const canRepair = gs.homeGold >= repairCost;
+    const copy = getReadinessDirectiveCopy('room-repair', { roomLabel });
     return {
-      title: '수리 우선',
-      body: `HP ${slot.hp}/${slot.maxHp} · 수리 ${repairCost}g`,
+      title: copy.title,
+      body: `${copy.body} · 수리 ${repairCost}g`,
       ctaLabel: canRepair ? '즉시 수리' : '골드 부족',
       target: 'repair',
-      accent: 0xff5544,
-      fillColor: 0x22100c,
-      textColor: '#ffb09a',
+      accent: copy.accent,
+      fillColor: roomDirectiveFill(copy.severity),
+      textColor: roomDirectiveTextColor(copy.severity),
       enabled: canRepair,
-      onPress: () => applyRoomRepairAction(scene, state, theme, cb, slotIdx, slot) };
+      onPress: () => applyRoomRepairAction(scene, state, theme, cb, slotIdx, slot),
+    };
   }
 
+  // 2. No room type set — room-design
   if (!slot.roomType) {
-    return {
-      title: recommendation ? `${recommendation.title}` : '방 역할 설계',
-      body: recommendation?.reason ?? '먼저 전투실, 함정실, 지원실, 마법실 중 역할을 정하세요.',
-      ctaLabel: recommendation ? '추천 적용' : '아래에서 설계',
-      target: 'type',
-      accent: 0x55b88a,
-      fillColor: 0x08151c,
-      textColor: '#c8f1ff',
-      onPress: recommendation
+    return buildRoomDirective(
+      'room-design',
+      { roomLabel },
+      recommendation
         ? () => applyRecommendedRoomDesign(scene, state, theme, cb, slotIdx, slot, recommendation)
-        : undefined };
+        : undefined,
+      recommendation
+        ? { body: recommendation.reason, ctaLabel: '추천 적용' }
+        : { ctaLabel: '아래에서 설계' },
+    );
   }
 
+  // 3. Empty monster slot — assign-monster
   if (firstMonsterSlot >= 0) {
     const monsterRecommendation = getMonsterLoadoutRecommendation(gs, slotIdx);
     if (monsterRecommendation) {
-      return {
-        title: '추천 수호자 배치',
-        body: `${monsterRecommendation.name} · ${monsterRecommendation.reason}`,
-        ctaLabel: '추천 배치',
-        target: 'monster',
-        accent: monsterRecommendation.accent,
-        fillColor: 0x1f1208,
-        textColor: '#ffe1c2',
-        onPress: () => applyRecommendedMonsterPlacement(
-          scene,
-          state,
-          theme,
-          cb,
-          slotIdx,
-          slot,
-          firstMonsterSlot,
-          monsterRecommendation,
-        ) };
+      return buildRoomDirective(
+        'assign-monster',
+        { roomLabel },
+        () => applyRecommendedMonsterPlacement(
+          scene, state, theme, cb, slotIdx, slot, firstMonsterSlot, monsterRecommendation,
+        ),
+        {
+          body: `${monsterRecommendation.name} · ${monsterRecommendation.reason}`,
+          ctaLabel: '추천 배치',
+          accent: monsterRecommendation.accent,
+        },
+      );
     }
-    return {
-      title: '수호자 배치',
-      body: `빈 몬스터 슬롯 ${cap.monsters - monsterCount}개가 남았습니다.`,
-      ctaLabel: '즉시 배치',
-      target: 'monster',
-      accent: 0xff8a45,
-      fillColor: 0x1f1208,
-      textColor: '#ffe1c2',
-      onPress: () => showMonsterPicker(scene, state, theme, cb, nav, slotIdx, firstMonsterSlot) };
+    return buildRoomDirective(
+      'assign-monster',
+      { roomLabel, emptySlots: cap.monsters - monsterCount },
+      () => showMonsterPicker(scene, state, theme, cb, nav, slotIdx, firstMonsterSlot),
+      { ctaLabel: '즉시 배치' },
+    );
   }
 
+  // 4. Open trap slot — install-trap
   if (cap.traps > 0 && firstTrapSlot >= 0) {
     const trapRecommendation = getTrapLoadoutRecommendation(gs, slotIdx);
     if (trapRecommendation) {
-      return {
-        title: '추천 함정 설치',
-        body: `${trapRecommendation.name} · ${trapRecommendation.reason}`,
-        ctaLabel: '추천 설치',
-        target: 'trap',
-        accent: trapRecommendation.accent,
-        fillColor: 0x201605,
-        textColor: '#ffe3a0',
-        onPress: () => applyRecommendedTrapPlacement(
-          scene,
-          state,
-          theme,
-          cb,
-          slotIdx,
-          slot,
-          firstTrapSlot,
-          trapRecommendation,
-        ) };
+      return buildRoomDirective(
+        'install-trap',
+        { roomLabel },
+        () => applyRecommendedTrapPlacement(
+          scene, state, theme, cb, slotIdx, slot, firstTrapSlot, trapRecommendation,
+        ),
+        {
+          body: `${trapRecommendation.name} · ${trapRecommendation.reason}`,
+          ctaLabel: '추천 설치',
+          accent: trapRecommendation.accent,
+        },
+      );
     }
-    return {
-      title: '함정 설치',
-      body: `침입 경로에 빈 함정 슬롯 ${cap.traps - trapCount}개가 있습니다.`,
-      ctaLabel: '즉시 설치',
-      target: 'trap',
-      accent: 0xc8921a,
-      fillColor: 0x201605,
-      textColor: '#ffe3a0',
-      onPress: () => showTrapPicker(scene, state, theme, cb, nav, slotIdx, firstTrapSlot) };
+    return buildRoomDirective(
+      'install-trap',
+      { roomLabel },
+      () => showTrapPicker(scene, state, theme, cb, nav, slotIdx, firstTrapSlot),
+      {
+        body: `침입 경로에 빈 함정 슬롯 ${cap.traps - trapCount}개가 있습니다.`,
+        ctaLabel: '즉시 설치',
+      },
+    );
   }
 
   const assignedMonsterIds = slot.monsterIds.filter((monsterId): monsterId is string =>
     typeof monsterId === 'string' && monsterId.length > 0,
   );
+
+  // 5. Monster missing equipment — forge-equipment
   const firstUnequippedMonsterId = assignedMonsterIds.find(monsterId =>
     !gs.ownedMonsters.find(monster => monster.id === monsterId)?.equipment,
   );
   if (firstUnequippedMonsterId) {
     const focusMonsterDef = MONSTER_DEFS[firstUnequippedMonsterId as keyof typeof MONSTER_DEFS] ?? null;
-    return {
-      title: '장비 보강',
-      body: `${focusMonsterDef?.name ?? '수호자'} 장비가 비어 있습니다. 제작소에서 바로 보강하세요.`,
-      ctaLabel: '장비 강화',
-      target: 'growth',
-      accent: 0x9a6cd8,
-      fillColor: 0x151026,
-      textColor: '#e4d8ff',
-      onPress: () => navigateToFocusedForge(scene, state, cb, firstUnequippedMonsterId, slotIdx) };
+    return buildRoomDirective(
+      'forge-equipment',
+      { roomLabel, readiness: roomMetrics.readiness },
+      () => navigateToFocusedForge(scene, state, cb, firstUnequippedMonsterId, slotIdx),
+      {
+        body: `${focusMonsterDef?.name ?? '수호자'} 장비가 비어 있습니다. 제작소에서 바로 보강하세요.`,
+        ctaLabel: '장비 강화',
+      },
+    );
   }
 
+  // 6. Monster underleveled — grow-monster
   const targetLevel = Math.max(2, gs.dmLevel - 1);
   const underleveledMonster = assignedMonsterIds
     .map(monsterId => gs.ownedMonsters.find(monster => monster.id === monsterId))
     .find(monster => monster && monster.level < targetLevel);
   if (underleveledMonster) {
     const focusMonsterDef = MONSTER_DEFS[underleveledMonster.id as keyof typeof MONSTER_DEFS] ?? null;
-    return {
-      title: '수호자 성장 필요',
-      body: `${focusMonsterDef?.name ?? '수호자'} Lv.${underleveledMonster.level} · 목표 Lv.${targetLevel}`,
-      ctaLabel: '수호자 성장',
-      target: 'growth',
-      accent: 0x44aa77,
-      fillColor: 0x0b1b14,
-      textColor: '#c8ffe0',
-      onPress: () => navigateToFocusedMonster(scene, state, cb, underleveledMonster.id, slotIdx) };
+    return buildRoomDirective(
+      'grow-monster',
+      { skillReady: 1 },
+      () => navigateToFocusedMonster(scene, state, cb, underleveledMonster.id, slotIdx),
+      {
+        body: `${focusMonsterDef?.name ?? '수호자'} Lv.${underleveledMonster.level} · 목표 Lv.${targetLevel}`,
+        ctaLabel: '수호자 성장',
+      },
+    );
   }
 
+  // 7. Low readiness — power-risk (or grow-monster if there is a focus monster)
   if (roomMetrics.readiness < 78) {
     const focusMonsterId = slot.monsterIds.find((monsterId): monsterId is string => typeof monsterId === 'string');
     const focusMonsterDef = focusMonsterId ? MONSTER_DEFS[focusMonsterId as keyof typeof MONSTER_DEFS] : null;
-    return {
-      title: focusMonsterDef ? '수호자 성장 필요' : '전력 보강',
-      body: focusMonsterDef
-        ? `${focusMonsterDef.name} 성장/장비 보강으로 방 준비도를 올리세요.`
-        : '몬스터 성장이나 장비 제작으로 준비도를 더 올릴 수 있습니다.',
-      ctaLabel: focusMonsterDef ? '수호자 성장' : '성장 이동',
-      target: 'growth',
-      accent: 0x44aa77,
-      fillColor: 0x0b1b14,
-      textColor: '#c8ffe0',
-      onPress: () => {
+    return buildRoomDirective(
+      'power-risk',
+      { roomLabel, readiness: roomMetrics.readiness },
+      () => {
         if (focusMonsterId) {
           navigateToFocusedMonster(scene, state, cb, focusMonsterId, slotIdx);
           return;
         }
         navigateFromRoomDetail(scene, state, cb, 'BarracksScene');
-      } };
+      },
+      focusMonsterDef
+        ? {
+            body: `${focusMonsterDef.name} 성장/장비 보강으로 방 준비도를 올리세요.`,
+            ctaLabel: '수호자 성장',
+          }
+        : undefined,
+    );
   }
 
+  // 8. This room is ready — show next queued action or battle-ready
   const nextActionEntry = getNextRoomDetailAction(gs, slotIdx);
   if (nextActionEntry && cb.openRoomSlot) {
     const { action: nextAction, rank: nextActionRank } = nextActionEntry;
-    return {
-      title: '가동 완비',
-      body: `${nextActionRank}순 작업: 방 #${nextAction.slotIdx + 1} ${nextAction.label} · ${nextAction.body}`,
-      ctaLabel: `방 #${nextAction.slotIdx + 1} ${nextAction.label}`,
-      target: 'none',
-      accent: nextAction.accent,
-      fillColor: 0x071812,
-      textColor: '#b7ffe8',
-      onPress: () => openQueuedRoomFromDetail(scene, state, cb, nextAction.slotIdx) };
+    return buildRoomDirective(
+      'battle-ready',
+      {},
+      () => openQueuedRoomFromDetail(scene, state, cb, nextAction.slotIdx),
+      {
+        body: `${nextActionRank}순 작업: 방 #${nextAction.slotIdx + 1} ${nextAction.label} · ${nextAction.body}`,
+        ctaLabel: `방 #${nextAction.slotIdx + 1} ${nextAction.label}`,
+        accent: nextAction.accent,
+      },
+    );
   }
 
   if (cb.startBattle) {
-    return {
-      title: '전투 준비 완료',
-      body: '모든 작업 큐가 비었습니다. 다음 침공 방어로 진행하세요.',
-      ctaLabel: '침공 준비',
-      target: 'none',
-      accent: 0xe8c468,
-      fillColor: 0x1f1506,
-      textColor: '#ffe8a6',
-      onPress: () => startBattleFromRoomDetail(scene, state, cb) };
+    return buildRoomDirective(
+      'battle-ready',
+      {},
+      () => startBattleFromRoomDetail(scene, state, cb),
+      { body: '모든 작업 큐가 비었습니다. 다음 침공 방어로 진행하세요.', ctaLabel: '침공 준비' },
+    );
   }
 
-  return {
-    title: '가동 완비',
-    body: '이 방은 다음 침입을 막을 준비가 끝났습니다.',
-    ctaLabel: '완비',
-    target: 'none',
-    accent: 0x66c08a,
-    fillColor: 0x071812,
-    textColor: '#b7ffe8' };
+  return buildRoomDirective('battle-ready', {});
 }
 
 export function getNextRoomDetailAction(
