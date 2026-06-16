@@ -74,7 +74,11 @@ import {
   drawSynergySummary,
 } from '../ui/DungeonSynergy';
 import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
-import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import {
+  computeIdleReward, collectIdleIncome, startIdleClock, IDLE_CAP_HOURS,
+  type IdleReward,
+} from '../data/idleIncome';
 import {
   type TopBarRefs,
   buildTopBar,
@@ -308,6 +312,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     // Store latest gs ref after battle return and quest initialization.
     this.registry.set('_invasionGs', this.gs);
 
+    this.maybeShowIdleIncome();
+
     const pendingUnlock = this.registry.get('pendingUnlock') as string | undefined;
     if (pendingUnlock) this.registry.remove('pendingUnlock');
 
@@ -321,6 +327,92 @@ export class DungeonHomeScene extends Phaser.Scene {
     audioManager.resume().then(() => audioManager.playBgm('home'));
     this.maybeOpenFocusedDungeonSlot();
     this.maybeShowTutorial();
+  }
+
+  // ─── Idle (offline) dungeon income ────────────────────────────────────────
+  private maybeShowIdleIncome(): void {
+    const now = Date.now();
+    // First-ever visit: start the clock, no payout (avoid an epoch-sized reward).
+    if ((this.gs.lastIdleCollect ?? 0) <= 0) {
+      this.persistGameState(startIdleClock(this.gs, now));
+      return;
+    }
+    const reward = computeIdleReward(this.gs, now);
+    if (reward.gold <= 0) return;   // nothing meaningful accrued yet — keep accruing
+    this.time.delayedCall(550, () => this.showIdleIncomePanel(reward));
+  }
+
+  private formatIdleDuration(ms: number): string {
+    const totalMin = Math.floor(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h > 0) return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+    return `${Math.max(1, m)}분`;
+  }
+
+  private showIdleIncomePanel(reward: IdleReward): void {
+    if (!this.scene.isActive()) return;
+    const cx = CANVAS_WIDTH / 2;
+    const w = 300, h = 224;
+    const px = cx - w / 2;
+    const py = CANVAS_HEIGHT / 2 - h / 2;
+
+    // Tap-blocking scrim.
+    const scrim = this.add.graphics().setDepth(899);
+    scrim.fillStyle(CASUAL.SHADOW, 0.62);
+    scrim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    scrim.setInteractive(
+      new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT),
+      Phaser.Geom.Rectangle.Contains,
+    );
+
+    const overlay = this.add.container(0, 0).setDepth(900);
+
+    const frame = addFramedPanel(this, {
+      x: px, y: py, w, h, radius: 18,
+      fillColor: CASUAL.PANEL, borderColor: CASUAL.GOLD, borderAlpha: 1, borderWidth: 3,
+      accentColor: CASUAL.GOLD, accentAlpha: 0.5, glowColor: CASUAL.GOLD, glowOpacity: 0.1,
+      shadowOpacity: 0.5, shadowOffsetY: 5,
+    });
+    overlay.add([frame.shadow, frame.panel, frame.glow]);
+
+    overlay.add(this.add.text(cx, py + 28, '🏰 던전 방치 수익', {
+      fontFamily: 'Georgia, serif', fontSize: '18px', fontStyle: 'bold',
+      color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5));
+
+    const dur = this.formatIdleDuration(reward.creditedMs);
+    overlay.add(this.add.text(cx, py + 60, `던전을 비운 ${dur} 동안${reward.capped ? ' (최대 적립)' : ''}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+    }).setOrigin(0.5));
+
+    overlay.add(this.add.text(cx, py + 100, `💰 +${reward.gold.toLocaleString('ko-KR')}`, {
+      fontFamily: 'sans-serif', fontSize: '30px', fontStyle: 'bold',
+      color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5));
+
+    overlay.add(this.add.text(cx, py + 134, `던전 운영 수익  ${Math.round(reward.ratePerMin)} 골드/분 · 최대 ${IDLE_CAP_HOURS}시간`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+    }).setOrigin(0.5));
+
+    const btnW = 180, btnH = 44;
+    const claim = addPrimaryActionButton(this, {
+      x: cx - btnW / 2, y: py + h - 58, w: btnW, h: btnH, label: '수령', fontSize: '17px',
+      fillColor: CASUAL.GOLD, hoverFillColor: 0xffd66a, borderColor: CASUAL.GOLD_DK,
+      once: true,
+      onPress: () => {
+        const { state } = collectIdleIncome(this.gs, Date.now());
+        this.persistGameState(state);
+        overlay.destroy();
+        scrim.destroy();
+      },
+    });
+    overlay.add([claim.bg, claim.text, claim.zone]);
+
+    // Fade in (no scale — keeps the full-screen scrim aligned).
+    scrim.setAlpha(0);
+    overlay.setAlpha(0);
+    this.tweens.add({ targets: [scrim, overlay], alpha: 1, duration: 220, ease: 'Quad.easeOut' });
   }
 
   private maybeOpenFocusedDungeonSlot(): void {

@@ -270,6 +270,7 @@ export interface GameState {
   abyss:             AbyssState;                // 심연 farming progress (depth + sweep keys)
   craftedEquipment:  Array<{ id: string; name: string; type: string; rarity: number; emoji: string; stats: Record<string, number> }>;
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
+  lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   // Summon system (Phase 5)
   summonPity: {
     normal:  { count: number; guaranteed: number };
@@ -346,6 +347,7 @@ function defaultGameState(): GameState {
     abyss:             { ...DEFAULT_ABYSS_STATE },
     craftedEquipment:  [],
     dungeonSlots:      [],
+    lastIdleCollect:   0,
     summonPity:        { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } },
     summonHistory:     [],
     friendshipPoints:  10,
