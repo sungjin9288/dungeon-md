@@ -57,7 +57,7 @@ function row(...segs: number[]): number[] {
 // ─── Generic silhouettes per monster type ──────────────────────────────────────
 
 // Melee: stocky warrior with weapon
-const MELEE_SILHOUETTE: number[][] = [
+export const MELEE_SILHOUETTE: number[][] = [
   row(0,24),
   row(0,24),
   row(0,9, 1,1, 4,4, 1,1, 0,9),         // head top
@@ -86,7 +86,7 @@ const MELEE_SILHOUETTE: number[][] = [
 ];
 
 // Ranged: slimmer figure with bow
-const RANGED_SILHOUETTE: number[][] = [
+export const RANGED_SILHOUETTE: number[][] = [
   row(0,24),
   row(0,24),
   row(0,10, 1,1, 4,2, 1,1, 0,10),        // head top
@@ -115,7 +115,7 @@ const RANGED_SILHOUETTE: number[][] = [
 ];
 
 // Magic: robed figure with staff/aura
-const MAGIC_SILHOUETTE: number[][] = [
+export const MAGIC_SILHOUETTE: number[][] = [
   row(0,24),
   row(0,10, 4,1, 3,2, 4,1, 0,10),         // hat tip
   row(0,9, 1,1, 3,4, 1,1, 0,9),            // hat
@@ -211,7 +211,7 @@ const DOKKAEBI_WARRIOR: number[][] = [
 ];
 
 // Gumiho guardian: fox ears + 3 tails
-const GUMIHO_GUARDIAN: number[][] = [
+export const GUMIHO_GUARDIAN: number[][] = [
   row(0,24),
   row(0,8, 4,1, 0,5, 4,1, 0,9),           // fox ears
   row(0,8, 3,1, 4,1, 0,3, 4,1, 3,1, 0,9),
@@ -240,7 +240,7 @@ const GUMIHO_GUARDIAN: number[][] = [
 ];
 
 // White tiger: tiger stripes, powerful stance
-const WHITE_TIGER: number[][] = [
+export const WHITE_TIGER: number[][] = [
   row(0,24),
   row(0,9, 4,1, 0,3, 4,1, 0,10),          // ears
   row(0,8, 1,1, 2,6, 1,1, 0,8),            // head
@@ -268,7 +268,7 @@ const WHITE_TIGER: number[][] = [
 ];
 
 // Death messenger: skeleton with scythe
-const DEATH_MESSENGER: number[][] = [
+export const DEATH_MESSENGER: number[][] = [
   row(0,24),
   row(0,24),
   row(0,9, 1,1, 3,4, 1,1, 0,9),           // hood

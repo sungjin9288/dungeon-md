@@ -4,14 +4,7 @@ import { CANVAS_WIDTH } from '../constants/layout';
 import { INVADER_DEFS, type InvaderType } from '../data/invaders';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { getMonsterSpriteData, drawMonsterSprite } from '../art/PixelMonsters';
-import { drawInvaderShape } from '../art/InvaderShapes';
-
-const PROCEDURAL_INVADER_ASSET_TYPES = new Set<InvaderType>([
-  'void_soldier',
-  'abyss_berserker',
-  'primordial_guard',
-  'primordial_titan',
-]);
+import { getInvaderSpriteData } from '../art/PixelInvaders';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
@@ -47,13 +40,8 @@ export class BootScene extends Phaser.Scene {
       barFill.fillRoundedRect(CANVAS_WIDTH / 2 - 149, 411, Math.floor(298 * v), 12, 3);
     });
 
-    // Load AI-generated invader sprites. Ch8 final invaders currently rely on
-    // procedural shapes, so do not queue missing image URLs for them.
-    const invaderTypes = Object.keys(INVADER_DEFS) as InvaderType[];
-    invaderTypes.forEach(type => {
-      if (PROCEDURAL_INVADER_ASSET_TYPES.has(type)) return;
-      this.load.image(`invader-ai-${type}`, `/assets/invaders/${type}.jpg`);
-    });
+    // Invaders are now procedural pixel art (see PixelInvaders.ts) — no AI
+    // invader sprites to preload.
 
     // Load AI-generated monster portraits (Ch1-5 pre-loaded; Ch6+ loaded lazily)
     // Ch7 assets are NOT pre-loaded here — large files caused loader deadlock
@@ -102,44 +90,19 @@ export class BootScene extends Phaser.Scene {
     dust.generateTexture('dust', 5, 5);
     dust.destroy();
 
-    // Invader textures: use AI sprites if available, else procedural fallback
+    // Invader textures: procedural pixel-art sprites (24×24 grid, baked at 2×),
+    // matching the player monsters' pixel style so the whole battle is cohesive.
     const allInvaderTypes = Object.keys(INVADER_DEFS) as InvaderType[];
+    const INV_PX = 2;   // bake scale → 48×48 texture, NEAREST-filtered for crisp pixels
     allInvaderTypes.forEach((type) => {
-      const def = INVADER_DEFS[type];
-      const r   = def.radius;
-      const aiKey = `invader-ai-${type}`;
-
       const finalKey = `invader-${type}`;
-      let aiProcessed = false;
-      if (this.textures.exists(aiKey)) {
-        try {
-          const src = this.textures.get(aiKey).getSourceImage() as HTMLImageElement;
-          if (src && (src as HTMLImageElement).naturalWidth > 0) {
-            const SIZE = 128;
-            const canvas = document.createElement('canvas');
-            canvas.width = SIZE;
-            canvas.height = SIZE;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(src, 0, 0, SIZE, SIZE);
-            const id = ctx.getImageData(0, 0, SIZE, SIZE);
-            const d = id.data;
-            for (let i = 0; i < d.length; i += 4) {
-              if (d[i] > 215 && d[i + 1] > 215 && d[i + 2] > 215) d[i + 3] = 0;
-            }
-            ctx.putImageData(id, 0, 0);
-            if (this.textures.exists(finalKey)) this.textures.remove(finalKey);
-            this.textures.addCanvas(finalKey, canvas);
-            aiProcessed = true;
-          }
-        } catch (_) { /* fall through to procedural */ }
-      }
-      if (!aiProcessed) {
-        // Fallback: procedural chibi shape
-        const g = this.make.graphics({ x: 0, y: 0 }, false);
-        drawInvaderShape(g, type, def);
-        g.generateTexture(finalKey, r * 2, r * 2);
-        g.destroy();
-      }
+      if (this.textures.exists(finalKey)) this.textures.remove(finalKey);
+      const data = getInvaderSpriteData(type);
+      const g = this.make.graphics({ x: 0, y: 0 }, false);
+      drawMonsterSprite(g, data, INV_PX);
+      g.generateTexture(finalKey, 24 * INV_PX, 24 * INV_PX);
+      g.destroy();
+      this.textures.get(finalKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
     });
   }
 

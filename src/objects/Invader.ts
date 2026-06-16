@@ -135,10 +135,12 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.maxHp = def.hp;
     this.setOrigin(0.5, 0.5);
 
-    // AI sprites are stored at 128×128 — scale to 2.5× radius for visibility
+    // Sprites are baked larger than the gameplay radius (pixel sprites at 48×48,
+    // legacy AI sprites at 128×128) — scale every invader to ~3× its radius so
+    // size still tracks the unit's stats, NEAREST keeping the pixels crisp.
     const texKey = `invader-${def.type}`;
     const texSrc = scene.textures.get(texKey).source[0];
-    if (texSrc && texSrc.width === 128) {
+    if (texSrc) {
       this.setDisplaySize(def.radius * 3, def.radius * 3);
     }
 
