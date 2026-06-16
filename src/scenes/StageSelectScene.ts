@@ -113,6 +113,7 @@ export class StageSelectScene extends Phaser.Scene {
     this.drawEndlessButton();
     this.drawAchievementButton();
     this.drawBarracksButton();
+    this.drawAbyssButton();
 
     // Camera scroll via drag
     this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT + this.maxScrollY);
@@ -479,6 +480,19 @@ export class StageSelectScene extends Phaser.Scene {
       '⚔️ 몬스터 막사',
       CASUAL.BLUE, CASUAL_CSS.BLUE,
       () => this.scene.start('BarracksScene'),
+    );
+  }
+
+  private drawAbyssButton(): void {
+    const btnW = 240, btnH = 48;
+    const btnX = CANVAS_WIDTH / 2 - btnW / 2;
+    const btnY = 1142;
+
+    this.buildCasualButton(
+      btnX, btnY, btnW, btnH,
+      '🕳 심연 (재료 파밍)',
+      CASUAL.PURPLE, CASUAL_CSS.PURPLE,
+      () => this.scene.start('AbyssScene'),
     );
   }
 

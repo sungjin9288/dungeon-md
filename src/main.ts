@@ -6,6 +6,7 @@ import { UIScene }               from './scenes/UIScene';
 import { StageSelectScene }      from './scenes/StageSelectScene';
 import { AncestralWisdomScene }  from './scenes/AncestralWisdomScene';
 import { EndlessResultScene }    from './scenes/EndlessResultScene';
+import { AbyssScene }            from './scenes/AbyssScene';
 import { AchievementScene }      from './scenes/AchievementScene';
 import { BarracksScene }         from './scenes/BarracksScene';
 import { SummonScene }           from './scenes/SummonScene';
@@ -79,7 +80,7 @@ const config = {
     // (aspect-locked letterbox); phones are bounded by their own viewport.
     min: { width: 320, height: 568 },
   },
-  scene: [BootScene, DungeonScene, UIScene, StageSelectScene, AncestralWisdomScene, EndlessResultScene, AchievementScene, BarracksScene, SummonScene, ShopScene, CinematicScene, DungeonHomeScene, PreBattleScene, FusionScene, ForgeScene, CodexScene, StageRewardOverlay],
+  scene: [BootScene, DungeonScene, UIScene, StageSelectScene, AncestralWisdomScene, EndlessResultScene, AbyssScene, AchievementScene, BarracksScene, SummonScene, ShopScene, CinematicScene, DungeonHomeScene, PreBattleScene, FusionScene, ForgeScene, CodexScene, StageRewardOverlay],
 };
 
 // ── Global text resolution patch ─────────────────────────────────────────────
@@ -595,6 +596,7 @@ const AMBIENT_SCENES = new Set<string>([
   'CodexScene',
   'AchievementScene',
   'EndlessResultScene',
+  'AbyssScene',
 ]);
 
 game.events.once(Phaser.Core.Events.READY, () => {
