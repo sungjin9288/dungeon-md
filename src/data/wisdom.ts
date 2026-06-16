@@ -1,4 +1,5 @@
 import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barracks';
+import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
 export type { OwnedMonster };
 
 // ─── Branch definitions ───────────────────────────────────────────────────────
@@ -266,6 +267,7 @@ export interface GameState {
   awakeningStones:   number;
   blueprints:        string[];                 // blueprint IDs owned
   materials:         Record<string, number>;   // materialId → quantity
+  abyss:             AbyssState;                // 심연 farming progress (depth + sweep keys)
   craftedEquipment:  Array<{ id: string; name: string; type: string; rarity: number; emoji: string; stats: Record<string, number> }>;
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
   // Summon system (Phase 5)
@@ -341,6 +343,7 @@ function defaultGameState(): GameState {
     awakeningStones:   0,
     blueprints:        [],
     materials:         {},
+    abyss:             { ...DEFAULT_ABYSS_STATE },
     craftedEquipment:  [],
     dungeonSlots:      [],
     summonPity:        { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } },
@@ -420,6 +423,7 @@ export function loadGameState(): GameState {
         ownedMonsters:     saved.ownedMonsters      ?? defaults.ownedMonsters,
         ownedEquipment:    saved.ownedEquipment     ?? defaults.ownedEquipment,
         ownedActiveSkills: saved.ownedActiveSkills  ?? defaults.ownedActiveSkills,
+        abyss:             { ...DEFAULT_ABYSS_STATE, ...(saved.abyss ?? {}) },
         dungeonSlots,
       };
     } catch { /* fall through */ }
@@ -456,6 +460,7 @@ export function importGameState(encoded: string): { success: boolean; error?: st
       ...parsed,
       wisdomTree:    { ...defaults.wisdomTree, ...(parsed.wisdomTree ?? {}) },
       stageProgress: migrateStageProgress(parsed.stageProgress ?? defaults.stageProgress),
+      abyss:         { ...DEFAULT_ABYSS_STATE, ...(parsed.abyss ?? {}) },
       dungeonSlots,
     };
     saveGameState(merged);
