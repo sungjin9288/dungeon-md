@@ -432,9 +432,17 @@ function drawDungeonRoomShell(
   g.fillStyle(CASUAL.SHADOW, 0.22);
   g.fillEllipse(x + SLOT_W / 2, y + SLOT_H - 10, SLOT_W - 10, 18);
 
-  // Chamber body fill — cream.
+  // Chamber body fill — dark stone.
   g.fillStyle(CASUAL.PANEL, 0.98);
   g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 10);
+
+  // Warm torchlight bath — makes an occupied room read as a lived-in, lit
+  // dungeon chamber. Two soft pools from the wall sconces + a gentle ambient.
+  g.fillStyle(0xff8a3d, 0.05 + glow * 0.07);
+  g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 10);
+  g.fillStyle(0xffb060, 0.06 + glow * 0.1);
+  g.fillCircle(x + 18, y + 44, 26);
+  g.fillCircle(x + SLOT_W - 18, y + 44, 26);
 
   // Carved rim accent.
   g.lineStyle(1.5, accent, 0.5 + glow * 0.2);
@@ -507,13 +515,21 @@ function drawDungeonRoomShell(
   g.fillCircle(x + 10, y + 42, 2.6);
   g.fillCircle(x + SLOT_W - 10, y + 42, 2.6);
 
-  // Warm torch sconces (kept as warm gold dots on the bright field).
-  g.fillStyle(CASUAL.GOLD, 0.25 + glow * 0.1);
-  g.fillCircle(x + 18, y + 43, 7);
-  g.fillCircle(x + SLOT_W - 18, y + 43, 7);
-  g.fillStyle(CASUAL.GOLD, 0.9);
-  g.fillCircle(x + 18, y + 43, 2.4);
-  g.fillCircle(x + SLOT_W - 18, y + 43, 2.4);
+  // Wall torches — bracket + flame, so the room reads as torch-lit.
+  for (const tx of [x + 18, x + SLOT_W - 18]) {
+    const ty = y + 44;
+    // glow halo
+    g.fillStyle(0xff8a3d, 0.18 + glow * 0.14);
+    g.fillCircle(tx, ty - 2, 9);
+    // iron bracket
+    g.fillStyle(CASUAL.EDGE, 0.9);
+    g.fillRoundedRect(tx - 2, ty, 4, 8, 1.5);
+    // flame (outer warm + inner bright)
+    g.fillStyle(0xff6b1a, 0.95);
+    g.fillTriangle(tx - 4, ty, tx, ty - 11, tx + 4, ty);
+    g.fillStyle(0xffd24a, 1);
+    g.fillTriangle(tx - 2, ty, tx, ty - 6, tx + 2, ty);
+  }
 }
 
 function drawLockedExcavationFace(
