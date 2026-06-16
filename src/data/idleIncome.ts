@@ -15,6 +15,7 @@
 
 import type { GameState, DungeonSlot } from './wisdom';
 import { facilityProductionOverMs } from './production';
+import { computeDecorationBonuses } from './decorations';
 
 // ─── Tunable rate constants (gold per minute) ────────────────────────────────
 export const IDLE_BASE_PER_MIN     = 1;     // a staffed dungeon ticks over at all
@@ -95,10 +96,15 @@ export function computeIdleReward(state: Readonly<GameState>, now: number): Idle
 
   const elapsedMs  = now - last;
   const creditedMs = Math.min(elapsedMs, IDLE_CAP_MS);
-  const operationGold = Math.floor(ratePerMin * (creditedMs / 60000));
 
-  // Production facilities yield materials + treasury gold over the same window.
-  const production = facilityProductionOverMs(state.productionFacilities, creditedMs);
+  // Decoration set bonuses scale idle gold + facility production.
+  const deco = computeDecorationBonuses(state.placedDecorations);
+  const goldMult = 1 + deco.idleGoldPct / 100;
+  const prodMult = 1 + deco.idleProductionPct / 100;
+
+  const operationGold = Math.floor(ratePerMin * (creditedMs / 60000) * goldMult);
+  // Apply the production bonus by scaling the credited window before flooring.
+  const production = facilityProductionOverMs(state.productionFacilities, creditedMs * prodMult);
 
   return {
     gold: operationGold + production.gold,

@@ -484,26 +484,27 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   private drawAbyssButton(): void {
-    // Two resource-gathering destinations side by side: Abyss (active farming)
-    // + Production facilities (passive idle generation).
-    const gap = 12, totalW = 330, btnH = 48;
-    const btnW = (totalW - gap) / 2;
+    // Dungeon-management hubs: Abyss (active farming), Production (idle
+    // materials), Decorations (set bonuses) — all resource/economy destinations.
+    const gap = 8, totalW = 362, btnH = 48;
+    const btnW = (totalW - gap * 2) / 3;
     const startX = CANVAS_WIDTH / 2 - totalW / 2;
     const btnY = 1142;
 
     this.buildCasualButton(
-      startX, btnY, btnW, btnH,
-      '🕳 심연',
+      startX, btnY, btnW, btnH, '🕳 심연',
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
-      () => this.scene.start('AbyssScene'),
-      '15px',
+      () => this.scene.start('AbyssScene'), '13px',
     );
     this.buildCasualButton(
-      startX + btnW + gap, btnY, btnW, btnH,
-      '🏭 생산 시설',
+      startX + btnW + gap, btnY, btnW, btnH, '🏭 생산',
       CASUAL.GOLD, CASUAL_CSS.GOLD,
-      () => this.scene.start('ProductionScene'),
-      '14px',
+      () => this.scene.start('ProductionScene'), '13px',
+    );
+    this.buildCasualButton(
+      startX + (btnW + gap) * 2, btnY, btnW, btnH, '🎏 장식',
+      CASUAL.GREEN, CASUAL_CSS.GREEN,
+      () => this.scene.start('DecorationScene'), '13px',
     );
   }
 
