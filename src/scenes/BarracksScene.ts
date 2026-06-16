@@ -60,7 +60,7 @@ const ELEMENT_META: Record<string, { label: string; icon: string; color: number 
   holy:      { label: '신성', icon: '✦',  color: 0xffe8a3 },
 };
 
-type BarracksSortKey = 'level' | 'atk' | 'rarity';
+type BarracksSortKey = 'growth' | 'level' | 'atk' | 'rarity';
 type BarracksFilterType = 'all' | 'melee' | 'ranged' | 'magic' | 'support';
 
 interface BarracksStats {
@@ -102,6 +102,35 @@ interface MonsterCardActionCue {
   textColor: string;
 }
 
+// ─── Growth sort helpers ──────────────────────────────────────────────────────
+
+function isGrowthReady(m: OwnedMonster): boolean {
+  if (m.skillPoints > 0) return true;
+  if (m.equipment === null) return true;
+  if (m.level < 50) {
+    const needed = xpToNextLevel(m.level);
+    if (needed > 0 && m.xp / needed >= 0.78) return true;
+  }
+  return false;
+}
+
+function growthPriority(m: OwnedMonster): number {
+  // Higher = shown first among growth-ready monsters
+  const xpProgress = m.level < 50 ? m.xp / xpToNextLevel(m.level) : 0;
+  const spScore    = m.skillPoints > 0 ? 1000 + m.skillPoints * 10 : 0;
+  const xpScore    = xpProgress >= 0.78 ? Math.round(xpProgress * 100) : 0;
+  const gearScore  = m.equipment === null ? 50 : 0;
+  return spScore + xpScore + gearScore;
+}
+
+function compareGrowth(a: OwnedMonster, b: OwnedMonster): number {
+  const aReady = isGrowthReady(a);
+  const bReady = isGrowthReady(b);
+  if (aReady !== bReady) return aReady ? -1 : 1;
+  if (aReady) return growthPriority(b) - growthPriority(a);
+  return b.level - a.level;
+}
+
 export class BarracksScene extends Phaser.Scene {
   private gs = loadGameState();
   private scrollY    = 0;
@@ -109,7 +138,7 @@ export class BarracksScene extends Phaser.Scene {
   private contentContainer!: Phaser.GameObjects.Container;
   private detailOverlay?: Phaser.GameObjects.Container;
   private shopOverlay?:   Phaser.GameObjects.Container;
-  private sortKey: BarracksSortKey = 'level';
+  private sortKey: BarracksSortKey = 'growth';
   private sortChips: Phaser.GameObjects.GameObject[] = [];
   private filterType: BarracksFilterType = 'all';
   private filterChips: Phaser.GameObjects.GameObject[] = [];
@@ -530,11 +559,12 @@ export class BarracksScene extends Phaser.Scene {
 
   private buildSortChips(): void {
     const KEYS: Array<{ key: BarracksSortKey; label: string }> = [
+      { key: 'growth', label: '성장 우선' },
       { key: 'level',  label: '레벨 ↓' },
       { key: 'atk',    label: '공격력' },
       { key: 'rarity', label: '희귀도' },
     ];
-    const chipW = 88, chipH = 22, chipGap = 10;
+    const chipW = 82, chipH = 22, chipGap = 6;
     const totalW = KEYS.length * chipW + (KEYS.length - 1) * chipGap;
     const startX = (CANVAS_WIDTH - totalW) / 2;
     const chipY = SORT_CHIP_Y;
@@ -635,6 +665,7 @@ export class BarracksScene extends Phaser.Scene {
         return def?.type === this.filterType;
       })
       .sort((a, b) => {
+        if (this.sortKey === 'growth') return compareGrowth(a, b);
         if (this.sortKey === 'level') return b.level - a.level;
         if (this.sortKey === 'rarity') return (b.rarity ?? 0) - (a.rarity ?? 0);
         const defA = MONSTER_DEFS[a.id as keyof typeof MONSTER_DEFS];
