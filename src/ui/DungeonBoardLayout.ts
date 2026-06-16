@@ -90,9 +90,138 @@ const INVASION_ORDER: readonly number[] = [3, 2, 1, 4, 5, 6, 9, 8, 7];
 
 export function buildDungeonBoardLayout(input: BoardLayoutInput): DungeonBoardLayout {
   if (input.mode === 'vertical-cutaway') {
-    throw new Error('DungeonBoardLayout: vertical-cutaway is not yet implemented (Phase B).');
+    return buildVerticalCutaway(input);
   }
   return buildFlatGrid(input);
+}
+
+// ─── Vertical-cutaway implementation ─────────────────────────────────────────
+
+/**
+ * Phase B: Vertical dungeon cross-section.
+ *
+ * Layout (top→bottom within regionTop..regionBottom):
+ *   [Entrance strip ~30px] → [Band B1 ~84px] → [gap 4px] → [Band B2] → [gap] → [Band B3] → [Heart strip ~34px]
+ *
+ * Cells are compressed to fit — 3 per band row, sized to fill the available width.
+ * Route is row-major (0,1,2…8) top→bottom (not INVASION_ORDER).
+ */
+function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
+  const { unlockedSlots, totalSlots, regionTop, regionBottom, canvasWidth } = input;
+
+  // ── Geometry constants ────────────────────────────────────────────────────
+  const ENTRANCE_H = 30;   // entrance strip height
+  const HEART_H    = 34;   // heart strip height
+  const SIDE_GUT   = 8;    // left+right gutter (per side)
+  const CELL_GAP_X = 6;    // horizontal gap between cells within a band
+  const BAND_GAP   = 4;    // vertical gap between bands
+  const CELL_PAD_Y = 5;    // top+bottom padding inside band → cell starts PAD_Y below band top
+  const numBands   = 3;
+  const numCols    = 3;
+
+  const regionH      = regionBottom - regionTop;            // 324px
+  const bandsH       = regionH - ENTRANCE_H - HEART_H;      // 260px
+  const bandH        = (bandsH - (numBands - 1) * BAND_GAP) / numBands;  // 84px
+  const cellH        = bandH - 2 * CELL_PAD_Y;              // 74px
+  const availW       = canvasWidth - 2 * SIDE_GUT;          // 374px
+  const cellW        = (availW - (numCols - 1) * CELL_GAP_X) / numCols;  // ~120px
+
+  const boardX  = SIDE_GUT;
+  const boardY  = regionTop;
+  const boardW  = canvasWidth - 2 * SIDE_GUT;
+
+  // ── Build all cells ────────────────────────────────────────────────────────
+  const allCells: BoardCell[] = [];
+  for (let row = 0; row < numBands; row++) {
+    const bandTop = regionTop + ENTRANCE_H + row * (bandH + BAND_GAP);
+    for (let col = 0; col < numCols; col++) {
+      const slotIdx = row * numCols + col;
+      if (slotIdx >= totalSlots) continue;
+
+      const rx = SIDE_GUT + col * (cellW + CELL_GAP_X);
+      const ry = bandTop + CELL_PAD_Y;
+      const rect: Rect   = { x: rx, y: ry, w: cellW, h: cellH };
+      const center: Point = { x: rx + cellW / 2, y: ry + cellH / 2 };
+
+      allCells.push({
+        slotIdx,
+        rect,
+        center,
+        isUnlocked: slotIdx < unlockedSlots,
+        floor:      row,
+        colInFloor: col,
+      });
+    }
+  }
+
+  const cellsByIdx = new Map<number, BoardCell>(allCells.map(c => [c.slotIdx, c]));
+
+  // ── Route: row-major top→bottom (0,1,2,3,…8) ─────────────────────────────
+  // For vertical-cutaway we use descent order, NOT INVASION_ORDER,
+  // so the visible flow goes straight down through the bands.
+  const route = Array.from({ length: numCols * numBands }, (_, idx) => idx)
+    .filter(idx => idx < unlockedSlots);
+
+  // ── Entrance & heart strip centers ───────────────────────────────────────
+  const entrance: Point = {
+    x: canvasWidth / 2,
+    y: regionTop + ENTRANCE_H / 2,
+  };
+  const heart: Point = {
+    x: canvasWidth / 2,
+    y: regionTop + ENTRANCE_H + numBands * bandH + (numBands - 1) * BAND_GAP + HEART_H / 2,
+  };
+
+  // ── Route polyline: entrance → each unlocked cell center (row-major) → heart ──
+  // We route through the center column shaft for a clean vertical descent,
+  // then out horizontally to each cell within the band.
+  const routePolyline: Point[] = [entrance];
+  for (const idx of route) {
+    const cell = cellsByIdx.get(idx);
+    if (cell) routePolyline.push(cell.center);
+  }
+  routePolyline.push(heart);
+
+  // ── Floor bands ───────────────────────────────────────────────────────────
+  const floors: FloorBand[] = [];
+  for (let row = 0; row < numBands; row++) {
+    const bandTop    = regionTop + ENTRANCE_H + row * (bandH + BAND_GAP);
+    const bandRect: Rect = { x: boardX, y: bandTop, w: boardW, h: bandH };
+    // Label chip: left gutter, vertically centred in the band
+    const labelPos: Point = { x: boardX + 22, y: bandTop + bandH / 2 };
+
+    const bandCells = allCells.filter(c => c.floor === row);
+
+    floors.push({
+      floor:      row,
+      label:      `B${row + 1}`,
+      labelPos,
+      bandRect,
+      cells:      bandCells,
+      tunnelInY:  bandTop,
+      tunnelOutY: bandTop + bandH,
+    });
+  }
+
+  // ── Board rect: covers entrance through heart ─────────────────────────────
+  const boardH    = ENTRANCE_H + numBands * bandH + (numBands - 1) * BAND_GAP + HEART_H;
+  const boardRect: Rect = { x: boardX, y: boardY, w: boardW, h: boardH };
+
+  // ── contentBottomY: bottom of the heart strip ────────────────────────────
+  const contentBottomY = regionTop + boardH;
+
+  return {
+    entrance,
+    heart,
+    floors,
+    cellsByIdx,
+    route,
+    routePolyline,
+    slotW: cellW,
+    slotH: cellH,
+    boardRect,
+    contentBottomY,
+  };
 }
 
 // ─── Flat-grid implementation ─────────────────────────────────────────────────

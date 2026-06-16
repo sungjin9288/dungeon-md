@@ -1039,9 +1039,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       unlockedSlots: unlockedCount,
       totalSlots:    GRID_COLS_HOME * GRID_ROWS_HOME,
       regionTop:     GRID_START_Y,
-      regionBottom:  0, // unused in flat-grid
+      regionBottom:  GRID_START_Y + GRID_ROWS_HOME * (SLOT_H + SLOT_PAD_Y), // flat-grid contentBottomY
       canvasWidth:   CANVAS_WIDTH,
-      mode:          'flat-grid',
+      mode:          'vertical-cutaway',
     });
 
     const g = this.add.graphics();
@@ -1070,28 +1070,47 @@ export class DungeonHomeScene extends Phaser.Scene {
       slotW, slotH,
       slotPadX: derivedSlotPadX, slotPadY: SLOT_PAD_Y,
       gridStartY: derivedGridStartY,
+      layout: this.boardLayout,
     };
     drawSynergyConnectors(synergyCtx, c, unlockedCount);
+
+    const { slotW: cellW, slotH: cellH } = this.boardLayout;
+    const scaleX = cellW / SLOT_W;
+    const scaleY = cellH / SLOT_H;
+    const needsScale = Math.abs(scaleX - 1) > 0.01 || Math.abs(scaleY - 1) > 0.01;
 
     for (const [idx, loopCell] of this.boardLayout.cellsByIdx) {
         const isUnlocked = loopCell.isUnlocked;
         const sx = loopCell.rect.x;
         const sy = loopCell.rect.y;
-        this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
+
+        if (needsScale) {
+          // Draw the slot at its natural 100×100 size inside a sub-container,
+          // then scale it down to fit the compressed cell.
+          const slotContainer = this.add.container(sx, sy);
+          const slotG = this.add.graphics();
+          slotContainer.add(slotG);
+          _drawBattleSlot(this.makeRoomSlotCtx(), slotContainer, slotG, 0, 0, idx, isUnlocked);
+          slotContainer.setScale(scaleX, scaleY);
+          c.add(slotContainer);
+        } else {
+          this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
+        }
+
         if (idx === changedIdx && isUnlocked) this.addRoomChangedPulse(c, sx, sy, idx);
         if (idx === this.selectedRoomIdx && isUnlocked) {
           const hl = this.add.graphics().setDepth(9);
           hl.lineStyle(3, COLORS.JADE, 1);
-          hl.strokeRoundedRect(sx - 2, sy - 2, SLOT_W + 4, SLOT_H + 4, 10);
+          hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
           hl.lineStyle(6, COLORS.JADE, 0.25);
-          hl.strokeRoundedRect(sx - 2, sy - 2, SLOT_W + 4, SLOT_H + 4, 10);
+          hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
           c.add(hl);
         }
 
         if (isUnlocked) {
           const _sx = sx, _sy = sy, _idx = idx;
           const focusAffordance = this.addRoomOpenAffordance(c, _sx, _sy, _idx);
-          const zone = this.add.zone(sx + SLOT_W / 2, sy + SLOT_H / 2, SLOT_W, SLOT_H)
+          const zone = this.add.zone(sx + cellW / 2, sy + cellH / 2, cellW, cellH)
             .setDepth(10).setInteractive({ useHandCursor: true });
           zone.on('pointerover', () => focusAffordance.setHover(true));
           zone.on('pointerout', () => focusAffordance.setHover(false));
@@ -1122,6 +1141,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     const pulse = this.add.graphics().setVisible(false);
     const corner = 10;
     const inset = 6;
+    // Use the actual cell dimensions from the layout (may differ from SLOT_W/H in vertical-cutaway).
+    const cellW = this.boardLayout.slotW;
+    const cellH = this.boardLayout.slotH;
 
     const drawCorners = (
       graphics: Phaser.GameObjects.Graphics,
@@ -1131,8 +1153,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     ): void => {
       const left = x + inset - expand;
       const top = y + inset - expand;
-      const right = x + SLOT_W - inset + expand;
-      const bottom = y + SLOT_H - inset + expand;
+      const right = x + cellW - inset + expand;
+      const bottom = y + cellH - inset + expand;
       const len = corner + expand * 0.5;
 
       graphics.clear();
@@ -1188,7 +1210,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (rankedSlots.has(pin.slotIdx)) return;
 
     const pinCell = this.boardLayout.cellsByIdx.get(pin.slotIdx);
-    const x = (pinCell?.rect.x ?? 0) + SLOT_W - 17;
+    const x = (pinCell?.rect.x ?? 0) + this.boardLayout.slotW - 17;
     const y = (pinCell?.rect.y ?? 0) + 29;
     const pinContainer = this.add.container(x, y);
     const g = this.add.graphics();
@@ -1252,7 +1274,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       const x = aqCell?.center.x ?? 0;
       const y = (aqCell?.rect.y ?? 0) + 10;
       const rank = i + 1;
-      this.addActionQueueRoomSpotlight(c, action, rank, x, y + SLOT_H / 2 - 10, reducedMotion);
+      this.addActionQueueRoomSpotlight(c, action, rank, x, y + this.boardLayout.slotH / 2 - 10, reducedMotion);
       const markerW = 42;
       const marker = this.add.container(x, y).setDepth(14);
       const bg = this.add.graphics();
@@ -1319,8 +1341,8 @@ export class DungeonHomeScene extends Phaser.Scene {
   ): void {
     const spotlight = this.add.container(x, y).setDepth(13);
     const g = this.add.graphics();
-    const ringW = SLOT_W + 12 - Math.min(rank, 3) * 2;
-    const ringH = SLOT_H + 10 - Math.min(rank, 3) * 2;
+    const ringW = this.boardLayout.slotW + 12 - Math.min(rank, 3) * 2;
+    const ringH = this.boardLayout.slotH + 10 - Math.min(rank, 3) * 2;
     const left = -ringW / 2;
     const top = -ringH / 2;
     const alpha = rank === 1 ? 0.80 : rank === 2 ? 0.56 : 0.42;
@@ -1376,7 +1398,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     maintenanceActions.forEach(action => {
       const mbCell = this.boardLayout.cellsByIdx.get(action.slotIdx);
       const x = mbCell?.center.x ?? 0;
-      const y = (mbCell?.rect.y ?? 0) + SLOT_H - 15;
+      const y = (mbCell?.rect.y ?? 0) + this.boardLayout.slotH - 15;
       const label = `${action.icon} ${action.label}`;
       const badgeW = Math.max(54, 38 + action.label.length * 10);
       const badge = this.add.container(x, y).setDepth(15);
@@ -1627,7 +1649,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         ? this.resolveMonsterVisual(monsterIds[0]).emoji
         : '⚠';
       const loadoutCount = monsterIds.length + trapIds.length;
-      const badgeX = sx + SLOT_W + 5;
+      const badgeX = sx + this.boardLayout.slotW + 5;
       const badgeY = sy + 42 + (idx % 2) * 15;
 
       this.addRoomCrewBadge(c, badgeX, badgeY, icon, loadoutCount, accent, trapIds.length > 0, reducedMotion, idx);
@@ -1719,36 +1741,42 @@ export class DungeonHomeScene extends Phaser.Scene {
     y: number,
     accent: number,
   ): void {
-    g.fillStyle(0x050302, 0.84);
-    g.fillRoundedRect(x - 20, y - 27, 40, 54, 12);
-    g.fillStyle(0x101a20, 0.94);
-    g.fillRoundedRect(x - 16, y - 22, 32, 44, 10);
-    g.fillStyle(0x050302, 0.90);
-    g.fillCircle(x, y - 4, 12);
-    g.fillRoundedRect(x - 12, y - 4, 24, 24, 7);
-    g.lineStyle(1.4, accent, 0.62);
-    g.strokeRoundedRect(x - 18, y - 25, 36, 50, 11);
-    g.lineStyle(1, 0xffffff, 0.12);
-    g.lineBetween(x - 9, y - 17, x - 9, y + 18);
-    g.lineBetween(x + 9, y - 17, x + 9, y + 18);
-    // Threat glow + entry-direction chevrons (invaders pour in here)
-    g.fillStyle(accent, 0.16);
-    g.fillCircle(x, y + 2, 14);
-    g.fillStyle(accent, 0.30);
-    g.fillCircle(x, y + 7, 3);
-    g.lineStyle(2, accent, 0.7);
+    // Full-width top banner — "침입문" label + downward chevrons showing where invaders breach.
+    const { boardRect } = this.boardLayout;
+    const bx  = boardRect.x + 3;
+    const bw  = boardRect.w - 6;
+    const top = boardRect.y + 3;
+    const btm = y + 13;  // just below entrance center
+    const bannerH = btm - top;
+
+    // Red threat glow behind text
+    g.fillStyle(accent, 0.12);
+    g.fillRoundedRect(bx, top, bw, bannerH, 8);
+    g.lineStyle(1.5, accent, 0.52);
+    g.strokeRoundedRect(bx, top, bw, bannerH, 8);
+
+    // Arch "gate" symbol in the centre
+    g.fillStyle(0x050302, 0.88);
+    g.fillCircle(x, y, 11);
+    g.fillRoundedRect(x - 9, y, 18, 14, 5);
+    g.lineStyle(1.5, accent, 0.72);
+    g.strokeCircle(x, y, 11);
+    // Downward threat chevrons (invaders pour downward)
+    g.lineStyle(2, accent, 0.78);
     for (let k = 0; k < 2; k++) {
-      const cy2 = y + 2 + k * 8;
-      g.lineBetween(x - 7, cy2, x, cy2 + 5);
-      g.lineBetween(x + 7, cy2, x, cy2 + 5);
+      const cy2 = y + 3 + k * 7;
+      g.lineBetween(x - 6, cy2, x, cy2 + 5);
+      g.lineBetween(x + 6, cy2, x, cy2 + 5);
     }
-    c.add(this.add.text(x, y - 36, '침입문', {
+
+    // Label text on the left of the banner
+    c.add(this.add.text(bx + 10, y, '침입문', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: '#d8f7ff',
+      color: '#ffb8b8',
       fontStyle: 'bold',
-      stroke: '#02141a', strokeThickness: 3,
-    }).setOrigin(1, 0.5).setAlpha(0.95));
+      stroke: '#1a0000', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setAlpha(0.96).setDepth(3));
   }
 
   private drawDungeonHeartCore(
@@ -1758,30 +1786,44 @@ export class DungeonHomeScene extends Phaser.Scene {
     y: number,
     accent: number,
   ): void {
-    // Protected core — concentric glow so it reads as the thing under threat
-    g.fillStyle(0x050302, 0.86);
-    g.fillCircle(x, y, 25);
-    g.fillStyle(accent, 0.08);
-    g.fillCircle(x, y, 38);
+    // Full-width bottom plinth — protected core, the thing under threat.
+    const { boardRect } = this.boardLayout;
+    const bx       = boardRect.x + 3;
+    const bw       = boardRect.w - 6;
+    const plinthTop = y - 15;
+    const plinthBtm = boardRect.y + boardRect.h - 3;
+    const plinthH   = plinthBtm - plinthTop;
+
+    // Gold glow plinth background
+    g.fillStyle(accent, 0.09);
+    g.fillRoundedRect(bx, plinthTop, bw, plinthH, 8);
+    g.lineStyle(1.5, accent, 0.45);
+    g.strokeRoundedRect(bx, plinthTop, bw, plinthH, 8);
+
+    // Core orb at centre
+    g.fillStyle(0x050302, 0.88);
+    g.fillCircle(x, y, 13);
     g.fillStyle(accent, 0.14);
-    g.fillCircle(x, y, 31);
-    g.lineStyle(1.4, accent, 0.72);
-    g.strokeCircle(x, y, 23);
-    g.lineStyle(1, 0xffffff, 0.16);
-    g.strokeCircle(x, y, 14);
-    g.fillStyle(accent, 0.72);
-    g.fillCircle(x, y, 6);
-    g.fillStyle(0xffffff, 0.3);
-    g.fillCircle(x, y, 2.5);
+    g.fillCircle(x, y, 19);
     g.fillStyle(accent, 0.20);
-    g.fillTriangle(x, y - 18, x + 15, y + 10, x - 15, y + 10);
-    c.add(this.add.text(x, y + 36, '심장부', {
+    g.fillCircle(x, y, 13);
+    g.lineStyle(1.4, accent, 0.75);
+    g.strokeCircle(x, y, 12);
+    g.lineStyle(1, 0xffffff, 0.18);
+    g.strokeCircle(x, y, 7);
+    g.fillStyle(accent, 0.80);
+    g.fillCircle(x, y, 4);
+    g.fillStyle(0xffffff, 0.36);
+    g.fillCircle(x, y, 1.8);
+
+    // Label text on the right of the plinth
+    c.add(this.add.text(bx + bw - 10, y, '심장부', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
-      color: '#fff0b8',
+      color: '#ffd24a',
       fontStyle: 'bold',
       stroke: '#1a1002', strokeThickness: 3,
-    }).setOrigin(0.5).setAlpha(0.95));
+    }).setOrigin(1, 0.5).setAlpha(0.96).setDepth(3));
   }
 
   private drawDungeonMapBackdrop(
@@ -1789,63 +1831,103 @@ export class DungeonHomeScene extends Phaser.Scene {
     g: Phaser.GameObjects.Graphics,
     _unlockedCount: number,
   ): void {
-    const { boardRect, floors } = this.boardLayout;
+    const { boardRect, floors, entrance, heart, route: layoutRoute } = this.boardLayout;
     const mapX = boardRect.x;
     const mapY = boardRect.y;
     const mapW = boardRect.w;
     const mapH = boardRect.h;
 
-    // ── Bright casual play tray: cream panel, chunky brown edge, drop shadow ──
-    g.fillStyle(CASUAL.SHADOW, 0.4);
-    g.fillRoundedRect(mapX + 3, mapY + 7, mapW, mapH, 22);
+    // ── Outer dungeon tray: dark stone body + chunky brown edge + drop shadow ──
+    g.fillStyle(CASUAL.SHADOW, 0.45);
+    g.fillRoundedRect(mapX + 3, mapY + 5, mapW, mapH, 14);
     g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(mapX, mapY, mapW, mapH, 22);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(mapX + 4, mapY + 4, mapW - 8, mapH - 8, 19);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(mapX + 12, mapY + 8, mapW - 24, 9, 5);
+    g.fillRoundedRect(mapX, mapY, mapW, mapH, 14);
+    g.fillStyle(CASUAL.BG_BOTTOM, 1);
+    g.fillRoundedRect(mapX + 3, mapY + 3, mapW - 6, mapH - 6, 12);
 
-    // Per-floor soft shelf + B-label chip
+    // ── Entrance strip (red banner across the top) ────────────────────────────
+    const entranceH = entrance.y - mapY + 15; // extends from board top to just past entrance center
+    g.fillStyle(0x3a1010, 0.92);
+    g.fillRoundedRect(mapX + 3, mapY + 3, mapW - 6, entranceH - 3, 10);
+    g.fillStyle(CASUAL.RED, 0.10);
+    g.fillRoundedRect(mapX + 3, mapY + 3, mapW - 6, entranceH - 3, 10);
+    g.lineStyle(1.5, CASUAL.RED, 0.42);
+    g.lineBetween(mapX + 6, mapY + entranceH, mapX + mapW - 6, mapY + entranceH);
+
+    // ── Heart strip (gold plinth at the bottom) ───────────────────────────────
+    const heartTop = heart.y - 17;
+    const heartBtm = mapY + mapH - 3;
+    g.fillStyle(0x2a1a00, 0.92);
+    g.fillRoundedRect(mapX + 3, heartTop, mapW - 6, heartBtm - heartTop, 10);
+    g.fillStyle(CASUAL.GOLD, 0.10);
+    g.fillRoundedRect(mapX + 3, heartTop, mapW - 6, heartBtm - heartTop, 10);
+    g.lineStyle(1.5, CASUAL.GOLD, 0.38);
+    g.lineBetween(mapX + 6, heartTop, mapX + mapW - 6, heartTop);
+
+    // ── Per-floor stone shelves (each a horizontal band) ──────────────────────
+    // Tone gets slightly darker/deeper as floors descend.
+    const bandBaseColors = [0x2e2418, 0x271e13, 0x211810];  // B1 lightest, B3 darkest
     for (const band of floors) {
       const { bandRect, labelPos, label, floor } = band;
-      const y = bandRect.y;
-      g.fillStyle(floor % 2 === 0 ? CASUAL.PANEL_SOFT : 0xffedd0, 0.95);
-      g.fillRoundedRect(bandRect.x, y, bandRect.w, bandRect.h, 15);
-      g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.45);
-      g.strokeRoundedRect(bandRect.x, y, bandRect.w, bandRect.h, 15);
-      const chipX = labelPos.x, chipY = labelPos.y;
+      const bx = bandRect.x + 3;
+      const by = bandRect.y;
+      const bw = bandRect.w - 6;
+      const bh = bandRect.h;
+
+      // Band fill — dark stone shelf
+      g.fillStyle(bandBaseColors[floor] ?? CASUAL.PANEL, 0.96);
+      g.fillRoundedRect(bx, by, bw, bh, 8);
+      // Subtle lighter stone border
+      g.lineStyle(1.2, CASUAL.EDGE_SOFT, 0.24 + floor * 0.05);
+      g.strokeRoundedRect(bx, by, bw, bh, 8);
+      // Top highlight strip (light rim to give 3D ledge feel)
+      g.fillStyle(0xffffff, 0.05);
+      g.fillRoundedRect(bx + 4, by + 2, bw - 8, 5, 3);
+
+      // B-label chip on the left gutter
+      const chipX = labelPos.x;
+      const chipY = labelPos.y;
       g.fillStyle(CASUAL.EDGE, 1);
       g.fillRoundedRect(chipX - 14, chipY - 9, 30, 18, 6);
+      g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+      g.strokeRoundedRect(chipX - 14, chipY - 9, 30, 18, 6);
       c.add(this.add.text(chipX, chipY, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#fff6e6', fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#f0e6c8', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(2));
     }
 
-    // Per-room bright card backing (so rooms read as chunky cards on the tray)
+    // ── Per-room card backing ─────────────────────────────────────────────────
+    const { slotW, slotH } = this.boardLayout;
     for (const [idx, bdCell] of this.boardLayout.cellsByIdx) {
-      const x = bdCell.rect.x;
-      const y = bdCell.rect.y;
+      const cx = bdCell.rect.x;
+      const cy = bdCell.rect.y;
+      const cw = bdCell.rect.w;
+      const ch = bdCell.rect.h;
       const isUnlocked = bdCell.isUnlocked;
       const slot = this.gs.dungeonSlots?.[idx];
-      const isBroken = !!slot?.roomType && !!slot && slot.hp <= 0;
+      const isBroken = !!slot?.roomType && slot.hp <= 0;
       const accent = isBroken ? CASUAL.RED
         : slot?.roomType ? this.getRoomActivityColor(slot)
           : isUnlocked ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
-      g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.22 : 0.12);
-      g.fillRoundedRect(x - 5, y + 4, SLOT_W + 10, SLOT_H, 14);
-      g.fillStyle(isUnlocked ? 0xffffff : 0xece0c4, isUnlocked ? 0.6 : 0.45);
-      g.fillRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
-      g.lineStyle(2.5, accent, isUnlocked ? 0.6 : 0.3);
-      g.strokeRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
+      // Shadow & card
+      g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.28 : 0.14);
+      g.fillRoundedRect(cx + 1, cy + 3, cw, ch, 10);
+      g.fillStyle(isUnlocked ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      g.fillRoundedRect(cx, cy, cw, ch, 10);
+      // Sheen highlight
+      g.fillStyle(0xffffff, isUnlocked ? 0.08 : 0.03);
+      g.fillRoundedRect(cx + 4, cy + 3, cw - 8, 7, 4);
+      // Accent border
+      g.lineStyle(2.5, accent, isUnlocked ? 0.55 : 0.22);
+      g.strokeRoundedRect(cx, cy, cw, ch, 10);
     }
+    void slotW; void slotH; // referenced by drawBattleSlot callers via boardLayout
 
-    // Narrative anchors (entrance gate → heart core)
-    const { entrance, heart, route: layoutRoute } = this.boardLayout;
+    // ── Narrative anchors (entrance gate + heart core) ────────────────────────
     if (layoutRoute.length > 0) {
-      this.drawDungeonEntranceGate(c, g, entrance.x, entrance.y, CASUAL.GREEN);
+      this.drawDungeonEntranceGate(c, g, entrance.x, entrance.y, CASUAL.RED);
       this.drawDungeonHeartCore(c, g, heart.x, heart.y, CASUAL.GOLD);
     }
-    return;
   }
 
 
@@ -1926,59 +2008,37 @@ export class DungeonHomeScene extends Phaser.Scene {
     const route = this.getUnlockedRoute(unlockedCount);
     if (route.length === 0) return;
 
+    // Use the routePolyline (entrance → cells → heart) for visual segments so
+    // the shaft descends top→bottom in vertical-cutaway mode.
+    const polyline = this.boardLayout.routePolyline;
+    if (polyline.length < 2) return;
+
     const t = this.theme;
 
-    for (let i = 0; i < route.length - 1; i++) {
-      this.fillDungeonRouteTunnel(
-        g,
-        this.getSlotCenter(route[i]),
-        this.getSlotCenter(route[i + 1]),
-        31,
-        CASUAL.EDGE,
-        0.5,
-        i,
-      );
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.fillDungeonRouteTunnel(g, polyline[i], polyline[i + 1], 31, CASUAL.EDGE, 0.5, i);
+    }
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.fillDungeonRouteTunnel(g, polyline[i], polyline[i + 1], 23, CASUAL.EDGE_SOFT, 0.85, i + 1);
+    }
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.fillDungeonRouteTunnel(g, polyline[i], polyline[i + 1], 12, CASUAL.PANEL_SOFT, 0.6, i + 2);
     }
 
-    for (let i = 0; i < route.length - 1; i++) {
-      this.fillDungeonRouteTunnel(
-        g,
-        this.getSlotCenter(route[i]),
-        this.getSlotCenter(route[i + 1]),
-        23,
-        CASUAL.EDGE_SOFT,
-        0.85,
-        i + 1,
-      );
-    }
-
-    for (let i = 0; i < route.length - 1; i++) {
-      this.fillDungeonRouteTunnel(
-        g,
-        this.getSlotCenter(route[i]),
-        this.getSlotCenter(route[i + 1]),
-        12,
-        CASUAL.PANEL_SOFT,
-        0.6,
-        i + 2,
-      );
-    }
-
+    // Infrastructure / wall-stones / centre line on cell-to-cell segments only
     for (let i = 0; i < route.length - 1; i++) {
       this.drawRouteInfrastructureSegment(g, route[i], route[i + 1], i);
     }
-
-    for (let i = 0; i < route.length - 1; i++) {
-      this.drawDungeonRouteWallStones(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]), i);
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.drawDungeonRouteWallStones(g, polyline[i], polyline[i + 1], i);
     }
 
     g.lineStyle(1.5, t.panelBorder, 0.12);
-    for (let i = 0; i < route.length - 1; i++) {
-      this.strokeDungeonRouteSegment(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]));
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.strokeDungeonRouteSegment(g, polyline[i], polyline[i + 1]);
     }
-
-    for (let i = 0; i < route.length - 1; i++) {
-      this.drawRouteSignal(g, this.getSlotCenter(route[i]), this.getSlotCenter(route[i + 1]), i);
+    for (let i = 0; i < polyline.length - 1; i++) {
+      this.drawRouteSignal(g, polyline[i], polyline[i + 1], i);
     }
 
     route.forEach((idx, routeIdx) => {
@@ -2147,18 +2207,21 @@ export class DungeonHomeScene extends Phaser.Scene {
   ): { from: { x: number; y: number }; to: { x: number; y: number } } {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
+    // Use the layout's actual cell dimensions for edge offsets.
+    const halfW = this.boardLayout.slotW / 2 - 2;
+    const halfH = this.boardLayout.slotH / 2 - 2;
     if (Math.abs(dx) >= Math.abs(dy)) {
       const dir = Math.sign(dx) || 1;
       return {
-        from: { x: from.x + dir * (SLOT_W / 2 - 2), y: from.y },
-        to: { x: to.x - dir * (SLOT_W / 2 - 2), y: to.y },
+        from: { x: from.x + dir * halfW, y: from.y },
+        to: { x: to.x - dir * halfW, y: to.y },
       };
     }
 
     const dir = Math.sign(dy) || 1;
     return {
-      from: { x: from.x, y: from.y + dir * (SLOT_H / 2 - 2) },
-      to: { x: to.x, y: to.y - dir * (SLOT_H / 2 - 2) },
+      from: { x: from.x, y: from.y + dir * halfH },
+      to: { x: to.x, y: to.y - dir * halfH },
     };
   }
 
@@ -2205,16 +2268,23 @@ export class DungeonHomeScene extends Phaser.Scene {
     const route = this.getUnlockedRoute(unlockedCount);
     if (route.length < 2) return;
 
+    // Use routePolyline so particles travel top→bottom through the shaft.
+    const polyline = this.boardLayout.routePolyline;
+    if (polyline.length < 2) return;
+
     const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    for (let i = 0; i < route.length - 1; i++) {
-      const fromIdx = route[i];
-      const toIdx = route[i + 1];
-      const passage = this.getRoutePassage(this.getSlotCenter(fromIdx), this.getSlotCenter(toIdx));
+    for (let i = 0; i < polyline.length - 1; i++) {
+      const fromPt = polyline[i];
+      const toPt   = polyline[i + 1];
+      const passage = this.getRoutePassage(fromPt, toPt);
       const dx = passage.to.x - passage.from.x;
       const dy = passage.to.y - passage.from.y;
       const len = Math.max(1, Math.hypot(dx, dy));
       const ux = dx / len;
       const uy = dy / len;
+      // Use the nearest slot indices for accent colour (first & last of route for polyline endpoints)
+      const fromIdx = route[Math.min(i - 1, route.length - 1)] ?? route[0] ?? 0;
+      const toIdx   = route[Math.min(i, route.length - 1)] ?? route[0] ?? 0;
       const accent = this.getRouteFlowAccent(fromIdx, toIdx);
 
       for (let n = 0; n < 2; n++) {
@@ -2364,21 +2434,23 @@ export class DungeonHomeScene extends Phaser.Scene {
   ): void {
     const feedback = this.pendingRoomFeedback?.slotIdx === slotIdx ? this.pendingRoomFeedback : null;
     const accent = feedback?.accent ?? this.theme.panelBorder;
-    const pulse = this.add.container(x + SLOT_W / 2, y + SLOT_H / 2);
+    const cw = this.boardLayout.slotW;
+    const ch = this.boardLayout.slotH;
+    const pulse = this.add.container(x + cw / 2, y + ch / 2);
     const ring = this.add.graphics();
-    const left = -SLOT_W / 2;
-    const top = -SLOT_H / 2;
+    const left = -cw / 2;
+    const top = -ch / 2;
     ring.lineStyle(2, accent, 0.95);
-    ring.strokeRoundedRect(left - 4, top - 4, SLOT_W + 8, SLOT_H + 8, 9);
+    ring.strokeRoundedRect(left - 4, top - 4, cw + 8, ch + 8, 9);
     ring.lineStyle(1, 0xffffff, 0.34);
-    ring.strokeRoundedRect(left + 4, top + 4, SLOT_W - 8, SLOT_H - 8, 6);
+    ring.strokeRoundedRect(left + 4, top + 4, cw - 8, ch - 8, 6);
     ring.fillStyle(accent, 0.16);
-    ring.fillRoundedRect(left + 11, top + 8, SLOT_W - 22, feedback ? 32 : 14, 5);
+    ring.fillRoundedRect(left + 11, top + 8, cw - 22, feedback ? 32 : 14, 5);
     if (feedback) {
       ring.fillStyle(0xffffff, 0.10);
-      ring.fillCircle(left + 20, top + 60, 5);
-      ring.fillCircle(left + SLOT_W - 20, top + 68, 4);
-      ring.fillCircle(left + SLOT_W - 14, top + 30, 3);
+      ring.fillCircle(left + 20, top + Math.min(60, ch - 14), 5);
+      ring.fillCircle(left + cw - 20, top + Math.min(68, ch - 6), 4);
+      ring.fillCircle(left + cw - 14, top + 30, 3);
     }
 
     const label = this.add.text(0, top + (feedback ? 14 : 15), feedback?.title ?? '방 성장', {
@@ -2401,7 +2473,7 @@ export class DungeonHomeScene extends Phaser.Scene {
         color: '#d8fff5',
         fontStyle: 'bold',
         align: 'center',
-        wordWrap: { width: SLOT_W - 28, useAdvancedWrap: true },
+        wordWrap: { width: this.boardLayout.slotW - 28, useAdvancedWrap: true },
       }).setOrigin(0.5);
       pulse.add(item);
     }

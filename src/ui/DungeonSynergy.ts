@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import type { DungeonTheme } from '../themes/themes';
 import type { DungeonSlot } from '../data/wisdom';
 import { SLOT_W, SLOT_H } from './RoomSlotRenderer';
+import type { DungeonBoardLayout } from './DungeonBoardLayout';
 
 // ─── Layout context ───────────────────────────────────────────────────────────
 
@@ -20,6 +21,10 @@ export interface SynergyDrawContext {
   readonly slotPadX: number;
   readonly slotPadY: number;
   readonly gridStartY: number;
+  /** When provided, positions are read from the layout rather than computed
+   *  from the flat-grid formula. In vertical-cutaway mode, only intra-band
+   *  (horizontal) connectors are drawn to avoid visual clutter. */
+  readonly layout?: DungeonBoardLayout;
 }
 
 // ─── Connector lines ─────────────────────────────────────────────────────────
@@ -41,20 +46,22 @@ export function drawSynergyConnectors(
   c: Phaser.GameObjects.Container,
   unlockedCount: number,
 ): void {
-  const { scene, slots, gridCols, gridRows, slotPadX, slotPadY, gridStartY } = ctx;
+  const { scene, slots, gridCols, gridRows, slotPadX, slotPadY, gridStartY, layout } = ctx;
 
   const pairs: Array<[number, number]> = [];
   for (let row = 0; row < gridRows; row++) {
     for (let col = 0; col < gridCols; col++) {
       const idx = row * gridCols + col;
       if (idx >= unlockedCount) continue;
-      // Horizontal neighbour
+      // Horizontal (intra-band) neighbour — always included
       if (col + 1 < gridCols) {
         const nIdx = row * gridCols + (col + 1);
         if (nIdx < unlockedCount) pairs.push([idx, nIdx]);
       }
-      // Vertical neighbour
-      if (row + 1 < gridRows) {
+      // Vertical (cross-band) neighbour — only when NOT in layout mode.
+      // In vertical-cutaway the route shaft already shows the flow; cross-band
+      // synergy lines would be visually confusing, so we skip them.
+      if (!layout && row + 1 < gridRows) {
         const nIdx = (row + 1) * gridCols + col;
         if (nIdx < unlockedCount) pairs.push([idx, nIdx]);
       }
@@ -68,13 +75,24 @@ export function drawSynergyConnectors(
     if (aSlot.roomType !== bSlot.roomType) continue;
     if (aSlot.hp <= 0 || bSlot.hp <= 0) continue;
 
-    const aRow = Math.floor(aIdx / gridCols), aCol = aIdx % gridCols;
-    const bRow = Math.floor(bIdx / gridCols), bCol = bIdx % gridCols;
+    // Resolve centres — prefer layout lookup (accurate for any mode).
+    let ax: number, ay: number, bx: number, by: number;
+    const aCell = layout?.cellsByIdx.get(aIdx);
+    const bCell = layout?.cellsByIdx.get(bIdx);
+    if (aCell && bCell) {
+      ax = aCell.center.x; ay = aCell.center.y;
+      bx = bCell.center.x; by = bCell.center.y;
+    } else {
+      const aRow = Math.floor(aIdx / gridCols), aCol = aIdx % gridCols;
+      const bRow = Math.floor(bIdx / gridCols), bCol = bIdx % gridCols;
+      ax = slotPadX + aCol * (SLOT_W + slotPadX) + SLOT_W / 2;
+      ay = gridStartY + aRow * (SLOT_H + slotPadY) + SLOT_H / 2;
+      bx = slotPadX + bCol * (SLOT_W + slotPadX) + SLOT_W / 2;
+      by = gridStartY + bRow * (SLOT_H + slotPadY) + SLOT_H / 2;
+    }
 
-    const ax = slotPadX + aCol * (SLOT_W + slotPadX) + SLOT_W / 2;
-    const ay = gridStartY + aRow * (SLOT_H + slotPadY) + SLOT_H / 2;
-    const bx = slotPadX + bCol * (SLOT_W + slotPadX) + SLOT_W / 2;
-    const by = gridStartY + bRow * (SLOT_H + slotPadY) + SLOT_H / 2;
+    const cellHalfW = (layout?.slotW ?? SLOT_W) / 2 - 4;
+    const cellHalfH = (layout?.slotH ?? SLOT_H) / 2 - 4;
 
     const color = SYNERGY_COLOR[aSlot.roomType] ?? 0xffffff;
     const dx = bx - ax;
@@ -82,11 +100,11 @@ export function drawSynergyConnectors(
     const horizontal = Math.abs(dx) >= Math.abs(dy);
     const dir = horizontal ? Math.sign(dx) || 1 : Math.sign(dy) || 1;
     const from = horizontal
-      ? { x: ax + dir * (SLOT_W / 2 - 4), y: ay }
-      : { x: ax, y: ay + dir * (SLOT_H / 2 - 4) };
+      ? { x: ax + dir * cellHalfW, y: ay }
+      : { x: ax, y: ay + dir * cellHalfH };
     const to = horizontal
-      ? { x: bx - dir * (SLOT_W / 2 - 4), y: by }
-      : { x: bx, y: by - dir * (SLOT_H / 2 - 4) };
+      ? { x: bx - dir * cellHalfW, y: by }
+      : { x: bx, y: by - dir * cellHalfH };
 
     // Layered floor channel
     const sg = scene.add.graphics();
@@ -131,7 +149,7 @@ export function drawSynergySummary(
   c: Phaser.GameObjects.Container,
   canvasWidth: number,
 ): void {
-  const { scene, theme: t, slots, gridRows, slotPadY, gridStartY } = ctx;
+  const { scene, theme: t, slots, gridRows, slotPadY, gridStartY, layout } = ctx;
 
   const typeCounts: Record<string, number> = {};
   for (const slot of slots) {
@@ -143,7 +161,10 @@ export function drawSynergySummary(
   const activeTypes = Object.entries(typeCounts).filter(([, cnt]) => cnt >= 2);
   if (activeTypes.length === 0) return;
 
-  const baseY = gridStartY + gridRows * (SLOT_H + slotPadY) + 4;
+  // In vertical-cutaway mode use contentBottomY from the layout; otherwise the flat-grid formula.
+  const baseY = layout
+    ? layout.contentBottomY + 4
+    : gridStartY + gridRows * (SLOT_H + slotPadY) + 4;
   let xOff = 8;
 
   for (const [type, count] of activeTypes) {
