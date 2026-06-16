@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { loadGameState } from '../data/wisdom';
 import { generatePortrait } from '../art/PortraitGenerator';
+import { addPrimaryActionButton } from './GameUiPrimitives';
 import {
   RARITY_COLORS, RARITY_CSS, RARITY_STARS, RARITY_KO,
 } from '../data/summonPools';
@@ -81,20 +83,21 @@ function drawStatusPill(
   w: number,
   label: string,
   color: number,
-  textColor: string,
+  _textColor: string,
 ): void {
+  // Casual candy chip: white body, glossy top, rarity-accent border, INK text.
   const g = scene.add.graphics();
-  g.fillStyle(0x07020c, 0.94);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, 18, 7);
-  g.fillStyle(color, 0.18);
-  g.fillRoundedRect(x + 4, y + 4, w - 8, 4, 3);
-  g.lineStyle(1, color, 0.66);
+  g.fillStyle(0xffffff, 0.55);
+  g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 3);
+  g.lineStyle(2, color, 1);
   g.strokeRoundedRect(x, y, w, 18, 7);
   c.add(g);
   c.add(scene.add.text(x + w / 2, y + 9, label, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: textColor,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(99));
 }
@@ -189,19 +192,30 @@ export function playSinglePullAnimation(
       const panX = (CANVAS_WIDTH - panW) / 2;
       const panY = (CANVAS_HEIGHT - panH) / 2 - 30;
       const panG = scene.add.graphics().setDepth(96);
-      panG.fillStyle(0x040208, 0.48);
-      panG.fillRoundedRect(panX + 4, panY + 6, panW, panH, 14);
-      panG.fillStyle(0x100022, 1);
+      // chunky drop shadow (casual toy depth)
+      panG.fillStyle(CASUAL.SHADOW, 0.35);
+      panG.fillRoundedRect(panX + 4, panY + 7, panW, panH, 14);
+      // cream card body
+      panG.fillStyle(CASUAL.PANEL, 1);
       panG.fillRoundedRect(panX, panY, panW, panH, 14);
-      panG.fillStyle(rColor, 0.12);
+      // glossy white top highlight band
+      panG.fillStyle(0xffffff, 0.5);
+      panG.fillRoundedRect(panX + 6, panY + 5, panW - 12, 18, 8);
+      // portrait stage — soft cream tile carrying a rarity tint (kept as gacha drama)
+      panG.fillStyle(CASUAL.PANEL_SOFT, 1);
       panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
-      panG.fillStyle(0x05020b, 0.74);
+      panG.fillStyle(rColor, 0.16);
+      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
+      // info plate
+      panG.fillStyle(CASUAL.PANEL_SOFT, 1);
       panG.fillRoundedRect(panX + 20, panY + 170, panW - 40, 88, 12);
-      drawFoilLines(panG, panX + 13, panY + 38, panW - 26, 126, rColor, result.rarityIdx >= 2 ? 0.17 : 0.08);
-      panG.lineStyle(2, rColor, 0.9);
+      // rarity foil streaks across the portrait stage (vivid FX, kept)
+      drawFoilLines(panG, panX + 13, panY + 38, panW - 26, 126, rColor, result.rarityIdx >= 2 ? 0.2 : 0.1);
+      // rarity-accent inner trim + chunky brown outer border
+      panG.lineStyle(2, rColor, 1);
+      panG.strokeRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
+      panG.lineStyle(3, CASUAL.EDGE, 1);
       panG.strokeRoundedRect(panX, panY, panW, panH, 14);
-      panG.lineStyle(1, 0xffffff, 0.13);
-      panG.strokeRoundedRect(panX + 6, panY + 6, panW - 12, panH - 12, 10);
       ov.add(panG);
 
       drawStatusPill(scene, ov, panX + 18, panY + 16, 70, `도감 ${getDexNo(result.monsterId)}`, rColor, rCss);
@@ -212,8 +226,8 @@ export function playSinglePullAnimation(
         panY + 16,
         64,
         result.isNew ? 'NEW' : 'DUP',
-        result.isNew ? 0xffd45c : 0x44ffcc,
-        result.isNew ? '#fff1b0' : '#b8fff0',
+        result.isNew ? CASUAL.GOLD : CASUAL.BLUE,
+        result.isNew ? CASUAL_CSS.GOLD : CASUAL_CSS.BLUE,
       );
 
       // Rarity glow behind emoji
@@ -258,11 +272,11 @@ export function playSinglePullAnimation(
         });
       }
 
-      // Ceiling badge
+      // Ceiling badge — casual gold candy chip
       if (result.ceilingHit) {
         const cb = scene.add.text(CX, panY + 22, '🎯 천장 달성!', {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#ffdd44',
-          backgroundColor: '#440000', padding: { x: 8, y: 3 },
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          backgroundColor: CASUAL_CSS.GOLD, padding: { x: 8, y: 3 },
         }).setOrigin(0.5).setDepth(99);
         ov.add(cb);
       }
@@ -287,19 +301,21 @@ export function playSinglePullAnimation(
       // Name
       wait(scene,200, () => {
         const nameT = scene.add.text(CX, panY + 184, def.name, {
-          fontFamily: 'Georgia, serif', fontSize: '22px', color: rCss,
+          fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          stroke: '#ffffff', strokeThickness: 4,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(nameT);
         scene.tweens.add({ targets: nameT, alpha: 1, duration: 300 });
 
         const tagT = scene.add.text(CX, panY + 210, getMonsterTagLine(def), {
-          fontFamily: 'sans-serif', fontSize: '10px', color: '#bfa8df',
+          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(tagT);
         scene.tweens.add({ targets: tagT, alpha: 1, duration: 300 });
 
         const rarityT = scene.add.text(CX, panY + 232, `${RARITY_KO[result.rarityIdx]} · ${RARITY_STARS[result.rarityIdx]}`, {
-          fontFamily: 'sans-serif', fontSize: '12px', color: rCss,
+          fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: rCss,
+          stroke: '#ffffff', strokeThickness: 2,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(rarityT);
         scene.tweens.add({ targets: rarityT, alpha: 1, duration: 300 });
@@ -310,45 +326,55 @@ export function playSinglePullAnimation(
         const badgeText = result.isNew
           ? '새 몬스터 도감 등록'
           : `중복 보상 +${result.scComp}💠`;
-        const badgeColor = result.isNew ? '#ffdd44' : '#888888';
         const badgeT = scene.add.text(CX, panY + 270, badgeText, {
-          fontFamily: 'sans-serif', fontSize: '13px', color: badgeColor,
-          backgroundColor: result.isNew ? '#442200' : '#222222',
+          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          backgroundColor: result.isNew ? CASUAL_CSS.GOLD : CASUAL_CSS.CREAM,
           padding: { x: 12, y: 5 },
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(badgeT);
         scene.tweens.add({ targets: badgeT, alpha: 1, duration: 300 });
       });
 
-      // Action buttons: [ 다시 소환 ] [ 확인 ✓ ]
+      // Action buttons: [ 다시 소환 ] [ 확인 ✓ ] — casual candy buttons
       wait(scene,800, () => {
         scene.input.enabled = true;
 
-        const againT = scene.add.text(CX - 58, panY + 310, '다시 소환', {
-          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
-          backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
-        }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
-        ov.add(againT);
-        scene.tweens.add({ targets: againT, alpha: 1, duration: 300 });
-        againT.on('pointerdown', () => {
+        const dismiss = (): void => {
           skipZone.destroy();
           ov.destroy();
           darkOverlay.destroy();
           onComplete();
-        });
+        };
 
-        const confirmT = scene.add.text(CX + 52, panY + 310, '확인  ✓', {
-          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
-          backgroundColor: '#1a0030', padding: { x: 10, y: 8 },
-        }).setOrigin(0.5).setDepth(99).setAlpha(0).setInteractive();
-        ov.add(confirmT);
-        scene.tweens.add({ targets: confirmT, alpha: 1, duration: 300 });
-        confirmT.on('pointerdown', () => {
-          skipZone.destroy();
-          ov.destroy();
-          darkOverlay.destroy();
-          onComplete();
+        const btnW = 100, btnH = 34, btnY = panY + 296;
+        const again = addPrimaryActionButton(scene, {
+          x: CX - btnW - 6,
+          y: btnY,
+          w: btnW,
+          h: btnH,
+          label: '다시 소환',
+          fontSize: '13px',
+          fillColor: CASUAL.PURPLE,
+          hoverFillColor: 0xc488f0,
+          borderColor: CASUAL.PURPLE_DK,
+          hoverBorderColor: CASUAL.PURPLE_DK,
+          onPress: dismiss,
         });
+        const confirm = addPrimaryActionButton(scene, {
+          x: CX + 6,
+          y: btnY,
+          w: btnW,
+          h: btnH,
+          label: '확인  ✓',
+          fontSize: '13px',
+          onPress: dismiss,
+        });
+        const btnArts = [again.bg, again.text, confirm.bg, confirm.text];
+        btnArts.forEach(o => o.setDepth(99).setAlpha(0));
+        again.zone.setDepth(99);
+        confirm.zone.setDepth(99);
+        ov.add([again.bg, again.text, again.zone, confirm.bg, confirm.text, confirm.zone]);
+        scene.tweens.add({ targets: btnArts, alpha: 1, duration: 300 });
       });
     });
   });
@@ -438,31 +464,37 @@ export function playMultiPullAnimation(
           ov.add(cc);
           cardContainers[i] = cc;
 
-          // Card bg
+          // Card bg — cream tile, glossy top, rarity-accent border
           const cg = scene.add.graphics();
-          cg.fillStyle(0x040208, 0.42);
-          cg.fillRoundedRect(-cardW / 2 + 2, -cardH / 2 + 3, cardW, cardH, 8);
-          cg.fillStyle(0x100022, 1);
+          cg.fillStyle(CASUAL.SHADOW, 0.3);
+          cg.fillRoundedRect(-cardW / 2 + 2, -cardH / 2 + 4, cardW, cardH, 8);
+          cg.fillStyle(CASUAL.PANEL, 1);
           cg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
-          cg.fillStyle(rColor, result.rarityIdx >= 2 ? 0.13 : 0.07);
+          cg.fillStyle(0xffffff, 0.5);
+          cg.fillRoundedRect(-cardW / 2 + 4, -cardH / 2 + 3, cardW - 8, 4, 2);
+          // portrait stage tile w/ rarity tint (kept gacha drama)
+          cg.fillStyle(CASUAL.PANEL_SOFT, 1);
           cg.fillRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
-          drawFoilLines(cg, -cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, rColor, result.rarityIdx >= 2 ? 0.18 : 0.07);
-          cg.lineStyle(1.5, rColor, result.rarityIdx >= 2 ? 1 : 0.5);
+          cg.fillStyle(rColor, result.rarityIdx >= 2 ? 0.18 : 0.1);
+          cg.fillRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
+          drawFoilLines(cg, -cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, rColor, result.rarityIdx >= 2 ? 0.2 : 0.1);
+          // rarity-accent inner trim + chunky brown border
+          cg.lineStyle(1.5, rColor, 1);
+          cg.strokeRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
+          cg.lineStyle(2.5, CASUAL.EDGE, 1);
           cg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
-          cg.lineStyle(1, 0xffffff, 0.10);
-          cg.strokeRoundedRect(-cardW / 2 + 4, -cardH / 2 + 4, cardW - 8, cardH - 8, 6);
           cc.add(cg);
 
           const dexBg = scene.add.graphics();
-          dexBg.fillStyle(0x07020c, 0.94);
+          dexBg.fillStyle(CASUAL.PANEL, 1);
           dexBg.fillRoundedRect(-34, -49, 68, 13, 5);
-          dexBg.lineStyle(1, rColor, 0.55);
+          dexBg.lineStyle(1.5, rColor, 1);
           dexBg.strokeRoundedRect(-34, -49, 68, 13, 5);
           cc.add(dexBg);
           cc.add(scene.add.text(0, -42.5, `도감 ${getDexNo(result.monsterId)}`, {
             fontFamily: 'sans-serif',
             fontSize: '7px',
-            color: RARITY_CSS[result.rarityIdx] ?? '#ffffff',
+            color: CASUAL_CSS.INK,
             fontStyle: 'bold',
           }).setOrigin(0.5));
 
@@ -485,9 +517,10 @@ export function playMultiPullAnimation(
           }).setOrigin(0.5);
           cc.add(et);
 
-          // Name
+          // Name — INK on cream tile
           cc.add(scene.add.text(0, 14, mDef.name.slice(0, 5), {
-            fontFamily: 'sans-serif', fontSize: '11px', color: result.isNew ? '#ffdd44' : '#888888',
+            fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+            color: result.isNew ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
           }).setOrigin(0.5));
 
           // Stars
@@ -502,27 +535,31 @@ export function playMultiPullAnimation(
             fontStyle: 'bold',
           }).setOrigin(0.5));
 
-          // New/dupe tag
+          // New/dupe tag — casual candy chips
           if (!result.isNew) {
             const dg2 = scene.add.graphics();
-            dg2.fillStyle(0x0b1f1d, 0.9);
+            dg2.fillStyle(CASUAL.BLUE, 1);
             dg2.fillRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
-            dg2.lineStyle(1, 0x44ffcc, 0.48);
+            dg2.fillStyle(0xffffff, 0.3);
+            dg2.fillRoundedRect(-29, cardH / 2 - 17, 58, 3, 2);
+            dg2.lineStyle(1.5, CASUAL.BLUE_DK, 1);
             dg2.strokeRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
             cc.add(dg2);
             cc.add(scene.add.text(0, cardH / 2 - 11, `DUP +${result.scComp}`, {
-              fontFamily: 'sans-serif', fontSize: '8px', color: '#44ffcc',
+              fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.WHITE,
               fontStyle: 'bold',
             }).setOrigin(0.5));
           } else {
             const ng = scene.add.graphics();
-            ng.fillStyle(0x3b2500, 0.94);
+            ng.fillStyle(CASUAL.GOLD, 1);
             ng.fillRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
-            ng.lineStyle(1, 0xffd45c, 0.68);
+            ng.fillStyle(0xffffff, 0.32);
+            ng.fillRoundedRect(-18, cardH / 2 - 17, 36, 3, 2);
+            ng.lineStyle(1.5, CASUAL.GOLD_DK, 1);
             ng.strokeRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
             cc.add(ng);
             cc.add(scene.add.text(0, cardH / 2 - 11, 'NEW', {
-              fontFamily: 'sans-serif', fontSize: '9px', color: '#ffe8a3',
+              fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK,
               fontStyle: 'bold',
             }).setOrigin(0.5));
           }
@@ -556,8 +593,8 @@ export function playMultiPullAnimation(
       if (bestResult.rarityIdx >= 2) {
         const bestDef = MONSTER_DEFS[bestResult.monsterId]!;
         const highT = scene.add.text(CX, CANVAS_HEIGHT - 80, `최고 획득: ${RARITY_STARS[bestResult.rarityIdx]} ${bestDef.name}`, {
-          fontFamily: 'Georgia, serif', fontSize: '13px', color: RARITY_CSS[bestResult.rarityIdx],
-          backgroundColor: '#0d0010', padding: { x: 10, y: 6 },
+          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          backgroundColor: CASUAL_CSS.CREAM, padding: { x: 10, y: 6 },
         }).setOrigin(0.5).setDepth(97).setAlpha(0);
         ov.add(highT);
         scene.tweens.add({ targets: highT, alpha: 1, duration: 400 });
@@ -578,28 +615,41 @@ export function playMultiPullAnimation(
           ? `중복 보상: +${totalSC}💠   현재: ${gs2.soulCrystals}💠`
           : `새 몬스터 ${results.filter(r => r.isNew).length}마리 획득!`;
 
-        const sumT = scene.add.text(CX, CANVAS_HEIGHT - 108, summaryText, {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#aaaaff',
+        const sumT = scene.add.text(CX, CANVAS_HEIGHT - 116, summaryText, {
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+          backgroundColor: CASUAL_CSS.CREAM, padding: { x: 10, y: 5 },
         }).setOrigin(0.5).setDepth(97);
         ov.add(sumT);
 
         scene.input.enabled = true;
 
-        // Buttons
-        const btnY2 = CANVAS_HEIGHT - 62;
-        const againT = scene.add.text(CX - 60, btnY2, '다시 소환', {
-          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
-          backgroundColor: '#1a0030', padding: { x: 10, y: 7 },
-        }).setOrigin(0.5).setDepth(97).setInteractive();
-        againT.on('pointerdown', () => { skipZone.destroy(); ov.destroy(); darkG.destroy(); onComplete(); });
-        ov.add(againT);
-
-        const doneT = scene.add.text(CX + 60, btnY2, '확인  ✓', {
-          fontFamily: 'sans-serif', fontSize: '12px', color: '#9966cc',
-          backgroundColor: '#1a0030', padding: { x: 10, y: 7 },
-        }).setOrigin(0.5).setDepth(97).setInteractive();
-        doneT.on('pointerdown', finalize);
-        ov.add(doneT);
+        // Buttons — casual candy buttons
+        const btnW = 104, btnH = 38, btnY2 = CANVAS_HEIGHT - 86;
+        const again = addPrimaryActionButton(scene, {
+          x: CX - btnW - 6,
+          y: btnY2,
+          w: btnW,
+          h: btnH,
+          label: '다시 소환',
+          fontSize: '13px',
+          fillColor: CASUAL.PURPLE,
+          hoverFillColor: 0xc488f0,
+          borderColor: CASUAL.PURPLE_DK,
+          hoverBorderColor: CASUAL.PURPLE_DK,
+          onPress: () => { skipZone.destroy(); ov.destroy(); darkG.destroy(); onComplete(); },
+        });
+        const done = addPrimaryActionButton(scene, {
+          x: CX + 6,
+          y: btnY2,
+          w: btnW,
+          h: btnH,
+          label: '확인  ✓',
+          fontSize: '13px',
+          onPress: finalize,
+        });
+        [again.bg, again.text, again.zone, done.bg, done.text, done.zone]
+          .forEach(o => o.setDepth(97));
+        ov.add([again.bg, again.text, again.zone, done.bg, done.text, done.zone]);
       });
     });
   });

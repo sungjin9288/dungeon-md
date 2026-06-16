@@ -10,13 +10,13 @@ import { INVADER_DEFS, type InvaderDef, type InvaderType } from '../data/invader
 import type { WaveSpec } from '../data/stages';
 import type { DungeonTheme } from '../themes/themes';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { logger } from '../utils/logger';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from '../ui/GameUiPrimitives';
 
-const OVERLAY_PANEL_FILL = 0x0e0903;
-const PREVIEW_PANEL_FILL = 0x101b26;
-const PREVIEW_ROW_FILL = 0x172838;
+const OVERLAY_PANEL_FILL = CASUAL.PANEL;
+const PREVIEW_PANEL_FILL = CASUAL.PANEL;
+const PREVIEW_ROW_FILL = CASUAL.PANEL_SOFT;
 
 // ─── WaveEventContext ──────────────────────────────────────────────────────
 
@@ -88,14 +88,14 @@ export function showWaveEvent(
     radius: 12,
     fillColor: OVERLAY_PANEL_FILL,
     borderColor: accent,
-    borderAlpha: 0.9,
-    borderWidth: 2,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: accent,
-    accentAlpha: 0.9,
+    accentAlpha: 1,
     glowColor: accent,
-    glowOpacity: 0.1,
-    shadowOpacity: 0.58,
-    shadowOffsetY: 4,
+    glowOpacity: 0.12,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 5,
   });
   addToContainer(ov, frame.shadow, frame.panel, frame.glow);
 
@@ -105,9 +105,10 @@ export function showWaveEvent(
   }).setOrigin(0.5);
   ov.add(icon);
 
-  // Name
+  // Name — keep the saturated semantic accent on cream
   const name = scene.add.text(cx + cw / 2, cy + 66, evt.name, {
-    fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: evt.color,
+    fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: evt.color,
+    stroke: '#ffffff', strokeThickness: 3,
   }).setOrigin(0.5);
   ov.add(name);
 
@@ -115,7 +116,8 @@ export function showWaveEvent(
   const desc = scene.add.text(cx + cw / 2, cy + 94, evt.description, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CSS.PARCHMENT_DIM,
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: cw - 34 },
     align: 'center',
   }).setOrigin(0.5);
@@ -203,10 +205,10 @@ function getWaveThreatScore(rows: readonly [string, number][]): number {
 }
 
 function getThreatTier(score: number): { readonly label: string; readonly color: number; readonly css: string } {
-  if (score >= 520) return { label: 'BOSS', color: 0xd9594a, css: '#ffb8c9' };
-  if (score >= 260) return { label: 'HIGH', color: 0xffb84d, css: '#ffdf8a' };
-  if (score >= 120) return { label: 'MID', color: 0xe8c468, css: '#ffdf8a' };
-  return { label: 'LOW', color: 0x5fb854, css: '#b9ffd8' };
+  if (score >= 520) return { label: 'BOSS', color: CASUAL.RED, css: CASUAL_CSS.RED };
+  if (score >= 260) return { label: 'HIGH', color: CASUAL.RED, css: CASUAL_CSS.RED };
+  if (score >= 120) return { label: 'MID', color: CASUAL.GOLD, css: CASUAL_CSS.GOLD };
+  return { label: 'LOW', color: CASUAL.GREEN, css: CASUAL_CSS.GREEN };
 }
 
 function addPreviewMetricChip(
@@ -220,11 +222,13 @@ function addPreviewMetricChip(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(0x140c03, 0.78);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, 28, 7);
-  g.fillStyle(accent, 0.14);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
+  g.fillStyle(accent, 0.5);
   g.fillRoundedRect(x + 5, y + 5, 20, 18, 5);
-  g.lineStyle(1, accent, 0.44);
+  g.lineStyle(2, accent, 0.9);
   g.strokeRoundedRect(x, y, w, 28, 7);
   ov.add(g);
   ov.add(scene.add.text(x + 11, y + 9, label, {
@@ -234,9 +238,9 @@ function addPreviewMetricChip(
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + w - 8, y + 18, value, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CSS.PARCHMENT,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
 }
@@ -251,43 +255,49 @@ function addEnemyBriefingRow(
   rowY: number,
 ): void {
   const rowG = scene.add.graphics();
-  rowG.fillStyle(0x070503, 0.28);
+  rowG.fillStyle(CASUAL.SHADOW, 0.18);
   rowG.fillRoundedRect(cx + 13, rowY - 12, cw - 26, 33, GAME_UI.radius.row);
-  rowG.fillStyle(PREVIEW_ROW_FILL, 0.97);
+  rowG.fillStyle(PREVIEW_ROW_FILL, 1);
   rowG.fillRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
-  rowG.fillStyle(def.color, 0.12);
+  rowG.fillStyle(0xffffff, 0.4);
+  rowG.fillRoundedRect(cx + 15, rowY - 11, cw - 30, 3, 2);
+  rowG.fillStyle(def.color, 0.22);
   rowG.fillRoundedRect(cx + 18, rowY - 8, 35, 21, 6);
-  rowG.lineStyle(1, def.color, 0.52);
+  rowG.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
   rowG.strokeRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
-  rowG.fillStyle(def.color, 0.82);
+  // invader icon — keep the saturated species color
+  rowG.fillStyle(def.color, 1);
   rowG.fillCircle(cx + 35, rowY + 2, Math.min(9, Math.max(5, def.radius * 0.5)));
-  rowG.fillStyle(0xffffff, 0.22);
+  rowG.fillStyle(0xffffff, 0.35);
   rowG.fillCircle(cx + 32, rowY - 1, 2.5);
   ov.add(rowG);
 
   ov.add(scene.add.text(cx + 62, rowY - 4, `${def.koreanName}`, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CSS.PARCHMENT,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(cx + 62, rowY + 10, `HP ${def.hp} · 피해 ${def.damage}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '8px',
+    fontStyle: 'bold',
     color: GAME_UI.colors.mutedText,
   }).setOrigin(0, 0.5));
 
   const countLabel = `×${count}`;
   const countBg = scene.add.graphics();
-  countBg.fillStyle(0x140c03, 0.82);
+  countBg.fillStyle(CASUAL.GOLD, 1);
   countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
-  countBg.lineStyle(1, COLORS.TORCH_GOLD, 0.48);
+  countBg.fillStyle(0xffffff, 0.4);
+  countBg.fillRoundedRect(cx + cw - 52, rowY - 7, 30, 3, 2);
+  countBg.lineStyle(2, CASUAL.GOLD_DK, 0.9);
   countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
   ov.add(countBg);
   ov.add(scene.add.text(cx + cw - 37, rowY, countLabel, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: '#f0e6c8',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -322,7 +332,7 @@ function addEnemyBriefingRow(
     ov.add(scene.add.text(cx + cw - 102, rowY + 10, behaviorLabel[def.behavior] ?? '특수', {
       fontFamily: 'sans-serif',
       fontSize: '7px',
-      color: '#ffb8c9',
+      color: CASUAL_CSS.RED,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
   }
@@ -376,35 +386,36 @@ export function showWavePreview(ctx: WaveEventContext): void {
     radius: 12,
     fillColor: PREVIEW_PANEL_FILL,
     borderColor: threat.color,
-    borderAlpha: 0.88,
-    borderWidth: 2,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: threat.color,
-    accentAlpha: 0.82,
+    accentAlpha: 1,
     glowColor: threat.color,
-    glowOpacity: 0.1,
-    shadowOpacity: 0.56,
-    shadowOffsetY: 4,
+    glowOpacity: 0.12,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 5,
   });
   addToContainer(ov, card.shadow, card.panel, card.glow);
 
   // Title
   ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 18,
     `⚠️  ${nextWave}번째 침략 예고`, {
-    fontFamily: 'Georgia, serif', fontSize: '15px',
+    fontFamily: 'sans-serif', fontSize: '15px',
     fontStyle: 'bold', color: threat.css,
+    stroke: '#ffffff', strokeThickness: 3,
   }).setOrigin(0.5));
 
   if (cfg) {
     const rail = scene.add.graphics();
-    rail.fillStyle(0x140c03, 0.64);
+    rail.fillStyle(CASUAL.PANEL_SOFT, 1);
     rail.fillRoundedRect(cx + 14, cy + 35, cw - 28, 5, 3);
-    rail.fillStyle(threat.color, 0.8);
+    rail.fillStyle(threat.color, 1);
     rail.fillRoundedRect(cx + 14, cy + 35, Math.max(18, (cw - 28) * Phaser.Math.Clamp(getWaveThreatScore(enemyRows) / 600, 0.12, 1)), 5, 3);
     ov.add(rail);
 
     addPreviewMetricChip(scene, ov, cx + 16, cy + 47, 84, '위협', threat.label, threat.color);
-    addPreviewMetricChip(scene, ov, cx + 108, cy + 47, 86, '규모', `${totalInvaders}`, 0x55b88a);
-    addPreviewMetricChip(scene, ov, cx + 202, cy + 47, 100, '돌파 피해', `${totalDamage}`, 0xd9594a);
+    addPreviewMetricChip(scene, ov, cx + 108, cy + 47, 86, '규모', `${totalInvaders}`, CASUAL.BLUE);
+    addPreviewMetricChip(scene, ov, cx + 202, cy + 47, 100, '돌파 피해', `${totalDamage}`, CASUAL.RED);
 
     // Enemy list
     let rowY = cy + 94;
@@ -419,12 +430,12 @@ export function showWavePreview(ctx: WaveEventContext): void {
     // Total / damage warning
     ov.add(scene.add.text(CANVAS_WIDTH / 2, rowY + 2,
       `침입문 → 던전 심장부 · 방어선 돌파 시 HP 피해`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: GAME_UI.colors.mutedText,
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: GAME_UI.colors.mutedText,
     }).setOrigin(0.5));
   } else {
     ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 60,
       '무한 모드 - 침략자가 계속 강해집니다', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
   }
 
@@ -436,11 +447,11 @@ export function showWavePreview(ctx: WaveEventContext): void {
     h: 34,
     label: '🛡  방어 시작',
     fontSize: '13px',
-    fillColor: 0x1fae73,
-    hoverFillColor: 0x25c884,
-    borderColor: 0x8cffc1,
-    hoverBorderColor: COLORS.TORCH_AMBER,
-    textColor: '#fff8d8',
+    fillColor: CASUAL.GREEN,
+    hoverFillColor: 0x6fdc70,
+    borderColor: CASUAL.GREEN_DK,
+    hoverBorderColor: CASUAL.GREEN_DK,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => {
       ov.destroy();
       ctx.startWave();

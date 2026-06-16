@@ -6,6 +6,7 @@ import {
   type ActiveSynergy, type ActiveElementCombo,
 } from '../data/synergy';
 import { CANVAS_WIDTH } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 
 // ─── SynergyManager ───────────────────────────────────────────────────────────
 //
@@ -29,28 +30,29 @@ const TRIBE_EMOJI: Record<string, string> = {
   celestial:  '✨',
 };
 
-const TRIBE_COLORS: Record<string, number> = {
-  dokkaebi:   0x2a1500,
-  gumiho:     0x1a1000,
-  dragon:     0x1a0000,
-  underworld: 0x0d0d1a,
-  sansin:     0x001a0d,
-  sea:        0x001520,
-  mask:       0x1a1520,
-  moonlight:  0x100d1a,
-  celestial:  0x1a1a00,
+// Casual toy: each tribe gets a saturated candy pill fill + a darker edge.
+const TRIBE_FILL: Record<string, number> = {
+  dokkaebi:   0xe88a2a,
+  gumiho:     0xe6a93a,
+  dragon:     0xe8503a,
+  underworld: 0x8a6ad8,
+  sansin:     0x5fc760,
+  sea:        0x4aa8ee,
+  mask:       0xc762d8,
+  moonlight:  0xa080e8,
+  celestial:  0xf0d23a,
 };
 
-const TRIBE_BORDER: Record<string, number> = {
-  dokkaebi:   0xcc6600,
-  gumiho:     0xcc9933,
-  dragon:     0xcc2200,
-  underworld: 0x6644aa,
-  sansin:     0x44aa66,
-  sea:        0x2288cc,
-  mask:       0xaa44aa,
-  moonlight:  0x8866cc,
-  celestial:  0xcccc44,
+const TRIBE_EDGE: Record<string, number> = {
+  dokkaebi:   0xb05a10,
+  gumiho:     0xb07a18,
+  dragon:     0xb02a1c,
+  underworld: 0x5a3fa8,
+  sansin:     0x2f8f3a,
+  sea:        0x2470c0,
+  mask:       0x9a3aa8,
+  moonlight:  0x6a3fc0,
+  celestial:  0xc09a18,
 };
 
 export class SynergyManager {
@@ -138,8 +140,8 @@ export class SynergyManager {
       const emoji      = TRIBE_EMOJI[syn.tribe] ?? '❓';
       const tierDot    = syn.tier.count >= 6 ? '●●●' : syn.tier.count >= 4 ? '●●' : '●';
       const label      = `${emoji} ×${syn.count} ${tierDot}`;
-      const borderCol  = TRIBE_BORDER[syn.tribe] ?? 0x886644;
-      const bgCol      = TRIBE_COLORS[syn.tribe] ?? 0x1a1000;
+      const fillCol    = TRIBE_FILL[syn.tribe] ?? CASUAL.GOLD;
+      const edgeCol    = TRIBE_EDGE[syn.tribe] ?? CASUAL.GOLD_DK;
 
       const tmp = this.scene.add.text(0, -1000, label, {
         fontFamily: 'sans-serif', fontSize: '13px',
@@ -150,13 +152,22 @@ export class SynergyManager {
       const pillX = CANVAS_WIDTH - 8 - pillW;
 
       const g = this.scene.add.graphics().setDepth(85);
-      g.fillStyle(bgCol, 0.92);
-      g.fillRoundedRect(pillX, yOff, pillW, PILL_H, 4);
-      g.lineStyle(1, borderCol, 0.85);
-      g.strokeRoundedRect(pillX, yOff, pillW, PILL_H, 4);
+      // chunky drop shadow
+      g.fillStyle(CASUAL.SHADOW, 0.22);
+      g.fillRoundedRect(pillX, yOff + 3, pillW, PILL_H, 8);
+      // saturated candy fill
+      g.fillStyle(fillCol, 1);
+      g.fillRoundedRect(pillX, yOff, pillW, PILL_H, 8);
+      // glossy white top highlight
+      g.fillStyle(0xffffff, 0.35);
+      g.fillRoundedRect(pillX + 4, yOff + 3, pillW - 8, 5, 3);
+      // chunky darker edge
+      g.lineStyle(2.5, edgeCol, 1);
+      g.strokeRoundedRect(pillX, yOff, pillW, PILL_H, 8);
 
       const t = this.scene.add.text(pillX + pillW / 2, yOff + PILL_H / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '13px', color: '#ffeecc',
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
@@ -171,8 +182,9 @@ export class SynergyManager {
         const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
         const tipY = yOff - 10;
         const tip = this.scene.add.text(tipX, tipY, desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#ffeecc',
-          backgroundColor: '#2a1800',
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+          color: CASUAL_CSS.INK,
+          backgroundColor: CASUAL_CSS.CREAM,
           padding: { x: 8, y: 5 },
         }).setOrigin(0.5, 1).setDepth(200);
         this.scene.tweens.add({
@@ -195,21 +207,30 @@ export class SynergyManager {
       tmp.destroy();
 
       const pillX = CANVAS_WIDTH - 8 - pillW;
+      const ecH   = PILL_H - 4;
 
       const g = this.scene.add.graphics().setDepth(85);
-      g.fillStyle(0x001428, 0.92);
-      g.fillRoundedRect(pillX, yOff, pillW, PILL_H - 4, 4);
-      g.lineStyle(1, 0x2266aa, 0.8);
-      g.strokeRoundedRect(pillX, yOff, pillW, PILL_H - 4, 4);
+      // chunky drop shadow
+      g.fillStyle(CASUAL.SHADOW, 0.22);
+      g.fillRoundedRect(pillX, yOff + 3, pillW, ecH, 7);
+      // blue candy fill (element combos read as "info" accent)
+      g.fillStyle(CASUAL.BLUE, 1);
+      g.fillRoundedRect(pillX, yOff, pillW, ecH, 7);
+      // glossy white top highlight
+      g.fillStyle(0xffffff, 0.35);
+      g.fillRoundedRect(pillX + 4, yOff + 3, pillW - 8, 4, 2);
+      // chunky darker edge
+      g.lineStyle(2.5, CASUAL.BLUE_DK, 1);
+      g.strokeRoundedRect(pillX, yOff, pillW, ecH, 7);
 
-      const t = this.scene.add.text(pillX + pillW / 2, yOff + (PILL_H - 4) / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#88ccff',
+      const t = this.scene.add.text(pillX + pillW / 2, yOff + ecH / 2, label, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
 
-      const ecPillH = PILL_H - 4;
-      const ecZone = this.scene.add.zone(pillX, yOff, pillW, ecPillH)
+      const ecZone = this.scene.add.zone(pillX, yOff, pillW, ecH)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true })
         .setDepth(90);
@@ -219,8 +240,9 @@ export class SynergyManager {
         const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
         const tipY = yOff - 10;
         const tip = this.scene.add.text(tipX, tipY, desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', color: '#88ccff',
-          backgroundColor: '#001428',
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+          color: CASUAL_CSS.INK,
+          backgroundColor: CASUAL_CSS.CREAM,
           padding: { x: 8, y: 5 },
         }).setOrigin(0.5, 1).setDepth(200);
         this.scene.tweens.add({
@@ -233,7 +255,7 @@ export class SynergyManager {
         });
       });
 
-      yOff += ecPillH + GAP;
+      yOff += ecH + GAP;
     }
   }
 }

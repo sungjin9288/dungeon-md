@@ -11,7 +11,7 @@ import { HYBRID_DEFS } from '../data/fusion';
 import { MONSTER_DEFS } from '../data/monsters';
 import { loadGameState } from '../data/wisdom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 
 export interface SkillPopupContext {
@@ -37,13 +37,13 @@ function getSkillCooldownKey(row: number, col: number, skillId: string): string 
 function getCategoryAccent(category: typeof ACTIVE_SKILLS[number]['category']): number {
   switch (category) {
     case 'combat':
-      return COLORS.BLOOD_GLOW;
+      return CASUAL.RED;
     case 'defense':
-      return 0x55b88a;
+      return CASUAL.BLUE;
     case 'support':
-      return 0x5cff9b;
+      return CASUAL.GREEN;
     default:
-      return COLORS.TORCH_GOLD;
+      return CASUAL.GOLD;
   }
 }
 
@@ -104,30 +104,35 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const tipY = Phaser.Math.Clamp(room.y - 86, 118, CANVAS_HEIGHT - tipH - 122);
     const tip = scene.add.container(0, 0).setDepth(211).setAlpha(0);
     const bg = scene.add.graphics();
-    bg.fillStyle(0x07131d, 0.96);
+    bg.fillStyle(CASUAL.SHADOW, 0.2);
+    bg.fillRoundedRect(tipX, tipY + 4, tipW, tipH, 9);
+    bg.fillStyle(CASUAL.PANEL, 1);
     bg.fillRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(0x070503, 0.34);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(tipX + 5, tipY + 4, tipW - 10, 4, 3);
+    bg.fillStyle(CASUAL.GOLD, 0.5);
     bg.fillRoundedRect(tipX + 8, tipY + 8, 34, tipH - 16, 7);
-    bg.lineStyle(1.2, COLORS.TORCH_GOLD, 0.62);
+    bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(COLORS.TORCH_GOLD, 0.16);
+    bg.fillStyle(CASUAL.GOLD, 0.5);
     bg.fillRoundedRect(tipX + 48, tipY + 12, tipW - 62, 3, 2);
     tip.add(bg);
     tip.add(scene.add.text(tipX + 25, tipY + 29, '✦', {
       fontFamily: 'sans-serif',
       fontSize: '15px',
-      color: CSS.TORCH_AMBER,
+      color: CASUAL_CSS.GOLD,
     }).setOrigin(0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 22, '전술 슬롯 비어 있음', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: CSS.PARCHMENT,
+      color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 39, monsterName, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: CSS.PARCHMENT_DIM,
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5));
     scene.tweens.add({ targets: tip, alpha: 1, y: -4, duration: 120, ease: 'Cubic.easeOut' });
     scene.time.delayedCall(1300, () => {
@@ -169,47 +174,50 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     w: panelW,
     h: panelH,
     radius: 10,
-    fillColor: 0x07131d,
-    borderColor: COLORS.TORCH_GOLD,
-    borderAlpha: 0.7,
-    borderWidth: 1.4,
-    accentColor: COLORS.TORCH_GOLD,
-    accentAlpha: 0.62,
-    glowColor: COLORS.TORCH_AMBER,
-    glowOpacity: 0.09,
-    shadowOpacity: 0.5,
-    shadowOffsetY: 4,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 5,
   });
   popup.add([panel.shadow, panel.panel, panel.glow]);
 
   const header = scene.add.graphics();
-  header.fillStyle(0x070503, 0.28);
+  header.fillStyle(CASUAL.PANEL_SOFT, 1);
   header.fillRoundedRect(panelX + 8, panelY + 8, panelW - 16, 28, 8);
-  header.fillStyle(COLORS.TORCH_GOLD, 0.18);
+  header.fillStyle(0xffffff, 0.4);
+  header.fillRoundedRect(panelX + 11, panelY + 11, panelW - 22, 3, 2);
+  header.fillStyle(CASUAL.GOLD, 1);
   header.fillRoundedRect(panelX + 14, panelY + 13, 4, 18, 2);
-  header.fillStyle(0x0f2b3a, 0.88);
+  header.fillStyle(CASUAL.PANEL, 1);
   header.fillRoundedRect(panelX + panelW - 44, panelY + 13, 30, 16, 6);
-  header.lineStyle(1, COLORS.TORCH_GOLD, 0.36);
+  header.lineStyle(2, CASUAL.GOLD_DK, 0.9);
   header.strokeRoundedRect(panelX + panelW - 44, panelY + 13, 30, 16, 6);
   popup.add(header);
 
   const title = scene.add.text(panelX + PANEL_PAD + 14, panelY + 17, '전술 명령', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: CSS.TORCH_AMBER,
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5);
   popup.add(title);
   popup.add(scene.add.text(panelX + PANEL_PAD + 14, panelY + 29, `${monsterName} · Lv.${om?.level ?? 1}`, {
-    fontFamily: 'Georgia, serif',
-    fontSize: '8px',
-    color: '#9fc0ce',
-  }).setOrigin(0, 0.5));
-  popup.add(scene.add.text(panelX + panelW - 29, panelY + 21, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '8px',
     fontStyle: 'bold',
-    color: '#ffe0a3',
+    color: CASUAL_CSS.INK_SOFT,
+  }).setOrigin(0, 0.5));
+  popup.add(scene.add.text(panelX + panelW - 29, panelY + 21, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
+    fontFamily: 'sans-serif',
+    fontSize: '8px',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.GOLD,
   }).setOrigin(0.5));
 
   skills.forEach((skillId, i) => {
@@ -228,22 +236,27 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const bg = scene.add.graphics();
     const drawCard = (hover = false): void => {
       bg.clear();
-      bg.fillStyle(0x070503, 0.48);
+      // chunky drop shadow
+      bg.fillStyle(CASUAL.SHADOW, ready ? 0.22 : 0.12);
       bg.fillRoundedRect(bx, by + 4, CARD_W, CARD_H, 8);
-      bg.fillStyle(ready ? (hover ? 0x183449 : 0x112434) : 0x171717, 0.98);
+      // cream card body (muted when on cooldown)
+      bg.fillStyle(ready ? (hover ? CASUAL.PANEL : CASUAL.PANEL) : CASUAL.PANEL_SOFT, 1);
       bg.fillRoundedRect(bx, by, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, ready ? (hover ? 0.11 : 0.07) : 0.035);
+      // glossy white top highlight band
+      bg.fillStyle(0xffffff, ready ? (hover ? 0.55 : 0.45) : 0.22);
       bg.fillRoundedRect(bx + 4, by + 4, CARD_W - 8, 22, 6);
-      bg.fillStyle(accent, ready ? (hover ? 0.36 : 0.28) : 0.11);
+      // accent icon disc
+      bg.fillStyle(accent, ready ? (hover ? 0.6 : 0.5) : 0.2);
       bg.fillRoundedRect(bx + 7, by + 7, 25, 25, 7);
-      bg.fillStyle(accent, ready ? 0.85 : 0.26);
+      // accent underline by the name
+      bg.fillStyle(accent, ready ? 1 : 0.35);
       bg.fillRoundedRect(bx + 38, by + 8, CARD_W - 47, 3, 2);
-      bg.fillStyle(accent, ready ? 0.16 : 0.07);
+      // soft footer band
+      bg.fillStyle(CASUAL.PANEL_SOFT, ready ? 0.85 : 0.5);
       bg.fillRoundedRect(bx + 8, by + 57, CARD_W - 16, 21, 7);
-      bg.lineStyle(hover ? 1.9 : 1.5, ready ? (hover ? COLORS.TORCH_AMBER : accent) : 0x525252, ready ? 0.84 : 0.42);
+      // thick rounded border (accent when ready, muted edge when not)
+      bg.lineStyle(hover ? 3 : 3, ready ? accent : CASUAL.EDGE_SOFT, ready ? 1 : 0.7);
       bg.strokeRoundedRect(bx, by, CARD_W, CARD_H, 8);
-      bg.lineStyle(1, 0xffffff, ready ? 0.2 : 0.08);
-      bg.strokeRoundedRect(bx + 4, by + 4, CARD_W - 8, CARD_H - 8, 6);
     };
     drawCard();
     popup.add(bg);
@@ -253,66 +266,70 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
       fontSize: '17px',
     }).setOrigin(0.5);
     iconT.setAlpha(ready ? 1 : 0.45);
-    iconT.setShadow(0, 2, '#000000', 0.38, true, true);
     popup.add(iconT);
 
     const nameT = scene.add.text(bx + 39, by + 18, sk.name, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: ready ? '#f2fbff' : '#777777',
+      color: ready ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CARD_W - 48 },
     }).setOrigin(0, 0.5);
     popup.add(nameT);
 
     popup.add(scene.add.text(bx + 10, by + 41, sk.desc, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: ready ? '#aacbd8' : '#666666',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: CARD_W - 20 },
       lineSpacing: -1,
     }).setOrigin(0, 0.5));
 
     const categoryBg = scene.add.graphics();
-    categoryBg.fillStyle(accent, ready ? 0.18 : 0.08);
+    categoryBg.fillStyle(accent, ready ? 0.85 : 0.3);
     categoryBg.fillRoundedRect(bx + 8, by + CARD_H - 25, 32, 17, 6);
-    categoryBg.lineStyle(1, accent, ready ? 0.42 : 0.18);
+    categoryBg.lineStyle(2, accent, ready ? 1 : 0.4);
     categoryBg.strokeRoundedRect(bx + 8, by + CARD_H - 25, 32, 17, 6);
     popup.add(categoryBg);
     popup.add(scene.add.text(bx + 24, by + CARD_H - 16.5, categoryLabel, {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '8px',
       fontStyle: 'bold',
-      color: ready ? '#d9fbff' : '#777777',
+      color: ready ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
     const cooldownBg = scene.add.graphics();
-    cooldownBg.fillStyle(0x070503, 0.42);
+    cooldownBg.fillStyle(CASUAL.PANEL, 1);
     cooldownBg.fillRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
-    cooldownBg.lineStyle(1, 0xffffff, 0.12);
+    cooldownBg.lineStyle(2, CASUAL.EDGE_SOFT, ready ? 0.9 : 0.5);
     cooldownBg.strokeRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
     popup.add(cooldownBg);
     popup.add(scene.add.text(bx + CARD_W - 27, by + 17, `${sk.cooldown}s`, {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: ready ? '#e8d5aa' : '#777777',
+      fontStyle: 'bold',
+      color: ready ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
     const cdLeft = ready
       ? '준비됨'
       : `${Math.ceil((readyAt - now) / 1000)}s`;
     const statusBg = scene.add.graphics();
-    statusBg.fillStyle(ready ? 0x0d3627 : 0x35170f, 0.86);
+    // ready → green candy chip; cooling down → muted red chip
+    statusBg.fillStyle(ready ? CASUAL.GREEN : CASUAL.RED, ready ? 1 : 0.22);
     statusBg.fillRoundedRect(bx + 45, by + CARD_H - 25, CARD_W - 53, 17, 7);
-    statusBg.lineStyle(1, ready ? 0x5cff9b : 0xff7a4d, ready ? 0.48 : 0.38);
+    statusBg.fillStyle(0xffffff, ready ? 0.32 : 0.18);
+    statusBg.fillRoundedRect(bx + 48, by + CARD_H - 23, CARD_W - 59, 3, 2);
+    statusBg.lineStyle(2, ready ? CASUAL.GREEN_DK : CASUAL.RED_DK, ready ? 1 : 0.6);
     statusBg.strokeRoundedRect(bx + 45, by + CARD_H - 25, CARD_W - 53, 17, 7);
     popup.add(statusBg);
 
     const cdT = scene.add.text(bx + 45 + (CARD_W - 53) / 2, by + CARD_H - 16.5, cdLeft, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '9px',
       fontStyle: 'bold',
-      color: ready ? '#8cffc1' : '#ff9a78',
+      color: ready ? CASUAL_CSS.WHITE : CASUAL_CSS.RED,
     }).setOrigin(0.5);
     popup.add(cdT);
 

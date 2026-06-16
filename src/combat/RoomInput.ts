@@ -18,7 +18,7 @@ import { getRoomSlotCapacity, loadGameState, ROOM_SLOT_TYPE_DEFS, type RoomSlotT
 import { getMonstersForRoom, MONSTER_DEFS, type ElementId } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import type { RoomUpgradeLoadoutSummary } from '../ui/RoomUpgradePanel';
 
@@ -108,7 +108,8 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   const cardX = Phaser.Math.Clamp(room.x - cardW / 2, 8, CANVAS_WIDTH - cardW - 8);
   const preferredY = room.y < 245 ? room.y + 58 : room.y - cardH - 48;
   const cardY = Phaser.Math.Clamp(preferredY, 112, CANVAS_HEIGHT - cardH - 136);
-  const accent = canAfford ? 0x5cff9b : 0xff7a5a;
+  const accent     = canAfford ? CASUAL.GREEN : CASUAL.RED;
+  const accentDk   = canAfford ? CASUAL.GREEN_DK : CASUAL.RED_DK;
   const card = scene.add.container(0, 0).setName('repairCommandPopup').setDepth(212).setAlpha(0);
 
   const panel = addFramedPanel(scene, {
@@ -116,32 +117,24 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
     y: cardY,
     w: cardW,
     h: cardH,
-    radius: 10,
-    fillColor: 0x07131d,
-    borderColor: accent,
-    borderAlpha: 0.72,
-    borderWidth: 1.4,
+    radius: 12,
     accentColor: accent,
-    accentAlpha: canAfford ? 0.7 : 0.55,
-    glowColor: accent,
-    glowOpacity: 0.08,
-    shadowOpacity: 0.48,
-    shadowOffsetY: 4,
+    accentAlpha: 1,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 5,
   });
   card.add([panel.shadow, panel.panel, panel.glow]);
 
+  // soft cream icon tray on the left, capped with the accent color
   const shell = scene.add.graphics();
-  shell.fillStyle(0x070503, 0.38);
-  shell.fillRoundedRect(cardX + 9, cardY + 10, 35, cardH - 22, 8);
-  shell.fillStyle(accent, 0.16);
-  shell.fillRoundedRect(cardX + 16, cardY + 19, 21, cardH - 40, 7);
-  shell.fillStyle(accent, 0.36);
-  shell.fillRoundedRect(cardX + 11, cardY + 10, 31, 4, 2);
-  shell.fillRoundedRect(cardX + 11, cardY + cardH - 16, 31, 4, 2);
-  [[cardX + 8, cardY + 8], [cardX + cardW - 14, cardY + 8], [cardX + 8, cardY + cardH - 14], [cardX + cardW - 14, cardY + cardH - 14]].forEach(([sx, sy]) => {
-    shell.fillStyle(accent, 0.38);
-    shell.fillRoundedRect(sx, sy, 6, 6, 2);
-  });
+  shell.fillStyle(CASUAL.PANEL_SOFT, 1);
+  shell.fillRoundedRect(cardX + 9, cardY + 12, 35, cardH - 24, 9);
+  shell.fillStyle(0xffffff, 0.5);
+  shell.fillRoundedRect(cardX + 12, cardY + 14, 29, 4, 2);
+  shell.lineStyle(2, CASUAL.EDGE_SOFT, 1);
+  shell.strokeRoundedRect(cardX + 9, cardY + 12, 35, cardH - 24, 9);
+  shell.fillStyle(accent, 1);
+  shell.fillRoundedRect(cardX + 13, cardY + 14, 27, 5, 2);
   card.add(shell);
 
   card.add(scene.add.text(cardX + 26, cardY + 34, '🔧', {
@@ -149,78 +142,80 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
     fontSize: '15px',
   }).setOrigin(0.5));
   card.add(scene.add.text(cardX + 26, cardY + cardH - 33, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '8px',
     fontStyle: 'bold',
-    color: canAfford ? '#a6ffd0' : '#ffb29e',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
 
   card.add(scene.add.text(cardX + 52, cardY + 16, canAfford ? '긴급 정비' : '정비 대기', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '12px',
     fontStyle: 'bold',
-    color: CSS.PARCHMENT,
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
   card.add(scene.add.text(cardX + 52, cardY + 31, roomName, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#8fb4c4',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
 
   const damageChip = scene.add.graphics();
-  damageChip.fillStyle(canAfford ? 0x12362b : 0x3b1510, 0.86);
-  damageChip.fillRoundedRect(cardX + cardW - 74, cardY + 10, 60, 20, 8);
-  damageChip.lineStyle(1, accent, 0.48);
-  damageChip.strokeRoundedRect(cardX + cardW - 74, cardY + 10, 60, 20, 8);
+  damageChip.fillStyle(accent, 1);
+  damageChip.fillRoundedRect(cardX + cardW - 74, cardY + 10, 60, 20, 9);
+  damageChip.fillStyle(0xffffff, 0.3);
+  damageChip.fillRoundedRect(cardX + cardW - 71, cardY + 12, 54, 4, 2);
+  damageChip.lineStyle(2, accentDk, 1);
+  damageChip.strokeRoundedRect(cardX + cardW - 74, cardY + 10, 60, 20, 9);
   card.add(damageChip);
   card.add(scene.add.text(cardX + cardW - 44, cardY + 20, `피해 ${dmgPct}%`, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '9px',
     fontStyle: 'bold',
-    color: canAfford ? '#8cffc1' : '#ff9a78',
+    color: CASUAL_CSS.WHITE,
   }).setOrigin(0.5));
 
   const barW = cardW - 68;
   const barX = cardX + 52;
   const barY = cardY + 49;
   const hpBar = scene.add.graphics();
-  hpBar.fillStyle(0x03090d, 0.9);
+  hpBar.fillStyle(CASUAL.PANEL_SOFT, 1);
   hpBar.fillRoundedRect(barX, barY, barW, 10, 5);
-  hpBar.fillStyle(0x45d982, 0.92);
+  hpBar.fillStyle(CASUAL.GREEN, 1);
   hpBar.fillRoundedRect(barX, barY, Math.max(4, barW * hpPct), 10, 5);
-  hpBar.fillStyle(0xff5d46, 0.55);
+  hpBar.fillStyle(CASUAL.RED, 0.85);
   hpBar.fillRoundedRect(barX + Math.max(4, barW * hpPct), barY, Math.max(0, barW * (1 - hpPct)), 10, 5);
-  hpBar.lineStyle(1, 0x5cff9b, 0.34);
-  hpBar.lineBetween(barX + barW - 1, barY - 2, barX + barW - 1, barY + 12);
-  hpBar.lineStyle(1, 0xffffff, 0.14);
+  hpBar.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
   hpBar.strokeRoundedRect(barX, barY, barW, 10, 5);
   card.add(hpBar);
 
   card.add(scene.add.text(barX, cardY + 68, `HP ${beforeHp} → ${afterHp}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#e8d5aa',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
   card.add(scene.add.text(cardX + cardW - 15, cardY + 68, `비용 ${cost}`, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: canAfford ? CSS.TORCH_AMBER : '#ff8a6e',
+    color: canAfford ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
   }).setOrigin(1, 0.5));
 
   const action = addPrimaryActionButton(scene, {
     x: cardX + 51,
-    y: cardY + cardH - 32,
+    y: cardY + cardH - 34,
     w: cardW - 64,
-    h: 24,
+    h: 26,
     label: canAfford ? '즉시 수리' : '골드 부족',
     fontSize: '11px',
     enabled: true,
-    fillColor: canAfford ? 0x1b9f71 : 0x3a1b16,
-    hoverFillColor: canAfford ? 0x24bd86 : 0x4b241d,
-    borderColor: canAfford ? 0x8cffc1 : 0xff7a5a,
-    hoverBorderColor: COLORS.TORCH_AMBER,
-    textColor: canAfford ? '#fff8d8' : '#ffb29e',
+    fillColor: canAfford ? CASUAL.GREEN : CASUAL.RED,
+    hoverFillColor: canAfford ? 0x6fdc70 : 0xf57a66,
+    borderColor: accentDk,
+    hoverBorderColor: accentDk,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => {
       if (!canAfford) {
         ctx.showFloatText(room.x, room.y - 20, '골드 부족!', '#ff4444');
@@ -325,11 +320,12 @@ function showRoomIntelTip(room: Room): void {
   const maxHp = Math.max(1, room.roomData?.maxRoomHp ?? slot?.maxHp ?? def.baseHp);
   const hpPct = Phaser.Math.Clamp(hp / maxHp, 0, 1);
   const accent = def.accentColor;
+  const accentCss = `#${accent.toString(16).padStart(6, '0')}`;
   const hpStatus = hpPct > 0.66
-    ? { label: '정상', color: 0x5fb854, css: '#b9ffd8' }
+    ? { label: '정상', color: CASUAL.GREEN, dark: CASUAL.GREEN_DK }
     : hpPct > 0.33
-      ? { label: '주의', color: 0xe8c468, css: '#ffdf8a' }
-      : { label: '위험', color: 0xd9594a, css: '#ffb8c9' };
+      ? { label: '주의', color: CASUAL.GOLD, dark: CASUAL.GOLD_DK }
+      : { label: '위험', color: CASUAL.RED, dark: CASUAL.RED_DK };
 
   const panelW = 224;
   const panelH = 96;
@@ -338,67 +334,75 @@ function showRoomIntelTip(room: Room): void {
   const tip = scene.add.container(px, py).setName('roomIntelTip').setDepth(205).setAlpha(0);
 
   const bg = scene.add.graphics();
-  bg.fillStyle(0x140c03, 0.96);
-  bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 8);
-  bg.lineStyle(1.4, accent, 0.78);
-  bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 8);
-  bg.fillStyle(0x070503, 0.32);
-  bg.fillRoundedRect(-panelW / 2 + 7, -panelH / 2 + 8, 31, panelH - 20, 7);
-  bg.fillStyle(accent, 0.18);
-  bg.fillRoundedRect(-panelW / 2 + 8, -panelH / 2 + 7, panelW - 16, 4, 2);
-  bg.fillStyle(accent, 0.16);
-  bg.fillRoundedRect(-panelW / 2 + 14, -panelH / 2 + 18, 17, panelH - 40, 5);
-  bg.fillStyle(0x221504, 0.86);
+  // chunky drop shadow + cream card body
+  bg.fillStyle(CASUAL.SHADOW, 0.3);
+  bg.fillRoundedRect(-panelW / 2, -panelH / 2 + 5, panelW, panelH, 12);
+  bg.fillStyle(CASUAL.PANEL, 1);
+  bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
+  bg.fillStyle(0xffffff, 0.5);
+  bg.fillRoundedRect(-panelW / 2 + 6, -panelH / 2 + 4, panelW - 12, 5, 3);
+  // soft icon tray + accent header cap
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  bg.fillRoundedRect(-panelW / 2 + 9, -panelH / 2 + 12, 31, panelH - 24, 9);
+  bg.lineStyle(2, CASUAL.EDGE_SOFT, 1);
+  bg.strokeRoundedRect(-panelW / 2 + 9, -panelH / 2 + 12, 31, panelH - 24, 9);
+  bg.fillStyle(accent, 1);
+  bg.fillRoundedRect(-panelW / 2 + 8, -panelH / 2 + 7, panelW - 16, 5, 2);
+  // HP track + fill
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(-panelW / 2 + 46, panelH / 2 - 20, panelW - 59, 7, 4);
-  bg.fillStyle(hpStatus.color, 0.94);
+  bg.fillStyle(hpStatus.color, 1);
   bg.fillRoundedRect(-panelW / 2 + 46, panelH / 2 - 20, Math.max(4, (panelW - 59) * hpPct), 7, 4);
-  [[-panelW / 2 + 8, -panelH / 2 + 8], [panelW / 2 - 14, -panelH / 2 + 8], [-panelW / 2 + 8, panelH / 2 - 14], [panelW / 2 - 14, panelH / 2 - 14]].forEach(([sx, sy]) => {
-    bg.fillStyle(accent, 0.42);
-    bg.fillRoundedRect(sx, sy, 6, 6, 2);
-  });
+  // chunky brown outer border
+  bg.lineStyle(3, CASUAL.EDGE, 1);
+  bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
   tip.add(bg);
 
-  tip.add(scene.add.text(-panelW / 2 + 22, -panelH / 2 + 30, roomTypeDef?.icon ?? def.emoji, {
+  tip.add(scene.add.text(-panelW / 2 + 24, -panelH / 2 + 30, roomTypeDef?.icon ?? def.emoji, {
     fontFamily: 'sans-serif',
     fontSize: '16px',
   }).setOrigin(0.5));
-  tip.add(scene.add.text(-panelW / 2 + 22, panelH / 2 - 24, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
-    fontFamily: 'monospace',
+  tip.add(scene.add.text(-panelW / 2 + 24, panelH / 2 - 24, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
+    fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: `#${accent.toString(16).padStart(6, '0')}`,
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
   tip.add(scene.add.text(-panelW / 2 + 48, -panelH / 2 + 16, '방 관리', {
     fontFamily: 'sans-serif',
     fontSize: '7px',
-    color: '#907a58',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   tip.add(scene.add.text(-panelW / 2 + 48, -panelH / 2 + 30, `${roomTypeDef?.name ?? def.koreanName}`, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: '#f0e6c8',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
 
   tip.add(scene.add.text(panelW / 2 - 13, -panelH / 2 + 24, `Lv.${slot?.roomLevel ?? room.roomData?.level ?? 1}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: `#${accent.toString(16).padStart(6, '0')}`,
+    color: accentCss,
     fontStyle: 'bold',
+    stroke: '#ffffff',
+    strokeThickness: 2,
   }).setOrigin(1, 0.5));
 
   const statusBg = scene.add.graphics();
-  statusBg.fillStyle(hpStatus.color, 0.14);
-  statusBg.fillRoundedRect(panelW / 2 - 52, -panelH / 2 + 34, 39, 16, 5);
-  statusBg.lineStyle(1, hpStatus.color, 0.42);
-  statusBg.strokeRoundedRect(panelW / 2 - 52, -panelH / 2 + 34, 39, 16, 5);
+  statusBg.fillStyle(hpStatus.color, 1);
+  statusBg.fillRoundedRect(panelW / 2 - 52, -panelH / 2 + 34, 39, 16, 7);
+  statusBg.fillStyle(0xffffff, 0.3);
+  statusBg.fillRoundedRect(panelW / 2 - 50, -panelH / 2 + 35, 35, 3, 2);
+  statusBg.lineStyle(1.5, hpStatus.dark, 1);
+  statusBg.strokeRoundedRect(panelW / 2 - 52, -panelH / 2 + 34, 39, 16, 7);
   tip.add(statusBg);
   tip.add(scene.add.text(panelW / 2 - 32.5, -panelH / 2 + 42, hpStatus.label, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: hpStatus.css,
+    color: CASUAL_CSS.WHITE,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -412,17 +416,20 @@ function showRoomIntelTip(room: Room): void {
   tip.add(scene.add.text(-panelW / 2 + 48, 1, `수호 ${monsterIds.length}/${capacity.monsters}  ${monsterLabel}`, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#ffd3a6',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
   tip.add(scene.add.text(-panelW / 2 + 48, 17, `함정 ${trapIds.length}/${capacity.traps}  ${trapLabel}`, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#b9ffd8',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
   tip.add(scene.add.text(-panelW / 2 + 48, panelH / 2 - 7, `HP ${Math.round(hp)}/${Math.round(maxHp)}`, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: '#e8d5aa',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
 
   scene.tweens.add({ targets: tip, alpha: 1, y: py - 6, duration: 150, ease: 'Cubic.easeOut' });
