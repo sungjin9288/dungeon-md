@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
 import { getUnlockedSlots } from '../data/wisdom';
@@ -15,14 +15,15 @@ import { openPrestigeModal, buildPrestigeBadge } from './PrestigeModal';
 import { openSimulationModal } from './SimulationModal';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
 
-const OVERLAY_FILL = 0x0e0903;
-const OVERLAY_ROW_FILL = 0x120c05;
-const VICTORY_GREEN = 0x28c76f;
-const VICTORY_GREEN_DARK = 0x0b3519;
-const VICTORY_TEXT = '#80ffad';
-const DEFEAT_RED = 0xcc3322;
-const DEFEAT_RED_DARK = 0x33100c;
-const DEFEAT_TEXT = '#ff7a62';
+// Casual-toy modal chrome — cream cards, brown edges, saturated accents.
+const OVERLAY_FILL = CASUAL.PANEL;          // cream modal body
+const OVERLAY_ROW_FILL = CASUAL.PANEL_SOFT; // soft cream stat row
+const VICTORY_GREEN = CASUAL.GREEN;
+const VICTORY_GREEN_DARK = CASUAL.GREEN_DK; // candy-button base for primary
+const VICTORY_TEXT = CASUAL_CSS.GREEN;
+const DEFEAT_RED = CASUAL.RED;
+const DEFEAT_RED_DARK = CASUAL.RED_DK;      // candy-button base for retry
+const DEFEAT_TEXT = CASUAL_CSS.RED;
 
 interface BattleReturnGrowthContext {
   readonly previousDmLevel: number;
@@ -286,21 +287,23 @@ export function buildHeaderTorch(
 export function buildQuestBanner(
   scene: Phaser.Scene,
   gs: GameState,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,
   topH: number,
   onTap?: () => void,
 ): void {
   const quest = getQuest(gs.activeMainQuestId);
   if (!quest) return;
-  const t = theme;
 
   const bY = topH;
   const bH = 22;
   const bg = scene.add.graphics().setDepth(4);
-  bg.fillStyle(t.stoneDark, 1);
+  // cream banner with glossy top highlight + thin brown bottom edge
+  bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, bY, CANVAS_WIDTH, bH);
-  bg.lineStyle(1, t.panelBorder, 0.35);
-  bg.lineBetween(0, bY + bH - 1, CANVAS_WIDTH, bY + bH - 1);
+  bg.fillStyle(0xffffff, 0.4);
+  bg.fillRect(0, bY, CANVAS_WIDTH, 2);
+  bg.fillStyle(CASUAL.EDGE, 1);
+  bg.fillRect(0, bY + bH - 2, CANVAS_WIDTH, 2);
 
   const obj  = quest.objectives[0];
   const prog = gs.questProgress?.[quest.id];
@@ -309,24 +312,30 @@ export function buildQuestBanner(
   const pct  = Math.min(cur / tgt, 1);
 
   const barX = 8, barW = 80;
-  bg.fillStyle(0x1a1a1a, 1);
-  bg.fillRoundedRect(barX, bY + 7, barW, 7, 2);
+  // progress track — soft cream + brown edge
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  bg.fillRoundedRect(barX, bY + 7, barW, 7, 3);
   if (pct > 0) {
-    bg.fillStyle(t.panelBorder, 1);
-    bg.fillRoundedRect(barX, bY + 7, Math.round(barW * pct), 7, 2);
+    bg.fillStyle(CASUAL.GREEN, 1);
+    bg.fillRoundedRect(barX, bY + 7, Math.round(barW * pct), 7, 3);
   }
+  bg.lineStyle(1, CASUAL.EDGE, 0.6);
+  bg.strokeRoundedRect(barX, bY + 7, barW, 7, 3);
 
-  // Show objective action text (more actionable than quest title)
+  // Show objective action text (more actionable than quest title) — INK label
+  // with the progress "N/M" as a GOLD accent appended right after it.
   const objDesc = obj?.description ?? quest.title;
-  scene.add.text(barX + barW + 6, bY + 11,
-    `📜 ${objDesc}  ${cur}/${tgt}`,
-    { fontFamily: 'sans-serif', fontSize: '10px', color: t.textSecondary },
-  ).setOrigin(0, 0.5).setDepth(5);
+  const label = scene.add.text(barX + barW + 6, bY + 11, `📜 ${objDesc}  `, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0, 0.5).setDepth(5);
+  scene.add.text(label.x + label.width, bY + 11, `${cur}/${tgt}`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
+  }).setOrigin(0, 0.5).setDepth(5);
 
   // Tap hint arrow (right edge)
   if (onTap) {
     scene.add.text(CANVAS_WIDTH - 8, bY + 11, '›', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: t.textAccent,
+      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(5);
     scene.add.zone(0, bY, CANVAS_WIDTH, bH)
       .setOrigin(0, 0).setInteractive({ useHandCursor: true }).setDepth(6)
@@ -339,17 +348,19 @@ export function buildQuestBanner(
 export function buildStatsBar(
   scene: Phaser.Scene,
   gs: GameState,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,
   botY: number,
 ): void {
-  const t  = theme;
   const bH = 26;
   const bY = botY - bH;
   const g  = scene.add.graphics().setDepth(3);
-  g.fillStyle(t.stoneDark, 1);
+  // cream stats bar — glossy top highlight + thin brown top edge
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRect(0, bY, CANVAS_WIDTH, bH);
-  g.lineStyle(1, t.panelBorder, 0.2);
-  g.lineBetween(0, bY, CANVAS_WIDTH, bY);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRect(0, bY, CANVAS_WIDTH, 2);
+  g.fillStyle(CASUAL.EDGE, 1);
+  g.fillRect(0, bY, CANVAS_WIDTH, 1);
 
   const clearedStages = gs.stageProgress.filter(p => p.bestStars > 0).length;
   const stats = [
@@ -361,13 +372,28 @@ export function buildStatsBar(
   const colW = CANVAS_WIDTH / stats.length;
   stats.forEach(({ icon, val, label }, i) => {
     const cx = i * colW + colW / 2;
-    scene.add.text(cx, bY + 13,
-      `${icon} ${val} ${label}`,
-      { fontFamily: 'sans-serif', fontSize: '10px', color: t.textSecondary },
-    ).setOrigin(0.5).setDepth(4);
+    // value (INK) + label (INK_SOFT) — two-tone but kept centered as a block.
+    // Measure both parts hidden, then place left→right so the block stays on cx.
+    const valStr = `${icon} ${val} `;
+    const valMeasure = scene.add.text(0, 0, valStr, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    }).setVisible(false);
+    const labelMeasure = scene.add.text(0, 0, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    }).setVisible(false);
+    const blockW = valMeasure.width + labelMeasure.width;
+    const startX = cx - blockW / 2;
+    valMeasure.destroy();
+    labelMeasure.destroy();
+    const valText = scene.add.text(startX, bY + 13, valStr, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(4);
+    scene.add.text(startX + valText.width, bY + 13, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(4);
     if (i > 0) {
-      g.lineStyle(1, t.stoneDark, 0.4);
-      g.lineBetween(i * colW, bY + 4, i * colW, bY + bH - 4);
+      g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+      g.lineBetween(i * colW, bY + 5, i * colW, bY + bH - 5);
     }
   });
 }
@@ -381,7 +407,7 @@ export function showBattleReturnOverlay(
   growth?: BattleReturnGrowthContext,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
-  c.add(buildOverlayDim(scene, 0x000000, 0.74));
+  c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const growthSummary = buildBattleReturnGrowthSummary(growth);
   const PW = 310, PH = 268;
@@ -393,20 +419,21 @@ export function showBattleReturnOverlay(
     h: PH,
     radius: 12,
     fillColor: OVERLAY_FILL,
-    borderColor: VICTORY_GREEN,
-    borderAlpha: 0.94,
-    borderWidth: 2,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: VICTORY_GREEN,
-    accentAlpha: 0.85,
+    accentAlpha: 1,
     glowColor: VICTORY_GREEN,
-    glowOpacity: 0.12,
-    shadowOpacity: 0.62,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.32,
     shadowOffsetY: 5,
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '침략 격퇴! ✓', {
-    fontFamily: 'Georgia, serif', fontSize: '21px', color: VICTORY_TEXT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '21px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
   addToContainer(c, ...Object.values(addInfoRow(scene, {
@@ -447,7 +474,7 @@ export function showBattleReturnOverlay(
   })));
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 188, growthSummary.note, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   addOverlayButton(scene, c, {
@@ -455,10 +482,10 @@ export function showBattleReturnOverlay(
     y: PY + PH - 58,
     w: PW - 88,
     label: growthSummary.buttonLabel,
-    fillColor: VICTORY_GREEN_DARK,
-    hoverFillColor: 0x105027,
-    borderColor: VICTORY_GREEN,
-    textColor: VICTORY_TEXT,
+    fillColor: VICTORY_GREEN,
+    hoverFillColor: 0x6fdc70,
+    borderColor: VICTORY_GREEN_DARK,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => {
       c.destroy(true);
       onDismiss();
@@ -481,9 +508,9 @@ function buildBattleReturnGrowthSummary(
       icon: '🏰',
       label: '던전 확장',
       value: `${growth.previousSlots} → ${growth.nextSlots} 방`,
-      valueColor: '#88ffcc',
-      fillColor: 0x082018,
-      borderColor: 0x1e7a58,
+      valueColor: CASUAL_CSS.GREEN,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.GREEN_DK,
       note: '새 방을 설계해 침입 동선을 더 길게 만들 수 있습니다',
       buttonLabel: '방 확장 확인',
     };
@@ -494,9 +521,9 @@ function buildBattleReturnGrowthSummary(
       icon: '✦',
       label: '마스터 성장',
       value: `Lv.${growth.previousDmLevel} → ${growth.nextDmLevel}`,
-      valueColor: CSS.TORCH_AMBER,
-      fillColor: 0x1f1605,
-      borderColor: COLORS.TORCH_GOLD,
+      valueColor: CASUAL_CSS.GOLD,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.GOLD_DK,
       note: '레벨 보상이 다음 방어 준비에 반영됩니다',
       buttonLabel: '성장 확인',
     };
@@ -507,9 +534,9 @@ function buildBattleReturnGrowthSummary(
       icon: '⚒',
       label: '제작 재료',
       value: `+${materialCount.toLocaleString('ko-KR')}`,
-      valueColor: '#9be7ff',
-      fillColor: 0x061721,
-      borderColor: 0x8a6e30,
+      valueColor: CASUAL_CSS.BLUE,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.BLUE_DK,
       note: '공방에서 수호자 장비를 제작하거나 강화하세요',
       buttonLabel: '공방 준비',
     };
@@ -520,9 +547,9 @@ function buildBattleReturnGrowthSummary(
       icon: '📜',
       label: '퀘스트 완료',
       value: '보상 대기',
-      valueColor: CSS.TORCH_AMBER,
-      fillColor: 0x1f1605,
-      borderColor: COLORS.TORCH_GOLD,
+      valueColor: CASUAL_CSS.GOLD,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.GOLD_DK,
       note: '확인 후 메인 퀘스트 보상과 해금이 이어집니다',
       buttonLabel: '퀘스트 보상 확인',
     };
@@ -552,7 +579,7 @@ export function showDmLevelUpOverlay(
   const slotUnlocked = newSlots > prevSlots;
 
   const c = scene.add.container(0, 0).setDepth(75);
-  c.add(buildOverlayDim(scene, 0x000000, 0.78));
+  c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const PW = 304, PH = 222;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
@@ -563,23 +590,25 @@ export function showDmLevelUpOverlay(
     h: PH,
     radius: 12,
     fillColor: OVERLAY_FILL,
-    borderColor: COLORS.TORCH_GOLD,
+    borderColor: CASUAL.EDGE,
     borderAlpha: 1,
-    borderWidth: 2.5,
-    accentColor: COLORS.TORCH_AMBER,
-    accentAlpha: 0.9,
-    glowColor: COLORS.TORCH_AMBER,
-    glowOpacity: 0.14,
-    shadowOpacity: 0.62,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.32,
     shadowOffsetY: 5,
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 26, '✨ LEVEL UP! ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: CSS.TORCH_GOLD, letterSpacing: 3,
+    fontFamily: 'sans-serif', fontSize: '15px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
+    letterSpacing: 3, stroke: '#ffffff', strokeThickness: 3,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 60, `던전 마스터 Lv.${newLevel}`, {
-    fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: CSS.PARCHMENT,
+    fontFamily: 'sans-serif', fontSize: '26px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
   const row = addInfoRow(scene, {
@@ -590,14 +619,14 @@ export function showDmLevelUpOverlay(
     icon: slotUnlocked ? '🏰' : '⚔',
     label: slotUnlocked ? '방 슬롯 해금' : '전투력 강화',
     value: slotUnlocked ? `${prevSlots} → ${newSlots}` : '적용 완료',
-    valueColor: slotUnlocked ? '#88ffcc' : CSS.TORCH_AMBER,
-    fillColor: slotUnlocked ? 0x082018 : OVERLAY_ROW_FILL,
-    borderColor: slotUnlocked ? 0x1e7a58 : COLORS.STONE_MID,
+    valueColor: slotUnlocked ? CASUAL_CSS.GREEN : CASUAL_CSS.GOLD,
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: slotUnlocked ? CASUAL.GREEN_DK : CASUAL.GOLD_DK,
   });
   addToContainer(c, ...Object.values(row));
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 148, '다음 방어 준비에 즉시 반영됩니다', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   addOverlayButton(scene, c, {
@@ -605,10 +634,10 @@ export function showDmLevelUpOverlay(
     y: PY + PH - 58,
     w: PW - 104,
     label: options.primaryLabel ?? '확인',
-    fillColor: 0x2a1a00,
-    hoverFillColor: 0x3a2608,
-    borderColor: COLORS.TORCH_GOLD,
-    textColor: CSS.TORCH_GOLD,
+    fillColor: CASUAL.GOLD,
+    hoverFillColor: 0xffd66a,
+    borderColor: CASUAL.GOLD_DK,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => dismissOverlay(scene, c, options.onDismiss),
   });
 
@@ -628,7 +657,7 @@ export function showBattleDefeatOverlay(
   onRetry: () => void,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
-  c.add(buildOverlayDim(scene, 0x1a0000, 0.82));
+  c.add(buildOverlayDim(scene, 0x1a0000, 0.5));
 
   const PW = 310, PH = 208;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
@@ -639,20 +668,21 @@ export function showBattleDefeatOverlay(
     h: PH,
     radius: 12,
     fillColor: OVERLAY_FILL,
-    borderColor: DEFEAT_RED,
-    borderAlpha: 0.94,
-    borderWidth: 2,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: DEFEAT_RED,
-    accentAlpha: 0.88,
+    accentAlpha: 1,
     glowColor: DEFEAT_RED,
-    glowOpacity: 0.12,
-    shadowOpacity: 0.64,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.32,
     shadowOffsetY: 5,
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '던전 함락...', {
-    fontFamily: 'Georgia, serif', fontSize: '20px', color: DEFEAT_TEXT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.RED, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
   const row = addInfoRow(scene, {
@@ -664,13 +694,13 @@ export function showBattleDefeatOverlay(
     label: '방어 실패',
     value: '재정비 필요',
     valueColor: DEFEAT_TEXT,
-    fillColor: DEFEAT_RED_DARK,
-    borderColor: DEFEAT_RED,
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: DEFEAT_RED_DARK,
   });
   addToContainer(c, ...Object.values(row));
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 122, '수호자들이 물러났습니다.\n다시 방어를 준비하세요.', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_DIM,
+    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK,
     align: 'center', lineSpacing: 5,
   }).setOrigin(0.5));
 
@@ -679,10 +709,10 @@ export function showBattleDefeatOverlay(
     y: PY + PH - 58,
     w: PW - 84,
     label: '다시 준비하기',
-    fillColor: DEFEAT_RED_DARK,
-    hoverFillColor: 0x4a1710,
-    borderColor: DEFEAT_RED,
-    textColor: DEFEAT_TEXT,
+    fillColor: DEFEAT_RED,
+    hoverFillColor: 0xf57a66,
+    borderColor: DEFEAT_RED_DARK,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => {
       c.destroy(true);
       onRetry();
@@ -698,7 +728,7 @@ export function showChapterCompleteOverlay(
   scene: Phaser.Scene,
 ): void {
   const c = scene.add.container(0, 0).setDepth(90);
-  c.add(buildOverlayDim(scene, 0x000000, 0.85));
+  c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const PW = 340, PH = 280;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
@@ -709,26 +739,27 @@ export function showChapterCompleteOverlay(
     h: PH,
     radius: 12,
     fillColor: OVERLAY_FILL,
-    borderColor: COLORS.TORCH_GOLD,
+    borderColor: CASUAL.EDGE,
     borderAlpha: 1,
-    borderWidth: 2.5,
-    accentColor: COLORS.TORCH_AMBER,
-    accentAlpha: 0.9,
-    glowColor: COLORS.TORCH_AMBER,
-    glowOpacity: 0.13,
-    shadowOpacity: 0.64,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.32,
     shadowOffsetY: 5,
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 30, '✨  Chapter 1  ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_GOLD,
+    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 58, '메인 퀘스트 완료!', {
-    fontFamily: 'Georgia, serif', fontSize: '24px', color: CSS.PARCHMENT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '24px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 96, '던전이 더욱 강해졌다.\n연구소가 개방되었습니다.', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.PARCHMENT_DIM,
+    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK,
     align: 'center', lineSpacing: 6,
   }).setOrigin(0.5));
 
@@ -740,17 +771,17 @@ export function showChapterCompleteOverlay(
     icon: '🔓',
     label: '신규 시설',
     value: '연구소 개방',
-    valueColor: CSS.TORCH_AMBER,
-    fillColor: OVERLAY_ROW_FILL,
-    borderColor: COLORS.STONE_MID,
+    valueColor: CASUAL_CSS.GOLD,
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.GOLD_DK,
   });
   addToContainer(c, ...Object.values(unlockRow));
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 182, '"구미호 계곡에서 이상한 소식이..."', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: CSS.PARCHMENT_MUTED, fontStyle: 'italic',
+    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'italic',
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 204, 'Chapter 2 티저', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
+    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   addOverlayButton(scene, c, {
@@ -758,10 +789,10 @@ export function showChapterCompleteOverlay(
     y: PY + PH - 60,
     w: PW - 112,
     label: '확인',
-    fillColor: 0x1a0f00,
-    hoverFillColor: 0x2a1a00,
-    borderColor: COLORS.TORCH_GOLD,
-    textColor: CSS.TORCH_GOLD,
+    fillColor: CASUAL.GOLD,
+    hoverFillColor: 0xffd66a,
+    borderColor: CASUAL.GOLD_DK,
+    textColor: CASUAL_CSS.WHITE,
     onPress: () => {
       c.destroy(true);
       scene.scene.restart();
@@ -807,7 +838,7 @@ function addOverlayButton(
     fillColor: options.fillColor,
     hoverFillColor: options.hoverFillColor,
     borderColor: options.borderColor,
-    hoverBorderColor: COLORS.TORCH_AMBER,
+    hoverBorderColor: options.borderColor,
     textColor: options.textColor,
     onPress: options.onPress,
   });

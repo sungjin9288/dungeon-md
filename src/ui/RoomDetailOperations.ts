@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   getRoomSlotCapacity, getUnlockedSlots, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot, type GameState } from '../data/wisdom';
@@ -84,49 +85,51 @@ export function buildRoomOperationsPanel(
     w: secW,
     h: panelH,
     radius: 10,
-    fillColor: 0x07100d,
-    borderColor: 0x2f8f75,
-    borderAlpha: 0.38,
-    borderWidth: 1.2,
-    accentColor: 0x66c08a,
-    accentAlpha: 0.34,
-    glowColor: 0x66c08a,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.GREEN,
+    accentAlpha: 1,
+    glowColor: CASUAL.GREEN,
     glowOpacity: 0.04,
     shadowOpacity: 0.26,
     shadowOffsetY: 3 });
   c.add([frame.shadow, frame.panel, frame.glow]);
   if (highlightTarget) {
-    drawSectionTargetPulse(scene, c, secX, secY, secW, panelH, 0x44aa77, '전력 보강');
+    drawSectionTargetPulse(scene, c, secX, secY, secW, panelH, CASUAL.GREEN, '전력 보강');
   }
 
   const g = scene.add.graphics();
-  g.fillStyle(0x66c08a, 0.07);
+  g.fillStyle(CASUAL.GREEN, 0.1);
   g.fillRoundedRect(secX + 10, secY + 10, secW - 20, 28, 7);
-  g.lineStyle(1, 0x2f8f75, 0.18);
+  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
   g.lineBetween(secX + 14, secY + 58, secX + secW - 14, secY + 58);
   c.add(g);
 
   c.add(scene.add.text(secX + 18, secY + 24, '운영 현황', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '14px',
-    color: '#c8e8b0',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(secX + secW - 18, secY + 24, `${typeDef?.name ?? '미설계'} · ${status}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: slot.roomType && slot.hp <= 0 ? '#ff7766' : slot.roomType ? '#88ffcc' : '#d0a86c',
+    color: slot.roomType && slot.hp <= 0 ? CASUAL_CSS.RED : slot.roomType ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   const readinessW = secW - 156;
   const readinessY = secY + 48;
-  g.fillStyle(0x07100d, 1);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(secX + 14, readinessY, readinessW, 8, 4);
-  g.fillStyle(roomMetrics.readiness >= 70 ? 0x66c08a : roomMetrics.readiness >= 35 ? 0xc8921a : 0x8a4c32, 0.92);
+  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.6);
+  g.strokeRoundedRect(secX + 14, readinessY, readinessW, 8, 4);
+  g.fillStyle(roomMetrics.readiness >= 70 ? CASUAL.GREEN : roomMetrics.readiness >= 35 ? CASUAL.GOLD : CASUAL.RED, 1);
   g.fillRoundedRect(secX + 14, readinessY, Math.max(5, readinessW * roomMetrics.readiness / 100), 8, 4);
   c.add(scene.add.text(secX + 14, readinessY - 10, `준비도 ${roomMetrics.readiness}%`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#6f9c8c',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 
   drawRoomLoadoutRail(scene, c, g, loadoutStatus, {
@@ -134,13 +137,13 @@ export function buildRoomOperationsPanel(
     y: secY + 39,
     w: 128,
     h: 18,
-    accent: slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x66c08a : 0x66c08a,
+    accent: slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? CASUAL.GREEN : CASUAL.GREEN,
     showLabels: true });
 
   c.add(scene.add.text(secX + 18, secY + 73, '다음 지시', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#6f9c8c',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   drawRoomDirective(scene, c, directive, secX + 14, secY + 84, secW - 28);
 
@@ -166,20 +169,20 @@ export function buildRoomOperationsPanel(
       fillColor,
       hoverFillColor: fillColor,
       borderColor,
-      hoverBorderColor: 0xffdf6e,
+      hoverBorderColor: borderColor,
       textColor,
       onPress });
     c.add([button.bg, button.text, button.zone]);
   };
 
-  addShortcut(secX + 14, canResumePreBattle ? '👹 성장' : '👹 성장/레벨업', 0x123a2b, 0x5fb854, '#c8ffe0', () => {
+  addShortcut(secX + 14, canResumePreBattle ? '👹 성장' : '👹 성장/레벨업', CASUAL.GREEN, CASUAL.GREEN_DK, '#ffffff', () => {
     if (firstMonsterId) {
       navigateToFocusedMonster(scene, state, cb, firstMonsterId, slotIdx);
       return;
     }
     navigateFromRoomDetail(scene, state, cb, 'BarracksScene');
   });
-  addShortcut(secX + 14 + shortcutW + shortcutGap, canResumePreBattle ? '⚒ 장비' : '⚒ 장비 강화', 0x2e2142, 0x9a6cd8, '#e4d8ff', () => {
+  addShortcut(secX + 14 + shortcutW + shortcutGap, canResumePreBattle ? '⚒ 장비' : '⚒ 장비 강화', CASUAL.PURPLE, CASUAL.PURPLE_DK, '#ffffff', () => {
     if (firstMonsterId) {
       navigateToFocusedForge(scene, state, cb, firstMonsterId, slotIdx);
       return;
@@ -187,7 +190,7 @@ export function buildRoomOperationsPanel(
     navigateFromRoomDetail(scene, state, cb, 'ForgeScene');
   });
   if (canResumePreBattle) {
-    addShortcut(secX + 14 + (shortcutW + shortcutGap) * 2, '⚔ 침공 복귀', 0x27445a, 0xe8c468, '#f0e6c8', () => {
+    addShortcut(secX + 14 + (shortcutW + shortcutGap) * 2, '⚔ 침공 복귀', CASUAL.BLUE, CASUAL.BLUE_DK, '#ffffff', () => {
       cb.requestClose?.();
       scene.time.delayedCall(ROOM_DETAIL_CLOSE_MS + 40, () => {
         cb.resumePreBattle?.();
@@ -450,25 +453,25 @@ export function drawRoomDirective(
   const h = 48;
   const ctaW = 86;
   const g = scene.add.graphics();
-  g.fillStyle(directive.fillColor, 0.96);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, h, 8);
-  g.lineStyle(1.2, directive.accent, 0.58);
+  g.lineStyle(2, directive.accent, 0.85);
   g.strokeRoundedRect(x, y, w, h, 8);
-  g.fillStyle(directive.accent, 0.20);
+  g.fillStyle(directive.accent, 1);
   g.fillRoundedRect(x + 5, y + 5, 4, h - 10, 3);
-  g.fillStyle(directive.accent, 0.08);
-  g.fillRoundedRect(x + 13, y + 7, w - ctaW - 30, h - 14, 7);
+  g.fillStyle(0xffffff, 0.45);
+  g.fillRoundedRect(x + 13, y + 7, w - ctaW - 30, 4, 2);
   c.add(g);
 
   c.add(scene.add.text(x + 18, y + 14, directive.title, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '12px',
-    color: directive.textColor,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 18, y + 32, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#9ebcae',
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: w - ctaW - 42, useAdvancedWrap: true } }).setOrigin(0, 0.5));
 
   if (directive.onPress) {
@@ -479,23 +482,23 @@ export function drawRoomDirective(
       h: 32,
       label: directive.ctaLabel,
       fontSize: '10px',
-      fillColor: directive.fillColor,
-      hoverFillColor: directive.fillColor,
+      fillColor: directive.accent,
+      hoverFillColor: directive.accent,
       borderColor: directive.accent,
-      hoverBorderColor: 0xffdf6e,
-      textColor: directive.textColor,
+      hoverBorderColor: directive.accent,
+      textColor: '#ffffff',
       onPress: directive.onPress });
     c.add([button.bg, button.text, button.zone]);
     return;
   }
 
-  g.fillStyle(0x050806, 0.78);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x + w - ctaW - 8, y + 8, ctaW, 32, 7);
-  g.lineStyle(1, directive.accent, 0.34);
+  g.lineStyle(2, directive.accent, 0.7);
   g.strokeRoundedRect(x + w - ctaW - 8, y + 8, ctaW, 32, 7);
   c.add(scene.add.text(x + w - ctaW / 2 - 8, y + 24, directive.ctaLabel, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: directive.textColor,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0.5));
 }

@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
@@ -75,7 +76,7 @@ export function consumeRoomDetailFeedback(
 export function drawRoomDetailReturnFeedback(
   scene: Phaser.Scene,
   c: Phaser.GameObjects.Container,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,
   feedback: RoomDetailReturnFeedback,
   x: number,
   y: number,
@@ -105,14 +106,19 @@ export function drawRoomDetailReturnFeedback(
     ? `${feedback.statLabel} ${feedback.statBefore}→${feedback.statAfter}`
     : null;
   const g = scene.add.graphics();
-  g.fillStyle(0x06100d, 0.96);
+  g.fillStyle(CASUAL.SHADOW, 0.22);
+  g.fillRoundedRect(x, y + 4, w, h, 10);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.lineStyle(1.4, accent, 0.76);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
+  g.lineStyle(3, accent, 1);
   g.strokeRoundedRect(x, y, w, h, 10);
-  g.fillStyle(accent, 0.16);
+  g.fillStyle(accent, 1);
   g.fillRoundedRect(x + 7, y + 7, 5, h - 14, 4);
+  g.fillStyle(accent, 0.18);
   g.fillCircle(x + 31, y + h / 2, 18);
-  g.lineStyle(1, 0xffffff, 0.18);
+  g.lineStyle(2, accent, 0.7);
   g.strokeCircle(x + 31, y + h / 2, 18);
   c.add(g);
 
@@ -120,25 +126,25 @@ export function drawRoomDetailReturnFeedback(
     fontFamily: 'sans-serif',
     fontSize: '20px' }).setOrigin(0.5));
   c.add(scene.add.text(x + 58, y + 16, feedback.title, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: '#d8fff5',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 58, y + 33, feedback.body, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: theme.textSecondary,
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: statText ? w - 156 : w - 136, useAdvancedWrap: true } }).setOrigin(0, 0.5));
   if (statText) {
-    g.fillStyle(accent, 0.18);
+    g.fillStyle(0xffffff, 0.9);
     g.fillRoundedRect(x + w - 92, y + 13, 78, 22, 6);
-    g.lineStyle(1, accent, 0.48);
+    g.lineStyle(1.5, accent, 0.7);
     g.strokeRoundedRect(x + w - 92, y + 13, 78, 22, 6);
   }
   c.add(scene.add.text(x + w - 14, y + h / 2, statText ?? status, {
     fontFamily: 'sans-serif',
     fontSize: statText ? '9px' : '10px',
-    color: '#b8fff0',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   g.setAlpha(0.78);
@@ -155,7 +161,7 @@ export function drawRoomDetailReturnFeedback(
 export function drawPreBattleReturnStrip(
   scene: Phaser.Scene,
   c: Phaser.GameObjects.Container,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,
   cb: RoomDetailCallbacks,
   _state: RoomDetailState,
   x: number,
@@ -164,27 +170,29 @@ export function drawPreBattleReturnStrip(
 ): number {
   const h = 34;
   const g = scene.add.graphics();
-  g.fillStyle(0x091c2a, 0.96);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 9);
-  g.lineStyle(1.2, 0xe8c468, 0.74);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 5, y + 3, w - 10, 4, 2);
+  g.lineStyle(3, CASUAL.BLUE, 1);
   g.strokeRoundedRect(x, y, w, h, 9);
-  g.fillStyle(0xe8c468, 0.12);
+  g.fillStyle(CASUAL.BLUE, 0.18);
   g.fillRoundedRect(x + 8, y + 7, 22, 20, 6);
   c.add(g);
 
   c.add(scene.add.text(x + 19, y + 17, '⚔', {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: '#f0e6c8' }).setOrigin(0.5));
+    color: CASUAL_CSS.BLUE }).setOrigin(0.5));
   c.add(scene.add.text(x + 40, y + 12, '침공 편집 중', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#ffdf6e',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 40, y + 24, '정비 후 바로 작전판으로 돌아갈 수 있습니다.', {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: theme.textSecondary }).setOrigin(0, 0.5));
+    color: CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
 
   const button = addPrimaryActionButton(scene, {
     x: x + w - 92,
@@ -193,11 +201,11 @@ export function drawPreBattleReturnStrip(
     h: 24,
     label: '침공 복귀',
     fontSize: '9px',
-    fillColor: 0x27445a,
-    hoverFillColor: 0x315b78,
-    borderColor: 0xe8c468,
-    hoverBorderColor: 0xfff0a3,
-    textColor: '#f0e6c8',
+    fillColor: CASUAL.BLUE,
+    hoverFillColor: 0x5cb6f5,
+    borderColor: CASUAL.BLUE_DK,
+    hoverBorderColor: CASUAL.BLUE_DK,
+    textColor: '#ffffff',
     onPress: () => {
       cb.requestClose?.();
       scene.time.delayedCall(ROOM_DETAIL_CLOSE_MS + 40, () => {
@@ -225,19 +233,23 @@ export function drawRoomActionHeader(
   const ctaW = 88;
   const meta = getDirectiveVisualMeta(directive);
   const readinessColor = getRoomReadinessColor(status.readiness);
-  const readinessCss = `#${readinessColor.toString(16).padStart(6, '0')}`;
+  const readinessCss = status.readiness >= 78 ? CASUAL_CSS.GREEN : status.readiness >= 45 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
   const g = scene.add.graphics();
-  g.fillStyle(0x0b0703, 0.94);
+  g.fillStyle(CASUAL.SHADOW, 0.22);
+  g.fillRoundedRect(x, y + 4, w, h, 10);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.lineStyle(1.4, directive.accent, 0.66);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
+  g.lineStyle(3, directive.accent, 1);
   g.strokeRoundedRect(x, y, w, h, 10);
   g.fillStyle(directive.accent, 0.12);
-  g.fillRoundedRect(x + 7, y + 7, w - 14, h - 14, 8);
-  g.fillStyle(0x0b0703, 0.74);
+  g.fillRoundedRect(x + 7, y + 12, w - 14, h - 18, 8);
+  g.fillStyle(0xffffff, 0.85);
   g.fillRoundedRect(x + 12, y + 12, 40, 44, 10);
-  g.lineStyle(1.1, directive.accent, 0.58);
+  g.lineStyle(2, directive.accent, 0.8);
   g.strokeRoundedRect(x + 12, y + 12, 40, 44, 10);
-  g.fillStyle(directive.accent, 0.20);
+  g.fillStyle(directive.accent, 0.22);
   g.fillCircle(x + 32, y + 34, 15);
   c.add(g);
 
@@ -248,22 +260,22 @@ export function drawRoomActionHeader(
   c.add(scene.add.text(x + 60, y + 14, '던전마스터 지휘', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#8ab3aa',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  g.fillStyle(directive.accent, 0.16);
+  g.fillStyle(directive.accent, 1);
   g.fillRoundedRect(x + 155, y + 6, 44, 17, 6);
-  g.lineStyle(1, directive.accent, 0.36);
+  g.lineStyle(1.5, CASUAL.EDGE, 0.4);
   g.strokeRoundedRect(x + 155, y + 6, 44, 17, 6);
   c.add(scene.add.text(x + 177, y + 14.5, meta.label, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: directive.textColor,
+    color: '#ffffff',
     fontStyle: 'bold' }).setOrigin(0.5));
-  g.fillStyle(readinessColor, 0.13);
+  g.fillStyle(0xffffff, 0.9);
   g.fillRoundedRect(x + 203, y + 6, 58, 17, 6);
-  g.lineStyle(1, readinessColor, 0.44);
+  g.lineStyle(1.5, readinessColor, 0.8);
   g.strokeRoundedRect(x + 203, y + 6, 58, 17, 6);
-  g.fillStyle(readinessColor, 0.35);
+  g.fillStyle(readinessColor, 0.9);
   g.fillRoundedRect(
     x + 207,
     y + 18,
@@ -278,37 +290,37 @@ export function drawRoomActionHeader(
     fontStyle: 'bold' }).setOrigin(0.5));
 
   const miniStats = [
-    { label: '수호', value: `${status.monsterCount}/${status.monsterCapacity}`, color: status.monsterCount > 0 ? '#88ffcc' : '#806040' },
-    { label: '함정', value: status.trapCapacity > 0 ? `${status.trapCount}/${status.trapCapacity}` : '-', color: status.trapCount > 0 ? '#ffe080' : '#806040' },
-    { label: '장비', value: status.equipmentPower > 0 ? formatSignedPower(status.equipmentPower) : '-', color: status.equipmentPower > 0 ? '#ffdf6e' : '#806040' },
+    { label: '수호', value: `${status.monsterCount}/${status.monsterCapacity}`, color: status.monsterCount > 0 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT },
+    { label: '함정', value: status.trapCapacity > 0 ? `${status.trapCount}/${status.trapCapacity}` : '-', color: status.trapCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
+    { label: '장비', value: status.equipmentPower > 0 ? formatSignedPower(status.equipmentPower) : '-', color: status.equipmentPower > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
   ];
   const miniY = y + 60;
   miniStats.forEach((stat, i) => {
     const chipX = x + 60 + i * 62;
-    g.fillStyle(0x050806, 0.72);
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(chipX, miniY, 56, 16, 5);
-    g.lineStyle(1, directive.accent, 0.16);
+    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
     g.strokeRoundedRect(chipX, miniY, 56, 16, 5);
     c.add(scene.add.text(chipX + 7, miniY + 8, stat.label, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#8ab3aa',
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
     c.add(scene.add.text(chipX + 50, miniY + 8, stat.value, {
-      fontFamily: 'monospace',
+      fontFamily: 'sans-serif',
       fontSize: '10px',
       color: stat.color,
       fontStyle: 'bold' }).setOrigin(1, 0.5));
   });
   c.add(scene.add.text(x + 60, y + 32, directive.title, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: directive.textColor,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 60, y + 49, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#9ebcae',
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: w - ctaW - 82, useAdvancedWrap: true } }).setOrigin(0, 0.5));
 
   if (nextActionEntry && onNextActionPress) {
@@ -324,24 +336,24 @@ export function drawRoomActionHeader(
       label: directive.ctaLabel,
       fontSize: '10px',
       enabled: directive.enabled ?? true,
-      fillColor: directive.fillColor,
-      hoverFillColor: directive.fillColor,
+      fillColor: directive.accent,
+      hoverFillColor: directive.accent,
       borderColor: directive.accent,
-      hoverBorderColor: 0xffdf6e,
-      textColor: directive.textColor,
+      hoverBorderColor: directive.accent,
+      textColor: '#ffffff',
       onPress: directive.onPress });
     c.add([button.bg, button.text, button.zone]);
     return h;
   }
 
-  g.fillStyle(0x050806, 0.78);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x + w - ctaW - 8, y + 29, ctaW, 34, 7);
-  g.lineStyle(1, directive.accent, 0.34);
+  g.lineStyle(2, directive.accent, 0.7);
   g.strokeRoundedRect(x + w - ctaW - 8, y + 29, ctaW, 34, 7);
   c.add(scene.add.text(x + w - ctaW / 2 - 8, y + 46, directive.ctaLabel, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: directive.textColor,
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   return h;
@@ -360,36 +372,36 @@ export function drawNextQueuePreviewChip(
   const buttonW = 48;
   const { action, rank } = nextActionEntry;
   const g = scene.add.graphics();
-  g.fillStyle(0x06110f, 0.94);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, h, 7);
-  g.lineStyle(1, action.accent, 0.46);
+  g.lineStyle(2, action.accent, 0.7);
   g.strokeRoundedRect(x, y, w, h, 7);
-  g.fillStyle(action.accent, 0.16);
+  g.fillStyle(action.accent, 0.9);
   g.fillRoundedRect(x + 5, y + 5, 5, h - 10, 3);
-  g.fillStyle(0x071812, 0.96);
+  g.fillStyle(action.accent, 1);
   g.fillRoundedRect(x + w - buttonW - 5, y + 2, buttonW, 20, 6);
-  g.lineStyle(1, action.accent, 0.62);
-  g.strokeRoundedRect(x + w - buttonW - 5, y + 2, buttonW, 20, 6);
+  g.fillStyle(0xffffff, 0.3);
+  g.fillRoundedRect(x + w - buttonW - 3, y + 4, buttonW - 4, 3, 2);
   c.add(g);
 
   c.add(scene.add.text(x + 16, y + h / 2, `다음 ${rank}순 · 방 #${action.slotIdx + 1} ${action.label}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#b7ffe8',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
     wordWrap: { width: w - buttonW - 30 } }).setOrigin(0, 0.5));
 
   c.add(scene.add.text(x + w - buttonW / 2 - 5, y + h / 2, '이동', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#d8fff0',
+    color: '#ffffff',
     fontStyle: 'bold' }).setOrigin(0.5));
 
   const zone = scene.add.zone(x, y - 6, w, h + 12)
     .setOrigin(0, 0)
     .setInteractive({ useHandCursor: true });
   zone.on('pointerover', () => g.setAlpha(1));
-  zone.on('pointerout', () => g.setAlpha(0.94));
+  zone.on('pointerout', () => g.setAlpha(1));
   zone.on('pointerdown', onPress);
   c.add(zone);
 }
@@ -419,14 +431,16 @@ export function drawSectionTargetPulse(
     const chipW = Math.min(98, Math.max(58, label.length * 9 + 18));
     const chipX = x + w / 2 - chipW / 2;
     const chipY = y + 6;
-    g.fillStyle(0x040908, 0.88);
+    g.fillStyle(accent, 1);
     g.fillRoundedRect(chipX, chipY, chipW, 18, 6);
-    g.lineStyle(1, accent, 0.66);
+    g.fillStyle(0xffffff, 0.3);
+    g.fillRoundedRect(chipX + 3, chipY + 2, chipW - 6, 3, 2);
+    g.lineStyle(1.5, CASUAL.EDGE, 0.4);
     g.strokeRoundedRect(chipX, chipY, chipW, 18, 6);
     chip = scene.add.text(chipX + chipW / 2, chipY + 9, label, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#f5ffe8',
+      color: '#ffffff',
       fontStyle: 'bold' }).setOrigin(0.5);
     c.add(chip);
   }

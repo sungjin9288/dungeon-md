@@ -4,6 +4,7 @@
  */
 
 import Phaser from 'phaser';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   getRoomSlotCapacity, getMaxRoomLevel, ROOM_SLOT_TYPE_DEFS,
@@ -16,8 +17,6 @@ import {
   getRoomRepairCost,
   getRoomUpgradeCost,
   upgradeRoomSlot } from '../data/roomSlotTransactions';
-import {
-  drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes/decorations';
 import type { DungeonTheme } from '../themes/themes';
 import { logger } from '../utils/logger';
 import { addFramedPanel, addPrimaryActionButton, addProgressBar } from './GameUiPrimitives';
@@ -100,55 +99,64 @@ export function openRoomDetail(
   state.roomDetailContainer = c;
 
 
-  // ── Cave chamber background ─────────────────────────────────────────────────
-  const t  = theme;
+  // ── Bright casual backdrop sheet ────────────────────────────────────────────
   const bg = scene.add.graphics();
-  bg.fillStyle(t.stoneDark, 1);
+  // dim scrim behind the sheet
+  bg.fillStyle(0x000000, 0.5);
   bg.fillRect(-CW / 2, -CH / 2, CW, CH);
-  // Rock strata lines
-  bg.lineStyle(1, t.stoneMid, 0.25);
-  for (let ty = -CH / 2; ty < CH / 2; ty += 24) bg.lineBetween(-CW / 2, ty, CW / 2, ty);
-  bg.lineStyle(1, t.stoneMid, 0.12);
-  for (let tx = -CW / 2; tx < CW / 2; tx += 32) bg.lineBetween(tx, -CH / 2, tx, CH / 2);
-  drawCaveWallTexture(bg, t, -CW / 2, -CH / 2, CW, CH, 99);
-  // Cave wall edges
-  bg.fillStyle(t.bgPrimary, 0.6);
-  bg.fillRect(-CW / 2, -CH / 2, 14, CH);
-  bg.fillRect(CW / 2 - 14, -CH / 2, 14, CH);
-  // Stalactites at top, stalagmites at bottom
-  drawStalactites(bg, t, -CH / 2 + 44, CW, 55);
-  drawStalagmites(bg, t, CH / 2, CW, 66);
+  // cream full-screen sheet
+  bg.fillStyle(CASUAL.PANEL, 1);
+  bg.fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 14);
+  // soft warm shading toward the bottom
+  bg.fillStyle(CASUAL.PANEL_SOFT, 0.5);
+  bg.fillRoundedRect(-CW / 2, CH * 0.18, CW, CH * 0.82, 14);
+  // glossy white top highlight band
+  bg.fillStyle(0xffffff, 0.4);
+  bg.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 22, 10);
+  // thick rounded brown border
+  bg.lineStyle(3, CASUAL.EDGE, 1);
+  bg.strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 14);
   c.add(bg);
 
   // ── Header ────────────────────────────────────────────────────────────────
   const headerH = 56;
   const hdrG = scene.add.graphics();
-  hdrG.fillStyle(t.panelDark, 1);
-  hdrG.fillRect(-CW / 2, -CH / 2, CW, headerH);
-  hdrG.lineStyle(1, t.panelBorder, 0.5);
-  hdrG.lineBetween(-CW / 2, -CH / 2 + headerH, CW / 2, -CH / 2 + headerH);
+  hdrG.fillStyle(CASUAL.PANEL_SOFT, 1);
+  hdrG.fillRoundedRect(-CW / 2, -CH / 2, CW, headerH + 8, 14);
+  hdrG.fillStyle(0xffffff, 0.4);
+  hdrG.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 6, 3);
+  hdrG.lineStyle(3, CASUAL.EDGE, 1);
+  hdrG.lineBetween(-CW / 2 + 3, -CH / 2 + headerH, CW / 2 - 3, -CH / 2 + headerH);
   c.add(hdrG);
 
-  const backBtn = scene.add.text(-CW / 2 + 16, -CH / 2 + headerH / 2, '← 나가기', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: t.panelBorderCSS }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
-  backBtn.on('pointerdown', () => closeRoomDetail(state, cb));
+  // chunky cream back pill
+  const backW = 70;
+  const backX = -CW / 2 + 14;
+  const backCY = -CH / 2 + headerH / 2;
+  const backG = scene.add.graphics();
+  backG.fillStyle(CASUAL.SHADOW, 0.2);
+  backG.fillRoundedRect(backX, backCY - 13 + 3, backW, 26, 13);
+  backG.fillStyle(CASUAL.PANEL, 1);
+  backG.fillRoundedRect(backX, backCY - 13, backW, 26, 13);
+  backG.fillStyle(0xffffff, 0.45);
+  backG.fillRoundedRect(backX + 4, backCY - 11, backW - 8, 5, 3);
+  backG.lineStyle(2.5, CASUAL.EDGE, 1);
+  backG.strokeRoundedRect(backX, backCY - 13, backW, 26, 13);
+  c.add(backG);
+  const backBtn = scene.add.text(backX + backW / 2, backCY, '← 나가기', {
+    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold' }).setOrigin(0.5);
   c.add(backBtn);
+  const backZone = scene.add.zone(backX, backCY - 13, backW, 26).setOrigin(0)
+    .setInteractive({ useHandCursor: true });
+  backZone.on('pointerdown', () => closeRoomDetail(state, cb));
+  c.add(backZone);
 
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
   const typeLabel = typeDef ? `${typeDef.icon} ${typeDef.name}` : '🏚 일반실';
   c.add(scene.add.text(0, -CH / 2 + headerH / 2,
     `방 #${slotIdx + 1}  ${typeLabel}  ${'★'.repeat(slot.roomLevel)}`, {
-    fontFamily: 'Georgia, serif', fontSize: '15px', color: t.textPrimary }).setOrigin(0.5));
-
-  // ── Bioluminescent glow dots ────────────────────────────────────────────────
-  const glowG = scene.add.graphics();
-  for (const tx of [-CW / 2 + 18, CW / 2 - 18]) {
-    glowG.fillStyle(t.glowColor, 0.15);
-    glowG.fillCircle(tx, -CH / 2 + headerH + 14, 12);
-    glowG.fillStyle(t.glowColor, 0.35);
-    glowG.fillCircle(tx, -CH / 2 + headerH + 14, 5);
-  }
-  c.add(glowG);
+    fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4 }).setOrigin(0.5));
 
   const content = scene.add.container(0, 0);
   c.add(content);
@@ -236,7 +244,7 @@ export function openRoomDetail(
   // ── Room growth panel ─────────────────────────────────────────────────────
   const growthY = trapSecY + trapSecH + 14;
   const hpPct = Math.max(0, slot.hp / slot.maxHp);
-  const barColor = hpPct > 0.66 ? 0x2d9e2d : hpPct > 0.33 ? 0xc8921a : 0x8b0000;
+  const barColor = hpPct > 0.66 ? CASUAL.GREEN : hpPct > 0.33 ? CASUAL.GOLD : CASUAL.RED;
   const maxRoomLv = getMaxRoomLevel(gs.dmLevel);
   const isDamaged = slot.hp < slot.maxHp;
   const canShowUpgradeButton = slot.roomLevel < 5 && slot.roomLevel < maxRoomLv;
@@ -248,12 +256,12 @@ export function openRoomDetail(
     w: secW,
     h: growthPanelH,
     radius: 10,
-    fillColor: 0x160c04,
-    borderColor: growthAccent,
-    borderAlpha: 0.28,
-    borderWidth: 1.2,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: growthAccent,
-    accentAlpha: 0.26,
+    accentAlpha: 1,
     glowColor: growthAccent,
     glowOpacity: 0.05,
     shadowOpacity: 0.28,
@@ -261,23 +269,23 @@ export function openRoomDetail(
   content.add([growthFrame.shadow, growthFrame.panel, growthFrame.glow]);
 
   const growthG = scene.add.graphics();
-  growthG.fillStyle(growthAccent, 0.08);
+  growthG.fillStyle(growthAccent, 0.1);
   growthG.fillRoundedRect(secX + 10, growthY + 10, secW - 20, 30, 8);
-  growthG.fillStyle(0x050806, 0.76);
+  growthG.fillStyle(0xffffff, 0.85);
   growthG.fillRoundedRect(secX + secW - 72, growthY + 14, 56, 18, 7);
-  growthG.lineStyle(1, growthAccent, 0.38);
+  growthG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.8);
   growthG.strokeRoundedRect(secX + secW - 72, growthY + 14, 56, 18, 7);
   content.add(growthG);
 
   content.add(scene.add.text(secX + 18, growthY + 25, '방 성장', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '14px',
-    color: '#ffe1a8',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   content.add(scene.add.text(secX + secW - 44, growthY + 23, `Lv.${slot.roomLevel}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#ffdf8a',
+    color: CASUAL_CSS.GOLD,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   const durabilityY = growthY + 56;
@@ -288,20 +296,20 @@ export function openRoomDetail(
     h: 14,
     ratio: hpPct,
     fillColor: barColor,
-    trackColor: 0x0e0900,
-    borderColor: growthAccent,
-    borderAlpha: 0.32,
+    trackColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE_SOFT,
+    borderAlpha: 0.9,
     duration: 320 });
   content.add([durabilityBar.track, durabilityBar.fill]);
   content.add(scene.add.text(secX + 18, durabilityY + 7, '내구도', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#b78954',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   content.add(scene.add.text(secX + secW - 18, durabilityY + 7, `${slot.hp}/${slot.maxHp}`, {
-    fontFamily: 'monospace',
-    fontSize: '10px',
-    color: hpPct > 0.33 ? '#ffdf8a' : '#ff8a6a',
+    fontFamily: 'sans-serif',
+    fontSize: '11px',
+    color: hpPct > 0.33 ? CASUAL_CSS.INK : CASUAL_CSS.RED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   let nextGrowthY = growthY + 86;
@@ -317,12 +325,11 @@ export function openRoomDetail(
       label: `내구 수리  ${repairCost}g  ·  HP +${missingHp}`,
       fontSize: '12px',
       enabled: canRepair,
-      fillColor: 0x143010,
-      hoverFillColor: 0x1c4616,
-      borderColor: 0x5aaa40,
-      hoverBorderColor: 0x9be66b,
-      textColor: '#bbff66',
-      disabledTextColor: '#664400',
+      fillColor: CASUAL.GREEN,
+      hoverFillColor: 0x6fdc70,
+      borderColor: CASUAL.GREEN_DK,
+      hoverBorderColor: CASUAL.GREEN_DK,
+      textColor: '#ffffff',
       onPress: () => {
         applyRoomRepairAction(scene, state, theme, cb, slotIdx, slot);
       } });
@@ -349,11 +356,11 @@ export function openRoomDetail(
       fontSize: '12px',
       align: 'center',
       enabled: canUpgrade,
-      fillColor: 0x2a1606,
-      hoverFillColor: 0x3a210a,
-      borderColor: 0xc8921a,
-      hoverBorderColor: 0xffcc44,
-      textColor: '#ffe080',
+      fillColor: CASUAL.GOLD,
+      hoverFillColor: 0xffd564,
+      borderColor: CASUAL.GOLD_DK,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: '#ffffff',
       onPress: () => {
         showRoomUpgradeConfirm(scene, upgCost, slot.roomLevel, newCap, () => {
           const freshGs = cb.getGameState();
@@ -399,17 +406,17 @@ export function openRoomDetail(
     content.add(scene.add.text(secX + 18, nextGrowthY + 12, `🔒 ${upgradeSummary}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#9b7650',
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
-      backgroundColor: '#0e0900',
+      backgroundColor: CASUAL_CSS.CREAM,
       padding: { x: 10, y: 5 } }).setOrigin(0, 0.5));
     nextGrowthY += 36;
   } else {
     upgradeSummary = '최고 레벨 확장 완료';
     content.add(scene.add.text(secX + 18, nextGrowthY + 12, '최고 레벨 (Lv.5)', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '13px',
-      color: '#ffe080',
+      color: CASUAL_CSS.GOLD,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
     nextGrowthY += 34;
   }
@@ -419,26 +426,26 @@ export function openRoomDetail(
   if (bonusDef) {
     const bonusY = nextGrowthY + 2;
     const bonusH = 64;
-    growthG.fillStyle(0x050806, 0.66);
+    growthG.fillStyle(CASUAL.PANEL_SOFT, 1);
     growthG.fillRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 8);
-    growthG.lineStyle(1, growthAccent, 0.24);
+    growthG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
     growthG.strokeRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 8);
-    growthG.fillStyle(growthAccent, 0.16);
+    growthG.fillStyle(growthAccent, 1);
     growthG.fillRoundedRect(secX + 22, bonusY + 10, 5, bonusH - 20, 3);
     content.add(scene.add.text(secX + 36, bonusY + 14, `${bonusDef.icon} ${bonusDef.name} 특성`, {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: '#ffdf8a',
+      color: CASUAL_CSS.INK,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
     content.add(scene.add.text(secX + 36, bonusY + 34, bonusDef.bonus, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#c79b68',
+      color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: secW - 88, useAdvancedWrap: true } }).setOrigin(0, 0.5));
     content.add(scene.add.text(secX + 36, bonusY + 52, upgradeSummary || `현재 Lv.${slot.roomLevel}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#7f6143' }).setOrigin(0, 0.5));
+      color: CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
   }
 
   attachRoomDetailScroll(scene, state, c, content, contentBottom, headerH);
@@ -507,10 +514,11 @@ function attachRoomDetailScroll(
       h: buttonH,
       label: '▲',
       fontSize: '12px',
-      fillColor: 0x241208,
-      hoverFillColor: 0x3a210a,
-      borderColor: 0xc8921a,
-      hoverBorderColor: 0xffcc44,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: CASUAL_CSS.INK,
       onPress: () => {
         applyScroll(content.y + 150);
         updateButtons();
@@ -522,10 +530,11 @@ function attachRoomDetailScroll(
       h: buttonH,
       label: '▼',
       fontSize: '12px',
-      fillColor: 0x241208,
-      hoverFillColor: 0x3a210a,
-      borderColor: 0xc8921a,
-      hoverBorderColor: 0xffcc44,
+      fillColor: CASUAL.PANEL,
+      hoverFillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: CASUAL_CSS.INK,
       onPress: () => {
         applyScroll(content.y - 150);
         updateButtons();
