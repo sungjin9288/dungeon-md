@@ -5,7 +5,6 @@ import {
   loadGameState, saveGameState,
   getUnlockedSlots,
   getRoomSlotCapacity,
-  SLOT_UNLOCK_LEVELS,
   type DungeonSlot,
   type GameState,
   type OwnedMonster,
@@ -155,22 +154,6 @@ interface HomeFocusTarget {
   readonly slotIdx: number | null;
 }
 
-interface HomeCommandButtonHint {
-  readonly text: string;
-  readonly accent: number;
-}
-
-interface HomeOpsStatus {
-  readonly readiness: number;
-  readonly builtRooms: number;
-  readonly unlockedSlots: number;
-  readonly assignedMonsters: number;
-  readonly monsterCapacity: number;
-  readonly installedTraps: number;
-  readonly trapCapacity: number;
-  readonly threatScore: number;
-  readonly nextSlotLevel: number | null;
-}
 
 interface RouteSegmentVisualState {
   readonly accent: number;
@@ -2517,9 +2500,10 @@ export class DungeonHomeScene extends Phaser.Scene {
     const deckW = CANVAS_WIDTH - deckX * 2;
     const statsTopY = BOT_Y - 26;
     const availableDeckH = statsTopY - minDeckY - 10;
-    const deckH = Math.min(218, availableDeckH);
+    // Phase C: slim deck — target ~155px, was 218
+    const deckH = Math.min(160, availableDeckH);
     const deckY = Math.max(minDeckY, statsTopY - deckH - 10);
-    if (deckH < 190) return;
+    if (deckH < 140) return;
     const deck = this.add.container(0, 0).setDepth(4);
     this.commandDeckContainer = deck;
 
@@ -2529,24 +2513,15 @@ export class DungeonHomeScene extends Phaser.Scene {
     const ownedMonsters = this.gs.ownedMonsters ?? [];
     const skillReady = ownedMonsters.filter(m => (m.skillPoints ?? 0) > 0).length;
     const collectionSummary = this.getMonsterCollectionSummary(ownedMonsters);
-    const nextSlot = SLOT_UNLOCK_LEVELS.find(([, count]) => count > unlockedSlots);
     const dungeonMetrics = calculateDungeonMetrics(this.gs, unlockedSlots);
-    const capacityTotals = visibleSlots.reduce((totals, slot) => {
-      if (!slot?.roomType) return totals;
-      const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-      return {
-        monsters: totals.monsters + cap.monsters,
-        traps: totals.traps + cap.traps,
-      };
-    }, { monsters: 0, traps: 0 });
+    // Keep getDungeonActionQueue for board rank markers; not rendered in deck.
+    const _actionQueue = getDungeonActionQueue(this.gs, unlockedSlots);
     const directive = this.getHomeDirective(
       unlockedSlots,
       visibleSlots,
       dungeonMetrics.readiness,
       skillReady,
     );
-    const actionQueue = getDungeonActionQueue(this.gs, unlockedSlots).slice(0, 3);
-
     const frame = addFramedPanel(this, {
       x: deckX,
       y: deckY,
@@ -2568,88 +2543,148 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     const g = this.add.graphics();
     deck.add(g);
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 66, 12);
-    g.fillStyle(CASUAL.GOLD, 0.18);
-    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 28, 12);
-    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.45);
-    g.lineBetween(deckX + 14, deckY + 80, deckX + deckW - 14, deckY + 80);
-    g.lineBetween(deckX + 14, deckY + deckH - 51, deckX + deckW - 14, deckY + deckH - 51);
 
-    deck.add(this.add.text(deckX + 16, deckY + 20, '던전 운영실', {
+    // ── Header strip (deckY+8 … +28) ──────────────────────────────────────────
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 26, 10);
+    g.fillStyle(CASUAL.GOLD, 0.14);
+    g.fillRoundedRect(deckX + 8, deckY + 8, deckW - 16, 26, 10);
+
+    deck.add(this.add.text(deckX + 16, deckY + 21, '던전 운영실', {
       fontFamily: 'sans-serif',
-      fontSize: '15px',
+      fontSize: '13px',
       color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
-    this.drawHomeCollectionChip(deck, g, deckX + deckW - 172, deckY + 9, 112, 22, collectionSummary);
-    deck.add(this.add.text(deckX + deckW - 16, deckY + 20, `DM Lv.${this.gs.dmLevel}`, {
+
+    // Compact 도감 pill (right of header) — replaces full chip
+    this.drawHomeCollectionPill(deck, g, deckX + deckW - 92, deckY + 11, 80, 18, collectionSummary);
+
+    // ── Readiness inline line (deckY+36 … +54) ────────────────────────────────
+    const readinessColor = dungeonMetrics.readiness >= 80
+      ? CASUAL.GREEN : dungeonMetrics.readiness >= 55 ? CASUAL.GOLD : CASUAL.RED;
+    const readinessCss = dungeonMetrics.readiness >= 80
+      ? CASUAL_CSS.GREEN : dungeonMetrics.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
+    const readinessPct = Phaser.Math.Clamp(dungeonMetrics.readiness / 100, 0, 1);
+
+    const barLineY = deckY + 37;
+    const barLineX = deckX + 14;
+    const barLineW = deckW - 28;
+    g.fillStyle(CASUAL.PANEL_SOFT, 1);
+    g.fillRoundedRect(barLineX, barLineY, barLineW, 14, 5);
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
+    g.strokeRoundedRect(barLineX, barLineY, barLineW, 14, 5);
+    const fillW = Math.max(8, barLineW * readinessPct);
+    g.fillStyle(readinessColor, 0.28);
+    g.fillRoundedRect(barLineX, barLineY, fillW, 14, 5);
+
+    deck.add(this.add.text(barLineX + 6, barLineY + 7, '운영도', {
       fontFamily: 'sans-serif',
+      fontSize: '8px',
+      color: CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(barLineX + 42, barLineY + 7, `${dungeonMetrics.readiness}%`, {
+      fontFamily: 'Georgia, serif',
       fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      color: readinessCss,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    deck.add(this.add.text(barLineX + barLineW - 6, barLineY + 7, `방 ${builtRooms}/${unlockedSlots}`, {
+      fontFamily: 'monospace',
+      fontSize: '8px',
+      color: CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
     }).setOrigin(1, 0.5));
 
-    this.drawHomeOpsStatusPanel(
-      deck,
-      g,
-      deckX + 14,
-      deckY + 40,
-      deckW - 28,
-      34,
-      {
-        readiness: dungeonMetrics.readiness,
-        builtRooms,
-        unlockedSlots,
-        assignedMonsters: dungeonMetrics.assignedMonsters,
-        monsterCapacity: capacityTotals.monsters,
-        installedTraps: dungeonMetrics.installedTraps,
-        trapCapacity: capacityTotals.traps,
-        threatScore: dungeonMetrics.threatScore,
-        nextSlotLevel: nextSlot?.[0] ?? null,
-      },
-    );
+    // ── Divider ────────────────────────────────────────────────────────────────
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.35);
+    g.lineBetween(deckX + 14, deckY + 55, deckX + deckW - 14, deckY + 55);
 
-    const directiveY = deckY + 83;
+    // ── Directive card — hero element (deckY+58 … +100) ───────────────────────
+    const directiveY = deckY + 58;
     this.drawHomeDirectiveCard(deck, deckX + 14, directiveY, deckW - 28, 40, directive);
 
-    const queueY = directiveY + 48;
-    this.drawHomeActionQueue(deck, g, deckX + 14, queueY, deckW - 28, actionQueue);
+    // ── Primary CTA (deckY+102 … +130) ────────────────────────────────────────
+    const ctaY = directiveY + 44;
+    const ctaH = 26;
+    const { bg: ctaBg, text: ctaText, zone: ctaZone } = addPrimaryActionButton(this, {
+      x: deckX + 14,
+      y: ctaY,
+      w: deckW - 28,
+      h: ctaH,
+      label: directive.ctaLabel,
+      fontSize: '12px',
+      fillColor: directive.accent,
+      hoverFillColor: directive.accent,
+      borderColor: directive.accent,
+      hoverBorderColor: directive.accent,
+      onPress: () => directive.onPress(),
+    });
+    deck.add([ctaBg, ctaText, ctaZone]);
 
-    const buttonY = deckY + deckH - 44;
-    const buttonW = (deckW - 44) / 3;
-    const firstAction = actionQueue[0];
-    const growthTarget = this.getFocusedMonsterGrowthTarget();
-    const forgeTarget = this.getFocusedForgeTarget();
-    this.addCommandDeckButton(
-      deck,
-      deckX + 14,
-      buttonY,
-      buttonW,
-      '방 확대',
-      '▣',
-      () => this.openFirstDungeonSlot(),
-      firstAction ? { text: `우선 B${firstAction.slotIdx + 1}`, accent: firstAction.accent } : { text: '전체 완비', accent: 0x66c08a },
-    );
-    this.addCommandDeckButton(
-      deck,
-      deckX + 22 + buttonW,
-      buttonY,
-      buttonW,
-      '몬스터 성장',
-      '👹',
-      () => this.openFocusedMonsterGrowth(),
-      { text: this.formatHomeFocusTarget(growthTarget, '성장 지휘'), accent: 0x66c08a },
-    );
-    this.addCommandDeckButton(
-      deck,
-      deckX + 30 + buttonW * 2,
-      buttonY,
-      buttonW,
-      '장비 제작',
-      '⚒',
-      () => this.openFocusedForge(),
-      { text: this.formatHomeFocusTarget(forgeTarget, '제작 대기'), accent: 0x9a6cd8 },
-    );
+    // ── Divider ────────────────────────────────────────────────────────────────
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.35);
+    g.lineBetween(deckX + 14, ctaY + ctaH + 4, deckX + deckW - 14, ctaY + ctaH + 4);
+
+    // ── Secondary chip row (deckY+135 … +157): 방확대 · 몬스터성장 · 장비제작 ──
+    const chipRowY = ctaY + ctaH + 8;
+    const chipRowH = 20;
+    const chipGap = 6;
+    const chipW = (deckW - 28 - chipGap * 2) / 3;
+    const secondaryChips: Array<{ label: string; icon: string; onPress: () => void }> = [
+      { label: '방 확대', icon: '▣', onPress: () => this.openFirstDungeonSlot() },
+      { label: '몬스터 성장', icon: '👹', onPress: () => this.openFocusedMonsterGrowth() },
+      { label: '장비 제작', icon: '⚒', onPress: () => this.openFocusedForge() },
+    ];
+    secondaryChips.forEach((chip, i) => {
+      const chipX = deckX + 14 + i * (chipW + chipGap);
+      const chipBg = this.add.graphics();
+      deck.add(chipBg);
+      const drawChip = (hover = false): void => {
+        chipBg.clear();
+        chipBg.fillStyle(CASUAL.SHADOW, hover ? 0.28 : 0.18);
+        chipBg.fillRoundedRect(chipX, chipRowY + 2, chipW, chipRowH, 5);
+        chipBg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+        chipBg.fillRoundedRect(chipX, chipRowY, chipW, chipRowH, 5);
+        chipBg.lineStyle(hover ? 2 : 1.5, CASUAL.EDGE_SOFT, hover ? 0.9 : 0.6);
+        chipBg.strokeRoundedRect(chipX, chipRowY, chipW, chipRowH, 5);
+        chipBg.fillStyle(0xffffff, hover ? 0.2 : 0.1);
+        chipBg.fillRoundedRect(chipX + 3, chipRowY + 2, chipW - 6, 3, 2);
+      };
+      drawChip(false);
+      const iconT = this.add.text(chipX + 10, chipRowY + chipRowH / 2, chip.icon, {
+        fontFamily: 'sans-serif', fontSize: '9px',
+      }).setOrigin(0.5);
+      const labelT = this.add.text(chipX + chipW / 2 + 4, chipRowY + chipRowH / 2, chip.label, {
+        fontFamily: 'sans-serif',
+        fontSize: '8px',
+        color: CASUAL_CSS.INK_SOFT,
+        fontStyle: 'bold',
+      }).setOrigin(0.5);
+      const zone = this.add.zone(chipX, chipRowY, chipW, chipRowH)
+        .setOrigin(0, 0)
+        .setInteractive({ useHandCursor: true });
+      deck.add([iconT, labelT, zone]);
+      zone.on('pointerover', () => {
+        drawChip(true);
+        labelT.setColor(CASUAL_CSS.INK);
+      });
+      zone.on('pointerout', () => {
+        drawChip(false);
+        labelT.setColor(CASUAL_CSS.INK_SOFT);
+        iconT.setScale(1);
+        labelT.setScale(1);
+      });
+      zone.on('pointerdown', () => {
+        this.tweens.add({ targets: [iconT, labelT], scaleX: 0.92, scaleY: 0.92, yoyo: true, duration: 80 });
+        audioManager.playSfx('button_click');
+        chip.onPress();
+      });
+    });
+
+    // Suppress unused-variable warning — getDungeonActionQueue kept for board use.
+    void _actionQueue;
   }
 
   private getMonsterCollectionSummary(
@@ -2676,7 +2711,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     };
   }
 
-  private drawHomeCollectionChip(
+  private drawHomeCollectionPill(
     deck: Phaser.GameObjects.Container,
     g: Phaser.GameObjects.Graphics,
     x: number,
@@ -2685,43 +2720,41 @@ export class DungeonHomeScene extends Phaser.Scene {
     h: number,
     summary: { owned: number; total: number; rareOwned: number; percent: number },
   ): void {
-    // Codex chip keeps its pink semantic accent on a cream casual card.
     const PINK = 0xe85fc0;
-    const PINK_CSS = '#a82f88';
-    g.fillStyle(CASUAL.SHADOW, 0.22);
-    g.fillRoundedRect(x, y + 2, w, h, 8);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x, y, w, h, 8);
-    g.lineStyle(2, PINK, 0.85);
-    g.strokeRoundedRect(x, y, w, h, 8);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
-    g.fillStyle(PINK, 0.9);
-    g.fillCircle(x + 12, y + h / 2, 8);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillCircle(x + 10, y + h / 2 - 3, 2);
+    const PINK_CSS = '#e06ab0';
+    g.fillStyle(CASUAL.SHADOW, 0.18);
+    g.fillRoundedRect(x, y + 1, w, h, 6);
     g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(x + 27, y + h - 7, w - 42, 4, 2);
-    g.fillStyle(PINK, 0.9);
-    g.fillRoundedRect(x + 27, y + h - 7, Math.max(5, (w - 42) * summary.percent), 4, 2);
-    deck.add(this.add.text(x + 12, y + h / 2, '★', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '12px',
+    g.fillRoundedRect(x, y, w, h, 6);
+    g.lineStyle(1.5, PINK, 0.75);
+    g.strokeRoundedRect(x, y, w, h, 6);
+    g.fillStyle(PINK, 0.85);
+    g.fillCircle(x + 9, y + h / 2, 5);
+    deck.add(this.add.text(x + 9, y + h / 2, '★', {
+      fontFamily: 'sans-serif',
+      fontSize: '7px',
       color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5));
-    deck.add(this.add.text(x + 27, y + 8, `도감 ${summary.owned}/${summary.total}`, {
+    deck.add(this.add.text(x + 17, y + h / 2, `도감 ${summary.owned}/${summary.total}`, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
       color: PINK_CSS,
       fontStyle: 'bold',
     }).setOrigin(0, 0.5));
-    deck.add(this.add.text(x + w - 8, y + 8, `E+ ${summary.rareOwned}`, {
+    deck.add(this.add.text(x + w - 4, y + h / 2, `★${summary.rareOwned}`, {
       fontFamily: 'monospace',
       fontSize: '7px',
       color: CASUAL_CSS.GOLD,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
+    // Make the pill interactive → open Codex
+    const zone = this.add.zone(x, y, w, h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    deck.add(zone);
+    zone.on('pointerdown', () => {
+      audioManager.playSfx('button_click');
+      this.navigateFromHome('CodexScene');
+    });
   }
 
   private getHomeDirective(
@@ -2829,106 +2862,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     );
   }
 
-  private drawHomeOpsStatusPanel(
-    deck: Phaser.GameObjects.Container,
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    status: HomeOpsStatus,
-  ): void {
-    const readinessPct = Phaser.Math.Clamp(status.readiness / 100, 0, 1);
-    // Saturated casual semantic accent: green good / gold mid / red low.
-    const readinessColor = status.readiness >= 80
-      ? CASUAL.GREEN
-      : status.readiness >= 55 ? CASUAL.GOLD : CASUAL.RED;
-    const readinessColorDk = status.readiness >= 80
-      ? CASUAL.GREEN_DK
-      : status.readiness >= 55 ? CASUAL.GOLD_DK : CASUAL.RED_DK;
-    const readinessCss = status.readiness >= 80
-      ? CASUAL_CSS.GREEN
-      : status.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
-
-    g.fillStyle(CASUAL.SHADOW, 0.2);
-    g.fillRoundedRect(x, y + 2, w, h, 7);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x, y, w, h, 7);
-    g.lineStyle(2, CASUAL.EDGE, 0.85);
-    g.strokeRoundedRect(x, y, w, h, 7);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
-    g.fillStyle(readinessColor, 0.18);
-    g.fillRoundedRect(x + 5, y + 6, 72, h - 12, 6);
-    g.lineStyle(1.5, readinessColor, 0.7);
-    g.strokeRoundedRect(x + 5, y + 6, 72, h - 12, 6);
-
-    deck.add(this.add.text(x + 12, y + 12, '운영도', {
-      fontFamily: 'sans-serif',
-      fontSize: '9px',
-      color: CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-    deck.add(this.add.text(x + 70, y + 20, `${status.readiness}%`, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '18px',
-      color: readinessCss,
-      fontStyle: 'bold',
-    }).setOrigin(1, 0.5));
-
-    const barX = x + 86;
-    const barY = y + 10;
-    const barW = w - 96;
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(barX, barY, barW, 7, 4);
-    g.lineStyle(1.5, CASUAL.EDGE, 0.7);
-    g.strokeRoundedRect(barX, barY, barW, 7, 4);
-    const fillW = Math.max(6, barW * readinessPct);
-    g.fillStyle(readinessColorDk, 1);
-    g.fillRoundedRect(barX, barY, fillW, 7, 4);
-    g.fillStyle(readinessColor, 1);
-    g.fillRoundedRect(barX, barY, fillW, 5, 3);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(barX + 2, barY + 1.5, Math.max(4, fillW - 4), 2, 1);
-
-    const chipY = y + 23;
-    const chips = [
-      { label: '방', value: `${status.builtRooms}/${status.unlockedSlots}`, accent: CASUAL.BLUE, accentDk: CASUAL.BLUE_DK },
-      {
-        label: '수호',
-        value: status.monsterCapacity > 0 ? `${status.assignedMonsters}/${status.monsterCapacity}` : '-',
-        accent: CASUAL.RED, accentDk: CASUAL.RED_DK,
-      },
-      {
-        label: '함정',
-        value: status.trapCapacity > 0 ? `${status.installedTraps}/${status.trapCapacity}` : '-',
-        accent: CASUAL.GOLD, accentDk: CASUAL.GOLD_DK,
-      },
-    ];
-    const chipGap = 4;
-    const chipW = (barW - chipGap * (chips.length - 1)) / chips.length;
-    chips.forEach((chip, i) => {
-      const chipX = barX + i * (chipW + chipGap);
-      const chipCss = `#${chip.accentDk.toString(16).padStart(6, '0')}`;
-      g.fillStyle(CASUAL.PANEL_SOFT, 1);
-      g.fillRoundedRect(chipX, chipY, chipW, 12, 4);
-      g.lineStyle(1.5, chip.accent, 0.85);
-      g.strokeRoundedRect(chipX, chipY, chipW, 12, 4);
-      deck.add(this.add.text(chipX + 4, chipY + 6, chip.label, {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: CASUAL_CSS.INK_SOFT,
-        fontStyle: 'bold',
-      }).setOrigin(0, 0.5));
-      deck.add(this.add.text(chipX + chipW - 4, chipY + 6, chip.value, {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: chipCss,
-        fontStyle: 'bold',
-      }).setOrigin(1, 0.5));
-    });
-  }
-
   private drawHomeDirectiveCard(
     deck: Phaser.GameObjects.Container,
     x: number,
@@ -3029,229 +2962,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     });
   }
 
-  private drawHomeActionQueue(
-    deck: Phaser.GameObjects.Container,
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    w: number,
-    actions: readonly RoomActionRecommendation[],
-  ): number {
-    const rowH = 44;
-    const chipY = y + 11;
-    const chipH = 33;
-    const gap = 6;
-    const items = actions.slice(0, 3);
-
-    deck.add(this.add.text(x + 2, y + 3, '다음 명령', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-    deck.add(this.add.text(x + w - 2, y + 3, items.length > 0 ? `대기 ${items.length}` : '완비', {
-      fontFamily: 'sans-serif',
-      fontSize: '10px',
-      color: items.length > 0 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-    }).setOrigin(1, 0.5));
-
-    if (items.length === 0) {
-      g.fillStyle(CASUAL.SHADOW, 0.2);
-      g.fillRoundedRect(x, chipY + 2, w, chipH, 7);
-      g.fillStyle(CASUAL.PANEL, 1);
-      g.fillRoundedRect(x, chipY, w, chipH, 7);
-      g.lineStyle(2, CASUAL.GREEN, 0.85);
-      g.strokeRoundedRect(x, chipY, w, chipH, 7);
-      g.fillStyle(0xffffff, 0.12);
-      g.fillRoundedRect(x + 5, chipY + 3, w - 10, 4, 2);
-      deck.add(this.add.text(x + w / 2, chipY + chipH / 2, '모든 방이 다음 침공 준비 완료', {
-        fontFamily: 'sans-serif',
-        fontSize: '10px',
-        color: CASUAL_CSS.GREEN,
-        fontStyle: 'bold',
-      }).setOrigin(0.5));
-      return rowH;
-    }
-
-    const chipW = (w - gap * 2) / 3;
-    items.forEach((action, i) => {
-      const chipX = x + i * (chipW + gap);
-      const targetHint = this.getActionTargetHint(action);
-      const statLabel = targetHint
-        ? `${targetHint} ${action.statValue}`
-        : action.statValue;
-      const accentCss = `#${action.accent.toString(16).padStart(6, '0')}`;
-      const bg = this.add.graphics();
-      deck.add(bg);
-      const draw = (hover = false): void => {
-        bg.clear();
-        bg.fillStyle(CASUAL.SHADOW, hover ? 0.28 : 0.2);
-        bg.fillRoundedRect(chipX, chipY + 2, chipW, chipH, 7);
-        bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
-        bg.fillRoundedRect(chipX, chipY, chipW, chipH, 7);
-        bg.lineStyle(hover ? 2.5 : 2, action.accent, hover ? 1 : 0.85);
-        bg.strokeRoundedRect(chipX, chipY, chipW, chipH, 7);
-        bg.fillStyle(0xffffff, hover ? 0.45 : 0.35);
-        bg.fillRoundedRect(chipX + 4, chipY + 3, chipW - 8, 3, 2);
-        bg.fillStyle(action.accent, hover ? 1 : 0.92);
-        bg.fillRoundedRect(chipX + 4, chipY + 4, 24, chipH - 8, 6);
-        bg.fillStyle(0xffffff, 0.3);
-        bg.fillRoundedRect(chipX + 6, chipY + 6, 20, 3, 2);
-        bg.fillStyle(action.accent, hover ? 0.32 : 0.22);
-        bg.fillRoundedRect(chipX + 32, chipY + 5, chipW - 42, 5, 3);
-      };
-      draw(false);
-
-      const rankBg = this.add.graphics();
-      deck.add(rankBg);
-      const drawRank = (hover = false): void => {
-        rankBg.clear();
-        rankBg.fillStyle(action.accent, hover ? 1 : 0.92);
-        rankBg.fillRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
-        rankBg.lineStyle(1, 0xffffff, hover ? 0.55 : 0.35);
-        rankBg.strokeRoundedRect(chipX + chipW - 23, chipY + 5, 18, 14, 5);
-      };
-      drawRank(false);
-
-      const iconText = this.add.text(chipX + 15.5, chipY + chipH / 2, action.icon, {
-        fontFamily: 'sans-serif',
-        fontSize: '14px',
-      }).setOrigin(0.5);
-      const labelText = this.add.text(chipX + 33, chipY + 14, `B${action.slotIdx + 1} ${action.label}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '10px',
-        color: accentCss,
-        fontStyle: 'bold',
-      }).setOrigin(0, 0.5);
-      const statText = this.add.text(chipX + 33, chipY + 26, statLabel, {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: targetHint ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-      }).setOrigin(0, 0.5);
-      const rankText = this.add.text(chipX + chipW - 14, chipY + 12, String(i + 1), {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: CASUAL_CSS.WHITE,
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      deck.add([iconText, labelText, statText, rankText]);
-
-      const zone = this.add.zone(chipX, chipY, chipW, chipH)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      deck.add(zone);
-      zone.on('pointerover', () => {
-        draw(true);
-        drawRank(true);
-        labelText.setColor(CASUAL_CSS.INK);
-      });
-      zone.on('pointerout', () => {
-        draw(false);
-        drawRank(false);
-        labelText.setColor(accentCss);
-        iconText.setScale(1);
-        labelText.setScale(1);
-        statText.setScale(1);
-        rankText.setScale(1);
-      });
-      zone.on('pointerdown', () => {
-        audioManager.playSfx('button_click');
-        this.tweens.add({
-          targets: [iconText, labelText, statText, rankText],
-          scaleX: 0.92,
-          scaleY: 0.92,
-          yoyo: true,
-          duration: 80,
-        });
-        this.selectRoomForPlacement(action.slotIdx);
-      });
-    });
-
-    return rowH;
-  }
-
-  private addCommandDeckButton(
-    deck: Phaser.GameObjects.Container,
-    x: number,
-    y: number,
-    w: number,
-    label: string,
-    icon: string,
-    onPress: () => void,
-    hint?: HomeCommandButtonHint,
-  ): void {
-    const bg = this.add.graphics();
-    const h = hint ? 40 : 36;
-    deck.add(bg);
-    // Cream casual button; brightens to PANEL_SOFT on hover, accent border stays.
-    const draw = (hover = false): void => {
-      bg.clear();
-      bg.fillStyle(CASUAL.SHADOW, hover ? 0.28 : 0.2);
-      bg.fillRoundedRect(x, y + 3, w, h, 7);
-      bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
-      bg.fillRoundedRect(x, y, w, h, 7);
-      bg.lineStyle(hover ? 2.5 : 2, CASUAL.EDGE, hover ? 1 : 0.85);
-      bg.strokeRoundedRect(x, y, w, h, 7);
-      bg.fillStyle(0xffffff, hover ? 0.5 : 0.4);
-      bg.fillRoundedRect(x + 6, y + 4, w - 12, 4, 2);
-      if (hint) {
-        bg.fillStyle(CASUAL.PANEL_SOFT, 1);
-        bg.fillRoundedRect(x + 7, y + h - 9, w - 14, 5, 3);
-        bg.fillStyle(hint.accent, hover ? 1 : 0.9);
-        bg.fillRoundedRect(x + 7, y + h - 9, w - 14, 5, 3);
-      }
-    };
-    draw(false);
-
-    const iconT = this.add.text(x + 16, y + h / 2, icon, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '13px',
-      color: CASUAL_CSS.INK,
-    }).setOrigin(0.5);
-    const labelT = this.add.text(x + 31, y + (hint ? 13 : h / 2), label, {
-      fontFamily: 'sans-serif',
-      fontSize: '11px',
-      color: CASUAL_CSS.INK,
-      fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-    const children: Phaser.GameObjects.GameObject[] = [iconT, labelT];
-
-    let hintT: Phaser.GameObjects.Text | null = null;
-    if (hint) {
-      hintT = this.add.text(x + 31, y + 27, hint.text, {
-        fontFamily: 'sans-serif',
-        fontSize: '8px',
-        color: CASUAL_CSS.INK_SOFT,
-        fontStyle: 'bold',
-      }).setOrigin(0, 0.5);
-      children.push(hintT);
-    }
-
-    const zone = this.add.zone(x, y, w, h)
-      .setOrigin(0, 0)
-      .setInteractive({ useHandCursor: true });
-    deck.add([...children, zone]);
-    zone.on('pointerover', () => {
-      draw(true);
-      labelT.setColor(CASUAL_CSS.INK);
-      hintT?.setColor(CASUAL_CSS.INK);
-    });
-    zone.on('pointerout', () => {
-      draw(false);
-      labelT.setColor(CASUAL_CSS.INK);
-      hintT?.setColor(CASUAL_CSS.INK_SOFT);
-      iconT.setScale(1);
-      labelT.setScale(1);
-      hintT?.setScale(1);
-    });
-    zone.on('pointerdown', () => {
-      this.tweens.add({ targets: children, scaleX: 0.92, scaleY: 0.92, yoyo: true, duration: 80 });
-      audioManager.playSfx('button_click');
-      onPress();
-    });
-  }
-
   private openFirstDungeonSlot(): void {
     const unlockedSlots = getUnlockedSlots(this.gs.dmLevel);
     const queuedAction = getDungeonActionQueue(this.gs, unlockedSlots)[0];
@@ -3306,23 +3016,6 @@ export class DungeonHomeScene extends Phaser.Scene {
   private getFocusedForgeTarget(): HomeFocusTarget | null {
     return this.findQueuedGrowthTarget('equipment')
       ?? this.findFirstUnequippedMonsterTarget();
-  }
-
-  private formatHomeFocusTarget(target: HomeFocusTarget | null, fallback: string): string {
-    if (!target) return fallback;
-    const visual = this.resolveMonsterVisual(target.monsterId);
-    const roomMatch = /^방 #(\d+)/.exec(target.sourceLabel);
-    const source = roomMatch ? `B${roomMatch[1]}` : target.sourceLabel;
-    return `${source} ${visual.name}`;
-  }
-
-  private getActionTargetHint(action: RoomActionRecommendation): string | null {
-    if (action.kind !== 'growth') return null;
-    const target = action.statLabel === 'E'
-      ? this.findUnequippedRoomMonsterTarget(action.slotIdx)
-      : this.findUnderleveledRoomMonsterTarget(action.slotIdx)
-        ?? this.findFirstRoomMonsterTarget(action.slotIdx);
-    return target ? this.resolveMonsterVisual(target.monsterId).name : null;
   }
 
   private findQueuedGrowthTarget(kind: 'equipment' | 'level' | 'readiness'): HomeFocusTarget | null {
