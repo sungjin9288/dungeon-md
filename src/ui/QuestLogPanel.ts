@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   getQuest, applySubQuestClaim, prepareSubQuestLogViewState,
   type MainQuest,
@@ -20,15 +20,15 @@ import {
   type InfoRowOptions,
 } from './GameUiPrimitives';
 
-const QUEST_PANEL_FILL = 0x1a0f00;
-const QUEST_ROW_FILL = 0x120c05;
-const COSMIC_PANEL_FILL = 0x0d0020;
-const COSMIC_ROW_FILL = 0x16052a;
-const COSMIC_BORDER = 0x9940ff;
-const COSMIC_ACCENT = 0xcc77ff;
-const COSMIC_ACCENT_CSS = '#cc77ff';
-const COSMIC_TEXT = '#e8aaff';
-const COSMIC_MUTED = '#b890d0';
+const QUEST_PANEL_FILL = CASUAL.PANEL;
+const QUEST_ROW_FILL = CASUAL.PANEL_SOFT;
+const COSMIC_PANEL_FILL = CASUAL.PANEL;
+const COSMIC_ROW_FILL = CASUAL.PANEL_SOFT;
+const COSMIC_BORDER = CASUAL.PURPLE_DK;
+const COSMIC_ACCENT = CASUAL.PURPLE;
+const COSMIC_ACCENT_CSS = CASUAL_CSS.PURPLE;
+const COSMIC_TEXT = CASUAL_CSS.PURPLE;
+const COSMIC_MUTED = CASUAL_CSS.INK_SOFT;
 
 // ─── Quest complete overlay ─────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
 
   // Dim
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.75);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setInteractive();
   c.add(dim);
@@ -55,28 +55,30 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
     h: PH,
     radius: 12,
     fillColor: QUEST_PANEL_FILL,
-    borderColor: COLORS.TORCH_GOLD,
-    borderAlpha: 0.92,
-    accentColor: COLORS.TORCH_GOLD,
-    accentAlpha: 0.72,
-    glowColor: COLORS.TORCH_GOLD,
-    glowOpacity: 0.11,
-    shadowOpacity: 0.70,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0,
+    shadowOpacity: 0.3,
     shadowOffsetY: 5,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '퀘스트 완료', {
-    fontFamily: 'Georgia, serif', fontSize: '22px',
-    color: CSS.TORCH_GOLD, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '22px',
+    color: CASUAL_CSS.GOLD, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 58, quest.title, {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: CSS.PARCHMENT,
+    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   }).setOrigin(0.5));
 
   const div = scene.add.graphics();
-  div.lineStyle(1, COLORS.TORCH_GOLD, 0.22);
+  div.lineStyle(2, CASUAL.EDGE_SOFT, 0.6);
   div.lineBetween(PX + 22, PY + 78, PX + PW - 22, PY + 78);
   c.add(div);
 
@@ -101,11 +103,11 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
     h: 44,
     label: '확인',
     fontSize: '15px',
-    fillColor: 0x2a1800,
-    hoverFillColor: 0x3a2400,
-    borderColor: COLORS.TORCH_GOLD,
-    hoverBorderColor: COLORS.TORCH_AMBER,
-    textColor: CSS.PARCHMENT,
+    fillColor: CASUAL.GREEN,
+    hoverFillColor: 0x6fdc70,
+    borderColor: CASUAL.GREEN_DK,
+    hoverBorderColor: CASUAL.GREEN_DK,
+    textColor: CASUAL_CSS.WHITE,
     once: true,
     onPress: dismiss,
   });
@@ -123,16 +125,16 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
 export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
   const c = scene.add.container(0, 0).setDepth(80);
 
-  // Dim — deeper than usual for drama
+  // Dim
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.88);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setInteractive();
   c.add(dim);
 
   const rows = buildQuestRewardRows(quest, true);
 
-  // Panel — deep purple cosmic theme
+  // Panel — purple cosmic theme on cream
   const PW = 320, PH = 380;
   const PX = (CANVAS_WIDTH - PW) / 2;
   const PY = (CANVAS_HEIGHT - PH) / 2;
@@ -144,35 +146,37 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
     radius: 12,
     fillColor: COSMIC_PANEL_FILL,
     borderColor: COSMIC_BORDER,
-    borderAlpha: 0.94,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: COSMIC_ACCENT,
-    accentAlpha: 0.70,
+    accentAlpha: 1,
     glowColor: COSMIC_ACCENT,
-    glowOpacity: 0.14,
-    shadowOpacity: 0.78,
+    glowOpacity: 0,
+    shadowOpacity: 0.32,
     shadowOffsetY: 6,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
   // Top cosmic decoration
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '✦  심연 정복  ✦', {
-    fontFamily: 'Georgia, serif', fontSize: '20px', color: COSMIC_ACCENT_CSS,
+    fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold', color: COSMIC_ACCENT_CSS,
   }).setOrigin(0.5));
 
   // Main title
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 54, '원초의 심연 정복!', {
-    fontFamily: 'Georgia, serif', fontSize: '24px',
+    fontFamily: 'sans-serif', fontSize: '24px',
     color: COSMIC_TEXT, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
   // Quest subtitle
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 86, quest.title, {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: COSMIC_MUTED,
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: COSMIC_MUTED,
   }).setOrigin(0.5));
 
   // Divider
   const div = scene.add.graphics();
-  div.lineStyle(1, 0x6622aa, 0.7);
+  div.lineStyle(2, CASUAL.PURPLE, 0.5);
   div.moveTo(PX + 24, PY + 104);
   div.lineTo(PX + PW - 24, PY + 104);
   div.strokePath();
@@ -186,7 +190,7 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
       w: PW - 52,
       h: 21,
       fillColor: COSMIC_ROW_FILL,
-      borderColor: 0x6622aa,
+      borderColor: CASUAL.PURPLE,
       labelColor: COSMIC_MUTED,
     });
     c.add([refs.bg, refs.iconText, refs.labelText, refs.valueText]);
@@ -203,7 +207,7 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
     label: '칭호 획득',
     value: '원초의 심연 정복자',
     valueColor: COSMIC_ACCENT_CSS,
-    fillColor: 0x2a0044,
+    fillColor: CASUAL.PANEL_SOFT,
     borderColor: COSMIC_BORDER,
     labelColor: COSMIC_MUTED,
   });
@@ -211,7 +215,7 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
 
   // Congratulation message
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 305, '모든 챕터를 완료하셨습니다!', {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: COSMIC_MUTED,
+    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: COSMIC_MUTED,
   }).setOrigin(0.5));
 
   const dismiss = () => { c.destroy(true); scene.scene.restart(); };
@@ -222,11 +226,11 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
     h: 44,
     label: '✦ 확인 ✦',
     fontSize: '15px',
-    fillColor: 0x2a0044,
-    hoverFillColor: 0x3a0860,
+    fillColor: CASUAL.PURPLE,
+    hoverFillColor: 0xc488f0,
     borderColor: COSMIC_BORDER,
     hoverBorderColor: COSMIC_ACCENT,
-    textColor: COSMIC_TEXT,
+    textColor: CASUAL_CSS.WHITE,
     once: true,
     onPress: dismiss,
   });
@@ -250,19 +254,19 @@ function buildQuestRewardRows(
 ): Array<Omit<InfoRowOptions, 'x' | 'y' | 'w'>> {
   const rows: Array<Omit<InfoRowOptions, 'x' | 'y' | 'w'>> = [];
   if (quest.reward.gold) {
-    rows.push({ icon: '💰', label: '골드', value: `+${quest.reward.gold.toLocaleString('ko-KR')}`, valueColor: cosmic ? '#ffdd88' : CSS.TORCH_AMBER, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '💰', label: '골드', value: `+${quest.reward.gold.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   if (quest.reward.soulCrystals) {
-    rows.push({ icon: '💠', label: '수정', value: `+${quest.reward.soulCrystals.toLocaleString('ko-KR')}`, valueColor: cosmic ? '#ccbbff' : '#88ccff', fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '💠', label: '수정', value: `+${quest.reward.soulCrystals.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.BLUE, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   if (quest.reward.dmXP) {
-    rows.push({ icon: '✨', label: 'DM XP', value: `+${quest.reward.dmXP.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_TEXT : CSS.PARCHMENT, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '✨', label: 'DM XP', value: `+${quest.reward.dmXP.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   if (quest.reward.monsters?.length) {
-    rows.push({ icon: '👹', label: '몬스터', value: quest.reward.monsters[0], valueColor: cosmic ? '#ddaaff' : '#f0c8a0', fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '👹', label: '몬스터', value: quest.reward.monsters[0], valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   quest.reward.unlocks?.forEach(unlock => {
-    rows.push({ icon: '🔓', label: '해금', value: unlock, valueColor: cosmic ? COSMIC_ACCENT_CSS : CSS.TORCH_GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '🔓', label: '해금', value: unlock, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   });
   return rows;
 }
@@ -317,28 +321,38 @@ function buildQuestLogContainer(
 
   // Full-screen background
   const bg = scene.add.graphics();
-  bg.fillStyle(0x080500, 0.97);
+  bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  bg.lineStyle(2, 0xc8921a, 0.35);
-  bg.lineBetween(0, 0, 0, CANVAS_HEIGHT);
   c.add(bg);
 
   // Header bar
   const hg = scene.add.graphics();
-  hg.fillStyle(0x0d0800, 1);
+  hg.fillStyle(CASUAL.PANEL_SOFT, 1);
   hg.fillRect(0, 0, CANVAS_WIDTH, 48);
-  hg.lineStyle(1, 0xc8921a, 0.4);
-  hg.lineBetween(0, 48, CANVAS_WIDTH, 48);
+  hg.fillStyle(0xffffff, 0.4);
+  hg.fillRect(0, 0, CANVAS_WIDTH, 3);
+  hg.fillStyle(CASUAL.EDGE, 1);
+  hg.fillRect(0, 45, CANVAS_WIDTH, 3);
   c.add(hg);
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, 24, '퀘스트 로그', {
-    fontFamily: 'Georgia, serif', fontSize: '16px',
-    color: '#c8921a', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '18px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5));
 
-  const closeBtn = scene.add.text(CANVAS_WIDTH - 14, 12, '✕', {
-    fontFamily: 'sans-serif', fontSize: '16px', color: '#664422',
-  }).setOrigin(1, 0).setInteractive();
+  // chunky cream close pill
+  const closeG = scene.add.graphics();
+  closeG.fillStyle(CASUAL.SHADOW, 0.2);
+  closeG.fillRoundedRect(CANVAS_WIDTH - 40, 12 + 2, 28, 26, 13);
+  closeG.fillStyle(CASUAL.PANEL, 1);
+  closeG.fillRoundedRect(CANVAS_WIDTH - 40, 12, 28, 26, 13);
+  closeG.lineStyle(2.5, CASUAL.EDGE, 1);
+  closeG.strokeRoundedRect(CANVAS_WIDTH - 40, 12, 28, 26, 13);
+  c.add(closeG);
+  const closeBtn = scene.add.text(CANVAS_WIDTH - 26, 25, '✕', {
+    fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+  }).setOrigin(0.5).setInteractive();
   closeBtn.on('pointerdown', () => closeQuestLog(state, scene));
   c.add(closeBtn);
 
@@ -370,8 +384,8 @@ function drawMainQuestCard(
   const CARD_W = CANVAS_WIDTH - PAD * 2;
 
   c.add(scene.add.text(PAD, y, '📜  메인 퀘스트', {
-    fontFamily: 'Georgia, serif', fontSize: '11px',
-    color: '#c8921a', fontStyle: 'bold', letterSpacing: 1,
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold', letterSpacing: 1,
   }));
   y += 20;
 
@@ -385,19 +399,19 @@ function drawMainQuestCard(
       y,
       w: CARD_W,
       h: 50,
-      radius: 7,
-      fillColor: 0x140c04,
-      borderColor: 0x664422,
-      borderAlpha: 0.42,
-      borderWidth: 1,
-      glowColor: 0x664422,
-      glowOpacity: 0.05,
-      shadowOpacity: 0.30,
+      radius: 9,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
+      borderAlpha: 1,
+      borderWidth: 2,
+      glowColor: CASUAL.EDGE_SOFT,
+      glowOpacity: 0,
+      shadowOpacity: 0.2,
       shadowOffsetY: 2,
     });
     c.add([frame.shadow, frame.panel, frame.glow]);
     c.add(scene.add.text(CANVAS_WIDTH / 2, y + 25, '진행 중인 메인 퀘스트 없음', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#4a3020',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     return y + 62;
   }
@@ -412,41 +426,45 @@ function drawMainQuestCard(
     y,
     w: CARD_W,
     h: CARD_H,
-    radius: 7,
-    fillColor: 0x1a0f00,
-    borderColor: 0xc8921a,
-    borderAlpha: 0.70,
-    borderWidth: 1.5,
-    accentColor: 0xc8921a,
-    accentAlpha: 0.48,
-    glowColor: 0xc8921a,
-    glowOpacity: 0.08,
-    shadowOpacity: 0.42,
+    radius: 11,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.GOLD_DK,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0,
+    shadowOpacity: 0.28,
     shadowOffsetY: 3,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
   const cg = scene.add.graphics();
   // Status dot (yellow = in progress)
-  cg.fillStyle(0xffcc00, 1);
-  cg.fillCircle(PAD + CARD_W - 12, y + 14, 5);
+  cg.fillStyle(CASUAL.GOLD, 1);
+  cg.fillCircle(PAD + CARD_W - 12, y + 16, 5);
+  cg.lineStyle(2, CASUAL.GOLD_DK, 1);
+  cg.strokeCircle(PAD + CARD_W - 12, y + 16, 5);
   c.add(cg);
 
   // Chapter badge + quest ID
   const chBadgeBg = scene.add.graphics();
-  chBadgeBg.fillStyle(0x5a3a00, 1);
-  chBadgeBg.fillRoundedRect(PAD + 10, y + 8, 38, 16, 3);
+  chBadgeBg.fillStyle(CASUAL.GOLD, 1);
+  chBadgeBg.fillRoundedRect(PAD + 10, y + 8, 38, 16, 5);
+  chBadgeBg.lineStyle(1.5, CASUAL.GOLD_DK, 1);
+  chBadgeBg.strokeRoundedRect(PAD + 10, y + 8, 38, 16, 5);
   c.add(chBadgeBg);
   c.add(scene.add.text(PAD + 29, y + 16, `CH.${quest.chapter}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#ffc844', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   c.add(scene.add.text(PAD + 54, y + 8, `[${quest.id}]`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
   }));
   c.add(scene.add.text(PAD + 96, y + 8, quest.title, {
-    fontFamily: 'Georgia, serif', fontSize: '13px',
-    color: '#f0e6c8', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '13px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
   }));
 
   // NPC emoji + first line of description
@@ -455,8 +473,8 @@ function drawMainQuestCard(
   }));
   const descLine = quest.description.split('\n')[0];
   c.add(scene.add.text(PAD + 36, y + 30, `"${descLine}"`, {
-    fontFamily: 'Georgia, serif', fontSize: '10px',
-    color: '#a08060', fontStyle: 'italic',
+    fontFamily: 'sans-serif', fontSize: '10px',
+    color: CASUAL_CSS.INK_SOFT, fontStyle: 'italic',
     wordWrap: { width: CARD_W - 50 },
   }));
 
@@ -469,7 +487,7 @@ function drawMainQuestCard(
     const barBx  = CANVAS_WIDTH - PAD - BAR_W - 10;
 
     c.add(scene.add.text(PAD + 10, oy, `▸ ${obj.description}`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#c8b090',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }));
 
     const progress = addProgressBar(scene, {
@@ -478,13 +496,15 @@ function drawMainQuestCard(
       w: BAR_W,
       h: 11,
       ratio: pct,
-      fillColor: 0xc8921a,
+      fillColor: CASUAL.GOLD,
+      trackColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
       delay: 80 + oi * 120,
     });
     c.add([progress.track, progress.fill]);
 
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 6, oy + 5, `${cur}/${obj.target}`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#806040',
+      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0.5));
 
     oy += 26;
@@ -497,7 +517,7 @@ function drawMainQuestCard(
   if (quest.reward.dmXP)         rwds.push(`✨${quest.reward.dmXP}XP`);
   if (quest.reward.unlocks?.length) rwds.push(`🔓${quest.reward.unlocks[0]}`);
   c.add(scene.add.text(PAD + 10, oy + 4, `보상: ${rwds.join('  ')}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
   }));
 
   return y + CARD_H + 14;
@@ -517,8 +537,8 @@ function drawSubQuestSection(
   const CARD_H = 62;
 
   c.add(scene.add.text(PAD, y, '⚔️  서브 퀘스트', {
-    fontFamily: 'Georgia, serif', fontSize: '11px',
-    color: '#a08060', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
   }));
   y += 20;
 
@@ -530,19 +550,19 @@ function drawSubQuestSection(
       y,
       w: CARD_W,
       h: 44,
-      radius: 7,
-      fillColor: 0x120a02,
-      borderColor: 0x5a3c1c,
-      borderAlpha: 0.45,
-      borderWidth: 1,
-      glowColor: 0x5a3c1c,
-      glowOpacity: 0.04,
-      shadowOpacity: 0.28,
+      radius: 9,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
+      borderAlpha: 1,
+      borderWidth: 2,
+      glowColor: CASUAL.EDGE_SOFT,
+      glowOpacity: 0,
+      shadowOpacity: 0.2,
       shadowOffsetY: 2,
     });
     c.add([frame.shadow, frame.panel, frame.glow]);
     c.add(scene.add.text(CANVAS_WIDTH / 2, y + 22, '모든 서브 퀘스트 완료! 내일 다시 도전하세요.', {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#806040',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
     }).setOrigin(0.5));
     return y + 56;
   }
@@ -553,37 +573,36 @@ function drawSubQuestSection(
     const done   = item.completed;
     const pct    = item.progressRatio;
     const BAR_W  = 100;
-    const borderCol = done ? 0xffcc44 : 0x5a3c1c;
-    const borderAlpha = done ? 0.9 : 0.45;
+    const borderCol = done ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT;
 
     const frame = addFramedPanel(scene, {
       x: PAD,
       y,
       w: CARD_W,
       h: CARD_H,
-      radius: 7,
-      fillColor: done ? 0x1a1200 : 0x120a02,
+      radius: 11,
+      fillColor: done ? CASUAL.PANEL : CASUAL.PANEL_SOFT,
       borderColor: borderCol,
-      borderAlpha,
-      borderWidth: done ? 1.5 : 1,
-      accentColor: done ? 0xffcc44 : 0x5a3c1c,
-      accentAlpha: done ? 0.58 : 0.34,
+      borderAlpha: 1,
+      borderWidth: done ? 3 : 2,
+      accentColor: done ? CASUAL.GREEN : undefined,
+      accentAlpha: 1,
       glowColor: borderCol,
-      glowOpacity: done ? 0.08 : 0.04,
-      shadowOpacity: done ? 0.38 : 0.28,
+      glowOpacity: 0,
+      shadowOpacity: done ? 0.28 : 0.2,
       shadowOffsetY: 2,
     });
     c.add([frame.shadow, frame.panel, frame.glow]);
 
-    // Icon + title
-    c.add(scene.add.text(PAD + 10, y + 10, `${sq.icon} ${sq.title}`, {
-      fontFamily: 'Georgia, serif', fontSize: '12px',
-      color: done ? '#ffcc44' : '#c8b090', fontStyle: 'bold',
+    // Icon + title (+ check when done)
+    c.add(scene.add.text(PAD + 10, y + 10, `${done ? '✓ ' : ''}${sq.icon} ${sq.title}`, {
+      fontFamily: 'sans-serif', fontSize: '12px',
+      color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK, fontStyle: 'bold',
     }));
 
     // Objective description
     c.add(scene.add.text(PAD + 10, y + 26, sq.objective.description, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }));
 
     const bx = PAD + 10;
@@ -594,7 +613,9 @@ function drawSubQuestSection(
       w: BAR_W,
       h: 10,
       ratio: pct,
-      fillColor: done ? 0xffcc00 : 0xc8921a,
+      fillColor: done ? CASUAL.GREEN : CASUAL.GOLD,
+      trackColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
       duration: 400,
       delay: 100 + itemIndex * 120,
     });
@@ -602,7 +623,7 @@ function drawSubQuestSection(
 
     // Progress text
     c.add(scene.add.text(bx + BAR_W + 6, by + 5, `${prog}/${item.target}`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: '#806040',
+      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5));
 
     // Reward preview
@@ -611,7 +632,7 @@ function drawSubQuestSection(
     if (sq.reward.soulCrystals) rwds.push(`💠${sq.reward.soulCrystals}`);
     if (sq.reward.dmXP)         rwds.push(`✨${sq.reward.dmXP}XP`);
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, y + 26, rwds.join(' '), {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#c8921a',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
     }).setOrigin(1, 0.5));
 
     // Claim button (only when done)
@@ -627,8 +648,8 @@ function drawSubQuestSection(
 
         // Brief "✨ 수령!" toast before rebuilding
         const toast = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 수령 완료!', {
-          fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffcc44', fontStyle: 'bold',
-          backgroundColor: '#1a0f00', padding: { x: 20, y: 10 },
+          fontFamily: 'sans-serif', fontSize: '18px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
+          backgroundColor: CASUAL_CSS.GREEN, padding: { x: 20, y: 10 },
         }).setOrigin(0.5).setDepth(200).setAlpha(0);
         scene.tweens.add({
           targets: toast, alpha: 1, y: CANVAS_HEIGHT / 2 - 30,
@@ -651,11 +672,11 @@ function drawSubQuestSection(
         h: 18,
         label: '수령',
         fontSize: '10px',
-        fillColor: 0x8a6200,
-        hoverFillColor: 0xaa7800,
-        borderColor: 0xffcc44,
-        hoverBorderColor: 0xffe07a,
-        textColor: '#fff9e0',
+        fillColor: CASUAL.GREEN,
+        hoverFillColor: 0x6fdc70,
+        borderColor: CASUAL.GREEN_DK,
+        hoverBorderColor: CASUAL.GREEN_DK,
+        textColor: CASUAL_CSS.WHITE,
         once: true,
         onPress: claim,
       });
@@ -680,8 +701,8 @@ function drawMiniQuestSection(
   const CARD_W = CANVAS_WIDTH - PAD * 2;
 
   c.add(scene.add.text(PAD, y, '🎯  일일 퀘스트', {
-    fontFamily: 'Georgia, serif', fontSize: '11px',
-    color: '#a08060', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
   }));
   y += 20;
 
@@ -696,16 +717,16 @@ function drawMiniQuestSection(
     y,
     w: CARD_W,
     h: CARD_H,
-    radius: 7,
-    fillColor: 0x0e0700,
-    borderColor: 0x4a3010,
-    borderAlpha: 0.50,
-    borderWidth: 1,
-    accentColor: 0x44cccc,
-    accentAlpha: 0.32,
-    glowColor: 0x44cccc,
-    glowOpacity: 0.04,
-    shadowOpacity: 0.28,
+    radius: 11,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.BLUE_DK,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.BLUE,
+    accentAlpha: 1,
+    glowColor: CASUAL.BLUE,
+    glowOpacity: 0,
+    shadowOpacity: 0.24,
     shadowOffsetY: 2,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
@@ -719,23 +740,23 @@ function drawMiniQuestSection(
     if (!done) allDone = false;
 
     const checkmark = done ? '✓' : '□';
-    const col       = done ? '#44cc88' : '#7a5a3a';
+    const col       = done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK;
     c.add(scene.add.text(PAD + 10, dy, `${checkmark}  ${ch.description}`, {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: col,
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: col,
     }));
     const rwdStr = ch.reward.gems ? `💎${ch.reward.gems}` : '';
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, dy, done ? '완료' : `${prog}/${ch.objective.target}  ${rwdStr}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: done ? '#44cc88' : '#5a3c1c',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0));
     dy += 26;
   });
 
   // Summary footer
   c.add(scene.add.text(PAD + 10, dy + 2, `${dailyView.completedCount}/${challenges.length} 완료`, {
-    fontFamily: 'sans-serif', fontSize: '9px',
-    color: allDone ? '#44cc88' : '#5a3c1c',
+    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+    color: allDone ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
   }));
   c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, dy + 2, `총 보상: 💎${dailyView.totalRewardGems}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
   }).setOrigin(1, 0));
 }

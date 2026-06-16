@@ -4,17 +4,14 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { audioManager } from '../audio/AudioManager';
 import { exportGameState } from '../data/wisdom';
 import { showToast } from './Toast';
 import { showImportConfirm } from './ImportExportModal';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from './GameUiPrimitives';
 
-const SETTINGS_PANEL_FILL = 0x0e0903;
-const SETTINGS_ROW_FILL = 0x120c05;
-const ENABLED_GREEN = 0x226622;
-const DISABLED_RED = 0x442222;
+const SETTINGS_ROW_FILL = CASUAL.PANEL_SOFT;
 
 export function showAudioSettings(scene: Phaser.Scene): void {
   const CW = CANVAS_WIDTH, CH = CANVAS_HEIGHT;
@@ -25,7 +22,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   const ov = scene.add.container(0, 0).setDepth(DEPTH);
 
   // Backdrop
-  const backdrop = scene.add.rectangle(CW / 2, CH / 2, CW, CH, 0x000000, 0.65)
+  const backdrop = scene.add.rectangle(CW / 2, CH / 2, CW, CH, 0x000000, 0.5)
     .setInteractive();
   ov.add(backdrop);
 
@@ -35,24 +32,25 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     y: OY,
     w: OW,
     h: OH,
-    radius: 12,
-    fillColor: SETTINGS_PANEL_FILL,
-    borderColor: COLORS.TORCH_GOLD,
-    borderAlpha: 0.9,
-    borderWidth: 2,
-    accentColor: COLORS.TORCH_GOLD,
-    accentAlpha: 0.72,
-    glowColor: COLORS.TORCH_AMBER,
-    glowOpacity: 0.10,
-    shadowOpacity: 0.62,
+    radius: 16,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CASUAL.GOLD,
+    accentAlpha: 1,
+    glowColor: CASUAL.GOLD,
+    glowOpacity: 0.08,
+    shadowOpacity: 0.4,
     shadowOffsetY: 5,
   });
   addToContainer(ov, panel.shadow, panel.panel, panel.glow);
 
   // Title
   ov.add(scene.add.text(CW / 2, OY + 20, '⚙️  설정', {
-    fontFamily: 'Georgia, serif', fontSize: '16px',
-    color: CSS.TORCH_GOLD, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '18px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5, 0));
 
   const cfg = audioManager.getSettings();
@@ -67,18 +65,20 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   ) => {
     const rowY = OY + yOff;
     const rowBg = scene.add.graphics();
-    rowBg.fillStyle(SETTINGS_ROW_FILL, 0.96);
+    rowBg.fillStyle(SETTINGS_ROW_FILL, 1);
     rowBg.fillRoundedRect(OX + 16, rowY - 22, OW - 32, 62, GAME_UI.radius.row);
-    rowBg.lineStyle(1, COLORS.STONE_MID, 0.52);
+    rowBg.fillStyle(0xffffff, 0.4);
+    rowBg.fillRoundedRect(OX + 19, rowY - 19, OW - 38, 3, 2);
+    rowBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
     rowBg.strokeRoundedRect(OX + 16, rowY - 22, OW - 32, 62, GAME_UI.radius.row);
     ov.add(rowBg);
 
     // Label
     ov.add(scene.add.text(OX + 28, rowY - 6, labelText, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CSS.PARCHMENT,
+      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
     const valueLabel = scene.add.text(OX + OW - 86, rowY - 6, `${Math.round(volume * 100)}%`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CSS.PARCHMENT_MUTED,
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5);
     ov.add(valueLabel);
@@ -91,23 +91,28 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     const toggleH = 24;
     const drawToggle = (enabled: boolean): void => {
       toggleBg.clear();
-      toggleBg.fillStyle(enabled ? ENABLED_GREEN : DISABLED_RED, 1);
+      // thick candy bottom edge
+      toggleBg.fillStyle(enabled ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, 1);
+      toggleBg.fillRoundedRect(toggleX, toggleY + 2, toggleW, toggleH, 12);
+      // bright cap
+      toggleBg.fillStyle(enabled ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
       toggleBg.fillRoundedRect(toggleX, toggleY, toggleW, toggleH, 12);
-      toggleBg.lineStyle(1, enabled ? 0x66dd88 : 0xdd6666, 0.85);
+      toggleBg.lineStyle(2, enabled ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, 1);
       toggleBg.strokeRoundedRect(toggleX, toggleY, toggleW, toggleH, 12);
-      toggleBg.fillStyle(0xf0e6c8, 0.95);
-      toggleBg.fillCircle(toggleX + (enabled ? toggleW - 12 : 12), toggleY + toggleH / 2, 7);
+      // white knob
+      toggleBg.fillStyle(0xffffff, 1);
+      toggleBg.fillCircle(toggleX + (enabled ? toggleW - 12 : 12), toggleY + toggleH / 2, 8);
     };
     drawToggle(isEnabled);
     const toggleLabel = scene.add.text(0, 0, isEnabled ? 'ON' : 'OFF', {
         fontFamily: 'sans-serif', fontSize: '10px',
-        color: isEnabled ? '#b7ffc1' : '#ffb0a8',
+        color: isEnabled ? '#ffffff' : CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(0.5);
     const updateToggleLabel = (enabled: boolean): void => {
       toggleLabel
         .setText(enabled ? 'ON' : 'OFF')
-        .setColor(enabled ? '#b7ffc1' : '#ffb0a8')
+        .setColor(enabled ? '#ffffff' : CASUAL_CSS.INK_SOFT)
         .setPosition(toggleX + (enabled ? 14 : toggleW - 14), toggleY + toggleH / 2);
     };
     updateToggleLabel(isEnabled);
@@ -127,9 +132,9 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     // Volume slider track
     const SX = OX + 28, SY = rowY + 23, SW = OW - 56;
     const sliderBg = scene.add.graphics();
-    sliderBg.fillStyle(0x0a0600, 1);
+    sliderBg.fillStyle(CASUAL.PANEL_SOFT, 1);
     sliderBg.fillRoundedRect(SX, SY - 4, SW, 8, 4);
-    sliderBg.lineStyle(1, COLORS.STONE_MID, 0.52);
+    sliderBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
     sliderBg.strokeRoundedRect(SX, SY - 4, SW, 8, 4);
     ov.add(sliderBg);
 
@@ -137,14 +142,15 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     const fillG = scene.add.graphics();
     const drawFill = (p: number) => {
       fillG.clear();
-      fillG.fillStyle(COLORS.TORCH_GOLD, 1);
+      fillG.fillStyle(CASUAL.GOLD, 1);
       fillG.fillRoundedRect(SX, SY - 4, Math.max(8, SW * p), 8, 4);
     };
     drawFill(pct);
     ov.add(fillG);
 
-    // Slider handle
-    const knob = scene.add.circle(SX + SW * pct, SY, 8, COLORS.TORCH_AMBER)
+    // Slider handle — candy knob
+    const knob = scene.add.circle(SX + SW * pct, SY, 9, CASUAL.GOLD)
+      .setStrokeStyle(2.5, CASUAL.GOLD_DK)
       .setInteractive({ draggable: true });
     ov.add(knob);
     knob.on('drag', (_ptr: unknown, x: number) => {
@@ -177,17 +183,17 @@ export function showAudioSettings(scene: Phaser.Scene): void {
 
   // ── Divider ────────────────────────────────────────────
   const divG = scene.add.graphics();
-  divG.lineStyle(1, COLORS.TORCH_GOLD, 0.3);
+  divG.lineStyle(2, CASUAL.EDGE_SOFT, 0.55);
   divG.lineBetween(OX + 16, OY + 220, OX + OW - 16, OY + 220);
   ov.add(divG);
 
   ov.add(scene.add.text(CW / 2, OY + 234, '💾  세이브 관리', {
-    fontFamily: 'Georgia, serif', fontSize: '14px',
-    color: CSS.TORCH_GOLD, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '14px',
+    color: CASUAL_CSS.INK, fontStyle: 'bold',
   }).setOrigin(0.5, 0));
 
   // Toast helper using shared utility
-  const toast = (msg: string, color = '#88ff88') => {
+  const toast = (msg: string, color: string = CASUAL_CSS.GREEN) => {
     showToast(scene, msg, { color, depth: DEPTH + 1 });
   };
 
@@ -199,16 +205,16 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     h: 40,
     label: '📤  세이브 내보내기',
     fontSize: '12px',
-    fillColor: 0x18381e,
-    hoverFillColor: 0x22502a,
-    borderColor: 0x44aa44,
-    hoverBorderColor: 0x66dd88,
-    textColor: '#9cffaa',
+    fillColor: CASUAL.BLUE,
+    hoverFillColor: 0x66bcf4,
+    borderColor: CASUAL.BLUE_DK,
+    hoverBorderColor: CASUAL.BLUE_DK,
+    textColor: '#ffffff',
     onPress: () => {
       const code = exportGameState();
       navigator.clipboard.writeText(code).then(
         () => toast('복사 완료! 안전한 곳에 보관하세요.'),
-        () => toast('클립보드 접근 실패', '#ff8888'),
+        () => toast('클립보드 접근 실패', CASUAL_CSS.RED),
       );
     },
   });
@@ -222,28 +228,28 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     h: 40,
     label: '📥  세이브 가져오기',
     fontSize: '12px',
-    fillColor: 0x421918,
-    hoverFillColor: 0x5a2020,
-    borderColor: 0xaa4444,
-    hoverBorderColor: 0xdd6666,
-    textColor: '#ff9a8a',
+    fillColor: CASUAL.RED,
+    hoverFillColor: 0xf57a66,
+    borderColor: CASUAL.RED_DK,
+    hoverBorderColor: CASUAL.RED_DK,
+    textColor: '#ffffff',
     onPress: () => showImportConfirm(scene, ov, toast),
   });
   addToContainer(ov, importButton.bg, importButton.text, importButton.zone);
 
-  // Close button
+  // Close button — green candy
   const closeBtn = addPrimaryActionButton(scene, {
     x: OX + 78,
-    y: OY + OH - 42,
+    y: OY + OH - 44,
     w: OW - 156,
-    h: 30,
+    h: 34,
     label: '닫기',
     fontSize: '13px',
-    fillColor: 0x1a0f00,
-    hoverFillColor: 0x2a1a00,
-    borderColor: COLORS.TORCH_GOLD,
-    hoverBorderColor: COLORS.TORCH_AMBER,
-    textColor: CSS.TORCH_GOLD,
+    fillColor: CASUAL.GREEN,
+    hoverFillColor: 0x6fdc70,
+    borderColor: CASUAL.GREEN_DK,
+    hoverBorderColor: CASUAL.GREEN_DK,
+    textColor: '#ffffff',
     onPress: () => { ov.destroy(true); },
   });
   addToContainer(ov, closeBtn.bg, closeBtn.text, closeBtn.zone);

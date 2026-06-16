@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState, type OwnedMonster } from '../data/wisdom';
 import { getQuest } from '../data/quests';
 import { MONSTER_DEFS, getSkinForMonster, getSkinsForMonster, type MonsterDef, type MonsterId, type MonsterSkin, type RarityId } from '../data/monsters';
@@ -35,16 +35,18 @@ export interface MonsterDetailContext {
   onReturnToRoom?: () => void;
 }
 
-const DETAIL_PANEL_FILL = 0x130c06;
-const DETAIL_ROW_FILL = 0x120c05;
+const DETAIL_PANEL_FILL = CASUAL.PANEL;
+const DETAIL_ROW_FILL = CASUAL.PANEL_SOFT;
+// 초상화 디스크 — 크림 면 위 대비를 위한 살짝 깊은 따뜻한 톤
+const PORTRAIT_DISC_FILL = 0xe8c89a;
 const FEED_GOLD_COST = 50;
 const FEED_XP_GAIN = 20;
-const SHOP_PANEL_FILL = 0x190f06;
-const SHOP_CARD_FILL = 0x221504;
-const SHOP_CARD_OWNED_FILL = 0x1a2010;
-const SHOP_PURPLE = 0xaa44ff;
-const SHOP_PURPLE_DARK = 0x552475;
-const SHOP_OWNED_GREEN = 0x44cc88;
+const SHOP_PANEL_FILL = CASUAL.PANEL;
+const SHOP_CARD_FILL = CASUAL.PANEL;
+const SHOP_CARD_OWNED_FILL = CASUAL.PANEL_SOFT;
+const SHOP_PURPLE = CASUAL.PURPLE;
+const SHOP_PURPLE_DARK = CASUAL.PURPLE_DK;
+const SHOP_OWNED_GREEN = CASUAL.GREEN;
 const DETAIL_TYPE_LABEL: Record<string, string> = {
   melee: '근접 수호자',
   ranged: '원거리 수호자',
@@ -53,11 +55,11 @@ const DETAIL_TYPE_LABEL: Record<string, string> = {
 };
 const DETAIL_OWNED_RARITY_TO_TIER: readonly RarityId[] = ['C', 'U', 'R', 'E', 'L'];
 const DETAIL_RARITY_META: Record<RarityId, { rank: number; label: string; stars: string; color: number; css: string }> = {
-  C: { rank: 0, label: 'COMMON', stars: '★',     color: 0x8f98a5, css: '#b9c0ca' },
-  U: { rank: 1, label: 'UNIQUE', stars: '★★',    color: 0x58c681, css: '#8ff0ad' },
-  R: { rank: 2, label: 'RARE',   stars: '★★★',   color: 0x62a8ff, css: '#9bc9ff' },
-  E: { rank: 3, label: 'EPIC',   stars: '★★★★',  color: 0xc978ff, css: '#e3b4ff' },
-  L: { rank: 4, label: 'LEGEND', stars: '★★★★★', color: 0xffc857, css: '#ffd878' },
+  C: { rank: 0, label: 'COMMON', stars: '★',     color: CASUAL.EDGE_SOFT, css: CASUAL_CSS.INK_SOFT },
+  U: { rank: 1, label: 'UNIQUE', stars: '★★',    color: CASUAL.GREEN,     css: CASUAL_CSS.GREEN },
+  R: { rank: 2, label: 'RARE',   stars: '★★★',   color: CASUAL.BLUE,      css: CASUAL_CSS.BLUE },
+  E: { rank: 3, label: 'EPIC',   stars: '★★★★',  color: CASUAL.PURPLE,    css: CASUAL_CSS.PURPLE },
+  L: { rank: 4, label: 'LEGEND', stars: '★★★★★', color: CASUAL.GOLD,      css: CASUAL_CSS.GOLD },
 };
 const DETAIL_TRIBE_LABELS: Record<string, string> = {
   dokkaebi: '도깨비',
@@ -71,17 +73,17 @@ const DETAIL_TRIBE_LABELS: Record<string, string> = {
   celestial: '천상',
 };
 const DETAIL_ELEMENT_META: Record<string, { label: string; icon: string; color: number }> = {
-  fire:      { label: '화염', icon: '🔥', color: 0xff7a3d },
-  frost:     { label: '서리', icon: '❄',  color: 0x7bdcff },
-  lightning: { label: '번개', icon: '⚡', color: 0xffdf64 },
-  dark:      { label: '암흑', icon: '☾',  color: 0xc181ff },
-  holy:      { label: '신성', icon: '✦',  color: 0xffe8a3 },
+  fire:      { label: '화염', icon: '🔥', color: CASUAL.RED },
+  frost:     { label: '서리', icon: '❄',  color: CASUAL.BLUE },
+  lightning: { label: '번개', icon: '⚡', color: CASUAL.GOLD },
+  dark:      { label: '암흑', icon: '☾',  color: CASUAL.PURPLE },
+  holy:      { label: '신성', icon: '✦',  color: CASUAL.GOLD },
 };
 const DETAIL_EQUIPMENT_STARS = ['★', '★★', '★★★', '★★★★', '★★★★★', '★★★★★★'];
 const DETAIL_EQUIPMENT_TYPE_META: Record<string, { label: string; icon: string; color: number; css: string }> = {
-  weapon:    { label: '무기',   icon: '⚔', color: 0xffb45f, css: '#ffcc86' },
-  armor:     { label: '방어구', icon: '◆', color: 0x8ac7ff, css: '#aad7ff' },
-  accessory: { label: '장신구', icon: '✦', color: 0xd7a4ff, css: '#e3c0ff' },
+  weapon:    { label: '무기',   icon: '⚔', color: CASUAL.GOLD,   css: CASUAL_CSS.GOLD },
+  armor:     { label: '방어구', icon: '◆', color: CASUAL.BLUE,   css: CASUAL_CSS.BLUE },
+  accessory: { label: '장신구', icon: '✦', color: CASUAL.PURPLE, css: CASUAL_CSS.PURPLE },
 };
 
 type EquipmentDisplay = {
@@ -112,7 +114,7 @@ export function showMonsterDetailPanel(
 
   // Dim
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.88);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   ov.add(dim);
@@ -135,39 +137,40 @@ export function showMonsterDetailPanel(
     y: py,
     w: pw,
     h: ph,
-    radius: 14,
+    radius: 16,
     fillColor: DETAIL_PANEL_FILL,
-    borderColor: accentColor,
-    borderAlpha: 0.9,
-    borderWidth: 2,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor,
-    accentAlpha: 0.72,
+    accentAlpha: 1,
     glowColor: accentColor,
-    glowOpacity: 0.10,
-    shadowOpacity: 0.64,
-    shadowOffsetY: 5,
+    glowOpacity: 0,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 6,
   });
   addToContainer(ov, panel.shadow, panel.panel, panel.glow);
 
   // Header — training chamber hero with portrait fallback.
   const detailSkin = getSkinForMonster(m.id, loadGameState().equippedSkins ?? {});
   const hero = scene.add.graphics();
-  hero.fillStyle(0x060b0d, 0.96);
+  hero.fillStyle(CASUAL.PANEL_SOFT, 1);
   hero.fillRoundedRect(px + 16, py + 14, pw - 32, 80, 12);
-  hero.fillStyle(accentColor, 0.10);
-  hero.fillRoundedRect(px + 22, py + 20, 70, 68, 10);
-  hero.fillStyle(0x101716, 0.92);
-  hero.fillRoundedRect(px + 30, py + 27, 54, 50, 9);
-  hero.lineStyle(1.4, accentColor, 0.62);
-  hero.strokeRoundedRect(px + 16, py + 14, pw - 32, 80, 12);
-  hero.lineStyle(1, 0xffffff, 0.12);
-  hero.strokeRoundedRect(px + 22, py + 20, pw - 44, 68, 9);
-  hero.lineStyle(1, accentColor, 0.16);
-  hero.lineBetween(px + 104, py + 76, px + pw - 32, py + 76);
-  hero.lineBetween(px + 114, py + 58, px + pw - 44, py + 52);
+  hero.fillStyle(0xffffff, 0.4);
+  hero.fillRoundedRect(px + 21, py + 18, pw - 42, 5, 4);
   hero.fillStyle(accentColor, 0.16);
+  hero.fillRoundedRect(px + 22, py + 20, 70, 68, 10);
+  hero.fillStyle(PORTRAIT_DISC_FILL, 1);
+  hero.fillRoundedRect(px + 30, py + 27, 54, 50, 9);
+  hero.lineStyle(3, CASUAL.EDGE, 1);
+  hero.strokeRoundedRect(px + 16, py + 14, pw - 32, 80, 12);
+  hero.lineStyle(2, accentColor, 0.7);
+  hero.strokeRoundedRect(px + 22, py + 20, 70, 68, 10);
+  hero.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
+  hero.lineBetween(px + 104, py + 76, px + pw - 32, py + 76);
+  hero.fillStyle(accentColor, 0.18);
   hero.fillCircle(px + 57, py + 78, 26);
-  hero.fillStyle(0x050302, 0.38);
+  hero.fillStyle(CASUAL.SHADOW, 0.2);
   hero.fillEllipse(px + 57, py + 82, 64, 13);
   ov.add(hero);
 
@@ -185,16 +188,18 @@ export function showMonsterDetailPanel(
   drawHeroCollectionBadges(scene, ov, px + 22, py + 20, collectionMeta, xpPct, skillPoints, hasEquipment);
 
   const nameT = scene.add.text(px + 106, py + 32, def.name, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '18px',
     fontStyle: 'bold',
-    color: CSS.PARCHMENT,
+    color: CASUAL_CSS.INK,
+    stroke: '#ffffff',
+    strokeThickness: 4,
   }).setOrigin(0, 0.5);
   ov.add(nameT);
   ov.add(scene.add.text(px + pw - 28, py + 31, `Lv.${m.level}`, {
     fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: '#10110b',
+    color: '#ffffff',
     fontStyle: 'bold',
     backgroundColor: `#${accentColor.toString(16).padStart(6, '0')}`,
     padding: { x: 8, y: 3 },
@@ -204,29 +209,29 @@ export function showMonsterDetailPanel(
   ov.add(scene.add.text(px + 108, py + 53, `${typeLabel} · ${collectionMeta.tribeLabel} · ${collectionMeta.elementIcon} ${collectionMeta.elementLabel}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#b8fff0',
+    color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(px + 108, py + 72, def.passiveDesc, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: CSS.PARCHMENT_DIM,
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: pw - 146, useAdvancedWrap: true },
   }).setOrigin(0, 0.5));
 
   if (ctx.focusSourceLabel) {
     const focusChip = scene.add.graphics();
-    focusChip.fillStyle(0x061716, 0.98);
+    focusChip.fillStyle(CASUAL.GREEN, 1);
     focusChip.fillRoundedRect(px + pw - 142, py + 65, 112, 18, 7);
-    focusChip.lineStyle(1.1, 0xc8e8b0, 0.62);
+    focusChip.fillStyle(0xffffff, 0.3);
+    focusChip.fillRoundedRect(px + pw - 139, py + 67, 106, 3, 2);
+    focusChip.lineStyle(2, CASUAL.GREEN_DK, 1);
     focusChip.strokeRoundedRect(px + pw - 142, py + 65, 112, 18, 7);
-    focusChip.fillStyle(0xc8e8b0, 0.18);
-    focusChip.fillRoundedRect(px + pw - 138, py + 69, 4, 10, 3);
     ov.add(focusChip);
     ov.add(scene.add.text(px + pw - 84, py + 74, ctx.focusSourceLabel, {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: '#b8fff0',
+      color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5));
   }
@@ -246,8 +251,8 @@ export function showMonsterDetailPanel(
       label: 'ATK',
       value: `${atk}`,
       fillColor: DETAIL_ROW_FILL,
-      borderColor: COLORS.STONE_MID,
-      valueColor: CSS.TORCH_AMBER,
+      borderColor: CASUAL.EDGE,
+      valueColor: CASUAL_CSS.RED,
     }),
     addInfoRow(scene, {
       x: px + 20 + statW + statGap,
@@ -258,8 +263,8 @@ export function showMonsterDetailPanel(
       label: 'CD',
       value: `${def.attackCooldown}`,
       fillColor: DETAIL_ROW_FILL,
-      borderColor: COLORS.STONE_MID,
-      valueColor: CSS.PARCHMENT_DIM,
+      borderColor: CASUAL.EDGE_SOFT,
+      valueColor: CASUAL_CSS.INK,
     }),
     addInfoRow(scene, {
       x: px + 20 + (statW + statGap) * 2,
@@ -270,8 +275,8 @@ export function showMonsterDetailPanel(
       label: 'RNG',
       value: `${def.range}`,
       fillColor: DETAIL_ROW_FILL,
-      borderColor: COLORS.STONE_MID,
-      valueColor: CSS.PARCHMENT_DIM,
+      borderColor: CASUAL.EDGE_SOFT,
+      valueColor: CASUAL_CSS.INK,
     }),
   ].forEach(row => addToContainer(ov, row.bg, row.iconText, row.labelText, row.valueText));
 
@@ -283,16 +288,16 @@ export function showMonsterDetailPanel(
     w: xpBarW,
     h: 10,
     ratio: xpPct,
-    fillColor: xpPct >= 0.82 ? 0x55d4ff : 0x44aa44,
-    trackColor: 0x0a0600,
-    borderColor: xpPct >= 0.82 ? 0x3b8aad : 0x335522,
-    borderAlpha: 0.72,
+    fillColor: xpPct >= 0.82 ? CASUAL.GOLD : CASUAL.GREEN,
+    trackColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE_SOFT,
+    borderAlpha: 0.9,
     animate: false,
   });
   addToContainer(ov, xpBar.track, xpBar.fill);
 
   const xpLabel = scene.add.text(px + pw / 2, py + 139, m.level >= 50 ? 'MAX LEVEL' : `EXP ${m.xp} / ${xpNeeded}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: xpPct >= 0.82 ? '#c8f7ff' : '#88cc88',
+    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: xpPct >= 0.82 ? CASUAL_CSS.GOLD : CASUAL_CSS.GREEN,
   }).setOrigin(0.5);
   ov.add(xpLabel);
 
@@ -304,12 +309,12 @@ export function showMonsterDetailPanel(
   // Equipment section
   const eqY = py + 438;
   const eqDiv = scene.add.graphics();
-  eqDiv.lineStyle(1, COLORS.STONE_MID, 0.5);
+  eqDiv.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
   eqDiv.lineBetween(px + 16, eqY, px + pw - 16, eqY);
   ov.add(eqDiv);
 
   const eqLabel = scene.add.text(px + 16, eqY + 8, '🗡️ 장비', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   });
   ov.add(eqLabel);
 
@@ -318,12 +323,12 @@ export function showMonsterDetailPanel(
   // Active Skills section
   const skY = eqY + 100;
   const skDiv = scene.add.graphics();
-  skDiv.lineStyle(1, COLORS.STONE_MID, 0.5);
+  skDiv.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
   skDiv.lineBetween(px + 16, skY, px + pw - 16, skY);
   ov.add(skDiv);
 
   const skLabel = scene.add.text(px + 16, skY + 8, '✨ 장착 스킬', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   });
   ov.add(skLabel);
 
@@ -332,11 +337,11 @@ export function showMonsterDetailPanel(
   // Skin section
   const skinSectionY = skY + 88;
   const skinDiv = scene.add.graphics();
-  skinDiv.lineStyle(1, COLORS.STONE_MID, 0.5);
+  skinDiv.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
   skinDiv.lineBetween(px + 16, skinSectionY, px + pw - 16, skinSectionY);
   ov.add(skinDiv);
   ov.add(scene.add.text(px + 16, skinSectionY + 8, '🎨 코스튬', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   }));
   buildSkinSlot(ctx, ov, m, px + 16, skinSectionY + 30, pw - 32);
 
@@ -382,10 +387,10 @@ export function showMonsterDetailPanel(
           targets: ov, scaleX: 1.06, scaleY: 1.06, duration: 120, ease: 'Back.easeOut',
           onComplete: () => scene.tweens.add({ targets: ov, scaleX: 1, scaleY: 1, duration: 160, ease: 'Back.easeIn' }),
         });
-        // Golden "레벨 업!" banner
+        // Candy "레벨 업!" banner
         const lvUpT = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60, `⬆ LEVEL UP!  Lv.${m.level}`, {
-          fontFamily: 'Georgia, serif', fontSize: '20px', fontStyle: 'bold', color: '#ffee44',
-          stroke: '#000000', strokeThickness: 4,
+          fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold', color: '#ffffff',
+          stroke: `#${CASUAL.GOLD_DK.toString(16).padStart(6, '0')}`, strokeThickness: 5,
         }).setOrigin(0.5).setDepth(310).setScale(0.4).setAlpha(0);
         ov.add(lvUpT);
         scene.tweens.add({
@@ -414,11 +419,11 @@ export function showMonsterDetailPanel(
       h: 32,
       label: '방으로 복귀',
       fontSize: '12px',
-      fillColor: 0x0c211b,
-      hoverFillColor: 0x123229,
-      borderColor: 0xc8e8b0,
-      hoverBorderColor: accentColor,
-      textColor: '#b8fff0',
+      fillColor: CASUAL.GREEN,
+      hoverFillColor: 0x6fdc70,
+      borderColor: CASUAL.GREEN_DK,
+      hoverBorderColor: CASUAL.GREEN_DK,
+      textColor: '#ffffff',
       onPress: () => { ov.destroy(); onClose(); ctx.onReturnToRoom?.(); },
     });
     addToContainer(ov, returnButton.bg, returnButton.text, returnButton.zone);
@@ -433,11 +438,11 @@ export function showMonsterDetailPanel(
     h: 32,
     label: '닫기  ✕',
     fontSize: '12px',
-    fillColor: 0x17100a,
-    hoverFillColor: 0x24170b,
-    borderColor: COLORS.STONE_MID,
-    hoverBorderColor: accentColor,
-    textColor: CSS.PARCHMENT_MUTED,
+    fillColor: CASUAL.PANEL,
+    hoverFillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE,
+    hoverBorderColor: CASUAL.EDGE,
+    textColor: CASUAL_CSS.INK,
     onPress: () => { ov.destroy(); onClose(); },
   });
   addToContainer(ov, closeButton.bg, closeButton.text, closeButton.zone);
@@ -481,7 +486,7 @@ function getDetailCollectionMeta(monster: OwnedMonster, def: MonsterDef): {
     tribeLabel:   def.tribe ? DETAIL_TRIBE_LABELS[def.tribe] ?? '수호' : '수호',
     elementLabel: element?.label ?? '무속',
     elementIcon:  element?.icon ?? '◆',
-    elementColor: element?.color ?? COLORS.TORCH_AMBER,
+    elementColor: element?.color ?? CASUAL.GOLD,
   };
 }
 
@@ -499,18 +504,17 @@ function drawHeroCollectionBadges(
   const portraitX = x + 35;
   const portraitY = y + 32;
   const isLevelReady = xpPct >= 0.82;
-  const statusColor = skillPoints > 0 ? 0xc978ff : isLevelReady ? 0x55d4ff : hasEquipment ? meta.color : 0xffb45f;
+  const statusColor = skillPoints > 0 ? CASUAL.PURPLE : isLevelReady ? CASUAL.BLUE : hasEquipment ? meta.color : CASUAL.GOLD;
+  const statusCss = skillPoints > 0 ? CASUAL_CSS.PURPLE : isLevelReady ? CASUAL_CSS.BLUE : hasEquipment ? meta.css : CASUAL_CSS.GOLD;
 
-  badge.fillStyle(meta.color, meta.rank >= 3 ? 0.11 : 0.075);
-  badge.fillCircle(portraitX, portraitY, 39);
-  badge.lineStyle(meta.rank >= 3 ? 1.6 : 1.1, meta.color, meta.rank >= 3 ? 0.58 : 0.38);
+  badge.lineStyle(meta.rank >= 3 ? 2 : 1.5, meta.color, 0.9);
   badge.strokeCircle(portraitX, portraitY, 36);
-  badge.lineStyle(1, meta.elementColor, 0.28);
+  badge.lineStyle(1, meta.elementColor, 0.5);
   badge.strokeCircle(portraitX, portraitY, 28);
-  badge.fillStyle(0x050302, 0.38);
+  badge.fillStyle(CASUAL.SHADOW, 0.2);
   badge.fillEllipse(portraitX, portraitY + 30, 70, 12);
 
-  badge.lineStyle(1.6, statusColor, skillPoints > 0 || isLevelReady ? 0.72 : 0.34);
+  badge.lineStyle(2.4, statusColor, skillPoints > 0 || isLevelReady ? 1 : 0.5);
   badge.beginPath();
   badge.arc(
     portraitX,
@@ -521,28 +525,28 @@ function drawHeroCollectionBadges(
   );
   badge.strokePath();
 
-  badge.fillStyle(0x070503, 0.62);
+  badge.fillStyle(CASUAL.PANEL, 1);
   badge.fillRoundedRect(x + 5, y + 5, 42, 14, 5);
-  badge.lineStyle(1, meta.color, 0.46);
+  badge.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.9);
   badge.strokeRoundedRect(x + 5, y + 5, 42, 14, 5);
-  badge.fillStyle(meta.color, 0.22);
+  badge.fillStyle(meta.color, 1);
   badge.fillRoundedRect(x + 49, y + 5, 17, 14, 5);
-  badge.lineStyle(1, meta.color, 0.72);
+  badge.lineStyle(1.5, CASUAL.EDGE, 0.9);
   badge.strokeRoundedRect(x + 49, y + 5, 17, 14, 5);
-  badge.fillStyle(0x070503, 0.58);
+  badge.fillStyle(CASUAL.PANEL, 1);
   badge.fillRoundedRect(x + 9, y + 48, 52, 15, 6);
-  badge.lineStyle(1, meta.elementColor, 0.42);
+  badge.lineStyle(1.5, meta.elementColor, 0.9);
   badge.strokeRoundedRect(x + 9, y + 48, 52, 15, 6);
-  badge.fillStyle(0x070503, 0.86);
+  badge.fillStyle(CASUAL.PANEL, 1);
   badge.fillRoundedRect(x + 60, y + 24, 24, 17, 6);
-  badge.lineStyle(1, statusColor, 0.62);
+  badge.lineStyle(1.5, statusColor, 0.9);
   badge.strokeRoundedRect(x + 60, y + 24, 24, 17, 6);
-  badge.fillStyle(statusColor, 0.16);
+  badge.fillStyle(statusColor, 0.22);
   badge.fillCircle(x + 72, y + 32.5, 6);
   if (!hasEquipment) {
-    badge.fillStyle(0xffb45f, 0.16);
+    badge.fillStyle(CASUAL.GOLD, 0.3);
     badge.fillRoundedRect(x + 63, y + 45, 18, 12, 4);
-    badge.lineStyle(1, 0xffb45f, 0.42);
+    badge.lineStyle(1.5, CASUAL.GOLD_DK, 0.9);
     badge.strokeRoundedRect(x + 63, y + 45, 18, 12, 4);
   }
   ov.add(badge);
@@ -550,13 +554,14 @@ function drawHeroCollectionBadges(
   ov.add(scene.add.text(x + 26, y + 12, meta.indexLabel, {
     fontFamily: 'monospace',
     fontSize: '7px',
-    color: '#e6e4d6',
+    color: CASUAL_CSS.INK_SOFT,
+    fontStyle: 'bold',
   }).setOrigin(0.5));
   ov.add(scene.add.text(x + 57.5, y + 12, meta.tier, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '9px',
     fontStyle: 'bold',
-    color: meta.css,
+    color: '#ffffff',
   }).setOrigin(0.5));
   ov.add(scene.add.text(x + 35, y + 55.5, `${meta.elementIcon} ${meta.stars}`, {
     fontFamily: 'sans-serif',
@@ -568,14 +573,14 @@ function drawHeroCollectionBadges(
     fontFamily: 'sans-serif',
     fontSize: '7px',
     fontStyle: 'bold',
-    color: skillPoints > 0 ? '#e9c4ff' : isLevelReady ? '#d7f7ff' : meta.css,
+    color: statusCss,
   }).setOrigin(0.5));
   if (!hasEquipment) {
     ov.add(scene.add.text(x + 72, y + 51, 'EQ', {
       fontFamily: 'sans-serif',
       fontSize: '7px',
       fontStyle: 'bold',
-      color: '#ffd0a0',
+      color: CASUAL_CSS.GOLD,
     }).setOrigin(0.5));
   }
 }
@@ -599,50 +604,55 @@ function buildGrowthCommandPanel(
   const eq = m.equipment ? getEquipmentDisplay(gs, m.equipment) : null;
 
   const bg = scene.add.graphics();
-  bg.fillStyle(0x0b1412, 0.94);
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(x, y, w, 48, 8);
-  bg.fillStyle(directive.accent, 0.14);
+  bg.fillStyle(0xffffff, 0.4);
+  bg.fillRoundedRect(x + 4, y + 3, w - 8, 4, 3);
+  bg.fillStyle(directive.accent, 0.2);
   bg.fillRoundedRect(x + 4, y + 4, 82, 40, 7);
-  bg.lineStyle(1.5, directive.accent, 0.64);
+  bg.lineStyle(2, directive.accent, 0.9);
+  bg.strokeRoundedRect(x + 4, y + 4, 82, 40, 7);
+  bg.lineStyle(2, accentColor, 0.5);
+  bg.lineBetween(x + 96, y + 10, x + 96, y + 38);
+  bg.lineStyle(3, CASUAL.EDGE, 1);
   bg.strokeRoundedRect(x, y, w, 48, 8);
-  bg.lineStyle(1, accentColor, 0.16);
-  bg.lineBetween(x + 96, y + 8, x + 96, y + 40);
   ov.add(bg);
 
   ov.add(scene.add.text(x + 14, y + 13, '성장 루트', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: '#9ee8cc',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 14, y + 31, `${Math.round(xpPct * 100)}% EXP`, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     fontStyle: 'bold',
-    color: '#e9ffd8',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
 
   ov.add(scene.add.text(x + 108, y + 14, directive.title, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '13px',
     fontStyle: 'bold',
-    color: CSS.PARCHMENT,
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 108, y + 32, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: CSS.PARCHMENT_DIM,
+    color: CASUAL_CSS.INK_SOFT,
     wordWrap: { width: 124, useAdvancedWrap: true },
   }).setOrigin(0, 0.5));
 
-  addGrowthPill(scene, ov, x + w - 84, y + 7, 72, 'SP', String(m.skillPoints ?? 0), (m.skillPoints ?? 0) > 0 ? 0xc978ff : 0x53606a);
-  addGrowthPill(scene, ov, x + w - 84, y + 27, 72, '장비', eq ? eq.icon : '미장착', eq ? COLORS.TORCH_AMBER : 0x7a5a38);
+  addGrowthPill(scene, ov, x + w - 84, y + 7, 72, 'SP', String(m.skillPoints ?? 0), (m.skillPoints ?? 0) > 0 ? CASUAL.PURPLE : CASUAL.EDGE_SOFT);
+  addGrowthPill(scene, ov, x + w - 84, y + 27, 72, '장비', eq ? eq.icon : '미장착', eq ? CASUAL.GOLD : CASUAL.EDGE_SOFT);
 
   const skillSlotLabel = `${equippedSkills.length}/2 스킬`;
   ov.add(scene.add.text(x + w - 95, y + 39, skillSlotLabel, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: equippedSkills.length >= 2 ? '#a8e889' : '#caa980',
+    fontStyle: 'bold',
+    color: equippedSkills.length >= 2 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
   }).setOrigin(1, 0.5));
 }
 
@@ -655,22 +665,23 @@ function addGrowthPill(
   accent: number,
 ): void {
   const bg = scene.add.graphics();
-  bg.fillStyle(0x17100a, 0.94);
+  bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRoundedRect(x, y, w, 16, 5);
-  bg.lineStyle(1, accent, 0.42);
+  bg.lineStyle(1.5, accent, 0.9);
   bg.strokeRoundedRect(x, y, w, 16, 5);
   ov.add(bg);
 
   ov.add(scene.add.text(x + 6, y + 8, label, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: CSS.PARCHMENT_MUTED,
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + w - 6, y + 8, value, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
     fontStyle: 'bold',
-    color: `#${accent.toString(16).padStart(6, '0')}`,
+    color: CASUAL_CSS.INK,
   }).setOrigin(1, 0.5));
 }
 
@@ -689,34 +700,34 @@ function getGrowthDirective(
     return {
       title: '스킬 성장이 가능',
       body: `${nextNode.icon} ${nextNode.name} 노드를 열어 전투 역할을 강화하세요.`,
-      accent: 0xc978ff,
+      accent: CASUAL.PURPLE,
     };
   }
   if (xpPct >= 0.78 && m.level < 50) {
     return {
       title: '레벨업 임박',
       body: '먹이로 경험치를 채우면 다음 던전 방 주력으로 쓰기 좋습니다.',
-      accent: 0x55d4ff,
+      accent: CASUAL.BLUE,
     };
   }
   if (!m.equipment && getEquipmentInventoryIds(gs).length > 0) {
     return {
       title: '장비 장착 추천',
       body: '보유 장비를 장착하면 방어선 전투력이 바로 올라갑니다.',
-      accent: COLORS.TORCH_AMBER,
+      accent: CASUAL.GOLD,
     };
   }
   if ((m.equippedSkills ?? []).length < 2 && (gs.ownedActiveSkills ?? []).length > 0) {
     return {
       title: '액티브 스킬 장착',
       body: '빈 스킬 슬롯을 눌러 웨이브 대응 옵션을 채우세요.',
-      accent: 0x8aa7ff,
+      accent: CASUAL.BLUE,
     };
   }
   return {
     title: '던전 배치 준비',
     body: '성장 상태가 안정적입니다. 전투실에 배치해 방어선을 강화하세요.',
-    accent: 0x8bbf6a,
+    accent: CASUAL.GREEN,
   };
 }
 
@@ -741,40 +752,40 @@ function buildFeedTrainingAction(
   setMessage: (title: string, sub: string, chip: string, color: string) => void;
   resetMessage: () => void;
 } {
-  const { x, y, w, h, monster, state, accentColor, onPress } = options;
+  const { x, y, w, h, monster, state, onPress } = options;
   const preview = getFeedTrainingPreview(monster, state);
-  const fillColor = preview.maxLevel ? 0x172112 : preview.canAfford ? 0x3a2200 : 0x21120f;
-  const borderColor = preview.maxLevel ? 0x8bbf6a : preview.canAfford ? COLORS.TORCH_AMBER : 0xaa514d;
-  const chipColor = preview.maxLevel ? 0x8bbf6a : preview.willLevelUp ? 0xffdf64 : preview.canAfford ? 0xffb45f : 0xaa514d;
+  // 캔디 CTA: 만렙=초록 비활성톤, 가능=골드, 부족=뮤트 크림
+  const fillColor = preview.maxLevel ? CASUAL.GREEN : preview.canAfford ? CASUAL.GOLD : CASUAL.PANEL_SOFT;
+  const borderColor = preview.maxLevel ? CASUAL.GREEN_DK : preview.canAfford ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT;
+  const chipColor = preview.maxLevel ? CASUAL.GREEN_DK : preview.willLevelUp ? CASUAL.GOLD_DK : preview.canAfford ? CASUAL.GOLD_DK : CASUAL.RED;
+  const onCandy = preview.canAfford || preview.maxLevel; // 채도 캡 위 글자는 흰색
+  const chipCss = `#${chipColor.toString(16).padStart(6, '0')}`; // 흰 칩 위 채도 글자
   const defaultTitle = preview.title;
   const defaultSub = preview.sub;
   const defaultChip = preview.chip;
-  const defaultTitleColor = preview.maxLevel ? '#c9f0a8' : preview.canAfford ? '#ffe0a3' : '#ffb0a6';
-  const defaultChipColor = `#${chipColor.toString(16).padStart(6, '0')}`;
+  const defaultTitleColor = onCandy ? '#ffffff' : CASUAL_CSS.RED;
+  const defaultChipColor = chipCss;
 
   const bg = scene.add.graphics();
-  bg.fillStyle(0x070503, 0.42);
-  bg.fillRoundedRect(x + 2, y + 3, w - 4, h, 9);
-  bg.fillStyle(fillColor, 0.98);
-  bg.fillRoundedRect(x, y, w, h, 9);
-  bg.fillStyle(chipColor, preview.canAfford || preview.maxLevel ? 0.17 : 0.08);
+  // 채도 베이스(어두운 테두리색) → 밝은 캡 = 캔디 버튼 입체
+  bg.fillStyle(borderColor, 1);
+  bg.fillRoundedRect(x, y + 4, w, h, 10);
+  bg.fillStyle(fillColor, 1);
+  bg.fillRoundedRect(x, y, w, h - 2, 10);
+  bg.fillStyle(0xffffff, 0.32);
+  bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), 6);
+  bg.fillStyle(0xffffff, onCandy ? 0.22 : 0.5);
   bg.fillRoundedRect(x + 7, y + 6, 36, h - 12, 8);
-  bg.fillStyle(accentColor, 0.08);
-  bg.fillRoundedRect(x + 48, y + 6, w - 148, h - 12, 7);
-  bg.lineStyle(1.5, borderColor, preview.canAfford || preview.maxLevel ? 0.86 : 0.62);
-  bg.strokeRoundedRect(x, y, w, h, 9);
-  bg.lineStyle(1, 0xffffff, 0.12);
-  bg.lineBetween(x + 53, y + 8, x + 53, y + h - 8);
 
   const trackX = x + w - 96;
   const trackY = y + h - 8;
   const trackW = 74;
-  bg.fillStyle(0x120a05, 0.82);
+  bg.fillStyle(CASUAL.PANEL_SOFT, 0.9);
   bg.fillRoundedRect(trackX, trackY, trackW, 3, 2);
-  bg.fillStyle(0x5f3b14, 0.9);
+  bg.fillStyle(0xffffff, 0.7);
   bg.fillRoundedRect(trackX, trackY, Math.max(3, Math.round(trackW * preview.currentPct)), 3, 2);
   if (preview.nextPct > preview.currentPct) {
-    bg.fillStyle(chipColor, 0.95);
+    bg.fillStyle(0xffffff, 1);
     bg.fillRoundedRect(
       trackX + Math.round(trackW * preview.currentPct),
       trackY,
@@ -790,31 +801,35 @@ function buildFeedTrainingAction(
   }).setOrigin(0.5);
 
   const titleText = scene.add.text(x + 60, y + 12, defaultTitle, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '12px',
     fontStyle: 'bold',
     color: defaultTitleColor,
+    stroke: onCandy ? '#00000033' : undefined,
+    strokeThickness: onCandy ? 3 : 0,
   }).setOrigin(0, 0.5);
   const subText = scene.add.text(x + 60, y + 27, defaultSub, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: preview.canAfford || preview.maxLevel ? CSS.PARCHMENT_DIM : '#d98880',
+    fontStyle: 'bold',
+    color: onCandy ? '#ffffff' : CASUAL_CSS.RED,
   }).setOrigin(0, 0.5);
 
-  bg.fillStyle(0x070b08, 0.82);
+  bg.fillStyle(0xffffff, 0.85);
   bg.fillRoundedRect(x + w - 90, y + 7, 76, 19, 7);
-  bg.lineStyle(1, chipColor, 0.58);
+  bg.lineStyle(1.5, chipColor, 0.9);
   bg.strokeRoundedRect(x + w - 90, y + 7, 76, 19, 7);
   const chipText = scene.add.text(x + w - 52, y + 16.5, defaultChip, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: defaultChipColor,
+    color: chipCss,
   }).setOrigin(0.5);
   const arrowText = scene.add.text(x + w - 11, y + h / 2, '▶', {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: preview.canAfford ? '#ffd878' : '#806b57',
+    fontStyle: 'bold',
+    color: onCandy ? '#ffffff' : CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5);
 
   const zone = scene.add.zone(x + w / 2, y + h / 2, w, Math.max(44, h)).setInteractive({ useHandCursor: true });
@@ -908,16 +923,16 @@ function buildSkillTreeSection(
   const { scene, onRefresh } = ctx;
 
   const hdr = scene.add.text(x + w / 2, y, '스킬 트리', {
-    fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.TORCH_AMBER,
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   }).setOrigin(0.5);
   ov.add(hdr);
 
   const branches = (['A', 'B', 'C'] as const);
   const colW = w / 3;
   const branchAccents: Record<'A' | 'B' | 'C', number> = {
-    A: 0xff9354,
-    B: 0x8aa7ff,
-    C: 0x89e06f,
+    A: CASUAL.RED,
+    B: CASUAL.BLUE,
+    C: CASUAL.GREEN,
   };
 
   branches.forEach((branch, bi) => {
@@ -926,11 +941,13 @@ function buildSkillTreeSection(
     const branchAccent = branchAccents[branch];
 
     const lane = scene.add.graphics();
-    lane.fillStyle(branchAccent, 0.10);
+    lane.fillStyle(branchAccent, 1);
     lane.fillRoundedRect(bx + 8, y + 11, colW - 16, 20, 7);
-    lane.lineStyle(1, branchAccent, 0.36);
+    lane.fillStyle(0xffffff, 0.3);
+    lane.fillRoundedRect(bx + 11, y + 13, colW - 22, 4, 2);
+    lane.lineStyle(2, CASUAL.EDGE, 0.9);
     lane.strokeRoundedRect(bx + 8, y + 11, colW - 16, 20, 7);
-    lane.lineStyle(1.5, branchAccent, 0.20);
+    lane.lineStyle(2, branchAccent, 0.35);
     lane.lineBetween(bx + colW / 2, y + 34, bx + colW / 2, y + 198);
     ov.add(lane);
 
@@ -938,7 +955,9 @@ function buildSkillTreeSection(
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: `#${branchAccent.toString(16).padStart(6, '0')}`,
+      color: '#ffffff',
+      stroke: '#00000033',
+      strokeThickness: 3,
     }).setOrigin(0.5);
     ov.add(bnT);
 
@@ -949,35 +968,36 @@ function buildSkillTreeSection(
       const prereqMet = !node.requires || (m.spentSkills[node.requires] ?? 0) >= 1;
       const canAfford = m.skillPoints >= node.cost;
       const canUnlock = !spent && prereqMet && canAfford;
-      const stateAccent = spent ? 0x5cff7a : canUnlock ? 0xffd878 : prereqMet ? branchAccent : 0x4a4a4a;
-      const stateFill = spent ? 0x16321b : canUnlock ? 0x2b1c08 : prereqMet ? 0x17172a : 0x0d0d0d;
+      const stateAccent = spent ? CASUAL.GREEN : canUnlock ? CASUAL.GOLD : prereqMet ? branchAccent : CASUAL.EDGE_SOFT;
+      const stateAccentCss = spent ? CASUAL_CSS.GREEN : canUnlock ? CASUAL_CSS.GOLD : prereqMet ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT;
+      // 습득=초록 채도면(흰글자), 그 외=크림 타일(잉크글자)
+      const filledTile = spent;
+      const stateFill = filledTile ? CASUAL.GREEN : prereqMet ? CASUAL.PANEL : CASUAL.PANEL_SOFT;
       const stateLabel = spent ? '습득' : canUnlock ? '해금' : prereqMet ? `${node.cost}SP` : '잠김';
       const nodeW = 82;
       const nodeH = 52;
 
       const nodeBg = scene.add.graphics();
-      nodeBg.fillStyle(0x070503, 0.38);
+      nodeBg.fillStyle(CASUAL.SHADOW, 0.18);
       nodeBg.fillRoundedRect(nx - nodeW / 2 + 2, ny + 3, nodeW, nodeH, 8);
-      nodeBg.fillStyle(stateFill, 0.98);
+      nodeBg.fillStyle(stateFill, prereqMet ? 1 : 0.88);
       nodeBg.fillRoundedRect(nx - nodeW / 2, ny, nodeW, nodeH, 8);
-      nodeBg.fillStyle(stateAccent, spent || canUnlock ? 0.17 : prereqMet ? 0.08 : 0.03);
-      nodeBg.fillRoundedRect(nx - nodeW / 2 + 5, ny + 5, 30, 28, 7);
-      nodeBg.fillStyle(0xffffff, spent || canUnlock ? 0.13 : 0.05);
-      nodeBg.fillRoundedRect(nx - nodeW / 2 + 9, ny + 8, 22, 4, 3);
-      nodeBg.lineStyle(spent || canUnlock ? 2 : 1.5, stateAccent, spent || canUnlock ? 0.92 : 0.58);
+      nodeBg.fillStyle(0xffffff, filledTile ? 0.28 : 0.4);
+      nodeBg.fillRoundedRect(nx - nodeW / 2 + 5, ny + 4, nodeW - 10, 4, 3);
+      nodeBg.fillStyle(stateAccent, filledTile ? 0.3 : 0.18);
+      nodeBg.fillRoundedRect(nx - nodeW / 2 + 5, ny + 9, 30, 28, 7);
+      nodeBg.lineStyle(spent || canUnlock ? 3 : 2, stateAccent, prereqMet ? 1 : 0.7);
       nodeBg.strokeRoundedRect(nx - nodeW / 2, ny, nodeW, nodeH, 8);
-      nodeBg.lineStyle(1, 0xffffff, spent || canUnlock ? 0.14 : 0.05);
-      nodeBg.lineBetween(nx - 4, ny + 8, nx - 4, ny + nodeH - 8);
       ov.add(nodeBg);
 
-      ov.add(scene.add.text(nx - nodeW / 2 + 20, ny + 21, node.icon, {
+      ov.add(scene.add.text(nx - nodeW / 2 + 20, ny + 23, node.icon, {
         fontFamily: 'sans-serif',
         fontSize: '17px',
       }).setOrigin(0.5));
-      ov.add(scene.add.text(nx - nodeW / 2 + 8, ny + 7, `T${node.tier}`, {
+      ov.add(scene.add.text(nx - nodeW / 2 + 8, ny + 9, `T${node.tier}`, {
         fontFamily: 'monospace',
         fontSize: '7px',
-        color: spent || canUnlock ? '#ffffff' : '#8f8f8f',
+        color: filledTile ? '#ffffff' : CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5));
 
@@ -985,22 +1005,22 @@ function buildSkillTreeSection(
         fontFamily: 'sans-serif',
         fontSize: '10px',
         fontStyle: 'bold',
-        color: spent ? '#b9ffbf' : canUnlock ? '#ffe2a3' : prereqMet ? CSS.PARCHMENT_DIM : '#666666',
+        color: filledTile ? '#ffffff' : prereqMet ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       }).setOrigin(0, 0.5));
 
       ov.add(scene.add.text(nx + 2, ny + 36, stateLabel, {
         fontFamily: 'sans-serif',
         fontSize: '9px',
         fontStyle: spent || canUnlock ? 'bold' : 'normal',
-        color: spent ? '#5cff7a' : canUnlock ? '#ffd878' : prereqMet ? '#caa7ff' : '#707070',
+        color: filledTile ? '#ffffff' : stateAccentCss,
       }).setOrigin(0, 0.5));
       if (canUnlock) {
         ov.add(scene.add.text(nx + nodeW / 2 - 7, ny + 8, '!', {
           fontFamily: 'sans-serif',
           fontSize: '10px',
-          color: '#191006',
+          color: '#ffffff',
           fontStyle: 'bold',
-          backgroundColor: '#ffd878',
+          backgroundColor: CASUAL_CSS.GOLD,
           padding: { x: 3, y: 1 },
         }).setOrigin(1, 0.5));
       }
@@ -1039,7 +1059,7 @@ function buildEquipmentSlot(
   const equippedLabel = eqDef
     ? `${typeMeta.icon} ${typeMeta.label} · ${getEquipmentStars(eqDef.rarity)}`
     : '장비 슬롯 비어 있음';
-  const slotAccent = eqDef ? getEquipmentRarityColor(eqDef.rarity) : 0x6a5542;
+  const slotAccent = eqDef ? getEquipmentRarityColor(eqDef.rarity) : CASUAL.EDGE_SOFT;
   const recommendedEquipmentId = getRecommendedEquipmentId(inventory, eqId);
   const impactLabel = eqDef ? getEquipmentImpactLabel(eqDef) : '전력 보강 대기';
 
@@ -1048,75 +1068,77 @@ function buildEquipmentSlot(
   const rightW = w - leftW - 8;
 
   const slotBg = scene.add.graphics();
-  slotBg.fillStyle(eqDef ? 0x182012 : 0x10100d, 0.98);
+  slotBg.fillStyle(eqDef ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
   slotBg.fillRoundedRect(x, y, leftW, 68, 9);
-  slotBg.fillStyle(slotAccent, eqDef ? 0.18 : 0.08);
+  slotBg.fillStyle(0xffffff, 0.4);
+  slotBg.fillRoundedRect(x + 5, y + 4, leftW - 10, 4, 3);
+  slotBg.fillStyle(slotAccent, eqDef ? 0.22 : 0.12);
   slotBg.fillRoundedRect(x + 6, y + 6, 46, 56, 8);
-  slotBg.fillStyle(0xffffff, eqDef ? 0.12 : 0.05);
-  slotBg.fillRoundedRect(x + 11, y + 10, 36, 5, 3);
-  slotBg.lineStyle(1.5, slotAccent, eqDef ? 0.88 : 0.44);
+  slotBg.lineStyle(2, slotAccent, eqDef ? 1 : 0.7);
+  slotBg.strokeRoundedRect(x + 6, y + 6, 46, 56, 8);
+  slotBg.lineStyle(3, CASUAL.EDGE, 1);
   slotBg.strokeRoundedRect(x, y, leftW, 68, 9);
-  slotBg.lineStyle(1, 0xffffff, eqDef ? 0.12 : 0.05);
-  slotBg.lineBetween(x + 58, y + 10, x + 58, y + 58);
-  slotBg.fillStyle(eqDef ? slotAccent : 0x5e4a35, eqDef ? 0.24 : 0.14);
+  slotBg.fillStyle(slotAccent, eqDef ? 0.28 : 0.16);
   slotBg.fillRoundedRect(x + 64, y + 48, 74, 13, 5);
   ov.add(slotBg);
 
   ov.add(scene.add.text(x + 29, y + 24, eqDef ? eqDef.icon : '◇', {
     fontFamily: 'sans-serif',
     fontSize: eqDef ? '24px' : '22px',
-    color: eqDef ? '#ffffff' : '#7f6750',
+    color: eqDef ? `#${slotAccent.toString(16).padStart(6, '0')}` : CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
   ov.add(scene.add.text(x + 29, y + 48, eqDef ? getEquipmentStars(eqDef.rarity) : 'EMPTY', {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: eqDef ? `#${slotAccent.toString(16).padStart(6, '0')}` : '#7f6750',
+    color: eqDef ? `#${slotAccent.toString(16).padStart(6, '0')}` : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
   ov.add(scene.add.text(x + 66, y + 11, equippedLabel, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: eqDef ? typeMeta.css : '#9a7b5a',
+    color: eqDef ? typeMeta.css : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 66, y + 29, eqDef ? shortenLabel(eqDef.name, 8) : '장비 미장착', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: eqDef ? CSS.PARCHMENT : '#8a7358',
+    color: eqDef ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 66, y + 44, eqDef ? shortenLabel(eqDef.desc, 13) : '보관함에서 장착', {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: eqDef ? CSS.PARCHMENT_DIM : '#765f49',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 101, y + 54.5, impactLabel, {
     fontFamily: 'sans-serif',
     fontSize: '7px',
-    color: eqDef ? `#${slotAccent.toString(16).padStart(6, '0')}` : '#9a7b5a',
+    color: eqDef ? `#${slotAccent.toString(16).padStart(6, '0')}` : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
   const invBg = scene.add.graphics();
-  invBg.fillStyle(0x0c1412, 0.92);
+  invBg.fillStyle(CASUAL.PANEL_SOFT, 1);
   invBg.fillRoundedRect(rightX, y, rightW, 68, 9);
-  invBg.fillStyle(0x2a1a0c, 0.38);
+  invBg.fillStyle(0xffffff, 0.4);
+  invBg.fillRoundedRect(rightX + 5, y + 4, rightW - 10, 4, 3);
+  invBg.fillStyle(CASUAL.GOLD, 0.16);
   invBg.fillRoundedRect(rightX + 5, y + 5, rightW - 10, 15, 6);
-  invBg.lineStyle(1.2, 0x6a5032, 0.55);
+  invBg.lineStyle(3, CASUAL.EDGE, 1);
   invBg.strokeRoundedRect(rightX, y, rightW, 68, 9);
   ov.add(invBg);
 
   ov.add(scene.add.text(rightX + 8, y + 9, `보관함 ${inventory.length}`, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#c5a273',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(rightX + rightW - 8, y + 9, inventory.length > 0 ? '탭 장착' : '제작 필요', {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: inventory.length > 0 ? '#f5d08b' : '#846a4b',
+    color: inventory.length > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
 
@@ -1127,9 +1149,9 @@ function buildEquipmentSlot(
     ov.add(scene.add.text(rightX + rightW - 12, y + 34, `+${inventory.length - 4}`, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: '#c5a273',
+      color: '#ffffff',
       fontStyle: 'bold',
-      backgroundColor: '#241609',
+      backgroundColor: CASUAL_CSS.INK_SOFT,
       padding: { x: 3, y: 1 },
     }).setOrigin(1, 0.5));
   }
@@ -1137,7 +1159,7 @@ function buildEquipmentSlot(
     ov.add(scene.add.text(rightX + rightW / 2, y + 32, '장비 없음', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#6c5945',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
   }
 
@@ -1148,11 +1170,11 @@ function buildEquipmentSlot(
     h: 18,
     label: inventory.length > 0 ? '⚒ 장비 더 제작' : '⚒ 장비 제작소',
     fontSize: '9px',
-    fillColor: 0x2a1400,
-    hoverFillColor: 0x3a2100,
-    borderColor: 0xcc6600,
-    hoverBorderColor: COLORS.TORCH_AMBER,
-    textColor: '#ffaa44',
+    fillColor: CASUAL.GOLD,
+    hoverFillColor: 0xffd45f,
+    borderColor: CASUAL.GOLD_DK,
+    hoverBorderColor: CASUAL.GOLD_DK,
+    textColor: '#ffffff',
     onPress: () => {
       ov.destroy();
       if (ctx.onOpenForge) {
@@ -1177,12 +1199,13 @@ function drawEquipmentMiniCard(
   const { scene, onRefresh } = ctx;
   const typeMeta = getEquipmentTypeMeta(ed.type);
   const accent = getEquipmentRarityColor(ed.rarity);
+  const tileBorder = equipped ? CASUAL.GREEN : recommended ? CASUAL.GOLD : accent;
   const bg = scene.add.graphics();
-  bg.fillStyle(equipped ? 0x1d2715 : recommended ? 0x211707 : 0x130d08, 0.98);
+  bg.fillStyle(equipped ? CASUAL.GREEN : recommended ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(x, y, size, size, 6);
-  bg.fillStyle(typeMeta.color, equipped || recommended ? 0.20 : 0.08);
-  bg.fillRoundedRect(x + 3, y + 3, size - 6, size - 6, 5);
-  bg.lineStyle(equipped || recommended ? 1.5 : 1.1, equipped ? accent : recommended ? COLORS.TORCH_AMBER : typeMeta.color, equipped || recommended ? 0.92 : 0.42);
+  bg.fillStyle(0xffffff, equipped ? 0.28 : 0.4);
+  bg.fillRoundedRect(x + 3, y + 3, size - 6, 3, 2);
+  bg.lineStyle(equipped || recommended ? 2 : 1.5, tileBorder, equipped || recommended ? 1 : 0.7);
   bg.strokeRoundedRect(x, y, size, size, 6);
   ov.add(bg);
 
@@ -1193,7 +1216,7 @@ function drawEquipmentMiniCard(
   ov.add(scene.add.text(x + size / 2, y + 21, equipped ? '✓' : recommended ? 'BEST' : typeMeta.icon, {
     fontFamily: 'sans-serif',
     fontSize: equipped || recommended ? '7px' : '8px',
-    color: equipped ? '#b9ffbf' : recommended ? '#ffd878' : typeMeta.css,
+    color: equipped ? '#ffffff' : recommended ? CASUAL_CSS.GOLD : typeMeta.css,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -1246,7 +1269,7 @@ function getEquipmentInventoryIds(gs: GameState): string[] {
 }
 
 function getEquipmentTypeMeta(type: string | undefined): { label: string; icon: string; color: number; css: string } {
-  return DETAIL_EQUIPMENT_TYPE_META[type ?? ''] ?? { label: '장비', icon: '◇', color: 0xb99262, css: '#d6b783' };
+  return DETAIL_EQUIPMENT_TYPE_META[type ?? ''] ?? { label: '장비', icon: '◇', color: CASUAL.EDGE_SOFT, css: CASUAL_CSS.INK_SOFT };
 }
 
 function getEquipmentStars(rarity: number): string {
@@ -1255,7 +1278,7 @@ function getEquipmentStars(rarity: number): string {
 }
 
 function getEquipmentRarityColor(rarity: number): number {
-  const palette = [0xb99262, 0x76d17a, 0x62a8ff, 0xc978ff, 0xffc857, 0xff8f5f];
+  const palette = [CASUAL.EDGE_SOFT, CASUAL.GREEN, CASUAL.BLUE, CASUAL.PURPLE, CASUAL.GOLD, CASUAL.RED];
   const index = Phaser.Math.Clamp(Math.floor(rarity), 0, palette.length - 1);
   return palette[index];
 }
@@ -1319,7 +1342,7 @@ function buildEquippedSkillSlots(
     const sx   = x + si * (w / 2 + 4);
     const skId = (m.equippedSkills ?? [])[si];
     const sk   = skId ? ACTIVE_SKILLS.find(s => s.id === skId) : null;
-    const accent = sk ? SHOP_PURPLE : hasOwnedSkills ? 0x8aa7ff : 0x5e5144;
+    const accent = sk ? SHOP_PURPLE : hasOwnedSkills ? CASUAL.BLUE : CASUAL.EDGE_SOFT;
     const label = sk ? sk.name : '장착 대기';
     const subLabel = sk
       ? `쿨다운 ${sk.cooldown}s`
@@ -1328,40 +1351,42 @@ function buildEquippedSkillSlots(
         : '상점 필요';
 
     const bg = scene.add.graphics();
-    bg.fillStyle(sk ? 0x190b24 : 0x101617, 0.98);
+    // 장착됨=보라 채도 타일(흰글자), 비어있음=크림 타일(잉크글자)
+    bg.fillStyle(sk ? SHOP_PURPLE : hasOwnedSkills ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
     bg.fillRoundedRect(sx, y, slotW, 50, 8);
-    bg.fillStyle(accent, sk ? 0.18 : 0.10);
+    bg.fillStyle(0xffffff, sk ? 0.26 : 0.4);
+    bg.fillRoundedRect(sx + 5, y + 4, slotW - 10, 4, 3);
+    bg.fillStyle(sk ? 0xffffff : accent, sk ? 0.22 : 0.16);
     bg.fillRoundedRect(sx + 7, y + 7, 36, 36, 8);
-    bg.fillStyle(0xffffff, sk ? 0.13 : 0.06);
-    bg.fillRoundedRect(sx + 12, y + 11, 26, 4, 3);
-    bg.lineStyle(1.5, accent, sk ? 0.88 : 0.52);
+    bg.lineStyle(2, sk ? CASUAL.PURPLE_DK : accent, sk ? 1 : 0.7);
+    bg.strokeRoundedRect(sx + 7, y + 7, 36, 36, 8);
+    bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(sx, y, slotW, 50, 8);
-    bg.lineStyle(1, 0xffffff, sk ? 0.14 : 0.06);
-    bg.lineBetween(sx + 49, y + 9, sx + 49, y + 41);
     ov.add(bg);
 
     ov.add(scene.add.text(sx + 25, y + 25, sk ? sk.icon : '+', {
       fontFamily: 'sans-serif',
       fontSize: sk ? '21px' : '24px',
-      color: sk ? '#ffffff' : '#9fb4ff',
+      color: sk ? '#ffffff' : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5));
 
     ov.add(scene.add.text(sx + 57, y + 16, label, {
-      fontFamily: sk ? 'Georgia, serif' : 'sans-serif',
+      fontFamily: 'sans-serif',
       fontSize: '12px',
       fontStyle: 'bold',
-      color: sk ? '#edd1ff' : hasOwnedSkills ? '#d5dcff' : '#81766d',
+      color: sk ? '#ffffff' : hasOwnedSkills ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5));
     ov.add(scene.add.text(sx + 57, y + 33, subLabel, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: sk ? '#b8a0c8' : hasOwnedSkills ? '#9aaeff' : '#6a5b4c',
+      fontStyle: 'bold',
+      color: sk ? '#ffffff' : hasOwnedSkills ? CASUAL_CSS.BLUE : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0.5));
     ov.add(scene.add.text(sx + slotW - 9, y + 10, `S${si + 1}`, {
       fontFamily: 'monospace',
       fontSize: '8px',
-      color: sk ? '#efccff' : '#6f7c8c',
+      color: sk ? '#ffffff' : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
 
@@ -1404,11 +1429,13 @@ function buildSkinSlot(
   drawSkinDisplayCard(ctx, ov, m, typeId, x, y, baseW, null, !equipped, def?.emoji ?? '?', '기본');
 
   const gallery = scene.add.graphics();
-  gallery.fillStyle(0x0b1218, 0.96);
+  gallery.fillStyle(CASUAL.PANEL_SOFT, 1);
   gallery.fillRoundedRect(galleryX, y, galleryW, 56, 8);
-  gallery.fillStyle(0x8aa7ff, 0.08);
+  gallery.fillStyle(0xffffff, 0.4);
+  gallery.fillRoundedRect(galleryX + 5, y + 4, galleryW - 10, 4, 3);
+  gallery.fillStyle(CASUAL.BLUE, 0.16);
   gallery.fillRoundedRect(galleryX + 6, y + 7, galleryW - 12, 16, 6);
-  gallery.lineStyle(1.2, 0x8aa7ff, 0.46);
+  gallery.lineStyle(3, CASUAL.EDGE, 1);
   gallery.strokeRoundedRect(galleryX, y, galleryW, 56, 8);
   ov.add(gallery);
 
@@ -1416,20 +1443,20 @@ function buildSkinSlot(
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: '#d5dcff',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(galleryX + galleryW - 10, y + 15, locked.length > 0 ? `잠금 ${locked.length}` : '완성', {
     fontFamily: 'monospace',
     fontSize: '9px',
     fontStyle: 'bold',
-    color: locked.length > 0 ? '#a8b5d9' : '#91f0ad',
+    color: locked.length > 0 ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.GREEN,
   }).setOrigin(1, 0.5));
 
   if (allSkins.length === 0) {
     ov.add(scene.add.text(galleryX + galleryW / 2, y + 37, '이 몬스터의 스킨은 아직 없습니다', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#7b849b',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     return;
   }
@@ -1451,7 +1478,8 @@ function buildSkinSlot(
     ov.add(scene.add.text(galleryX + galleryW - 10, y + 39, shortenLabel(nextVia, 12), {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: '#8793b2',
+      fontStyle: 'bold',
+      color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0.5));
   }
 }
@@ -1470,17 +1498,19 @@ function drawSkinDisplayCard(
   fallbackLabel: string,
 ): void {
   const { scene, onRefresh } = ctx;
-  const accent = skin ? getSkinRarityColor(skin) : COLORS.TORCH_GOLD;
+  const accent = skin ? getSkinRarityColor(skin) : CASUAL.GOLD;
   const bg = scene.add.graphics();
-  bg.fillStyle(active ? 0x2a1800 : 0x111111, 1);
+  bg.fillStyle(active ? accent : CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(x, y, w, 56, 7);
-  bg.fillStyle(accent, active ? 0.18 : 0.08);
-  bg.fillRoundedRect(x + 7, y + 7, w - 14, 30, 7);
-  bg.lineStyle(1.5, active ? accent : 0x333333, active ? 1 : 0.55);
+  bg.fillStyle(0xffffff, active ? 0.26 : 0.4);
+  bg.fillRoundedRect(x + 5, y + 4, w - 10, 4, 3);
+  bg.fillStyle(active ? 0xffffff : accent, active ? 0.22 : 0.16);
+  bg.fillRoundedRect(x + 7, y + 9, w - 14, 28, 7);
+  bg.lineStyle(3, CASUAL.EDGE, 1);
   bg.strokeRoundedRect(x, y, w, 56, 7);
   ov.add(bg);
 
-  ov.add(scene.add.text(x + w / 2, y + 21, skin ? skin.emoji : fallbackEmoji, {
+  ov.add(scene.add.text(x + w / 2, y + 22, skin ? skin.emoji : fallbackEmoji, {
     fontFamily: 'sans-serif',
     fontSize: skin ? '18px' : '20px',
   }).setOrigin(0.5));
@@ -1488,7 +1518,7 @@ function drawSkinDisplayCard(
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: active ? `#${accent.toString(16).padStart(6, '0')}` : CSS.PARCHMENT_MUTED,
+    color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
 
   const zone = scene.add.zone(x + w / 2, y + 28, w, 56).setInteractive({ useHandCursor: true });
@@ -1516,24 +1546,25 @@ function drawSkinMiniCard(
   const { scene, onRefresh } = ctx;
   const accent = getSkinRarityColor(skin);
   const bg = scene.add.graphics();
-  bg.fillStyle(active ? 0x1d2715 : owned ? 0x151722 : 0x0f1014, 0.98);
+  // 활성=초록 채도 타일, 보유=크림 타일+레어 액센트, 잠금=뮤트 크림
+  bg.fillStyle(active ? CASUAL.GREEN : owned ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(x, y, size, size, 6);
-  bg.fillStyle(accent, owned ? 0.16 : 0.05);
-  bg.fillRoundedRect(x + 3, y + 3, size - 6, size - 6, 5);
-  bg.lineStyle(1.2, owned ? accent : 0x40465a, owned ? 0.88 : 0.48);
+  bg.fillStyle(0xffffff, active ? 0.28 : 0.4);
+  bg.fillRoundedRect(x + 3, y + 3, size - 6, 3, 2);
+  bg.lineStyle(owned ? 2 : 1.5, active ? CASUAL.GREEN_DK : owned ? accent : CASUAL.EDGE_SOFT, owned ? 1 : 0.7);
   bg.strokeRoundedRect(x, y, size, size, 6);
   ov.add(bg);
   ov.add(scene.add.text(x + size / 2, y + size / 2 - 1, owned ? skin.emoji : '🔒', {
     fontFamily: 'sans-serif',
     fontSize: owned ? '14px' : '12px',
-    color: owned ? '#ffffff' : '#7f879d',
+    color: owned ? '#ffffff' : CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
   if (skin.rarity !== 'normal') {
     ov.add(scene.add.text(x + size - 4, y + 5, skin.rarity === 'limited' ? 'L' : 'R', {
       fontFamily: 'monospace',
       fontSize: '7px',
       fontStyle: 'bold',
-      color: `#${accent.toString(16).padStart(6, '0')}`,
+      color: active ? '#ffffff' : `#${accent.toString(16).padStart(6, '0')}`,
     }).setOrigin(1, 0.5));
   }
 
@@ -1574,15 +1605,21 @@ function showLockedSkinPopup(
 
   const accent = getSkinRarityColor(skin);
   const bg = scene.add.graphics();
-  bg.fillStyle(0x141022, 0.98);
-  bg.fillRoundedRect(-popW / 2, -popH / 2, popW, popH, 10);
-  bg.lineStyle(1.5, accent, 0.85);
-  bg.strokeRoundedRect(-popW / 2, -popH / 2, popW, popH, 10);
+  bg.fillStyle(CASUAL.SHADOW, 0.3);
+  bg.fillRoundedRect(-popW / 2, -popH / 2 + 6, popW, popH, 12);
+  bg.fillStyle(CASUAL.PANEL, 1);
+  bg.fillRoundedRect(-popW / 2, -popH / 2, popW, popH, 12);
+  bg.fillStyle(0xffffff, 0.4);
+  bg.fillRoundedRect(-popW / 2 + 5, -popH / 2 + 4, popW - 10, 6, 4);
+  bg.fillStyle(accent, 1);
+  bg.fillRoundedRect(-popW / 2 + 6, -popH / 2 + 6, popW - 12, 8, 4);
+  bg.lineStyle(3, CASUAL.EDGE, 1);
+  bg.strokeRoundedRect(-popW / 2, -popH / 2, popW, popH, 12);
   pop.add(bg);
 
-  pop.add(scene.add.text(0, -popH / 2 + 20, `${skin.emoji} ${skin.name}`, {
-    fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-    color: `#${accent.toString(16).padStart(6, '0')}`,
+  pop.add(scene.add.text(0, -popH / 2 + 22, `${skin.emoji} ${skin.name}`, {
+    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0.5));
 
   if (isQuestSkin) {
@@ -1590,7 +1627,7 @@ function showLockedSkinPopup(
       ? getQuest(skin.unlockRef)?.title ?? skin.unlockRef
       : '?';
     pop.add(scene.add.text(0, -popH / 2 + 48, `퀘스트 「${questTitle}」\n완료 시 해금됩니다`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#e8d5aa',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       align: 'center', lineSpacing: 5,
     }).setOrigin(0.5, 0));
     return;
@@ -1598,7 +1635,7 @@ function showLockedSkinPopup(
 
   if (!skin.available) {
     pop.add(scene.add.text(0, -popH / 2 + 52, '기간 한정 스킨 — 현재 판매 종료', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#9aa6bb',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     return;
   }
@@ -1606,21 +1643,25 @@ function showLockedSkinPopup(
   const gems = loadGameState().gems ?? 0;
   const canAfford = gems >= skin.gemCost;
   pop.add(scene.add.text(0, -popH / 2 + 44, `보유 💎 ${gems.toLocaleString()}`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#9aa6bb',
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5));
 
   const btnW = 150;
   const btnH = 34;
   const btnY = popH / 2 - 28;
   const btn = scene.add.graphics();
-  btn.fillStyle(canAfford ? 0x2c5f8a : 0x33394a, 0.96);
-  btn.fillRoundedRect(-btnW / 2, btnY - btnH / 2, btnW, btnH, 8);
-  btn.lineStyle(1, canAfford ? 0x55b88a : 0x555d72, 0.8);
-  btn.strokeRoundedRect(-btnW / 2, btnY - btnH / 2, btnW, btnH, 8);
+  btn.fillStyle(canAfford ? CASUAL.BLUE_DK : CASUAL.EDGE_SOFT, 1);
+  btn.fillRoundedRect(-btnW / 2, btnY - btnH / 2 + 4, btnW, btnH, 10);
+  btn.fillStyle(canAfford ? CASUAL.BLUE : CASUAL.PANEL_SOFT, 1);
+  btn.fillRoundedRect(-btnW / 2, btnY - btnH / 2, btnW, btnH - 2, 10);
+  btn.fillStyle(0xffffff, canAfford ? 0.32 : 0.4);
+  btn.fillRoundedRect(-btnW / 2 + 5, btnY - btnH / 2 + 4, btnW - 10, 10, 6);
   pop.add(btn);
   pop.add(scene.add.text(0, btnY, canAfford ? `💎 ${skin.gemCost} 구매` : '젬 부족', {
     fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-    color: canAfford ? '#dff4ff' : '#8a8f9e',
+    color: canAfford ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+    stroke: canAfford ? '#00000033' : undefined,
+    strokeThickness: canAfford ? 3 : 0,
   }).setOrigin(0.5));
 
   if (!canAfford) return;
@@ -1643,9 +1684,9 @@ function showLockedSkinPopup(
 }
 
 function getSkinRarityColor(skin: MonsterSkin): number {
-  if (skin.rarity === 'limited') return 0xffc857;
-  if (skin.rarity === 'rare') return 0xc978ff;
-  return 0x8aa7ff;
+  if (skin.rarity === 'limited') return CASUAL.GOLD_DK;
+  if (skin.rarity === 'rare') return CASUAL.PURPLE_DK;
+  return CASUAL.BLUE_DK;
 }
 
 // ─── Skill Shop Overlay ───────────────────────────────────────────────────────
@@ -1658,7 +1699,7 @@ export function showSkillShopPanel(
   const ov = scene.add.container(0, 0).setDepth(110);
 
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.85);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   ov.add(dim);
@@ -1672,23 +1713,23 @@ export function showSkillShopPanel(
     y: PY,
     w: PW,
     h: PH,
-    radius: 14,
+    radius: 16,
     fillColor: SHOP_PANEL_FILL,
-    borderColor: SHOP_PURPLE,
-    borderAlpha: 0.9,
-    borderWidth: 2,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: SHOP_PURPLE,
-    accentAlpha: 0.72,
+    accentAlpha: 1,
     glowColor: SHOP_PURPLE,
-    glowOpacity: 0.10,
-    shadowOpacity: 0.64,
-    shadowOffsetY: 5,
+    glowOpacity: 0,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 6,
   });
   addToContainer(ov, panel.shadow, panel.panel, panel.glow);
 
   const titleT = scene.add.text(CANVAS_WIDTH / 2, PY + 24, '🛒 스킬 상점', {
-    fontFamily: 'Georgia, serif', fontSize: '20px', color: '#dba6ff',
-    fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.INK,
+    fontStyle: 'bold', stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5);
   ov.add(titleT);
 
@@ -1696,7 +1737,8 @@ export function showSkillShopPanel(
   const currencyT = scene.add.text(CANVAS_WIDTH / 2, PY + 50, `보유 재화   💰 ${gs.homeGold}    💎 ${gs.gems}`, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CSS.PARCHMENT_DIM,
+    fontStyle: 'bold',
+    color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5);
   ov.add(currencyT);
 
@@ -1724,17 +1766,17 @@ export function showSkillShopPanel(
       y: sy,
       w: cardW,
       h: cardH,
-      radius: 10,
+      radius: 12,
       fillColor: owned ? SHOP_CARD_OWNED_FILL : SHOP_CARD_FILL,
-      borderColor: owned ? SHOP_OWNED_GREEN : SHOP_PURPLE,
-      borderAlpha: owned ? 0.78 : 0.82,
-      borderWidth: 1.5,
+      borderColor: CASUAL.EDGE,
+      borderAlpha: 1,
+      borderWidth: 3,
       accentColor: owned ? SHOP_OWNED_GREEN : SHOP_PURPLE,
-      accentAlpha: owned ? 0.58 : 0.62,
+      accentAlpha: 1,
       glowColor: owned ? SHOP_OWNED_GREEN : SHOP_PURPLE,
-      glowOpacity: 0.07,
-      shadowOpacity: 0.44,
-      shadowOffsetY: 3,
+      glowOpacity: 0,
+      shadowOpacity: 0.28,
+      shadowOffsetY: 4,
     });
     addToContainer(ov, card.shadow, card.panel, card.glow);
 
@@ -1744,19 +1786,19 @@ export function showSkillShopPanel(
     ov.add(iconT);
 
     const nameT = scene.add.text(sx + cardW / 2, sy + 52, sk.name, {
-      fontFamily: 'Georgia, serif', fontSize: '13px', color: CSS.PARCHMENT,
+      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0.5);
     ov.add(nameT);
 
     const descT = scene.add.text(sx + cardW / 2, sy + 69, sk.desc, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_DIM,
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
       wordWrap: { width: cardW - 22, useAdvancedWrap: true }, align: 'center',
     }).setOrigin(0.5, 0);
     ov.add(descT);
 
     const cdT = scene.add.text(sx + cardW / 2, sy + 103, `쿨다운 ${sk.cooldown}s`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#b8a0c8',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: owned ? CASUAL_CSS.GREEN : CASUAL_CSS.PURPLE,
     }).setOrigin(0.5);
     ov.add(cdT);
 
@@ -1769,22 +1811,22 @@ export function showSkillShopPanel(
       label: buttonLabel,
       fontSize: '10px',
       enabled: !owned,
-      fillColor: 0x2a163a,
-      hoverFillColor: 0x3a1e52,
+      fillColor: SHOP_PURPLE,
+      hoverFillColor: 0xc488f0,
       borderColor: SHOP_PURPLE_DARK,
-      hoverBorderColor: SHOP_PURPLE,
-      disabledFillColor: 0x102417,
+      hoverBorderColor: SHOP_PURPLE_DARK,
+      disabledFillColor: CASUAL.PANEL_SOFT,
       disabledBorderColor: SHOP_OWNED_GREEN,
-      textColor: CSS.TORCH_AMBER,
-      disabledTextColor: '#91f0ad',
+      textColor: '#ffffff',
+      disabledTextColor: CASUAL_CSS.GREEN,
       onPress: () => {
         const gs2 = loadGameState();
         const result = purchaseActiveSkillWithGold(gs2, sk.id, sk.goldCost);
         if (!result.ok) {
-          buyButton.text.setText('💰 골드 부족!').setColor('#ff7777');
+          buyButton.text.setText('💰 골드 부족!').setColor(CASUAL_CSS.RED);
           scene.time.delayedCall(1200, () => {
             if (buyButton.text.active) {
-              buyButton.text.setText(buttonLabel).setColor(CSS.TORCH_AMBER);
+              buyButton.text.setText(buttonLabel).setColor('#ffffff');
             }
           });
           return;
@@ -1805,11 +1847,11 @@ export function showSkillShopPanel(
     h: 32,
     label: '닫기  ✕',
     fontSize: '12px',
-    fillColor: 0x17100a,
-    hoverFillColor: 0x24170b,
-    borderColor: COLORS.STONE_MID,
-    hoverBorderColor: SHOP_PURPLE,
-    textColor: CSS.PARCHMENT_MUTED,
+    fillColor: CASUAL.PANEL,
+    hoverFillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE,
+    hoverBorderColor: CASUAL.EDGE,
+    textColor: CASUAL_CSS.INK,
     onPress: () => { ov.destroy(); onClose(); },
   });
   addToContainer(ov, closeButton.bg, closeButton.text, closeButton.zone);

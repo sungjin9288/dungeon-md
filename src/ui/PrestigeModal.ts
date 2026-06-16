@@ -7,27 +7,27 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, getPrestigeDmgMult } from '../data/wisdom';
 import { applyPrestigeStart } from '../data/prestigeTransactions';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
 
 const CX = CANVAS_WIDTH / 2;
-const PRESTIGE_PANEL_FILL = 0x0d0d22;
-const PRESTIGE_ROW_FILL = 0x16052a;
-const PRESTIGE_BORDER = 0xcc88ff;
-const PRESTIGE_BORDER_CSS = '#cc88ff';
-const PRESTIGE_MUTED = '#aaaacc';
-const RESET_RED = 0xff7777;
-const KEEP_GREEN = 0x77ff99;
+const PRESTIGE_ROW_FILL = CASUAL.PANEL_SOFT;
+const PRESTIGE_BORDER = CASUAL.PURPLE;
+const PRESTIGE_BORDER_CSS = CASUAL_CSS.PURPLE;
+const PRESTIGE_MUTED = CASUAL_CSS.INK_SOFT;
+const RESET_RED = CASUAL.RED;
+const KEEP_GREEN = CASUAL.GREEN;
 
 // ── Prestige crown badges ─────────────────────────────────────────────────────
+// 캐주얼 토이: 밝은 크림 카드 위 진한 글자 — 명성 등급 색은 채도 높은 액센트로.
 
 const PRESTIGE_LABELS: Record<number, { emoji: string; color: string; title: string }> = {
-  0: { emoji: '',    color: '#ffffff', title: '' },
-  1: { emoji: '👑',  color: '#c0c0c0', title: '은빛 명성' },
-  2: { emoji: '👑',  color: '#ffd700', title: '황금 명성' },
-  3: { emoji: '💎',  color: '#aaddff', title: '천상 명성' },
+  0: { emoji: '',    color: CASUAL_CSS.INK,  title: '' },
+  1: { emoji: '👑',  color: '#8a8a8a', title: '은빛 명성' },
+  2: { emoji: '👑',  color: CASUAL_CSS.GOLD, title: '황금 명성' },
+  3: { emoji: '💎',  color: CASUAL_CSS.BLUE, title: '천상 명성' },
 };
 
 function getPrestigeLabel(level: number) {
@@ -55,7 +55,7 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
 
   // ── Dim overlay ────────────────────────────────────────────────────────────
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.88);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   container.add(dim);
 
@@ -67,34 +67,35 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     y: panelY,
     w: 320,
     h: panelH,
-    radius: 14,
-    fillColor: PRESTIGE_PANEL_FILL,
-    borderColor: PRESTIGE_BORDER,
-    borderAlpha: 0.92,
-    borderWidth: 2,
+    radius: 16,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: PRESTIGE_BORDER,
-    accentAlpha: 0.78,
+    accentAlpha: 1,
     glowColor: PRESTIGE_BORDER,
-    glowOpacity: 0.12,
-    shadowOpacity: 0.72,
+    glowOpacity: 0.1,
+    shadowOpacity: 0.42,
     shadowOffsetY: 6,
   });
   addToContainer(container, panel.shadow, panel.panel, panel.glow);
 
   // ── Header ─────────────────────────────────────────────────────────────────
   const titleT = scene.add.text(CX, panelY + 28, '✨ New Game+ ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '22px', fontStyle: 'bold', color: PRESTIGE_BORDER_CSS,
+    fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold', color: PRESTIGE_BORDER_CSS,
+    stroke: '#ffffff', strokeThickness: 4,
   }).setOrigin(0.5);
   container.add(titleT);
 
   const subT = scene.add.text(CX, panelY + 58, '새로운 여정을 시작하시겠습니까?', {
-    fontFamily: 'sans-serif', fontSize: '12px', color: PRESTIGE_MUTED,
+    fontFamily: 'sans-serif', fontSize: '12px', color: PRESTIGE_MUTED, fontStyle: 'bold',
   }).setOrigin(0.5);
   container.add(subT);
 
   // Divider
   const div = scene.add.graphics();
-  div.lineStyle(1, PRESTIGE_BORDER, 0.28);
+  div.lineStyle(2, CASUAL.EDGE_SOFT, 0.55);
   div.lineBetween(CX - 130, panelY + 76, CX + 130, panelY + 76);
   container.add(div);
 
@@ -108,8 +109,8 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     label: '다음 명성',
     value: nextLabel.title,
     valueColor: nextLabel.color,
-    fillColor: 0x1a1130,
-    borderColor: hexToColor(nextLabel.color),
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: PRESTIGE_BORDER,
     labelColor: PRESTIGE_MUTED,
   });
   addToContainer(container, badge.bg, badge.iconText, badge.labelText, badge.valueText);
@@ -132,9 +133,9 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     icon: '⚔',
     label: '영구 피해 보너스',
     value: `+${nextBonus}%`,
-    valueColor: CSS.TORCH_AMBER,
-    fillColor: 0x220044,
-    borderColor: COLORS.TORCH_GOLD,
+    valueColor: CASUAL_CSS.GOLD,
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.GOLD,
     labelColor: PRESTIGE_MUTED,
   });
   addToContainer(container, bonus.bg, bonus.iconText, bonus.labelText, bonus.valueText);
@@ -149,16 +150,16 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     y: infoY - 12,
     w: 132,
     h: 126,
-    radius: 8,
-    fillColor: 0x160c18,
+    radius: 10,
+    fillColor: CASUAL.PANEL,
     borderColor: RESET_RED,
-    borderAlpha: 0.62,
-    borderWidth: 1,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: RESET_RED,
-    accentAlpha: 0.42,
+    accentAlpha: 1,
     glowColor: RESET_RED,
-    glowOpacity: 0.06,
-    shadowOpacity: 0.28,
+    glowOpacity: 0.05,
+    shadowOpacity: 0.24,
     shadowOffsetY: 2,
   });
   const keepFrame = addFramedPanel(scene, {
@@ -166,16 +167,16 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     y: infoY - 12,
     w: 132,
     h: 126,
-    radius: 8,
-    fillColor: 0x0c1812,
+    radius: 10,
+    fillColor: CASUAL.PANEL,
     borderColor: KEEP_GREEN,
-    borderAlpha: 0.62,
-    borderWidth: 1,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: KEEP_GREEN,
-    accentAlpha: 0.42,
+    accentAlpha: 1,
     glowColor: KEEP_GREEN,
-    glowOpacity: 0.06,
-    shadowOpacity: 0.28,
+    glowOpacity: 0.05,
+    shadowOpacity: 0.24,
     shadowOffsetY: 2,
   });
   addToContainer(
@@ -185,23 +186,23 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
   );
 
   const resetHeaderT = scene.add.text(CX - 76, infoY, '초기화', {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#ff7777',
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.RED,
   }).setOrigin(0.5);
   container.add(resetHeaderT);
   const keepHeaderT = scene.add.text(CX + 76, infoY, '유지', {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#77ff99',
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
   }).setOrigin(0.5);
   container.add(keepHeaderT);
 
   resetItems.forEach((item, i) => {
     const t = scene.add.text(CX - 76, infoY + 20 + i * 18, `✗ ${item}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#cc5555',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     }).setOrigin(0.5);
     container.add(t);
   });
   keepItems.forEach((item, i) => {
     const t = scene.add.text(CX + 76, infoY + 20 + i * 18, `✓ ${item}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#55cc77',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
     }).setOrigin(0.5);
     container.add(t);
   });
@@ -220,7 +221,7 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
       value: `${curLabel.title} +${Math.round((curBonus - 1) * 100)}%`,
       valueColor: curLabel.color,
       fillColor: PRESTIGE_ROW_FILL,
-      borderColor: hexToColor(curLabel.color),
+      borderColor: PRESTIGE_BORDER,
       labelColor: PRESTIGE_MUTED,
     });
     addToContainer(container, currentRow.bg, currentRow.iconText, currentRow.labelText, currentRow.valueText);
@@ -237,11 +238,11 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     h: 44,
     label: '✨ 시작하기',
     fontSize: '13px',
-    fillColor: 0x3a0066,
-    hoverFillColor: 0x5500aa,
-    borderColor: PRESTIGE_BORDER,
-    hoverBorderColor: 0xeeaaff,
-    textColor: PRESTIGE_BORDER_CSS,
+    fillColor: CASUAL.PURPLE,
+    hoverFillColor: 0xc488f0,
+    borderColor: CASUAL.PURPLE_DK,
+    hoverBorderColor: CASUAL.PURPLE_DK,
+    textColor: '#ffffff',
     once: true,
     onPress: () => {
       const current = loadGameState();
@@ -262,11 +263,11 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     h: 44,
     label: '취소',
     fontSize: '13px',
-    fillColor: 0x1a1a33,
-    hoverFillColor: 0x2a2a55,
-    borderColor: 0x666688,
-    hoverBorderColor: 0x8888aa,
-    textColor: PRESTIGE_MUTED,
+    fillColor: CASUAL.PANEL,
+    hoverFillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE,
+    hoverBorderColor: CASUAL.EDGE_SOFT,
+    textColor: CASUAL_CSS.INK,
     onPress: () => container.destroy(),
   });
   addToContainer(container, cancelBtn.bg, cancelBtn.text, cancelBtn.zone);
@@ -288,29 +289,23 @@ export function buildPrestigeBadge(scene: Phaser.Scene, x: number, y: number, pr
     y: -12,
     w: 80,
     h: 24,
-    radius: 7,
-    fillColor: 0x1a0033,
-    borderColor: hexToColor(label.color),
-    borderAlpha: 0.9,
-    borderWidth: 1.5,
-    glowColor: hexToColor(label.color),
-    glowOpacity: 0.08,
+    radius: 9,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.PURPLE,
+    borderAlpha: 1,
+    borderWidth: 2.5,
+    glowColor: CASUAL.PURPLE,
+    glowOpacity: 0.06,
     shadowOpacity: 0.24,
     shadowOffsetY: 1,
   });
   addToContainer(badge, frame.shadow, frame.panel, frame.glow);
 
   const t = scene.add.text(0, 0, `${label.emoji} ×${prestigeLevel}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: label.color,
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
   }).setOrigin(0.5);
   badge.add(t);
   return badge;
-}
-
-function hexToColor(color: string): number {
-  const raw = color.startsWith('#') ? color.slice(1) : color;
-  const parsed = Number.parseInt(raw, 16);
-  return Number.isFinite(parsed) ? parsed : PRESTIGE_BORDER;
 }
 
 function addToContainer(

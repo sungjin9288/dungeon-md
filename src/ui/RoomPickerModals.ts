@@ -21,6 +21,7 @@ import {
   type GameState,
 } from '../data/wisdom';
 import { logger } from '../utils/logger';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { RoomDetailState, RoomDetailCallbacks } from './RoomDetailOverlay';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
@@ -172,23 +173,23 @@ function addPickerSheetFrame(
   scene: Phaser.Scene,
   c: Phaser.GameObjects.Container,
   modalH: number,
-  borderColor = 0xc8921a,
+  borderColor: number = CASUAL.GOLD,
 ): void {
   const frame = addFramedPanel(scene, {
     x: SHEET_X,
     y: 4,
     w: CANVAS_WIDTH - SHEET_X * 2,
     h: modalH - 4,
-    radius: 14,
-    fillColor: 0x0e0900,
-    borderColor,
-    borderAlpha: 0.62,
-    borderWidth: 1.5,
+    radius: 16,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
     accentColor: borderColor,
-    accentAlpha: 0.65,
+    accentAlpha: 1,
     glowColor: borderColor,
-    glowOpacity: 0.08,
-    shadowOpacity: 0.72,
+    glowOpacity: 0.06,
+    shadowOpacity: 0.42,
     shadowOffsetY: -2,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
@@ -202,24 +203,28 @@ function addPickerHeader(
   onClose: () => void,
 ): void {
   c.add(scene.add.text(22, 18, title, {
-    fontFamily: 'Georgia, serif',
-    fontSize: '16px',
-    color: '#c8921a',
+    fontFamily: 'sans-serif',
+    fontSize: '17px',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
+    stroke: '#ffffff',
+    strokeThickness: 3,
   }).setOrigin(0, 0.5));
   c.add(scene.add.text(22, 36, subtitle, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#806040',
+    color: CASUAL_CSS.INK_SOFT,
+    fontStyle: 'bold',
   }).setOrigin(0, 0.5));
 
   const closeBtn = scene.add.text(CANVAS_WIDTH - 20, 16, '×', {
     fontFamily: 'sans-serif',
-    fontSize: '20px',
-    color: '#806040',
+    fontSize: '22px',
+    color: CASUAL_CSS.INK_SOFT,
+    fontStyle: 'bold',
   }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
-  closeBtn.on('pointerover', () => closeBtn.setColor('#e8d090'));
-  closeBtn.on('pointerout', () => closeBtn.setColor('#806040'));
+  closeBtn.on('pointerover', () => closeBtn.setColor(CASUAL_CSS.INK));
+  closeBtn.on('pointerout', () => closeBtn.setColor(CASUAL_CSS.INK_SOFT));
   closeBtn.on('pointerdown', onClose);
   c.add(closeBtn);
 }
@@ -243,24 +248,26 @@ function addPickerRoomContext(
   const h = 24;
 
   const g = scene.add.graphics();
-  g.fillStyle(0x050806, 0.84);
-  g.fillRoundedRect(x, y, w, h, 7);
-  g.lineStyle(1, roomAccent, 0.38);
-  g.strokeRoundedRect(x, y, w, h, 7);
-  g.fillStyle(roomAccent, 0.12);
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillRoundedRect(x, y, w, h, 8);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
+  g.lineStyle(2, roomAccent, 0.9);
+  g.strokeRoundedRect(x, y, w, h, 8);
+  g.fillStyle(roomAccent, 1);
   g.fillRoundedRect(x + 5, y + 5, 5, h - 10, 3);
   c.add(g);
 
   c.add(scene.add.text(x + 16, y + h / 2, `${typeDef?.icon ?? '▣'} 방 #${slotIdx + 1} · ${typeDef?.name ?? '미설계'}`, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#e8d090',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 130, y + h / 2, targetLabel, {
     fontFamily: 'sans-serif',
     fontSize: '9px',
-    color: '#88ffcc',
+    color: CASUAL_CSS.GREEN,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
 
@@ -274,7 +281,7 @@ function addPickerRoomContext(
   c.add(scene.add.text(x + w - 21, y + h / 2, `${metrics.readiness}%`, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: '#fff0c2',
+    color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 }
@@ -320,10 +327,11 @@ function attachSheetListScroll(
     h: 28,
     label: '▲',
     fontSize: '11px',
-    fillColor: 0x241208,
-    hoverFillColor: 0x3a210a,
-    borderColor: 0xc8921a,
-    hoverBorderColor: 0xffcc44,
+    fillColor: CASUAL.GOLD,
+    hoverFillColor: 0xffd564,
+    borderColor: CASUAL.GOLD_DK,
+    hoverBorderColor: CASUAL.GOLD_DK,
+    textColor: '#ffffff',
     onPress: () => {
       applyScroll(list.y - listY + 128);
       updateButtons();
@@ -336,10 +344,11 @@ function attachSheetListScroll(
     h: 28,
     label: '▼',
     fontSize: '11px',
-    fillColor: 0x241208,
-    hoverFillColor: 0x3a210a,
-    borderColor: 0xc8921a,
-    hoverBorderColor: 0xffcc44,
+    fillColor: CASUAL.GOLD,
+    hoverFillColor: 0xffd564,
+    borderColor: CASUAL.GOLD_DK,
+    hoverBorderColor: CASUAL.GOLD_DK,
+    textColor: '#ffffff',
     onPress: () => {
       applyScroll(list.y - listY - 128);
       updateButtons();
@@ -381,23 +390,23 @@ function addPickerCardChrome(
     y,
     w,
     h,
-    radius: 10,
-    fillColor: enabled ? 0x1a0f00 : 0x0a0900,
-    borderColor: enabled ? accent : 0x3a2810,
-    borderAlpha: enabled ? 0.52 : 0.28,
-    borderWidth: 1,
-    glowColor: enabled ? accent : 0x3a2810,
-    glowOpacity: enabled ? 0.055 : 0.02,
+    radius: 12,
+    fillColor: enabled ? CASUAL.PANEL : CASUAL.PANEL_SOFT,
+    borderColor: enabled ? accent : CASUAL.EDGE_SOFT,
+    borderAlpha: enabled ? 1 : 0.6,
+    borderWidth: enabled ? 3 : 2,
+    glowColor: enabled ? accent : CASUAL.EDGE_SOFT,
+    glowOpacity: enabled ? 0.05 : 0.02,
     shadowOpacity: 0.24,
     shadowOffsetY: 2,
   });
   list.add([frame.shadow, frame.panel, frame.glow]);
 
   const strip = scene.add.graphics();
-  strip.fillStyle(accent, enabled ? 0.20 : 0.06);
+  strip.fillStyle(accent, enabled ? 1 : 0.3);
   strip.fillRoundedRect(x + 7, y + 6, w - 14, 4, 3);
-  strip.fillStyle(0xffffff, enabled ? 0.06 : 0.02);
-  strip.fillRoundedRect(x + 9, y + 13, w - 18, 26, 8);
+  strip.fillStyle(0xffffff, enabled ? 0.5 : 0.2);
+  strip.fillRoundedRect(x + 9, y + 13, w - 18, 4, 2);
   list.add(strip);
 }
 
@@ -412,17 +421,17 @@ function addPickerStatusPill(
 ): void {
   const w = Math.max(38, label.length * 8 + 12);
   const g = scene.add.graphics();
-  g.fillStyle(enabled ? 0x06120e : 0x0a0900, enabled ? 0.92 : 0.80);
+  g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
   g.fillRoundedRect(x, y, w, 16, 6);
-  g.lineStyle(1, accent, enabled ? 0.50 : 0.24);
+  g.lineStyle(2, accent, enabled ? 0.9 : 0.4);
   g.strokeRoundedRect(x, y, w, 16, 6);
-  g.fillStyle(accent, enabled ? 0.14 : 0.05);
+  g.fillStyle(accent, enabled ? 1 : 0.3);
   g.fillRoundedRect(x + 3, y + 3, 4, 10, 3);
   list.add(g);
   list.add(scene.add.text(x + w / 2 + 2, y + 8, label, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: enabled ? '#d8fff5' : '#5c4028',
+    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 }
@@ -438,17 +447,17 @@ function addPickerTinyPill(
 ): void {
   const w = Math.max(34, Math.min(70, label.length * 8 + 13));
   const g = scene.add.graphics();
-  g.fillStyle(enabled ? 0x050806 : 0x0a0900, enabled ? 0.84 : 0.62);
+  g.fillStyle(CASUAL.PANEL_SOFT, enabled ? 1 : 0.6);
   g.fillRoundedRect(x, y, w, 14, 5);
-  g.lineStyle(1, accent, enabled ? 0.42 : 0.16);
+  g.lineStyle(2, accent, enabled ? 0.8 : 0.3);
   g.strokeRoundedRect(x, y, w, 14, 5);
-  g.fillStyle(accent, enabled ? 0.13 : 0.04);
+  g.fillStyle(accent, enabled ? 1 : 0.3);
   g.fillRoundedRect(x + 3, y + 3, 4, 8, 3);
   list.add(g);
   list.add(scene.add.text(x + w / 2 + 2, y + 7, label, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: enabled ? '#fff0c2' : '#5c4028',
+    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 }
@@ -464,17 +473,17 @@ function addPickerMiniBadge(
 ): void {
   const w = Math.max(28, Math.min(58, label.length * 8 + 15));
   const g = scene.add.graphics();
-  g.fillStyle(enabled ? 0x120a02 : 0x0a0900, enabled ? 0.92 : 0.62);
+  g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
   g.fillRoundedRect(x, y, w, 14, 5);
-  g.lineStyle(1, accent, enabled ? 0.48 : 0.18);
+  g.lineStyle(2, accent, enabled ? 0.85 : 0.3);
   g.strokeRoundedRect(x, y, w, 14, 5);
-  g.fillStyle(accent, enabled ? 0.24 : 0.07);
-  g.fillCircle(x + 8, y + 7, 2.2);
+  g.fillStyle(accent, enabled ? 1 : 0.35);
+  g.fillCircle(x + 8, y + 7, 2.6);
   list.add(g);
   list.add(scene.add.text(x + w / 2 + 3, y + 7, label, {
     fontFamily: 'sans-serif',
     fontSize: '8px',
-    color: enabled ? '#fff4ce' : '#5c4028',
+    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 }
@@ -496,15 +505,15 @@ function addDeltaChipRow(
 
   if (chips.length === 0) {
     const g = scene.add.graphics();
-    g.fillStyle(0x050806, enabled ? 0.70 : 0.48);
+    g.fillStyle(CASUAL.PANEL_SOFT, enabled ? 1 : 0.6);
     g.fillRoundedRect(x, y, w, 18, 6);
-    g.lineStyle(1, 0x3a2810, 0.30);
+    g.lineStyle(2, CASUAL.EDGE_SOFT, 0.6);
     g.strokeRoundedRect(x, y, w, 18, 6);
     list.add(g);
     list.add(scene.add.text(x + w / 2, y + 9, '변화 없음', {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: enabled ? '#8ab3aa' : '#4a3020',
+      color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5));
     return;
@@ -515,17 +524,17 @@ function addDeltaChipRow(
   chips.forEach((chip, idx) => {
     const chipX = x + idx * (chipW + gap);
     const g = scene.add.graphics();
-    g.fillStyle(0x050806, enabled ? 0.78 : 0.50);
+    g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
     g.fillRoundedRect(chipX, y, chipW, 18, 6);
-    g.lineStyle(1, chip.color, enabled ? 0.42 : 0.16);
+    g.lineStyle(2, chip.color, enabled ? 0.85 : 0.35);
     g.strokeRoundedRect(chipX, y, chipW, 18, 6);
-    g.fillStyle(chip.color, enabled ? 0.12 : 0.04);
+    g.fillStyle(chip.color, enabled ? 1 : 0.35);
     g.fillRoundedRect(chipX + 3, y + 3, 4, 12, 3);
     list.add(g);
     list.add(scene.add.text(chipX + chipW / 2 + 2, y + 9, `${chip.label} ${formatSigned(chip.value)}${chip.suffix}`, {
       fontFamily: 'sans-serif',
       fontSize: '8px',
-      color: enabled ? '#fff0c2' : '#5c4028',
+      color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5));
   });
@@ -669,7 +678,7 @@ export function showTrapPicker(
   const c = scene.add.container(0, CH).setDepth(110);  // starts offscreen bottom
   state.trapPickerContainer = c;
 
-  addPickerSheetFrame(scene, c, modalH, 0xc8921a);
+  addPickerSheetFrame(scene, c, modalH, CASUAL.GOLD);
   addPickerHeader(
     scene,
     c,
@@ -677,7 +686,7 @@ export function showTrapPicker(
     `슬롯 ${trapSlotIdx + 1} · 보유 ${gs.homeGold.toLocaleString('ko-KR')}g`,
     () => destroyTrapPicker(state, scene, true),
   );
-  addPickerRoomContext(scene, c, gs, slotIdx, `T 슬롯 ${trapSlotIdx + 1}`, 0xc8921a);
+  addPickerRoomContext(scene, c, gs, slotIdx, `T 슬롯 ${trapSlotIdx + 1}`, CASUAL.GOLD);
 
   const list = scene.add.container(0, listY);
   c.add(list);
@@ -690,7 +699,7 @@ export function showTrapPicker(
     const locked = gs.dmLevel < trap.unlockLv;
     const canAfford = gs.homeGold >= trap.cost;
     const enabled = !locked && canAfford;
-    const accent = enabled ? 0xc8921a : locked ? 0x5c4028 : 0x8b3322;
+    const accent = enabled ? CASUAL.GOLD : locked ? CASUAL.EDGE_SOFT : CASUAL.RED;
     const fitLabel = getTrapRoomFitLabel(targetSlot, trap.id);
     const delta = getPreviewDelta(
       gs,
@@ -720,11 +729,11 @@ export function showTrapPicker(
 
     const alpha = enabled ? 1 : 0.42;
     const iconBg = scene.add.graphics();
-    iconBg.fillStyle(0x050806, 0.96);
+    iconBg.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
     iconBg.fillCircle(cardX + trapCardW / 2, cardY + 48, 27);
-    iconBg.lineStyle(1.2, accent, enabled ? 0.58 : 0.28);
+    iconBg.lineStyle(2.5, accent, enabled ? 0.9 : 0.4);
     iconBg.strokeCircle(cardX + trapCardW / 2, cardY + 48, 27);
-    iconBg.fillStyle(accent, enabled ? 0.14 : 0.06);
+    iconBg.fillStyle(accent, enabled ? 0.18 : 0.08);
     iconBg.fillCircle(cardX + trapCardW / 2, cardY + 48, 18);
     list.add(iconBg);
     list.add(scene.add.text(cardX + trapCardW / 2, cardY + 48, trap.emoji, {
@@ -732,16 +741,16 @@ export function showTrapPicker(
     }).setOrigin(0.5).setAlpha(alpha));
 
     list.add(scene.add.text(cardX + trapCardW / 2, cardY + 80, fitPickerLabel(trap.name, 8), {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '14px',
-      color: enabled ? '#c8921a' : '#4a3020',
+      color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5));
     list.add(scene.add.text(cardX + trapCardW / 2, cardY + 96, locked ? `DM Lv.${trap.unlockLv}` : `${trap.cost}g · ${trap.desc}`, {
       fontFamily: 'sans-serif',
       fontSize: '9px',
-      color: enabled ? '#ffe080' : '#5c4028',
-      fontStyle: enabled ? 'bold' : 'normal',
+      color: enabled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.6));
     addDeltaChipRow(scene, list, cardX + 10, cardY + 107, trapCardW - 20, delta, enabled);
 
@@ -755,12 +764,14 @@ export function showTrapPicker(
       fontSize: locked || !canAfford ? '10px' : '11px',
       align: 'center',
       enabled,
-      fillColor: 0x2a1806,
-      hoverFillColor: 0x3a2408,
-      borderColor: 0xc8921a,
-      hoverBorderColor: 0xffcc44,
-      textColor: '#e8d090',
-      disabledTextColor: '#5c4028',
+      fillColor: CASUAL.GOLD,
+      hoverFillColor: 0xffd564,
+      borderColor: CASUAL.GOLD_DK,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: '#ffffff',
+      disabledFillColor: CASUAL.PANEL_SOFT,
+      disabledBorderColor: CASUAL.EDGE_SOFT,
+      disabledTextColor: CASUAL_CSS.INK_SOFT,
       onPress: () => {
         const freshGs = cb.getGameState();
         const previewSlot = previewTrapSlot(freshGs.dungeonSlots?.[slotIdx], trapSlotIdx, trap.id);
@@ -835,7 +846,7 @@ export function showMonsterPicker(
   const c = scene.add.container(0, CH).setDepth(110);
   state.monsterPickerContainer = c;
 
-  addPickerSheetFrame(scene, c, modalH, 0xc8921a);
+  addPickerSheetFrame(scene, c, modalH, CASUAL.GREEN);
   addPickerHeader(
     scene,
     c,
@@ -843,7 +854,7 @@ export function showMonsterPicker(
     `슬롯 ${monsterSlotIdx + 1} · 보유 ${monsterRows.length}체`,
     () => destroyMonsterPicker(state, scene, true),
   );
-  addPickerRoomContext(scene, c, gs, slotIdx, `M 슬롯 ${monsterSlotIdx + 1}`, 0x66c08a);
+  addPickerRoomContext(scene, c, gs, slotIdx, `M 슬롯 ${monsterSlotIdx + 1}`, CASUAL.GREEN);
 
   const list = scene.add.container(0, listY);
   c.add(list);
@@ -854,20 +865,21 @@ export function showMonsterPicker(
       y: 0,
       w: CW - SHEET_PAD_X * 2,
       h: 48,
-      radius: 8,
-      fillColor: 0x120a02,
-      borderColor: 0x3a2810,
-      borderAlpha: 0.35,
-      borderWidth: 1,
-      glowOpacity: 0.03,
-      shadowOpacity: 0.20,
+      radius: 10,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.EDGE_SOFT,
+      borderAlpha: 0.8,
+      borderWidth: 2,
+      glowOpacity: 0.02,
+      shadowOpacity: 0.2,
       shadowOffsetY: 2,
     });
     list.add([emptyFrame.shadow, emptyFrame.panel, emptyFrame.glow]);
     list.add(scene.add.text(CW / 2, 24, '배치 가능한 몬스터 없음', {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: '#806040',
+      color: CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
@@ -884,7 +896,7 @@ export function showMonsterPicker(
     ) ?? -1;
     const isAssignedElsewhere = assignedRoomIdx >= 0;
     const enabled = !isCurrent && !isAssignedElsewhere;
-    const accent = enabled ? mDef.accentColor : 0x3a2810;
+    const accent = enabled ? mDef.accentColor : CASUAL.EDGE_SOFT;
     const typeAccent = MONSTER_TYPE_ACCENT[mDef.type] ?? mDef.accentColor;
     const roomFitLabel = getMonsterRoomFitLabel(targetSlot, mDef.type);
     const rarity = getPickerMonsterRarityMeta(mDef.rarityTier);
@@ -931,11 +943,11 @@ export function showMonsterPicker(
     portrait.fallbackText?.setAlpha(alpha);
     if (equipmentIcon) {
       const gear = scene.add.graphics();
-      gear.fillStyle(0x1b1204, enabled ? 0.94 : 0.54);
+      gear.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
       gear.fillCircle(cx + 24, cardY + 35, 10);
-      gear.lineStyle(1, 0xe8c468, enabled ? 0.62 : 0.22);
+      gear.lineStyle(2, CASUAL.GOLD, enabled ? 0.9 : 0.35);
       gear.strokeCircle(cx + 24, cardY + 35, 10);
-      gear.fillStyle(0xe8c468, enabled ? 0.14 : 0.04);
+      gear.fillStyle(CASUAL.GOLD, enabled ? 0.2 : 0.06);
       gear.fillCircle(cx + 24, cardY + 35, 6);
       list.add(gear);
       list.add(scene.add.text(cx + 24, cardY + 35, equipmentIcon, {
@@ -945,23 +957,23 @@ export function showMonsterPicker(
     }
 
     list.add(scene.add.text(cx, cardY + 90, fitPickerLabel(mDef.name, 8), {
-      fontFamily: 'Georgia, serif',
+      fontFamily: 'sans-serif',
       fontSize: '13px',
-      color: enabled ? '#e8d090' : '#4a3020',
+      color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5));
     list.add(scene.add.text(cx, cardY + 106, `Lv.${om.level} · ${MONSTER_TYPE_LABEL[mDef.type] ?? '전투'} · ATK ${actualAtk}${equipmentIcon ? ' · 장비' : ''}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: enabled ? '#a07040' : '#4a3020',
-      fontStyle: enabled ? 'bold' : 'normal',
+      color: enabled ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.INK_SOFT,
+      fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(enabled ? 1 : 0.54));
     addDeltaChipRow(scene, list, cardX + 10, cardY + 116, monsterCardW - 20, delta, enabled);
     if ((om.skillPoints ?? 0) > 0) {
       list.add(scene.add.text(cardX + monsterCardW - 14, cardY + 23, `SP ${om.skillPoints}`, {
         fontFamily: 'sans-serif',
         fontSize: '9px',
-        color: enabled ? '#88ffcc' : '#5c4028',
+        color: enabled ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
         fontStyle: 'bold',
       }).setOrigin(1, 0.5).setAlpha(enabled ? 1 : 0.54));
     }
@@ -975,12 +987,14 @@ export function showMonsterPicker(
       label,
       fontSize: '10px',
       enabled,
-      fillColor: 0x2a1806,
-      hoverFillColor: 0x3a2408,
-      borderColor: 0xc8921a,
-      hoverBorderColor: 0xffcc44,
-      textColor: '#e8d090',
-      disabledTextColor: '#5c4028',
+      fillColor: CASUAL.GREEN,
+      hoverFillColor: 0x6fdc70,
+      borderColor: CASUAL.GREEN_DK,
+      hoverBorderColor: CASUAL.GREEN_DK,
+      textColor: '#ffffff',
+      disabledFillColor: CASUAL.PANEL_SOFT,
+      disabledBorderColor: CASUAL.EDGE_SOFT,
+      disabledTextColor: CASUAL_CSS.INK_SOFT,
       onPress: () => {
         const freshGs = cb.getGameState();
         const previewSlot = previewMonsterSlot(freshGs.dungeonSlots?.[slotIdx], monsterSlotIdx, om.id);
