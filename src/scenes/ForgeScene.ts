@@ -16,6 +16,7 @@ import {
   BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, RARITY_NAMES,
   type BlueprintDef,
 } from '../data/fusion';
+import { dropsInAbyss } from '../data/abyss';
 import { MONSTER_DEFS } from '../data/monsters';
 import {
   applyCraftBlueprint,
@@ -167,6 +168,11 @@ export class ForgeScene extends Phaser.Scene {
       this.cameras.main.fadeOut(200, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(this.returnScene));
     });
+
+    // Farm-loop shortcut: jump to the Abyss to gather crafting materials.
+    if (this.focusRoomSlotIdx === null) {
+      this.buildBtn(c, 80, HEADER_H / 2 - 13, '🕳 심연', () => this.scene.start('AbyssScene'));
+    }
 
     if (this.focusRoomSlotIdx !== null) {
       const returnX = CANVAS_WIDTH - 78;
@@ -1232,12 +1238,14 @@ export class ForgeScene extends Phaser.Scene {
 
       this.drawProgressTrack(c, pad + 84, oy + 84, 152, 7, progress.ratio, canCraft ? 0x88cc66 : 0xcc6644);
 
-      // Material requirements
+      // Material requirements — short materials the Abyss farms get a 🕳 tag,
+      // pointing the player at the header's 심연 shortcut to farm them.
       const matStr = Object.entries(bp.materials)
         .map(([id, qty]) => {
           const have = gs.materials?.[id] ?? 0;
           const material = this.getMaterialDisplay(id);
-          return `${material.emoji}${have}/${qty}`;
+          const farmable = have < qty && dropsInAbyss(id);
+          return `${material.emoji}${have}/${qty}${farmable ? '🕳' : ''}`;
         }).join('  ');
       c.add(this.add.text(pad + 84, oy + 94, matStr, {
         fontFamily: 'sans-serif', fontSize: '10px', color: canCraft ? '#b6e58f' : '#d88a66',

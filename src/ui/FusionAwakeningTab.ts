@@ -27,10 +27,19 @@ export function buildAwakeningTab(
   const rowW = CANVAS_WIDTH - PAD * 2;
   let   y    = ctx.contentY + 238;
 
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 22,
+  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 26,
     `친밀도 100 + 각성석 1개 → 몬스터 각성   🪨 보유: ${gs.awakeningStones ?? 0}개`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
     }).setOrigin(0.5));
+
+  // Farm-loop hint + shortcut: awakening stones drop from Abyss boss floors.
+  const stoneChip = ctx.scene.add.text(CANVAS_WIDTH / 2, y - 8,
+    '🕳 각성석은 심연 보스층(10·20·30…)에서 파밍 →', {
+      fontFamily: 'sans-serif', fontSize: '9px', color: '#ffffff', fontStyle: 'bold',
+      backgroundColor: CASUAL_CSS.PURPLE, padding: { x: 8, y: 3 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+  stoneChip.on('pointerdown', () => ctx.scene.scene.start('AbyssScene'));
+  c.add(stoneChip);
 
   const monsters = gs.ownedMonsters;
   if (!monsters.length) {

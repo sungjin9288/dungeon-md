@@ -133,6 +133,58 @@ export function getAbyssFloorLoot(floor: number): AbyssLootEntry[] {
   return table;
 }
 
+// ─── Material → source lookup (farming-loop visibility) ──────────────────────
+// Reverse of the loot tables: given a crafting material, which part of the
+// Abyss farms it. Powers the Forge/Fusion "심연에서 파밍" shortcuts and the
+// Abyss "이 재료로 제작 가능" hints — making the farm → craft loop legible.
+
+const BAND_MIN_FLOORS = [1, 11, 26, 46] as const;
+
+export interface AbyssMaterialSource {
+  readonly materialId: string;
+  readonly bands: number[];     // band indices (0..3) that can drop it
+  readonly minFloor: number;    // shallowest floor where it can drop
+  readonly bandLabel: string;   // label of the shallowest source band
+  readonly bossOnly: boolean;   // only from boss floors (boss_essence)
+}
+
+/** Where in the Abyss a crafting material drops, or null if it never drops. */
+export function getAbyssMaterialSource(materialId: string): AbyssMaterialSource | null {
+  if (materialId === 'boss_essence') {
+    return {
+      materialId,
+      bands: [0, 1, 2, 3],
+      minFloor: ABYSS_BOSS_INTERVAL,   // first boss floor
+      bandLabel: BAND_LABELS[abyssBand(ABYSS_BOSS_INTERVAL)],
+      bossOnly: true,
+    };
+  }
+  const bands: number[] = [];
+  for (let b = 0; b < BAND_LOOT.length; b++) {
+    if (BAND_LOOT[b].some(e => e.id === materialId)) bands.push(b);
+  }
+  if (bands.length === 0) return null;
+  return {
+    materialId,
+    bands,
+    minFloor: BAND_MIN_FLOORS[bands[0]],
+    bandLabel: BAND_LABELS[bands[0]],
+    bossOnly: false,
+  };
+}
+
+/** Whether a material can be farmed anywhere in the Abyss. */
+export function dropsInAbyss(materialId: string): boolean {
+  return getAbyssMaterialSource(materialId) !== null;
+}
+
+/** Short Korean source tag for a material, e.g. "심연 11층~" / "심연 보스층". */
+export function abyssMaterialSourceLabel(materialId: string): string | null {
+  const src = getAbyssMaterialSource(materialId);
+  if (!src) return null;
+  return src.bossOnly ? '심연 보스층' : `심연 ${src.minFloor}층~`;
+}
+
 function rollInt(rng: () => number, min: number, max: number): number {
   return min + Math.floor(rng() * (max - min + 1));
 }

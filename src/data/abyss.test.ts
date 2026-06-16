@@ -12,6 +12,9 @@ import {
   refilledKeys,
   canSweepAbyss,
   nextAbyssFloor,
+  getAbyssMaterialSource,
+  dropsInAbyss,
+  abyssMaterialSourceLabel,
   type AbyssState,
 } from './abyss';
 
@@ -132,5 +135,49 @@ describe('key economy', () => {
     expect(nextAbyssFloor({ ...DEFAULT_ABYSS_STATE })).toBe(1);
     expect(nextAbyssFloor({ highestFloor: 4, keys: 0, lastRefill: '' })).toBe(5);
     expect(nextAbyssFloor({ highestFloor: ABYSS_MAX_FLOOR, keys: 0, lastRefill: '' })).toBe(ABYSS_MAX_FLOOR);
+  });
+});
+
+describe('abyss material → source lookup (farming-loop visibility)', () => {
+  it('common_ore sources to the shallowest band (floor 1)', () => {
+    const src = getAbyssMaterialSource('common_ore');
+    expect(src).not.toBeNull();
+    expect(src!.bands[0]).toBe(0);
+    expect(src!.minFloor).toBe(1);
+    expect(src!.bossOnly).toBe(false);
+  });
+
+  it('soul_fragment first appears in band 2 (floor 26)', () => {
+    const src = getAbyssMaterialSource('soul_fragment');
+    expect(src!.minFloor).toBe(26);
+    expect(src!.bands).toContain(2);
+    expect(src!.bands).toContain(3);
+  });
+
+  it('boss_essence is boss-only and tagged across all bands', () => {
+    const src = getAbyssMaterialSource('boss_essence');
+    expect(src!.bossOnly).toBe(true);
+    expect(src!.minFloor).toBe(10);
+    expect(src!.bands).toEqual([0, 1, 2, 3]);
+  });
+
+  it('non-abyss materials return null', () => {
+    expect(getAbyssMaterialSource('nonexistent_material')).toBeNull();
+    expect(dropsInAbyss('nonexistent_material')).toBe(false);
+  });
+
+  it('dropsInAbyss is true for every material in the loot tables', () => {
+    for (const id of ['common_ore', 'iron_shard', 'magic_dust', 'soul_fragment', 'dok_fragment', 'boss_essence']) {
+      expect(dropsInAbyss(id)).toBe(true);
+      // every farmable material id must exist in MATERIAL_DEFS
+      expect(MATERIAL_DEFS[id]).toBeDefined();
+    }
+  });
+
+  it('abyssMaterialSourceLabel renders a short Korean tag', () => {
+    expect(abyssMaterialSourceLabel('common_ore')).toBe('심연 1층~');
+    expect(abyssMaterialSourceLabel('soul_fragment')).toBe('심연 26층~');
+    expect(abyssMaterialSourceLabel('boss_essence')).toBe('심연 보스층');
+    expect(abyssMaterialSourceLabel('nonexistent_material')).toBeNull();
   });
 });

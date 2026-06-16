@@ -25,6 +25,7 @@ const CARD_W = CANVAS_WIDTH - 28;
 const CARD_H = 86;
 const LIST_TOP = 150;
 const CARD_GAP = 10;
+const SHORTCUT_H = 56;   // craft-shortcut bar height (top of the scroll content)
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -89,6 +90,7 @@ export class AbyssScene extends Phaser.Scene {
     this.drawStatusBar();
     this.drawFloorList();
     this.setupScroll();
+    this.drawCraftShortcuts();
   }
 
   // ─── Status bar: depth + keys ──────────────────────────────────────────────
@@ -117,12 +119,13 @@ export class AbyssScene extends Phaser.Scene {
     const floors: number[] = [];
     for (let f = 1; f <= next; f++) floors.push(f);
 
+    const floorsTop = LIST_TOP + SHORTCUT_H + CARD_GAP;
     floors.forEach((floor, i) => {
-      const y = LIST_TOP + i * (CARD_H + CARD_GAP);
+      const y = floorsTop + i * (CARD_H + CARD_GAP);
       this.drawFloorCard(floor, y);
     });
 
-    const contentBottom = LIST_TOP + floors.length * (CARD_H + CARD_GAP) + 20;
+    const contentBottom = floorsTop + floors.length * (CARD_H + CARD_GAP) + 20;
     this.maxScrollY = Math.max(0, contentBottom - CANVAS_HEIGHT);
     this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT + this.maxScrollY);
   }
@@ -245,5 +248,35 @@ export class AbyssScene extends Phaser.Scene {
       this.cameras.main.setScroll(0, Phaser.Math.Clamp(this.dragStartY - p.y, 0, this.maxScrollY));
     });
     this.input.on('pointerup', () => { this.dragging = false; });
+  }
+
+  // ─── Craft-loop shortcuts (farm → craft) ───────────────────────────────────
+  // A bar at the top of the scroll content (scrollFactor 1, like the cards — the
+  // DPR zoom-2 camera misaligns scrollFactor-0 elements low on screen). Makes the
+  // farming loop navigable: materials/stones farmed here feed Forge (equipment)
+  // + Fusion (evolution/awakening), so jump straight there.
+  private drawCraftShortcuts(): void {
+    const barY = LIST_TOP;
+    const bar = this.add.graphics();
+    bar.fillStyle(CASUAL.SHADOW, 0.3); bar.fillRoundedRect(CARD_X, barY + 3, CARD_W, SHORTCUT_H, 12);
+    bar.fillStyle(CASUAL.PANEL, 1);    bar.fillRoundedRect(CARD_X, barY, CARD_W, SHORTCUT_H, 12);
+    bar.fillStyle(0xffffff, 0.07);     bar.fillRoundedRect(CARD_X + 5, barY + 3, CARD_W - 10, 4, 2);
+    bar.lineStyle(2, CASUAL.EDGE, 1);  bar.strokeRoundedRect(CARD_X, barY, CARD_W, SHORTCUT_H, 12);
+
+    this.add.text(CARD_X + 12, barY + 11, '심연 재료 사용처', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+
+    const half = (CARD_W - 24) / 2;
+    addPrimaryActionButton(this, {
+      x: CARD_X + 8, y: barY + 22, w: half, h: 28, label: '🔨 제작소', fontSize: '12px',
+      fillColor: CASUAL.BLUE, hoverFillColor: 0x6aa8e0, borderColor: CASUAL.BLUE_DK,
+      onPress: () => this.scene.start('ForgeScene'),
+    });
+    addPrimaryActionButton(this, {
+      x: CARD_X + 16 + half, y: barY + 22, w: half, h: 28, label: '✨ 진화 · 각성', fontSize: '12px',
+      fillColor: CASUAL.PURPLE, hoverFillColor: 0xb98ae0, borderColor: CASUAL.PURPLE_DK,
+      onPress: () => this.scene.start('FusionScene'),
+    });
   }
 }
