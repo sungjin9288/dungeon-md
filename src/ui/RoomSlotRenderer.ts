@@ -13,8 +13,11 @@ import { SLOT_UNLOCK_LEVELS, ROOM_SLOT_TYPE_DEFS } from '../data/wisdom';
 import type { DungeonTheme } from '../themes/themes';
 import { drawRoughEdgeRect, strokeRoughEdgeRect } from '../themes/decorations';
 import type { GameState } from '../data/wisdom';
-import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
+import { resolveMonsterTypeId } from './MonsterPortraitView';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
+import { drawPixelRoom } from '../art/PixelRoom';
+import { generateMonsterSprite } from '../art/PortraitGenerator';
+import type { MonsterId } from '../data/monsters';
 
 // ─── Shared layout constants ───────────────────────────────────────────────
 
@@ -304,252 +307,6 @@ function drawHomeEmptyRoomLoadoutCue(
   drawHomeSocketChip(scene, c, g, x + 51, y + 51, 'T', status.trapCount, status.trapCapacity, HOME_TRAP_SLOT_COLOR);
 }
 
-function drawRoomTypeProps(
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  roomType: string | undefined,
-  accent: number,
-  readiness: number,
-): void {
-  const alpha = 0.2 + Phaser.Math.Clamp(readiness / 100, 0, 1) * 0.2;
-  g.lineStyle(1.4, accent, 0.4 + alpha);
-  g.fillStyle(accent, alpha * 0.45);
-
-  if (roomType === 'combat') {
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.6);
-    g.fillRoundedRect(x + 21, y + 28, 15, 30, 4);
-    g.fillRoundedRect(x + 64, y + 28, 15, 30, 4);
-    g.fillStyle(accent, 0.55 + alpha * 0.3);
-    g.fillTriangle(x + 21, y + 28, x + 36, y + 28, x + 28.5, y + 44);
-    g.fillTriangle(x + 64, y + 28, x + 79, y + 28, x + 71.5, y + 44);
-    g.lineStyle(1, CASUAL.EDGE, 0.4 + alpha * 0.2);
-    g.lineBetween(x + 38, y + 43, x + 62, y + 32);
-    g.lineBetween(x + 38, y + 32, x + 62, y + 43);
-    g.fillStyle(accent, 0.5 + alpha * 0.2);
-    g.fillRoundedRect(x + 32, y + 58, 36, 9, 4);
-    g.fillRoundedRect(x + 16, y + 66, 21, 4, 2);
-    g.fillRoundedRect(x + 63, y + 66, 21, 4, 2);
-    g.lineBetween(x + 25, y + 62, x + 34, y + 49);
-    g.lineBetween(x + 75, y + 62, x + 66, y + 49);
-    g.lineStyle(1, 0xffffff, 0.35 + alpha * 0.26);
-    g.lineBetween(x + 27, y + 53, x + 36, y + 46);
-    g.lineBetween(x + 73, y + 53, x + 64, y + 46);
-    return;
-  }
-
-  if (roomType === 'trap') {
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.5);
-    g.fillRoundedRect(x + 24, y + 34, 52, 28, 8);
-    g.lineStyle(1, accent, 0.45 + alpha * 0.2);
-    for (let i = 0; i < 4; i++) {
-      const yy = y + 39 + i * 6;
-      g.lineBetween(x + 28, yy, x + 72, yy + (i % 2 === 0 ? 3 : -3));
-    }
-    g.fillStyle(accent, 0.55 + alpha * 0.18);
-    for (let i = 0; i < 4; i++) {
-      const px = x + 30 + i * 13;
-      g.fillTriangle(px, y + 60, px + 5, y + 49 - (i % 2) * 3, px + 10, y + 60);
-    }
-    for (let i = 0; i < 5; i++) {
-      const px = x + 22 + i * 14;
-      g.fillTriangle(px, y + 71, px + 5, y + 58 - (i % 2) * 3, px + 10, y + 71);
-    }
-    g.lineStyle(1, accent, 0.5 + alpha * 0.5);
-    g.lineBetween(x + 18, y + 73, x + 84, y + 73);
-    return;
-  }
-
-  if (roomType === 'support') {
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.45);
-    g.fillEllipse(x + SLOT_W / 2, y + 63, 50, 18);
-    g.lineStyle(1.4, accent, 0.5 + alpha * 0.2);
-    g.strokeCircle(x + SLOT_W / 2, y + 46, 16);
-    g.lineStyle(1, accent, 0.45 + alpha * 0.16);
-    for (let i = 0; i < 5; i++) {
-      const vx = x + 24 + i * 13;
-      g.lineBetween(vx, y + 30, vx - 4 + (i % 2) * 8, y + 55);
-      g.fillCircle(vx - 3 + (i % 2) * 6, y + 48, 2.4);
-    }
-    g.fillStyle(accent, 0.55 + alpha * 0.12);
-    g.fillCircle(x + SLOT_W / 2, y + 46, 4);
-    g.fillRoundedRect(x + 18, y + 55, 10, 24, 3);
-    g.fillRoundedRect(x + 72, y + 55, 10, 24, 3);
-    g.fillRoundedRect(x + 30, y + 61, 40, 8, 4);
-    g.lineStyle(1, 0xffffff, 0.3 + alpha * 0.22);
-    g.lineBetween(x + 36, y + 65, x + 64, y + 65);
-    return;
-  }
-
-  if (roomType === 'magic') {
-    const cx = x + SLOT_W / 2;
-    const cy = y + 64;
-    g.fillStyle(CASUAL.PANEL_SOFT, 0.5);
-    g.fillCircle(cx, cy, 26);
-    g.lineStyle(1.2, accent, 0.55 + alpha * 0.24);
-    g.strokeCircle(cx, cy, 24);
-    g.strokeCircle(cx, cy, 16);
-    g.strokeCircle(cx, cy, 8);
-    g.lineStyle(1, CASUAL.EDGE, 0.3 + alpha * 0.08);
-    g.lineBetween(cx - 18, cy + 9, cx, cy - 18);
-    g.lineBetween(cx, cy - 18, cx + 18, cy + 9);
-    g.lineBetween(cx + 18, cy + 9, cx - 18, cy + 9);
-    g.fillStyle(accent, 0.6 + alpha * 0.15);
-    for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i + 0.2;
-      const rx = cx + Math.cos(angle) * 23;
-      const ry = cy + Math.sin(angle) * 23;
-      g.fillCircle(rx, ry, 2.5);
-    }
-  }
-}
-
-function drawMasonryLines(
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  w: number,
-  accent: number,
-  alpha: number,
-): void {
-  g.lineStyle(1, CASUAL.EDGE_SOFT, alpha * 0.5);
-  for (let row = 0; row < 3; row++) {
-    const yy = y + 9 + row * 11;
-    g.lineBetween(x + 5, yy, x + w - 5, yy);
-  }
-
-  g.lineStyle(1, accent, alpha * 0.5);
-  for (let row = 0; row < 3; row++) {
-    const offset = row % 2 === 0 ? 9 : 18;
-    for (let xx = x + offset; xx < x + w - 8; xx += 22) {
-      g.lineBetween(xx, y + 4 + row * 11, xx, y + 13 + row * 11);
-    }
-  }
-}
-
-function drawDungeonRoomShell(
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  accent: number,
-  readiness: number,
-): void {
-  // Cream cutaway chamber (casual reskin): cream body, soft back wall + white
-  // sheen, warm cream floor slab, and an accent ground pad — matches Room.ts.
-  const glow = Phaser.Math.Clamp(readiness / 100, 0, 1);
-  const chamberX = x + 5;
-  const chamberY = y + 8;
-  const chamberW = SLOT_W - 10;
-  const chamberH = SLOT_H - 14;
-  const backX = x + 17;
-  const backY = y + 20;
-  const backW = SLOT_W - 34;
-  const backH = 38;
-  const floorY = y + 58;
-
-  // Warm ground shadow under the cell.
-  g.fillStyle(CASUAL.SHADOW, 0.22);
-  g.fillEllipse(x + SLOT_W / 2, y + SLOT_H - 10, SLOT_W - 10, 18);
-
-  // Chamber body fill — dark stone.
-  g.fillStyle(CASUAL.PANEL, 0.98);
-  g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 10);
-
-  // Warm torchlight bath — makes an occupied room read as a lived-in, lit
-  // dungeon chamber. Two soft pools from the wall sconces + a gentle ambient.
-  g.fillStyle(0xff8a3d, 0.05 + glow * 0.07);
-  g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 10);
-  g.fillStyle(0xffb060, 0.06 + glow * 0.1);
-  g.fillCircle(x + 18, y + 44, 26);
-  g.fillCircle(x + SLOT_W - 18, y + 44, 26);
-
-  // Carved rim accent.
-  g.lineStyle(1.5, accent, 0.5 + glow * 0.2);
-  g.beginPath();
-  g.moveTo(x + 18, y + 29);
-  g.lineTo(x + 27, y + 18);
-  g.lineTo(x + 41, y + 13);
-  g.lineTo(x + 59, y + 13);
-  g.lineTo(x + 73, y + 18);
-  g.lineTo(x + 82, y + 29);
-  g.strokePath();
-
-  // Back wall — soft cream panel + faint accent wash + white sheen line.
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.95);
-  g.fillRoundedRect(backX, backY, backW, backH, 8);
-  g.fillStyle(accent, 0.1 + glow * 0.06);
-  g.fillRoundedRect(backX + 6, backY + 7, backW - 12, backH - 9, 7);
-  g.lineStyle(1, 0xffffff, 0.4);
-  g.lineBetween(backX + 6, backY + 6, backX + backW - 6, backY + 6);
-  drawMasonryLines(g, backX + 4, backY + 5, backW - 8, accent, 0.42 + glow * 0.28);
-
-  // Side walls — soft cream wedges with accent seam.
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.7);
-  g.fillTriangle(chamberX + 3, chamberY + 18, backX, backY + 7, x + 14, y + SLOT_H - 13);
-  g.fillTriangle(chamberX + chamberW - 3, chamberY + 18, backX + backW, backY + 7, x + SLOT_W - 14, y + SLOT_H - 13);
-  g.lineStyle(1, accent, 0.3 + glow * 0.16);
-  g.lineBetween(backX, backY + 10, x + 14, y + SLOT_H - 14);
-  g.lineBetween(backX + backW, backY + 10, x + SLOT_W - 14, y + SLOT_H - 14);
-
-  // Perspective floor slab — warm cream.
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.beginPath();
-  g.moveTo(x + 16, floorY);
-  g.lineTo(x + SLOT_W - 16, floorY);
-  g.lineTo(x + SLOT_W - 7, y + SLOT_H - 12);
-  g.lineTo(x + 7, y + SLOT_H - 12);
-  g.closePath();
-  g.fillPath();
-  g.fillStyle(accent, 0.1 + glow * 0.06);
-  g.beginPath();
-  g.moveTo(x + 20, floorY + 2);
-  g.lineTo(x + SLOT_W - 20, floorY + 2);
-  g.lineTo(x + SLOT_W - 18, y + SLOT_H - 19);
-  g.lineTo(x + 18, y + SLOT_H - 19);
-  g.closePath();
-  g.fillPath();
-  g.lineStyle(1, accent, 0.4 + glow * 0.18);
-  g.lineBetween(x + 16, floorY, x + SLOT_W - 16, floorY);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.45);
-  g.lineBetween(x + 23, floorY + 3, x + 13, y + SLOT_H - 14);
-  g.lineBetween(x + SLOT_W - 23, floorY + 3, x + SLOT_W - 13, y + SLOT_H - 14);
-  g.lineBetween(x + 32, floorY + 7, x + SLOT_W - 32, floorY + 7);
-  g.lineBetween(x + 25, floorY + 17, x + SLOT_W - 25, floorY + 17);
-
-  // Wall niche behind the portrait — soft cream pocket + accent glow.
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
-  g.fillCircle(x + SLOT_W / 2, backY + 21, 15);
-  g.fillRoundedRect(x + SLOT_W / 2 - 15, backY + 21, 30, 23, 7);
-  g.fillStyle(accent, 0.14 + glow * 0.1);
-  g.fillCircle(x + SLOT_W / 2, backY + 22, 10);
-
-  // Side pillars — cream with accent seam.
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.95);
-  g.fillRoundedRect(x + 5, y + 32, 10, 42, 5);
-  g.fillRoundedRect(x + SLOT_W - 15, y + 32, 10, 42, 5);
-  g.lineStyle(1, accent, 0.45 + glow * 0.15);
-  g.lineBetween(x + 10, y + 37, x + 10, y + 67);
-  g.lineBetween(x + SLOT_W - 10, y + 37, x + SLOT_W - 10, y + 67);
-  g.fillStyle(accent, 0.5 + glow * 0.12);
-  g.fillCircle(x + 10, y + 42, 2.6);
-  g.fillCircle(x + SLOT_W - 10, y + 42, 2.6);
-
-  // Wall torches — bracket + flame, so the room reads as torch-lit.
-  for (const tx of [x + 18, x + SLOT_W - 18]) {
-    const ty = y + 44;
-    // glow halo
-    g.fillStyle(0xff8a3d, 0.18 + glow * 0.14);
-    g.fillCircle(tx, ty - 2, 9);
-    // iron bracket
-    g.fillStyle(CASUAL.EDGE, 0.9);
-    g.fillRoundedRect(tx - 2, ty, 4, 8, 1.5);
-    // flame (outer warm + inner bright)
-    g.fillStyle(0xff6b1a, 0.95);
-    g.fillTriangle(tx - 4, ty, tx, ty - 11, tx + 4, ty);
-    g.fillStyle(0xffd24a, 1);
-    g.fillTriangle(tx - 2, ty, tx, ty - 6, tx + 2, ty);
-  }
-}
 
 // Deterministic 0..1 from an integer seed (stable per slot, no Math.random).
 function seededUnit(seed: number, salt: number): number {
@@ -788,8 +545,7 @@ export function drawBattleSlot(
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 12);
     g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 8, y + 6, SLOT_W - 16, 16, 7);
-    drawDungeonRoomShell(g, x, y, roomAccent, roomMetrics.readiness);
-    drawRoomTypeProps(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
+    drawPixelRoom(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
     addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index);
     drawEquipmentPowerAura(scene, c, g, x, y, roomMetrics.equipmentPower, primaryEquipment);
 
@@ -823,16 +579,16 @@ export function drawBattleSlot(
     }
     c.add(glowG);
 
-    const portrait = addMonsterPortrait(scene, c, cx, cy, primaryMonsterId ?? '', {
-      size: 58,
-      frameColor: roomAccent,
-      glowColor: glow,
-      bgColor: CASUAL.PANEL_SOFT,
-      equippedSkins: gs.equippedSkins ?? {},
+    // Pixel monster sprite (transparent) standing inside the pixel room.
+    const spriteKey = generateMonsterSprite(scene, (typeIdForSlot ?? primaryMonsterId ?? '') as MonsterId);
+    const sprite = scene.add.image(cx, cy + 8, spriteKey).setOrigin(0.5).setScale(1.25);
+    c.add(sprite);
+    scene.tweens.add({
+      targets: sprite,
+      y: cy + 3,
+      duration: 1300 + (index % 4) * 130,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    if (portrait.fallbackText && typeIdForSlot) {
-      ctx.applyIdleAnimation(portrait.fallbackText, typeIdForSlot, true);
-    }
     if (primaryEquipment) {
       drawEquipmentBadge(scene, c, g, x + SLOT_W - 20, y + SLOT_H / 2 - 8, primaryEquipment);
     }
@@ -900,8 +656,7 @@ export function drawBattleSlot(
       const td = typeDef;
       const cx = x + SLOT_W / 2;
       const roomAccent = ROOM_TYPE_ACCENT[slot?.roomType ?? ''] ?? CASUAL.GOLD;
-      drawDungeonRoomShell(g, x, y, roomAccent, roomMetrics.readiness);
-      drawRoomTypeProps(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
+      drawPixelRoom(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
       addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index);
       c.add(scene.add.text(cx, y + SLOT_H / 2 - 10, td?.icon ?? '▣', {
         fontFamily: 'sans-serif',

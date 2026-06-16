@@ -223,6 +223,44 @@ export function generatePortrait(
 }
 
 /**
+ * Bake a TRANSPARENT pixel sprite (just the 24x24 silhouette, no background /
+ * frame) for placing a monster directly into a world scene — e.g. standing
+ * inside a pixel dungeon room. NEAREST-filtered so pixels stay crisp.
+ */
+export function generateMonsterSprite(scene: Phaser.Scene, monsterId: MonsterId): string {
+  const key = `sprite-${monsterId}`;
+  if (generated.has(key)) return key;
+  if (scene.textures.exists(key)) { generated.add(key); return key; }
+
+  const def = MONSTER_DEFS[monsterId];
+  if (!def) return key;
+
+  const SC = 2; // 24 * 2 = 48px
+  const canvas = document.createElement('canvas');
+  canvas.width = 24 * SC; canvas.height = 24 * SC;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return key;
+  ctx.imageSmoothingEnabled = false;
+
+  const { palette, silhouette } = getMonsterSpriteData(monsterId, def.tribe, def.type, def.rarityTier);
+  for (let y = 0; y < 24; y++) {
+    const row = silhouette[y];
+    if (!row) continue;
+    for (let x = 0; x < 24; x++) {
+      const idx = row[x];
+      if (!idx || idx === 0) continue;
+      ctx.fillStyle = hexToCSS(palette[idx] ?? 0xff00ff);
+      ctx.fillRect(x * SC, y * SC, SC, SC);
+    }
+  }
+
+  scene.textures.addCanvas(key, canvas);
+  scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+  generated.add(key);
+  return key;
+}
+
+/**
  * Ensure a portrait exists, generating if needed.
  * Returns true if the texture is ready.
  */
