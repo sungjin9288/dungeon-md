@@ -12,6 +12,9 @@
  * abyssTransactions.ts for the GameState-level transactions).
  */
 
+import type { WaveSpec } from './stagesChapter1';
+import type { InvaderType } from './invaders';
+
 export interface AbyssState {
   /** Highest floor cleared (0 = none cleared yet; floor 1 always enterable). */
   highestFloor: number;
@@ -185,4 +188,46 @@ export function canSweepAbyss(state: AbyssState, floor: number): SweepCheck {
 /** The next floor the player can attempt (climb). Capped at ABYSS_MAX_FLOOR. */
 export function nextAbyssFloor(state: AbyssState): number {
   return Math.min(ABYSS_MAX_FLOOR, state.highestFloor + 1);
+}
+
+// ─── Floor battle waves ──────────────────────────────────────────────────────
+// Build a short, depth-scaled inline wave set for an Abyss floor battle. Fed to
+// the shared battle scene via stageConfig.waves (the player's placed dungeon
+// auto-deploys to defend, same as invasion battles).
+
+// Primary invader by band (0..3) + the tougher boss-floor unit.
+const ABYSS_PRIMARY: InvaderType[] = ['peasant', 'soldier', 'knight', 'berserker'];
+const ABYSS_BOSS: InvaderType[] = ['knight', 'iron_golem', 'iron_golem', 'iron_golem'];
+
+export function buildAbyssFloorWaves(floor: number): WaveSpec[] {
+  const f = Math.max(1, Math.min(ABYSS_MAX_FLOOR, Math.floor(floor)));
+  const band = abyssBand(f);
+  const primary = ABYSS_PRIMARY[band];
+  const support: InvaderType = band >= 2 ? 'shaman' : 'shaman';
+  const count = Math.min(4 + Math.floor(f / 2), 14);
+  const delay = Math.max(700, 1700 - f * 14);
+  const reward = Math.round((30 + f * 8));
+
+  const waves: WaveSpec[] = [
+    { clearReward: reward, invaders: [
+      { type: primary, count, spawnDelay: delay },
+      { type: support, count: 2 + band, spawnDelay: delay },
+    ] },
+    { clearReward: reward, invaders: [
+      { type: primary, count: count + 2, spawnDelay: delay },
+      { type: ABYSS_PRIMARY[Math.max(0, band - 1)], count: 3, spawnDelay: delay },
+    ] },
+  ];
+
+  if (isAbyssBossFloor(f)) {
+    waves.push({ clearReward: reward * 3, invaders: [
+      { type: ABYSS_BOSS[band], count: 1, spawnDelay: 0, isBoss: true },
+      { type: primary, count: 4, spawnDelay: delay },
+    ] });
+  } else {
+    waves.push({ clearReward: reward, invaders: [
+      { type: primary, count: count + 4, spawnDelay: Math.max(600, delay - 200) },
+    ] });
+  }
+  return waves;
 }

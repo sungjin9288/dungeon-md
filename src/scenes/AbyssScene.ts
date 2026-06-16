@@ -14,9 +14,10 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import {
   ABYSS_MAX_FLOOR, ABYSS_KEY_MAX,
   getAbyssFloorConfig, getAbyssFloorLoot, isAbyssBossFloor,
-  refilledKeys, canSweepAbyss, nextAbyssFloor,
+  refilledKeys, canSweepAbyss, nextAbyssFloor, buildAbyssFloorWaves,
+  type AbyssLoot,
 } from '../data/abyss';
-import { sweepAbyssFloor } from '../data/abyssTransactions';
+import { sweepAbyssFloor, clearAbyssFloor } from '../data/abyssTransactions';
 import { addSceneHeader, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 
 const CARD_X = 14;
@@ -37,8 +38,11 @@ export class AbyssScene extends Phaser.Scene {
 
   constructor() { super({ key: 'AbyssScene' }); }
 
+  private resultToast: { loot: AbyssLoot; firstClear: boolean; floor: number } | null = null;
+
   create(): void {
     this.gs = loadGameState();
+    this.resolveReturnedBattle();
     // Daily key refill on entry.
     const refilled = refilledKeys(this.gs.abyss, today());
     if (refilled !== this.gs.abyss) {
@@ -46,6 +50,30 @@ export class AbyssScene extends Phaser.Scene {
       saveGameState(this.gs);
     }
     this.render();
+    if (this.resultToast) {
+      const { loot, firstClear, floor } = this.resultToast;
+      this.resultToast = null;
+      const prefix = firstClear ? `${floor}층 정복! ` : `${floor}층 클리어 `;
+      this.time.delayedCall(120, () => this.showLootToast(loot.materials, loot.awakeningStones, loot.gold, prefix));
+    }
+  }
+
+  /** If we returned from an Abyss floor battle, apply the result (advance depth on win). */
+  private resolveReturnedBattle(): void {
+    const pendingFloor = this.registry.get('abyssPendingFloor') as number | undefined;
+    const result = this.registry.get('battleResult') as { won: boolean } | undefined;
+    if (pendingFloor === undefined) return;
+
+    this.registry.remove('abyssPendingFloor');
+    this.registry.remove('battleResult');
+    this.registry.remove('returnTo');
+
+    if (result?.won) {
+      const r = clearAbyssFloor(this.gs, pendingFloor);
+      this.gs = r.state;
+      saveGameState(this.gs);
+      this.resultToast = { loot: r.loot, firstClear: r.firstClear, floor: pendingFloor };
+    }
   }
 
   private render(): void {
@@ -172,21 +200,27 @@ export class AbyssScene extends Phaser.Scene {
   }
 
   private climb(floor: number): void {
-    // TODO(next): launch the scaled floor battle (inline abyss waves) and, on
-    // victory return, apply clearAbyssFloor() to advance depth + grant the
-    // first-clear bonus. Needs the battle clear-flow to honour returnTo +
-    // surface an abyss win signal. Stubbed for now to avoid a broken battle.
-    void floor;
-    this.showToast('층 전투는 다음 업데이트에서 연결됩니다 ⚔', CASUAL_CSS.GOLD);
+    // Launch a depth-scaled floor battle. The player's placed dungeon
+    // auto-deploys to defend (inline waves). On victory return, create() →
+    // resolveReturnedBattle() advances depth + grants the first-clear reward.
+    this.registry.remove('battleResult');
+    this.registry.set('abyssPendingFloor', floor);
+    this.registry.set('returnTo', 'AbyssScene');
+    this.registry.set('stageConfig', {
+      stageNumber: 0,
+      slots: 9,
+      waves: buildAbyssFloorWaves(floor),
+    });
+    this.scene.start('DungeonScene');
   }
 
   // ─── Toasts ────────────────────────────────────────────────────────────────
-  private showLootToast(materials: Record<string, number>, stones: number, gold: number): void {
+  private showLootToast(materials: Record<string, number>, stones: number, gold: number, prefix = '획득  '): void {
     const parts: string[] = [];
     for (const [id, qty] of Object.entries(materials)) parts.push(`${MATERIAL_DEFS[id]?.emoji ?? '❔'}${qty}`);
     if (stones > 0) parts.push(`🔯${stones}`);
     if (gold > 0) parts.push(`💰${gold}`);
-    this.showToast(`획득  ${parts.join('  ')}`, CASUAL_CSS.GOLD);
+    this.showToast(`${prefix}${parts.join('  ')}`, CASUAL_CSS.GOLD);
   }
 
   private showToast(msg: string, color: string): void {

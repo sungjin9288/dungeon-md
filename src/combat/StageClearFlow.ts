@@ -252,7 +252,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
           scene.registry.set('battleResult', { won: true, goldEarned, dmXP: 150, materialsEarned: { ...ctx.materialsEarnedThisRun } });
           ov.destroy();
           scene.scene.stop('UIScene');
-          scene.scene.start('DungeonHomeScene');
+          scene.scene.start(ctx.returnTo);
         } else {
           ov.destroy();
           scene.scene.stop('UIScene');

@@ -333,7 +333,7 @@ function buildFailContent(
           materialsEarned: { ...ctx.materialsEarnedThisRun },
         });
         ov.destroy();
-        scene.scene.start('DungeonHomeScene');
+        scene.scene.start(ctx.returnTo ?? 'DungeonHomeScene');
       },
     }] : []),
     { label: '광고 보기 (부활)',  cap: CASUAL.GREEN, base: CASUAL.GREEN_DK, action: () => revive(ctx, 0) },
