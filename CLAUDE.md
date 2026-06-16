@@ -141,9 +141,8 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 
 ## 에셋
 
-- `public/assets/monsters/{id}.jpg` — AI 생성 몬스터 초상화 (Ch1–5 29종)
-- `public/assets/invaders/{type}.jpg` — AI 생성 인베이더 스프라이트 (35종)
-- 없을 경우 절차적 픽셀아트 폴백 (`src/art/`)
+- `public/assets/monsters/{id}.jpg` — AI 생성 몬스터 초상화 (Ch1–5 29종). 없을 경우 절차적 픽셀아트 폴백 (`src/art/PixelMonsters.ts`)
+- 인베이더는 `src/art/PixelInvaders.ts`의 절차적 픽셀아트로만 렌더 (BootScene에서 베이킹). AI JPG 에셋은 사용하지 않음
 
 ---
 
