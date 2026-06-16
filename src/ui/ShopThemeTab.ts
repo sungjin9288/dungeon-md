@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { equipTheme, purchaseAndEquipTheme, unequipTheme } from '../data/shopTransactions';
 import { ALL_THEMES, type DungeonTheme } from '../themes/themes';
@@ -36,11 +37,11 @@ export function buildThemeTab(ctx: ShopThemeTabContext): void {
   const gs = loadGameState();
 
   contentCtr.add(scene.add.text(CANVAS_WIDTH / 2, 108, '🏰 던전 테마', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'bold',
-    color: '#ffcc88',
+    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
+    color: CASUAL_CSS.INK,
   }).setOrigin(0.5).setDepth(6));
   contentCtr.add(scene.add.text(CANVAS_WIDTH / 2, 128, '던전 전체 외관을 변경합니다', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#666688',
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0.5).setDepth(6));
 
   const CARD_H = 148;
@@ -60,40 +61,60 @@ function drawThemeCard(
   const owned    = rarity === 'default' || (gs.ownedThemes ?? []).includes(theme.id);
   const equipped = (gs.equippedTheme ?? 'cave') === theme.id;
 
-  contentCtr.add(addPanelShadow(scene, x, y, w, h, 10, { offsetY: 3, opacity: 0.5 }));
+  // Rarity → saturated CASUAL accent (kept as the card border hue).
+  const RARITY_ACCENT: Record<string, number> = {
+    default:   CASUAL.INK_SOFT,
+    rare:      CASUAL.BLUE,
+    epic:      CASUAL.PURPLE,
+    legendary: CASUAL.GOLD,
+  };
+  const accent = equipped ? CASUAL.GREEN : RARITY_ACCENT[rarity] ?? CASUAL.EDGE;
+
+  contentCtr.add(addPanelShadow(scene, x, y, w, h, 10, { offsetY: 3, opacity: 0.32 }));
 
   const g = scene.add.graphics();
-  g.fillStyle(theme.bgSecondary, 1);
+  g.fillStyle(CASUAL.SHADOW, 0.22);
+  g.fillRoundedRect(x, y + 4, w, h, 10);
+  g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.lineStyle(2, equipped ? theme.panelBorder : (owned ? 0x446644 : 0x334), equipped ? 1 : 0.7);
+  g.fillStyle(0xffffff, 0.4);
+  g.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+  g.fillStyle(CASUAL.PANEL_SOFT, 0.5);
+  g.fillRoundedRect(x + 5, y + h * 0.62, w - 10, h * 0.38 - 5, 6);
+  g.lineStyle(3, accent, 1);
   g.strokeRoundedRect(x, y, w, h, 10);
   contentCtr.add(g);
 
-  contentCtr.add(addInnerGlow(scene, x, y, w, h, 10, equipped ? theme.panelBorder : 0xaaccff, 0.14));
+  contentCtr.add(addInnerGlow(scene, x, y, w, h, 10, accent, 0.1));
 
   if (equipped) {
     const bdg = scene.add.graphics();
-    bdg.fillStyle(0x003300, 1);
-    bdg.fillRoundedRect(x + w - 64, y + 6, 58, 18, 4);
+    bdg.fillStyle(CASUAL.GREEN_DK, 1);
+    bdg.fillRoundedRect(x + w - 64, y + 6 + 2, 58, 18, 7);
+    bdg.fillStyle(CASUAL.GREEN, 1);
+    bdg.fillRoundedRect(x + w - 64, y + 6, 58, 18, 7);
     contentCtr.add(bdg);
     contentCtr.add(scene.add.text(x + w - 35, y + 15, '✓ 장착 중', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#44ff88',
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
     }).setOrigin(0.5).setDepth(7));
   }
 
-  const RARITY_CONFIG: Record<string, { bg: number; label: string; color: string } | undefined> = {
-    rare:      { bg: 0x442a0e, label: '레어',   color: '#88aaff' },
-    epic:      { bg: 0x221504, label: '에픽',   color: '#cc88ff' },
-    legendary: { bg: 0x221100, label: '전설',   color: '#ffd700' },
+  // Rarity tag → saturated accent pill + white bold (readable on cream).
+  const RARITY_TAG: Record<string, { cap: number; base: number; label: string } | undefined> = {
+    rare:      { cap: CASUAL.BLUE,   base: CASUAL.BLUE_DK,   label: '레어' },
+    epic:      { cap: CASUAL.PURPLE, base: CASUAL.PURPLE_DK, label: '에픽' },
+    legendary: { cap: CASUAL.GOLD,   base: CASUAL.GOLD_DK,   label: '전설' },
   };
-  const rarityConfig = RARITY_CONFIG[rarity];
-  if (rarityConfig) {
+  const rarityTag = RARITY_TAG[rarity];
+  if (rarityTag) {
     const rdg = scene.add.graphics();
-    rdg.fillStyle(rarityConfig.bg, 1);
-    rdg.fillRoundedRect(x + 6, y + 6, 38, 18, 4);
+    rdg.fillStyle(rarityTag.base, 1);
+    rdg.fillRoundedRect(x + 6, y + 6 + 2, 38, 18, 7);
+    rdg.fillStyle(rarityTag.cap, 1);
+    rdg.fillRoundedRect(x + 6, y + 6, 38, 18, 7);
     contentCtr.add(rdg);
-    contentCtr.add(scene.add.text(x + 25, y + 15, rarityConfig.label, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: rarityConfig.color,
+    contentCtr.add(scene.add.text(x + 25, y + 15, rarityTag.label, {
+      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
     }).setOrigin(0.5).setDepth(7));
   }
 
@@ -102,32 +123,33 @@ function drawThemeCard(
   }).setOrigin(0.5).setDepth(6));
 
   contentCtr.add(scene.add.text(x + 64, y + 16, theme.name, {
-    fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold',
-    color: theme.textPrimary,
+    fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold',
+    color: CASUAL_CSS.INK,
   }).setDepth(6));
 
+  // Swatches preview the theme's real colors — keep the fills, only soften the border.
   const swatchColors = [theme.bgPrimary, theme.panelBorder, theme.ambientColor, theme.slotBorder];
   swatchColors.forEach((col, si) => {
     const sg = scene.add.graphics();
     sg.fillStyle(col, 1);
-    sg.fillRoundedRect(x + 64 + si * 26, y + 40, 20, 20, 4);
-    sg.lineStyle(1, 0x333333, 0.5);
-    sg.strokeRoundedRect(x + 64 + si * 26, y + 40, 20, 20, 4);
+    sg.fillRoundedRect(x + 64 + si * 26, y + 40, 20, 20, 5);
+    sg.lineStyle(2, CASUAL.EDGE, 0.8);
+    sg.strokeRoundedRect(x + 64 + si * 26, y + 40, 20, 20, 5);
     contentCtr.add(sg);
   });
 
-  contentCtr.add(scene.add.text(x + 64, y + 68, theme.textAccent + ' 색상 테마', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: theme.textSecondary,
+  contentCtr.add(scene.add.text(x + 64, y + 68, '색상 테마', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
   }).setDepth(6));
 
   if (owned) {
     contentCtr.add(scene.add.text(x + 64, y + 86, rarity === 'default' ? '기본 테마' : '✅ 보유 중', {
-      fontFamily: 'sans-serif', fontSize: '10px',
-      color: rarity === 'default' ? theme.textSecondary : '#66cc66',
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: rarity === 'default' ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.GREEN,
     }).setDepth(6));
   } else {
     contentCtr.add(scene.add.text(x + 64, y + 86, `💎 ${gemCost} 젬`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#cc88ff',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
     }).setDepth(6));
   }
 
@@ -141,29 +163,24 @@ function drawThemeCard(
 
   if (isDefault) return;
 
+  // 해제 → red, 장착 → blue, 구매 → green candy button.
+  let btnCap: number = CASUAL.GREEN, btnBase: number = CASUAL.GREEN_DK;
+  if (equipped)      { btnCap = CASUAL.RED;  btnBase = CASUAL.RED_DK; }
+  else if (canEquip) { btnCap = CASUAL.BLUE; btnBase = CASUAL.BLUE_DK; }
+
   const btnBg = scene.add.graphics();
-  if (equipped) {
-    btnBg.fillStyle(0x442200, 1);
-    btnBg.fillRoundedRect(bx, by, btnW, btnH, 6);
-    btnBg.lineStyle(1.5, 0xcc6600, 0.8);
-    btnBg.strokeRoundedRect(bx, by, btnW, btnH, 6);
-  } else if (canEquip) {
-    btnBg.fillStyle(theme.bgSecondary, 1);
-    btnBg.fillRoundedRect(bx, by, btnW, btnH, 6);
-    btnBg.lineStyle(1.5, theme.panelBorder, 0.9);
-    btnBg.strokeRoundedRect(bx, by, btnW, btnH, 6);
-  } else if (canBuy) {
-    btnBg.fillStyle(0x221504, 1);
-    btnBg.fillRoundedRect(bx, by, btnW, btnH, 6);
-    btnBg.lineStyle(1.5, 0xaa44ff, 0.8);
-    btnBg.strokeRoundedRect(bx, by, btnW, btnH, 6);
-  }
+  btnBg.fillStyle(btnBase, 1);
+  btnBg.fillRoundedRect(bx, by + 4, btnW, btnH, 8);
+  btnBg.fillStyle(btnCap, 1);
+  btnBg.fillRoundedRect(bx, by, btnW, btnH - 1, 8);
+  btnBg.fillStyle(0xffffff, 0.32);
+  btnBg.fillRoundedRect(bx + 5, by + 4, btnW - 10, 9, 4);
   contentCtr.add(btnBg);
 
   const btnLabel = equipped ? '해제' : canEquip ? '장착' : `💎 ${gemCost}`;
-  contentCtr.add(scene.add.text(bx + btnW / 2, by + btnH / 2, btnLabel, {
-    fontFamily: 'sans-serif', fontSize: '11px',
-    color: equipped ? '#ffaa44' : canEquip ? theme.textAccent : '#cc88ff',
+  contentCtr.add(scene.add.text(bx + btnW / 2, by + btnH / 2 - 1, btnLabel, {
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+    color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(7));
 
   const zone = scene.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH)

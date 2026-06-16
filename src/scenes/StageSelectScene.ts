@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
@@ -60,18 +60,6 @@ const STAGE_ENEMY_ICONS: string[] = ALL_STAGES.map(cfg => {
     .join('');
   return top;
 });
-
-function drawStageAccent(
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  w: number,
-  color: number,
-  alpha: number,
-): void {
-  g.fillStyle(color, alpha);
-  g.fillRoundedRect(x + 8, y + 4, Math.max(8, w - 16), 3, 2);
-}
 
 function pressStagePlaque(
   scene: Phaser.Scene,
@@ -254,31 +242,32 @@ export class StageSelectScene extends Phaser.Scene {
     const bg = this.add.graphics();
 
     if (!prog.unlocked) {
-      // Locked — dark plaque
-      bg.fillStyle(0x0e0a04, 1);
-      bg.fillRoundedRect(x, y, w, h, 6);
-      bg.lineStyle(1, 0x3a2810, 0.8);
-      bg.strokeRoundedRect(x, y, w, h, 6);
-      drawStageAccent(bg, x, y, w, 0x3a2810, 0.35);
+      // Locked — muted cream plaque
+      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      bg.fillRoundedRect(x, y, w, h, 10);
+      bg.lineStyle(2.5, CASUAL.EDGE_SOFT, 0.9);
+      bg.strokeRoundedRect(x, y, w, h, 10);
 
-      this.add.text(x + w / 2, y + h / 2 - 4, '⛓', {
-        fontFamily: 'sans-serif', fontSize: '20px',
-      }).setOrigin(0.5);
+      this.add.text(x + w / 2, y + h / 2 - 4, '🔒', {
+        fontFamily: 'sans-serif', fontSize: '18px',
+      }).setOrigin(0.5).setAlpha(0.8);
       this.add.text(x + w / 2, y + h - 14, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#5a3a1a',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0.5);
 
     } else if (prog.bestStars === 0) {
-      // Unlocked, not cleared
-      bg.fillStyle(0x2d2416, 1);
-      bg.fillRoundedRect(x, y, w, h, 6);
-      bg.lineStyle(1.5, 0x6a4820, 0.9);
-      bg.strokeRoundedRect(x, y, w, h, 6);
-      drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, idx === this.frontierIdx ? 0.9 : 0.55);
+      // Unlocked, not cleared — cream playable cell
+      const playAccent = idx === this.frontierIdx ? CASUAL.GREEN : CASUAL.EDGE;
+      bg.fillStyle(CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, w, h, 10);
+      bg.fillStyle(0xffffff, 0.4);
+      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+      bg.lineStyle(2.5, playAccent, 1);
+      bg.strokeRoundedRect(x, y, w, h, 10);
 
       this.add.text(x + w / 2, y + 16, label, {
-        fontFamily: "Georgia, serif", fontSize: '18px', fontStyle: 'bold',
-        color: CSS.PARCHMENT,
+        fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
+        color: CASUAL_CSS.INK,
       }).setOrigin(0.5);
 
       // Enemy type icons
@@ -291,43 +280,39 @@ export class StageSelectScene extends Phaser.Scene {
 
       // 3 empty star outlines
       this.add.text(x + w / 2, y + h - 18, '☆☆☆', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: '#6a5030',
+        fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
 
       // Interactive
+      const drawPlay = (accent: number): void => {
+        bg.clear();
+        bg.fillStyle(CASUAL.PANEL, 1);
+        bg.fillRoundedRect(x, y, w, h, 10);
+        bg.fillStyle(0xffffff, 0.4);
+        bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+        bg.lineStyle(2.5, accent, 1);
+        bg.strokeRoundedRect(x, y, w, h, 10);
+      };
       const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => pressStagePlaque(this, bg, () => this.showRewardPreview(idx)));
-      zone.on('pointerover', () => {
-        bg.clear();
-        bg.fillStyle(0x3d3020, 1);
-        bg.fillRoundedRect(x, y, w, h, 6);
-        bg.lineStyle(1.5, COLORS.TORCH_GOLD, 0.75);
-        bg.strokeRoundedRect(x, y, w, h, 6);
-        drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, 0.9);
-      });
-      zone.on('pointerout',  () => {
-        bg.clear();
-        bg.fillStyle(0x2d2416, 1);
-        bg.fillRoundedRect(x, y, w, h, 6);
-        bg.lineStyle(1.5, 0x6a4820, 0.9);
-        bg.strokeRoundedRect(x, y, w, h, 6);
-        drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, idx === this.frontierIdx ? 0.9 : 0.55);
-      });
+      zone.on('pointerover', () => drawPlay(CASUAL.GREEN_DK));
+      zone.on('pointerout',  () => drawPlay(playAccent));
 
     } else {
-      // Cleared — gold glow
-      bg.fillStyle(0x3d3020, 1);
-      bg.fillRoundedRect(x, y, w, h, 6);
-      bg.lineStyle(2, COLORS.TORCH_GOLD, 0.9);
-      bg.strokeRoundedRect(x, y, w, h, 6);
-      drawStageAccent(bg, x, y, w, COLORS.TORCH_GOLD, 0.85);
+      // Cleared — cream cell, gold border
+      bg.fillStyle(CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, w, h, 10);
+      bg.fillStyle(0xffffff, 0.4);
+      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+      bg.lineStyle(2.5, CASUAL.GOLD, 1);
+      bg.strokeRoundedRect(x, y, w, h, 10);
 
       this.add.text(x + w / 2, y + 16, label, {
-        fontFamily: "Georgia, serif", fontSize: '18px', fontStyle: 'bold',
-        color: CSS.TORCH_AMBER,
+        fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
+        color: CASUAL_CSS.INK,
       }).setOrigin(0.5);
 
-      addStarPop(this, x + w / 2, y + h - 18, prog.bestStars, CSS.TORCH_AMBER);
+      addStarPop(this, x + w / 2, y + h - 18, prog.bestStars, CASUAL_CSS.GOLD);
 
       // Enemy type icons
       const icons1 = STAGE_ENEMY_ICONS[idx];
@@ -339,14 +324,16 @@ export class StageSelectScene extends Phaser.Scene {
 
       if (prog.bestHpPercent !== undefined) {
         const pct     = prog.bestHpPercent / 100;
-        const hpColor = prog.bestHpPercent >= 80 ? '#44ff88' : prog.bestHpPercent >= 40 ? '#ffcc44' : '#ff6644';
-        const fillRgb = prog.bestHpPercent >= 80 ? 0x44ff88 : prog.bestHpPercent >= 40 ? 0xffcc44 : 0xff6644;
+        const hpColor = prog.bestHpPercent >= 80 ? CASUAL_CSS.GREEN : prog.bestHpPercent >= 40 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
+        const fillRgb = prog.bestHpPercent >= 80 ? CASUAL.GREEN : prog.bestHpPercent >= 40 ? CASUAL.GOLD : CASUAL.RED;
         const barW    = w - 14;
         const barX    = x + 7;
         const barY    = y + h - 26;
         const hpBar   = this.add.graphics();
-        hpBar.fillStyle(0x222222, 0.9);
+        hpBar.fillStyle(CASUAL.PANEL_SOFT, 1);
         hpBar.fillRoundedRect(barX, barY, barW, 4, 2);
+        hpBar.lineStyle(1, CASUAL.EDGE_SOFT, 0.7);
+        hpBar.strokeRoundedRect(barX, barY, barW, 4, 2);
         hpBar.fillStyle(fillRgb, 1);
         hpBar.fillRoundedRect(barX, barY, Math.max(2, barW * pct), 4, 2);
         this.add.text(x + w / 2, barY - 9, `❤ ${prog.bestHpPercent}%`, {
@@ -362,8 +349,8 @@ export class StageSelectScene extends Phaser.Scene {
     if (cfg.bossWave) {
       if (prog.unlocked) {
         const bossRing = this.add.graphics();
-        bossRing.lineStyle(2, 0xcc2222, 0.85);
-        bossRing.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 7);
+        bossRing.lineStyle(2.5, CASUAL.RED, 0.9);
+        bossRing.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 11);
         this.tweens.add({
           targets: bossRing,
           alpha: { from: 0.4, to: 1 },

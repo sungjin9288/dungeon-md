@@ -10,102 +10,116 @@
 //   addStarPop          — animated ★ row (shared by Ch1 plaque + generic plaque)
 
 import Phaser from 'phaser';
-import { COLORS, CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import type { StageProgress } from '../data/stageProgress';
 import { addPanelShadow } from './PanelDepth';
 
 // ── PlaqueTheme ───────────────────────────────────────────────────────────────
+// Casual-toy reskin: stage cards are now cream cells on the bright board. Each
+// chapter keeps its identity through a single saturated CASUAL *accent* colour
+// used for the chunky border + tint; the cell fill is always cream
+// (CASUAL.PANEL / PANEL_SOFT). The hex/CSS fields below carry CASUAL values —
+// the field *names* are retained because StageSelectScene + drawing helpers
+// reference them, but their semantics shifted from "dark fill" → "accent".
 
 export interface PlaqueTheme {
-  // Locked state
-  lockedBg:             number;
-  lockedBorder:         number;
-  lockedLabelColor:     string;
-  // Uncleared state
-  unclearedBg:          number;
-  unclearedBorder:      number;
-  unclearedHoverBg:     number;
-  unclearedHoverBorder: number;
-  unclearedLabelColor:  string;
-  unclearedStarColor:   string;
-  // Cleared state
-  clearedBg:            number;
-  clearedBorder:        number;
-  clearedLabelColor:    string;
-  starColor:            string;
+  // Locked state — muted cream cell + soft edge.
+  lockedBg:             number;   // cream fill (CASUAL.PANEL_SOFT)
+  lockedBorder:         number;   // soft brown edge (CASUAL.EDGE_SOFT)
+  lockedLabelColor:     string;   // INK_SOFT
+  // Uncleared state — cream cell + chapter accent edge (playable).
+  unclearedBg:          number;   // cream fill (CASUAL.PANEL)
+  unclearedBorder:      number;   // chapter accent (used as edge tint)
+  unclearedHoverBg:     number;   // brighter cream (CASUAL.PANEL)
+  unclearedHoverBorder: number;   // chapter accent (brighter on hover)
+  unclearedLabelColor:  string;   // INK
+  unclearedStarColor:   string;   // empty-star colour (EDGE_SOFT-ish)
+  // Cleared state — cream cell + GOLD edge.
+  clearedBg:            number;   // cream fill (CASUAL.PANEL)
+  clearedBorder:        number;   // CASUAL.GOLD
+  clearedLabelColor:    string;   // INK
+  starColor:            string;   // earned-star gold (CASUAL_CSS.GOLD-ish)
   // Decoration
   bossEmoji:            string;
+  /** chapter accent hex used for boss ring / frontier ring (CASUAL hex) */
+  accent:               number;
   /** true → graphics mini bar + text; false → text-only HP% line */
   showHpBar:            boolean;
 }
 
-// ── CHAPTER_PLAQUE_THEMES  (index 0 = Ch2, … index 5 = Ch7) ──────────────────
+// Empty-star colour on cream — soft brown so blanks read as "not yet earned".
+const EMPTY_STAR_CSS = CASUAL_CSS.INK_SOFT;
+// Earned-star gold (slightly deeper than fill GOLD so it pops on cream).
+const STAR_GOLD_CSS = '#e0a312';
+
+// ── CHAPTER_PLAQUE_THEMES  (index 0 = Ch2, … index 6 = Ch8) ──────────────────
+// Cream cells everywhere; chapter identity = the accent edge colour.
 
 export const CHAPTER_PLAQUE_THEMES: PlaqueTheme[] = [
   // [0] Ch2 — emerald green
   {
-    lockedBg: 0x050e0a, lockedBorder: 0x143020, lockedLabelColor: '#1a4a30',
-    unclearedBg: 0x0d1e18, unclearedBorder: 0x2a7a60,
-    unclearedHoverBg: 0x163028, unclearedHoverBorder: 0x20c090,
-    unclearedLabelColor: '#a0e8c8', unclearedStarColor: '#1a6040',
-    clearedBg: 0x163028, clearedBorder: 0x20c090, clearedLabelColor: '#20c090',
-    starColor: '#20c090', bossEmoji: '🦊', showHpBar: true,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.GREEN,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.GREEN_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🦊', accent: CASUAL.GREEN, showHpBar: true,
   },
   // [1] Ch3 — ocean blue
   {
-    lockedBg: 0x020810, lockedBorder: 0x0a1830, lockedLabelColor: '#0a2048',
-    unclearedBg: 0x050e20, unclearedBorder: 0x1a4488,
-    unclearedHoverBg: 0x0a1838, unclearedHoverBorder: 0x4488ff,
-    unclearedLabelColor: '#88aaf8', unclearedStarColor: '#1a3a88',
-    clearedBg: 0x0a1838, clearedBorder: 0x4488ff, clearedLabelColor: '#4488ff',
-    starColor: '#4488ff', bossEmoji: '🐲', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.BLUE,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.BLUE_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🐲', accent: CASUAL.BLUE, showHpBar: false,
   },
   // [2] Ch4 — blood red
   {
-    lockedBg: 0x100008, lockedBorder: 0x3a0820, lockedLabelColor: '#5a1030',
-    unclearedBg: 0x200010, unclearedBorder: 0x881030,
-    unclearedHoverBg: 0x300018, unclearedHoverBorder: 0xcc2244,
-    unclearedLabelColor: '#ff6688', unclearedStarColor: '#881030',
-    clearedBg: 0x300018, clearedBorder: 0xcc2244, clearedLabelColor: '#cc2244',
-    starColor: '#cc2244', bossEmoji: '☠️', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.RED,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.RED_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '☠️', accent: CASUAL.RED, showHpBar: false,
   },
   // [3] Ch5 — ancient gold
   {
-    lockedBg: 0x0e0800, lockedBorder: 0x3a2800, lockedLabelColor: '#5a4000',
-    unclearedBg: 0x1a1000, unclearedBorder: 0xaa7700,
-    unclearedHoverBg: 0x281800, unclearedHoverBorder: 0xddaa00,
-    unclearedLabelColor: '#ffcc44', unclearedStarColor: '#aa7700',
-    clearedBg: 0x281800, clearedBorder: 0xddaa00, clearedLabelColor: '#ddaa00',
-    starColor: '#ddaa00', bossEmoji: '🌟', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.GOLD,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.GOLD_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🌟', accent: CASUAL.GOLD, showHpBar: false,
   },
-  // [4] Ch6 — royal purple / gold
+  // [4] Ch6 — royal purple
   {
-    lockedBg: 0x0a0018, lockedBorder: 0x2a1050, lockedLabelColor: '#4a2870',
-    unclearedBg: 0x140028, unclearedBorder: 0x8844cc,
-    unclearedHoverBg: 0x200040, unclearedHoverBorder: 0xd4af37,
-    unclearedLabelColor: '#d4af37', unclearedStarColor: '#8844cc',
-    clearedBg: 0x200040, clearedBorder: 0xd4af37, clearedLabelColor: '#d4af37',
-    starColor: '#d4af37', bossEmoji: '🌟', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.PURPLE,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.PURPLE_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🌟', accent: CASUAL.PURPLE, showHpBar: false,
   },
   // [5] Ch7 — divine gold
   {
-    lockedBg: 0x0a0800, lockedBorder: 0x3a2a00, lockedLabelColor: '#4a3a00',
-    unclearedBg: 0x1a1400, unclearedBorder: 0xffd700,
-    unclearedHoverBg: 0x2a2000, unclearedHoverBorder: 0xffd700,
-    unclearedLabelColor: '#ffd700', unclearedStarColor: '#cc9900',
-    clearedBg: 0x2a2000, clearedBorder: 0xffd700, clearedLabelColor: '#ffd700',
-    starColor: '#ffd700', bossEmoji: '🌟', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.GOLD,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.GOLD_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🌟', accent: CASUAL.GOLD, showHpBar: false,
   },
-  // [6] Ch8 — primordial abyss (void indigo)
+  // [6] Ch8 — primordial abyss (purple)
   {
-    lockedBg: 0x04020e, lockedBorder: 0x1a0a3a, lockedLabelColor: '#2a1050',
-    unclearedBg: 0x0a0520, unclearedBorder: 0x6622cc,
-    unclearedHoverBg: 0x120830, unclearedHoverBorder: 0x9944ff,
-    unclearedLabelColor: '#cc88ff', unclearedStarColor: '#440088',
-    clearedBg: 0x120830, clearedBorder: 0x9944ff, clearedLabelColor: '#cc88ff',
-    starColor: '#aa44ff', bossEmoji: '🌑', showHpBar: false,
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.PURPLE,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.PURPLE_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🌑', accent: CASUAL.PURPLE_DK, showHpBar: false,
   },
 ];
 
@@ -131,15 +145,17 @@ export interface ChapterSectionData {
   bh:               number;
   gapX:             number;
   gapY:             number;
-  // Colours
-  activeDivColor:   number;
-  activeTextColor:  string;
-  lockedDivColor:   number;
-  lockedLabelColor: string;
-  bannerBg:         number;
-  bannerBorder:     number;
-  lockedMsgColor:   string;
-  lockedNameColor:  string;
+  // Colours — casual reskin: divider/banner accents are CASUAL hex; banner fill
+  // is always cream. The chapter title keeps a small accent tint, everything
+  // else is INK / INK_SOFT on cream.
+  activeDivColor:   number;   // chapter accent (divider + title accent pill)
+  activeTextColor:  string;   // chapter title text (INK with accent pill)
+  lockedDivColor:   number;   // soft brown divider when locked (EDGE_SOFT)
+  lockedLabelColor: string;   // locked chapter title (INK_SOFT)
+  bannerBg:         number;   // cream banner fill (CASUAL.PANEL_SOFT)
+  bannerBorder:     number;   // chapter accent banner edge
+  lockedMsgColor:   string;   // lock message (INK_SOFT)
+  lockedNameColor:  string;   // chapter name + count line (INK_SOFT / INK)
 }
 
 // ── CHAPTER_SECTION_DATA  (index 0 = Ch2, … index 5 = Ch7) ───────────────────
@@ -152,10 +168,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 10,
     divY: 302, labelY: 292, progressBarY: 307, bannerY: 310, gridStartY: 318,
     cols: 5, rows: 2, bw: 58, bh: 68, gapX: 8, gapY: 14,
-    activeDivColor: 0x20c090, activeTextColor: '#20c090',
-    lockedDivColor: 0x2a3a30, lockedLabelColor: '#2a5040',
-    bannerBg: 0x050e0a, bannerBorder: 0x143020,
-    lockedMsgColor: '#2a6040', lockedNameColor: '#1a3a28',
+    activeDivColor: CASUAL.GREEN, activeTextColor: CASUAL_CSS.GREEN,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GREEN,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch3
   {
@@ -164,10 +180,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 20,
     divY: 492, labelY: 482, progressBarY: 497, bannerY: 500, gridStartY: 506,
     cols: 6, rows: 2, bw: 48, bh: 62, gapX: 6, gapY: 10,
-    activeDivColor: 0x2266cc, activeTextColor: '#4488ff',
-    lockedDivColor: 0x1a2440, lockedLabelColor: '#1a3060',
-    bannerBg: 0x020810, bannerBorder: 0x0a1830,
-    lockedMsgColor: '#1a3880', lockedNameColor: '#0e1e48',
+    activeDivColor: CASUAL.BLUE, activeTextColor: CASUAL_CSS.BLUE,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.BLUE,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch4
   {
@@ -176,10 +192,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 32,
     divY: 662, labelY: 652, progressBarY: 667, bannerY: 670, gridStartY: 672,
     cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
-    activeDivColor: 0xaa2244, activeTextColor: '#cc2244',
-    lockedDivColor: 0x3a1520, lockedLabelColor: '#5a1a2a',
-    bannerBg: 0x100008, bannerBorder: 0x3a0820,
-    lockedMsgColor: '#6a1a30', lockedNameColor: '#3a0a18',
+    activeDivColor: CASUAL.RED, activeTextColor: CASUAL_CSS.RED,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.RED,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch5
   {
@@ -188,10 +204,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 42,
     divY: 840, labelY: 830, progressBarY: 845, bannerY: 848, gridStartY: 850,
     cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
-    activeDivColor: 0xddaa00, activeTextColor: '#ddaa00',
-    lockedDivColor: 0x3a2800, lockedLabelColor: '#5a4000',
-    bannerBg: 0x0e0800, bannerBorder: 0x3a2800,
-    lockedMsgColor: '#8a6000', lockedNameColor: '#4a3000',
+    activeDivColor: CASUAL.GOLD, activeTextColor: CASUAL_CSS.GOLD,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GOLD,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch6
   {
@@ -200,10 +216,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 52,
     divY: 1010, labelY: 1000, progressBarY: 1015, bannerY: 1018, gridStartY: 1020,
     cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
-    activeDivColor: 0x8844cc, activeTextColor: '#d4af37',
-    lockedDivColor: 0x2a1050, lockedLabelColor: '#4a2870',
-    bannerBg: 0x0a0018, bannerBorder: 0x2a1050,
-    lockedMsgColor: '#8844cc', lockedNameColor: '#4a2870',
+    activeDivColor: CASUAL.PURPLE, activeTextColor: CASUAL_CSS.PURPLE,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch7
   {
@@ -212,10 +228,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 62,
     divY: 1175, labelY: 1165, progressBarY: 1180, bannerY: 1183, gridStartY: 1185,
     cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
-    activeDivColor: 0xffd700, activeTextColor: '#ffd700',
-    lockedDivColor: 0x2a1a00, lockedLabelColor: '#4a3a00',
-    bannerBg: 0x0a0800, bannerBorder: 0x3a2a00,
-    lockedMsgColor: '#cc9900', lockedNameColor: '#4a3a00',
+    activeDivColor: CASUAL.GOLD, activeTextColor: CASUAL_CSS.GOLD,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GOLD,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
   // Ch8
   {
@@ -224,10 +240,10 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     startIdx: 72,
     divY: 1340, labelY: 1330, progressBarY: 1345, bannerY: 1348, gridStartY: 1350,
     cols: 4, rows: 2, bw: 66, bh: 62, gapX: 10, gapY: 10,
-    activeDivColor: 0x9944ff, activeTextColor: '#cc88ff',
-    lockedDivColor: 0x1a0a3a, lockedLabelColor: '#2a1050',
-    bannerBg: 0x04020e, bannerBorder: 0x1a0a3a,
-    lockedMsgColor: '#6622cc', lockedNameColor: '#2a1050',
+    activeDivColor: CASUAL.PURPLE_DK, activeTextColor: CASUAL_CSS.PURPLE,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE_DK,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
 ];
 
@@ -251,32 +267,49 @@ export function drawGenericPlaque(
   const label = cfg ? String(cfg.stageNumber) : String(idx + 1);
   const bg    = scene.add.graphics();
   const isFrontier = idx === highlightIdx && !!prog?.unlocked && prog.bestStars === 0;
+  const isBoss = !!cfg?.bossWave;
+  // Boss/special stages → RED accent edge regardless of chapter accent.
+  const bossEdge = CASUAL.RED;
 
   if (prog?.unlocked) {
-    addPanelShadow(scene, x, y, w, h, 6, { offsetY: 2, opacity: isFrontier ? 0.7 : 0.45 });
+    addPanelShadow(scene, x, y, w, h, 6, {
+      offsetY: 2, color: CASUAL.SHADOW, opacity: isFrontier ? 0.32 : 0.22,
+    });
   }
 
   if (!prog?.unlocked) {
+    // Locked — muted cream cell + soft brown edge + lock glyph.
+    bg.fillStyle(CASUAL.SHADOW, 0.16);
+    bg.fillRoundedRect(x, y + 2, w, h, 6);
     bg.fillStyle(theme.lockedBg, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.lineStyle(1, theme.lockedBorder, 0.8);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
+    bg.lineStyle(2.5, theme.lockedBorder, 0.9);
     bg.strokeRoundedRect(x, y, w, h, 6);
-    _drawPlaqueAccent(bg, x, y, w, theme.lockedBorder, 0.35);
-    scene.add.text(x + w / 2, y + h / 2 - 4, '⛓',
-      { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5);
+    scene.add.text(x + w / 2, y + h / 2 - 4, '🔒',
+      { fontFamily: 'sans-serif', fontSize: '16px' }).setOrigin(0.5).setAlpha(0.7);
     scene.add.text(x + w / 2, y + h - 12, label,
-      { fontFamily: 'sans-serif', fontSize: '10px', color: theme.lockedLabelColor }).setOrigin(0.5);
+      { fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+        color: theme.lockedLabelColor }).setOrigin(0.5);
 
   } else if (prog.bestStars === 0) {
-    const drawBase = (fillCol: number, strokeCol: number) => {
+    // Unlocked, not cleared — cream cell + chapter (or boss) accent edge.
+    const edgeBase  = isBoss ? bossEdge : theme.unclearedBorder;
+    const edgeHover = isBoss ? CASUAL.RED_DK : theme.unclearedHoverBorder;
+    const drawBase = (fillCol: number, accentCol: number) => {
       bg.clear();
       bg.fillStyle(fillCol, 1);
       bg.fillRoundedRect(x, y, w, h, 6);
-      bg.lineStyle(1.5, strokeCol, 0.9);
+      bg.fillStyle(0xffffff, 0.4);
+      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+      bg.lineStyle(2.5, CASUAL.EDGE, 1);
       bg.strokeRoundedRect(x, y, w, h, 6);
-      _drawPlaqueAccent(bg, x, y, w, strokeCol, isFrontier ? 0.95 : 0.65);
+      bg.lineStyle(1.5, accentCol, 0.95);
+      bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
+      _drawPlaqueAccent(bg, x, y, w, accentCol, isFrontier ? 0.95 : 0.7);
     };
-    drawBase(theme.unclearedBg, theme.unclearedBorder);
+    drawBase(theme.unclearedBg, edgeBase);
     scene.add.text(x + w / 2, y + 14, label, {
       fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
       color: theme.unclearedLabelColor,
@@ -286,15 +319,20 @@ export function drawGenericPlaque(
     }).setOrigin(0.5);
     const zone = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
-    zone.on('pointerover', () => drawBase(theme.unclearedHoverBg,  theme.unclearedHoverBorder));
-    zone.on('pointerout',  () => drawBase(theme.unclearedBg,       theme.unclearedBorder));
+    zone.on('pointerover', () => drawBase(theme.unclearedHoverBg, edgeHover));
+    zone.on('pointerout',  () => drawBase(theme.unclearedBg,      edgeBase));
 
   } else {
+    // Cleared — cream cell + GOLD edge (boss keeps a RED inner ring accent).
     bg.fillStyle(theme.clearedBg, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.lineStyle(2, theme.clearedBorder, 0.9);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
+    bg.lineStyle(2.5, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(x, y, w, h, 6);
-    _drawPlaqueAccent(bg, x, y, w, theme.clearedBorder, 0.85);
+    bg.lineStyle(1.5, isBoss ? bossEdge : theme.clearedBorder, 0.95);
+    bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
+    _drawPlaqueAccent(bg, x, y, w, theme.clearedBorder, 0.9);
     scene.add.text(x + w / 2, y + 14, label, {
       fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
       color: theme.clearedLabelColor,
@@ -307,13 +345,16 @@ export function drawGenericPlaque(
     zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
   }
 
-  if (cfg?.bossWave) {
+  if (isBoss) {
     scene.add.text(x + w - 4, y + 4, theme.bossEmoji,
       { fontSize: '11px' }).setOrigin(1, 0);
+    if (prog?.unlocked) {
+      _drawBossRing(scene, x, y, w, h);
+    }
   }
 
   if (isFrontier) {
-    _drawFrontierCue(scene, x, y, w, h, theme.unclearedHoverBorder);
+    _drawFrontierCue(scene, x, y, w, h, isBoss ? CASUAL.RED : theme.accent);
   }
 }
 
@@ -373,6 +414,29 @@ function _drawFrontierCue(
   cue.fillTriangle(x + 7, y + 9, x + 7, y + 21, x + 17, y + 15);
 }
 
+// ── _drawBossRing ─────────────────────────────────────────────────────────────
+// Pulsing RED ring around an unlocked boss/special stage cell (casual accent).
+
+function _drawBossRing(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  const ring = scene.add.graphics();
+  ring.lineStyle(2, CASUAL.RED, 0.85);
+  ring.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 7);
+  scene.tweens.add({
+    targets: ring,
+    alpha: { from: 0.4, to: 1 },
+    duration: 900,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+  });
+}
+
 // ── _drawHpDisplay ────────────────────────────────────────────────────────────
 
 function _drawHpDisplay(
@@ -384,12 +448,13 @@ function _drawHpDisplay(
   hpPercent:  number,
   showBar:    boolean,
 ): void {
-  const hpColor = hpPercent >= 80 ? '#44ff88' : hpPercent >= 40 ? '#ffcc44' : '#ff6644';
+  // Casual HP tint on cream — soft green/gold/red INK-friendly hexes.
+  const hpColor = hpPercent >= 80 ? CASUAL_CSS.GREEN : hpPercent >= 40 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
   if (showBar) {
-    const fillRgb = hpPercent >= 80 ? 0x44ff88 : hpPercent >= 40 ? 0xffcc44 : 0xff6644;
+    const fillRgb = hpPercent >= 80 ? CASUAL.GREEN : hpPercent >= 40 ? CASUAL.GOLD : CASUAL.RED;
     const barW = w - 14, barX = x + 7, barY = y + h - 26;
     const hpBar = scene.add.graphics();
-    hpBar.fillStyle(0x222222, 0.9);
+    hpBar.fillStyle(CASUAL.PANEL_SOFT, 1);
     hpBar.fillRoundedRect(barX, barY, barW, 4, 2);
     hpBar.fillStyle(fillRgb, 1);
     hpBar.fillRoundedRect(barX, barY, Math.max(2, barW * (hpPercent / 100)), 4, 2);
@@ -415,38 +480,70 @@ export function drawChapterSection(
 ): void {
   const unlocked = (progress[data.unlockIdx]?.bestStars ?? 0) > 0;
 
+  // Soft brown divider with a centred accent diamond (matches Ch1 header).
   const div = scene.add.graphics();
-  div.lineStyle(1, unlocked ? data.activeDivColor : data.lockedDivColor, 0.6);
+  div.lineStyle(1, unlocked ? CASUAL.EDGE : CASUAL.EDGE_SOFT, 0.55);
   div.lineBetween(30, data.divY, CANVAS_WIDTH - 30, data.divY);
+  div.fillStyle(unlocked ? data.activeDivColor : CASUAL.EDGE_SOFT, 1);
+  div.fillTriangle(CANVAS_WIDTH / 2 - 4, data.divY, CANVAS_WIDTH / 2 + 4, data.divY, CANVAS_WIDTH / 2, data.divY - 5);
+  div.fillTriangle(CANVAS_WIDTH / 2 - 4, data.divY, CANVAS_WIDTH / 2 + 4, data.divY, CANVAS_WIDTH / 2, data.divY + 5);
 
   if (unlocked) {
-    scene.add.text(CANVAS_WIDTH / 2, data.labelY,
-      `Chapter ${data.num}  —  ${data.name}`, {
-        fontFamily: 'sans-serif', fontSize: '12px',
-        color: data.activeTextColor, letterSpacing: 2,
-      }).setOrigin(0.5, 1);
+    _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}`, data.activeDivColor);
     drawChapterProgressBar(scene, data.startIdx, data.stageCount, data.progressBarY, progress);
     _drawChapterGrid(scene, data, theme, progress, onSelect, highlightIdx);
   } else {
-    scene.add.text(CANVAS_WIDTH / 2, data.labelY,
-      `Chapter ${data.num}  —  ${data.name}  🔒`, {
-        fontFamily: 'sans-serif', fontSize: '12px',
-        color: data.lockedLabelColor, letterSpacing: 2,
-      }).setOrigin(0.5, 1);
+    _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}  🔒`, CASUAL.EDGE_SOFT, data.lockedLabelColor);
+
+    // Cream locked banner — chunky brown edge + chapter-accent inner ring +
+    // white top highlight + soft drop shadow. Message/name read in INK_SOFT.
     const bx = 30, bw = CANVAS_WIDTH - 60, bh = 56;
     const bg = scene.add.graphics();
+    bg.fillStyle(CASUAL.SHADOW, 0.2);
+    bg.fillRoundedRect(bx, data.bannerY + 3, bw, bh, 10);
     bg.fillStyle(data.bannerBg, 1);
-    bg.fillRoundedRect(bx, data.bannerY, bw, bh, 8);
-    bg.lineStyle(1, data.bannerBorder, 0.8);
-    bg.strokeRoundedRect(bx, data.bannerY, bw, bh, 8);
+    bg.fillRoundedRect(bx, data.bannerY, bw, bh, 10);
+    bg.fillStyle(0xffffff, 0.4);
+    bg.fillRoundedRect(bx + 6, data.bannerY + 5, bw - 12, 6, 3);
+    bg.lineStyle(3, CASUAL.EDGE, 1);
+    bg.strokeRoundedRect(bx, data.bannerY, bw, bh, 10);
+    bg.lineStyle(1.5, data.bannerBorder, 0.8);
+    bg.strokeRoundedRect(bx + 3, data.bannerY + 3, bw - 6, bh - 6, 8);
     scene.add.text(CANVAS_WIDTH / 2, data.bannerY + bh / 2 - 6, data.unlockMsg, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: data.lockedMsgColor,
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: data.lockedMsgColor,
     }).setOrigin(0.5);
     scene.add.text(CANVAS_WIDTH / 2, data.bannerY + bh / 2 + 10,
       `${data.name}  ·  ${data.stageCount} 스테이지`, {
         fontFamily: 'sans-serif', fontSize: '12px', color: data.lockedNameColor,
       }).setOrigin(0.5);
   }
+}
+
+// ── _drawChapterTitle ─────────────────────────────────────────────────────────
+// Chapter header: INK (or INK_SOFT when locked) title with a small accent diamond
+// pill on each side — mirrors StageSelectScene's casual flourish.
+
+function _drawChapterTitle(
+  scene:     Phaser.Scene,
+  labelY:    number,
+  text:      string,
+  accent:    number,
+  textColor: string = CASUAL_CSS.INK,
+): void {
+  const title = scene.add.text(CANVAS_WIDTH / 2, labelY, text, {
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+    color: textColor, stroke: '#ffffff', strokeThickness: 3, letterSpacing: 1,
+  }).setOrigin(0.5, 1);
+
+  const bounds = title.getBounds();
+  const cy = labelY - bounds.height / 2;
+  const pad = 12;
+  const orn = scene.add.graphics();
+  orn.fillStyle(accent, 1);
+  const lx = bounds.left - pad;
+  orn.fillTriangle(lx - 4, cy, lx, cy - 3, lx, cy + 3);
+  const rx = bounds.right + pad;
+  orn.fillTriangle(rx + 4, cy, rx, cy - 3, rx, cy + 3);
 }
 
 // ── _drawChapterGrid ──────────────────────────────────────────────────────────
@@ -488,16 +585,17 @@ export function drawChapterProgressBar(
   const maxStars  = count * 3;
   const pct       = count > 0 ? cleared / count : 0;
   const bx = 30, bw = CANVAS_WIDTH - 60, bh = 4;
+  // Cream PANEL_SOFT track + GOLD fill (GREEN/BLUE accents while in progress).
   const bg = scene.add.graphics();
-  bg.fillStyle(0x1a1a1a, 1);
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(bx, y, bw, bh, 2);
-  const fillColor = pct >= 1 ? COLORS.TORCH_GOLD : pct >= 0.5 ? 0x44cc88 : 0x2255aa;
-  bg.fillStyle(fillColor, 0.9);
+  const fillColor = pct >= 1 ? CASUAL.GOLD : pct >= 0.5 ? CASUAL.GREEN : CASUAL.BLUE;
+  bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(bx, y, Math.max(4, bw * pct), bh, 2);
   scene.add.text(bx + bw - 2, y - 2, `${cleared}/${count}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: '#806040',
+    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(1, 1);
-  const starColor = totalStars === maxStars ? CSS.TORCH_AMBER : '#666644';
+  const starColor = totalStars === maxStars ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT;
   scene.add.text(bx + 2, y - 2, `★ ${totalStars}/${maxStars}`, {
     fontFamily: 'sans-serif', fontSize: '9px', color: starColor,
   }).setOrigin(0, 1);
@@ -518,7 +616,7 @@ export function addStarPop(
     const isFilled = i < filled;
     const t = scene.add.text(cx + ox, cy, isFilled ? '★' : '☆', {
       fontFamily: 'sans-serif', fontSize: '12px',
-      color: isFilled ? color : '#666655',
+      color: isFilled ? color : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setScale(0).setAlpha(0);
     scene.tweens.add({
       targets: t, scaleX: 1, scaleY: 1, alpha: 1,

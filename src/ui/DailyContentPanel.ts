@@ -22,12 +22,13 @@ interface ShowChallengePanelFn {
 
 const EVENT_TILE_SIZE = 42;
 const EVENT_TILE_GAP = 8;
-const CHALLENGE_PANEL_FILL = 0x061018;
-const CHALLENGE_ROW_FILL = 0x081420;
-const CHALLENGE_DONE_FILL = 0x082518;
-const CHALLENGE_CYAN = 0x44cccc;
-const CHALLENGE_CYAN_DARK = 0x226c6c;
-const CHALLENGE_DONE_GREEN = 0x44cc88;
+// Casual-toy challenge modal palette (used only by showChallengePanel).
+const CHALLENGE_PANEL_FILL = CASUAL.PANEL;       // cream modal body
+const CHALLENGE_ACCENT = CASUAL.BLUE;            // challenge identity = blue
+const CHALLENGE_ROW_FILL = CASUAL.PANEL_SOFT;    // soft cream row pill
+const CHALLENGE_DONE_FILL = CASUAL.PANEL_SOFT;   // done rows keep cream + green accent
+const CHALLENGE_ROW_BORDER = CASUAL.EDGE_SOFT;   // incomplete row edge
+const CHALLENGE_DONE_GREEN = CASUAL.GREEN;       // done accent
 
 function drawEventTileShell(
   scene: Phaser.Scene,
@@ -250,9 +251,9 @@ export function showChallengePanel(scene: Phaser.Scene): void {
 
   const c = scene.add.container(0, 0).setDepth(95);
 
-  // Dim overlay
+  // Dim scrim — lightened for the bright casual look
   const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.80);
+  dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   c.add(dim);
@@ -265,17 +266,15 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     y: PY,
     w: PW,
     h: PH,
-    radius: 12,
+    radius: 16,
     fillColor: CHALLENGE_PANEL_FILL,
-    borderColor: CHALLENGE_CYAN,
-    borderAlpha: 0.9,
-    borderWidth: 2,
-    accentColor: CHALLENGE_CYAN,
-    accentAlpha: 0.72,
-    glowColor: CHALLENGE_CYAN,
-    glowOpacity: 0.10,
-    shadowOpacity: 0.62,
-    shadowOffsetY: 5,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: CHALLENGE_ACCENT,
+    accentAlpha: 1,
+    shadowOpacity: 0.32,
+    shadowOffsetY: 6,
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
@@ -284,15 +283,17 @@ export function showChallengePanel(scene: Phaser.Scene): void {
   const totalGems = allDone ? dailyView.totalRewardGems : 0;
 
   if (allDone) {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 16, '🎉 모든 도전 완료!', {
-      fontFamily: 'Georgia, serif', fontSize: '15px', color: '#44ffaa', fontStyle: 'bold',
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 18, '🎉 모든 도전 완료!', {
+      fontFamily: 'sans-serif', fontSize: '17px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
+      stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5));
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 36, `오늘 총 +${totalGems} 💎 획득`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#aaffcc',
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 38, `오늘 총 +${totalGems} 💎 획득`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   } else {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '🎯  오늘의 도전 과제', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#78ffff', fontStyle: 'bold',
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 24, '🎯  오늘의 도전 과제', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5));
   }
 
@@ -304,11 +305,14 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     const rowW = PW - 24;
     const rowH = 70;
 
-    // Row background
+    // Row background — cream pill, green accent border when complete
+    const rowBorder = entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_ROW_BORDER;
     const rbg = scene.add.graphics();
-    rbg.fillStyle(entry.completed ? CHALLENGE_DONE_FILL : CHALLENGE_ROW_FILL, 0.96);
+    rbg.fillStyle(entry.completed ? CHALLENGE_DONE_FILL : CHALLENGE_ROW_FILL, 1);
     rbg.fillRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
-    rbg.lineStyle(1, entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_CYAN_DARK, entry.completed ? 0.68 : 0.55);
+    rbg.fillStyle(0xffffff, 0.4);
+    rbg.fillRoundedRect(rowX + 4, rowY + 4, rowW - 8, 4, 2);
+    rbg.lineStyle(2, rowBorder, entry.completed ? 1 : 0.9);
     rbg.strokeRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
     c.add(rbg);
 
@@ -317,27 +321,32 @@ export function showChallengePanel(scene: Phaser.Scene): void {
       fontFamily: 'sans-serif', fontSize: '14px',
     }));
     c.add(scene.add.text(rowX + 38, rowY + 12, ch.description, {
-      fontFamily: 'Georgia, serif', fontSize: '11px',
-      color: entry.completed ? '#88eebb' : '#d0c8b0',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: entry.completed ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
       wordWrap: { width: 200, useAdvancedWrap: true },
     }));
 
-    // Reward badge
+    // Reward badge — gold (or green when claimed)
+    const rewardFill = entry.completed ? CASUAL.GREEN : CASUAL.GOLD;
+    const rewardBorder = entry.completed ? CASUAL.GREEN_DK : CASUAL.GOLD_DK;
     const rewardBg = scene.add.graphics();
-    rewardBg.fillStyle(entry.completed ? 0x103624 : 0x0a1f2d, 0.95);
+    rewardBg.fillStyle(rewardFill, 1);
     rewardBg.fillRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
-    rewardBg.lineStyle(1, entry.completed ? CHALLENGE_DONE_GREEN : 0x336688, 0.65);
+    rewardBg.fillStyle(0xffffff, 0.4);
+    rewardBg.fillRoundedRect(PX + PW - 80, rowY + 12, 50, 4, 2);
+    rewardBg.lineStyle(2, rewardBorder, 1);
     rewardBg.strokeRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
     c.add(rewardBg);
     c.add(scene.add.text(PX + PW - 36, rowY + 20, `+${ch.reward.gems ?? 0} 💎`, {
       fontFamily: 'sans-serif', fontSize: '10px',
-      color: entry.completed ? '#aaffcc' : '#9ed8ff',
+      color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
+      stroke: '#00000033', strokeThickness: 2,
     }).setOrigin(0.5));
 
-    // Progress bar
+    // Progress bar — cream track, green/gold fill
     const barX = rowX + 14, barY = rowY + 47, barW = rowW - 78, barH = 9;
-    const fillColor = entry.completed ? 0x44cc88 : 0x44aacc;
+    const fillColor = entry.completed ? CASUAL.GREEN : CASUAL.GOLD;
     const progress = addProgressBar(scene, {
       x: barX,
       y: barY,
@@ -345,9 +354,9 @@ export function showChallengePanel(scene: Phaser.Scene): void {
       h: barH,
       ratio,
       fillColor,
-      trackColor: 0x06101a,
-      borderColor: entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_CYAN_DARK,
-      borderAlpha: 0.68,
+      trackColor: CASUAL.PANEL_SOFT,
+      borderColor: entry.completed ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT,
+      borderAlpha: 0.9,
       delay: 120 + i * 140,
       duration: 440,
     });
@@ -357,28 +366,29 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     const pct = Math.floor(ratio * 100);
     c.add(scene.add.text(barX + barW + 10, barY - 3,
       `${entry.progress}/${ch.objective.target}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: entry.completed ? '#aaffcc' : '#88cce8',
+        fontFamily: 'sans-serif', fontSize: '10px',
+        color: entry.completed ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
         fontStyle: 'bold',
       }));
     c.add(scene.add.text(barX + barW + 10, barY + 10,
       entry.completed ? '완료' : `${pct}%`, {
-        fontFamily: 'sans-serif', fontSize: '9px',
-        color: entry.completed ? '#44ffaa' : '#667788',
+        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+        color: entry.completed ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
       }));
   });
 
   const closeBtn = addPrimaryActionButton(scene, {
     x: PX + 92,
-    y: PY + PH - 42,
+    y: PY + PH - 44,
     w: PW - 184,
-    h: 32,
+    h: 34,
     label: '닫기',
-    fontSize: '13px',
-    fillColor: 0x071822,
-    hoverFillColor: 0x0b2834,
-    borderColor: CHALLENGE_CYAN,
-    hoverBorderColor: 0x78ffff,
-    textColor: '#78ffff',
+    fontSize: '14px',
+    fillColor: CASUAL.PANEL,
+    hoverFillColor: CASUAL.PANEL_SOFT,
+    borderColor: CASUAL.EDGE,
+    hoverBorderColor: CASUAL.EDGE,
+    textColor: CASUAL_CSS.INK,
     onPress: () => { c.destroy(true); },
   });
   addToContainer(c, closeBtn.bg, closeBtn.text, closeBtn.zone);
