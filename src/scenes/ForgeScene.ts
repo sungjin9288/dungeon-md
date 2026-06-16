@@ -1127,7 +1127,21 @@ export class ForgeScene extends Phaser.Scene {
     const pad = LIST_PAD;
     const rowH = 108;
 
-    owned.forEach((bpId, index) => {
+    const mats = gs.materials ?? {};
+    const sortedOwned = [...owned].sort((a, b) => {
+      const bpA = BLUEPRINT_DEFS[a];
+      const bpB = BLUEPRINT_DEFS[b];
+      if (!bpA || !bpB) return 0;
+      const craftA = canCraftBlueprint(bpA, mats) ? 1 : 0;
+      const craftB = canCraftBlueprint(bpB, mats) ? 1 : 0;
+      if (craftB !== craftA) return craftB - craftA;
+      const ratioA = this.getBlueprintMaterialProgress(bpA, mats).ratio;
+      const ratioB = this.getBlueprintMaterialProgress(bpB, mats).ratio;
+      if (ratioB !== ratioA) return ratioB - ratioA;
+      return (bpB.rarity ?? 0) - (bpA.rarity ?? 0);
+    });
+
+    sortedOwned.forEach((bpId, index) => {
       const bp = BLUEPRINT_DEFS[bpId];
       if (!bp) return;
 
