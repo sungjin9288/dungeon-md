@@ -58,7 +58,7 @@ import {
 import {
   type RoomSlotContext,
   drawBattleSlot as _drawBattleSlot,
-  SLOT_W, SLOT_H, INVASION_ORDER,
+  SLOT_W, SLOT_H,
 } from '../ui/RoomSlotRenderer';
 import { applyIdleAnimation as _applyIdleAnimation } from '../ui/MonsterAnimations';
 import {
@@ -73,6 +73,10 @@ import {
   drawSynergyConnectors,
   drawSynergySummary,
 } from '../ui/DungeonSynergy';
+import {
+  buildDungeonBoardLayout, cellCenter,
+  type DungeonBoardLayout,
+} from '../ui/DungeonBoardLayout';
 import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import {
@@ -194,6 +198,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   private dungeonContainer: Phaser.GameObjects.Container | null = null;
   private dungeonBlueprintContainer: Phaser.GameObjects.Container | null = null;
   private commandDeckContainer: Phaser.GameObjects.Container | null = null;
+  private boardLayout!: DungeonBoardLayout;
   private recentlyChangedRoomIdx: number | null = null;
   private selectedRoomIdx: number | null = null;
   private pendingRoomFeedback: HomeRoomFeedback | null = null;
@@ -1029,6 +1034,16 @@ export class DungeonHomeScene extends Phaser.Scene {
     const unlockedCount = getUnlockedSlots(this.gs.dmLevel);
     logger.debug(`[SLOTS] DM Lv.${this.gs.dmLevel}: ${unlockedCount} slots unlocked`);
 
+    // Build the single-source-of-truth layout for this render pass.
+    this.boardLayout = buildDungeonBoardLayout({
+      unlockedSlots: unlockedCount,
+      totalSlots:    GRID_COLS_HOME * GRID_ROWS_HOME,
+      regionTop:     GRID_START_Y,
+      regionBottom:  0, // unused in flat-grid
+      canvasWidth:   CANVAS_WIDTH,
+      mode:          'flat-grid',
+    });
+
     const g = this.add.graphics();
     c.add(g);
     const changedIdx = this.recentlyChangedRoomIdx;
@@ -1039,22 +1054,29 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.addDungeonActivityLayer(c, unlockedCount);
     this.drawDungeonRoomAlcoves(g, unlockedCount);
 
+    const { floors, slotW, slotH } = this.boardLayout;
+    // Derive padX and gridStartY from the layout so SynergyDrawContext
+    // is always consistent with the board geometry.
+    const derivedSlotPadX = floors[0]?.cells[0]
+      ? floors[0].cells[0].rect.x
+      : SLOT_PAD_X;
+    const derivedGridStartY = floors[0]?.cells[0]
+      ? floors[0].cells[0].rect.y
+      : GRID_START_Y;
     const synergyCtx: SynergyDrawContext = {
       scene: this, theme: this.theme,
       slots: this.gs.dungeonSlots ?? [],
       gridCols: GRID_COLS_HOME, gridRows: GRID_ROWS_HOME,
-      slotW: SLOT_W, slotH: SLOT_H,
-      slotPadX: SLOT_PAD_X, slotPadY: SLOT_PAD_Y,
-      gridStartY: GRID_START_Y,
+      slotW, slotH,
+      slotPadX: derivedSlotPadX, slotPadY: SLOT_PAD_Y,
+      gridStartY: derivedGridStartY,
     };
     drawSynergyConnectors(synergyCtx, c, unlockedCount);
 
-    for (let row = 0; row < GRID_ROWS_HOME; row++) {
-      for (let col = 0; col < GRID_COLS_HOME; col++) {
-        const idx        = row * GRID_COLS_HOME + col;
-        const isUnlocked = idx < unlockedCount;
-        const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-        const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+    for (const [idx, loopCell] of this.boardLayout.cellsByIdx) {
+        const isUnlocked = loopCell.isUnlocked;
+        const sx = loopCell.rect.x;
+        const sy = loopCell.rect.y;
         this.drawBattleSlot(c, g, sx, sy, idx, isUnlocked);
         if (idx === changedIdx && isUnlocked) this.addRoomChangedPulse(c, sx, sy, idx);
         if (idx === this.selectedRoomIdx && isUnlocked) {
@@ -1079,7 +1101,6 @@ export class DungeonHomeScene extends Phaser.Scene {
           });
           c.add(zone);
         }
-      }
     }
 
     this.addDungeonCrewLayer(c, unlockedCount);
@@ -1166,10 +1187,9 @@ export class DungeonHomeScene extends Phaser.Scene {
     );
     if (rankedSlots.has(pin.slotIdx)) return;
 
-    const col = pin.slotIdx % GRID_COLS_HOME;
-    const row = Math.floor(pin.slotIdx / GRID_COLS_HOME);
-    const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W - 17;
-    const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + 29;
+    const pinCell = this.boardLayout.cellsByIdx.get(pin.slotIdx);
+    const x = (pinCell?.rect.x ?? 0) + SLOT_W - 17;
+    const y = (pinCell?.rect.y ?? 0) + 29;
     const pinContainer = this.add.container(x, y);
     const g = this.add.graphics();
 
@@ -1228,10 +1248,9 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     actions.forEach((action, i) => {
-      const col = action.slotIdx % GRID_COLS_HOME;
-      const row = Math.floor(action.slotIdx / GRID_COLS_HOME);
-      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
-      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + 10;
+      const aqCell = this.boardLayout.cellsByIdx.get(action.slotIdx);
+      const x = aqCell?.center.x ?? 0;
+      const y = (aqCell?.rect.y ?? 0) + 10;
       const rank = i + 1;
       this.addActionQueueRoomSpotlight(c, action, rank, x, y + SLOT_H / 2 - 10, reducedMotion);
       const markerW = 42;
@@ -1355,10 +1374,9 @@ export class DungeonHomeScene extends Phaser.Scene {
 
     const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     maintenanceActions.forEach(action => {
-      const col = action.slotIdx % GRID_COLS_HOME;
-      const row = Math.floor(action.slotIdx / GRID_COLS_HOME);
-      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
-      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H - 15;
+      const mbCell = this.boardLayout.cellsByIdx.get(action.slotIdx);
+      const x = mbCell?.center.x ?? 0;
+      const y = (mbCell?.rect.y ?? 0) + SLOT_H - 15;
       const label = `${action.icon} ${action.label}`;
       const badgeW = Math.max(54, 38 + action.label.length * 10);
       const badge = this.add.container(x, y).setDepth(15);
@@ -1417,25 +1435,19 @@ export class DungeonHomeScene extends Phaser.Scene {
       const slot = this.gs.dungeonSlots?.[idx];
       if (!slot?.roomType) continue;
 
-      const col = idx % GRID_COLS_HOME;
-      const row = Math.floor(idx / GRID_COLS_HOME);
-      const cx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2;
-      const cy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2;
+      const actCell = this.boardLayout.cellsByIdx.get(idx);
+      const cx = actCell?.center.x ?? 0;
+      const cy = actCell?.center.y ?? 0;
       this.addRoomActivityAura(c, cx, cy, slot, idx);
     }
   }
 
   private drawDungeonRoomAlcoves(
     g: Phaser.GameObjects.Graphics,
-    unlockedCount: number,
+    _unlockedCount: number,
   ): void {
-    const totalSlots = GRID_COLS_HOME * GRID_ROWS_HOME;
-    for (let idx = 0; idx < totalSlots; idx++) {
-      const col = idx % GRID_COLS_HOME;
-      const row = Math.floor(idx / GRID_COLS_HOME);
-      const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
-      this.drawDungeonRoomAlcove(g, x, y, idx, idx < unlockedCount);
+    for (const [idx, alcCell] of this.boardLayout.cellsByIdx) {
+      this.drawDungeonRoomAlcove(g, alcCell.rect.x, alcCell.rect.y, idx, alcCell.isUnlocked);
     }
   }
 
@@ -1607,10 +1619,9 @@ export class DungeonHomeScene extends Phaser.Scene {
       const trapIds = (slot.trapIds ?? []).filter((id): id is string => typeof id === 'string');
       if (monsterIds.length === 0 && trapIds.length === 0) continue;
 
-      const col = idx % GRID_COLS_HOME;
-      const row = Math.floor(idx / GRID_COLS_HOME);
-      const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-      const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+      const crewCell = this.boardLayout.cellsByIdx.get(idx);
+      const sx = crewCell?.rect.x ?? 0;
+      const sy = crewCell?.rect.y ?? 0;
       const accent = monsterIds.length > 0 ? this.getRoomActivityColor(slot) : 0xffc45f;
       const icon = monsterIds.length > 0
         ? this.resolveMonsterVisual(monsterIds[0]).emoji
@@ -1776,12 +1787,13 @@ export class DungeonHomeScene extends Phaser.Scene {
   private drawDungeonMapBackdrop(
     c: Phaser.GameObjects.Container,
     g: Phaser.GameObjects.Graphics,
-    unlockedCount: number,
+    _unlockedCount: number,
   ): void {
-    const mapX = 8;
-    const mapY = GRID_START_Y - 12;
-    const mapW = CANVAS_WIDTH - 16;
-    const mapH = GRID_ROWS_HOME * SLOT_H + (GRID_ROWS_HOME - 1) * SLOT_PAD_Y + 24;
+    const { boardRect, floors } = this.boardLayout;
+    const mapX = boardRect.x;
+    const mapY = boardRect.y;
+    const mapW = boardRect.w;
+    const mapH = boardRect.h;
 
     // ── Bright casual play tray: cream panel, chunky brown edge, drop shadow ──
     g.fillStyle(CASUAL.SHADOW, 0.4);
@@ -1794,46 +1806,44 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(mapX + 12, mapY + 8, mapW - 24, 9, 5);
 
     // Per-floor soft shelf + B-label chip
-    for (let row = 0; row < GRID_ROWS_HOME; row++) {
-      const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) - 6;
-      g.fillStyle(row % 2 === 0 ? CASUAL.PANEL_SOFT : 0xffedd0, 0.95);
-      g.fillRoundedRect(mapX + 12, y, mapW - 24, SLOT_H + 6, 15);
+    for (const band of floors) {
+      const { bandRect, labelPos, label, floor } = band;
+      const y = bandRect.y;
+      g.fillStyle(floor % 2 === 0 ? CASUAL.PANEL_SOFT : 0xffedd0, 0.95);
+      g.fillRoundedRect(bandRect.x, y, bandRect.w, bandRect.h, 15);
       g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.45);
-      g.strokeRoundedRect(mapX + 12, y, mapW - 24, SLOT_H + 6, 15);
-      const chipX = mapX + 24, chipY = y + 13;
+      g.strokeRoundedRect(bandRect.x, y, bandRect.w, bandRect.h, 15);
+      const chipX = labelPos.x, chipY = labelPos.y;
       g.fillStyle(CASUAL.EDGE, 1);
       g.fillRoundedRect(chipX - 14, chipY - 9, 30, 18, 6);
-      c.add(this.add.text(chipX + 1, chipY, `B${row + 1}`, {
+      c.add(this.add.text(chipX, chipY, label, {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#fff6e6', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(2));
     }
 
     // Per-room bright card backing (so rooms read as chunky cards on the tray)
-    for (let row = 0; row < GRID_ROWS_HOME; row++) {
-      for (let col = 0; col < GRID_COLS_HOME; col++) {
-        const idx = row * GRID_COLS_HOME + col;
-        const x = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-        const y = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
-        const slot = this.gs.dungeonSlots?.[idx];
-        const isUnlocked = idx < unlockedCount;
-        const isBroken = !!slot?.roomType && !!slot && slot.hp <= 0;
-        const accent = isBroken ? CASUAL.RED
-          : slot?.roomType ? this.getRoomActivityColor(slot)
-            : isUnlocked ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
-        g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.22 : 0.12);
-        g.fillRoundedRect(x - 5, y + 4, SLOT_W + 10, SLOT_H, 14);
-        g.fillStyle(isUnlocked ? 0xffffff : 0xece0c4, isUnlocked ? 0.6 : 0.45);
-        g.fillRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
-        g.lineStyle(2.5, accent, isUnlocked ? 0.6 : 0.3);
-        g.strokeRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
-      }
+    for (const [idx, bdCell] of this.boardLayout.cellsByIdx) {
+      const x = bdCell.rect.x;
+      const y = bdCell.rect.y;
+      const isUnlocked = bdCell.isUnlocked;
+      const slot = this.gs.dungeonSlots?.[idx];
+      const isBroken = !!slot?.roomType && !!slot && slot.hp <= 0;
+      const accent = isBroken ? CASUAL.RED
+        : slot?.roomType ? this.getRoomActivityColor(slot)
+          : isUnlocked ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
+      g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.22 : 0.12);
+      g.fillRoundedRect(x - 5, y + 4, SLOT_W + 10, SLOT_H, 14);
+      g.fillStyle(isUnlocked ? 0xffffff : 0xece0c4, isUnlocked ? 0.6 : 0.45);
+      g.fillRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
+      g.lineStyle(2.5, accent, isUnlocked ? 0.6 : 0.3);
+      g.strokeRoundedRect(x - 5, y - 2, SLOT_W + 10, SLOT_H + 4, 14);
     }
 
     // Narrative anchors (entrance gate → heart core)
-    const routeAnchors = this.getUnlockedRoute(unlockedCount);
-    if (routeAnchors.length > 0) {
-      this.drawDungeonEntranceGate(c, g, mapX + mapW - 12, mapY + 48, CASUAL.GREEN);
-      this.drawDungeonHeartCore(c, g, mapX + 24, mapY + mapH - 42, CASUAL.GOLD);
+    const { entrance, heart, route: layoutRoute } = this.boardLayout;
+    if (layoutRoute.length > 0) {
+      this.drawDungeonEntranceGate(c, g, entrance.x, entrance.y, CASUAL.GREEN);
+      this.drawDungeonHeartCore(c, g, heart.x, heart.y, CASUAL.GOLD);
     }
     return;
   }
@@ -2111,19 +2121,12 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillCircle(cx + px * (terminalIndex % 2 === 0 ? 3 : -3), cy + py * (terminalIndex % 2 === 0 ? 3 : -3), 1.1);
   }
 
-  private getUnlockedRoute(unlockedCount: number): number[] {
-    return Array.from({ length: GRID_COLS_HOME * GRID_ROWS_HOME }, (_, idx) => idx)
-      .filter(idx => idx < unlockedCount)
-      .sort((a, b) => (INVASION_ORDER[a] ?? 99) - (INVASION_ORDER[b] ?? 99));
+  private getUnlockedRoute(_unlockedCount: number): readonly number[] {
+    return this.boardLayout.route;
   }
 
   private getSlotCenter(idx: number): { x: number; y: number } {
-    const col = idx % GRID_COLS_HOME;
-    const row = Math.floor(idx / GRID_COLS_HOME);
-    return {
-      x: SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X) + SLOT_W / 2,
-      y: GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y) + SLOT_H / 2,
-    };
+    return cellCenter(this.boardLayout, idx);
   }
 
   private strokeDungeonRouteSegment(
@@ -2438,7 +2441,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       this.commandDeckContainer = null;
     }
     const deckX = 12;
-    const minDeckY = GRID_START_Y + GRID_ROWS_HOME * (SLOT_H + SLOT_PAD_Y) + 8;
+    const minDeckY = this.boardLayout.contentBottomY + 8;
     const deckW = CANVAS_WIDTH - deckX * 2;
     const statsTopY = BOT_Y - 26;
     const availableDeckH = statsTopY - minDeckY - 10;
@@ -3365,10 +3368,9 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   private openDungeonSlot(idx: number): void {
-    const col = idx % GRID_COLS_HOME;
-    const row = Math.floor(idx / GRID_COLS_HOME);
-    const sx = SLOT_PAD_X + col * (SLOT_W + SLOT_PAD_X);
-    const sy = GRID_START_Y + row * (SLOT_H + SLOT_PAD_Y);
+    const odCell = this.boardLayout.cellsByIdx.get(idx);
+    const sx = odCell?.rect.x ?? 0;
+    const sy = odCell?.rect.y ?? 0;
     this.openRoomDetail(idx, sx, sy);
   }
 
