@@ -87,18 +87,18 @@ export function addFramedPanel(
   });
 
   const panel = scene.add.graphics();
-  // warm bottom edge — gives the card a printed-sticker thickness
-  panel.fillStyle(CASUAL.SHADOW, 0.22);
+  // dark bottom edge — gives the stone card a chiseled thickness
+  panel.fillStyle(CASUAL.SHADOW, 0.5);
   panel.fillRoundedRect(x, y + 4, w, h, radius);
-  // cream body
+  // stone body
   panel.fillStyle(fillColor, 1);
   panel.fillRoundedRect(x, y, w, h, radius);
-  // glossy white top highlight band
-  panel.fillStyle(0xffffff, 0.5);
-  panel.fillRoundedRect(x + 5, y + 4, w - 10, Math.min(20, h * 0.34), Math.max(6, radius - 4));
-  // soft warm shading toward the bottom
-  panel.fillStyle(CASUAL.PANEL_SOFT, 0.55);
-  panel.fillRoundedRect(x + 5, y + h * 0.55, w - 10, h * 0.45 - 5, Math.max(6, radius - 4));
+  // subtle lit top bevel (torch-lit stone edge, not a bright gloss)
+  panel.fillStyle(0xffffff, 0.07);
+  panel.fillRoundedRect(x + 5, y + 4, w - 10, Math.min(16, h * 0.3), Math.max(6, radius - 4));
+  // soft inner shadow toward the bottom for depth
+  panel.fillStyle(CASUAL.SHADOW, 0.28);
+  panel.fillRoundedRect(x + 5, y + h * 0.6, w - 10, h * 0.4 - 5, Math.max(6, radius - 4));
   // thick rounded brown border
   panel.lineStyle(borderWidth, borderColor, borderAlpha);
   panel.strokeRoundedRect(x, y, w, h, radius);
@@ -153,20 +153,20 @@ export function addInfoRow(
   } = options;
 
   const bg = scene.add.graphics();
-  // soft cream pill row
+  // soft stone pill row
   bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.07);
   bg.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
   bg.lineStyle(2, borderColor, 0.9);
   bg.strokeRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  // icon disc
-  bg.fillStyle(0xffffff, 0.7);
+  // icon disc (warm tan)
+  bg.fillStyle(CASUAL.EDGE_SOFT, 0.45);
   bg.fillCircle(x + 14, y + h / 2, 9);
-  // value chip (white rounded)
+  // value chip (dark inset so the value text reads)
   const valueChipW = Math.max(24, Math.min(64, w - 40));
   const valueChipX = x + Math.max(30, w - valueChipW - 6);
-  bg.fillStyle(0xffffff, 0.85);
+  bg.fillStyle(CASUAL.SHADOW, 0.4);
   bg.fillRoundedRect(valueChipX, y + 4, valueChipW, h - 8, 6);
 
   const iconText = scene.add.text(x + 14, y + h / 2, icon, {
@@ -402,7 +402,7 @@ export function addSceneHeader(
   backG.fillRoundedRect(backX, y - 13 + 3, backW, 26, 13);
   backG.fillStyle(CASUAL.PANEL, 1);
   backG.fillRoundedRect(backX, y - 13, backW, 26, 13);
-  backG.fillStyle(0xffffff, 0.45);
+  backG.fillStyle(0xffffff, 0.1);
   backG.fillRoundedRect(backX + 4, y - 11, backW - 8, 5, 3);
   backG.lineStyle(2.5, CASUAL.EDGE, 1);
   backG.strokeRoundedRect(backX, y - 13, backW, 26, 13);
@@ -480,8 +480,8 @@ export function addTabBar<T extends string>(
   const bg = scene.add.graphics();
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, 0, width, height);
-  bg.fillStyle(0xffffff, 0.4);
-  bg.fillRect(0, 0, width, 3);
+  bg.fillStyle(0xffffff, 0.08);
+  bg.fillRect(0, 0, width, 2);
   bg.fillStyle(CASUAL.EDGE, 1);
   bg.fillRect(0, height - 3, width, 3);
   container.add(bg);

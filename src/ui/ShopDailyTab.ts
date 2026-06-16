@@ -155,7 +155,7 @@ function drawItemCard(
   bg.fillRoundedRect(cardX, cardY + 4, w, h, 10);
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRoundedRect(cardX, cardY, w, h, 10);
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(cardX + 5, cardY + 4, w - 10, 6, 3);
   bg.lineStyle(3, accent, 1);
   bg.strokeRoundedRect(cardX, cardY, w, h, 10);

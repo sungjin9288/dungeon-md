@@ -32,10 +32,12 @@ export function applyCasualBackground(scene: Phaser.Scene): void {
   const bg = scene.add.graphics().setDepth(-1000);
   bg.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
   bg.fillRect(0, top, CANVAS_WIDTH, bottom - top);
-  bg.fillStyle(0xfff7e4, 0.5);
-  bg.fillEllipse(CANVAS_WIDTH / 2, 30, CANVAS_WIDTH * 1.5, 240);
-  bg.fillStyle(CASUAL.BG_DOT, 0.16);
-  for (let row = 0, y = 70; y < bottom; y += 60, row++) {
-    for (let x = (row % 2) * 30 + 16; x < CANVAS_WIDTH; x += 60) bg.fillCircle(x, y, 3.5);
+  // Warm torchlight glow from above (replaces the bright sun glow).
+  bg.fillStyle(0xff8a3d, 0.12);
+  bg.fillEllipse(CANVAS_WIDTH / 2, 20, CANVAS_WIDTH * 1.4, 220);
+  // Faint drifting embers instead of bright polka dots.
+  bg.fillStyle(CASUAL.BG_DOT, 0.07);
+  for (let row = 0, y = 70; y < bottom; y += 70, row++) {
+    for (let x = (row % 2) * 34 + 18; x < CANVAS_WIDTH; x += 68) bg.fillCircle(x, y, 2.2);
   }
 }

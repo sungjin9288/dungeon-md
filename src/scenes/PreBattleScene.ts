@@ -723,7 +723,7 @@ export class PreBattleScene extends Phaser.Scene {
       backBg.fillRoundedRect(10, 12, 70, 28, 13);
       backBg.fillStyle(fill, 1);
       backBg.fillRoundedRect(10, 10, 70, 26, 13);
-      backBg.fillStyle(0xffffff, 0.45);
+      backBg.fillStyle(0xffffff, 0.12);
       backBg.fillRoundedRect(14, 12, 62, 5, 3);
       backBg.lineStyle(2, border, 1);
       backBg.strokeRoundedRect(10, 10, 70, 26, 13);
@@ -843,7 +843,7 @@ export class PreBattleScene extends Phaser.Scene {
     const directiveIcon = directive.severity === 'ready' ? '✓' : directive.severity === 'warning' ? '!' : '!';
     dg.fillStyle(CASUAL.PANEL, 1);
     dg.fillRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 8);
-    dg.fillStyle(0xffffff, 0.4);
+    dg.fillStyle(0xffffff, 0.12);
     dg.fillRoundedRect(28, directiveY + 4, CANVAS_WIDTH - 56, 4, 2);
     dg.lineStyle(2.5, directive.accent, 1);
     dg.strokeRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 46, 8);
@@ -899,7 +899,7 @@ export class PreBattleScene extends Phaser.Scene {
       const w = 66, h = 24;
       dg.fillStyle(CASUAL.PANEL, 1);
       dg.fillRoundedRect(x, statY, w, h, 7);
-      dg.fillStyle(0xffffff, 0.4);
+      dg.fillStyle(0xffffff, 0.12);
       dg.fillRoundedRect(x + 3, statY + 3, w - 6, 3, 2);
       dg.lineStyle(2, color, 0.9);
       dg.strokeRoundedRect(x, statY, w, h, 7);
@@ -924,7 +924,7 @@ export class PreBattleScene extends Phaser.Scene {
     const railX = Math.floor((CANVAS_WIDTH - (9 * cellW + 8 * cellGap)) / 2);
     dg.fillStyle(CASUAL.PANEL, 1);
     dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
-    dg.fillStyle(0xffffff, 0.4);
+    dg.fillStyle(0xffffff, 0.12);
     dg.fillRoundedRect(28, railY + 4, CANVAS_WIDTH - 56, 4, 2);
     dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
     dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
@@ -962,7 +962,7 @@ export class PreBattleScene extends Phaser.Scene {
         dg.fillStyle(style.accent, 0.16);
         dg.fillRoundedRect(cx + 4, cy + cellH - 7, cellW - 8, 3, 2);
       } else if (unlocked) {
-        dg.fillStyle(0xffffff, 0.45);
+        dg.fillStyle(0xffffff, 0.12);
         dg.fillRoundedRect(cx + 3, cy + 3, cellW - 6, 4, 2);
       }
       dg.lineStyle(built ? 1.5 : 2, built ? style.accent : unlocked ? CASUAL.EDGE : 0x223344, built ? 0.85 : unlocked ? 0.9 : 0.48);
@@ -1173,7 +1173,7 @@ export class PreBattleScene extends Phaser.Scene {
         // cream-rimmed empty slot
         dg.fillStyle(CASUAL.PANEL_SOFT, 1);
         dg.fillRoundedRect(cx, cy, cardW, cardH, 8);
-        dg.fillStyle(0xffffff, 0.4);
+        dg.fillStyle(0xffffff, 0.12);
         dg.fillRoundedRect(cx + 5, cy + 4, cardW - 10, 5, 3);
         // inner glyph well (cream sub-tile)
         dg.fillStyle(CASUAL.PANEL, 1);
@@ -1454,7 +1454,7 @@ export class PreBattleScene extends Phaser.Scene {
     commandBg.fillRoundedRect(10, commandY + 4, CANVAS_WIDTH - 20, commandH, 14);
     commandBg.fillStyle(CASUAL.PANEL, 1);
     commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);
-    commandBg.fillStyle(0xffffff, 0.5);
+    commandBg.fillStyle(0xffffff, 0.14);
     commandBg.fillRoundedRect(16, commandY + 5, CANVAS_WIDTH - 32, 5, 3);
     commandBg.lineStyle(3, CASUAL.EDGE, 1);
     commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);

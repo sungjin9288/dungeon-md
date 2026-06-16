@@ -250,7 +250,7 @@ function addPickerRoomContext(
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
   g.lineStyle(2, roomAccent, 0.9);
   g.strokeRoundedRect(x, y, w, h, 8);

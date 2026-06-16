@@ -42,7 +42,7 @@ export class ShopScene extends Phaser.Scene {
     g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
     g.lineStyle(3, CASUAL.EDGE, 0.9);
     g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(13, trayY + 5, CANVAS_WIDTH - 26, 6, 3);
   }
 

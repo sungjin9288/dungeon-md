@@ -77,7 +77,7 @@ function drawThemeCard(
   g.fillRoundedRect(x, y + 4, w, h, 10);
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
   g.fillStyle(CASUAL.PANEL_SOFT, 0.5);
   g.fillRoundedRect(x + 5, y + h * 0.62, w - 10, h * 0.38 - 5, 6);

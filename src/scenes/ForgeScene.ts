@@ -128,7 +128,7 @@ export class ForgeScene extends Phaser.Scene {
     g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
     g.lineStyle(3, CASUAL.EDGE, 0.9);
     g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
   }
 
@@ -143,7 +143,7 @@ export class ForgeScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
@@ -230,7 +230,7 @@ export class ForgeScene extends Phaser.Scene {
     g.fillRoundedRect(x, y + 3, w, 26, 13);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, w, 26, 13);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 4, y + 2, w - 8, 5, 3);
     c.add(g);
     c.add(this.add.text(x + w / 2, y + 13, label, {
@@ -985,7 +985,7 @@ export class ForgeScene extends Phaser.Scene {
     bg.fillRoundedRect(x, y + 3, w, h, 10);
     bg.fillStyle(CASUAL.PANEL, 1);
     bg.fillRoundedRect(x, y, w, h, 10);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
     bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(x, y, w, h, 10);

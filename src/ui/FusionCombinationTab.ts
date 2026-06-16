@@ -92,7 +92,7 @@ export function buildCombinationTab(
       rg.fillRoundedRect(resultX, resultY + 3, slotW, slotH, 12);
       rg.fillStyle(CASUAL.PANEL, 1);
       rg.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
-      rg.fillStyle(0xffffff, 0.4);
+      rg.fillStyle(0xffffff, 0.12);
       rg.fillRoundedRect(resultX + 4, resultY + 4, slotW - 8, 6, 3);
       rg.lineStyle(3, TAB_ACCENT['조합'], 1);
       rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);

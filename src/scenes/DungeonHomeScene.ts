@@ -890,7 +890,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       simBg.fillRoundedRect(simBtnX, simBtnY + 2, 56, 24, 12);
       simBg.fillStyle(CASUAL.PANEL, 1);
       simBg.fillRoundedRect(simBtnX, simBtnY, 56, 23, 12);
-      simBg.fillStyle(0xffffff, 0.45);
+      simBg.fillStyle(0xffffff, 0.12);
       simBg.fillRoundedRect(simBtnX + 4, simBtnY + 3, 48, 5, 3);
       const simTxt = this.add.text(simBtnX + 28, simBtnY + 11, '⚗ 예측', {
         fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK, fontStyle: 'bold',
@@ -1684,7 +1684,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(mapX, mapY, mapW, mapH, 22);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(mapX + 4, mapY + 4, mapW - 8, mapH - 8, 19);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(mapX + 12, mapY + 8, mapW - 24, 9, 5);
 
     // Per-floor soft shelf + B-label chip
@@ -2513,11 +2513,11 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(x, y, w, h, 8);
     g.lineStyle(2, PINK, 0.85);
     g.strokeRoundedRect(x, y, w, h, 8);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
     g.fillStyle(PINK, 0.9);
     g.fillCircle(x + 12, y + h / 2, 8);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillCircle(x + 10, y + h / 2 - 3, 2);
     g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(x + 27, y + h - 7, w - 42, 4, 2);
@@ -2675,7 +2675,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(x, y, w, h, 7);
     g.lineStyle(2, CASUAL.EDGE, 0.85);
     g.strokeRoundedRect(x, y, w, h, 7);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
     g.fillStyle(readinessColor, 0.18);
     g.fillRoundedRect(x + 5, y + 6, 72, h - 12, 6);
@@ -2707,7 +2707,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRoundedRect(barX, barY, fillW, 7, 4);
     g.fillStyle(readinessColor, 1);
     g.fillRoundedRect(barX, barY, fillW, 5, 3);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(barX + 2, barY + 1.5, Math.max(4, fillW - 4), 2, 1);
 
     const chipY = y + 23;
@@ -2766,7 +2766,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     bg.fillRoundedRect(x, y, w, h, 7);
     bg.lineStyle(2.5, directive.accent, 0.9);
     bg.strokeRoundedRect(x, y, w, h, 7);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
     bg.fillStyle(directive.accent, 0.95);
     bg.fillRoundedRect(x + 6, y + 6, 24, h - 12, 6);
@@ -2882,7 +2882,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       g.fillRoundedRect(x, chipY, w, chipH, 7);
       g.lineStyle(2, CASUAL.GREEN, 0.85);
       g.strokeRoundedRect(x, chipY, w, chipH, 7);
-      g.fillStyle(0xffffff, 0.4);
+      g.fillStyle(0xffffff, 0.12);
       g.fillRoundedRect(x + 5, chipY + 3, w - 10, 4, 2);
       deck.add(this.add.text(x + w / 2, chipY + chipH / 2, '모든 방이 다음 침공 준비 완료', {
         fontFamily: 'sans-serif',
@@ -3292,7 +3292,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     g.fillRect(0, BOT_Y - 4, CANVAS_WIDTH, BOT_H + 4);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, BOT_Y, CANVAS_WIDTH, BOT_H);
-    g.fillStyle(0xffffff, 0.5);
+    g.fillStyle(0xffffff, 0.14);
     g.fillRect(0, BOT_Y, CANVAS_WIDTH, 3);
     g.lineStyle(3, CASUAL.EDGE, 1);
     g.lineBetween(0, BOT_Y, CANVAS_WIDTH, BOT_Y);

@@ -77,7 +77,7 @@ export class BossHud {
     this.bg.fillStyle(CASUAL.PANEL_SOFT, 1);
     this.bg.fillRoundedRect(px, py, pw, ph, 6);
     // glossy white top highlight band
-    this.bg.fillStyle(0xffffff, 0.4);
+    this.bg.fillStyle(0xffffff, 0.12);
     this.bg.fillRoundedRect(px + 4, py + 3, pw - 8, 4, 2);
     // thick rounded brown border
     this.bg.lineStyle(3, CASUAL.EDGE, 1);

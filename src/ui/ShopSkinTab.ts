@@ -158,7 +158,7 @@ function drawQuestSkinChip(
   g.fillRoundedRect(x, y + 3, w, h, 8);
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 2);
   g.lineStyle(2.5, accent, 1);
   g.strokeRoundedRect(x, y, w, h, 8);
@@ -198,7 +198,7 @@ function drawPreviewPill(
   pbg.fillRoundedRect(px, py + 3, w, h, 7);
   pbg.fillStyle(CASUAL.PANEL, 1);
   pbg.fillRoundedRect(px, py, w, h, 7);
-  pbg.fillStyle(0xffffff, 0.4);
+  pbg.fillStyle(0xffffff, 0.12);
   pbg.fillRoundedRect(px + 4, py + 3, w - 8, 5, 3);
   pbg.lineStyle(2, CASUAL.EDGE_SOFT, 1);
   pbg.strokeRoundedRect(px, py, w, h, 7);
@@ -233,7 +233,7 @@ function drawSkinCard(
   g.fillRoundedRect(x, y + 4, w, h, 10);
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
   g.fillStyle(CASUAL.PANEL_SOFT, 0.5);
   g.fillRoundedRect(x + 5, y + h * 0.58, w - 10, h * 0.42 - 5, 6);
@@ -397,7 +397,7 @@ export function showPreviewModal(
   panel.fillRoundedRect(px, py + 5, pw, ph, 14);
   panel.fillStyle(CASUAL.PANEL, 1);
   panel.fillRoundedRect(px, py, pw, ph, 14);
-  panel.fillStyle(0xffffff, 0.45);
+  panel.fillStyle(0xffffff, 0.12);
   panel.fillRoundedRect(px + 6, py + 5, pw - 12, 8, 4);
   panel.lineStyle(3, CASUAL.EDGE, 1);
   panel.strokeRoundedRect(px, py, pw, ph, 14);
@@ -468,7 +468,7 @@ export function showPreviewModal(
   closeBg.fillRoundedRect(px + 16, py + ph - 52 + 3, 100, 36, 9);
   closeBg.fillStyle(CASUAL.PANEL_SOFT, 1);
   closeBg.fillRoundedRect(px + 16, py + ph - 52, 100, 36, 9);
-  closeBg.fillStyle(0xffffff, 0.4);
+  closeBg.fillStyle(0xffffff, 0.12);
   closeBg.fillRoundedRect(px + 20, py + ph - 49, 92, 6, 3);
   closeBg.lineStyle(2.5, CASUAL.EDGE_SOFT, 1);
   closeBg.strokeRoundedRect(px + 16, py + ph - 52, 100, 36, 9);

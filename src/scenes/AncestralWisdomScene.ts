@@ -90,7 +90,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     const hdr = this.add.graphics();
     hdr.fillStyle(CASUAL.PANEL, 1);
     hdr.fillRect(0, 0, CANVAS_WIDTH, 80);
-    hdr.fillStyle(0xffffff, 0.4);
+    hdr.fillStyle(0xffffff, 0.12);
     hdr.fillRect(0, 0, CANVAS_WIDTH, 4);
     hdr.fillStyle(CASUAL.EDGE, 1);
     hdr.fillRect(0, 80 - 3, CANVAS_WIDTH, 3);
@@ -110,7 +110,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
     crystalBg.lineStyle(3, CASUAL.PURPLE, 1);
     crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
-    crystalBg.fillStyle(0xffffff, 0.4);
+    crystalBg.fillStyle(0xffffff, 0.12);
     crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 50, 53, 100, 5, 3);
 
     this.crystalText = this.add.text(CANVAS_WIDTH / 2, 62, `💠 ${this.state.soulCrystals} 영혼 수정`, {
@@ -131,7 +131,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
     this.add.text(x - 4 + w / 2, y - 1, label, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
@@ -353,7 +353,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.panelBg.fillRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
     this.panelBg.lineStyle(3, CASUAL.EDGE, 1);
     this.panelBg.strokeRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
-    this.panelBg.fillStyle(0xffffff, 0.4);
+    this.panelBg.fillStyle(0xffffff, 0.12);
     this.panelBg.fillRoundedRect(8, 5, CANVAS_WIDTH - 16, 6, 3);
     this.panel.add(this.panelBg);
 
@@ -530,7 +530,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     bg.fillRoundedRect(OX, OY, OW, OH, 16);
     bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(OX, OY, OW, OH, 16);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(OX + 10, OY + 6, OW - 20, 6, 3);
     ov.add(bg);
 

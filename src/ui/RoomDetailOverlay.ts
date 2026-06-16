@@ -111,7 +111,7 @@ export function openRoomDetail(
   bg.fillStyle(CASUAL.PANEL_SOFT, 0.5);
   bg.fillRoundedRect(-CW / 2, CH * 0.18, CW, CH * 0.82, 14);
   // glossy white top highlight band
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 22, 10);
   // thick rounded brown border
   bg.lineStyle(3, CASUAL.EDGE, 1);
@@ -123,7 +123,7 @@ export function openRoomDetail(
   const hdrG = scene.add.graphics();
   hdrG.fillStyle(CASUAL.PANEL_SOFT, 1);
   hdrG.fillRoundedRect(-CW / 2, -CH / 2, CW, headerH + 8, 14);
-  hdrG.fillStyle(0xffffff, 0.4);
+  hdrG.fillStyle(0xffffff, 0.12);
   hdrG.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 6, 3);
   hdrG.lineStyle(3, CASUAL.EDGE, 1);
   hdrG.lineBetween(-CW / 2 + 3, -CH / 2 + headerH, CW / 2 - 3, -CH / 2 + headerH);
@@ -138,7 +138,7 @@ export function openRoomDetail(
   backG.fillRoundedRect(backX, backCY - 13 + 3, backW, 26, 13);
   backG.fillStyle(CASUAL.PANEL, 1);
   backG.fillRoundedRect(backX, backCY - 13, backW, 26, 13);
-  backG.fillStyle(0xffffff, 0.45);
+  backG.fillStyle(0xffffff, 0.12);
   backG.fillRoundedRect(backX + 4, backCY - 11, backW - 8, 5, 3);
   backG.lineStyle(2.5, CASUAL.EDGE, 1);
   backG.strokeRoundedRect(backX, backCY - 13, backW, 26, 13);

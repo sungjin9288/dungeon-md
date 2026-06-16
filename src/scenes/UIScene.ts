@@ -50,7 +50,7 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, 0, CANVAS_WIDTH, TOP_BAR_HEIGHT + st);
 
     // Top edge highlight strip
-    g.fillStyle(0xffffff, 0.5);
+    g.fillStyle(0xffffff, 0.14);
     g.fillRect(0, 0, CANVAS_WIDTH, 3);
 
     // Chunky brown bottom edge
@@ -75,7 +75,7 @@ export class UIScene extends Phaser.Scene {
     titlePlate.fillRoundedRect(10, st + 8, 154, 44, 9);
     titlePlate.lineStyle(2, CASUAL.EDGE, 1);
     titlePlate.strokeRoundedRect(10, st + 8, 154, 44, 9);
-    titlePlate.fillStyle(0xffffff, 0.5);
+    titlePlate.fillStyle(0xffffff, 0.14);
     titlePlate.fillRoundedRect(18, st + 14, 138, 3, 2);
 
     // Main title
@@ -98,7 +98,7 @@ export class UIScene extends Phaser.Scene {
     wavePill.fillRoundedRect(12, st + 58, 120, 26, 6);
     wavePill.lineStyle(2, CASUAL.EDGE, 1);
     wavePill.strokeRoundedRect(12, st + 58, 120, 26, 6);
-    wavePill.fillStyle(0xffffff, 0.5);
+    wavePill.fillStyle(0xffffff, 0.14);
     wavePill.fillRoundedRect(20, st + 62, 68, 3, 2);
     // Divider between wave label and speed button
     wavePill.lineStyle(1, CASUAL.EDGE_SOFT, 0.6);
@@ -134,7 +134,7 @@ export class UIScene extends Phaser.Scene {
     pausePill.fillRoundedRect(136, st + 58, 28, 26, 6);
     pausePill.lineStyle(2, CASUAL.EDGE, 1);
     pausePill.strokeRoundedRect(136, st + 58, 28, 26, 6);
-    pausePill.fillStyle(0xffffff, 0.5);
+    pausePill.fillStyle(0xffffff, 0.14);
     pausePill.fillRoundedRect(140, st + 61, 20, 3, 2);
 
     this.pauseBtn = this.add.text(150, st + 71, '⏸', {
@@ -162,7 +162,7 @@ export class UIScene extends Phaser.Scene {
     goldPill.fillRoundedRect(gx, st + 8, 90, 30, 7);
     goldPill.lineStyle(2, CASUAL.EDGE, 1);
     goldPill.strokeRoundedRect(gx, st + 8, 90, 30, 7);
-    goldPill.fillStyle(0xffffff, 0.5);
+    goldPill.fillStyle(0xffffff, 0.14);
     goldPill.fillRoundedRect(gx + 6, st + 12, 78, 3, 2);
 
     // coin icon
@@ -185,7 +185,7 @@ export class UIScene extends Phaser.Scene {
     gemPill.fillRoundedRect(px, st + 8, 90, 30, 7);
     gemPill.lineStyle(2, CASUAL.EDGE, 1);
     gemPill.strokeRoundedRect(px, st + 8, 90, 30, 7);
-    gemPill.fillStyle(0xffffff, 0.5);
+    gemPill.fillStyle(0xffffff, 0.14);
     gemPill.fillRoundedRect(px + 6, st + 12, 78, 3, 2);
 
     // gem icon (diamond)

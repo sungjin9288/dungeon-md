@@ -38,7 +38,7 @@ export function drawRoomLoadoutRail(
 
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, h, 7);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 3, y + 2, w - 6, 3, 2);
   g.lineStyle(1.5, CASUAL.EDGE, 0.85);
   g.strokeRoundedRect(x, y, w, h, 7);

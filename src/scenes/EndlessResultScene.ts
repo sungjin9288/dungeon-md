@@ -66,7 +66,7 @@ export class EndlessResultScene extends Phaser.Scene {
     g.lineStyle(3, CASUAL.EDGE, 1);
     g.strokeRoundedRect(tx, ty, tw, th, 16);
     // White top highlight
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(tx + 6, ty + 6, tw - 12, 7, 4);
     // Soft inner border
     g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);

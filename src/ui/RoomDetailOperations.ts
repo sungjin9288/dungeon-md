@@ -459,7 +459,7 @@ export function drawRoomDirective(
   g.strokeRoundedRect(x, y, w, h, 8);
   g.fillStyle(directive.accent, 1);
   g.fillRoundedRect(x + 5, y + 5, 4, h - 10, 3);
-  g.fillStyle(0xffffff, 0.45);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 13, y + 7, w - ctaW - 30, 4, 2);
   c.add(g);
 

@@ -76,7 +76,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   card.fillStyle(CASUAL.PANEL, 1);
   card.fillRoundedRect(cx, cy, cw, ch, 16);
   // glossy white top highlight band
-  card.fillStyle(0xffffff, 0.4);
+  card.fillStyle(0xffffff, 0.12);
   card.fillRoundedRect(cx + 6, cy + 6, cw - 12, 18, 8);
   // thick rounded brown border
   card.lineStyle(3, CASUAL.EDGE, 1);
@@ -183,7 +183,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       const chipBg = scene.add.graphics().setAlpha(0);
       chipBg.fillStyle(CASUAL.PANEL_SOFT, 1);
       chipBg.fillRoundedRect(cx2, chipRowY, chipW, 26, 6);
-      chipBg.fillStyle(0xffffff, 0.4);
+      chipBg.fillStyle(0xffffff, 0.12);
       chipBg.fillRoundedRect(cx2 + 3, chipRowY + 3, chipW - 6, 3, 2);
       chipBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
       chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 26, 6);

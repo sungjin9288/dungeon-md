@@ -108,7 +108,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     bg.fillRoundedRect(tipX, tipY + 4, tipW, tipH, 9);
     bg.fillStyle(CASUAL.PANEL, 1);
     bg.fillRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(tipX + 5, tipY + 4, tipW - 10, 4, 3);
     bg.fillStyle(CASUAL.GOLD, 0.5);
     bg.fillRoundedRect(tipX + 8, tipY + 8, 34, tipH - 16, 7);
@@ -190,7 +190,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
   const header = scene.add.graphics();
   header.fillStyle(CASUAL.PANEL_SOFT, 1);
   header.fillRoundedRect(panelX + 8, panelY + 8, panelW - 16, 28, 8);
-  header.fillStyle(0xffffff, 0.4);
+  header.fillStyle(0xffffff, 0.12);
   header.fillRoundedRect(panelX + 11, panelY + 11, panelW - 22, 3, 2);
   header.fillStyle(CASUAL.GOLD, 1);
   header.fillRoundedRect(panelX + 14, panelY + 13, 4, 18, 2);

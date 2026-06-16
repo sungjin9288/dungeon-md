@@ -84,7 +84,7 @@ function drawActionHintBadge(
   g.strokeCircle(cx, cy, 11);
   g.fillStyle(hint.color, 0.22);
   g.fillCircle(cx, cy, 7);
-  g.fillStyle(0xffffff, 0.45);
+  g.fillStyle(0xffffff, 0.12);
   g.fillCircle(cx - 3, cy - 4, 2.4);
   c.add(scene.add.text(cx, cy, hint.icon, {
     fontFamily: 'sans-serif',
@@ -675,7 +675,7 @@ export function drawBattleSlot(
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 12);
     g.fillStyle(CASUAL.RED, 0.12);
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 12);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 8, y + 6, SLOT_W - 16, 16, 7);
     g.lineStyle(2.5, CASUAL.RED, 1);
     g.strokeRoundedRect(x, y, SLOT_W, SLOT_H, 12);
@@ -723,7 +723,7 @@ export function drawBattleSlot(
     g.fillRoundedRect(x + 1, y + 3, SLOT_W, SLOT_H, 12);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 12);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 8, y + 6, SLOT_W - 16, 16, 7);
     drawDungeonRoomShell(g, x, y, roomAccent, roomMetrics.readiness);
     drawRoomTypeProps(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
@@ -827,7 +827,7 @@ export function drawBattleSlot(
     g.fillRoundedRect(x + 1, y + 3, SLOT_W, SLOT_H, 12);
     g.fillStyle(CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 12);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 8, y + 6, SLOT_W - 16, 16, 7);
     const emptyBorder = hasType ? (ROOM_TYPE_ACCENT[slot?.roomType ?? ''] ?? CASUAL.EDGE) : CASUAL.EDGE;
     g.lineStyle(2.5, emptyBorder, hasType ? 0.9 : 1);

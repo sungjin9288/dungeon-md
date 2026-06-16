@@ -158,12 +158,12 @@ export class BarracksScene extends Phaser.Scene {
     g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
     g.lineStyle(3, CASUAL.EDGE, 0.9);
     g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(13, trayY + 5, CANVAS_WIDTH - 26, 6, 3);
     // Top header band (cream with brown bottom edge).
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 88);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, 88 - 3, CANVAS_WIDTH, 3);
@@ -1658,7 +1658,7 @@ export class BarracksScene extends Phaser.Scene {
     const navBg = this.add.graphics().setDepth(20);
     navBg.fillStyle(CASUAL.PANEL, 1);
     navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 72);
-    navBg.fillStyle(0xffffff, 0.5);
+    navBg.fillStyle(0xffffff, 0.14);
     navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 4);
     navBg.fillStyle(CASUAL.EDGE, 1);
     navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 1.5);
@@ -1738,7 +1738,7 @@ export class BarracksScene extends Phaser.Scene {
     g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
     this.add.text(x - 4 + w / 2, y - 1, label, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',

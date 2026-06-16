@@ -107,7 +107,7 @@ export class AchievementScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(-10);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 104);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, 104 - 3, CANVAS_WIDTH, 3);
@@ -265,14 +265,14 @@ export class AchievementScene extends Phaser.Scene {
       // completed/claimable → bright green accent border on cream
       bg.fillStyle(CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, 0.45);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
       bg.lineStyle(3, CASUAL.GREEN_DK, 1);
       bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
     } else if (unlocked) {
       bg.fillStyle(CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, 0.4);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
       bg.lineStyle(3, CASUAL.EDGE, 1);
       bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
@@ -467,7 +467,7 @@ export class AchievementScene extends Phaser.Scene {
       bg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
       bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
       bg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
-      bg.fillStyle(0xffffff, 0.45);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(btnX + 6, btnY + 4, btnW - 12, 5, 3);
     };
     const bg = this.add.graphics();

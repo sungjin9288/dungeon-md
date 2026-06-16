@@ -121,7 +121,7 @@ export class CodexScene extends Phaser.Scene {
     // Top header band (cream with white top highlight + brown bottom edge).
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HDR_H);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, HDR_H - 3, CANVAS_WIDTH, 3);
@@ -298,7 +298,7 @@ export class CodexScene extends Phaser.Scene {
     g.fillRoundedRect(PAD, y + 3, CANVAS_WIDTH - PAD * 2, h, 8);
     g.fillStyle(expanded ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
     g.fillRoundedRect(PAD, y, CANVAS_WIDTH - PAD * 2, h, 8);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(PAD + 5, y + 4, CANVAS_WIDTH - PAD * 2 - 10, 5, 3);
     g.fillStyle(tribe.color, expanded ? 0.9 : 0.55);
     g.fillRoundedRect(PAD + 6, y + 6, CANVAS_WIDTH - PAD * 2 - 12, 6, 3);
@@ -597,7 +597,7 @@ export class CodexScene extends Phaser.Scene {
     g.fillRoundedRect(PAD + 4, y + 3, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(PAD + 9, y + 4, CANVAS_WIDTH - PAD * 2 - 18, 4, 2);
     g.lineStyle(3, done ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
     g.strokeRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
@@ -690,7 +690,7 @@ export class CodexScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(20);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, BOT_H);
-    g.fillStyle(0xffffff, 0.5);
+    g.fillStyle(0xffffff, 0.14);
     g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, CANVAS_HEIGHT - BOT_H, CANVAS_WIDTH, 1.5);
@@ -775,7 +775,7 @@ export class CodexScene extends Phaser.Scene {
       hdrG.fillRoundedRect(PAD, cursorY + 3, CANVAS_WIDTH - PAD * 2, 28, 8);
       hdrG.fillStyle(CASUAL.PANEL, 1);
       hdrG.fillRoundedRect(PAD, cursorY, CANVAS_WIDTH - PAD * 2, 28, 8);
-      hdrG.fillStyle(0xffffff, 0.4);
+      hdrG.fillStyle(0xffffff, 0.12);
       hdrG.fillRoundedRect(PAD + 5, cursorY + 3, CANVAS_WIDTH - PAD * 2 - 10, 4, 2);
       hdrG.fillStyle(chColor, 0.85);
       hdrG.fillRoundedRect(PAD + 6, cursorY + 5, 6, 18, 3);

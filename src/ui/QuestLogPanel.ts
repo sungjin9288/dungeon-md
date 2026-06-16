@@ -329,7 +329,7 @@ function buildQuestLogContainer(
   const hg = scene.add.graphics();
   hg.fillStyle(CASUAL.PANEL_SOFT, 1);
   hg.fillRect(0, 0, CANVAS_WIDTH, 48);
-  hg.fillStyle(0xffffff, 0.4);
+  hg.fillStyle(0xffffff, 0.12);
   hg.fillRect(0, 0, CANVAS_WIDTH, 3);
   hg.fillStyle(CASUAL.EDGE, 1);
   hg.fillRect(0, 45, CANVAS_WIDTH, 3);

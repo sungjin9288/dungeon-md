@@ -102,7 +102,7 @@ export function showCodexMonsterDetail(
   panel.fillStyle(CASUAL.PANEL, 1);
   panel.fillRoundedRect(ox, oy, ow, oh, 14);
   // glossy white top highlight
-  panel.fillStyle(0xffffff, 0.4);
+  panel.fillStyle(0xffffff, 0.12);
   panel.fillRoundedRect(ox + 6, oy + 5, ow - 12, 16, 9);
   // rarity-accent header band
   panel.fillStyle(rarity.color, 0.9);
@@ -144,7 +144,7 @@ export function showCodexMonsterDetail(
   portrait.fillEllipse(ox + 63, cy + 74, 76, 16);
   portrait.lineStyle(3, rarity.color, 0.9);
   portrait.strokeRoundedRect(ox + 16, cy, 94, 92, 12);
-  portrait.fillStyle(0xffffff, 0.4);
+  portrait.fillStyle(0xffffff, 0.12);
   portrait.fillRoundedRect(ox + 21, cy + 5, 84, 6, 3);
   ctr.add(portrait);
 
@@ -211,7 +211,7 @@ export function showCodexMonsterDetail(
     const sbg = scene.add.graphics();
     sbg.fillStyle(CASUAL.PANEL, 1);
     sbg.fillRoundedRect(sx, cy, statW - 4, 42, 7);
-    sbg.fillStyle(0xffffff, 0.4);
+    sbg.fillStyle(0xffffff, 0.12);
     sbg.fillRoundedRect(sx + 3, cy + 3, statW - 10, 4, 2);
     sbg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
     sbg.strokeRoundedRect(sx, cy, statW - 4, 42, 7);
@@ -374,7 +374,7 @@ function drawCodexDetailPill(
   const bg = scene.add.graphics();
   bg.fillStyle(fill, 1);
   bg.fillRoundedRect(x, y, w, h, 6);
-  bg.fillStyle(0xffffff, 0.45);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(x + 3, y + 2, w - 6, 3, 2);
   bg.lineStyle(2, stroke, 0.95);
   bg.strokeRoundedRect(x, y, w, h, 6);

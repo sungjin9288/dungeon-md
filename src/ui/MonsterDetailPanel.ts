@@ -156,7 +156,7 @@ export function showMonsterDetailPanel(
   const hero = scene.add.graphics();
   hero.fillStyle(CASUAL.PANEL_SOFT, 1);
   hero.fillRoundedRect(px + 16, py + 14, pw - 32, 80, 12);
-  hero.fillStyle(0xffffff, 0.4);
+  hero.fillStyle(0xffffff, 0.12);
   hero.fillRoundedRect(px + 21, py + 18, pw - 42, 5, 4);
   hero.fillStyle(accentColor, 0.16);
   hero.fillRoundedRect(px + 22, py + 20, 70, 68, 10);
@@ -606,7 +606,7 @@ function buildGrowthCommandPanel(
   const bg = scene.add.graphics();
   bg.fillStyle(CASUAL.PANEL_SOFT, 1);
   bg.fillRoundedRect(x, y, w, 48, 8);
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(x + 4, y + 3, w - 8, 4, 3);
   bg.fillStyle(directive.accent, 0.2);
   bg.fillRoundedRect(x + 4, y + 4, 82, 40, 7);
@@ -1070,7 +1070,7 @@ function buildEquipmentSlot(
   const slotBg = scene.add.graphics();
   slotBg.fillStyle(eqDef ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
   slotBg.fillRoundedRect(x, y, leftW, 68, 9);
-  slotBg.fillStyle(0xffffff, 0.4);
+  slotBg.fillStyle(0xffffff, 0.12);
   slotBg.fillRoundedRect(x + 5, y + 4, leftW - 10, 4, 3);
   slotBg.fillStyle(slotAccent, eqDef ? 0.22 : 0.12);
   slotBg.fillRoundedRect(x + 6, y + 6, 46, 56, 8);
@@ -1121,7 +1121,7 @@ function buildEquipmentSlot(
   const invBg = scene.add.graphics();
   invBg.fillStyle(CASUAL.PANEL_SOFT, 1);
   invBg.fillRoundedRect(rightX, y, rightW, 68, 9);
-  invBg.fillStyle(0xffffff, 0.4);
+  invBg.fillStyle(0xffffff, 0.12);
   invBg.fillRoundedRect(rightX + 5, y + 4, rightW - 10, 4, 3);
   invBg.fillStyle(CASUAL.GOLD, 0.16);
   invBg.fillRoundedRect(rightX + 5, y + 5, rightW - 10, 15, 6);
@@ -1431,7 +1431,7 @@ function buildSkinSlot(
   const gallery = scene.add.graphics();
   gallery.fillStyle(CASUAL.PANEL_SOFT, 1);
   gallery.fillRoundedRect(galleryX, y, galleryW, 56, 8);
-  gallery.fillStyle(0xffffff, 0.4);
+  gallery.fillStyle(0xffffff, 0.12);
   gallery.fillRoundedRect(galleryX + 5, y + 4, galleryW - 10, 4, 3);
   gallery.fillStyle(CASUAL.BLUE, 0.16);
   gallery.fillRoundedRect(galleryX + 6, y + 7, galleryW - 12, 16, 6);
@@ -1609,7 +1609,7 @@ function showLockedSkinPopup(
   bg.fillRoundedRect(-popW / 2, -popH / 2 + 6, popW, popH, 12);
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRoundedRect(-popW / 2, -popH / 2, popW, popH, 12);
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(-popW / 2 + 5, -popH / 2 + 4, popW - 10, 6, 4);
   bg.fillStyle(accent, 1);
   bg.fillRoundedRect(-popW / 2 + 6, -popH / 2 + 6, popW - 12, 8, 4);

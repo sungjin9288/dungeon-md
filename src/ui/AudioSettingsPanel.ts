@@ -67,7 +67,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     const rowBg = scene.add.graphics();
     rowBg.fillStyle(SETTINGS_ROW_FILL, 1);
     rowBg.fillRoundedRect(OX + 16, rowY - 22, OW - 32, 62, GAME_UI.radius.row);
-    rowBg.fillStyle(0xffffff, 0.4);
+    rowBg.fillStyle(0xffffff, 0.12);
     rowBg.fillRoundedRect(OX + 19, rowY - 19, OW - 38, 3, 2);
     rowBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
     rowBg.strokeRoundedRect(OX + 16, rowY - 22, OW - 32, 62, GAME_UI.radius.row);

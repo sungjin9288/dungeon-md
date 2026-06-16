@@ -60,7 +60,7 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   card.fillStyle(CASUAL.PANEL, 1);
   card.fillRoundedRect(cx, cy, cw, ch, 16);
   // glossy white top highlight band
-  card.fillStyle(0xffffff, 0.4);
+  card.fillStyle(0xffffff, 0.12);
   card.fillRoundedRect(cx + 6, cy + 6, cw - 12, 18, 8);
   // thick rounded brown border
   card.lineStyle(3, isFail ? CASUAL.RED_DK : CASUAL.EDGE, 1);
@@ -203,7 +203,7 @@ function buildSuccessContent(
       const chipBg = scene.add.graphics().setAlpha(0);
       chipBg.fillStyle(CASUAL.PANEL_SOFT, 1);
       chipBg.fillRoundedRect(chipX, chipY, chipW - 4, 28, 6);
-      chipBg.fillStyle(0xffffff, 0.4);
+      chipBg.fillStyle(0xffffff, 0.12);
       chipBg.fillRoundedRect(chipX + 3, chipY + 3, chipW - 10, 3, 2);
       chipBg.lineStyle(2, CASUAL.GOLD_DK, 0.7);
       chipBg.strokeRoundedRect(chipX, chipY, chipW - 4, 28, 6);
@@ -411,7 +411,7 @@ function confirmReset(ctx: ResultFlowContext, failOv: Phaser.GameObjects.Contain
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRoundedRect(OX, OY, OW, OH, 16);
   // glossy white top highlight
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRoundedRect(OX + 6, OY + 6, OW - 12, 16, 8);
   // thick red border (destructive)
   bg.lineStyle(3, CASUAL.RED_DK, 1);
@@ -459,7 +459,7 @@ function confirmReset(ctx: ResultFlowContext, failOv: Phaser.GameObjects.Contain
   cancelBg.fillRoundedRect(xbX, xbY + 3, cbW, cbH, cbR);
   cancelBg.fillStyle(CASUAL.PANEL, 1);
   cancelBg.fillRoundedRect(xbX, xbY, cbW, cbH - 1, cbR);
-  cancelBg.fillStyle(0xffffff, 0.5);
+  cancelBg.fillStyle(0xffffff, 0.14);
   cancelBg.fillRoundedRect(xbX + 5, xbY + 3, cbW - 10, 9, 5);
   ov.add(cancelBg);
   const cancelTxt = scene.add.text(CANVAS_WIDTH / 2 + 50, OY + OH - 30, '취소', {

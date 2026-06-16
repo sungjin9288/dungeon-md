@@ -139,7 +139,7 @@ export class StageSelectScene extends Phaser.Scene {
     const g = this.add.graphics().setScrollFactor(0).setDepth(-10);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 124);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.SHADOW, 0.18);
     g.fillRect(0, 124, CANVAS_WIDTH, 4);
@@ -260,7 +260,7 @@ export class StageSelectScene extends Phaser.Scene {
       const playAccent = idx === this.frontierIdx ? CASUAL.GREEN : CASUAL.EDGE;
       bg.fillStyle(CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, w, h, 10);
-      bg.fillStyle(0xffffff, 0.4);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
       bg.lineStyle(2.5, playAccent, 1);
       bg.strokeRoundedRect(x, y, w, h, 10);
@@ -288,7 +288,7 @@ export class StageSelectScene extends Phaser.Scene {
         bg.clear();
         bg.fillStyle(CASUAL.PANEL, 1);
         bg.fillRoundedRect(x, y, w, h, 10);
-        bg.fillStyle(0xffffff, 0.4);
+        bg.fillStyle(0xffffff, 0.12);
         bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
         bg.lineStyle(2.5, accent, 1);
         bg.strokeRoundedRect(x, y, w, h, 10);
@@ -302,7 +302,7 @@ export class StageSelectScene extends Phaser.Scene {
       // Cleared — cream cell, gold border
       bg.fillStyle(CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, w, h, 10);
-      bg.fillStyle(0xffffff, 0.4);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
       bg.lineStyle(2.5, CASUAL.GOLD, 1);
       bg.strokeRoundedRect(x, y, w, h, 10);
@@ -504,7 +504,7 @@ export class StageSelectScene extends Phaser.Scene {
       bg.fillRoundedRect(x, y + 4, w, h, radius);
       bg.fillStyle(pressed ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
       bg.fillRoundedRect(x, y, w, h, radius);
-      bg.fillStyle(0xffffff, 0.45);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
       bg.lineStyle(3, CASUAL.EDGE, 1);
       bg.strokeRoundedRect(x, y, w, h, radius);

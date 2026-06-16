@@ -283,7 +283,7 @@ export function drawGenericPlaque(
     bg.fillRoundedRect(x, y + 2, w, h, 6);
     bg.fillStyle(theme.lockedBg, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
     bg.lineStyle(2.5, theme.lockedBorder, 0.9);
     bg.strokeRoundedRect(x, y, w, h, 6);
@@ -301,7 +301,7 @@ export function drawGenericPlaque(
       bg.clear();
       bg.fillStyle(fillCol, 1);
       bg.fillRoundedRect(x, y, w, h, 6);
-      bg.fillStyle(0xffffff, 0.4);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
       bg.lineStyle(2.5, CASUAL.EDGE, 1);
       bg.strokeRoundedRect(x, y, w, h, 6);
@@ -326,7 +326,7 @@ export function drawGenericPlaque(
     // Cleared — cream cell + GOLD edge (boss keeps a RED inner ring accent).
     bg.fillStyle(theme.clearedBg, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
     bg.lineStyle(2.5, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(x, y, w, h, 6);
@@ -503,7 +503,7 @@ export function drawChapterSection(
     bg.fillRoundedRect(bx, data.bannerY + 3, bw, bh, 10);
     bg.fillStyle(data.bannerBg, 1);
     bg.fillRoundedRect(bx, data.bannerY, bw, bh, 10);
-    bg.fillStyle(0xffffff, 0.4);
+    bg.fillStyle(0xffffff, 0.12);
     bg.fillRoundedRect(bx + 6, data.bannerY + 5, bw - 12, 6, 3);
     bg.lineStyle(3, CASUAL.EDGE, 1);
     bg.strokeRoundedRect(bx, data.bannerY, bw, bh, 10);

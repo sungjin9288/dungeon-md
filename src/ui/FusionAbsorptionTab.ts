@@ -69,7 +69,7 @@ export function buildAbsorptionTab(
       sg.fillRoundedRect(sx, y + 3, sacW, sacH, 10);
       sg.fillStyle(CASUAL.PANEL, 1);
       sg.fillRoundedRect(sx, y, sacW, sacH, 10);
-      sg.fillStyle(0xffffff, 0.4);
+      sg.fillStyle(0xffffff, 0.12);
       sg.fillRoundedRect(sx + 4, y + 4, sacW - 8, 5, 3);
       sg.lineStyle(3, CASUAL.GOLD, 1);
       sg.strokeRoundedRect(sx, y, sacW, sacH, 10);

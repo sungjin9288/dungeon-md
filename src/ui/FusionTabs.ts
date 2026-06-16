@@ -59,7 +59,7 @@ export function drawMonsterSlot(
     g.fillRoundedRect(x, y + 3, w, h, 12);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, w, h, 12);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 4, y + 4, w - 8, 6, 3);
     g.lineStyle(3, accent, 1);
     g.strokeRoundedRect(x, y, w, h, 12);

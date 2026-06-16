@@ -196,7 +196,7 @@ export class SummonScene extends Phaser.Scene {
     g.fillRoundedRect(x + 2, y + 4, w, h, 12);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(x, y, w, h, 12);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 6, y + 5, w - 12, 6, 3);
     g.lineStyle(3, border, 1);
     g.strokeRoundedRect(x, y, w, h, 12);
@@ -314,7 +314,7 @@ export class SummonScene extends Phaser.Scene {
     g.fillRect(0, TAB_Y + 32, CANVAS_WIDTH, 3);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, TAB_Y, CANVAS_WIDTH, 32);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, TAB_Y, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, TAB_Y + 32 - 3, CANVAS_WIDTH, 3);
@@ -770,7 +770,7 @@ export class SummonScene extends Phaser.Scene {
       } else {
         fg.fillStyle(CASUAL.PANEL, 1);
         fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
-        fg.fillStyle(0xffffff, 0.4);
+        fg.fillStyle(0xffffff, 0.12);
         fg.fillRoundedRect(fx - 34, filterY - 7, 68, 5, 3);
         fg.lineStyle(2.5, CASUAL.EDGE, 1);
         fg.strokeRoundedRect(fx - 40, filterY - 10, 80, 24, 11);

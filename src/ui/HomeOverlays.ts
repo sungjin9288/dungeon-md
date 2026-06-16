@@ -92,7 +92,7 @@ export function buildTopBar(
   // Chunky cream header bar with brown bottom edge
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRect(0, 0, CANVAS_WIDTH, topH);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRect(0, 0, CANVAS_WIDTH, 3);
   g.fillStyle(CASUAL.EDGE, 1);
   g.fillRect(0, topH - 4, CANVAS_WIDTH, 4);
@@ -300,7 +300,7 @@ export function buildQuestBanner(
   // cream banner with glossy top highlight + thin brown bottom edge
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, bY, CANVAS_WIDTH, bH);
-  bg.fillStyle(0xffffff, 0.4);
+  bg.fillStyle(0xffffff, 0.12);
   bg.fillRect(0, bY, CANVAS_WIDTH, 2);
   bg.fillStyle(CASUAL.EDGE, 1);
   bg.fillRect(0, bY + bH - 2, CANVAS_WIDTH, 2);
@@ -357,7 +357,7 @@ export function buildStatsBar(
   // cream stats bar — glossy top highlight + thin brown top edge
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRect(0, bY, CANVAS_WIDTH, bH);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRect(0, bY, CANVAS_WIDTH, 2);
   g.fillStyle(CASUAL.EDGE, 1);
   g.fillRect(0, bY, CANVAS_WIDTH, 1);

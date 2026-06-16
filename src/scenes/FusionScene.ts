@@ -84,7 +84,7 @@ export class FusionScene extends Phaser.Scene {
     g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
     g.lineStyle(3, CASUAL.EDGE, 0.9);
     g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
   }
 
@@ -99,7 +99,7 @@ export class FusionScene extends Phaser.Scene {
     const g = this.add.graphics();
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.fillStyle(0xffffff, 0.4);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRect(0, 0, CANVAS_WIDTH, 4);
     g.fillStyle(CASUAL.EDGE, 1);
     g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
@@ -305,7 +305,7 @@ export class FusionScene extends Phaser.Scene {
     pg.fillRoundedRect(PX, PY + 5, PW, PH, 14);
     pg.fillStyle(CASUAL.PANEL, 1);
     pg.fillRoundedRect(PX, PY, PW, PH, 14);
-    pg.fillStyle(0xffffff, 0.4);
+    pg.fillStyle(0xffffff, 0.12);
     pg.fillRoundedRect(PX + 6, PY + 5, PW - 12, 6, 3);
     pg.lineStyle(3, CASUAL.EDGE, 1);
     pg.strokeRoundedRect(PX, PY, PW, PH, 14);

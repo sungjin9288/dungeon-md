@@ -129,7 +129,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   const shell = scene.add.graphics();
   shell.fillStyle(CASUAL.PANEL_SOFT, 1);
   shell.fillRoundedRect(cardX + 9, cardY + 12, 35, cardH - 24, 9);
-  shell.fillStyle(0xffffff, 0.5);
+  shell.fillStyle(0xffffff, 0.14);
   shell.fillRoundedRect(cardX + 12, cardY + 14, 29, 4, 2);
   shell.lineStyle(2, CASUAL.EDGE_SOFT, 1);
   shell.strokeRoundedRect(cardX + 9, cardY + 12, 35, cardH - 24, 9);
@@ -339,7 +339,7 @@ function showRoomIntelTip(room: Room): void {
   bg.fillRoundedRect(-panelW / 2, -panelH / 2 + 5, panelW, panelH, 12);
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 12);
-  bg.fillStyle(0xffffff, 0.5);
+  bg.fillStyle(0xffffff, 0.14);
   bg.fillRoundedRect(-panelW / 2 + 6, -panelH / 2 + 4, panelW - 12, 5, 3);
   // soft icon tray + accent header cap
   bg.fillStyle(CASUAL.PANEL_SOFT, 1);

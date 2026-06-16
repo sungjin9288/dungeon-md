@@ -310,7 +310,7 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     const rbg = scene.add.graphics();
     rbg.fillStyle(entry.completed ? CHALLENGE_DONE_FILL : CHALLENGE_ROW_FILL, 1);
     rbg.fillRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
-    rbg.fillStyle(0xffffff, 0.4);
+    rbg.fillStyle(0xffffff, 0.12);
     rbg.fillRoundedRect(rowX + 4, rowY + 4, rowW - 8, 4, 2);
     rbg.lineStyle(2, rowBorder, entry.completed ? 1 : 0.9);
     rbg.strokeRoundedRect(rowX, rowY, rowW, rowH, GAME_UI.radius.row);
@@ -332,7 +332,7 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     const rewardBg = scene.add.graphics();
     rewardBg.fillStyle(rewardFill, 1);
     rewardBg.fillRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
-    rewardBg.fillStyle(0xffffff, 0.4);
+    rewardBg.fillStyle(0xffffff, 0.12);
     rewardBg.fillRoundedRect(PX + PW - 80, rowY + 12, 50, 4, 2);
     rewardBg.lineStyle(2, rewardBorder, 1);
     rewardBg.strokeRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);

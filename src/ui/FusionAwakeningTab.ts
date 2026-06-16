@@ -53,7 +53,7 @@ export function buildAwakeningTab(
     rg.fillRoundedRect(PAD, ry + 3, rowW, rowH - 4, 12);
     rg.fillStyle(awakened ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
     rg.fillRoundedRect(PAD, ry, rowW, rowH - 4, 12);
-    rg.fillStyle(0xffffff, 0.4);
+    rg.fillStyle(0xffffff, 0.12);
     rg.fillRoundedRect(PAD + 4, ry + 4, rowW - 8, 6, 3);
     rg.lineStyle(3, borderCol, awakened ? 1 : 0.9);
     rg.strokeRoundedRect(PAD, ry, rowW, rowH - 4, 12);

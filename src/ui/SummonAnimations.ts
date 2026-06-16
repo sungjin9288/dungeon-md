@@ -199,7 +199,7 @@ export function playSinglePullAnimation(
       panG.fillStyle(CASUAL.PANEL, 1);
       panG.fillRoundedRect(panX, panY, panW, panH, 14);
       // glossy white top highlight band
-      panG.fillStyle(0xffffff, 0.5);
+      panG.fillStyle(0xffffff, 0.14);
       panG.fillRoundedRect(panX + 6, panY + 5, panW - 12, 18, 8);
       // portrait stage — soft cream tile carrying a rarity tint (kept as gacha drama)
       panG.fillStyle(CASUAL.PANEL_SOFT, 1);
@@ -470,7 +470,7 @@ export function playMultiPullAnimation(
           cg.fillRoundedRect(-cardW / 2 + 2, -cardH / 2 + 4, cardW, cardH, 8);
           cg.fillStyle(CASUAL.PANEL, 1);
           cg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
-          cg.fillStyle(0xffffff, 0.5);
+          cg.fillStyle(0xffffff, 0.14);
           cg.fillRoundedRect(-cardW / 2 + 4, -cardH / 2 + 3, cardW - 8, 4, 2);
           // portrait stage tile w/ rarity tint (kept gacha drama)
           cg.fillStyle(CASUAL.PANEL_SOFT, 1);

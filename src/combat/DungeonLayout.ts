@@ -257,7 +257,7 @@ function drawDungeonDefenseFrame(
   g.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x - 12, y - 14, gridW + 24, 12, 9);
   g.lineStyle(3, CASUAL.EDGE, 1);
   g.strokeRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);

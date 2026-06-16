@@ -516,7 +516,7 @@ export class DungeonScene extends Phaser.Scene {
     g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
     g.lineStyle(2, CASUAL.EDGE, 0.92);
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
-    g.fillStyle(0xffffff, 0.45);
+    g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(-w / 2 + 6, -h / 2 + 3, w - 12, 3, 2);
     strip.add(g);
 
@@ -580,7 +580,7 @@ export class DungeonScene extends Phaser.Scene {
       bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
       bg.lineStyle(2, CASUAL.EDGE, 0.85);
       bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.fillStyle(0xffffff, 0.4);
+      bg.fillStyle(0xffffff, 0.12);
       bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
     } else {
       // Cream stat pill: PANEL_SOFT body + 2px EDGE border + white top highlight.
@@ -588,7 +588,7 @@ export class DungeonScene extends Phaser.Scene {
       bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
       bg.lineStyle(2, CASUAL.EDGE, 0.55);
       bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.fillStyle(0xffffff, 0.5);
+      bg.fillStyle(0xffffff, 0.14);
       bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
     }
     strip.add(bg);

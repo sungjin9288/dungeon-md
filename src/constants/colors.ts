@@ -49,20 +49,21 @@ export const CSS = {
   BLOOD_GLOW:      '#cc2200',
 } as const;
 
-// ─── CASUAL: 선명한 캐주얼 토이 룩 (클래시/로얄매치/쿠키런 결) ──────────────────
-// 밝은 따뜻한 배경 + 크림 카드 + 통통한 갈색 테두리 + 채도 높은 액센트.
-// Graphics용 hex.
+// ─── CASUAL: 전통 한국 판타지 다크 베이스 + 캐주얼 폴리시 액센트 ──────────────────
+// 어두운 던전 석재 베이스(횃불·양피지) 위에 채도 높은 액센트·청크 UI·캔디 CTA를
+// '폴리시 레이어'로 얹는다 (기획 Design Direction: "어두운 dungeon 배경은 유지").
+// 토큰 키는 그대로 — 호출부 변경 없이 값만 다크로 되돌린다. Graphics용 hex.
 export const CASUAL = {
-  BG_TOP:      0xffe7c2,   // 밝은 따뜻한 상단
-  BG_BOTTOM:   0xf4c483,   // 따뜻한 모래빛 하단
-  BG_DOT:      0xffffff,   // 패턴 점
-  PANEL:       0xfff6e6,   // 크림 카드
-  PANEL_SOFT:  0xffe9c8,   // 카드 보조면
+  BG_TOP:      0x241a0e,   // 던전 상단 (횃불에 데워진 석재)
+  BG_BOTTOM:   0x100a05,   // 던전 하단 (심부 어둠)
+  BG_DOT:      0xffc58a,   // 떠도는 불씨 (낮은 알파)
+  PANEL:       0x2b2114,   // 석재 패널
+  PANEL_SOFT:  0x3a2c19,   // 패널 보조면 (살짝 밝은 석재)
   EDGE:        0x7a4a22,   // 통통한 갈색 테두리
-  EDGE_SOFT:   0xb98a52,   // 보조 테두리
-  SHADOW:      0x6a4420,   // 카드 그림자
-  INK:         0x4a3016,   // 밝은 면 위 진한 글자
-  INK_SOFT:    0x8a6238,   // 보조 글자
+  EDGE_SOFT:   0xb98a52,   // 조명 받은 밝은 탄 테두리
+  SHADOW:      0x070402,   // 드롭 섀도 (거의 검정)
+  INK:         0xf0e6c8,   // 다크 면 위 양피지 글자
+  INK_SOFT:    0xc8b896,   // 보조 글자 (양피지 디밍)
   GREEN:       0x5fc760,  GREEN_DK: 0x2f8f3a,   // 실행/긍정
   GOLD:        0xffc63a,  GOLD_DK:  0xd9971f,   // 재화/보상
   BLUE:        0x4aa8ee,  BLUE_DK:  0x2470c0,   // 정보
@@ -70,15 +71,15 @@ export const CASUAL = {
   PURPLE:      0xb070e8,  PURPLE_DK: 0x7a3fc0,  // 특수/소환
 } as const;
 
-/** CASUAL CSS strings for Text */
+/** CASUAL CSS strings for Text — 다크 베이스이므로 텍스트 액센트는 밝게(대비) */
 export const CASUAL_CSS = {
-  INK:      '#4a3016',
-  INK_SOFT: '#8a6238',
+  INK:      '#f0e6c8',   // 양피지 (다크 면 위 본문)
+  INK_SOFT: '#c8b896',   // 양피지 디밍
   WHITE:    '#ffffff',
-  CREAM:    '#fff6e6',
-  GREEN:    '#1f7a2a',
-  GOLD:     '#9a6810',
-  BLUE:     '#1f5fa8',
-  RED:      '#b8331f',
-  PURPLE:   '#6a2fb0',
+  CREAM:    '#2b2114',   // (구 크림 — 이제 다크 석재 칩 배경; INK 글자와 대비)
+  GREEN:    '#7ad97b',
+  GOLD:     '#ffd24a',
+  BLUE:     '#6fc0ff',
+  RED:      '#ff7a64',
+  PURPLE:   '#c890f0',
 } as const;

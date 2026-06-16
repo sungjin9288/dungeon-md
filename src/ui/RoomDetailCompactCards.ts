@@ -110,7 +110,7 @@ export function drawCompactLoadoutSlotFrame(
   g.fillRoundedRect(x + 9, y + 29, 38, h - 39, 8);
   g.lineStyle(filled ? 3 : 2, cardBorder, filled ? 1 : 0.7);
   g.strokeRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0xffffff, 0.45);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 5, w - 10, 4, 3);
   g.fillStyle(accent, filled ? 0.9 : 0.3);
   g.fillRoundedRect(x + 5, y + 5, w - 10, 4, 3);
@@ -402,7 +402,7 @@ export function addRecommendedMonsterSlotPreview(
   g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 7);
   g.fillStyle(rarity.color, 1);
   g.fillRoundedRect(x + w - badgeW - 8, y + 9, badgeW, 16, 5);
-  g.fillStyle(0xffffff, 0.5);
+  g.fillStyle(0xffffff, 0.14);
   g.fillRoundedRect(x + 7, y + 7, w - 14, 4, 2);
   c.add(g);
 
@@ -490,7 +490,7 @@ export function addRecommendedTrapSlotPreview(
   g.strokeCircle(x + 27, y + 33, 18);
   g.fillStyle(accent, 0.16);
   g.fillCircle(x + 27, y + 33, 12);
-  g.fillStyle(0xffffff, 0.5);
+  g.fillStyle(0xffffff, 0.14);
   g.fillRoundedRect(x + 7, y + 7, w - 14, 4, 2);
   c.add(g);
 

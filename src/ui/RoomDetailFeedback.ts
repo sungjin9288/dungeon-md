@@ -110,7 +110,7 @@ export function drawRoomDetailReturnFeedback(
   g.fillRoundedRect(x, y + 4, w, h, 10);
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
   g.lineStyle(3, accent, 1);
   g.strokeRoundedRect(x, y, w, h, 10);
@@ -172,7 +172,7 @@ export function drawPreBattleReturnStrip(
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 9);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 3, w - 10, 4, 2);
   g.lineStyle(3, CASUAL.BLUE, 1);
   g.strokeRoundedRect(x, y, w, h, 9);
@@ -239,7 +239,7 @@ export function drawRoomActionHeader(
   g.fillRoundedRect(x, y + 4, w, h, 10);
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
   g.lineStyle(3, directive.accent, 1);
   g.strokeRoundedRect(x, y, w, h, 10);

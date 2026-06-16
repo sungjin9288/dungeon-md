@@ -224,7 +224,7 @@ function addPreviewMetricChip(
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
   g.fillRoundedRect(x, y, w, 28, 7);
-  g.fillStyle(0xffffff, 0.4);
+  g.fillStyle(0xffffff, 0.12);
   g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
   g.fillStyle(accent, 0.5);
   g.fillRoundedRect(x + 5, y + 5, 20, 18, 5);
@@ -259,7 +259,7 @@ function addEnemyBriefingRow(
   rowG.fillRoundedRect(cx + 13, rowY - 12, cw - 26, 33, GAME_UI.radius.row);
   rowG.fillStyle(PREVIEW_ROW_FILL, 1);
   rowG.fillRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
-  rowG.fillStyle(0xffffff, 0.4);
+  rowG.fillStyle(0xffffff, 0.12);
   rowG.fillRoundedRect(cx + 15, rowY - 11, cw - 30, 3, 2);
   rowG.fillStyle(def.color, 0.22);
   rowG.fillRoundedRect(cx + 18, rowY - 8, 35, 21, 6);
@@ -289,7 +289,7 @@ function addEnemyBriefingRow(
   const countBg = scene.add.graphics();
   countBg.fillStyle(CASUAL.GOLD, 1);
   countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
-  countBg.fillStyle(0xffffff, 0.4);
+  countBg.fillStyle(0xffffff, 0.12);
   countBg.fillRoundedRect(cx + cw - 52, rowY - 7, 30, 3, 2);
   countBg.lineStyle(2, CASUAL.GOLD_DK, 0.9);
   countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
