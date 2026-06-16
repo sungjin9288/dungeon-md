@@ -11,8 +11,8 @@
 import Phaser from 'phaser';
 
 const PX = 4;        // pixel-block size
-const INSET = 4;     // margin inside the 100x100 cell (keeps rounded corners clean)
-const N = 23;        // 23 * 4 = 92 ≈ 100 - 2*INSET
+const INSET = 4;     // margin inside the cell (keeps rounded corners clean)
+const REF_N = 23;    // reference grid (100px cell): 23 * 4 = 92 ≈ 100 - 2*INSET
 
 // Warm dark dungeon stone palette.
 const FLOOR = 0x241a0e, FLOOR_MID = 0x2e2213, FLOOR_LITE = 0x382a18, GROUT = 0x100b06;
@@ -28,7 +28,9 @@ function rnd(gx: number, gy: number, salt = 0): number {
 
 /**
  * Draw a pixel-art dungeon room interior onto `g` at cell origin (x, y).
- * `readiness` (0..100) brightens the torch glow.
+ * `readiness` (0..100) brightens the torch glow. `size` is the cell edge in
+ * px (default 100 → 23-block grid); larger cells (e.g. battle's 110px) derive
+ * a wider grid so the room fills the cell instead of leaving a gap.
  */
 export function drawPixelRoom(
   g: Phaser.GameObjects.Graphics,
@@ -37,16 +39,18 @@ export function drawPixelRoom(
   roomType: string | undefined,
   accent: number,
   readiness: number,
+  size = 100,
 ): void {
   const ox = x + INSET;
   const oy = y + INSET;
+  const N = Math.max(16, Math.floor((size - INSET * 2) / PX));
   const glow = Phaser.Math.Clamp(readiness / 100, 0, 1);
   const blk = (gx: number, gy: number, color: number, alpha = 1, w = 1, h = 1): void => {
     g.fillStyle(color, alpha);
     g.fillRect(ox + gx * PX, oy + gy * PX, w * PX, h * PX);
   };
 
-  const WALL_BOTTOM = 9;   // rows 0..9 wall, 10..N-1 floor
+  const WALL_BOTTOM = Math.round(N * 0.41);   // upper rows wall, rest floor
 
   // ── Floor base ──
   blk(0, 0, FLOOR, 1, N, N);
@@ -85,7 +89,7 @@ export function drawPixelRoom(
   }
 
   // ── Room-type fixture ──
-  drawFixture(blk, roomType, accent);
+  drawFixture(blk, roomType, accent, N);
 
   // ── Wall torches with warm glow ──
   for (const gx of [2, N - 3]) {
@@ -106,23 +110,29 @@ export function drawPixelRoom(
 
 type BlkFn = (gx: number, gy: number, color: number, alpha?: number, w?: number, h?: number) => void;
 
-function drawFixture(blk: BlkFn, roomType: string | undefined, accent: number): void {
+function drawFixture(blk: BlkFn, roomType: string | undefined, accent: number, N: number): void {
+  if (N < 20) return;                  // too small to read a fixture cleanly
+  const f = N / REF_N;                 // scale 23-grid design to the actual grid
+  const s = (v: number): number => Math.round(v * f);   // scale a coordinate/length
+
   if (roomType === 'combat') {
     // weapon rack + crossed blades
-    blk(5, 11, BRICK_DK, 1, 1, 6); blk(16, 11, BRICK_DK, 1, 1, 6);
-    blk(5, 11, accent, 0.9, 12, 1);
-    for (let i = 0; i < 5; i++) { blk(8 + i, 13 + i, accent, 0.85); blk(13 - i, 13 + i, accent, 0.85); }
+    const postH = Math.max(4, s(6));
+    blk(s(5), s(11), BRICK_DK, 1, 1, postH); blk(s(16), s(11), BRICK_DK, 1, 1, postH);
+    blk(s(5), s(11), accent, 0.9, s(12), 1);
+    const blades = Math.max(4, s(5));
+    for (let i = 0; i < blades; i++) { blk(s(8) + i, s(13) + i, accent, 0.85); blk(s(13) - i, s(13) + i, accent, 0.85); }
   } else if (roomType === 'trap') {
     for (let i = 0; i < 5; i++) {
-      const sx = 4 + i * 4;
-      blk(sx, 19, accent, 0.85); blk(sx, 18, accent, 0.85); blk(sx - 1, 20, accent, 0.7, 3, 1);
+      const sx = s(4) + i * s(4);
+      blk(sx, s(19), accent, 0.85); blk(sx, s(18), accent, 0.85); blk(sx - 1, s(20), accent, 0.7, 3, 1);
     }
   } else if (roomType === 'support') {
-    blk(10, 10, accent, 0.85, 3, 7);
-    blk(9, 10, accent, 0.85, 5, 1);
-    blk(7, 19, BRICK_DK, 1, 9, 2); blk(8, 18, accent, 0.8, 7, 1);
+    blk(s(10), s(10), accent, 0.85, 3, s(7));
+    blk(s(9), s(10), accent, 0.85, 5, 1);
+    blk(s(7), s(19), BRICK_DK, 1, s(9), 2); blk(s(8), s(18), accent, 0.8, s(7), 1);
   } else if (roomType === 'magic') {
-    const cx = 11, cy = 16, R = 5;
+    const cx = s(11), cy = s(16), R = s(5);
     for (let a = 0; a < 12; a++) {
       const gx = Math.round(cx + Math.cos((Math.PI / 6) * a) * R);
       const gy = Math.round(cy + Math.sin((Math.PI / 6) * a) * R);

@@ -2,25 +2,30 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
-import { getActiveTheme, type DungeonTheme } from '../themes/themes';
-import { drawRoomDecoration } from '../art/RoomDecorations';
-import { loadGameState } from '../data/wisdom';
+import { drawPixelRoom } from '../art/PixelRoom';
+import { generateMonsterSprite } from '../art/PortraitGenerator';
+import { resolveMonsterTypeId } from '../ui/MonsterPortraitView';
+import type { MonsterId } from '../data/monsters';
 
 /**
- * Visual-only reskin: the shared dungeon decoration helper (drawRoomDecoration)
- * reads stone/glow colors from the theme. To draw decorations in warm CASUAL
- * tones on the cream chamber WITHOUT mutating the shared theme object, we feed
- * it an immutable spread with only the decorative stone/glow fields swapped.
+ * Map a concrete combat RoomType to the abstract pixel-room fixture category
+ * (the same four buckets the home board uses), so battle rooms render the
+ * matching pixel fixture (weapon rack / spikes / altar / rune ring).
  */
-function casualDecorTheme(theme: DungeonTheme): DungeonTheme {
-  return {
-    ...theme,
-    stoneDark:  CASUAL.EDGE_SOFT,
-    stoneMid:   CASUAL.PANEL_SOFT,
-    stoneLight: CASUAL.EDGE_SOFT,
-    glowColor:  CASUAL.GOLD,
-  };
-}
+const ROOM_TYPE_TO_FIXTURE: Record<RoomType, 'combat' | 'trap' | 'support' | 'magic'> = {
+  guardian:         'combat',
+  tower:            'combat',
+  armory:           'combat',
+  trap:             'trap',
+  trap_corridor:    'trap',
+  gold:             'support',
+  medicine_hall:    'support',
+  spirit_altar:     'support',
+  scroll_library:   'magic',
+  dragons_lair:     'magic',
+  celestial_shrine: 'magic',
+  void_forge:       'magic',
+};
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
@@ -28,7 +33,11 @@ export interface RoomLoadoutVisualOptions {
   readonly roomTypeIcon: string;
   readonly roomTypeName: string;
   readonly accentColor: number;
+  /** Abstract room category → pixel-room fixture (weapon rack / spikes / …). */
+  readonly slotRoomType?: 'combat' | 'trap' | 'support' | 'magic';
   readonly primaryMonsterEmoji?: string | null;
+  /** Instance/type id of the deployed guardian → its pixel sprite. */
+  readonly primaryMonsterId?: string | null;
   readonly monsterCount: number;
   readonly monsterCapacity: number;
   readonly equipmentCount: number;
@@ -54,6 +63,8 @@ export class Room extends Phaser.GameObjects.Container {
   private roomTypeBadge?: Phaser.GameObjects.Text;
   private slotLoadoutGfx?: Phaser.GameObjects.Graphics;
   private slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
+  private slotLoadoutSprite?: Phaser.GameObjects.Image;
+  private slotLoadoutTween?: Phaser.Tweens.Tween;
 
   private roomHpBar?: Phaser.GameObjects.Graphics;
   private roomHpValue = 0;
@@ -66,7 +77,6 @@ export class Room extends Phaser.GameObjects.Container {
   private isDestroyed = false;
 
   private readonly cs: number;   // effective cell size
-  private readonly theme: DungeonTheme;
 
   constructor(
     scene: Phaser.Scene,
@@ -81,7 +91,6 @@ export class Room extends Phaser.GameObjects.Container {
     this.row   = row;
     this.col   = col;
     this.state = state;
-    this.theme = getActiveTheme(loadGameState().equippedTheme);
 
     this.bg = scene.add.graphics();
     this.drawStone();
@@ -119,49 +128,40 @@ export class Room extends Phaser.GameObjects.Container {
     g.clear();
     if (this.state === 'water') return;
 
+    const occupied = this.state === 'occupied' && !!this.roomData;
     // Per-state accent: occupied uses the room's own accent, otherwise warm gold.
-    const accent = this.state === 'occupied' && this.roomData
+    const accent = occupied && this.roomData
       ? ROOM_DEFS[this.roomData.type].accentColor
       : CASUAL.GOLD;
-    // Cream body fill — brighter PANEL for occupied chambers, PANEL_SOFT otherwise.
-    const bodyFill = this.state === 'occupied' ? CASUAL.PANEL : CASUAL.PANEL_SOFT;
     const radius = 12;
-    const cw = s - inset * 2;
+    const cw  = s - inset * 2;
     const cx0 = -s / 2 + inset;
     const cy0 = -s / 2 + inset;
 
     // Warm drop shadow under the cell for depth.
-    g.fillStyle(CASUAL.SHADOW, 0.22);
+    g.fillStyle(CASUAL.SHADOW, 0.3);
     g.fillRoundedRect(cx0 + 1, cy0 + 3, cw, cw, radius);
 
-    // Cream cell body.
-    g.fillStyle(bodyFill, 1);
+    // Dark stone body behind the pixel interior — fills the rounded corners the
+    // axis-aligned pixel blocks can't reach.
+    g.fillStyle(CASUAL.PANEL, 1);
     g.fillRoundedRect(cx0, cy0, cw, cw, radius);
 
-    // White top highlight (glossy toy sheen).
-    g.fillStyle(0xffffff, 0.4);
-    g.fillRoundedRect(cx0 + 8, cy0 + 6, cw - 16, 16, 7);
+    // Pixel-art dungeon interior (matches the home board + monster sprites).
+    const fixture  = occupied && this.roomData ? ROOM_TYPE_TO_FIXTURE[this.roomData.type] : undefined;
+    const readiness = occupied ? 74 : 26;
+    drawPixelRoom(g, cx0, cy0, fixture, accent, readiness, cw);
+
+    // Locked cell: darken the pixel interior so it reads "sealed".
+    if (this.state === 'locked') {
+      g.fillStyle(CASUAL.SHADOW, 0.5);
+      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
+    }
 
     // Chunky saturated rounded border.
-    const borderColor = this.state === 'occupied' ? accent : CASUAL.EDGE;
+    const borderColor = occupied ? accent : CASUAL.EDGE;
     g.lineStyle(2.5, borderColor, this.state === 'locked' ? 0.5 : 1);
     g.strokeRoundedRect(cx0, cy0, cw, cw, radius);
-
-    // Occupied chamber: faint accent wash + saturated bottom strip + decoration.
-    if (this.state === 'occupied' && this.roomData) {
-      g.fillStyle(accent, 0.12);
-      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
-      g.fillStyle(accent, 0.85);
-      g.fillRoundedRect(cx0 + 10, -s / 2 + s - inset - 10, cw - 20, 4, 2);
-      // Warm-tone decoration override (does not mutate the shared theme).
-      drawRoomDecoration(g, this.roomData.type, s, casualDecorTheme(this.theme));
-    }
-
-    // Locked cell: muted cream wash so it reads "locked" on the bright field.
-    if (this.state === 'locked') {
-      g.fillStyle(CASUAL.EDGE_SOFT, 0.32);
-      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
-    }
   }
 
   // ─── Candle ─────────────────────────────────────────────────────────────
@@ -280,50 +280,26 @@ export class Room extends Phaser.GameObjects.Container {
     this.slotLoadoutGfx = g;
     this.add(g);
 
-    const chamberX = -s / 2 + 12;
-    const chamberY = -s / 2 + 25;
-    const chamberW = s - 24;
-    const chamberH = s - 54;
-    const floorY = chamberY + chamberH - 13;
+    const inset = 7;
+    const cw  = s - inset * 2;
+    const cx0 = -s / 2 + inset;
+    const cy0 = -s / 2 + inset;
+    // Floor + sprite anchors within the full-bleed pixel room.
+    const floorY  = s / 2 - 26;
+    const centerY = -2;
 
-    // Cream chamber body + saturated accent border (visual-only reskin).
-    g.fillStyle(CASUAL.PANEL, 0.96);
-    g.fillRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
-    g.lineStyle(2, accent, 0.85);
-    g.strokeRoundedRect(chamberX, chamberY, chamberW, chamberH, 7);
-
-    // Back wall — soft cream panel + faint accent wash + white sheen line.
-    g.fillStyle(CASUAL.PANEL_SOFT, 0.85);
-    g.fillRoundedRect(chamberX + 5, chamberY + 5, chamberW - 10, chamberH * 0.42, 5);
-    g.fillStyle(accent, 0.1);
-    g.fillRect(chamberX + 7, chamberY + 7, chamberW - 14, Math.max(4, chamberH * 0.18));
-    g.lineStyle(1, 0xffffff, 0.4);
-    g.lineBetween(chamberX + 8, chamberY + 15, chamberX + chamberW - 8, chamberY + 15);
-
-    // Floor slab — warmer cream tone.
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillPoints([
-      new Phaser.Geom.Point(chamberX + 7, floorY),
-      new Phaser.Geom.Point(chamberX + chamberW - 7, floorY),
-      new Phaser.Geom.Point(chamberX + chamberW - 3, chamberY + chamberH - 4),
-      new Phaser.Geom.Point(chamberX + 3, chamberY + chamberH - 4),
-    ], true);
-    g.lineStyle(1, accent, 0.4);
-    g.lineBetween(chamberX + 8, floorY, chamberX + chamberW - 8, floorY);
-    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
-    g.lineBetween(chamberX + 14, floorY + 5, chamberX + chamberW - 14, floorY + 5);
+    // Dark stone body (rounded-corner filler) + full-bleed pixel interior —
+    // the same pixel room the home board uses, so battle reads as pixel art.
+    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillRoundedRect(cx0, cy0, cw, cw, 12);
+    drawPixelRoom(g, cx0, cy0, options.slotRoomType, accent, 78, cw);
 
     const hasGuardian = options.monsterCount > 0;
-    const centerY = chamberY + chamberH * 0.52;
-    // Soft warm ground shadow + accent stand pad so the portrait sits grounded.
-    g.fillStyle(CASUAL.SHADOW, 0.28);
-    g.fillEllipse(0, floorY + 3, 36, 9);
-    g.fillStyle(hasGuardian ? accent : CASUAL.EDGE_SOFT, hasGuardian ? 0.3 : 0.18);
-    g.fillEllipse(0, floorY + 1, 31, 7);
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.85);
-    g.fillRoundedRect(-16, centerY + 10, 32, 7, 4);
-    g.lineStyle(1, accent, hasGuardian ? 0.6 : 0.3);
-    g.strokeRoundedRect(-16, centerY + 10, 32, 7, 4);
+    // Soft ground shadow so the guardian reads as standing in the room.
+    g.fillStyle(CASUAL.SHADOW, 0.4);
+    g.fillEllipse(0, floorY + 5, 38, 9);
+    g.fillStyle(hasGuardian ? accent : CASUAL.SHADOW, hasGuardian ? 0.28 : 0.18);
+    g.fillEllipse(0, floorY + 3, 30, 6);
 
     if (options.equipmentCount > 0) {
       g.lineStyle(2, CASUAL.GOLD, 0.55);
@@ -338,7 +314,7 @@ export class Room extends Phaser.GameObjects.Container {
 
     const trapFixtures = Math.min(4, options.trapCount);
     for (let i = 0; i < trapFixtures; i++) {
-      const fixtureX = chamberX + 10 + i * ((chamberW - 20) / Math.max(1, trapFixtures - 1));
+      const fixtureX = cx0 + 12 + i * ((cw - 24) / Math.max(1, trapFixtures - 1));
       g.fillStyle(CASUAL.GREEN, 0.28);
       g.fillCircle(fixtureX, floorY + 2, 5);
       g.fillStyle(CASUAL.GREEN, 0.95);
@@ -364,16 +340,35 @@ export class Room extends Phaser.GameObjects.Container {
     this.slotLoadoutLabels.push(title);
     this.add(title);
 
-    const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
-    const guardian = this.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
-      fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
-      fontSize: hasGuardian ? '25px' : '15px',
-      color: hasGuardian ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-      stroke: hasGuardian ? '#4a3016' : '#8a6238',
-      strokeThickness: hasGuardian ? 3 : 1,
-    }).setOrigin(0.5);
-    this.slotLoadoutLabels.push(guardian);
-    this.add(guardian);
+    // Guardian — pixel monster sprite standing in the room (matches home board);
+    // falls back to an emoji glyph when no sprite texture is available.
+    const monsterTypeId = options.primaryMonsterId
+      ? resolveMonsterTypeId(options.primaryMonsterId)
+      : null;
+    const spriteId = (monsterTypeId ?? options.primaryMonsterId ?? '') as MonsterId;
+    if (hasGuardian && spriteId) {
+      const spriteKey = generateMonsterSprite(this.scene, spriteId);
+      const sprite = this.scene.add.image(0, centerY, spriteKey).setOrigin(0.5).setScale(1.25);
+      this.slotLoadoutSprite = sprite;
+      this.add(sprite);
+      this.slotLoadoutTween = this.scene.tweens.add({
+        targets: sprite,
+        y: centerY - 4,
+        duration: 1300 + (this.row * 3 + this.col) % 4 * 130,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    } else {
+      const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
+      const guardian = this.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
+        fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
+        fontSize: hasGuardian ? '25px' : '15px',
+        color: hasGuardian ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+        stroke: hasGuardian ? '#4a3016' : '#8a6238',
+        strokeThickness: hasGuardian ? 3 : 1,
+      }).setOrigin(0.5);
+      this.slotLoadoutLabels.push(guardian);
+      this.add(guardian);
+    }
 
     if (options.monsterCount > 1) {
       g.fillStyle(CASUAL.RED, 0.95);
@@ -624,7 +619,7 @@ export class Room extends Phaser.GameObjects.Container {
     const icon = this.scene.add.text(0, -14, def.emoji, { fontSize: '28px' }).setOrigin(0.5);
     this.add(icon);
 
-    // Room name — dark ink so it reads on the cream chamber.
+    // Room name — parchment ink so it reads on the dark pixel room.
     const nameLabel = this.scene.add.text(0, 24, def.koreanName, {
       fontFamily: "Georgia, serif", fontSize: '10px', color: CASUAL_CSS.INK,
       fontStyle: 'bold',
@@ -750,6 +745,10 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private clearDungeonSlotLoadoutVisual(): void {
+    this.slotLoadoutTween?.stop();
+    this.slotLoadoutTween = undefined;
+    this.slotLoadoutSprite?.destroy();
+    this.slotLoadoutSprite = undefined;
     this.slotLoadoutGfx?.destroy();
     this.slotLoadoutGfx = undefined;
     this.slotLoadoutLabels.forEach(label => label.destroy());
@@ -922,6 +921,7 @@ export class Room extends Phaser.GameObjects.Container {
     this.candleTween?.stop();
     this.selectionTween?.stop();
     this.waterTween?.stop();
+    this.slotLoadoutTween?.stop();
     super.destroy(fromScene);
   }
 }
