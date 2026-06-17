@@ -2,30 +2,15 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
-import { drawPixelRoom } from '../art/PixelRoom';
-import { generateMonsterSprite } from '../art/PortraitGenerator';
-import { resolveMonsterTypeId } from '../ui/MonsterPortraitView';
-import type { MonsterId } from '../data/monsters';
-
-/**
- * Map a concrete combat RoomType to the abstract pixel-room fixture category
- * (the same four buckets the home board uses), so battle rooms render the
- * matching pixel fixture (weapon rack / spikes / altar / rune ring).
- */
-const ROOM_TYPE_TO_FIXTURE: Record<RoomType, 'combat' | 'trap' | 'support' | 'magic'> = {
-  guardian:         'combat',
-  tower:            'combat',
-  armory:           'combat',
-  trap:             'trap',
-  trap_corridor:    'trap',
-  gold:             'support',
-  medicine_hall:    'support',
-  spirit_altar:     'support',
-  scroll_library:   'magic',
-  dragons_lair:     'magic',
-  celestial_shrine: 'magic',
-  void_forge:       'magic',
-};
+import {
+  drawStoneVisual,
+  drawLevelBadgeVisual,
+  drawRoomHpBarVisual,
+  flashDamageVisual,
+  collapseRoomVisual,
+  clearSlotLoadoutVisual,
+  setSlotLoadoutVisual,
+} from './RoomVisuals';
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
@@ -52,31 +37,31 @@ export class Room extends Phaser.GameObjects.Container {
   readonly row: number;
   readonly col: number;
 
-  private bg: Phaser.GameObjects.Graphics;
+  /** @internal */ bg: Phaser.GameObjects.Graphics;
   private outline: Phaser.GameObjects.Graphics;
   private candleGfx?: Phaser.GameObjects.Graphics;
   private candleTween?: Phaser.Tweens.Tween;
   private emptyLabel?: Phaser.GameObjects.Text;
   private selectionTween?: Phaser.Tweens.Tween;
-  private levelBadge?:   Phaser.GameObjects.Graphics;
+  /** @internal */ levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   private roomTypeBadge?: Phaser.GameObjects.Text;
-  private slotLoadoutGfx?: Phaser.GameObjects.Graphics;
-  private slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
-  private slotLoadoutSprite?: Phaser.GameObjects.Image;
-  private slotLoadoutTween?: Phaser.Tweens.Tween;
+  /** @internal */ slotLoadoutGfx?: Phaser.GameObjects.Graphics;
+  /** @internal */ slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
+  /** @internal */ slotLoadoutSprite?: Phaser.GameObjects.Image;
+  /** @internal */ slotLoadoutTween?: Phaser.Tweens.Tween;
 
-  private roomHpBar?: Phaser.GameObjects.Graphics;
-  private roomHpValue = 0;
-  private roomHpMax  = 0;
-  private damageFlash?: Phaser.GameObjects.Graphics;
-  private hpCriticalTween?: Phaser.Tweens.Tween;
+  /** @internal */ roomHpBar?: Phaser.GameObjects.Graphics;
+  /** @internal */ roomHpValue = 0;
+  /** @internal */ roomHpMax  = 0;
+  /** @internal */ damageFlash?: Phaser.GameObjects.Graphics;
+  /** @internal */ hpCriticalTween?: Phaser.Tweens.Tween;
   private cooldownRing?: Phaser.GameObjects.Graphics;
   private waterRipple?: Phaser.GameObjects.Graphics;
   private waterTween?: Phaser.Tweens.Tween;
-  private isDestroyed = false;
+  /** @internal */ isDestroyed = false;
 
-  private readonly cs: number;   // effective cell size
+  /** @internal */ readonly cs: number;   // effective cell size
 
   constructor(
     scene: Phaser.Scene,
@@ -122,46 +107,7 @@ export class Room extends Phaser.GameObjects.Container {
   // ─── Stone drawing ──────────────────────────────────────────────────────
 
   private drawStone(): void {
-    const g = this.bg;
-    const s = this.cs;
-    const inset = 7;
-    g.clear();
-    if (this.state === 'water') return;
-
-    const occupied = this.state === 'occupied' && !!this.roomData;
-    // Per-state accent: occupied uses the room's own accent, otherwise warm gold.
-    const accent = occupied && this.roomData
-      ? ROOM_DEFS[this.roomData.type].accentColor
-      : CASUAL.GOLD;
-    const radius = 12;
-    const cw  = s - inset * 2;
-    const cx0 = -s / 2 + inset;
-    const cy0 = -s / 2 + inset;
-
-    // Warm drop shadow under the cell for depth.
-    g.fillStyle(CASUAL.SHADOW, 0.3);
-    g.fillRoundedRect(cx0 + 1, cy0 + 3, cw, cw, radius);
-
-    // Dark stone body behind the pixel interior — fills the rounded corners the
-    // axis-aligned pixel blocks can't reach.
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(cx0, cy0, cw, cw, radius);
-
-    // Pixel-art dungeon interior (matches the home board + monster sprites).
-    const fixture  = occupied && this.roomData ? ROOM_TYPE_TO_FIXTURE[this.roomData.type] : undefined;
-    const readiness = occupied ? 74 : 26;
-    drawPixelRoom(g, cx0, cy0, fixture, accent, readiness, cw);
-
-    // Locked cell: darken the pixel interior so it reads "sealed".
-    if (this.state === 'locked') {
-      g.fillStyle(CASUAL.SHADOW, 0.5);
-      g.fillRoundedRect(cx0, cy0, cw, cw, radius);
-    }
-
-    // Chunky saturated rounded border.
-    const borderColor = occupied ? accent : CASUAL.EDGE;
-    g.lineStyle(2.5, borderColor, this.state === 'locked' ? 0.5 : 1);
-    g.strokeRoundedRect(cx0, cy0, cw, cw, radius);
+    drawStoneVisual(this);
   }
 
   // ─── Candle ─────────────────────────────────────────────────────────────
@@ -271,166 +217,7 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   setDungeonSlotLoadoutVisual(options: RoomLoadoutVisualOptions): void {
-    this.clearDungeonSlotLoadoutVisual();
-    if (this.state !== 'occupied') return;
-
-    const s = this.cs;
-    const accent = options.accentColor;
-    const g = this.scene.add.graphics();
-    this.slotLoadoutGfx = g;
-    this.add(g);
-
-    const inset = 7;
-    const cw  = s - inset * 2;
-    const cx0 = -s / 2 + inset;
-    const cy0 = -s / 2 + inset;
-    // Floor + sprite anchors within the full-bleed pixel room.
-    const floorY  = s / 2 - 26;
-    const centerY = -2;
-
-    // Dark stone body (rounded-corner filler) + full-bleed pixel interior —
-    // the same pixel room the home board uses, so battle reads as pixel art.
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(cx0, cy0, cw, cw, 12);
-    drawPixelRoom(g, cx0, cy0, options.slotRoomType, accent, 78, cw);
-
-    const hasGuardian = options.monsterCount > 0;
-    // Soft ground shadow so the guardian reads as standing in the room.
-    g.fillStyle(CASUAL.SHADOW, 0.4);
-    g.fillEllipse(0, floorY + 5, 38, 9);
-    g.fillStyle(hasGuardian ? accent : CASUAL.SHADOW, hasGuardian ? 0.28 : 0.18);
-    g.fillEllipse(0, floorY + 3, 30, 6);
-
-    if (options.equipmentCount > 0) {
-      g.lineStyle(2, CASUAL.GOLD, 0.55);
-      g.strokeCircle(0, centerY + 3, 18);
-      g.lineStyle(1, CASUAL.GOLD, 0.32);
-      g.strokeCircle(0, centerY + 3, 22);
-      g.fillStyle(CASUAL.GOLD_DK, 0.85);
-      g.fillCircle(-19, centerY - 6, 1.8);
-      g.fillCircle(19, centerY + 7, 1.6);
-      g.fillCircle(8, centerY - 17, 1.5);
-    }
-
-    const trapFixtures = Math.min(4, options.trapCount);
-    for (let i = 0; i < trapFixtures; i++) {
-      const fixtureX = cx0 + 12 + i * ((cw - 24) / Math.max(1, trapFixtures - 1));
-      g.fillStyle(CASUAL.GREEN, 0.28);
-      g.fillCircle(fixtureX, floorY + 2, 5);
-      g.fillStyle(CASUAL.GREEN, 0.95);
-      g.fillTriangle(fixtureX - 4, floorY + 5, fixtureX, floorY - 6, fixtureX + 4, floorY + 5);
-      g.lineStyle(1, CASUAL.GREEN_DK, 0.55);
-      g.lineBetween(fixtureX - 5, floorY + 5, fixtureX + 5, floorY + 5);
-    }
-
-    // Outer accent frame + cream title strip with white sheen.
-    g.lineStyle(2, accent, 0.5);
-    g.strokeRoundedRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10, 11);
-    g.fillStyle(accent, 0.85);
-    g.fillRoundedRect(-s / 2 + 17, -s / 2 + 8, s - 34, 14, 5);
-    g.fillStyle(0xffffff, 0.3);
-    g.fillRoundedRect(-s / 2 + 20, -s / 2 + 9, s - 40, 5, 3);
-
-    const title = this.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '8px',
-      color: CASUAL_CSS.WHITE,
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.slotLoadoutLabels.push(title);
-    this.add(title);
-
-    // Guardian — pixel monster sprite standing in the room (matches home board);
-    // falls back to an emoji glyph when no sprite texture is available.
-    const monsterTypeId = options.primaryMonsterId
-      ? resolveMonsterTypeId(options.primaryMonsterId)
-      : null;
-    const spriteId = (monsterTypeId ?? options.primaryMonsterId ?? '') as MonsterId;
-    if (hasGuardian && spriteId) {
-      const spriteKey = generateMonsterSprite(this.scene, spriteId);
-      const sprite = this.scene.add.image(0, centerY, spriteKey).setOrigin(0.5).setScale(1.25);
-      this.slotLoadoutSprite = sprite;
-      this.add(sprite);
-      this.slotLoadoutTween = this.scene.tweens.add({
-        targets: sprite,
-        y: centerY - 4,
-        duration: 1300 + (this.row * 3 + this.col) % 4 * 130,
-        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      });
-    } else {
-      const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
-      const guardian = this.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
-        fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
-        fontSize: hasGuardian ? '25px' : '15px',
-        color: hasGuardian ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-        stroke: hasGuardian ? '#4a3016' : '#8a6238',
-        strokeThickness: hasGuardian ? 3 : 1,
-      }).setOrigin(0.5);
-      this.slotLoadoutLabels.push(guardian);
-      this.add(guardian);
-    }
-
-    if (options.monsterCount > 1) {
-      g.fillStyle(CASUAL.RED, 0.95);
-      g.fillRoundedRect(10, centerY - 17, 18, 11, 4);
-      g.lineStyle(1, CASUAL.RED_DK, 0.6);
-      g.strokeRoundedRect(10, centerY - 17, 18, 11, 4);
-      const count = this.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '7px',
-        color: CASUAL_CSS.WHITE,
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.slotLoadoutLabels.push(count);
-      this.add(count);
-    }
-
-    const stripY = s / 2 - 26;
-    // Loadout strip — cream track + chunky brown border (matches casual chrome).
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
-    g.lineStyle(1.5, CASUAL.EDGE, 0.85);
-    g.strokeRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
-
-    const drawPips = (startX: number, y: number, count: number, cap: number, fill: number): void => {
-      const safeCap = Math.max(1, Math.min(5, cap));
-      for (let i = 0; i < safeCap; i++) {
-        g.fillStyle(i < count ? fill : CASUAL.PANEL, i < count ? 0.95 : 1);
-        g.fillCircle(startX + i * 6, y, 2.2);
-        g.lineStyle(0.8, i < count ? fill : CASUAL.EDGE_SOFT, i < count ? 0.7 : 0.5);
-        g.strokeCircle(startX + i * 6, y, 2.2);
-      }
-    };
-
-    drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, CASUAL.RED);
-    drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, CASUAL.GREEN_DK);
-
-    if (options.equipmentCount > 0) {
-      g.fillStyle(CASUAL.GOLD, 0.35);
-      g.fillRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
-      g.lineStyle(1, CASUAL.GOLD_DK, 0.7);
-      g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
-      const equipment = this.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
-        fontFamily: 'Georgia, serif',
-        fontSize: '7px',
-        color: CASUAL_CSS.GOLD,
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.slotLoadoutLabels.push(equipment);
-      this.add(equipment);
-    }
-
-    const loadoutLabel = options.equipmentCount > 0
-      ? `M${options.monsterCount}/${options.monsterCapacity} E${options.equipmentCount} T${options.trapCount}/${options.trapCapacity}`
-      : `M${options.monsterCount}/${options.monsterCapacity} T${options.trapCount}/${options.trapCapacity}`;
-    const loadout = this.scene.add.text(0, stripY + 7, loadoutLabel, {
-      fontFamily: 'monospace',
-      fontSize: '7px',
-      color: CASUAL_CSS.INK,
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-    this.slotLoadoutLabels.push(loadout);
-    this.add(loadout);
+    setSlotLoadoutVisual(this, options);
   }
 
   addBonusHp(bonus: number): void {
@@ -452,23 +239,7 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private _flashDamage(): void {
-    // Reuse existing graphic to avoid stacking
-    if (!this.damageFlash) {
-      this.damageFlash = this.scene.add.graphics();
-      this.add(this.damageFlash);
-    }
-    const s = this.cs;
-    const inset = 7;
-    this.damageFlash.clear();
-    this.damageFlash.fillStyle(CASUAL.RED, 0.55);
-    this.damageFlash.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
-    this.damageFlash.setDepth(this.depth + 4).setAlpha(1);
-    this.scene.tweens.add({
-      targets: this.damageFlash,
-      alpha: 0,
-      duration: 280,
-      ease: 'Power2.easeOut',
-    });
+    flashDamageVisual(this);
   }
 
   healRoomHp(amount: number): void {
@@ -491,93 +262,11 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private drawRoomHpBar(): void {
-    const g = this.roomHpBar;
-    if (!g) return;
-    g.clear();
-    const s    = this.cs;
-    const bw   = s - 16;
-    const bh   = 4;
-    const bx   = -bw / 2;
-    const by   = s / 2 - 8;
-    const pct  = this.roomHpMax > 0 ? this.roomHpValue / this.roomHpMax : 1;
-    // Track — cream with chunky brown border (casual chrome).
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(bx - 1.5, by - 1.5, bw + 3, bh + 3, 3);
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(bx, by, bw, bh, 2);
-    // Fill — green → gold → red (saturated CASUAL accents).
-    const col = pct > 0.6 ? CASUAL.GREEN : pct > 0.3 ? CASUAL.GOLD : CASUAL.RED;
-    g.fillStyle(col, 1);
-    g.fillRoundedRect(bx, by, Math.max(0, Math.round(bw * pct)), bh, 2);
-    // Hide bar if full HP
-    g.setAlpha(pct < 1 ? 1 : 0);
-
-    // Critical HP pulse: start tween when ≤30%, stop when recovered
-    if (pct <= 0.3 && pct > 0 && !this.hpCriticalTween) {
-      this.hpCriticalTween = this.scene.tweens.add({
-        targets: g,
-        alpha: { from: 1, to: 0.25 },
-        duration: 350, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      });
-    } else if ((pct > 0.3 || pct <= 0) && this.hpCriticalTween) {
-      this.hpCriticalTween.stop();
-      this.hpCriticalTween = undefined;
-      g.setAlpha(pct < 1 ? 1 : 0);
-    }
+    drawRoomHpBarVisual(this);
   }
 
   private collapseRoom(): void {
-    this.isDestroyed = true;
-    const s = this.cs;
-
-    // Rubble overlay — muted warm-brown crumbled cream (on the bright field).
-    const rubble = this.scene.add.graphics().setDepth(this.depth + 3);
-    const inset = 7;
-    rubble.fillStyle(CASUAL.EDGE_SOFT, 0.8);
-    rubble.fillRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
-    // Crack lines (jagged, not clean X) — saturated red danger marks.
-    rubble.lineStyle(2, CASUAL.RED_DK, 0.9);
-    rubble.lineBetween(-s / 2 + 10, -s / 2 + 6,  0,  8);
-    rubble.lineBetween(0,  8,  s / 2 - 8,  -s / 2 + 14);
-    rubble.lineBetween(0,  8,  -6,  s / 2 - 10);
-    rubble.lineBetween(-6, s / 2 - 10,  s / 2 - 12,  s / 2 - 5);
-    rubble.lineStyle(2.5, CASUAL.RED, 0.7);
-    rubble.strokeRoundedRect(-s / 2 + inset, -s / 2 + inset, s - inset * 2, s - inset * 2, 12);
-    this.add(rubble);
-
-    // Dust puff particles — small warm circles drifting up.
-    const spawnSmoke = () => {
-      if (!this.active) return;
-      for (let i = 0; i < 3; i++) {
-        const sx = this.x + (Math.random() - 0.5) * (s * 0.6);
-        const sy = this.y + (Math.random() - 0.5) * (s * 0.3);
-        const smoke = this.scene.add.graphics().setDepth(this.depth + 10);
-        const r = 3 + Math.random() * 4;
-        smoke.fillStyle(CASUAL.PANEL_SOFT, 0.7);
-        smoke.fillCircle(0, 0, r);
-        smoke.setPosition(sx, sy);
-        this.scene.tweens.add({
-          targets: smoke,
-          y: sy - 30 - Math.random() * 20,
-          alpha: 0,
-          scaleX: 1.8, scaleY: 1.8,
-          duration: 700 + Math.random() * 500,
-          ease: 'Quad.easeOut',
-          onComplete: () => smoke.destroy(),
-        });
-      }
-    };
-    // Burst on collapse
-    spawnSmoke();
-    this.scene.time.delayedCall(300, spawnSmoke);
-    this.scene.time.delayedCall(700, spawnSmoke);
-
-    // Shake
-    this.scene.tweens.add({
-      targets: this, x: this.x - 4, y: this.y - 4,
-      duration: 50, yoyo: true, repeat: 3,
-      onComplete: () => { this.scene.events.emit('roomDestroyed', this.row, this.col); },
-    });
+    collapseRoomVisual(this);
   }
 
   // ─── Occupation ─────────────────────────────────────────────────────────
@@ -690,17 +379,7 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private drawLevelBadge(): void {
-    const g = this.levelBadge!;
-    g.clear();
-    if (!this.roomData || this.roomData.level <= 1) return;
-    const bx = this.cs / 2 - 14;
-    const by = -this.cs / 2 + 6;
-    const r  = 8;
-    const col = this.roomData.level === 3 ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
-    g.fillStyle(CASUAL.SHADOW, 0.4); g.fillCircle(bx + 1, by + 1, r);
-    g.fillStyle(col, 1);             g.fillCircle(bx, by, r);
-    g.lineStyle(2, CASUAL.EDGE, 0.9); g.strokeCircle(bx, by, r);
-    g.lineStyle(1, 0xffffff, 0.4);   g.strokeCircle(bx, by - 0.5, r - 1.5);
+    drawLevelBadgeVisual(this);
   }
 
   setMonsterBadge(emoji: string | null): void {
@@ -745,14 +424,7 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   private clearDungeonSlotLoadoutVisual(): void {
-    this.slotLoadoutTween?.stop();
-    this.slotLoadoutTween = undefined;
-    this.slotLoadoutSprite?.destroy();
-    this.slotLoadoutSprite = undefined;
-    this.slotLoadoutGfx?.destroy();
-    this.slotLoadoutGfx = undefined;
-    this.slotLoadoutLabels.forEach(label => label.destroy());
-    this.slotLoadoutLabels = [];
+    clearSlotLoadoutVisual(this);
   }
 
   setBrokenState(): void {
