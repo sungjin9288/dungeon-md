@@ -1,653 +1,57 @@
 /**
  * RoomPickerModals — trap picker and monster picker modals for the room detail overlay.
- * Extracted from RoomDetailOverlay (lines 598-823).
+ * Entry points: showTrapPicker, showMonsterPicker.
+ * Chrome helpers live in RoomPickerChrome; pure helpers/consts in RoomPickerShared.
  */
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { EQUIPMENT_DEFS, getMonsterAtk } from '../data/barracks';
+import { getMonsterAtk } from '../data/barracks';
 import { assignMonsterToRoomSlot, installTrapInRoomSlot } from '../data/roomSlotTransactions';
-import {
-  calculateRoomLoadoutStatus,
-  calculateRoomMetricDelta,
-  calculateRoomMetrics,
-  type RoomMetricDelta,
-} from '../data/dungeonMetrics';
 import { MONSTER_DEFS } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
-import {
-  ROOM_SLOT_TYPE_DEFS,
-  type DungeonSlot,
-  type GameState,
-} from '../data/wisdom';
 import { logger } from '../utils/logger';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { RoomDetailState, RoomDetailCallbacks } from './RoomDetailOverlay';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { addMonsterPortrait } from './MonsterPortraitView';
-import { drawRoomLoadoutRail } from './RoomLoadoutRail';
+import { showRoomGrowthFeedback } from './RoomGrowthFeedback';
 import {
-  buildRoomGrowthFeedbackStats,
-  showRoomGrowthFeedback,
-  type RoomGrowthFeedbackStats,
-} from './RoomGrowthFeedback';
+  PICKER_SLIDE_MS,
+  SHEET_PAD_X,
+  SHEET_HEADER_H,
+  SHEET_BOTTOM_PAD,
+  ROW_GAP,
+  MONSTER_TYPE_LABEL,
+  MONSTER_TYPE_ACCENT,
+  fitPickerLabel,
+  getMonsterRoomFitLabel,
+  getTrapRoomFitLabel,
+  getEquipmentIcon,
+  getPickerMonsterRarityMeta,
+} from './RoomPickerShared';
+import {
+  destroyTrapPicker,
+  destroyMonsterPicker,
+  addPickerSheetFrame,
+  addPickerHeader,
+  addPickerRoomContext,
+  attachSheetListScroll,
+  addPickerCardChrome,
+  addPickerStatusPill,
+  addPickerTinyPill,
+  addPickerMiniBadge,
+  addDeltaChipRow,
+  registerRoomLoadoutFeedback,
+  previewMonsterSlot,
+  previewTrapSlot,
+  getPreviewDelta,
+  getPreviewGrowthStats,
+} from './RoomPickerChrome';
 
-/** Callbacks injected to avoid circular imports. */
-export interface PickerNavCallbacks {
-  closeRoomDetail: (state: RoomDetailState, cb: RoomDetailCallbacks) => void;
-  openRoomDetail: (
-    scene: Phaser.Scene,
-    state: RoomDetailState,
-    theme: DungeonTheme,
-    cb: RoomDetailCallbacks,
-    slotIdx: number,
-    cellX: number,
-    cellY: number,
-  ) => void;
-}
-
-const SHEET_X = 8;
-const SHEET_PAD_X = 12;
-const SHEET_HEADER_H = 78;
-const SHEET_BOTTOM_PAD = 14;
-const ROW_GAP = 8;
-const PICKER_SLIDE_MS = 220;
-
-const MONSTER_TYPE_LABEL: Record<string, string> = {
-  melee: '근접',
-  ranged: '원거리',
-  magic: '마법',
-  support: '지원',
-};
-
-const MONSTER_TYPE_ACCENT: Record<string, number> = {
-  melee: 0xd65a42,
-  ranged: 0x5fb7ff,
-  magic: 0x9a6cd8,
-  support: 0x65e0a0,
-};
-
-const ROOM_TYPE_ACCENT: Record<string, number> = {
-  combat: 0xb64a3a,
-  trap: 0xc8921a,
-  support: 0x44aa77,
-  magic: 0x7f66cc,
-};
-
-const PICKER_MONSTER_RARITY_META = {
-  C: { stars: '★', color: 0x8aa4aa, css: '#8aa4aa' },
-  U: { stars: '★★', color: 0x65e0a0, css: '#65e0a0' },
-  R: { stars: '★★★', color: 0x5fb7ff, css: '#5fb7ff' },
-  E: { stars: '★★★★', color: 0xc58cff, css: '#c58cff' },
-  L: { stars: '★★★★★', color: 0xe8c468, css: '#ffd166' },
-} as const;
-
-const MONSTER_ROOM_FIT: Record<string, Partial<Record<string, string>>> = {
-  combat: {
-    melee: '전열 핵심',
-    ranged: '후열 화력',
-  },
-  trap: {
-    ranged: '함정 보조',
-    magic: '제압 보조',
-    support: '유지 보조',
-  },
-  support: {
-    support: '지원 적합',
-    magic: '버프 연계',
-  },
-  magic: {
-    magic: '마력 적합',
-    support: '쿨감 연계',
-  },
-};
-
-const TRAP_ROOM_FIT: Record<string, Partial<Record<string, string>>> = {
-  combat: {
-    slow_trap: '진입 제어',
-    spike_trap: '초반 피해',
-  },
-  trap: {
-    stun_trap: '핵심 제압',
-    poison_trap: '지속 피해',
-    slow_trap: '동선 제어',
-  },
-  support: {
-    slow_trap: '보호 동선',
-    stun_trap: '긴급 제압',
-  },
-  magic: {
-    stun_trap: '시전 보호',
-    poison_trap: '마력 압박',
-  },
-};
-
-function destroyTrapPicker(
-  state: RoomDetailState,
-  scene?: Phaser.Scene,
-  animate = false,
-): void {
-  const container = state.trapPickerContainer;
-  state.trapPickerContainer = null;
-  if (!container) return;
-  if (animate && scene) {
-    scene.tweens.killTweensOf(container);
-    scene.tweens.add({
-      targets: container,
-      y: CANVAS_HEIGHT,
-      alpha: 0,
-      duration: PICKER_SLIDE_MS,
-      ease: 'Quad.easeIn',
-      onComplete: () => container.destroy(),
-    });
-  } else {
-    container.destroy();
-  }
-}
-
-function destroyMonsterPicker(
-  state: RoomDetailState,
-  scene?: Phaser.Scene,
-  animate = false,
-): void {
-  const container = state.monsterPickerContainer;
-  state.monsterPickerContainer = null;
-  if (!container) return;
-  if (animate && scene) {
-    scene.tweens.killTweensOf(container);
-    scene.tweens.add({
-      targets: container,
-      y: CANVAS_HEIGHT,
-      alpha: 0,
-      duration: PICKER_SLIDE_MS,
-      ease: 'Quad.easeIn',
-      onComplete: () => container.destroy(),
-    });
-  } else {
-    container.destroy();
-  }
-}
-
-function addPickerSheetFrame(
-  scene: Phaser.Scene,
-  c: Phaser.GameObjects.Container,
-  modalH: number,
-  borderColor: number = CASUAL.GOLD,
-): void {
-  const frame = addFramedPanel(scene, {
-    x: SHEET_X,
-    y: 4,
-    w: CANVAS_WIDTH - SHEET_X * 2,
-    h: modalH - 4,
-    radius: 16,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: borderColor,
-    accentAlpha: 1,
-    glowColor: borderColor,
-    glowOpacity: 0.06,
-    shadowOpacity: 0.42,
-    shadowOffsetY: -2,
-  });
-  c.add([frame.shadow, frame.panel, frame.glow]);
-}
-
-function addPickerHeader(
-  scene: Phaser.Scene,
-  c: Phaser.GameObjects.Container,
-  title: string,
-  subtitle: string,
-  onClose: () => void,
-): void {
-  c.add(scene.add.text(22, 18, title, {
-    fontFamily: 'sans-serif',
-    fontSize: '17px',
-    color: CASUAL_CSS.INK,
-    fontStyle: 'bold',
-    stroke: '#ffffff',
-    strokeThickness: 3,
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(22, 36, subtitle, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-
-  const closeBtn = scene.add.text(CANVAS_WIDTH - 20, 16, '×', {
-    fontFamily: 'sans-serif',
-    fontSize: '22px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
-  closeBtn.on('pointerover', () => closeBtn.setColor(CASUAL_CSS.INK));
-  closeBtn.on('pointerout', () => closeBtn.setColor(CASUAL_CSS.INK_SOFT));
-  closeBtn.on('pointerdown', onClose);
-  c.add(closeBtn);
-}
-
-function addPickerRoomContext(
-  scene: Phaser.Scene,
-  c: Phaser.GameObjects.Container,
-  gs: GameState,
-  slotIdx: number,
-  targetLabel: string,
-  accent: number,
-): void {
-  const slot = gs.dungeonSlots?.[slotIdx];
-  const typeDef = ROOM_SLOT_TYPE_DEFS.find(def => def.id === slot?.roomType);
-  const roomAccent = getRoomAccent(slot, accent);
-  const loadoutStatus = calculateRoomLoadoutStatus(gs, slot);
-  const metrics = calculateRoomMetrics(gs, slot);
-  const x = 20;
-  const y = 47;
-  const w = CANVAS_WIDTH - 40;
-  const h = 24;
-
-  const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
-  g.lineStyle(2, roomAccent, 0.9);
-  g.strokeRoundedRect(x, y, w, h, 8);
-  g.fillStyle(roomAccent, 1);
-  g.fillRoundedRect(x + 5, y + 5, 5, h - 10, 3);
-  c.add(g);
-
-  c.add(scene.add.text(x + 16, y + h / 2, `${typeDef?.icon ?? '▣'} 방 #${slotIdx + 1} · ${typeDef?.name ?? '미설계'}`, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 130, y + h / 2, targetLabel, {
-    fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: CASUAL_CSS.GREEN,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-
-  drawRoomLoadoutRail(scene, c, g, loadoutStatus, {
-    x: x + w - 134,
-    y: y + 4,
-    w: 88,
-    h: 16,
-    accent: roomAccent,
-  });
-  c.add(scene.add.text(x + w - 21, y + h / 2, `${metrics.readiness}%`, {
-    fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: CASUAL_CSS.INK,
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-}
-
-function getRoomAccent(slot: DungeonSlot | null | undefined, fallback: number): number {
-  return slot?.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? fallback : fallback;
-}
-
-function attachSheetListScroll(
-  scene: Phaser.Scene,
-  sheet: Phaser.GameObjects.Container,
-  list: Phaser.GameObjects.Container,
-  targetY: number,
-  listY: number,
-  listH: number,
-  contentH: number,
-): void {
-  const maxScroll = Math.max(0, contentH - listH);
-
-  const maskShape = scene.make.graphics({ x: 0, y: 0 }, false);
-  maskShape.fillStyle(0xffffff, 1);
-  maskShape.fillRect(SHEET_X, targetY + listY, CANVAS_WIDTH - SHEET_X * 2, listH);
-  const mask = maskShape.createGeometryMask();
-  list.setMask(mask);
-  sheet.once(Phaser.GameObjects.Events.DESTROY, () => {
-    list.clearMask(false);
-    mask.destroy();
-    maskShape.destroy();
-  });
-
-  if (maxScroll <= 0) return;
-
-  const applyScroll = (nextY: number): void => {
-    list.setY(listY + Phaser.Math.Clamp(nextY, -maxScroll, 0));
-  };
-
-  let updateButtons = (): void => {};
-  const buttonY = 13;
-  const upButton = addPrimaryActionButton(scene, {
-    x: CANVAS_WIDTH - 104,
-    y: buttonY,
-    w: 30,
-    h: 28,
-    label: '▲',
-    fontSize: '11px',
-    fillColor: CASUAL.GOLD,
-    hoverFillColor: 0xffd564,
-    borderColor: CASUAL.GOLD_DK,
-    hoverBorderColor: CASUAL.GOLD_DK,
-    textColor: '#ffffff',
-    onPress: () => {
-      applyScroll(list.y - listY + 128);
-      updateButtons();
-    },
-  });
-  const downButton = addPrimaryActionButton(scene, {
-    x: CANVAS_WIDTH - 70,
-    y: buttonY,
-    w: 30,
-    h: 28,
-    label: '▼',
-    fontSize: '11px',
-    fillColor: CASUAL.GOLD,
-    hoverFillColor: 0xffd564,
-    borderColor: CASUAL.GOLD_DK,
-    hoverBorderColor: CASUAL.GOLD_DK,
-    textColor: '#ffffff',
-    onPress: () => {
-      applyScroll(list.y - listY - 128);
-      updateButtons();
-    },
-  });
-  sheet.add([upButton.bg, upButton.text, upButton.zone, downButton.bg, downButton.text, downButton.zone]);
-
-  const setButtonState = (button: ReturnType<typeof addPrimaryActionButton>, enabled: boolean): void => {
-    button.bg.setAlpha(enabled ? 0.88 : 0.24);
-    button.text.setAlpha(enabled ? 1 : 0.3);
-    if (enabled) button.zone.setInteractive({ useHandCursor: true });
-    else button.zone.disableInteractive();
-  };
-
-  updateButtons = (): void => {
-    const offsetY = list.y - listY;
-    setButtonState(upButton, offsetY < -1);
-    setButtonState(downButton, offsetY > -maxScroll + 1);
-  };
-  updateButtons();
-}
-
-function fitPickerLabel(label: string, max = 8): string {
-  return label.length > max ? `${label.slice(0, max - 1)}…` : label;
-}
-
-function addPickerCardChrome(
-  scene: Phaser.Scene,
-  list: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  accent: number,
-  enabled: boolean,
-): void {
-  const frame = addFramedPanel(scene, {
-    x,
-    y,
-    w,
-    h,
-    radius: 12,
-    fillColor: enabled ? CASUAL.PANEL : CASUAL.PANEL_SOFT,
-    borderColor: enabled ? accent : CASUAL.EDGE_SOFT,
-    borderAlpha: enabled ? 1 : 0.6,
-    borderWidth: enabled ? 3 : 2,
-    glowColor: enabled ? accent : CASUAL.EDGE_SOFT,
-    glowOpacity: enabled ? 0.05 : 0.02,
-    shadowOpacity: 0.24,
-    shadowOffsetY: 2,
-  });
-  list.add([frame.shadow, frame.panel, frame.glow]);
-
-  const strip = scene.add.graphics();
-  strip.fillStyle(accent, enabled ? 1 : 0.3);
-  strip.fillRoundedRect(x + 7, y + 6, w - 14, 4, 3);
-  strip.fillStyle(0xffffff, enabled ? 0.5 : 0.2);
-  strip.fillRoundedRect(x + 9, y + 13, w - 18, 4, 2);
-  list.add(strip);
-}
-
-function addPickerStatusPill(
-  scene: Phaser.Scene,
-  list: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  label: string,
-  accent: number,
-  enabled: boolean,
-): void {
-  const w = Math.max(38, label.length * 8 + 12);
-  const g = scene.add.graphics();
-  g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
-  g.fillRoundedRect(x, y, w, 16, 6);
-  g.lineStyle(2, accent, enabled ? 0.9 : 0.4);
-  g.strokeRoundedRect(x, y, w, 16, 6);
-  g.fillStyle(accent, enabled ? 1 : 0.3);
-  g.fillRoundedRect(x + 3, y + 3, 4, 10, 3);
-  list.add(g);
-  list.add(scene.add.text(x + w / 2 + 2, y + 8, label, {
-    fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-}
-
-function addPickerTinyPill(
-  scene: Phaser.Scene,
-  list: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  label: string,
-  accent: number,
-  enabled: boolean,
-): void {
-  const w = Math.max(34, Math.min(70, label.length * 8 + 13));
-  const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, enabled ? 1 : 0.6);
-  g.fillRoundedRect(x, y, w, 14, 5);
-  g.lineStyle(2, accent, enabled ? 0.8 : 0.3);
-  g.strokeRoundedRect(x, y, w, 14, 5);
-  g.fillStyle(accent, enabled ? 1 : 0.3);
-  g.fillRoundedRect(x + 3, y + 3, 4, 8, 3);
-  list.add(g);
-  list.add(scene.add.text(x + w / 2 + 2, y + 7, label, {
-    fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-}
-
-function addPickerMiniBadge(
-  scene: Phaser.Scene,
-  list: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  label: string,
-  accent: number,
-  enabled: boolean,
-): void {
-  const w = Math.max(28, Math.min(58, label.length * 8 + 15));
-  const g = scene.add.graphics();
-  g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
-  g.fillRoundedRect(x, y, w, 14, 5);
-  g.lineStyle(2, accent, enabled ? 0.85 : 0.3);
-  g.strokeRoundedRect(x, y, w, 14, 5);
-  g.fillStyle(accent, enabled ? 1 : 0.35);
-  g.fillCircle(x + 8, y + 7, 2.6);
-  list.add(g);
-  list.add(scene.add.text(x + w / 2 + 3, y + 7, label, {
-    fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-}
-
-function addDeltaChipRow(
-  scene: Phaser.Scene,
-  list: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  w: number,
-  delta: RoomMetricDelta,
-  enabled: boolean,
-): void {
-  const chips = [
-    { label: '위협', value: delta.threatDelta, suffix: '', color: 0xff8a45 },
-    { label: '전리품', value: delta.lootDelta, suffix: '', color: 0xe8c468 },
-    { label: '준비', value: delta.readinessDelta, suffix: '%', color: 0x66c08a },
-  ].filter(chip => chip.value !== 0);
-
-  if (chips.length === 0) {
-    const g = scene.add.graphics();
-    g.fillStyle(CASUAL.PANEL_SOFT, enabled ? 1 : 0.6);
-    g.fillRoundedRect(x, y, w, 18, 6);
-    g.lineStyle(2, CASUAL.EDGE_SOFT, 0.6);
-    g.strokeRoundedRect(x, y, w, 18, 6);
-    list.add(g);
-    list.add(scene.add.text(x + w / 2, y + 9, '변화 없음', {
-      fontFamily: 'sans-serif',
-      fontSize: '8px',
-      color: CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-    }).setOrigin(0.5));
-    return;
-  }
-
-  const gap = 4;
-  const chipW = (w - gap * (chips.length - 1)) / chips.length;
-  chips.forEach((chip, idx) => {
-    const chipX = x + idx * (chipW + gap);
-    const g = scene.add.graphics();
-    g.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
-    g.fillRoundedRect(chipX, y, chipW, 18, 6);
-    g.lineStyle(2, chip.color, enabled ? 0.85 : 0.35);
-    g.strokeRoundedRect(chipX, y, chipW, 18, 6);
-    g.fillStyle(chip.color, enabled ? 1 : 0.35);
-    g.fillRoundedRect(chipX + 3, y + 3, 4, 12, 3);
-    list.add(g);
-    list.add(scene.add.text(chipX + chipW / 2 + 2, y + 9, `${chip.label} ${formatSigned(chip.value)}${chip.suffix}`, {
-      fontFamily: 'sans-serif',
-      fontSize: '8px',
-      color: enabled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-    }).setOrigin(0.5));
-  });
-}
-
-function formatSigned(value: number): string {
-  if (value > 0) return `+${value}`;
-  return String(value);
-}
-
-function formatDeltaParts(delta: RoomMetricDelta): string[] {
-  return [
-    delta.threatDelta !== 0 ? `위협 ${formatSigned(delta.threatDelta)}` : null,
-    delta.lootDelta !== 0 ? `전리품 ${formatSigned(delta.lootDelta)}` : null,
-    delta.readinessDelta !== 0 ? `준비 ${formatSigned(delta.readinessDelta)}%` : null,
-  ].filter((part): part is string => Boolean(part));
-}
-
-function registerRoomLoadoutFeedback(
-  scene: Phaser.Scene,
-  slotIdx: number,
-  kind: 'monster' | 'trap',
-  name: string,
-  icon: string,
-  delta: RoomMetricDelta,
-  accent: number,
-  stats?: RoomGrowthFeedbackStats,
-): void {
-  const actionLabel = kind === 'monster' ? '수호 라인 배치' : '함정 라인 설치';
-  const parts = formatDeltaParts(delta);
-  const feedback = {
-    kind,
-    slotIdx,
-    title: kind === 'monster' ? '수호자 배치 완료' : '함정 설치 완료',
-    body: `${name} ${actionLabel}${parts.length > 0 ? ` · ${parts.join(' · ')}` : ''}`,
-    roomIcon: icon,
-    statLabel: stats ? '준비' : undefined,
-    statBefore: stats ? `${stats.readinessBefore}%` : undefined,
-    statAfter: stats ? `${stats.readinessAfter}%` : undefined,
-    accent,
-  };
-  scene.registry.set('homeRoomFeedback', feedback);
-  scene.registry.set('roomDetailFeedback', feedback);
-}
-
-function previewMonsterSlot(
-  slot: DungeonSlot | null | undefined,
-  monsterSlotIdx: number,
-  monsterId: string,
-): DungeonSlot | null {
-  if (!slot) return null;
-  const monsterIds = [...(slot.monsterIds ?? [])];
-  monsterIds[monsterSlotIdx] = monsterId;
-  return { ...slot, monsterIds };
-}
-
-function previewTrapSlot(
-  slot: DungeonSlot | null | undefined,
-  trapSlotIdx: number,
-  trapId: string,
-): DungeonSlot | null {
-  if (!slot) return null;
-  const trapIds = [...(slot.trapIds ?? [])];
-  trapIds[trapSlotIdx] = trapId;
-  return { ...slot, trapIds };
-}
-
-function getPreviewDelta(
-  gs: GameState,
-  slotIdx: number,
-  previewSlot: DungeonSlot | null,
-): RoomMetricDelta {
-  return calculateRoomMetricDelta(gs, gs.dungeonSlots?.[slotIdx], previewSlot);
-}
-
-function getPreviewGrowthStats(
-  gs: GameState,
-  slotIdx: number,
-  previewSlot: DungeonSlot | null,
-): RoomGrowthFeedbackStats {
-  return buildRoomGrowthFeedbackStats(
-    calculateRoomMetrics(gs, gs.dungeonSlots?.[slotIdx]),
-    calculateRoomMetrics(gs, previewSlot),
-  );
-}
-
-function getMonsterRoomFitLabel(slot: DungeonSlot | null | undefined, monsterType: string): string {
-  if (!slot?.roomType) return MONSTER_TYPE_LABEL[monsterType] ?? '전투';
-  return MONSTER_ROOM_FIT[slot.roomType]?.[monsterType]
-    ?? MONSTER_TYPE_LABEL[monsterType]
-    ?? '전투';
-}
-
-function getTrapRoomFitLabel(slot: DungeonSlot | null | undefined, trapId: string): string {
-  if (!slot?.roomType) return '기본 설비';
-  return TRAP_ROOM_FIT[slot.roomType]?.[trapId]
-    ?? (slot.roomType === 'trap' ? '함정실 보정' : '보조 설비');
-}
-
-function getEquipmentIcon(gs: GameState, equipmentId: string | null | undefined): string | null {
-  if (!equipmentId) return null;
-  return EQUIPMENT_DEFS.find(equipment => equipment.id === equipmentId)?.icon
-    ?? gs.craftedEquipment?.find(equipment => equipment.id === equipmentId)?.emoji
-    ?? '◆';
-}
-
-function getPickerMonsterRarityMeta(rarityTier: string | undefined): typeof PICKER_MONSTER_RARITY_META[keyof typeof PICKER_MONSTER_RARITY_META] {
-  if (rarityTier && rarityTier in PICKER_MONSTER_RARITY_META) {
-    return PICKER_MONSTER_RARITY_META[rarityTier as keyof typeof PICKER_MONSTER_RARITY_META];
-  }
-  return PICKER_MONSTER_RARITY_META.C;
-}
-
+// Re-export for the 8 files that import PickerNavCallbacks from here
+export type { PickerNavCallbacks } from './RoomPickerShared';
 
 // ─── Trap Picker Modal ──────────────────────────────────────────────────────
 
@@ -656,7 +60,7 @@ export function showTrapPicker(
   state: RoomDetailState,
   theme: DungeonTheme,
   cb: RoomDetailCallbacks,
-  nav: PickerNavCallbacks,
+  nav: import('./RoomPickerShared').PickerNavCallbacks,
   slotIdx: number,
   trapSlotIdx: number,
 ): void {
@@ -814,7 +218,7 @@ export function showMonsterPicker(
   state: RoomDetailState,
   theme: DungeonTheme,
   cb: RoomDetailCallbacks,
-  nav: PickerNavCallbacks,
+  nav: import('./RoomPickerShared').PickerNavCallbacks,
   slotIdx: number,
   monsterSlotIdx = 0,
 ): void {
