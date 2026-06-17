@@ -1,0 +1,223 @@
+/**
+ * Unit tests for PreBattleShared.ts pure helpers.
+ * No Phaser dependency — pure data logic only.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { loadGameState } from '../data/wisdom';
+import type { GameState, DungeonSlot } from '../data/wisdom';
+import type { InvasionConfig } from '../data/quests';
+import {
+  getDefenseTotals,
+  getDefenseRooms,
+  getDefenseDirective,
+  estimateInvasionPressure,
+  formatDefenseReadinessPercent,
+  shortenLabel,
+  getDefenseDirectiveDisplayChip,
+  buildDefenseDirective,
+} from './PreBattleShared';
+import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
+
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+function makeCombatSlot(overrides: Partial<DungeonSlot> = {}): DungeonSlot {
+  return {
+    roomType:  'combat',
+    roomLevel: 1,
+    hp:        100,
+    maxHp:     100,
+    monsterIds: [],
+    trapIds:    [],
+    ...overrides,
+  };
+}
+
+function makeGs(overrides: Partial<GameState> = {}): GameState {
+  return {
+    ...loadGameState(),
+    ...overrides,
+  };
+}
+
+function makeInvasionConfig(waveCount = 1, enemyCount = 3): InvasionConfig {
+  return {
+    id: 'test_invasion',
+    name: '테스트 침략',
+    isStoryInvasion: true,
+    waves: Array.from({ length: waveCount }, (_, i) => ({
+      waveNumber: i + 1,
+      invaders: [{ type: 'peasant_soldier', count: enemyCount }],
+    })),
+  };
+}
+
+// ─── shortenLabel ──────────────────────────────────────────────────────────────
+
+describe('shortenLabel', () => {
+  it('returns the label unchanged when under or at the max', () => {
+    expect(shortenLabel('전투실', 8)).toBe('전투실');
+    expect(shortenLabel('12345678', 8)).toBe('12345678');
+  });
+
+  it('truncates and appends ellipsis when over the max', () => {
+    const result = shortenLabel('123456789', 8);
+    expect(result.length).toBe(8);
+    expect(result.endsWith('…')).toBe(true);
+  });
+
+  it('uses default max of 8', () => {
+    expect(shortenLabel('short')).toBe('short');
+    expect(shortenLabel('123456789')).toHaveLength(8);
+  });
+});
+
+// ─── formatDefenseReadinessPercent ────────────────────────────────────────────
+
+describe('formatDefenseReadinessPercent', () => {
+  it('returns "0%" for zero readiness', () => {
+    expect(formatDefenseReadinessPercent(0)).toBe('0%');
+  });
+
+  it('returns normal percent for values 1–100', () => {
+    expect(formatDefenseReadinessPercent(75)).toBe('75%');
+    expect(formatDefenseReadinessPercent(100)).toBe('100%');
+  });
+
+  it('returns "100%+" for values above 100', () => {
+    expect(formatDefenseReadinessPercent(150)).toBe('100%+');
+    expect(formatDefenseReadinessPercent(999)).toBe('100%+');
+  });
+
+  it('rounds fractional values', () => {
+    expect(formatDefenseReadinessPercent(42.7)).toBe('43%');
+  });
+});
+
+// ─── estimateInvasionPressure ─────────────────────────────────────────────────
+
+describe('estimateInvasionPressure', () => {
+  it('returns 0 for undefined config', () => {
+    expect(estimateInvasionPressure(undefined)).toBe(0);
+  });
+
+  it('returns a positive integer for a valid config', () => {
+    const pressure = estimateInvasionPressure(makeInvasionConfig(1, 3));
+    expect(pressure).toBeGreaterThan(0);
+    expect(Number.isInteger(pressure)).toBe(true);
+  });
+
+  it('is higher for configs with more waves', () => {
+    const single = estimateInvasionPressure(makeInvasionConfig(1, 5));
+    const multi  = estimateInvasionPressure(makeInvasionConfig(3, 5));
+    expect(multi).toBeGreaterThan(single);
+  });
+
+  it('is higher for heavier enemy types', () => {
+    const light: InvasionConfig = {
+      id: 'light', name: 'light', isStoryInvasion: true,
+      waves: [{ waveNumber: 1, invaders: [{ type: 'peasant_soldier', count: 5 }] }],
+    };
+    const heavy: InvasionConfig = {
+      id: 'heavy', name: 'heavy', isStoryInvasion: true,
+      waves: [{ waveNumber: 1, invaders: [{ type: 'primordial_titan', count: 5 }] }],
+    };
+    expect(estimateInvasionPressure(heavy)).toBeGreaterThan(estimateInvasionPressure(light));
+  });
+});
+
+// ─── getDefenseTotals ─────────────────────────────────────────────────────────
+
+describe('getDefenseTotals', () => {
+  it('returns all zeros for a fresh game state', () => {
+    const gs = makeGs({ dmLevel: 1, dungeonSlots: [] });
+    const rooms = getDefenseRooms(gs);
+    const totals = getDefenseTotals(gs, rooms);
+    expect(totals.builtRooms).toBe(0);
+    expect(totals.monsterCount).toBe(0);
+    expect(totals.trapCount).toBe(0);
+    expect(totals.totalPower).toBe(0);
+  });
+
+  it('counts built rooms and monsters correctly', () => {
+    const gs = makeGs({
+      dmLevel: 1,
+      dungeonSlots: [
+        makeCombatSlot({ monsterIds: ['dokkaebi_warrior'] }),
+      ],
+    });
+    const rooms = getDefenseRooms(gs);
+    const totals = getDefenseTotals(gs, rooms);
+    expect(totals.builtRooms).toBe(1);
+    expect(totals.monsterCount).toBe(1);
+  });
+
+  it('sums totalPower across rooms', () => {
+    const gs = makeGs({
+      dmLevel: 2, // unlocks 2 slots
+      dungeonSlots: [
+        makeCombatSlot({ monsterIds: ['dokkaebi_warrior'] }),
+        makeCombatSlot({ roomType: 'trap', trapIds: ['spike_trap'] }),
+      ],
+    });
+    const rooms = getDefenseRooms(gs);
+    const totals = getDefenseTotals(gs, rooms);
+    expect(totals.totalPower).toBeGreaterThan(0);
+    expect(totals.trapCount).toBe(1);
+  });
+});
+
+// ─── getDefenseDirective ──────────────────────────────────────────────────────
+
+describe('getDefenseDirective', () => {
+  it('returns a room-design directive when no rooms are built', () => {
+    const gs = makeGs({ dmLevel: 1, dungeonSlots: [] });
+    const rooms = getDefenseRooms(gs);
+    const totals = getDefenseTotals(gs, rooms);
+    const directive = getDefenseDirective(rooms, totals, gs, undefined);
+    expect(directive.severity).not.toBe('ready');
+    expect(directive.actionSlotIdx).toBeDefined();
+  });
+
+  it('has readiness >= 100 when totalPower far exceeds pressure', () => {
+    // Build multiple rooms with traps so totalPower far exceeds minimal pressure
+    const slots: DungeonSlot[] = Array.from({ length: 3 }, () =>
+      makeCombatSlot({
+        monsterIds: ['dokkaebi_warrior', 'dokkaebi_warrior'],
+        trapIds:    ['spike_trap'],
+        roomLevel:  5,
+        hp: 500,
+        maxHp: 500,
+      }),
+    );
+    const gs = makeGs({ dmLevel: 3, dungeonSlots: slots });
+    const rooms = getDefenseRooms(gs);
+    const totals = getDefenseTotals(gs, rooms);
+    // Very low pressure (1 peasant)
+    const cfg: InvasionConfig = { id: 'tiny', name: 'tiny', isStoryInvasion: true, waves: [{ waveNumber: 1, invaders: [{ type: 'peasant_soldier', count: 1 }] }] };
+    const directive = getDefenseDirective(rooms, totals, gs, cfg);
+    expect(directive.readiness).toBeGreaterThanOrEqual(100);
+    expect(directive.pressure).toBeGreaterThan(0);
+  });
+});
+
+// ─── getDefenseDirectiveDisplayChip ──────────────────────────────────────────
+
+describe('getDefenseDirectiveDisplayChip', () => {
+  it('maps warning+위험 chip to 보강', () => {
+    const copy = getReadinessDirectiveCopy('power-risk', { currentPower: 10, requiredPower: 100 });
+    const directive = buildDefenseDirective(copy, 10, 100);
+    // If chip is '위험' and severity is 'warning', should map to '보강'
+    if (directive.chip === '위험' && directive.severity === 'warning') {
+      expect(getDefenseDirectiveDisplayChip(directive)).toBe('보강');
+    } else {
+      expect(getDefenseDirectiveDisplayChip(directive)).toBe(directive.chip);
+    }
+  });
+
+  it('passes through chip unchanged for non-warning severity', () => {
+    const copy = getReadinessDirectiveCopy('battle-ready', { currentPower: 200, requiredPower: 100, readiness: 200 });
+    const directive = buildDefenseDirective(copy, 200, 100);
+    expect(getDefenseDirectiveDisplayChip(directive)).toBe(directive.chip);
+  });
+});
