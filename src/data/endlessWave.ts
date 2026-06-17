@@ -1,5 +1,6 @@
 import { INVADER_DEFS } from './invaders';
 import type { InvaderType, InvaderDef } from './invaders';
+import type { EndlessModifier } from './endlessModifiers';
 
 // ─── buildEndlessSpawnQueue ───────────────────────────────────────────────────
 //
@@ -37,18 +38,28 @@ function buildPool(w: number): InvaderType[] {
 
 export function buildEndlessSpawnQueue(
   wave: number,
+  modifier?: EndlessModifier | null,
 ): Array<{ def: InvaderDef; delay: number }> {
   const w     = wave;
   const queue: Array<{ def: InvaderDef; delay: number }> = [];
   const pool  = buildPool(w);
 
-  // Base count grows with wave (capped at 20 to prevent excessive spawns)
-  const baseCount = Math.min(5 + Math.floor(w / 5), 20);
+  // Run-level challenge modifier (도전 변수) — defaults to no-op multipliers.
+  const mCount  = modifier?.countMult  ?? 1;
+  const mHp     = modifier?.hpMult     ?? 1;
+  const mSpeed  = modifier?.speedMult  ?? 1;
+  const mReward = modifier?.rewardMult ?? 1;
+  const mElite  = modifier?.eliteBias  ?? 0;
 
-  // Scaling factors
-  const hpMult    = Math.pow(1.12, w - 1);
-  const speedMult = Math.pow(1.03, w - 1);
-  const rwdMult   = Math.pow(1.08, w - 1);
+  // Base count grows with wave (capped at 20 — unchanged baseline). The run
+  // modifier then scales it, with a higher 24 ceiling so 쇄도 can swarm.
+  const waveCount = Math.min(5 + Math.floor(w / 5), 20);
+  const baseCount = Math.min(Math.round(waveCount * mCount), 24);
+
+  // Scaling factors (wave exponential × run modifier)
+  const hpMult    = Math.pow(1.12, w - 1) * mHp;
+  const speedMult = Math.pow(1.03, w - 1) * mSpeed;
+  const rwdMult   = Math.pow(1.08, w - 1) * mReward;
 
   const makeScaledDef = (type: InvaderType, overrides: Partial<InvaderDef> = {}): InvaderDef => {
     const base = INVADER_DEFS[type];
@@ -134,7 +145,7 @@ export function buildEndlessSpawnQueue(
   // Bias index: newer types in pool get higher probability with higher waves.
   for (let i = 0; i < baseCount; i++) {
     // Pick an index biased toward the upper end of the pool
-    const bias    = Math.min(1, (w - 1) / 90); // 0→1 over 90 waves
+    const bias    = Math.min(1, (w - 1) / 90 + mElite); // 0→1 over 90 waves (+ run elite bias)
     const raw     = Math.random();
     const biased  = Math.pow(raw, 1 - bias * 0.7); // skews toward higher indices
     const typeIdx = Math.floor(biased * pool.length);

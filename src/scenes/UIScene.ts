@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { getEndlessModifierById } from '../data/endlessModifiers';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -160,6 +161,25 @@ export class UIScene extends Phaser.Scene {
       this.add.text(106, st + 71, `🏆 최고: ${endlessHS}`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0, 0.5);
+    }
+
+    // ── Endless challenge modifier chip (도전 변수) ──────────
+    const modifier = getEndlessModifierById(this.registry.get('endlessModifier') as string | null);
+    if (modifier) {
+      const my = st + 88;
+      const mw = 124;
+      const modChip = this.add.graphics();
+      modChip.fillStyle(CASUAL.PANEL, 1);
+      modChip.fillRoundedRect(12, my, mw, 18, 6);
+      modChip.lineStyle(1.5, CASUAL.PURPLE, 1);
+      modChip.strokeRoundedRect(12, my, mw, 18, 6);
+      this.add.text(18, my + 9, `${modifier.icon} ${modifier.name}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
+      }).setOrigin(0, 0.5);
+      // Tap the chip to recap the modifier's effect.
+      this.add.zone(12 + mw / 2, my + 9, mw, 18)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.showModifierToast(modifier.icon, modifier.name, modifier.desc));
     }
 
     // ── Gold pill ─────────────────────────────────────────
@@ -430,6 +450,25 @@ export class UIScene extends Phaser.Scene {
       targets: toast, alpha: 1, duration: 150, ease: 'Quad.easeOut',
       onComplete: () => {
         this.time.delayedCall(800, () => {
+          this.tweens.add({
+            targets: toast, alpha: 0, duration: 300,
+            onComplete: () => toast.destroy(),
+          });
+        });
+      },
+    });
+  }
+
+  private showModifierToast(icon: string, name: string, desc: string): void {
+    const toast = this.add.text(CANVAS_WIDTH / 2, 130, `${icon} ${name}\n${desc}`, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', align: 'center',
+      color: CASUAL_CSS.PURPLE, backgroundColor: CASUAL_CSS.CREAM,
+      padding: { x: 14, y: 8 },
+    }).setOrigin(0.5).setDepth(200).setAlpha(0);
+    this.tweens.add({
+      targets: toast, alpha: 1, duration: 150, ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.time.delayedCall(1600, () => {
           this.tweens.add({
             targets: toast, alpha: 0, duration: 300,
             onComplete: () => toast.destroy(),

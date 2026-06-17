@@ -12,6 +12,7 @@ import type { RoomData } from '../data/rooms';
 import type { WaveSpec } from '../data/stages';
 import type { DungeonSlot } from '../data/wisdom';
 import { buildEndlessSpawnQueue } from '../data/endlessWave';
+import { getEndlessModifierById } from '../data/endlessModifiers';
 import { CSS } from '../constants/colors';
 import { CANVAS_WIDTH, GRID_Y, GRID_ROWS } from '../constants/layout';
 import { showFloatText } from './VisualEffects';
@@ -187,7 +188,8 @@ export function startWave(ctx: WaveStartContext): void {
 
   // ── Spawn queue construction + dispatch ──────────────────────────────────────
   if (ctx.isEndless) {
-    ctx.spawnQueue = buildEndlessSpawnQueue(ctx.wave);
+    const modifier = getEndlessModifierById(ctx.scene.registry.get('endlessModifier') as string | null);
+    ctx.spawnQueue = buildEndlessSpawnQueue(ctx.wave, modifier);
     ctx.showEndlessMilestoneToast();
     ctx.processSpawnQueue(0);
     logger.debug(`[ENDLESS WAVE ${ctx.wave}] spawning ${ctx.spawnQueue.length} invaders`);

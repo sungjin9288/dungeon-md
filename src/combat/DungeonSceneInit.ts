@@ -16,6 +16,7 @@ import {
 import { loadGameState, getUnlockedSlots, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
+import { rollEndlessModifier } from '../data/endlessModifiers';
 import { GRID_COLS } from '../constants/layout';
 
 // ─── StageSetup ───────────────────────────────────────────────────────────────
@@ -60,6 +61,11 @@ export function resolveStageSetup(
   const baseSlots = stageCfg?.slots ?? getUnlockedSlots(gameState.dmLevel);
   const isEndless = stageCfg?.endless ?? false;
   const endlessHighScore = isEndless ? (gameState.endlessHighScore ?? 0) : 0;
+
+  // Roll a fresh endless challenge modifier (도전 변수) per run; carried via the
+  // registry so WaveStart / UIScene / EndlessResultScene can read it. Cleared on
+  // non-endless stages so no stale chip shows.
+  registry.set('endlessModifier', isEndless ? rollEndlessModifier().id : null);
 
   // ── Resolve wave config + grid shape ─────────────────────────────────────────
   const allStages: StageConfig[] = [

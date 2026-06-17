@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { CANVAS_WIDTH } from '../constants/layout';
+import { getEndlessModifierById } from '../data/endlessModifiers';
 
 // ─── EndlessResultScene ───────────────────────────────────────────────────────
 //
@@ -129,6 +130,25 @@ export class EndlessResultScene extends Phaser.Scene {
 
       this.add.text(cx, compY + 18, deltaText, {
         fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: deltaColor,
+      }).setOrigin(0.5);
+    }
+
+    // ── Challenge modifier this run carried (도전 변수) ──────────────────────────
+    const modifier = getEndlessModifierById(this.registry.get('endlessModifier') as string | null);
+    if (modifier) {
+      const my = ty + th - 52;
+      const mw = tw - 48;
+      const mx = (CANVAS_WIDTH - mw) / 2;
+      const chip = this.add.graphics();
+      chip.fillStyle(CASUAL.PANEL_SOFT, 1);
+      chip.fillRoundedRect(mx, my, mw, 34, 9);
+      chip.lineStyle(1.5, CASUAL.PURPLE, 0.9);
+      chip.strokeRoundedRect(mx, my, mw, 34, 9);
+      this.add.text(cx, my + 11, `도전 변수  ${modifier.icon} ${modifier.name}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
+      }).setOrigin(0.5);
+      this.add.text(cx, my + 25, modifier.desc, {
+        fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(0.5);
     }
   }
