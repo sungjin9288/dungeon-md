@@ -1,82 +1,46 @@
 import Phaser from 'phaser';
-import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CANVAS_WIDTH } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from '../data/stages';
-import type { InvaderType } from '../data/invaders';
-import { addPanelShadow } from '../ui/PanelDepth';
 import {
   type StageProgress, TOTAL_STAGES, STAGE_CONFIGS,
   loadProgress, saveProgress, recordClear,
 } from '../data/stageProgress';
 import {
   CHAPTER_PLAQUE_THEMES, CHAPTER_SECTION_DATA,
-  drawChapterSection, drawChapterProgressBar, addStarPop,
+  drawChapterSection, drawChapterProgressBar,
+  drawGenericPlaque, buildJourneyPathPositions, drawJourneyTrail,
+  JOURNEY_NODE_W, JOURNEY_NODE_H,
+  type PlaqueTheme,
 } from '../ui/StagePlaque';
 
 export type { StageProgress };
 export { TOTAL_STAGES, STAGE_CONFIGS, loadProgress, saveProgress, recordClear };
 
-// ─── Invader type → emoji ─────────────────────────────────────────────────────
+// ── Chapter 1 plaque theme ────────────────────────────────────────────────────
+// Mirrors the inline Ch1 colours from the old drawStagePlaque() method.
 
-const INVADER_EMOJI: Partial<Record<InvaderType, string>> = {
-  peasant: '👤', soldier: '🪖', knight: '⚔️', shaman: '🔮',
-  berserker: '😡', shadow_ninja: '🥷', siege_soldier: '🛡',
-  holy_paladin: '✝️', iron_golem: '🤖', high_priest: '🧙', mercenary_captain: '🗡',
-  fox_queen: '🦊',
-  undying_knight: '💀', scarecrow_mage: '🎃', venom_dancer: '🐍', void_assassin: '👁',
-  dragon_king: '🐉',
-  void_assassin_elite: '👁', death_emissary: '💀', ghost_add: '👻',
-  void_invader: '🌀', undying_warrior: '💀', three_god_destroyer: '⚡',
-  mirror_knight: '🪞', shadow_wraith: '👤', celestial_crusader: '✝️',
-  swarm_larva: '🐛', swarm_spawn: '🐜', plague_herald: '☠️', titan_sentinel: '🪨',
-  void_colossus: '🌑', eternal_emperor: '👑',
-  celestial_knight: '🌟', divine_archer: '🏹', sky_titan: '⛅',
-  radiant_seraph: '😇', heaven_general: '👑', celestial_dragon: '🐉', god_emperor: '👼',
-  // Ch8 — 원초의 심연
-  void_soldier: '🌑', abyss_berserker: '🔥', primordial_guard: '💜', primordial_titan: '💫',
+const CHAPTER_1_THEME: PlaqueTheme = {
+  lockedBg:             CASUAL.PANEL_SOFT,
+  lockedBorder:         CASUAL.EDGE_SOFT,
+  lockedLabelColor:     CASUAL_CSS.INK_SOFT,
+  unclearedBg:          CASUAL.PANEL,
+  unclearedBorder:      CASUAL.EDGE,
+  unclearedHoverBg:     CASUAL.PANEL,
+  unclearedHoverBorder: CASUAL.GREEN_DK,
+  unclearedLabelColor:  CASUAL_CSS.INK,
+  unclearedStarColor:   CASUAL_CSS.INK_SOFT,
+  clearedBg:            CASUAL.PANEL,
+  clearedBorder:        CASUAL.GOLD,
+  clearedLabelColor:    CASUAL_CSS.INK,
+  starColor:            CASUAL_CSS.GOLD,
+  bossEmoji:            '👹',
+  accent:               CASUAL.GREEN,
+  showHpBar:            true,
 };
-
-// Compute top-2 invader type emojis for each stage (index 0-79)
-const ALL_STAGES = [
-  ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4,
-  ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8,
-];
-
-const STAGE_ENEMY_ICONS: string[] = ALL_STAGES.map(cfg => {
-  const counts: Partial<Record<InvaderType, number>> = {};
-  for (const wave of cfg.waves) {
-    for (const inv of wave.invaders) {
-      if (!inv.isBoss) counts[inv.type] = (counts[inv.type] ?? 0) + inv.count;
-    }
-  }
-  const top = (Object.entries(counts) as [InvaderType, number][])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 2)
-    .map(([t]) => INVADER_EMOJI[t] ?? '')
-    .join('');
-  return top;
-});
-
-function pressStagePlaque(
-  scene: Phaser.Scene,
-  bg: Phaser.GameObjects.Graphics,
-  onComplete: () => void,
-): void {
-  scene.tweens.add({
-    targets: bg,
-    alpha: 0.68,
-    duration: 70,
-    yoyo: true,
-    onComplete: () => {
-      bg.setAlpha(1);
-      onComplete();
-    },
-  });
-}
 
 // ─── StageSelectScene ─────────────────────────────────────────────────────────
 
@@ -84,7 +48,15 @@ export class StageSelectScene extends Phaser.Scene {
   private progress: StageProgress[] = [];
   private isDragging    = false;
   private dragStartY    = 0;
-  private maxScrollY    = 820;
+  // Journey path layout: 8 chapters total. Heights:
+  //   Ch1–2,4–7 (10 stages): 424px path + 60px header = 484px
+  //   Ch3 (12 stages):        512px path + 60px header = 572px
+  //   Ch8 (8 stages):         336px path + 60px header = 396px
+  // Total content bottom = deepest hub button row (abyss/생산/장식):
+  //   btnY 4174 + btnH 48 + 28 padding ≈ 4250.
+  // Scroll clamp is derived live from this + the DPR-zoom camera offset
+  // (see the pointermove handler) so the true top (world y=0) stays reachable.
+  private contentHeight = 4250;
   private frontierIdx   = 0;
 
   constructor() { super({ key: 'StageSelectScene' }); }
@@ -98,7 +70,7 @@ export class StageSelectScene extends Phaser.Scene {
 
     this.drawBackground();
     this.drawHeader();
-    this.drawGrid();
+    this.drawChapter1Path();
     for (let i = 0; i < CHAPTER_SECTION_DATA.length; i++) {
       drawChapterSection(
         this,
@@ -115,16 +87,25 @@ export class StageSelectScene extends Phaser.Scene {
     this.drawBarracksButton();
     this.drawAbyssButton();
 
-    // Camera scroll via drag
-    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT + this.maxScrollY);
+    // Camera scroll via drag.
+    // NOTE: main.ts applyDprCamera() zooms the camera by dpr and centerOn()s the
+    // canvas, so the scroll value that shows world y=0 at the top is NEGATIVE
+    // (= -(camHeight - camHeight/zoom)/2), not 0. Clamping to [0, …] would
+    // amputate the top chapters. We derive the true [top, bottom] scroll range
+    // live from the camera's current zoom + height (DPR-agnostic).
+    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, this.contentHeight);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       this.isDragging = true;
       this.dragStartY = p.y + this.cameras.main.scrollY;
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.isDragging) return;
-      const newScrollY = Phaser.Math.Clamp(this.dragStartY - p.y, 0, this.maxScrollY);
-      this.cameras.main.setScroll(0, newScrollY);
+      const cam = this.cameras.main;
+      const viewH = cam.height / cam.zoom;                 // visible world px (≈ CANVAS_HEIGHT)
+      const topScrollY = -(cam.height - viewH) / 2;        // scroll that shows world y=0
+      const bottomScrollY = topScrollY + Math.max(0, this.contentHeight - viewH);
+      const newScrollY = Phaser.Math.Clamp(this.dragStartY - p.y, topScrollY, bottomScrollY);
+      cam.setScroll(0, newScrollY);
     });
     this.input.on('pointerup', () => { this.isDragging = false; });
   }
@@ -208,191 +189,39 @@ export class StageSelectScene extends Phaser.Scene {
     ornR.lineBetween(rx + 7, cy, rx + 22, cy);
   }
 
-  // ─── Stage grid (2 rows × 5 cols) ───────────────────────────────────────
+  // ─── Chapter 1 journey path ──────────────────────────────────────────────
+  // Replaces the old flat 2×5 grid with a serpentine path of 10 nodes.
+  // Ch1 header ends at ~124; path starts at 136.
 
-  private drawGrid(): void {
-    const COLS = 5, ROWS = 2;
-    const BW = 58, BH = 68;
-    const GAP_X = 8, GAP_Y = 14;
-    const gridW = COLS * BW + (COLS - 1) * GAP_X;
-    const startX = (CANVAS_WIDTH - gridW) / 2;
-    const startY = 128;
+  private drawChapter1Path(): void {
+    const CH1_COUNT  = 10;
+    const PATH_START = 136;
+    const positions  = buildJourneyPathPositions(CH1_COUNT, PATH_START);
 
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const idx = r * COLS + c;
-        const x   = startX + c * (BW + GAP_X);
-        const y   = startY + r * (BH + GAP_Y);
-        this.drawStagePlaque(idx, x, y, BW, BH);
-      }
-    }
-  }
+    // Local frontier (0–9 within Ch1, or CH1_COUNT if all cleared)
+    const localFrontier = this.frontierIdx < CH1_COUNT ? this.frontierIdx : CH1_COUNT;
 
-  private drawStagePlaque(
-    idx: number, x: number, y: number, w: number, h: number,
-  ): void {
-    const prog  = this.progress[idx];
-    const cfg   = STAGE_CONFIGS[idx];
-    const label = String(idx + 1);
+    // Trail first (behind nodes)
+    drawJourneyTrail(this, positions, localFrontier, CASUAL.GOLD);
 
-    // Phase B2: drop shadow behind every unlocked stage card
-    if (prog.unlocked) {
-      addPanelShadow(this, x, y, w, h, 6, { offsetY: 2, opacity: 0.55 });
-    }
-
-    const bg = this.add.graphics();
-
-    if (!prog.unlocked) {
-      // Locked — muted cream plaque
-      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      bg.fillRoundedRect(x, y, w, h, 10);
-      bg.lineStyle(2.5, CASUAL.EDGE_SOFT, 0.9);
-      bg.strokeRoundedRect(x, y, w, h, 10);
-
-      this.add.text(x + w / 2, y + h / 2 - 4, '🔒', {
-        fontFamily: 'sans-serif', fontSize: '18px',
-      }).setOrigin(0.5).setAlpha(0.8);
-      this.add.text(x + w / 2, y + h - 14, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-      }).setOrigin(0.5);
-
-    } else if (prog.bestStars === 0) {
-      // Unlocked, not cleared — cream playable cell
-      const playAccent = idx === this.frontierIdx ? CASUAL.GREEN : CASUAL.EDGE;
-      bg.fillStyle(CASUAL.PANEL, 1);
-      bg.fillRoundedRect(x, y, w, h, 10);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-      bg.lineStyle(2.5, playAccent, 1);
-      bg.strokeRoundedRect(x, y, w, h, 10);
-
-      this.add.text(x + w / 2, y + 16, label, {
-        fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
-        color: CASUAL_CSS.INK,
-      }).setOrigin(0.5);
-
-      // Enemy type icons
-      const icons0 = STAGE_ENEMY_ICONS[idx];
-      if (icons0) {
-        this.add.text(x + w / 2, y + 36, icons0, {
-          fontFamily: 'sans-serif', fontSize: '10px',
-        }).setOrigin(0.5).setAlpha(0.6);
-      }
-
-      // 3 empty star outlines
-      this.add.text(x + w / 2, y + h - 18, '☆☆☆', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(0.5);
-
-      // Interactive
-      const drawPlay = (accent: number): void => {
-        bg.clear();
-        bg.fillStyle(CASUAL.PANEL, 1);
-        bg.fillRoundedRect(x, y, w, h, 10);
-        bg.fillStyle(0xffffff, 0.12);
-        bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-        bg.lineStyle(2.5, accent, 1);
-        bg.strokeRoundedRect(x, y, w, h, 10);
-      };
-      const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => pressStagePlaque(this, bg, () => this.showRewardPreview(idx)));
-      zone.on('pointerover', () => drawPlay(CASUAL.GREEN_DK));
-      zone.on('pointerout',  () => drawPlay(playAccent));
-
-    } else {
-      // Cleared — cream cell, gold border
-      bg.fillStyle(CASUAL.PANEL, 1);
-      bg.fillRoundedRect(x, y, w, h, 10);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-      bg.lineStyle(2.5, CASUAL.GOLD, 1);
-      bg.strokeRoundedRect(x, y, w, h, 10);
-
-      this.add.text(x + w / 2, y + 16, label, {
-        fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
-        color: CASUAL_CSS.INK,
-      }).setOrigin(0.5);
-
-      addStarPop(this, x + w / 2, y + h - 18, prog.bestStars, CASUAL_CSS.GOLD);
-
-      // Enemy type icons
-      const icons1 = STAGE_ENEMY_ICONS[idx];
-      if (icons1) {
-        this.add.text(x + w / 2, y + 30, icons1, {
-          fontFamily: 'sans-serif', fontSize: '10px',
-        }).setOrigin(0.5).setAlpha(0.5);
-      }
-
-      if (prog.bestHpPercent !== undefined) {
-        const pct     = prog.bestHpPercent / 100;
-        const hpColor = prog.bestHpPercent >= 80 ? CASUAL_CSS.GREEN : prog.bestHpPercent >= 40 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
-        const fillRgb = prog.bestHpPercent >= 80 ? CASUAL.GREEN : prog.bestHpPercent >= 40 ? CASUAL.GOLD : CASUAL.RED;
-        const barW    = w - 14;
-        const barX    = x + 7;
-        const barY    = y + h - 26;
-        const hpBar   = this.add.graphics();
-        hpBar.fillStyle(CASUAL.PANEL_SOFT, 1);
-        hpBar.fillRoundedRect(barX, barY, barW, 4, 2);
-        hpBar.lineStyle(1, CASUAL.EDGE_SOFT, 0.7);
-        hpBar.strokeRoundedRect(barX, barY, barW, 4, 2);
-        hpBar.fillStyle(fillRgb, 1);
-        hpBar.fillRoundedRect(barX, barY, Math.max(2, barW * pct), 4, 2);
-        this.add.text(x + w / 2, barY - 9, `❤ ${prog.bestHpPercent}%`, {
-          fontFamily: 'sans-serif', fontSize: '9px', color: hpColor,
-        }).setOrigin(0.5);
-      }
-
-      const zone = this.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => pressStagePlaque(this, bg, () => this.showRewardPreview(idx)));
-    }
-
-    // Phase B2: boss stage — red pulsing ring + larger badge
-    if (cfg.bossWave) {
-      if (prog.unlocked) {
-        const bossRing = this.add.graphics();
-        bossRing.lineStyle(2.5, CASUAL.RED, 0.9);
-        bossRing.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 11);
-        this.tweens.add({
-          targets: bossRing,
-          alpha: { from: 0.4, to: 1 },
-          duration: 900,
-          yoyo: true, repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
-      }
-      // Slightly larger boss icon, pulsing
-      const bossIcon = this.add.text(x + w - 5, y + 5, '👹', {
-        fontSize: '14px',
-      }).setOrigin(1, 0);
-      this.tweens.add({
-        targets: bossIcon,
-        scaleX: 1.15, scaleY: 1.15,
-        duration: 700,
-        yoyo: true, repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
-
-    // Frontier pulse ring — first unlocked uncleared stage
-    if (idx === this.frontierIdx) {
-      const ring = this.add.graphics();
-      ring.lineStyle(2.5, COLORS.TORCH_GOLD, 1);
-      ring.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 8);
-      this.tweens.add({
-        targets: ring,
-        alpha: { from: 0.3, to: 1.0 },
-        duration: 850,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-      const cue = this.add.graphics();
-      cue.fillStyle(COLORS.TORCH_GOLD, 0.95);
-      cue.fillTriangle(x + 7, y + 9, x + 7, y + 21, x + 17, y + 15);
+    // Nodes via shared drawGenericPlaque
+    for (let i = 0; i < CH1_COUNT; i++) {
+      const { x, y } = positions[i];
+      drawGenericPlaque(
+        this, i, x, y,
+        JOURNEY_NODE_W, JOURNEY_NODE_H,
+        CHAPTER_1_THEME, this.progress,
+        (idx) => this.showRewardPreview(idx),
+        this.frontierIdx,
+      );
     }
   }
 
   // ─── Wisdom button ───────────────────────────────────────────────────────
+
+  // ─── Wisdom button ───────────────────────────────────────────────────────
+  // Hub buttons sit after all 8 chapter path sections.
+  // Ch8 bottom: 3628 + journeyPathHeight(8)=336 = 3964, +40 gap → 4004.
 
   private drawWisdomButton(): void {
     const gameState = loadGameState();
@@ -400,7 +229,7 @@ export class StageSelectScene extends Phaser.Scene {
 
     const btnW = 240, btnH = 48;
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
-    const btnY = 976;
+    const btnY = 4004;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -418,7 +247,7 @@ export class StageSelectScene extends Phaser.Scene {
 
     const btnW = 114, btnH = 44;
     const btnX = CANVAS_WIDTH / 2 - btnW - 4;
-    const btnY = 1034;
+    const btnY = 4062;
 
     if (stage10Cleared) {
       this.buildCasualButton(
@@ -457,7 +286,7 @@ export class StageSelectScene extends Phaser.Scene {
   private drawAchievementButton(): void {
     const btnW = 114, btnH = 44;
     const btnX = CANVAS_WIDTH / 2 + 4;
-    const btnY = 1034;
+    const btnY = 4062;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -473,7 +302,7 @@ export class StageSelectScene extends Phaser.Scene {
   private drawBarracksButton(): void {
     const btnW = 240, btnH = 48;
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
-    const btnY = 1088;
+    const btnY = 4116;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -489,7 +318,7 @@ export class StageSelectScene extends Phaser.Scene {
     const gap = 8, totalW = 362, btnH = 48;
     const btnW = (totalW - gap * 2) / 3;
     const startX = CANVAS_WIDTH / 2 - totalW / 2;
-    const btnY = 1142;
+    const btnY = 4174;
 
     this.buildCasualButton(
       startX, btnY, btnW, btnH, '🕳 심연',

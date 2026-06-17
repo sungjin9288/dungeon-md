@@ -4,10 +4,12 @@
 // plaque / grid / section logic that differed only in colour palette.
 //
 // Public API
-//   drawGenericPlaque   — renders one stage card (locked / uncleared / cleared)
-//   drawChapterSection  — renders a chapter divider, header, progress bar + grid
-//   drawChapterProgressBar — standalone progress bar; also used by Ch1 header
-//   addStarPop          — animated ★ row (shared by Ch1 plaque + generic plaque)
+//   drawGenericPlaque          — renders one stage card (locked / uncleared / cleared)
+//   drawChapterSection         — renders a chapter divider, header, progress bar + path
+//   drawChapterProgressBar     — standalone progress bar; also used by Ch1 header
+//   addStarPop                 — animated ★ row (shared by Ch1 plaque + generic plaque)
+//   buildJourneyPathPositions  — compute serpentine node positions for a chapter
+//   drawJourneyTrail           — draw lit/dim connecting trail between nodes
 
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -158,88 +160,205 @@ export interface ChapterSectionData {
   lockedNameColor:  string;   // chapter name + count line (INK_SOFT / INK)
 }
 
-// ── CHAPTER_SECTION_DATA  (index 0 = Ch2, … index 5 = Ch7) ───────────────────
+// ── Journey path layout constants ─────────────────────────────────────────────
+// Two-column zigzag serpentine. 10 nodes fit in ~424px, 12 nodes in ~512px.
+// Nodes alternate left/right column to create a winding path feel.
+
+export const JOURNEY_NODE_W = 62;
+export const JOURNEY_NODE_H = 72;
+const JOURNEY_ROW_HEIGHT    = 88;  // vertical step per pair-row
+const JOURNEY_LEFT_X        = 42;  // left column node top-left X
+const JOURNEY_RIGHT_X       = 226; // right column node top-left X
+
+/**
+ * Returns top-left {x,y} for each node in a chapter path.
+ * Nodes alternate left/right columns going down (zigzag).
+ * Even-indexed node in each pair sits in left col, odd in right col.
+ * Row direction swaps every pair so the path zigzags.
+ */
+export function buildJourneyPathPositions(
+  stageCount: number,
+  startY:     number,
+  nodeW:      number = JOURNEY_NODE_W,
+  nodeH:      number = JOURNEY_NODE_H,
+): { x: number; y: number }[] {
+  const leftX  = (CANVAS_WIDTH / 2) - nodeW - 20;  // ~153 for nodeW=62  → use fixed
+  const rightX = (CANVAS_WIDTH / 2) + 20;           // ~215 for nodeW=62  → use fixed
+  // Use fixed columns for consistency regardless of nodeW
+  const colL = JOURNEY_LEFT_X;
+  const colR = JOURNEY_RIGHT_X;
+  // Suppress nodeH/nodeW unused-param lint (values used externally for trail centering)
+  void nodeW; void nodeH;
+  void leftX; void rightX;
+
+  const positions: { x: number; y: number }[] = [];
+  for (let i = 0; i < stageCount; i++) {
+    const pairRow = Math.floor(i / 2);
+    const posInPair = i % 2; // 0=first, 1=second of the pair
+    const y = startY + pairRow * JOURNEY_ROW_HEIGHT;
+    // Alternate which column goes first each pair-row for a true zigzag:
+    // pair 0 (rows 0,1): first=left, second=right
+    // pair 1 (rows 2,3): first=right, second=left
+    // pair 2 (rows 4,5): first=left, second=right ...
+    const evenPair = pairRow % 2 === 0;
+    const x = (posInPair === 0)
+      ? (evenPair ? colL : colR)
+      : (evenPair ? colR : colL);
+    positions.push({ x, y });
+  }
+  return positions;
+}
+
+/** Compute center points from top-left positions for trail drawing. */
+function _pathCenters(
+  positions: { x: number; y: number }[],
+  nodeW: number = JOURNEY_NODE_W,
+  nodeH: number = JOURNEY_NODE_H,
+): { cx: number; cy: number }[] {
+  return positions.map(({ x, y }) => ({ cx: x + nodeW / 2, cy: y + nodeH / 2 }));
+}
+
+/**
+ * Draws connecting trail segments between consecutive nodes.
+ * Segments up to (not including) frontierLocalIdx are "lit" (bright/gold).
+ * Segments from frontierLocalIdx onward are "dim" (muted stone).
+ */
+export function drawJourneyTrail(
+  scene:            Phaser.Scene,
+  positions:        { x: number; y: number }[],
+  frontierLocalIdx: number,
+  accentColor:      number,
+): void {
+  if (positions.length < 2) return;
+  const centers = _pathCenters(positions);
+  const trail = scene.add.graphics();
+
+  for (let i = 0; i < centers.length - 1; i++) {
+    const { cx: x1, cy: y1 } = centers[i];
+    const { cx: x2, cy: y2 } = centers[i + 1];
+    const isLit = i < frontierLocalIdx;
+
+    if (isLit) {
+      // Lit segment: gold shadow + bright line
+      trail.lineStyle(10, CASUAL.SHADOW, 0.35);
+      trail.lineBetween(x1, y1, x2, y2);
+      trail.lineStyle(6, accentColor, 0.85);
+      trail.lineBetween(x1, y1, x2, y2);
+    } else {
+      // Dim segment: muted stone path
+      trail.lineStyle(6, CASUAL.EDGE_SOFT, 0.3);
+      trail.lineBetween(x1, y1, x2, y2);
+    }
+  }
+
+  // Stone-step dots at each cleared node center
+  for (let i = 0; i < Math.min(frontierLocalIdx, centers.length); i++) {
+    const { cx, cy } = centers[i];
+    trail.fillStyle(accentColor, 0.55);
+    trail.fillCircle(cx, cy, 4);
+  }
+}
+
+/** Compute the path height for a given stage count. */
+export function journeyPathHeight(stageCount: number): number {
+  // pairs = ceil(stageCount / 2), rowGaps = pairs - 1
+  const pairs = Math.ceil(stageCount / 2);
+  return (pairs - 1) * JOURNEY_ROW_HEIGHT + JOURNEY_NODE_H;
+}
+
+// ── CHAPTER_SECTION_DATA  (index 0 = Ch2, … index 6 = Ch8) ───────────────────
+// Y positions updated for the vertical journey path layout.
+// Ch1 header top: 0, nodes start: 136. Section heights:
+//   10-stage chapter: journeyPathHeight(10) = 4*88+72 = 424px + 60px header = 484px
+//   12-stage chapter: journeyPathHeight(12) = 5*88+72 = 512px + 60px header = 572px
+//    8-stage chapter: journeyPathHeight(8)  = 3*88+72 = 336px + 60px header = 396px
+//
+// Cumulative section starts (after Ch1 bottom at 136+424=560, +50 gap):
+//   Ch2: start 610, Ch3: 1094, Ch4: 1666, Ch5: 2150, Ch6: 2634, Ch7: 3118, Ch8: 3602
+//
+// gridStartY now stores the path start Y (renamed semantically; value updated).
+// cols/rows/bw/bh/gapX/gapY retained in interface for compat but unused.
 
 export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
-  // Ch2
+  // Ch2 — 10 stages, section start 610, path start 636
   {
     num: 2, name: '구미호 계곡', stageCount: 10,
     unlockIdx: 9, unlockMsg: '⛓ 스테이지 10을 클리어하면 열립니다',
     startIdx: 10,
-    divY: 302, labelY: 292, progressBarY: 307, bannerY: 310, gridStartY: 318,
-    cols: 5, rows: 2, bw: 58, bh: 68, gapX: 8, gapY: 14,
+    divY: 610, labelY: 598, progressBarY: 613, bannerY: 616, gridStartY: 636,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.GREEN, activeTextColor: CASUAL_CSS.GREEN,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GREEN,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch3
+  // Ch3 — 12 stages, section start 1094, path start 1120
   {
     num: 3, name: '용왕 해저궁', stageCount: 12,
     unlockIdx: 19, unlockMsg: '⛓ 스테이지 20을 클리어하면 열립니다',
     startIdx: 20,
-    divY: 492, labelY: 482, progressBarY: 497, bannerY: 500, gridStartY: 506,
-    cols: 6, rows: 2, bw: 48, bh: 62, gapX: 6, gapY: 10,
+    divY: 1094, labelY: 1082, progressBarY: 1097, bannerY: 1100, gridStartY: 1120,
+    cols: 6, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.BLUE, activeTextColor: CASUAL_CSS.BLUE,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.BLUE,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch4
+  // Ch4 — 10 stages, section start 1666, path start 1692
   {
     num: 4, name: '저승 관문', stageCount: 10,
     unlockIdx: 31, unlockMsg: '⛓ 스테이지 32를 클리어하면 열립니다',
     startIdx: 32,
-    divY: 662, labelY: 652, progressBarY: 667, bannerY: 670, gridStartY: 672,
-    cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
+    divY: 1666, labelY: 1654, progressBarY: 1669, bannerY: 1672, gridStartY: 1692,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.RED, activeTextColor: CASUAL_CSS.RED,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.RED,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch5
+  // Ch5 — 10 stages, section start 2150, path start 2176
   {
     num: 5, name: '삼신산', stageCount: 10,
     unlockIdx: 41, unlockMsg: '⛓ 스테이지 42를 클리어하면 열립니다',
     startIdx: 42,
-    divY: 840, labelY: 830, progressBarY: 845, bannerY: 848, gridStartY: 850,
-    cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
+    divY: 2150, labelY: 2138, progressBarY: 2153, bannerY: 2156, gridStartY: 2176,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.GOLD, activeTextColor: CASUAL_CSS.GOLD,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GOLD,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch6
+  // Ch6 — 10 stages, section start 2634, path start 2660
   {
     num: 6, name: '영원의 왕좌', stageCount: 10,
     unlockIdx: 51, unlockMsg: '⛓ 스테이지 52를 클리어하면 열립니다',
     startIdx: 52,
-    divY: 1010, labelY: 1000, progressBarY: 1015, bannerY: 1018, gridStartY: 1020,
-    cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
+    divY: 2634, labelY: 2622, progressBarY: 2637, bannerY: 2640, gridStartY: 2660,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.PURPLE, activeTextColor: CASUAL_CSS.PURPLE,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch7
+  // Ch7 — 10 stages, section start 3118, path start 3144
   {
     num: 7, name: '신계 침공', stageCount: 10,
     unlockIdx: 61, unlockMsg: '⛓ 스테이지 62를 클리어하면 열립니다',
     startIdx: 62,
-    divY: 1175, labelY: 1165, progressBarY: 1180, bannerY: 1183, gridStartY: 1185,
-    cols: 5, rows: 2, bw: 56, bh: 62, gapX: 6, gapY: 10,
+    divY: 3118, labelY: 3106, progressBarY: 3121, bannerY: 3124, gridStartY: 3144,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.GOLD, activeTextColor: CASUAL_CSS.GOLD,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GOLD,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch8
+  // Ch8 — 8 stages, section start 3602, path start 3628
   {
     num: 8, name: '원초의 심연', stageCount: 8,
     unlockIdx: 71, unlockMsg: '⛓ 스테이지 72를 클리어하면 열립니다',
     startIdx: 72,
-    divY: 1340, labelY: 1330, progressBarY: 1345, bannerY: 1348, gridStartY: 1350,
-    cols: 4, rows: 2, bw: 66, bh: 62, gapX: 10, gapY: 10,
+    divY: 3602, labelY: 3590, progressBarY: 3605, bannerY: 3608, gridStartY: 3628,
+    cols: 4, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.PURPLE_DK, activeTextColor: CASUAL_CSS.PURPLE,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE_DK,
@@ -491,32 +610,20 @@ export function drawChapterSection(
   if (unlocked) {
     _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}`, data.activeDivColor);
     drawChapterProgressBar(scene, data.startIdx, data.stageCount, data.progressBarY, progress);
-    _drawChapterGrid(scene, data, theme, progress, onSelect, highlightIdx);
   } else {
     _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}  🔒`, CASUAL.EDGE_SOFT, data.lockedLabelColor);
-
-    // Cream locked banner — chunky brown edge + chapter-accent inner ring +
-    // white top highlight + soft drop shadow. Message/name read in INK_SOFT.
-    const bx = 30, bw = CANVAS_WIDTH - 60, bh = 56;
-    const bg = scene.add.graphics();
-    bg.fillStyle(CASUAL.SHADOW, 0.2);
-    bg.fillRoundedRect(bx, data.bannerY + 3, bw, bh, 10);
-    bg.fillStyle(data.bannerBg, 1);
-    bg.fillRoundedRect(bx, data.bannerY, bw, bh, 10);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(bx + 6, data.bannerY + 5, bw - 12, 6, 3);
-    bg.lineStyle(3, CASUAL.EDGE, 1);
-    bg.strokeRoundedRect(bx, data.bannerY, bw, bh, 10);
-    bg.lineStyle(1.5, data.bannerBorder, 0.8);
-    bg.strokeRoundedRect(bx + 3, data.bannerY + 3, bw - 6, bh - 6, 8);
-    scene.add.text(CANVAS_WIDTH / 2, data.bannerY + bh / 2 - 6, data.unlockMsg, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: data.lockedMsgColor,
-    }).setOrigin(0.5);
-    scene.add.text(CANVAS_WIDTH / 2, data.bannerY + bh / 2 + 10,
-      `${data.name}  ·  ${data.stageCount} 스테이지`, {
-        fontFamily: 'sans-serif', fontSize: '12px', color: data.lockedNameColor,
-      }).setOrigin(0.5);
+    // Slim single-line unlock hint — no big banner (avoids dead-space voids).
+    // The dimmed 🔒 node path drawn below shows the journey still ahead, so the
+    // map reads as one continuous road (AFK-Journey style) instead of gaps.
+    scene.add.text(CANVAS_WIDTH / 2, data.progressBarY - 1, data.unlockMsg, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: data.lockedMsgColor,
+    }).setOrigin(0.5, 0);
   }
+
+  // Always render the chapter path. Unlocked chapters show playable / cleared
+  // nodes; locked chapters render dimmed 🔒 nodes (non-interactive) so the
+  // journey continues unbroken and the reserved height is never empty.
+  _drawChapterPath(scene, data, theme, progress, onSelect, highlightIdx);
 }
 
 // ── _drawChapterTitle ─────────────────────────────────────────────────────────
@@ -546,27 +653,36 @@ function _drawChapterTitle(
   orn.fillTriangle(rx + 4, cy, rx, cy - 3, rx, cy + 3);
 }
 
-// ── _drawChapterGrid ──────────────────────────────────────────────────────────
+// ── _drawChapterPath ──────────────────────────────────────────────────────────
+// Renders chapter nodes along a serpentine path with a lit/dim trail.
 
-function _drawChapterGrid(
-  scene:    Phaser.Scene,
-  data:     ChapterSectionData,
-  theme:    PlaqueTheme,
-  progress: StageProgress[],
-  onSelect: (idx: number) => void,
+function _drawChapterPath(
+  scene:        Phaser.Scene,
+  data:         ChapterSectionData,
+  theme:        PlaqueTheme,
+  progress:     StageProgress[],
+  onSelect:     (idx: number) => void,
   highlightIdx?: number,
 ): void {
-  const { cols, rows, bw, bh, gapX, gapY, startIdx, gridStartY } = data;
-  const gridW  = cols * bw + (cols - 1) * gapX;
-  const startX = (CANVAS_WIDTH - gridW) / 2;
+  const { startIdx, stageCount, gridStartY } = data;
+  const positions = buildJourneyPathPositions(stageCount, gridStartY);
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const idx = startIdx + r * cols + c;
-      const x   = startX + c * (bw + gapX);
-      const y   = gridStartY + r * (bh + gapY);
-      drawGenericPlaque(scene, idx, x, y, bw, bh, theme, progress, onSelect, highlightIdx);
-    }
+  // Local frontier index (0-based within this chapter)
+  const localFrontier = highlightIdx !== undefined
+    ? Math.max(0, highlightIdx - startIdx)
+    : stageCount;
+
+  // Trail drawn first (behind nodes)
+  drawJourneyTrail(scene, positions, localFrontier, data.activeDivColor);
+
+  // Nodes
+  for (let i = 0; i < stageCount; i++) {
+    const { x, y } = positions[i];
+    drawGenericPlaque(
+      scene, startIdx + i, x, y,
+      JOURNEY_NODE_W, JOURNEY_NODE_H,
+      theme, progress, onSelect, highlightIdx,
+    );
   }
 }
 
