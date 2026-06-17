@@ -4,51 +4,31 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { loadGameState } from '../data/wisdom';
-import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { audioManager } from '../audio/AudioManager';
+import { MONSTER_DEFS } from '../data/monsters';
 import { getActiveBanner, type SeasonBanner } from '../data/banners';
 import {
   type SummonType, type SummonTypeDef, SUMMON_TYPE_DEFS,
-  RARITY_RATES, RARITIES, RARITY_STARS, RARITY_COLORS, RARITY_CSS, RARITY_KO,
+  RARITY_RATES, RARITIES, RARITY_COLORS,
 } from '../data/summonPools';
 import { buildBannerCard } from '../ui/SummonBannerCard';
 import { executePull as runPull } from '../ui/SummonPullLogic';
-
-// ─── Layout constants ─────────────────────────────────────────────────────────
-
-const CX        = CANVAS_WIDTH / 2;
-const CARD_W    = 178;
-const CARD_H    = 190;
-const CARD_GAP  = 8;
-const CARD_ML   = 11;  // left margin
-const CARDS_Y   = 228; // top of first row
-const PORTAL_CY = 130; // portal center Y
-const TAB_Y     = 186; // tab bar top
-const SUMMON_TRIBE_LABELS: Record<string, string> = {
-  dokkaebi: '도깨비',
-  gumiho: '구미호',
-  dragon: '용족',
-  underworld: '저승',
-  sansin: '산신',
-  sea: '해신',
-  mask: '탈족',
-  moonlight: '달빛',
-  celestial: '천상',
-};
-const SUMMON_ELEMENT_LABELS: Record<string, string> = {
-  fire: '화염',
-  frost: '서리',
-  lightning: '번개',
-  dark: '암흑',
-  holy: '신성',
-};
+import {
+  RARITY_STARS, RARITY_CSS, RARITY_KO,
+} from '../data/summonPools';
+import { CX, CARD_W, CARD_H, CARD_GAP, CARD_ML, CARDS_Y, PORTAL_CY, TAB_Y } from '../ui/SummonShared';
+import { drawCollectionShowcase } from '../ui/SummonShowcase';
+import {
+  buildHistoryTab, rebuildHistory,
+  type SummonHistoryContext, type HistoryFilter,
+} from '../ui/SummonHistory';
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
 export class SummonScene extends Phaser.Scene {
   private summonTabContainer!: Phaser.GameObjects.Container;
   private historyTabContainer!: Phaser.GameObjects.Container;
-  private historyFilter: 'all' | 'new' | 'dupe' = 'all';
+  private historyFilter: HistoryFilter = 'all';
   private portalGraphics!: Phaser.GameObjects.Graphics;
   private runeGraphics!: Phaser.GameObjects.Graphics;
 
@@ -57,11 +37,11 @@ export class SummonScene extends Phaser.Scene {
   create(): void {
     this.drawBackground();
     this.drawPortal();
-    this.drawCollectionShowcase();
+    drawCollectionShowcase(this);
     this.drawHeader();
     this.drawTabBar();
     this.buildSummonTab();
-    this.buildHistoryTab();
+    this.buildHistoryTabLocal();
     this.showTab('summon');
     this.checkFreeReminderBadge();
 
@@ -141,141 +121,6 @@ export class SummonScene extends Phaser.Scene {
     this.add.text(CX, PORTAL_CY - 22, '🌌', {
       fontFamily: 'sans-serif', fontSize: '32px',
     }).setOrigin(0.5).setDepth(5);
-  }
-
-  private drawCollectionShowcase(): void {
-    const gs = loadGameState();
-    const summary = this.getCollectionSummary(gs);
-    const g = this.add.graphics().setDepth(2);
-
-    const progress = summary.total > 0 ? summary.owned / summary.total : 0;
-    const barW = 92;
-    this.drawShowcasePanel(g, 14, 78, 112, 78, 0x2b1a09, CASUAL.PURPLE);
-    this.add.text(28, 91, '도감 수집', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setDepth(6);
-    this.add.text(28, 109, `${summary.owned}/${summary.total}`, {
-      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setDepth(6);
-
-    const pg = this.add.graphics().setDepth(6);
-    pg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    pg.fillRoundedRect(28, 134, barW, 7, 4);
-    pg.fillStyle(CASUAL.GOLD, 1);
-    pg.fillRoundedRect(28, 134, Phaser.Math.Clamp(barW * progress, 3, barW), 7, 4);
-    pg.lineStyle(1, CASUAL.EDGE_SOFT, 0.6);
-    pg.strokeRoundedRect(28, 134, barW, 7, 4);
-
-    this.drawShowcasePanel(g, CANVAS_WIDTH - 126, 78, 112, 78, 0x261022, CASUAL.RED);
-    this.add.text(CANVAS_WIDTH - 112, 91, '레어 획득', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setDepth(6);
-    this.add.text(CANVAS_WIDTH - 112, 111, `E ${summary.epics}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-    }).setDepth(6);
-    this.add.text(CANVAS_WIDTH - 60, 111, `L ${summary.legends}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-    }).setDepth(6);
-    this.add.text(CANVAS_WIDTH - 112, 134, `${summary.totalPulls} pulls`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-    }).setDepth(6);
-
-    this.drawRecentPullChips(summary.recent);
-  }
-
-  private drawShowcasePanel(
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    _bg: number,
-    border: number,
-  ): void {
-    g.fillStyle(CASUAL.SHADOW, 0.18);
-    g.fillRoundedRect(x + 2, y + 4, w, h, 12);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x, y, w, h, 12);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x + 6, y + 5, w - 12, 6, 3);
-    g.lineStyle(3, border, 1);
-    g.strokeRoundedRect(x, y, w, h, 12);
-  }
-
-  private drawRecentPullChips(recent: NonNullable<ReturnType<typeof loadGameState>['summonHistory']>): void {
-    const y = 162;
-    const title = recent.length > 0 ? '최근 획득' : '첫 소환 보상 대기';
-    this.add.text(CX, y - 12, title, {
-      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5).setDepth(6);
-
-    const chips = recent.slice(0, 3);
-    if (chips.length === 0) {
-      const emptyG = this.add.graphics().setDepth(5);
-      emptyG.fillStyle(0x1d1106, 0.86);
-      emptyG.fillRoundedRect(CX - 53, y - 1, 106, 20, 10);
-      emptyG.lineStyle(1, 0x7a55ff, 0.35);
-      emptyG.strokeRoundedRect(CX - 53, y - 1, 106, 20, 10);
-      this.add.text(CX, y + 9, 'NEW 카드팩 OPEN', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd86b',
-      }).setOrigin(0.5).setDepth(6);
-      return;
-    }
-
-    const startX = CX - ((chips.length - 1) * 42) / 2;
-    chips.forEach((rec, i) => {
-      const def = MONSTER_DEFS[rec.monsterId as MonsterId];
-      if (!def) return;
-      const rarityIdx = RARITIES.indexOf(rec.rarity);
-      const color = RARITY_COLORS[rarityIdx] ?? 0x8866ff;
-      const x = startX + i * 42;
-      const chipG = this.add.graphics().setDepth(5);
-      chipG.fillStyle(0x1d1106, 0.92);
-      chipG.fillRoundedRect(x - 17, y - 2, 34, 24, 9);
-      chipG.lineStyle(1.2, color, 0.8);
-      chipG.strokeRoundedRect(x - 17, y - 2, 34, 24, 9);
-      chipG.fillStyle(color, rec.isNew ? 0.24 : 0.12);
-      chipG.fillCircle(x + 11, y + 3, rec.isNew ? 4 : 2);
-      this.add.text(x, y + 9, def.emoji, {
-        fontFamily: 'sans-serif', fontSize: '15px',
-      }).setOrigin(0.5).setDepth(6);
-    });
-  }
-
-  private getCollectionSummary(gs: ReturnType<typeof loadGameState>): {
-    owned: number;
-    total: number;
-    totalPulls: number;
-    epics: number;
-    legends: number;
-    recent: NonNullable<ReturnType<typeof loadGameState>['summonHistory']>;
-  } {
-    const validIds = new Set(Object.keys(MONSTER_DEFS));
-    const ownedIds = new Set(
-      (gs.ownedMonsters ?? [])
-        .map(monster => monster.id)
-        .filter(id => validIds.has(id)),
-    );
-    const history = gs.summonHistory ?? [];
-    return {
-      owned:      ownedIds.size,
-      total:      validIds.size,
-      totalPulls: history.length,
-      epics:      history.filter(record => record.rarity === 'epic').length,
-      legends:    history.filter(record => record.rarity === 'legendary').length,
-      recent:     history.slice().reverse().slice(0, 3),
-    };
-  }
-
-  private getDexNo(monsterId: MonsterId): string {
-    const index = Object.keys(MONSTER_DEFS).indexOf(monsterId);
-    return String(Math.max(0, index) + 1).padStart(3, '0');
-  }
-
-  private getMonsterTagLine(def: (typeof MONSTER_DEFS)[MonsterId]): string {
-    const tribe = def.tribe ? SUMMON_TRIBE_LABELS[def.tribe] ?? def.tribe : '던전';
-    const element = def.element ? SUMMON_ELEMENT_LABELS[def.element] ?? def.element : '중립';
-    return `${tribe} · ${element}`;
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────────
@@ -601,7 +446,7 @@ export class SummonScene extends Phaser.Scene {
 
     if (used) {
       // Show countdown
-      const now     = new Date();
+      const now      = new Date();
       const midnight = new Date(now);
       midnight.setHours(24, 0, 0, 0);
       const secsLeft = Math.floor((midnight.getTime() - now.getTime()) / 1000);
@@ -710,154 +555,19 @@ export class SummonScene extends Phaser.Scene {
 
   // ─── History tab ─────────────────────────────────────────────────────────────
 
-  private buildHistoryTab(): void {
-    this.historyTabContainer = this.add.container(0, 0).setDepth(7);
-    this.rebuildHistory();
-  }
-
-  private rebuildHistory(): void {
-    this.historyTabContainer.removeAll(true);
-    const c = this.historyTabContainer;
-    const gs = loadGameState();
-    const history = (gs.summonHistory ?? []).slice().reverse().slice(0, 100);
-
-    // Filter tabs
-    const filterY = CARDS_Y - 4;
-    const self = this;
-    const filters: Array<{ label: string; val: typeof self.historyFilter }> = [
-      { label: '전체', val: 'all' }, { label: '새 몬스터', val: 'new' }, { label: '중복', val: 'dupe' },
-    ];
-    filters.forEach((f, i) => {
-      const fx = 50 + i * 110;
-      const isActive = this.historyFilter === f.val;
-      const fg = this.add.graphics();
-      if (isActive) {
-        fg.fillStyle(CASUAL.EDGE, 0.3);
-        fg.fillRoundedRect(fx - 40, filterY - 8, 80, 24, 11);
-        fg.fillStyle(CASUAL.PURPLE, 1);
-        fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
-        fg.fillStyle(0xffffff, 0.3);
-        fg.fillRoundedRect(fx - 34, filterY - 7, 68, 5, 3);
-      } else {
-        fg.fillStyle(CASUAL.PANEL, 1);
-        fg.fillRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
-        fg.fillStyle(0xffffff, 0.12);
-        fg.fillRoundedRect(fx - 34, filterY - 7, 68, 5, 3);
-        fg.lineStyle(2.5, CASUAL.EDGE, 1);
-        fg.strokeRoundedRect(fx - 40, filterY - 10, 80, 24, 11);
-      }
-      c.add(fg);
-      const ft = this.add.text(fx, filterY + 2, f.label, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-        color: isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-        stroke: isActive ? '#00000033' : '#00000000', strokeThickness: isActive ? 3 : 0,
-      }).setOrigin(0.5).setInteractive();
-      ft.on('pointerdown', () => { this.historyFilter = f.val; this.rebuildHistory(); });
-      c.add(ft);
-    });
-
-    const filtered = history.filter(r => {
-      if (this.historyFilter === 'new')  return r.isNew;
-      if (this.historyFilter === 'dupe') return !r.isNew;
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      c.add(this.add.text(CX, CARDS_Y + 80, '소환 기록이 없습니다', {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(0.5));
-    } else {
-      let ry = CARDS_Y + 26;
-      filtered.slice(0, 11).forEach(rec => {
-        const def = MONSTER_DEFS[rec.monsterId as MonsterId];
-        if (!def) return;
-        const rarityIdx = RARITIES.indexOf(rec.rarity);
-        const rarityColor = RARITY_COLORS[rarityIdx] ?? 0x6644ff;
-        const rarityCss = RARITY_CSS[rarityIdx] ?? '#9977cc';
-        const rowX = 12;
-        const rowW = CANVAS_WIDTH - 24;
-        const rowH = 42;
-        const statusLabel = rec.isNew ? 'NEW' : rec.scCompensation ? `+${rec.scCompensation}💠` : 'DUP';
-
-        // Row bg
-        const rbg = this.add.graphics();
-        rbg.fillStyle(0x000000, 0.18);
-        rbg.fillRoundedRect(rowX + 1, ry + 2, rowW, rowH, 8);
-        rbg.fillStyle(0x1a1005, 0.96);
-        rbg.fillRoundedRect(rowX, ry, rowW, rowH, 8);
-        rbg.fillStyle(rarityColor, rec.isNew ? 0.17 : 0.08);
-        rbg.fillRoundedRect(rowX + 6, ry + 6, 50, rowH - 12, 8);
-        rbg.fillStyle(rarityColor, rec.isNew ? 0.08 : 0.035);
-        rbg.fillRoundedRect(rowX + 64, ry + 6, rowW - 140, rowH - 12, 8);
-        for (let i = 0; i < 6; i++) {
-          rbg.lineStyle(0.8, rarityColor, rec.isNew ? 0.10 : 0.045);
-          rbg.lineBetween(rowX + 70 + i * 28, ry + rowH - 8, rowX + 108 + i * 28, ry + 8);
-        }
-        rbg.lineStyle(1, rarityColor, rec.isNew ? 0.82 : 0.42);
-        rbg.strokeRoundedRect(rowX, ry, rowW, rowH, 8);
-        rbg.lineStyle(1, 0xffffff, 0.10);
-        rbg.strokeRoundedRect(rowX + 4, ry + 4, rowW - 8, rowH - 8, 6);
-        rbg.fillStyle(0x110a03, 0.94);
-        rbg.fillRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
-        rbg.lineStyle(1, rarityColor, 0.48);
-        rbg.strokeRoundedRect(rowX + 17, ry + 5, 42, 12, 5);
-        rbg.fillStyle(rec.isNew ? 0x3b2500 : 0x180e05, 0.94);
-        rbg.fillRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);
-        rbg.lineStyle(1, rec.isNew ? 0xffd45c : 0x44ffcc, rec.isNew ? 0.72 : 0.54);
-        rbg.strokeRoundedRect(CANVAS_WIDTH - 78, ry + 10, 56, 22, 7);
-        c.add(rbg);
-
-        c.add(this.add.text(38, ry + 11, `도감 ${this.getDexNo(rec.monsterId as MonsterId)}`, {
-          fontFamily: 'sans-serif',
-          fontSize: '7px',
-          color: rarityCss,
-          fontStyle: 'bold',
-        }).setOrigin(0.5));
-        c.add(this.add.text(37, ry + 27, def.emoji, {
-          fontFamily: 'sans-serif', fontSize: '18px',
-        }).setOrigin(0.5));
-
-        c.add(this.add.text(72, ry + 11, def.name, {
-          fontFamily: 'sans-serif',
-          fontSize: '11px',
-          color: rec.isNew ? '#ffffff' : '#b6a9c8',
-          fontStyle: rec.isNew ? 'bold' : 'normal',
-        }).setOrigin(0, 0.5));
-        c.add(this.add.text(72, ry + 28, this.getMonsterTagLine(def), {
-          fontFamily: 'sans-serif',
-          fontSize: '8px',
-          color: '#9d86be',
-        }).setOrigin(0, 0.5));
-
-        c.add(this.add.text(202, ry + 11, RARITY_STARS[rarityIdx] ?? '', {
-          fontFamily: 'sans-serif',
-          fontSize: '10px',
-          color: rarityCss,
-        }).setOrigin(0.5));
-        c.add(this.add.text(202, ry + 28, RARITY_KO[rarityIdx] ?? '획득', {
-          fontFamily: 'sans-serif',
-          fontSize: '8px',
-          color: rarityCss,
-          fontStyle: 'bold',
-        }).setOrigin(0.5));
-
-        c.add(this.add.text(CANVAS_WIDTH - 50, ry + 21, statusLabel, {
-          fontFamily: 'sans-serif',
-          fontSize: rec.isNew ? '10px' : '9px',
-          color: rec.isNew ? '#ffe8a3' : '#b8fff0',
-          fontStyle: 'bold',
-        }).setOrigin(0.5));
-        ry += 46;
-      });
-    }
-
-    // Lifetime stats
-    const total  = gs.summonHistory?.length ?? 0;
-    const epics  = gs.summonHistory?.filter(r => r.rarity === 'epic').length ?? 0;
-    const legs   = gs.summonHistory?.filter(r => r.rarity === 'legendary').length ?? 0;
-    c.add(this.add.text(CX, CANVAS_HEIGHT - 52, `총 소환: ${total}회  |  에픽: ${epics}회  |  전설: ${legs}회`, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5));
+  private buildHistoryTabLocal(): void {
+    const ctx: SummonHistoryContext = {
+      historyFilter: this.historyFilter,
+      onFilterChange: (filter: HistoryFilter) => {
+        this.historyFilter = filter;
+        const updatedCtx: SummonHistoryContext = {
+          historyFilter: this.historyFilter,
+          onFilterChange: ctx.onFilterChange,
+        };
+        rebuildHistory(this, this.historyTabContainer, updatedCtx);
+      },
+    };
+    this.historyTabContainer = buildHistoryTab(this, ctx);
   }
 
   // ─── Execute pull ────────────────────────────────────────────────────────────
@@ -869,8 +579,6 @@ export class SummonScene extends Phaser.Scene {
       count,
     );
   }
-
-  // ─── Animation delegates ────────────────────────────────────────────────────
 
   // ─── Friend summon reminder ────────────────────────────────────────────────
 
