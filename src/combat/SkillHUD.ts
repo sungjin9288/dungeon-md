@@ -179,8 +179,12 @@ class SkillSlot {
   private cdLabel: Phaser.GameObjects.Text;
   private badgeText: Phaser.GameObjects.Text;
   private categoryText: Phaser.GameObjects.Text;
+  private cancelHint?: Phaser.GameObjects.Text;
   private highlight = false;
   private cooldownActive = false;
+  private slotX = 0;
+  private slotY = 0;
+  private scene: Phaser.Scene;
 
   constructor(
     scene: Phaser.Scene,
@@ -191,6 +195,9 @@ class SkillSlot {
     onTap: () => void,
   ) {
     this.skill = skill;
+    this.scene = scene;
+    this.slotX = x;
+    this.slotY = y;
     this.container = scene.add.container(0, 0);
 
     // Background circle
@@ -222,7 +229,7 @@ class SkillSlot {
 
     this.categoryText = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE - 7, getCategoryLabel(skill?.category), {
       fontFamily: 'sans-serif',
-      fontSize: '6px',
+      fontSize: '8px',
       fontStyle: 'bold',
       color: skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
       stroke: skill ? '#00000033' : undefined,
@@ -324,6 +331,23 @@ class SkillSlot {
     this.iconText.setScale(on ? 1.08 : 1);
     this.badgeText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
     this.drawBg();
+
+    if (on && !this.cancelHint) {
+      this.cancelHint = this.scene.add.text(
+        this.slotX + SLOT_SIZE / 2,
+        this.slotY + SLOT_SIZE + 4,
+        '탭하면 취소',
+        {
+          fontFamily: 'sans-serif',
+          fontSize: '8px',
+          color: CASUAL_CSS.INK_SOFT,
+        },
+      ).setOrigin(0.5, 0).setDepth(91);
+      this.container.add(this.cancelHint);
+    } else if (!on && this.cancelHint) {
+      this.cancelHint.destroy();
+      this.cancelHint = undefined;
+    }
   }
 
   updateCooldown(remainingMs: number, totalMs: number): void {
@@ -410,12 +434,12 @@ function getCategoryAccentDark(category: ActiveSkill['category'] | undefined): n
 function getCategoryLabel(category: ActiveSkill['category'] | undefined): string {
   switch (category) {
     case 'combat':
-      return 'ATK';
+      return '⚔';
     case 'defense':
-      return 'DEF';
+      return '🛡';
     case 'support':
-      return 'SUP';
+      return '✨';
     default:
-      return 'LOCK';
+      return '';
   }
 }

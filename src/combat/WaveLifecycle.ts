@@ -13,7 +13,7 @@ import type { WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyEndlessRunReward, applyWaveClearDailyChallengeProgress } from '../data/waveTransactions';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_ROWS, GRID_Y } from '../constants/layout';
-import { COLORS } from '../constants/colors';
+import { COLORS, CASUAL } from '../constants/colors';
 import { logger } from '../utils/logger';
 import { WAVE_BUTTON_H, WAVE_BUTTON_W } from './DungeonLayout';
 
@@ -213,20 +213,32 @@ export function enableWaveButton(ctx: WavePrepContext): void {
   ctx.waveBtnZone.setInteractive();
   ctx.waveLabel.setText('🛡  방어 시작').setColor('#fff8d8');
 
-  // Golden pulse to draw attention to the newly-ready button
+  // Wave-ready glow pulse — attract attention after result panel closes
   const scene = ctx.scene;
-  const pulse = scene.add.graphics().setDepth(63).setAlpha(0);
-  pulse.lineStyle(2.5, COLORS.TORCH_GOLD, 1);
-  pulse.strokeRoundedRect(bx - 2, by - 2, bw + 4, bh + 4, 8);
-  scene.tweens.add({
-    targets: pulse,
-    alpha: { from: 0, to: 0.9 },
-    duration: 180,
-    yoyo: true,
-    repeat: 2,
-    ease: 'Sine.easeInOut',
-    onComplete: () => pulse.destroy(),
-  });
+  const reducedMotion = typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!reducedMotion) {
+    // Fill glow: soft gold wash inside the button
+    const fillPulse = scene.add.graphics().setDepth(63).setAlpha(0);
+    fillPulse.fillStyle(CASUAL.GOLD, 0.18);
+    fillPulse.fillRoundedRect(bx + 2, by + 2, bw - 4, bh - 4, 6);
+
+    // Ring outline: 3px gold border around the button
+    const ringPulse = scene.add.graphics().setDepth(64).setAlpha(0);
+    ringPulse.lineStyle(3, CASUAL.GOLD, 1);
+    ringPulse.strokeRoundedRect(bx - 3, by - 3, bw + 6, bh + 6, 9);
+
+    scene.tweens.add({
+      targets: [fillPulse, ringPulse],
+      alpha: { from: 0, to: 0.9 },
+      duration: 280,
+      yoyo: true,
+      repeat: 3,
+      ease: 'Sine.easeInOut',
+      onComplete: () => { fillPulse.destroy(); ringPulse.destroy(); },
+    });
+  }
 }
 
 // ── startPrepCountdown ────────────────────────────────────────────────────────

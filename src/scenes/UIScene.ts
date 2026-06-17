@@ -13,6 +13,7 @@ export class UIScene extends Phaser.Scene {
   private speedBtn!: Phaser.GameObjects.Text;
   private pauseBtn!: Phaser.GameObjects.Text;
   private remainingText?: Phaser.GameObjects.Text;
+  private remainingPillBg?: Phaser.GameObjects.Graphics;
   private currentSpeed: 1 | 2 = 1;
   private isPaused = false;
   private vignetteG?: Phaser.GameObjects.Graphics;
@@ -92,19 +93,16 @@ export class UIScene extends Phaser.Scene {
       color: CASUAL_CSS.INK_SOFT,
     });
 
-    // ── Wave pill + speed toggle (left, row 2) ────────────────────────────
+    // ── Wave pill (left, row 2) — wave counter only ────────────────────────
     const wavePill = this.add.graphics();
     wavePill.fillStyle(CASUAL.PANEL, 1);
-    wavePill.fillRoundedRect(12, st + 58, 120, 26, 6);
+    wavePill.fillRoundedRect(12, st + 58, 86, 26, 6);
     wavePill.lineStyle(2, CASUAL.EDGE, 1);
-    wavePill.strokeRoundedRect(12, st + 58, 120, 26, 6);
+    wavePill.strokeRoundedRect(12, st + 58, 86, 26, 6);
     wavePill.fillStyle(0xffffff, 0.14);
-    wavePill.fillRoundedRect(20, st + 62, 68, 3, 2);
-    // Divider between wave label and speed button
-    wavePill.lineStyle(1, CASUAL.EDGE_SOFT, 0.6);
-    wavePill.lineBetween(96, st + 62, 96, st + 80);
+    wavePill.fillRoundedRect(20, st + 62, 48, 3, 2);
 
-    this.waveLabel = this.add.text(54, st + 71, this.getWaveLabel(), {
+    this.waveLabel = this.add.text(55, st + 71, this.getWaveLabel(), {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
@@ -113,8 +111,16 @@ export class UIScene extends Phaser.Scene {
     this.waveProgress = this.add.graphics();
     this.redrawWaveProgress();
 
-    // ── Speed toggle button ───────────────────────────────
-    this.speedBtn = this.add.text(110, st + 71, '1x', {
+    // ── Speed toggle — separate mini pill ────────────────
+    const speedPill = this.add.graphics();
+    speedPill.fillStyle(CASUAL.PANEL_SOFT, 1);
+    speedPill.fillRoundedRect(102, st + 58, 36, 26, 6);
+    speedPill.lineStyle(2, CASUAL.EDGE, 1);
+    speedPill.strokeRoundedRect(102, st + 58, 36, 26, 6);
+    speedPill.fillStyle(0xffffff, 0.14);
+    speedPill.fillRoundedRect(106, st + 62, 28, 3, 2);
+
+    this.speedBtn = this.add.text(120, st + 71, '1x', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
@@ -218,17 +224,24 @@ export class UIScene extends Phaser.Scene {
     this.hpFill = this.add.graphics();
     this.safeHby = hby;
 
-    // Numerical HP readout inside the bar
-    this.hpText = this.add.text(hbx + hbw / 2, hby + hbh / 2, '', {
-      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setOrigin(0.5).setDepth(103).setAlpha(0.9);
+    // Numerical HP readout — right-aligned above the bar (always legible regardless of fill)
+    this.hpText = this.add.text(hbx + hbw, hby - 1, '', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    }).setOrigin(1, 1).setDepth(103);
 
     this.redrawHp();
 
-    // ── Remaining invaders counter (right of HP bar label) ──
-    this.remainingText = this.add.text(CANVAS_WIDTH - 8, hby - 1, '', {
+    // ── Remaining invaders counter — mini pill below HP bar ──
+    this.remainingPillBg = this.add.graphics();
+    this.remainingPillBg.fillStyle(CASUAL.PANEL_SOFT, 1);
+    this.remainingPillBg.fillRoundedRect(hbx, hby + hbh + 4, 80, 18, 6);
+    this.remainingPillBg.lineStyle(1.5, CASUAL.EDGE, 1);
+    this.remainingPillBg.strokeRoundedRect(hbx, hby + hbh + 4, 80, 18, 6);
+    this.remainingPillBg.setAlpha(0);
+
+    this.remainingText = this.add.text(hbx + 40, hby + hbh + 13, '', {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(1, 1);
+    }).setOrigin(0.5, 0.5).setDepth(103);
 
     // ── Status text (wave info) ───────────────────────────
     this.statusText = this.add.text(CANVAS_WIDTH / 2, TOP_BAR_HEIGHT + st + 10, '', {
@@ -386,8 +399,22 @@ export class UIScene extends Phaser.Scene {
       if (v > 0) {
         this.remainingText?.setText(`👾 ${v}명`);
         this.remainingText?.setColor(v <= 3 ? CASUAL_CSS.RED : CASUAL_CSS.INK_SOFT);
+        this.remainingPillBg?.setAlpha(1);
+        const reducedMotion = typeof window !== 'undefined' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (v <= 3 && !reducedMotion && this.remainingText) {
+          this.tweens.killTweensOf(this.remainingText);
+          this.tweens.add({
+            targets: this.remainingText,
+            scaleX: { from: 1.2, to: 1 },
+            scaleY: { from: 1.2, to: 1 },
+            duration: 180,
+            ease: 'Back.easeOut',
+          });
+        }
       } else {
         this.remainingText?.setText('');
+        this.remainingPillBg?.setAlpha(0);
       }
     });
   }

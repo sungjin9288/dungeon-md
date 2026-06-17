@@ -45,10 +45,12 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
 
   // Card — taller to fit stats
   const cw     = 300;
-  // Reserve 70px for stat row, plus 56px for materials section if any materials earned
-  const hasMaterials = Object.values(ctx.materialsEarnedThisRun ?? {}).some(q => q > 0);
-  const statsH = hasMaterials ? 126 : 60;
-  const ch     = isFail ? 220 : 200 + statsH;
+  // Fail: dynamic height based on option count; Success: dynamic based on materials
+  const matEntries = Object.entries(ctx.materialsEarnedThisRun ?? {}).filter(([, q]) => q > 0);
+  const matRowCount = Math.min(Math.ceil(matEntries.length / 3), 2);
+  const statsH = matEntries.length === 0 ? 60 : matRowCount === 1 ? 100 : 136;
+  const failOptionCount = (ctx.returnTo ? 1 : 0) + 3; // returnTo + ad + gems + reset
+  const ch     = isFail ? 105 + failOptionCount * 54 : 200 + statsH;
   const cx     = CANVAS_WIDTH  / 2 - cw / 2;
   const cy     = CANVAS_HEIGHT / 2 - ch / 2;
 
@@ -65,7 +67,7 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   // thick rounded brown border
   card.lineStyle(3, isFail ? CASUAL.RED_DK : CASUAL.EDGE, 1);
   card.strokeRoundedRect(cx, cy, cw, ch, 16);
-  card.setY(-80).setAlpha(0);
+  card.setY(-120).setAlpha(0);
   ov.add(card);
   scene.tweens.add({ targets: card, y: 0, alpha: 1, duration: 350, ease: 'Power2.easeOut' });
 
@@ -172,7 +174,7 @@ function buildSuccessContent(
     scene.tweens.add({ targets: warnT, alpha: 1, duration: 200, delay: 680 });
   }
 
-  // Materials earned this wave
+  // Materials earned this wave — up to 2 rows × 3 cols (max 6)
   const matEntries = Object.entries(ctx.materialsEarnedThisRun).filter(([, q]) => q > 0);
   if (matEntries.length > 0) {
     // Section divider + header
@@ -189,15 +191,18 @@ function buildSuccessContent(
     ov.add(matHeaderT);
     scene.tweens.add({ targets: matHeaderT, alpha: 1, duration: 200, delay: 690 });
 
-    // Material chips — show name + qty
-    const chipY = matDivY + 22;
-    const cols  = Math.min(matEntries.length, 3);
-    const chipW = (cw - 32) / cols;
-    matEntries.slice(0, 3).forEach(([id, qty], mi) => {
+    // Material chips — 3 per row, up to 2 rows (max 6 shown)
+    const COLS_PER_ROW = 3;
+    const chipW = (cw - 32) / COLS_PER_ROW;
+    const visibleEntries = matEntries.slice(0, 6);
+    visibleEntries.forEach(([id, qty], mi) => {
+      const rowIdx = Math.floor(mi / COLS_PER_ROW);
+      const colIdx = mi % COLS_PER_ROW;
+      const chipY  = matDivY + 22 + rowIdx * 36;
       const def    = MATERIAL_DEFS[id];
       const emoji  = def?.emoji ?? '?';
       const name   = def?.name  ?? id;
-      const chipX  = cx + 16 + mi * chipW;
+      const chipX  = cx + 16 + colIdx * chipW;
 
       // Chip background — cream pill + gold accent
       const chipBg = scene.add.graphics().setAlpha(0);
@@ -225,9 +230,10 @@ function buildSuccessContent(
       scene.tweens.add({ targets: nameT, alpha: 1, duration: 180, delay: 730 + mi * 50 });
     });
 
-    // If more than 3, show "+N more" hint
-    if (matEntries.length > 3) {
-      const moreT = scene.add.text(cx + cw - 16, chipY + 10, `+${matEntries.length - 3}`, {
+    // If more than 6, show "+N more" hint
+    if (matEntries.length > 6) {
+      const lastRowChipY = matDivY + 22 + 36;
+      const moreT = scene.add.text(cx + cw - 16, lastRowChipY + 10, `+${matEntries.length - 6}`, {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       }).setOrigin(1, 0).setAlpha(0);
       ov.add(moreT);
@@ -342,9 +348,9 @@ function buildFailContent(
   ];
 
   options.forEach(({ label, action, cap, base }, i) => {
-    const oy = cy + 110 + i * 38;
+    const oy = cy + 115 + i * 54;
     const isSecondary = cap === CASUAL.PANEL;
-    const obW = cw - 40, obH = 30, obX = cx + 20, obY = oy - 14, obR = 8;
+    const obW = cw - 40, obH = 44, obX = cx + 20, obY = oy - 20, obR = 8;
     const ob = scene.add.graphics();
     // thick colored bottom edge (candy-button base)
     ob.fillStyle(base, 1);
@@ -354,17 +360,17 @@ function buildFailContent(
     ob.fillRoundedRect(obX, obY, obW, obH - 1, obR);
     // glossy top highlight
     ob.fillStyle(0xffffff, isSecondary ? 0.5 : 0.3);
-    ob.fillRoundedRect(obX + 5, obY + 3, obW - 10, 9, 5);
+    ob.fillRoundedRect(obX + 5, obY + 3, obW - 10, 12, 5);
     ov.add(ob);
     const ot = scene.add.text(CANVAS_WIDTH / 2, oy, label, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
       color: isSecondary ? CASUAL_CSS.INK : CASUAL_CSS.WHITE,
       stroke: isSecondary ? undefined : '#00000033',
       strokeThickness: isSecondary ? 0 : 3,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(ot);
     scene.tweens.add({ targets: ot, alpha: 1, duration: 250, delay: 250 + i * 80 });
-    const oz = scene.add.zone(CANVAS_WIDTH / 2, oy, cw - 40, 30).setInteractive();
+    const oz = scene.add.zone(CANVAS_WIDTH / 2, oy, cw - 40, 44).setInteractive();
     ov.add(oz);
     oz.on('pointerdown', () => { ov.destroy(); ctx.setResultOverlay(undefined); action(); });
   });

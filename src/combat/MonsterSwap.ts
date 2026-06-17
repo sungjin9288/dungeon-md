@@ -7,7 +7,7 @@
  */
 
 import Phaser from 'phaser';
-import { CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS } from '../constants/colors';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,10 @@ export class MonsterSwapManager {
   private swapSource: { row: number; col: number } | null = null;
   private cooldownUntil = 0;
   private longPressTimer?: Phaser.Time.TimerEvent;
-  private swapIndicator?: Phaser.GameObjects.Text;
+  private swapPillBg?: Phaser.GameObjects.Graphics;
+  private swapHeader?: Phaser.GameObjects.Text;
+  private swapBody?: Phaser.GameObjects.Text;
+  private cooldownPillBg?: Phaser.GameObjects.Graphics;
   private cooldownText?: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, callbacks: SwapCallbacks) {
@@ -101,44 +104,72 @@ export class MonsterSwapManager {
   private enterSwapMode(row: number, col: number): void {
     this.swapSource = { row, col };
 
-    // Show indicator
-    this.swapIndicator = this.scene.add.text(
-      this.scene.cameras.main.width / 2,
-      20,
-      '🔄 교체할 몬스터를 선택하세요',
-      {
-        fontFamily: 'sans-serif', fontSize: '13px', color: CSS.TORCH_AMBER,
-        backgroundColor: '#000000cc', padding: { x: 10, y: 4 },
-      },
-    ).setOrigin(0.5).setDepth(95);
+    // CASUAL pill background
+    const cx = this.scene.cameras.main.width / 2;
+    const pillW = 200, pillH = 44, pillX = cx - pillW / 2, pillY = 90;
+
+    this.swapPillBg = this.scene.add.graphics().setDepth(95);
+    this.swapPillBg.fillStyle(CASUAL.PANEL, 1);
+    this.swapPillBg.fillRoundedRect(pillX, pillY, pillW, pillH, 8);
+    this.swapPillBg.lineStyle(2, CASUAL.EDGE, 1);
+    this.swapPillBg.strokeRoundedRect(pillX, pillY, pillW, pillH, 8);
+
+    this.swapHeader = this.scene.add.text(cx, pillY + 12, '🔄 교체 모드', {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+      color: CASUAL_CSS.GOLD,
+    }).setOrigin(0.5, 0).setDepth(96);
+
+    this.swapBody = this.scene.add.text(cx, pillY + 28, '교체할 방을 선택하세요', {
+      fontFamily: 'sans-serif', fontSize: '11px',
+      color: CASUAL_CSS.INK_SOFT,
+    }).setOrigin(0.5, 0).setDepth(96);
   }
 
   cancelSwapMode(): void {
     this.swapSource = null;
-    this.swapIndicator?.destroy();
-    this.swapIndicator = undefined;
+    this.swapPillBg?.destroy();
+    this.swapPillBg = undefined;
+    this.swapHeader?.destroy();
+    this.swapHeader = undefined;
+    this.swapBody?.destroy();
+    this.swapBody = undefined;
   }
 
   private showCooldownMessage(secsLeft: number): void {
+    this.cooldownPillBg?.destroy();
     this.cooldownText?.destroy();
+
+    const cx = this.scene.cameras.main.width / 2;
+    const pillW = 200, pillH = 30, pillX = cx - pillW / 2, pillY = 142;
+
+    this.cooldownPillBg = this.scene.add.graphics().setDepth(95);
+    this.cooldownPillBg.fillStyle(CASUAL.PANEL, 1);
+    this.cooldownPillBg.fillRoundedRect(pillX, pillY, pillW, pillH, 8);
+    this.cooldownPillBg.lineStyle(2, CASUAL.EDGE, 1);
+    this.cooldownPillBg.strokeRoundedRect(pillX, pillY, pillW, pillH, 8);
+
     this.cooldownText = this.scene.add.text(
-      this.scene.cameras.main.width / 2,
-      45,
+      cx,
+      pillY + 15,
       `⏳ 교체 쿨다운: ${secsLeft}초`,
       {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#ff6644',
-        backgroundColor: '#000000cc', padding: { x: 8, y: 3 },
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED,
       },
-    ).setOrigin(0.5).setDepth(95);
+    ).setOrigin(0.5).setDepth(96);
 
     this.scene.time.delayedCall(1500, () => {
+      this.cooldownPillBg?.destroy();
+      this.cooldownPillBg = undefined;
       this.cooldownText?.destroy();
       this.cooldownText = undefined;
     });
   }
 
   destroy(): void {
-    this.swapIndicator?.destroy();
+    this.swapPillBg?.destroy();
+    this.swapHeader?.destroy();
+    this.swapBody?.destroy();
+    this.cooldownPillBg?.destroy();
     this.cooldownText?.destroy();
     this.longPressTimer?.remove(false);
   }
