@@ -4,86 +4,14 @@ import { CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
+import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
-import { generatePortrait } from '../art/PortraitGenerator';
-import { showCodexMonsterDetail } from '../ui/CodexMonsterDetail';
-
-// ─── Tribe metadata ───────────────────────────────────────────────────────────
-
-interface TribeMeta {
-  id:       TribeId;
-  name:     string;
-  emoji:    string;
-  bonus:    string;
-  reward:   string;   // Korean name of codex completion reward
-  color:    number;   // accent color
-}
-
-const TRIBE_META: TribeMeta[] = [
-  { id: 'dokkaebi',   name: '도깨비족',  emoji: '👹', color: 0xcc3300,
-    bonus: '도깨비족 전체 ATK +15%',
-    reward: '도깨비 신왕 (전설) 해금' },
-  { id: 'gumiho',     name: '구미호족',  emoji: '🦊', color: 0xd06010,
-    bonus: '구미호족 매혹 확률 +10%',
-    reward: '구미호 악신 (전설) 해금' },
-  { id: 'sansin',     name: '산신족',    emoji: '⛩️', color: 0x3a8a3a,
-    bonus: '전체 던전 회복력 +20%',
-    reward: '산신 완성체 (전설) 해금' },
-  { id: 'sea',        name: '해신족',    emoji: '🌊', color: 0x1060a0,
-    bonus: '밀어내기 효과 +50%',
-    reward: '해신 완성체 (전설) 해금' },
-  { id: 'underworld', name: '저승족',    emoji: '💀', color: 0x6020a0,
-    bonus: '처형 임계치 15% → 25%',
-    reward: '저승 완성체 (전설) 해금' },
-  { id: 'mask',       name: '탈족',      emoji: '🎭', color: 0x804040,
-    bonus: '도발 지속시간 +1초',
-    reward: '탈족 완성체 (전설) 해금' },
-  { id: 'moonlight',  name: '달빛족',    emoji: '🌙', color: 0x4040a0,
-    bonus: '신성 속성 피해 +20%',
-    reward: '달빛 완성체 (전설) 해금' },
-  { id: 'dragon',     name: '용족',      emoji: '🐉', color: 0xc04000,
-    bonus: '전설 몬스터 ATK +25%',
-    reward: '오룡 완성체 (전설) 해금' },
-  { id: 'celestial',  name: '천상족',    emoji: '✨', color: 0xffd700,
-    bonus: '천상족 성스러운 피해 +30%',
-    reward: '천제 분신 (전설) 해금' },
-];
-
-// Tribe ID → reward monster to unlock on 100% completion
-const TRIBE_REWARD_MONSTER: Record<string, MonsterId> = {
-  dokkaebi:   'dokkaebi_god_king',
-  gumiho:     'gumiho_demon',
-  sansin:     'mountain_god_complete',
-  sea:        'sea_god_complete',
-  underworld: 'underworld_complete',
-  mask:       'mask_complete',
-  moonlight:  'moonlight_complete',
-  dragon:     'five_dragon_complete',
-  celestial:  'god_realm_general',
-};
-
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
-const CX    = CANVAS_WIDTH / 2;
-const HDR_H = 94;  // addSceneHeader (~56) + addTabBar (38)
-const BOT_H = 64;
-const PAD   = 12;
-const CODEX_RARITY_META: Record<string, { label: string; stars: string; color: number; css: string }> = {
-  C: { label: 'C', stars: '★',     color: 0x8f98a5, css: '#b9c0ca' },
-  U: { label: 'U', stars: '★★',    color: 0x58c681, css: '#8ff0ad' },
-  R: { label: 'R', stars: '★★★',   color: 0x62a8ff, css: '#9bc9ff' },
-  E: { label: 'E', stars: '★★★★',  color: 0xc978ff, css: '#e3b4ff' },
-  L: { label: 'L', stars: '★★★★★', color: 0xffc857, css: '#ffd878' },
-};
-const CODEX_ELEMENT_LABELS: Record<string, string> = {
-  fire: '화염',
-  frost: '서리',
-  lightning: '번개',
-  dark: '암흑',
-  holy: '신성',
-};
+import {
+  CX, HDR_H, BOT_H, PAD,
+  TRIBE_META, TRIBE_REWARD_MONSTER,
+} from '../ui/CodexShared';
+import { drawMonsterCell, drawSetBonus, type CodexCellContext } from '../ui/CodexCell';
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +23,7 @@ export class CodexScene extends Phaser.Scene {
   private gs = loadGameState();
   private showOwnedOnly  = false;
   private codexTab: 'monsters' | 'invaders' = 'monsters';
+  private detailOverlayRef: { current: Phaser.GameObjects.Container | null } = { current: null };
 
   constructor() { super({ key: 'CodexScene' }); }
 
@@ -246,12 +175,13 @@ export class CodexScene extends Phaser.Scene {
       const isExpanded = this.expandedTribes.has(tribe.id);
 
       // Section header row
-      cursorY = this.drawTribeHeader(tribe, tribeOwned, tribeTotal, cursorY, isExpanded);
+      cursorY = this.drawTribeHeader(tribe.id, tribe.name, tribe.emoji, tribe.color, tribeOwned, tribeTotal, cursorY, isExpanded);
 
       // Expanded: grid of monsters
       if (isExpanded) {
         cursorY = this.drawMonsterGrid(tribeMonsters, tribe.color, cursorY);
-        cursorY = this.drawSetBonus(tribe, tribeOwned, tribeTotal, cursorY);
+        const cellCtx = this.makeCellCtx();
+        cursorY = drawSetBonus(this, cellCtx, this.contentCtr, tribe, tribeOwned, tribeTotal, cursorY);
         cursorY += 10;
       }
 
@@ -264,7 +194,8 @@ export class CodexScene extends Phaser.Scene {
   // ─── Tribe header ──────────────────────────────────────────────────────────
 
   private drawTribeHeader(
-    tribe: TribeMeta, owned: number, total: number,
+    tribeId: TribeId, tribeName: string, tribeEmoji: string, tribeColor: number,
+    owned: number, total: number,
     y: number, expanded: boolean,
   ): number {
     const h = 52;
@@ -278,7 +209,7 @@ export class CodexScene extends Phaser.Scene {
     g.fillRoundedRect(PAD, y, CANVAS_WIDTH - PAD * 2, h, 8);
     g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(PAD + 5, y + 4, CANVAS_WIDTH - PAD * 2 - 10, 5, 3);
-    g.fillStyle(tribe.color, expanded ? 0.9 : 0.55);
+    g.fillStyle(tribeColor, expanded ? 0.9 : 0.55);
     g.fillRoundedRect(PAD + 6, y + 6, CANVAS_WIDTH - PAD * 2 - 12, 6, 3);
     g.lineStyle(3, CASUAL.EDGE, expanded ? 1 : 0.8);
     g.strokeRoundedRect(PAD, y, CANVAS_WIDTH - PAD * 2, h, 8);
@@ -289,17 +220,17 @@ export class CodexScene extends Phaser.Scene {
     g.fillRoundedRect(bx, by, bw, bh, 2);
     g.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
     g.strokeRoundedRect(bx, by, bw, bh, 2);
-    g.fillStyle(tribe.color, 1);
+    g.fillStyle(tribeColor, 1);
     g.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 2);
 
     // emoji
-    const emojiT = this.add.text(PAD + 22, y + h / 2 - 8, tribe.emoji, {
+    const emojiT = this.add.text(PAD + 22, y + h / 2 - 8, tribeEmoji, {
       fontFamily: 'sans-serif', fontSize: '22px',
     }).setOrigin(0.5, 0);
     this.contentCtr.add(emojiT);
 
     // name + count
-    const nameT = this.add.text(PAD + 44, y + 10, `${tribe.name}`, {
+    const nameT = this.add.text(PAD + 44, y + 10, `${tribeName}`, {
       fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
       color: CASUAL_CSS.INK,
     }).setOrigin(0, 0);
@@ -329,8 +260,8 @@ export class CodexScene extends Phaser.Scene {
       .setInteractive().setOrigin(0.5);
     this.contentCtr.add(zone);
     zone.on('pointerdown', () => {
-      if (this.expandedTribes.has(tribe.id)) this.expandedTribes.delete(tribe.id);
-      else this.expandedTribes.add(tribe.id);
+      if (this.expandedTribes.has(tribeId)) this.expandedTribes.delete(tribeId);
+      else this.expandedTribes.add(tribeId);
       this.buildContent();
     });
 
@@ -356,6 +287,8 @@ export class CodexScene extends Phaser.Scene {
       return ao - bo || a.name.localeCompare(b.name);
     });
 
+    const cellCtx = this.makeCellCtx();
+
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
@@ -365,271 +298,30 @@ export class CodexScene extends Phaser.Scene {
         const cx    = PAD + c * cellW;
         const cy    = y + r * (cellH + 4);
 
-        this.drawMonsterCell(m, owned, color, cx, cy, cellW, cellH);
+        drawMonsterCell(this, cellCtx, this.contentCtr, m, owned, color, cx, cy, cellW, cellH);
       }
     }
 
     return y + rows * (cellH + 4) + 4;
   }
 
-  private drawMonsterCell(
-    m: (typeof MONSTER_DEFS)[MonsterId],
-    owned: boolean,
-    tribeColor: number,
-    x: number, y: number, w: number, h: number,
-  ): void {
-    const g = this.add.graphics();
-    this.contentCtr.add(g);
-    const rarity = this.getRarityMeta(m.rarityTier);
-    const dexNo = this.getDexNo(m.id);
-    const elementLabel = m.element ? CODEX_ELEMENT_LABELS[m.element] ?? m.element : '중립';
+  // ─── Cell context factory ──────────────────────────────────────────────────
 
-    if (owned) {
-      g.fillStyle(0x000000, 0.24);
-      g.fillRoundedRect(x + 3, y + 4, w - 5, h - 4, 7);
-      g.fillStyle(0x150b08, 1);
-      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
-      g.fillStyle(rarity.color, 0.10);
-      g.fillRoundedRect(x + 8, y + 20, w - 16, 35, 7);
-      g.fillStyle(tribeColor, 0.08);
-      g.fillRoundedRect(x + 7, y + 58, w - 14, 16, 6);
-      this.drawFoilLines(g, x + 8, y + 20, w - 16, 35, rarity.color, 0.10);
-      g.lineStyle(1.2, rarity.color, 0.72);
-      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
-      g.lineStyle(1, 0xffffff, 0.10);
-      g.strokeRoundedRect(x + 6, y + 6, w - 12, h - 12, 5);
-      g.fillStyle(0x060402, 0.94);
-      g.fillRoundedRect(x + 8, y + 7, 42, 13, 5);
-      g.lineStyle(1, rarity.color, 0.46);
-      g.strokeRoundedRect(x + 8, y + 7, 42, 13, 5);
-      g.fillStyle(rarity.color, 0.17);
-      g.fillRoundedRect(x + w - 38, y + 7, 27, 13, 5);
-      g.lineStyle(1, rarity.color, 0.54);
-      g.strokeRoundedRect(x + w - 38, y + 7, 27, 13, 5);
-
-      const codexSkin = getSkinForMonster(m.id, this.gs.equippedSkins ?? {});
-      const codexPortraitKey = generatePortrait(this, m.id as MonsterId, codexSkin?.id);
-      if (this.textures.exists(codexPortraitKey)) {
-        const portrait = this.add.image(x + w / 2, y + 38, codexPortraitKey)
-          .setOrigin(0.5).setDisplaySize(34, 34);
-        this.contentCtr.add(portrait);
-      } else {
-        const emojiT = this.add.text(x + w / 2, y + 24, codexSkin ? codexSkin.emoji : m.emoji, {
-          fontFamily: 'sans-serif', fontSize: '28px',
-        }).setOrigin(0.5, 0);
-        this.contentCtr.add(emojiT);
-      }
-
-      const dexT = this.add.text(x + 29, y + 13.5, `도감 ${dexNo}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: rarity.css,
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.contentCtr.add(dexT);
-
-      const rarityT = this.add.text(x + w - 24.5, y + 13.5, rarity.label, {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: rarity.css,
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.contentCtr.add(rarityT);
-
-      const starsT = this.add.text(x + 13, y + h - 15, rarity.stars, {
-        fontFamily: 'sans-serif',
-        fontSize: '8px',
-        color: rarity.css,
-      }).setOrigin(0, 0.5);
-      this.contentCtr.add(starsT);
-
-      const nameT = this.add.text(x + w / 2, y + 62, this.truncateLabel(m.name, 7), {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: CSS.PARCHMENT_DIM,
-        fontStyle: 'bold',
-        align: 'center', wordWrap: { width: w - 8 },
-      }).setOrigin(0.5, 0);
-      this.contentCtr.add(nameT);
-
-      const metaT = this.add.text(x + w / 2, y + 76, `${elementLabel} · Ch.${m.chapter ?? '-'}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: '#b39b72',
-      }).setOrigin(0.5);
-      this.contentCtr.add(metaT);
-
-      // Tap to show detail overlay
-      const tapZone = this.add.zone(x + w / 2, y + h / 2, w - 4, h - 4)
-        .setInteractive({ useHandCursor: true }).setOrigin(0.5);
-      this.contentCtr.add(tapZone);
-      tapZone.on('pointerdown', () => {
-        this.detailOverlay?.destroy();
-        this.detailOverlay = showCodexMonsterDetail(this, m, this.gs, () => {
-          this.detailOverlay = null;
-        });
-      });
-
-    } else {
-      // Silhouette (unowned)
-      g.fillStyle(0x000000, 0.22);
-      g.fillRoundedRect(x + 3, y + 4, w - 5, h - 4, 7);
-      g.fillStyle(0x0b0808, 1);
-      g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
-      g.fillStyle(rarity.color, 0.04);
-      g.fillRoundedRect(x + 8, y + 20, w - 16, 35, 7);
-      this.drawFoilLines(g, x + 8, y + 20, w - 16, 35, rarity.color, 0.035);
-      g.lineStyle(1, 0x2a1a00, 0.8);
-      g.strokeRoundedRect(x + 2, y + 2, w - 4, h - 4, 7);
-      g.fillStyle(0x060402, 0.88);
-      g.fillRoundedRect(x + 8, y + 7, 42, 13, 5);
-      g.lineStyle(1, 0x3a2a18, 0.5);
-      g.strokeRoundedRect(x + 8, y + 7, 42, 13, 5);
-      g.fillStyle(0x060402, 0.88);
-      g.fillRoundedRect(x + w - 38, y + 7, 27, 13, 5);
-      g.lineStyle(1, rarity.color, 0.24);
-      g.strokeRoundedRect(x + w - 38, y + 7, 27, 13, 5);
-
-      const dexT = this.add.text(x + 29, y + 13.5, `도감 ${dexNo}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: '#5e4a36',
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.contentCtr.add(dexT);
-
-      const rarityT = this.add.text(x + w - 24.5, y + 13.5, rarity.label, {
-        fontFamily: 'monospace',
-        fontSize: '8px',
-        color: '#5d4d38',
-        fontStyle: 'bold',
-      }).setOrigin(0.5);
-      this.contentCtr.add(rarityT);
-
-      const shadowT = this.add.text(x + w / 2, y + 28, '???', {
-        fontFamily: 'Georgia, serif', fontSize: '18px',
-      }).setOrigin(0.5, 0).setAlpha(0.4);
-      this.contentCtr.add(shadowT);
-
-      const unknownT = this.add.text(x + w / 2, y + 64, '미발견', {
-        fontFamily: 'Georgia, serif', fontSize: '10px', color: '#5a3a18',
-        fontStyle: 'bold',
-      }).setOrigin(0.5, 0);
-      this.contentCtr.add(unknownT);
-
-      const hintT = this.add.text(x + w / 2, y + 78, `${elementLabel} · Ch.${m.chapter ?? '-'}`, {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: '#46301c',
-      }).setOrigin(0.5);
-      this.contentCtr.add(hintT);
-    }
-  }
-
-  private getDexNo(monsterId: MonsterId): string {
-    const index = Object.keys(MONSTER_DEFS).indexOf(monsterId);
-    return String(Math.max(0, index) + 1).padStart(3, '0');
-  }
-
-  private getRarityMeta(rarityTier: string | undefined): typeof CODEX_RARITY_META[keyof typeof CODEX_RARITY_META] {
-    return CODEX_RARITY_META[rarityTier ?? 'C'] ?? CODEX_RARITY_META.C;
-  }
-
-  private drawFoilLines(
-    g: Phaser.GameObjects.Graphics,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    color: number,
-    alpha: number,
-  ): void {
-    const lineCount = Math.max(3, Math.ceil(w / 28));
-    for (let i = -1; i < lineCount; i++) {
-      const sx = x + 8 + i * 24;
-      g.lineStyle(0.8, color, alpha);
-      g.lineBetween(sx, y + h - 5, sx + 42, y + 4);
-    }
-  }
-
-  private truncateLabel(value: string, maxChars: number): string {
-    return value.length > maxChars ? `${value.slice(0, maxChars)}…` : value;
-  }
-
-  // ─── Monster detail overlay ────────────────────────────────────────────────
-
-  private detailOverlay: Phaser.GameObjects.Container | null = null;
-
-  // ─── Set bonus display ─────────────────────────────────────────────────────
-
-  private drawSetBonus(
-    tribe: TribeMeta, owned: number, total: number, y: number,
-  ): number {
-    const gs = loadGameState();
-    const claimed = gs.codexRewardsClaimed?.includes(tribe.id) ?? false;
-    const done = owned === total;
-    const h = done && !claimed ? 70 : 50;
-
-    const g = this.add.graphics();
-    this.contentCtr.add(g);
-
-    g.fillStyle(CASUAL.SHADOW, 0.16);
-    g.fillRoundedRect(PAD + 4, y + 3, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(PAD + 9, y + 4, CANVAS_WIDTH - PAD * 2 - 18, 4, 2);
-    g.lineStyle(3, done ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
-    g.strokeRoundedRect(PAD + 4, y, CANVAS_WIDTH - PAD * 2 - 8, h, 8);
-
-    const labelColor = done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT;
-    const prefix = done
-      ? (claimed ? '✓ 세트 효과 활성화! (보상 수령 완료)' : '✓ 세트 효과 활성화!')
-      : `세트 효과 (${owned}/${total} 달성 시)`;
-    const labelT = this.add.text(PAD + 12, y + 8, prefix, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: labelColor,
-    }).setOrigin(0, 0);
-    this.contentCtr.add(labelT);
-
-    const bonusT = this.add.text(PAD + 12, y + 24, `✦ ${tribe.bonus}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
-    }).setOrigin(0, 0);
-    this.contentCtr.add(bonusT);
-
-    if (done && !claimed) {
-      // Claim button
-      const btnW = 120, btnH = 24;
-      const btnX = CX - btnW / 2, btnY = y + 40;
-      const btnG = this.add.graphics();
-      btnG.fillStyle(CASUAL.GREEN_DK, 1);
-      btnG.fillRoundedRect(btnX, btnY + 2, btnW, btnH, 7);
-      btnG.fillStyle(CASUAL.GREEN, 1);
-      btnG.fillRoundedRect(btnX, btnY, btnW, btnH, 7);
-      btnG.fillStyle(0xffffff, 0.32);
-      btnG.fillRoundedRect(btnX + 5, btnY + 3, btnW - 10, 5, 3);
-      this.contentCtr.add(btnG);
-
-      const btnLabel = this.add.text(CX, btnY + btnH / 2, `🎁 ${tribe.reward.split(' ')[0]} 수령`, {
-        fontFamily: 'sans-serif', fontSize: '11px',
-        color: CASUAL_CSS.WHITE, fontStyle: 'bold',
-        stroke: '#00000033', strokeThickness: 3,
-      }).setOrigin(0.5).setInteractive();
-      this.contentCtr.add(btnLabel);
-
-      btnLabel.on('pointerdown', () => {
-        this.claimTribeReward(tribe.id);
-        // Refresh scene
+  private makeCellCtx(): CodexCellContext {
+    return {
+      gs:               this.gs,
+      expandedTribes:   this.expandedTribes,
+      showOwnedOnly:    this.showOwnedOnly,
+      isOwned:          (id) => this.isOwned(id),
+      onClaimTribeReward: (tribeId) => {
+        this.claimTribeReward(tribeId);
         this.scene.restart();
-      });
-    } else if (!done) {
-      const rewardT = this.add.text(CANVAS_WIDTH - PAD - 12, y + 8, tribe.reward, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-      }).setOrigin(1, 0);
-      this.contentCtr.add(rewardT);
-    }
-
-    return y + h + 4;
+      },
+      detailOverlayRef: this.detailOverlayRef,
+    };
   }
+
+  // ─── Claim tribe reward ────────────────────────────────────────────────────
 
   private claimTribeReward(tribeId: string): void {
     const rewardMonsterId = TRIBE_REWARD_MONSTER[tribeId];
