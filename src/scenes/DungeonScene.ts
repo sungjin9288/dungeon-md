@@ -7,12 +7,11 @@ import { MonsterSelectPanel }  from '../ui/MonsterSelectPanel';
 import { RoomUpgradePanel }    from '../ui/RoomUpgradePanel';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
-  CANVAS_HEIGHT, CANVAS_WIDTH,
-  GRID_COLS, GRID_ROWS, CELL_SIZE, GRID_Y,
+  CANVAS_HEIGHT,
+  GRID_COLS, GRID_ROWS, CELL_SIZE,
 } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { type RoomData, type RoomType } from '../data/rooms';
-import { resolveMonsterDef, type MonsterId } from '../data/monsters';
+import { type MonsterId } from '../data/monsters';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
@@ -42,7 +41,6 @@ import {
   runEntrancingVeil as _runEntrancingVeil,
   runSpiritAltar as _runSpiritAltar,
   runLunarRhythm as _runLunarRhythm,
-  runExtraMonsterAttacks as _runExtraMonsterAttacks,
 } from '../combat/RoomMechanics';
 import { runTrapEffects as _runTrapEffects, recalcRoomTypeBonuses as _recalcRoomTypeBonuses } from '../combat/RoomTriggers';
 import { showWisdomToast as _showWisdomToast } from '../combat/VisualEffects';
@@ -59,7 +57,6 @@ import {
   addDustMoteParticles,
   addDungeonFog,
   buildWaveStartButton,
-  deployDungeonSlotsToGrid,
   type DungeonSlotDeploymentSummary,
 } from '../combat/DungeonLayout';
 import { activateSkillEffect } from '../combat/ActiveSkills';
@@ -78,16 +75,11 @@ import {
   triggerTauntingRoar      as _triggerTauntingRoar,
 } from '../combat/BattleEventHandlers';
 import {
-  findTarget as _findTarget,
-  resolveAttack as _resolveAttack,
-} from '../combat/CombatResolver';
-import {
   buildRoomInputCtx,
   buildActiveSkillContext,
   buildRoomActionsCtx,
   buildWaveStartCtx,
   buildSpawnPipelineCtx,
-  buildCombatResolverCtx,
   buildResultFlowCtx,
   buildRoomMechanicsCtx,
   buildCheckWaveEndCtx,
@@ -98,6 +90,13 @@ import {
   buildQuestTrackerCtx,
 } from '../combat/DungeonSceneCtx';
 import { logger } from '../utils/logger';
+import {
+  deployDungeonSlots as _deployDungeonSlots,
+  showDungeonDeploymentToast as _showDungeonDeploymentToast,
+  buildDungeonCommandStrip as _buildDungeonCommandStrip,
+  runCombat as _runCombat,
+  setupEvents as _setupEvents,
+} from './DungeonSceneVisuals';
 
 export class DungeonScene extends Phaser.Scene {
   // ── Dynamic grid dimensions (overridden per chapter) ───────────────────────
@@ -140,7 +139,7 @@ export class DungeonScene extends Phaser.Scene {
   resultOverlay?: Phaser.GameObjects.Container;
   returnTo?: string;   // set when launched from invasion (PreBattleScene)
   countdownBar?: Phaser.GameObjects.Graphics;
-  private commandStrip?: Phaser.GameObjects.Container;
+  /** @internal */ commandStrip?: Phaser.GameObjects.Container;
 
   // ── Combat interaction subsystems ─────────────────────────────────────────
   skillHUD?: SkillHUD;
@@ -446,158 +445,15 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private deployDungeonSlots(): DungeonSlotDeploymentSummary {
-    const summary = deployDungeonSlotsToGrid({
-      rooms:             this.rooms,
-      roomGrid:          this.roomGrid,
-      effectiveCols:     this.effectiveCols,
-      dungeonTrapSlots:  this.dungeonTrapSlots,
-      equipmentMap:      this.equipmentMap,
-    });
-
-    if (summary.builtRooms > 0) {
-      this.synergyManager.recalc(this.roomGrid, this.effectiveCols);
-      _recalcRoomTypeBonuses(buildRoomMechanicsCtx(this));
-    }
-
-    return summary;
+    return _deployDungeonSlots(this);
   }
 
   private showDungeonDeploymentToast(summary: DungeonSlotDeploymentSummary): void {
-    if (summary.builtRooms <= 0) return;
-    const toastY = GRID_Y + GRID_ROWS * this.effectiveCellSize + 5;
-
-    const toast = this.add.text(
-      CANVAS_WIDTH / 2,
-      toastY,
-      `던전 전개 완료 · 방 ${summary.builtRooms} · 수호자 ${summary.assignedMonsters} · 장비 ${summary.equippedMonsters} · 함정 ${summary.activeTraps}`,
-      {
-        fontFamily: 'Georgia, serif',
-        fontSize: '11px',
-        color: summary.brokenRooms > 0 ? CASUAL_CSS.RED : CASUAL_CSS.INK,
-        backgroundColor: CASUAL_CSS.CREAM,
-        padding: { x: 10, y: 5 },
-      },
-    ).setOrigin(0.5).setDepth(120).setAlpha(0);
-
-    this.tweens.add({
-      targets: toast,
-      alpha: { from: 0, to: 0.94 },
-      y: toastY - 6,
-      duration: 220,
-      ease: 'Cubic.easeOut',
-      yoyo: true,
-      hold: 1250,
-      onComplete: () => toast.destroy(),
-    });
+    _showDungeonDeploymentToast(this, summary);
   }
 
   private buildDungeonCommandStrip(summary: DungeonSlotDeploymentSummary): void {
-    this.commandStrip?.destroy();
-    if (summary.builtRooms <= 0) return;
-
-    const builtSlots = this.dungeonTrapSlots.filter(slot => Boolean(slot.roomType));
-    const totalMaxHp = builtSlots.reduce((sum, slot) => sum + Math.max(1, slot.maxHp), 0);
-    const totalHp = builtSlots.reduce((sum, slot) => sum + Phaser.Math.Clamp(slot.hp, 0, Math.max(1, slot.maxHp)), 0);
-    const durability = totalMaxHp > 0 ? Math.round((totalHp / totalMaxHp) * 100) : 100;
-    const warning = summary.brokenRooms > 0
-      ? `파손${summary.brokenRooms}`
-      : summary.assignedMonsters <= 0
-        ? '수호 없음'
-        : durability < 50
-          ? '수리'
-          : '준비';
-    const isWarning = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0;
-    const warningColor = isWarning ? CASUAL.RED : CASUAL.GREEN;
-
-    const y = GRID_Y - 8;
-    const strip = this.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
-    const g = this.add.graphics();
-    const w = CANVAS_WIDTH - 24;
-    const h = 22;
-    // Cream strip with chunky brown edge + white top highlight (casual toy look).
-    g.fillStyle(CASUAL.SHADOW, 0.18);
-    g.fillRoundedRect(-w / 2, -h / 2 + 3, w, h, 8);
-    g.fillStyle(CASUAL.PANEL, 0.98);
-    g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
-    g.lineStyle(2, CASUAL.EDGE, 0.92);
-    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(-w / 2 + 6, -h / 2 + 3, w - 12, 3, 2);
-    strip.add(g);
-
-    const title = this.add.text(-w / 2 + 12, 0, '방어 진형', {
-      fontFamily: 'Georgia, serif',
-      fontSize: '10px',
-      fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
-    }).setOrigin(0, 0.5);
-    strip.add(title);
-
-    this.addCommandStripChip(strip, -98, `방${summary.builtRooms}`, CASUAL.BLUE, CASUAL_CSS.BLUE);
-    this.addCommandStripChip(strip, -50, `수호${summary.assignedMonsters}`, CASUAL.RED, CASUAL_CSS.RED);
-    this.addCommandStripChip(strip, 2, `함정${summary.activeTraps}`, CASUAL.GREEN, CASUAL_CSS.GREEN);
-    this.addCommandStripChip(strip, 57, `장비${summary.equippedMonsters}`,
-      summary.equippedMonsters > 0 ? CASUAL.GOLD : CASUAL.EDGE_SOFT,
-      summary.equippedMonsters > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
-    this.addCommandStripChip(strip, 115, `내구${durability}%`,
-      durability < 50 ? CASUAL.RED : CASUAL.GOLD,
-      durability < 50 ? CASUAL_CSS.RED : CASUAL_CSS.GOLD);
-    this.addCommandStripChip(strip, 172, warning, warningColor,
-      isWarning ? CASUAL_CSS.RED : CASUAL_CSS.WHITE, true, !isWarning);
-
-    this.commandStrip = strip;
-    this.tweens.add({
-      targets: strip,
-      alpha: { from: 0, to: 0.96 },
-      y: y - 2,
-      duration: 220,
-      ease: 'Cubic.easeOut',
-    });
-  }
-
-  private addCommandStripChip(
-    strip: Phaser.GameObjects.Container,
-    x: number,
-    label: string,
-    accent: number,
-    textColor: string,
-    alignRight = false,
-    candy = false,
-  ): void {
-    const text = this.add.text(x, 0, label, {
-      fontFamily: 'Georgia, serif',
-      fontSize: '9px',
-      fontStyle: 'bold',
-      // Candy "ready" pill gets white-on-saturated text; stat pills get their
-      // saturated accent value as the label color over a cream body.
-      color: candy ? CASUAL_CSS.WHITE : textColor,
-    }).setOrigin(alignRight ? 1 : 0.5, 0.5);
-    const b = text.getBounds();
-    const padX = 8;
-    const chipW = b.width + padX * 2;
-    const chipX = alignRight ? x - b.width - padX * 2 : x - b.width / 2 - padX;
-    const bg = this.add.graphics();
-    if (candy) {
-      // Bright saturated candy pill (GREEN/GOLD when ready) with white highlight.
-      bg.fillStyle(CASUAL.SHADOW, 0.22);
-      bg.fillRoundedRect(chipX, -7, chipW, 16, 6);
-      bg.fillStyle(accent, 1);
-      bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.lineStyle(2, CASUAL.EDGE, 0.85);
-      bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
-    } else {
-      // Cream stat pill: PANEL_SOFT body + 2px EDGE border + white top highlight.
-      bg.fillStyle(CASUAL.PANEL_SOFT, 0.98);
-      bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.lineStyle(2, CASUAL.EDGE, 0.55);
-      bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-      bg.fillStyle(0xffffff, 0.14);
-      bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
-    }
-    strip.add(bg);
-    strip.add(text);
+    _buildDungeonCommandStrip(this, summary);
   }
 
   private placeTorches(): void {
@@ -733,32 +589,11 @@ export class DungeonScene extends Phaser.Scene {
 
   // ─── Combat (update loop) ─────────────────────────────────────────────────
 
-  private runCombat(now: number, rmCtx: RoomMechanicsContext): void {
-    const cs  = this.effectiveCellSize;
-    const ctx = buildCombatResolverCtx(this);
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < this.effectiveCols; col++) {
-        const data = this.roomGrid[row][col];
-        if (!data || !data.attackCooldown) continue;
-        if (now - data.lastAttackTime < data.attackCooldown) continue;
-
-        const mDef        = resolveMonsterDef(data.monsterSlot ?? undefined);
-        const range       = mDef ? mDef.range : 1;
-        const cellCenterY = GRID_Y + row * cs + cs / 2;
-        const rowRange    = cs * Math.max(range - 0.2, 0.8);
-
-        const target = _findTarget(
-          this.activeInvaders, data, mDef,
-          this.rooms[row][col].x, cellCenterY, rowRange, now,
-        );
-        if (target && _resolveAttack(ctx, row, col, data, mDef, target, cellCenterY, now)) continue;
-      }
-    }
-    _runExtraMonsterAttacks(rmCtx, now);
+  private runCombat(now: number, _rmCtx: RoomMechanicsContext): void {
+    _runCombat(this, now);
   }
 
-
-  private setSpeed(mult: 1 | 2): void {
+  /** @internal */ setSpeed(mult: 1 | 2): void {
     this.speedMult = mult;
     this.time.timeScale = mult;
     this.tweens.timeScale = mult;
@@ -848,64 +683,52 @@ export class DungeonScene extends Phaser.Scene {
     _showChapterClear(buildResultFlowCtx(this));
   }
 
-  // ─── Events ───────────────────────────────────────────────────────────────
-
   // ─── Event Registration ──────────────────────────────────────────────────────
-  // Each handler is a named private method so it can be read and reasoned about
-  // independently. The lambda bodies have been removed from this registration
-  // stub to keep it concise.
 
   private setupEvents(): void {
-    this.events.on('invaderKilled',    (inv: Invader)                  => this.handleInvaderKilled(inv));
-    this.events.on('invaderReachedEnd',(inv: Invader)                  => this.handleInvaderReachedEnd(inv));
-    this.events.on('mirrorReflect',    (_inv: Invader, dmg: number)    => this.handleMirrorReflect(dmg));
-    this.events.on('invaderKilledRow', (_inv: Invader, row: number)    => this.handleInvaderKilledRow(row));
-    this.events.on('roomDestroyed',    (row: number, col: number)      => this.handleRoomDestroyed(row, col));
-    this.events.on('permafrostShatter',(source: Invader)               => this.handlePermafrostShatter(source));
-    this.registry.events.on('changedata-battleSpeed',  (_: unknown, v: 1 | 2)       => this.setSpeed(v));
-    this.registry.events.on('changedata-battlePaused', (_: unknown, p: boolean)     => this.handleBattlePauseChange(p));
+    _setupEvents(this);
   }
 
   // ─── roomDestroyed ────────────────────────────────────────────────────────────
 
-  private handleRoomDestroyed(row: number, col: number): void {
+  /** @internal */ handleRoomDestroyed(row: number, col: number): void {
     this.roomGrid[row][col] = null;
     logger.debug(`[ROOM DESTROYED] [${row},${col}]`);
   }
 
   // ─── invaderKilled ────────────────────────────────────────────────────────────
 
-  private handleInvaderKilled(inv: Invader): void {
+  /** @internal */ handleInvaderKilled(inv: Invader): void {
     _handleInvaderKilled(buildKillHandlerCtx(this), inv);
   }
 
   // ─── invaderReachedEnd ────────────────────────────────────────────────────────
 
-  private handleInvaderReachedEnd(inv: Invader): void {
+  /** @internal */ handleInvaderReachedEnd(inv: Invader): void {
     _handleInvaderReachedEnd(buildBattleEventCtx(this), inv);
   }
 
   // ─── mirrorReflect ────────────────────────────────────────────────────────────
 
-  private handleMirrorReflect(reflectDmg: number): void {
+  /** @internal */ handleMirrorReflect(reflectDmg: number): void {
     _handleMirrorReflect(buildBattleEventCtx(this), reflectDmg);
   }
 
   // ─── invaderKilledRow (GILDED_KILL) ──────────────────────────────────────────
 
-  private handleInvaderKilledRow(invRow: number): void {
+  /** @internal */ handleInvaderKilledRow(invRow: number): void {
     _handleInvaderKilledRow(buildBattleEventCtx(this), invRow);
   }
 
   // ─── permafrostShatter ────────────────────────────────────────────────────────
 
-  private handlePermafrostShatter(source: Invader): void {
+  /** @internal */ handlePermafrostShatter(source: Invader): void {
     _handlePermafrostShatter(buildBattleEventCtx(this), source);
   }
 
   // ─── battlePaused ─────────────────────────────────────────────────────────────
 
-  private handleBattlePauseChange(paused: boolean): void {
+  /** @internal */ handleBattlePauseChange(paused: boolean): void {
     if (paused) {
       this.time.timeScale = 0;
       this.tweens.timeScale = 0;
