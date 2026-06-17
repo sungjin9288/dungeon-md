@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
-import { addSceneHeader } from '../ui/GameUiPrimitives';
+import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { MONSTER_DEFS, getSkinForMonster, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
@@ -66,8 +66,8 @@ const TRIBE_REWARD_MONSTER: Record<string, MonsterId> = {
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
-const CX   = CANVAS_WIDTH / 2;
-const HDR_H = 88;
+const CX    = CANVAS_WIDTH / 2;
+const HDR_H = 94;  // addSceneHeader (~56) + addTabBar (38)
 const BOT_H = 64;
 const PAD   = 12;
 const CODEX_RARITY_META: Record<string, { label: string; stars: string; color: number; css: string }> = {
@@ -136,45 +136,23 @@ export class CodexScene extends Phaser.Scene {
       onBack: () => this.scene.start((this.registry.get('previousScene') as string) ?? 'BarracksScene'),
     });
 
-    // ── Tab chips ──
-    const tabDefs: Array<{ key: 'monsters' | 'invaders'; label: string }> = [
-      { key: 'monsters', label: '🏰 수호자' },
-      { key: 'invaders', label: '👺 적군'   },
-    ];
-    const tabW = 88, tabH = 20, tabGap = 8;
-    const tabsX = CX - (tabDefs.length * tabW + (tabDefs.length - 1) * tabGap) / 2;
-    tabDefs.forEach(({ key, label }, i) => {
-      const tx = tabsX + i * (tabW + tabGap);
-      const ty = 44;
-      const active = this.codexTab === key;
-      const tabG = this.add.graphics().setDepth(10);
-      if (active) {
-        tabG.fillStyle(CASUAL.EDGE, 0.25);
-        tabG.fillRoundedRect(tx, ty + 2, tabW, tabH, 7);
-        tabG.fillStyle(CASUAL.GOLD, 1);
-        tabG.fillRoundedRect(tx, ty, tabW, tabH, 7);
-        tabG.fillStyle(0xffffff, 0.32);
-        tabG.fillRoundedRect(tx + 5, ty + 3, tabW - 10, 5, 3);
-      } else {
-        tabG.fillStyle(CASUAL.PANEL_SOFT, 1);
-        tabG.fillRoundedRect(tx, ty, tabW, tabH, 7);
-      }
-      tabG.lineStyle(2, CASUAL.EDGE, active ? 1 : 0.7);
-      tabG.strokeRoundedRect(tx, ty, tabW, tabH, 7);
-      this.add.text(tx + tabW / 2, ty + tabH / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-        color: active ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-        stroke: active ? '#00000033' : undefined,
-        strokeThickness: active ? 3 : 0,
-      }).setOrigin(0.5).setDepth(10);
-      this.add.zone(tx + tabW / 2, ty + tabH / 2, tabW, tabH)
-        .setInteractive({ useHandCursor: true }).setDepth(11)
-        .on('pointerdown', () => {
-          if (this.codexTab !== key) {
-            this.registry.set('codexActiveTab', key);
-            this.scene.restart();
-          }
-        });
+    // ── Tab bar (shared primitive) ──
+    addTabBar(this, {
+      tabs: [
+        { id: 'monsters', label: '🏰 수호자' },
+        { id: 'invaders', label: '👺 적군'   },
+      ],
+      active:  this.codexTab,
+      y:       56,
+      accent:  CASUAL.BLUE,
+      height:  38,
+      depth:   10,
+      onSelect: (id) => {
+        if (this.codexTab !== id) {
+          this.registry.set('codexActiveTab', id);
+          this.scene.restart();
+        }
+      },
     });
 
     // ── Tab-specific stats row ──

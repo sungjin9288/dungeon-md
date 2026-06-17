@@ -7,6 +7,7 @@ import {
   loadGameState, saveGameState, upgradeWisdomBranch,
   type BranchDef, type GameState,
 } from '../data/wisdom';
+import { addSceneHeader } from '../ui/GameUiPrimitives';
 
 const ALTAR_X  = 195;
 const ALTAR_Y  = 422;
@@ -86,59 +87,32 @@ export class AncestralWisdomScene extends Phaser.Scene {
   // ─── Header ──────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    // Cream top band with brown bottom edge + white top highlight.
-    const hdr = this.add.graphics();
-    hdr.fillStyle(CASUAL.PANEL, 1);
-    hdr.fillRect(0, 0, CANVAS_WIDTH, 80);
-    hdr.fillStyle(0xffffff, 0.12);
-    hdr.fillRect(0, 0, CANVAS_WIDTH, 4);
-    hdr.fillStyle(CASUAL.EDGE, 1);
-    hdr.fillRect(0, 80 - 3, CANVAS_WIDTH, 3);
-    hdr.setDepth(10);
+    const { title: headerTitle } = addSceneHeader(this, {
+      title:  '🌳 선조의 지혜',
+      y:      28,
+      depth:  11,
+      onBack: () => this.scene.start(
+        (this.registry.get('previousScene') as string) ?? 'StageSelectScene',
+      ),
+    });
 
-    this.add.text(CANVAS_WIDTH / 2, 22, '선조의 지혜', {
-      fontFamily: 'sans-serif',
-      fontSize: '22px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5, 0).setDepth(11);
-
-    // Crystal counter — cream chip with purple accent.
+    // Crystal counter pill — sits right of header title, acts as live subtitle.
     const crystalBg = this.add.graphics().setDepth(11);
     crystalBg.fillStyle(CASUAL.SHADOW, 0.18);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50 + 2, 110, 24, 8);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 58, 44 + 2, 116, 22, 8);
     crystalBg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
-    crystalBg.lineStyle(3, CASUAL.PURPLE, 1);
-    crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 55, 50, 110, 24, 8);
-    crystalBg.fillStyle(0xffffff, 0.12);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 50, 53, 100, 5, 3);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 58, 44, 116, 22, 8);
+    crystalBg.lineStyle(2.5, CASUAL.PURPLE, 1);
+    crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 58, 44, 116, 22, 8);
+    crystalBg.fillStyle(0xffffff, 0.10);
+    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 53, 47, 106, 4, 2);
 
-    this.crystalText = this.add.text(CANVAS_WIDTH / 2, 62, `💠 ${this.state.soulCrystals} 영혼 수정`, {
+    this.crystalText = this.add.text(CANVAS_WIDTH / 2, 55, `💠 ${this.state.soulCrystals} 영혼 수정`, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
     }).setOrigin(0.5).setDepth(12);
 
-    // Back button — casual pill.
-    this.buildBackButton(
-      18, 26, '← 던전으로',
-      () => this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene'),
-    );
-  }
-
-  private buildBackButton(x: number, y: number, label: string, cb: () => void): void {
-    const w = label.length * 8 + 18;
-    const g = this.add.graphics().setDepth(15);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
-    this.add.text(x - 4 + w / 2, y - 1, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(16);
-    const zone = this.add.zone(x - 4, y - 14, w, 28).setOrigin(0).setDepth(16)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', cb);
+    // Suppress TS "unused" warning — headerTitle is used by addSceneHeader internally.
+    void headerTitle;
   }
 
   // ─── Altar ───────────────────────────────────────────────────────────────────

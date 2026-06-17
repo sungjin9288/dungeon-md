@@ -12,6 +12,7 @@ import {
 } from '../data/achievements';
 import { claimAchievementReward } from '../data/rewardTransactions';
 import { unlockAvailableAchievements } from '../data/progressionTransactions';
+import { addSceneHeader, addTabBar, type TabBarTab } from '../ui/GameUiPrimitives';
 
 // ─── AchievementScene ─────────────────────────────────────────────────────────
 
@@ -29,7 +30,9 @@ const TABS: Tab[] = [
 const CARD_W   = 340;
 const CARD_H   = 68;
 const CARD_X   = (CANVAS_WIDTH - CARD_W) / 2;
-const LIST_TOP = 160;
+const HDR_H    = 56;   // addSceneHeader center y=28 → band height ~56
+const TAB_H    = 38;   // addTabBar height
+const LIST_TOP = HDR_H + TAB_H;
 const LIST_BOT = CANVAS_HEIGHT - 60;
 const VISIBLE_H = LIST_BOT - LIST_TOP;
 
@@ -42,10 +45,9 @@ export class AchievementScene extends Phaser.Scene {
   private ctx!: AchievementContext;
 
   // Containers
-  private headerContainer!:  Phaser.GameObjects.Container;
-  private tabContainer!:     Phaser.GameObjects.Container;
-  private listContainer!:    Phaser.GameObjects.Container;
-  private maskGraphics!:     Phaser.GameObjects.Graphics;
+  private tabContainer?:      Phaser.GameObjects.Container;
+  private listContainer!:     Phaser.GameObjects.Container;
+  private maskGraphics!:      Phaser.GameObjects.Graphics;
 
   constructor() { super({ key: 'AchievementScene' }); }
 
@@ -63,7 +65,6 @@ export class AchievementScene extends Phaser.Scene {
     this.buildTabs();
     this.buildList();
     this.setupScrollInput();
-    this.drawBackButton();
 
     // Fade in
     this.cameras.main.setAlpha(0);
@@ -102,97 +103,51 @@ export class AchievementScene extends Phaser.Scene {
   private drawBackground(): void {
     // Bright casual storybook backdrop (gradient + sun glow + polka dots).
     applyCasualBackground(this);
-
-    // Top header band (cream with white top highlight + brown bottom edge).
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRect(0, 0, CANVAS_WIDTH, 104);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, 0, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRect(0, 104 - 3, CANVAS_WIDTH, 3);
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   private buildHeader(): void {
-    const totalCount   = ACHIEVEMENT_DEFS.length;
+    const totalCount    = ACHIEVEMENT_DEFS.length;
     const unlockedCount = ACHIEVEMENT_DEFS.filter(
       d => this.gameState.achievements?.[d.id]?.unlocked,
     ).length;
 
-    this.headerContainer = this.add.container(0, 0);
-
-    const title = this.add.text(CANVAS_WIDTH / 2, 36, '🏆 업적', {
-      fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5);
-
-    const counter = this.add.text(CANVAS_WIDTH / 2, 68, `${unlockedCount} / ${totalCount}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
-    }).setOrigin(0.5);
-
-    // Progress bar — gold fill on a soft cream track
-    const pbg = this.add.graphics();
-    pbg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    pbg.fillRoundedRect(30, 86, CANVAS_WIDTH - 60, 8, 4);
-    pbg.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
-    pbg.strokeRoundedRect(30, 86, CANVAS_WIDTH - 60, 8, 4);
-
-    const pct  = totalCount > 0 ? unlockedCount / totalCount : 0;
-    const pfill = this.add.graphics();
-    pfill.fillStyle(CASUAL.GOLD, 1);
-    pfill.fillRoundedRect(31, 87, Math.max(0, (CANVAS_WIDTH - 62) * pct), 6, 3);
-
-    this.headerContainer.add([title, counter, pbg, pfill]);
+    addSceneHeader(this, {
+      title:    '🏆 업적',
+      subtitle: `${unlockedCount} / ${totalCount} 달성`,
+      y:        28,
+      onBack:   () => this.scene.start(
+        (this.registry.get('previousScene') as string) ?? 'StageSelectScene',
+      ),
+    });
   }
 
   // ─── Tabs ────────────────────────────────────────────────────────────────────
 
   private buildTabs(): void {
     if (this.tabContainer) this.tabContainer.destroy();
-    this.tabContainer = this.add.container(0, 108);
 
-    const tabW = Math.floor(CANVAS_WIDTH / TABS.length);
+    const tabDefs: Array<TabBarTab<AchievementCategory | 'all'>> = TABS.map(t => ({
+      id:    t.category,
+      label: `${t.icon} ${t.label}`,
+    }));
 
-    TABS.forEach((tab, i) => {
-      const x    = i * tabW;
-      const isActive = tab.category === this.activeTab;
-
-      const bg = this.add.graphics();
-      bg.fillStyle(CASUAL.PANEL, 1);
-      bg.fillRect(x, 0, tabW - 1, 40);
-      if (isActive) {
-        // saturated rounded active pill with white top highlight
-        bg.fillStyle(CASUAL.EDGE, 0.25);
-        bg.fillRoundedRect(x + 4, 6 + 2, tabW - 9, 30, 9);
-        bg.fillStyle(CASUAL.GOLD, 1);
-        bg.fillRoundedRect(x + 4, 6, tabW - 9, 30, 9);
-        bg.fillStyle(0xffffff, 0.32);
-        bg.fillRoundedRect(x + 8, 9, tabW - 17, 5, 3);
-      }
-
-      const txt = this.add.text(x + tabW / 2, 20, `${tab.icon}\n${tab.label}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
-        color: isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-        align: 'center',
-        stroke: isActive ? '#00000033' : undefined,
-        strokeThickness: isActive ? 2 : 0,
-      }).setOrigin(0.5);
-
-      const zone = this.add.zone(x + tabW / 2, 20, tabW - 1, 40)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => {
-        if (this.activeTab === tab.category) return;
-        this.activeTab = tab.category;
+    const { container } = addTabBar(this, {
+      tabs:     tabDefs,
+      active:   this.activeTab,
+      y:        HDR_H,
+      accent:   CASUAL.GOLD,
+      fontSize: '11px',
+      depth:    10,
+      onSelect: (id) => {
+        this.activeTab = id;
         this.scrollY   = 0;
         this.buildTabs();
         this.buildList();
-      });
-
-      this.tabContainer.add([bg, txt, zone]);
+      },
     });
+    this.tabContainer = container;
   }
 
   // ─── List ────────────────────────────────────────────────────────────────────
@@ -453,35 +408,5 @@ export class AchievementScene extends Phaser.Scene {
     });
   }
 
-  // ─── Back button ─────────────────────────────────────────────────────────────
-
-  private drawBackButton(): void {
-    const btnW = 100, btnH = 36;
-    const btnX = (CANVAS_WIDTH - btnW) / 2;
-    const btnY = CANVAS_HEIGHT - 50;
-
-    // Casual cream pill (matches BarracksScene.buildBtn look).
-    const drawPill = (hover: boolean): void => {
-      bg.clear();
-      bg.fillStyle(CASUAL.EDGE, 1);
-      bg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
-      bg.fillStyle(hover ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(btnX + 6, btnY + 4, btnW - 12, 5, 3);
-    };
-    const bg = this.add.graphics();
-    drawPill(false);
-
-    this.add.text(btnX + btnW / 2, btnY + btnH / 2, '← 뒤로', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
-    }).setOrigin(0.5);
-
-    const zone = this.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => drawPill(true));
-    zone.on('pointerout', () => drawPill(false));
-    zone.on('pointerdown', () => this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene'));
-  }
 }
+

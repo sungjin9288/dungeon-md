@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { addSceneHeader } from '../ui/GameUiPrimitives';
+import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
@@ -102,11 +102,11 @@ export class SummonScene extends Phaser.Scene {
         const t = this.time.now * 0.001;
         this.portalGraphics.clear();
 
-        // Outer glow rings (3 rings, different speeds + radii)
+        // Outer glow rings (3 rings, different speeds + radii) — CASUAL palette
         const rings = [
-          { r: 52, speed: 0.4,  color: 0x6600cc, alpha: 0.15 },
-          { r: 40, speed: 0.7,  color: 0x9933ff, alpha: 0.25 },
-          { r: 28, speed: 1.1,  color: 0xcc66ff, alpha: 0.40 },
+          { r: 52, speed: 0.4,  color: CASUAL.PURPLE_DK, alpha: 0.18 },
+          { r: 40, speed: 0.7,  color: CASUAL.PURPLE,    alpha: 0.30 },
+          { r: 28, speed: 1.1,  color: 0xd49cff,         alpha: 0.45 },
         ];
         for (const ring of rings) {
           const pulse = 1 + 0.08 * Math.sin(t * ring.speed * 2.5);
@@ -114,9 +114,9 @@ export class SummonScene extends Phaser.Scene {
           this.portalGraphics.strokeCircle(CX, PORTAL_CY, ring.r * pulse);
         }
 
-        // Inner core glow
+        // Inner core glow — CASUAL.PURPLE
         for (let r = 18; r >= 4; r -= 3) {
-          this.portalGraphics.fillStyle(0xcc44ff, 0.04 * (20 - r));
+          this.portalGraphics.fillStyle(CASUAL.PURPLE, 0.04 * (20 - r));
           this.portalGraphics.fillCircle(CX, PORTAL_CY, r);
         }
 
@@ -124,14 +124,14 @@ export class SummonScene extends Phaser.Scene {
         this.portalGraphics.fillStyle(0xffffff, 0.7 + 0.15 * Math.sin(t * 3));
         this.portalGraphics.fillCircle(CX, PORTAL_CY, 6);
 
-        // Floating runes (8 small circles orbiting)
+        // Floating runes (8 small circles orbiting) — CASUAL.PURPLE tint
         this.runeGraphics.clear();
         for (let i = 0; i < 8; i++) {
           const angle = (i / 8) * Math.PI * 2 + t * 0.6;
           const rx    = CX + Math.cos(angle) * 60;
           const ry    = PORTAL_CY + Math.sin(angle) * 22;
           const alpha = 0.25 + 0.25 * Math.sin(t * 1.5 + i);
-          this.runeGraphics.fillStyle(0xaa66ff, alpha);
+          this.runeGraphics.fillStyle(CASUAL.PURPLE, alpha);
           this.runeGraphics.fillCircle(rx, ry, 3.5);
         }
       },
@@ -299,63 +299,34 @@ export class SummonScene extends Phaser.Scene {
 
   // ─── Tab bar ────────────────────────────────────────────────────────────────
 
-  private summonTabBtn!: Phaser.GameObjects.Text;
-  private historyTabBtn!: Phaser.GameObjects.Text;
-  private tabPillGraphics!: Phaser.GameObjects.Graphics;
-  private readonly tabPillW = 96;
-  private readonly tabPillH = 26;
-  private readonly summonTabAccent = CASUAL.PURPLE;
-  private readonly historyTabAccent = CASUAL.BLUE;
+  private activeTab: 'summon' | 'history' = 'summon';
+  private tabBarContainer!: Phaser.GameObjects.Container;
 
   private drawTabBar(): void {
-    // Cream tab band with brown edge + white highlight strip.
-    const g = this.add.graphics().setDepth(6);
-    g.fillStyle(CASUAL.SHADOW, 0.18);
-    g.fillRect(0, TAB_Y + 32, CANVAS_WIDTH, 3);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRect(0, TAB_Y, CANVAS_WIDTH, 32);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, TAB_Y, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRect(0, TAB_Y + 32 - 3, CANVAS_WIDTH, 3);
-
-    this.tabPillGraphics = this.add.graphics().setDepth(7);
-
-    this.summonTabBtn = this.add.text(CX - 60, TAB_Y + 16, '🌀 소환', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
-    }).setOrigin(0.5).setDepth(10).setInteractive();
-    this.summonTabBtn.on('pointerdown', () => this.showTab('summon'));
-
-    this.historyTabBtn = this.add.text(CX + 60, TAB_Y + 16, '📜 기록', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5).setDepth(10).setInteractive();
-    this.historyTabBtn.on('pointerdown', () => this.showTab('history'));
-  }
-
-  private drawTabPill(cx: number, accent: number): void {
-    const g = this.tabPillGraphics;
-    const x = cx - this.tabPillW / 2;
-    const y = TAB_Y + 16 - this.tabPillH / 2;
-    g.fillStyle(CASUAL.EDGE, 0.3);
-    g.fillRoundedRect(x, y + 2, this.tabPillW, this.tabPillH, 12);
-    g.fillStyle(accent, 1);
-    g.fillRoundedRect(x, y, this.tabPillW, this.tabPillH, 12);
-    g.fillStyle(0xffffff, 0.3);
-    g.fillRoundedRect(x + 6, y + 4, this.tabPillW - 12, 5, 3);
+    const { container } = addTabBar(this, {
+      tabs: [
+        { id: 'summon',  label: '🌀 소환', accent: CASUAL.PURPLE },
+        { id: 'history', label: '📜 기록', accent: CASUAL.BLUE   },
+      ],
+      active:   this.activeTab,
+      y:        TAB_Y,
+      accent:   CASUAL.PURPLE,
+      height:   32,
+      fontSize: '12px',
+      depth:    8,
+      onSelect: (id) => this.showTab(id as 'summon' | 'history'),
+    });
+    this.tabBarContainer = container;
   }
 
   private showTab(tab: 'summon' | 'history'): void {
+    this.activeTab = tab;
     this.summonTabContainer.setVisible(tab === 'summon');
     this.historyTabContainer.setVisible(tab === 'history');
 
-    this.tabPillGraphics.clear();
-    const isSummon = tab === 'summon';
-    this.drawTabPill(isSummon ? CX - 60 : CX + 60, isSummon ? this.summonTabAccent : this.historyTabAccent);
-
-    this.summonTabBtn.setColor(isSummon ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
-    this.summonTabBtn.setStroke(isSummon ? '#00000033' : '#00000000', isSummon ? 3 : 0);
-    this.historyTabBtn.setColor(isSummon ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.WHITE);
-    this.historyTabBtn.setStroke(isSummon ? '#00000000' : '#00000033', isSummon ? 0 : 3);
+    // Rebuild tab bar to reflect new active state
+    this.tabBarContainer.destroy();
+    this.drawTabBar();
   }
 
   // ─── Summon tab ─────────────────────────────────────────────────────────────
