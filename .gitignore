@@ -1,5 +1,6 @@
 node_modules/
 dist/
+coverage/
 *.keystore
 *.jks
 android/app/release/
