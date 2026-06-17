@@ -1,0 +1,363 @@
+/**
+ * HomeBoardScenery — extracted private-method bodies from DungeonHomeScene.
+ *
+ * These were all PRIVATE methods; only DungeonHomeScene calls them (via
+ * one-line delegators that keep the original `this.<name>(...)` call sites).
+ * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
+ */
+import type { DungeonHomeScene } from './DungeonHomeScene';
+import Phaser from 'phaser';
+import { CASUAL } from '../constants/colors';
+import { getUnlockedSlots } from '../data/wisdom';
+import { calculateDungeonMetrics } from '../data/dungeonMetrics';
+import { getReducedMotion } from '../utils/reducedMotion';
+
+// ─── Entrance gate ─────────────────────────────────────────────────────────────
+
+export function drawDungeonEntranceGate(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  accent: number,
+): void {
+  // Phase D: Full-width top banner — clearer "침입문" label, bigger arch gate,
+  // downward chevrons showing where invaders breach.
+  const { boardRect } = scene.boardLayout;
+  const bx  = boardRect.x + 3;
+  const bw  = boardRect.w - 6;
+  const top = boardRect.y + 3;
+  const btm = boardRect.y + (scene.boardLayout.entrance.y - boardRect.y) * 2 + 4;
+  const bannerH = btm - top;
+
+  // Red threat glow fill
+  g.fillStyle(0x3a0808, 0.96);
+  g.fillRoundedRect(bx, top, bw, bannerH, 10);
+  g.fillStyle(accent, 0.14);
+  g.fillRoundedRect(bx, top, bw, bannerH, 10);
+  // Highlight top rim
+  g.fillStyle(0xffffff, 0.07);
+  g.fillRoundedRect(bx + 4, top + 3, bw - 8, 6, 4);
+  // Border
+  g.lineStyle(2, accent, 0.60);
+  g.strokeRoundedRect(bx, top, bw, bannerH, 10);
+
+  // Arch gate symbol — centred, slightly bigger than before
+  const gR = 14;
+  g.fillStyle(0x050302, 0.92);
+  g.fillCircle(x, y, gR);
+  g.fillRoundedRect(x - gR + 2, y, (gR - 2) * 2, gR + 4, 4);
+  g.lineStyle(2, accent, 0.80);
+  g.strokeCircle(x, y, gR);
+  // Inner arch highlight
+  g.lineStyle(1, 0xffffff, 0.16);
+  g.strokeCircle(x, y, gR - 4);
+
+  // Downward threat chevrons (invaders pour downward)
+  g.lineStyle(2.2, accent, 0.82);
+  for (let k = 0; k < 3; k++) {
+    const cy2 = y + 2 + k * 6;
+    g.lineBetween(x - 7, cy2, x, cy2 + 5);
+    g.lineBetween(x + 7, cy2, x, cy2 + 5);
+  }
+
+  // Labels — left and right of the banner
+  c.add(scene.add.text(bx + 12, y, '침입문', {
+    fontFamily: 'sans-serif',
+    fontSize: '13px',
+    color: '#ffb8b8',
+    fontStyle: 'bold',
+    stroke: '#1a0000', strokeThickness: 4,
+  }).setOrigin(0, 0.5).setAlpha(0.98).setDepth(3));
+
+  // Threat sub-label right side
+  c.add(scene.add.text(bx + bw - 12, y, '▼ 침략', {
+    fontFamily: 'sans-serif',
+    fontSize: '10px',
+    color: '#ff8888',
+    fontStyle: 'bold',
+    stroke: '#1a0000', strokeThickness: 3,
+  }).setOrigin(1, 0.5).setAlpha(0.80).setDepth(3));
+
+  // Phase D motion: entrance "breach" pulse (tween on a pre-built ring graphic)
+  const reducedMotion = getReducedMotion();
+  if (!reducedMotion) {
+    const pulse = scene.add.graphics();
+    pulse.lineStyle(2.5, accent, 0.56);
+    pulse.strokeCircle(x, y, gR + 2);
+    pulse.lineStyle(1, accent, 0.28);
+    pulse.strokeCircle(x, y, gR + 6);
+    c.add(pulse);
+    scene.tweens.add({
+      targets: pulse,
+      scaleX: 1.30,
+      scaleY: 1.30,
+      alpha: 0,
+      duration: 1400,
+      repeat: -1,
+      ease: 'Sine.easeOut',
+      onRepeat: () => {
+        pulse.setScale(1).setAlpha(0.56);
+      },
+    });
+  }
+}
+
+// ─── Heart core ────────────────────────────────────────────────────────────────
+
+export function drawDungeonHeartCore(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  _accent: number,
+): void {
+  // Phase D: readiness-linked heart glow.
+  // Low readiness (<40) → alarmed red; mid (40-70) → amber; high (>70) → calm gold.
+  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
+  const readiness = dungeonMetrics.readiness;
+  const accent = readiness >= 70 ? CASUAL.GOLD
+    : readiness >= 40 ? 0xffaa22
+    : 0xff5544;
+
+  const glowAlphaBase = readiness >= 70 ? 0.10
+    : readiness >= 40 ? 0.15
+    : 0.22;   // more alarmed = stronger glow
+
+  // Full-width bottom plinth — protected core, the thing under threat.
+  const { boardRect } = scene.boardLayout;
+  const bx       = boardRect.x + 3;
+  const bw       = boardRect.w - 6;
+  const plinthTop = y - 20;
+  const plinthBtm = boardRect.y + boardRect.h - 3;
+  const plinthH   = plinthBtm - plinthTop;
+
+  // Plinth background — darker stone with accent tint
+  g.fillStyle(readiness >= 70 ? 0x2a1a00 : readiness >= 40 ? 0x2a1400 : 0x2a0808, 0.96);
+  g.fillRoundedRect(bx, plinthTop, bw, plinthH, 10);
+  g.fillStyle(accent, glowAlphaBase);
+  g.fillRoundedRect(bx, plinthTop, bw, plinthH, 10);
+  // Highlight rim
+  g.fillStyle(0xffffff, 0.05);
+  g.fillRoundedRect(bx + 4, plinthTop + 3, bw - 8, 6, 4);
+  // Border
+  g.lineStyle(2, accent, readiness >= 70 ? 0.50 : readiness >= 40 ? 0.60 : 0.72);
+  g.strokeRoundedRect(bx, plinthTop, bw, plinthH, 10);
+  // Top seam line
+  g.lineStyle(1.5, accent, 0.42);
+  g.lineBetween(bx + 8, plinthTop, bx + bw - 8, plinthTop);
+
+  // Core orb — larger in Phase D, radius 16
+  const oR = 16;
+  g.fillStyle(0x050302, 0.90);
+  g.fillCircle(x, y, oR);
+  // Outer glow rings
+  g.fillStyle(accent, glowAlphaBase * 1.6);
+  g.fillCircle(x, y, oR + 7);
+  g.fillStyle(accent, glowAlphaBase * 0.9);
+  g.fillCircle(x, y, oR + 14);
+  // Orb fill
+  g.fillStyle(accent, 0.22);
+  g.fillCircle(x, y, oR);
+  // Ring borders
+  g.lineStyle(2, accent, readiness >= 70 ? 0.72 : 0.85);
+  g.strokeCircle(x, y, oR);
+  g.lineStyle(1, 0xffffff, 0.20);
+  g.strokeCircle(x, y, oR - 5);
+  // Core bright dot
+  g.fillStyle(accent, 0.88);
+  g.fillCircle(x, y, 5);
+  g.fillStyle(0xffffff, 0.45);
+  g.fillCircle(x - 2, y - 2, 2.2);
+
+  // Labels
+  c.add(scene.add.text(bx + 12, y, '심장부', {
+    fontFamily: 'sans-serif',
+    fontSize: '13px',
+    color: readiness >= 70 ? '#ffd24a' : readiness >= 40 ? '#ffaa44' : '#ff7766',
+    fontStyle: 'bold',
+    stroke: '#1a1002', strokeThickness: 4,
+  }).setOrigin(0, 0.5).setAlpha(0.98).setDepth(3));
+
+  // Readiness sub-label right side
+  const readinessLabel = readiness >= 70 ? '✦ 수호' : readiness >= 40 ? '△ 경계' : '! 위협';
+  c.add(scene.add.text(bx + bw - 12, y, readinessLabel, {
+    fontFamily: 'sans-serif',
+    fontSize: '10px',
+    color: readiness >= 70 ? '#ffd24a' : readiness >= 40 ? '#ffbb55' : '#ff8866',
+    fontStyle: 'bold',
+    stroke: '#1a1002', strokeThickness: 3,
+  }).setOrigin(1, 0.5).setAlpha(0.84).setDepth(3));
+
+  // Phase D motion: heart glow pulse tied to readiness — alarmed = faster pulse
+  const reducedMotion = getReducedMotion();
+  if (!reducedMotion) {
+    const glowPulse = scene.add.graphics();
+    glowPulse.lineStyle(2, accent, 0.52);
+    glowPulse.strokeCircle(x, y, oR + 2);
+    glowPulse.lineStyle(1, accent, 0.24);
+    glowPulse.strokeCircle(x, y, oR + 8);
+    c.add(glowPulse);
+    // Faster pulse when readiness is low (more alarmed feel)
+    const pulseDuration = readiness >= 70 ? 2200 : readiness >= 40 ? 1600 : 1000;
+    scene.tweens.add({
+      targets: glowPulse,
+      scaleX: 1.28,
+      scaleY: 1.28,
+      alpha: 0,
+      duration: pulseDuration,
+      repeat: -1,
+      ease: 'Sine.easeOut',
+      onRepeat: () => {
+        glowPulse.setScale(1).setAlpha(0.52);
+      },
+    });
+  }
+}
+
+// ─── Map backdrop ──────────────────────────────────────────────────────────────
+
+export function drawDungeonMapBackdrop(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  _unlockedCount: number,
+): void {
+  const { boardRect, floors, entrance, heart, route: layoutRoute } = scene.boardLayout;
+  const mapX = boardRect.x;
+  const mapY = boardRect.y;
+  const mapW = boardRect.w;
+  const mapH = boardRect.h;
+
+  // ── Outer dungeon tray: dark stone body + chunky brown edge + drop shadow ──
+  g.fillStyle(CASUAL.SHADOW, 0.45);
+  g.fillRoundedRect(mapX + 3, mapY + 5, mapW, mapH, 14);
+  g.fillStyle(CASUAL.EDGE, 1);
+  g.fillRoundedRect(mapX, mapY, mapW, mapH, 14);
+  g.fillStyle(CASUAL.BG_BOTTOM, 1);
+  g.fillRoundedRect(mapX + 3, mapY + 3, mapW - 6, mapH - 6, 12);
+
+  // ── Entrance strip — drawn by drawDungeonEntranceGate (skip pre-fill here) ──
+  // Just draw a bottom seam for the entrance → B1 transition
+  const entranceBtmY = entrance.y + (entrance.y - mapY);
+  g.lineStyle(1, CASUAL.RED, 0.30);
+  g.lineBetween(mapX + 8, entranceBtmY, mapX + mapW - 8, entranceBtmY);
+
+  // ── Heart strip — drawn by drawDungeonHeartCore (skip pre-fill here) ──
+  // Just draw a top seam for the B3 → heart transition
+  const heartTopY = heart.y - (mapY + mapH - heart.y);
+  g.lineStyle(1, CASUAL.GOLD, 0.24);
+  g.lineBetween(mapX + 8, heartTopY, mapX + mapW - 8, heartTopY);
+
+  // ── Per-floor stone shelves (each a horizontal band) ──────────────────────
+  // Tone gets slightly darker/deeper as floors descend.
+  const bandBaseColors = [0x2e2418, 0x271e13, 0x211810];  // B1 lightest, B3 darkest
+  for (const band of floors) {
+    const { bandRect, labelPos, label, floor } = band;
+    const bx = bandRect.x + 3;
+    const by = bandRect.y;
+    const bw = bandRect.w - 6;
+    const bh = bandRect.h;
+
+    // Band fill — dark stone shelf
+    g.fillStyle(bandBaseColors[floor] ?? CASUAL.PANEL, 0.96);
+    g.fillRoundedRect(bx, by, bw, bh, 8);
+    // Subtle lighter stone border
+    g.lineStyle(1.2, CASUAL.EDGE_SOFT, 0.24 + floor * 0.05);
+    g.strokeRoundedRect(bx, by, bw, bh, 8);
+    // Top highlight strip (light rim to give 3D ledge feel)
+    g.fillStyle(0xffffff, 0.05);
+    g.fillRoundedRect(bx + 4, by + 2, bw - 8, 6, 3);
+
+    // Phase D: Floor label chip — floats above the band's top seam.
+    // labelPos.y = bandTop (the top edge of this band).
+    // Chip is centred on that y so it straddles the gap between bands,
+    // keeping it clear of cell content.  depth 12/13 so it sits above cells.
+    const chipX = labelPos.x;
+    const chipY = labelPos.y;   // = bandTop
+    const chipW = 38;
+    const chipH = 22;
+    // Use a separate graphics at depth 12 so it draws over band fill and cells
+    const chipG = scene.add.graphics().setDepth(12);
+    // Chip shadow
+    chipG.fillStyle(CASUAL.SHADOW, 0.60);
+    chipG.fillRoundedRect(chipX - chipW / 2 + 2, chipY - chipH / 2 + 2, chipW, chipH, 6);
+    // Chip body — slightly lighter stone
+    chipG.fillStyle(CASUAL.EDGE, 1);
+    chipG.fillRoundedRect(chipX - chipW / 2, chipY - chipH / 2, chipW, chipH, 6);
+    chipG.fillStyle(0xffffff, 0.10);
+    chipG.fillRoundedRect(chipX - chipW / 2 + 3, chipY - chipH / 2 + 3, chipW - 6, 4, 3);
+    // Chip border
+    chipG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.82);
+    chipG.strokeRoundedRect(chipX - chipW / 2, chipY - chipH / 2, chipW, chipH, 6);
+    c.add(chipG);
+    // Label text — large and bold, clearly legible
+    c.add(scene.add.text(chipX, chipY, label, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#f0e6c8', fontStyle: 'bold',
+      stroke: '#0a0806', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(13));
+  }
+
+  // ── Per-room card backing (Phase D: state-legibility pass) ───────────────
+  // States: built(green/active), broken(red), locked/excavate(brown dim), empty(faint)
+  const { slotW, slotH } = scene.boardLayout;
+  for (const [idx, bdCell] of scene.boardLayout.cellsByIdx) {
+    const cx = bdCell.rect.x;
+    const cy = bdCell.rect.y;
+    const cw = bdCell.rect.w;
+    const ch = bdCell.rect.h;
+    const isUnlocked = bdCell.isUnlocked;
+    const slot = scene.gs.dungeonSlots?.[idx];
+    const isBuilt   = !!slot?.roomType && slot.hp > 0;
+    const isBroken  = !!slot?.roomType && slot.hp <= 0;
+    const isEmpty   = isUnlocked && !slot?.roomType;
+
+    // Choose fill + border based on state
+    const cardFill  = isBroken ? 0x2a0808 : isBuilt ? CASUAL.PANEL_SOFT : isUnlocked ? CASUAL.PANEL : 0x1a1208;
+    const cardAlpha = isUnlocked ? 1 : 0.72;
+    const borderC   = isBroken ? CASUAL.RED : isBuilt ? scene.getRoomActivityColor(slot) : isUnlocked ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
+    const borderA   = isBroken ? 0.72 : isBuilt ? 0.60 : isEmpty ? 0.42 : 0.18;
+
+    // Shadow
+    g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.32 : 0.12);
+    g.fillRoundedRect(cx + 1, cy + 3, cw, ch, 10);
+    // Card
+    g.fillStyle(cardFill, cardAlpha);
+    g.fillRoundedRect(cx, cy, cw, ch, 10);
+
+    // State-specific interior hints
+    if (isEmpty) {
+      // Dashed / faint grid lines to suggest "empty slot ready for a room"
+      g.lineStyle(1, CASUAL.GREEN, 0.18);
+      g.lineBetween(cx + 8, cy + ch / 2, cx + cw - 8, cy + ch / 2);
+      g.lineBetween(cx + cw / 2, cy + 8, cx + cw / 2, cy + ch - 8);
+    } else if (!isUnlocked) {
+      // Locked slot: crosshatch hint (굴착 needed)
+      g.fillStyle(CASUAL.EDGE_SOFT, 0.10);
+      for (let li = 0; li < 4; li++) {
+        g.fillRect(cx + 6 + li * (cw - 12) / 3, cy + 4, 1, ch - 8);
+      }
+    } else if (isBroken) {
+      // Broken: red tint fill
+      g.fillStyle(CASUAL.RED, 0.08);
+      g.fillRoundedRect(cx + 2, cy + 2, cw - 4, ch - 4, 8);
+    }
+
+    // Sheen highlight (top)
+    g.fillStyle(0xffffff, isUnlocked ? 0.07 : 0.02);
+    g.fillRoundedRect(cx + 4, cy + 3, cw - 8, 6, 3);
+    // Accent border — thicker for built/broken to pop
+    g.lineStyle(isBroken || isBuilt ? 3 : 2, borderC, borderA);
+    g.strokeRoundedRect(cx, cy, cw, ch, 10);
+  }
+  void slotW; void slotH; // referenced by drawBattleSlot callers via boardLayout
+
+  // ── Narrative anchors (entrance gate + heart core) ────────────────────────
+  if (layoutRoute.length > 0) {
+    drawDungeonEntranceGate(scene, c, g, entrance.x, entrance.y, CASUAL.RED);
+    drawDungeonHeartCore(scene, c, g, heart.x, heart.y, CASUAL.GOLD);
+  }
+}
