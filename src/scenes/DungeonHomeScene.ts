@@ -93,6 +93,7 @@ import {
   showBattleDefeatOverlay,
   showChapterCompleteOverlay,
 } from '../ui/HomeOverlays';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
 
@@ -824,7 +825,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       );
     };
 
-    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    if (getReducedMotion()) {
       openOverlay();
       return;
     }
@@ -1235,7 +1236,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     pinContainer.add(zone);
     c.add(pinContainer);
 
-    if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    if (getReducedMotion()) return;
     this.tweens.add({
       targets: pinContainer,
       y: y - 3,
@@ -1260,7 +1261,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const actions = getDungeonActionQueue(this.gs, unlockedCount).slice(0, 3);
     if (actions.length === 0) return;
 
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
     actions.forEach((action, i) => {
       const aqCell = this.boardLayout.cellsByIdx.get(action.slotIdx);
       const x = aqCell?.center.x ?? 0;
@@ -1386,7 +1387,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       .slice(0, 3);
     if (maintenanceActions.length === 0) return;
 
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
     maintenanceActions.forEach(action => {
       const mbCell = this.boardLayout.cellsByIdx.get(action.slotIdx);
       const x = mbCell?.center.x ?? 0;
@@ -1624,7 +1625,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     c: Phaser.GameObjects.Container,
     unlockedCount: number,
   ): void {
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
     for (let idx = 0; idx < unlockedCount; idx++) {
       const slot = this.gs.dungeonSlots?.[idx];
       if (!slot?.roomType || slot.hp <= 0) continue;
@@ -1792,7 +1793,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     }).setOrigin(1, 0.5).setAlpha(0.80).setDepth(3));
 
     // Phase D motion: entrance "breach" pulse (tween on a pre-built ring graphic)
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
     if (!reducedMotion) {
       const pulse = this.add.graphics();
       pulse.lineStyle(2.5, accent, 0.56);
@@ -1901,7 +1902,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     }).setOrigin(1, 0.5).setAlpha(0.84).setDepth(3));
 
     // Phase D motion: heart glow pulse tied to readiness — alarmed = faster pulse
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
     if (!reducedMotion) {
       const glowPulse = this.add.graphics();
       glowPulse.lineStyle(2, accent, 0.52);
@@ -2409,7 +2410,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     const polyline = this.boardLayout.routePolyline;
     if (polyline.length < 2) return;
 
-    const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reducedMotion = getReducedMotion();
 
     // Phase D idle cadence: calm, staggered downward flow.
     // Each segment gets 3 particles staggered by 600ms (AFK idle feel).

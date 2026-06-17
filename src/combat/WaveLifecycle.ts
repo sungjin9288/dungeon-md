@@ -16,6 +16,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_ROWS, GRID_Y } from '../constants/lay
 import { COLORS, CASUAL } from '../constants/colors';
 import { logger } from '../utils/logger';
 import { WAVE_BUTTON_H, WAVE_BUTTON_W } from './DungeonLayout';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── showWaveEnemyPreview ─────────────────────────────────────────────────────
 // Brief "농민 ×5  기사 ×1" pill shown just after the wave banner slides in.
@@ -215,8 +216,7 @@ export function enableWaveButton(ctx: WavePrepContext): void {
 
   // Wave-ready glow pulse — attract attention after result panel closes
   const scene = ctx.scene;
-  const reducedMotion = typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = getReducedMotion();
 
   if (!reducedMotion) {
     // Fill glow: soft gold wash inside the button

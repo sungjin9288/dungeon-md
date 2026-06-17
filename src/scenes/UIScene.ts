@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -400,8 +401,7 @@ export class UIScene extends Phaser.Scene {
         this.remainingText?.setText(`👾 ${v}명`);
         this.remainingText?.setColor(v <= 3 ? CASUAL_CSS.RED : CASUAL_CSS.INK_SOFT);
         this.remainingPillBg?.setAlpha(1);
-        const reducedMotion = typeof window !== 'undefined' &&
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const reducedMotion = getReducedMotion();
         if (v <= 3 && !reducedMotion && this.remainingText) {
           this.tweens.killTweensOf(this.remainingText);
           this.tweens.add({

@@ -14,6 +14,7 @@ import { EQUIPMENT_DEFS, getEquipmentStats, type EquipmentStats } from '../data/
 import { getDungeonActionQueue } from '../data/roomActionRecommendations';
 import type { } from '../themes/themes';
 import type { PickerNavCallbacks } from './RoomPickerModals';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export type { PickerNavCallbacks };
 
@@ -187,7 +188,7 @@ export function getDirectiveVisualMeta(directive: RoomDirective): { icon: string
 }
 
 export function prefersReducedMotion(): boolean {
-  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  return getReducedMotion();
 }
 
 export function shouldHighlightDirectiveTarget(directive: RoomDirective, target: RoomDirectiveTarget): boolean {

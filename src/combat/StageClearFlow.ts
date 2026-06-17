@@ -13,6 +13,7 @@ import { applyClearRewards } from '../data/clearRewards';
 import { recordClear, STAGE_CONFIGS } from '../data/stageProgress';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
+import { popIn } from '../ui/motion';
 import type { ResultFlowContext } from './ResultFlow';
 import { showGameComplete } from './GameCompleteFlow';
 
@@ -119,11 +120,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
         color: isFilled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
     ).setOrigin(0.5).setScale(0).setAlpha(0);
     ov.add(starT);
-    scene.tweens.add({
-      targets: starT, scaleX: 1, scaleY: 1, alpha: 1,
-      duration: 280, ease: 'Back.easeOut',
-      delay: 650 + si * 110,
-    });
+    // Gated pop (snaps to final state under prefers-reduced-motion).
+    popIn(scene, starT, { duration: 280, delay: 650 + si * 110 });
   }
 
   const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💠`, {

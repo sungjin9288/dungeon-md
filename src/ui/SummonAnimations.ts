@@ -5,6 +5,7 @@ import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { loadGameState } from '../data/wisdom';
 import { generatePortrait } from '../art/PortraitGenerator';
 import { addPrimaryActionButton } from './GameUiPrimitives';
+import { popIn } from './motion';
 import {
   RARITY_COLORS, RARITY_CSS, RARITY_STARS, RARITY_KO,
 } from '../data/summonPools';
@@ -292,7 +293,7 @@ export function playSinglePullAnimation(
               fontFamily: 'sans-serif', fontSize: '16px',
             }).setOrigin(0.5).setDepth(98).setAlpha(0).setScale(0);
             ov.add(st);
-            scene.tweens.add({ targets: st, alpha: 1, scaleX: 1, scaleY: 1, duration: 200, ease: 'Back.easeOut' });
+            popIn(scene, st, { duration: 200 });
           });
           delay += 100;
         });
