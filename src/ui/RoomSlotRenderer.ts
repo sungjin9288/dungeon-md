@@ -458,25 +458,48 @@ export function drawBattleSlot(
   const { scene, gs } = ctx;
 
   if (!unlocked) {
-    // Locked slots read as raw rock to be excavated — dungeon expansion.
-    drawRoughEdgeRect(g, 0x1c150b, 1, x, y, SLOT_W, SLOT_H, index * 17);
-    strokeRoughEdgeRect(g, CASUAL.EDGE, 0.7, 2.5, x, y, SLOT_W, SLOT_H, index * 17);
+    // Sealed dungeon chamber — a barred cell mouth carved into raw rock.
+    // (Replaces the old pickaxe/"굴착" affordance that read as an idle-miner
+    //  grid rather than a dungeon you unseal.)
+    drawRoughEdgeRect(g, 0x140d07, 1, x, y, SLOT_W, SLOT_H, index * 17);
+    strokeRoughEdgeRect(g, CASUAL.EDGE, 0.55, 2.5, x, y, SLOT_W, SLOT_H, index * 17);
     drawLockedExcavationFace(g, x, y, index * 17);
     const cx = x + SLOT_W / 2;
     const cy = y + SLOT_H / 2;
-    // Pickaxe affordance — "dig this out".
-    g.fillStyle(0x000000, 0.3);
-    g.fillCircle(cx, cy - 8, 15);
-    c.add(scene.add.text(cx, cy - 8, '⛏', { fontSize: '18px' }).setOrigin(0.5).setAlpha(0.92));
+    // Recessed chamber mouth — a dark archway carved into the wall
+    const mw = 58, mh = 50, mTop = cy - 30;
+    g.fillStyle(0x000000, 0.62);
+    g.fillRoundedRect(cx - mw / 2, mTop, mw, mh, 7);
+    g.fillStyle(0x1c1409, 0.5);
+    g.fillRoundedRect(cx - mw / 2 + 2, mTop + 2, mw - 4, mh - 4, 6);
+    // Iron bars + crossbar — an unmistakable dungeon cell gate
+    const barTop = mTop + 3, barBtm = mTop + mh - 4;
+    g.lineStyle(3, 0x3e352b, 0.95);
+    for (let b = 0; b < 3; b++) {
+      const bxp = cx - mw / 2 + 12 + b * (mw - 24) / 2;
+      g.lineBetween(bxp, barTop, bxp, barBtm);
+    }
+    g.lineBetween(cx - mw / 2 + 5, mTop + mh * 0.42, cx + mw / 2 - 5, mTop + mh * 0.42);
+    // Cold iron highlight along each bar
+    g.lineStyle(1, 0x6a5e4e, 0.5);
+    for (let b = 0; b < 3; b++) {
+      const bxp = cx - mw / 2 + 12 + b * (mw - 24) / 2 - 1;
+      g.lineBetween(bxp, barTop, bxp, barBtm);
+    }
+    // Central iron padlock on the gate
+    g.fillStyle(0x241a10, 1);     g.fillCircle(cx, cy + 1, 6);
+    g.lineStyle(2, 0x5a4a36, 0.9); g.strokeCircle(cx, cy + 1, 6);
+    g.fillStyle(0xc8921a, 0.85);  g.fillCircle(cx, cy + 1, 1.6);
+    // Unlock-level stone plaque — muted carved stone, not a bright gold pill
     const reqLv = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
-    g.fillStyle(CASUAL.PANEL, 0.98);
-    g.fillRoundedRect(cx - 26, cy + 10, 52, 17, 6);
-    g.lineStyle(1.5, CASUAL.GOLD_DK, 0.8);
-    g.strokeRoundedRect(cx - 26, cy + 10, 52, 17, 6);
-    c.add(scene.add.text(cx, cy + 18, `Lv.${reqLv} 굴착`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.GOLD,
+    g.fillStyle(0x140d07, 0.96);
+    g.fillRoundedRect(cx - 26, cy + 22, 52, 16, 4);
+    g.lineStyle(1.2, CASUAL.EDGE, 0.7);
+    g.strokeRoundedRect(cx - 26, cy + 22, 52, 16, 4);
+    c.add(scene.add.text(cx, cy + 30, `🔒 Lv.${reqLv}`, {
+      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
-    }).setOrigin(0.5));
+    }).setOrigin(0.5).setAlpha(0.9));
     return;
   }
 

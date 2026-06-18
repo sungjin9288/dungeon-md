@@ -12,6 +12,52 @@ import { getUnlockedSlots } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { getReducedMotion } from '../utils/reducedMotion';
 
+// ─── Dungeon atmosphere helpers ──────────────────────────────────────────────
+// Make surfaces read as carved STONE, not flat UI fills: mortar courses + a
+// deterministic stone speckle. Pure Graphics, no per-frame cost.
+
+/** Stacked-stone-block texture: horizontal mortar courses + staggered head joints. */
+export function drawStoneCourses(
+  g: Phaser.GameObjects.Graphics,
+  x: number, y: number, w: number, h: number,
+  course = 13,
+): void {
+  g.lineStyle(1, 0x000000, 0.22);
+  let row = 0;
+  for (let cy = y + course; cy < y + h - 2; cy += course, row++) {
+    g.lineBetween(x + 3, cy, x + w - 3, cy);           // mortar course (bed joint)
+    // staggered vertical head joints, offset every other row (running bond)
+    const off = (row % 2) * (course * 1.6);
+    for (let hx = x + 6 + off; hx < x + w - 4; hx += course * 3.2) {
+      g.lineBetween(hx, cy, hx, Math.min(cy + course, y + h - 2));
+    }
+  }
+  // faint top highlight on each block top (light catching the stone lip)
+  g.lineStyle(1, 0xffffff, 0.04);
+  for (let cy = y + course; cy < y + h - 2; cy += course) {
+    g.lineBetween(x + 3, cy + 1, x + w - 3, cy + 1);
+  }
+}
+
+/** Warm radial torch light-pool (stacked alpha circles) + a flame + bright core. */
+export function drawTorchLight(
+  g: Phaser.GameObjects.Graphics,
+  x: number, y: number, scale = 1,
+): void {
+  // light pool — large soft warm glow fading outward (bold: real chiaroscuro)
+  g.fillStyle(0xff8a2a, 0.07); g.fillCircle(x, y, 64 * scale);
+  g.fillStyle(0xff8a2a, 0.10); g.fillCircle(x, y, 46 * scale);
+  g.fillStyle(0xff9a30, 0.14); g.fillCircle(x, y, 30 * scale);
+  g.fillStyle(0xffb347, 0.20); g.fillCircle(x, y, 18 * scale);
+  // iron bracket
+  g.fillStyle(0x140d07, 1);    g.fillRect(x - 2.5, y, 5, 11 * scale);
+  // flame (bigger, brighter)
+  g.fillStyle(0xc8521a, 0.95); g.fillEllipse(x, y - 3 * scale, 9 * scale, 15 * scale);
+  g.fillStyle(0xffa028, 1);    g.fillEllipse(x, y - 4 * scale, 6 * scale, 11 * scale);
+  g.fillStyle(0xffe89a, 1);    g.fillEllipse(x, y - 5 * scale, 3 * scale, 6 * scale);
+  g.fillStyle(0xffffff, 0.85); g.fillEllipse(x, y - 5 * scale, 1.4 * scale, 3 * scale);
+}
+
 // ─── Entrance gate ─────────────────────────────────────────────────────────────
 
 export function drawDungeonEntranceGate(
@@ -265,6 +311,8 @@ export function drawDungeonMapBackdrop(
     // Band fill — dark stone shelf
     g.fillStyle(bandBaseColors[floor] ?? CASUAL.PANEL, 0.96);
     g.fillRoundedRect(bx, by, bw, bh, 8);
+    // Carved stone-block texture (mortar courses) — reads as stacked masonry
+    drawStoneCourses(g, bx, by, bw, bh);
     // Subtle lighter stone border
     g.lineStyle(1.2, CASUAL.EDGE_SOFT, 0.24 + floor * 0.05);
     g.strokeRoundedRect(bx, by, bw, bh, 8);
@@ -301,6 +349,21 @@ export function drawDungeonMapBackdrop(
     }).setOrigin(0.5).setDepth(13));
   }
 
+  // ── Wall torches: warm light pools on the stone (signature dungeon lighting) ──
+  // A sconce pair per floor band lights the chambers; pools fade into darkness.
+  for (const band of floors) {
+    const ty = band.bandRect.y + band.bandRect.h / 2;
+    drawTorchLight(g, mapX + 20, ty);
+    drawTorchLight(g, mapX + mapW - 20, ty);
+  }
+
+  // ── Vignette: darken the board perimeter for an enclosed underground feel ──
+  // Layered insets → a gradient-ish darkening toward the stone walls.
+  g.lineStyle(28, CASUAL.SHADOW, 0.16);
+  g.strokeRoundedRect(mapX + 14, mapY + 14, mapW - 28, mapH - 28, 12);
+  g.lineStyle(14, CASUAL.SHADOW, 0.18);
+  g.strokeRoundedRect(mapX + 7, mapY + 7, mapW - 14, mapH - 14, 13);
+
   // ── Per-room card backing (Phase D: state-legibility pass) ───────────────
   // States: built(green/active), broken(red), locked/excavate(brown dim), empty(faint)
   const { slotW, slotH } = scene.boardLayout;
@@ -324,9 +387,11 @@ export function drawDungeonMapBackdrop(
     // Shadow
     g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.32 : 0.12);
     g.fillRoundedRect(cx + 1, cy + 3, cw, ch, 10);
-    // Card
+    // Card — a hollow stone chamber carved into the wall
     g.fillStyle(cardFill, cardAlpha);
     g.fillRoundedRect(cx, cy, cw, ch, 10);
+    // Carved masonry texture inside the chamber
+    drawStoneCourses(g, cx + 2, cy + 2, cw - 4, ch - 4, 11);
 
     // State-specific interior hints
     if (isEmpty) {
@@ -346,9 +411,16 @@ export function drawDungeonMapBackdrop(
       g.fillRoundedRect(cx + 2, cy + 2, cw - 4, ch - 4, 8);
     }
 
-    // Sheen highlight (top)
-    g.fillStyle(0xffffff, isUnlocked ? 0.07 : 0.02);
-    g.fillRoundedRect(cx + 4, cy + 3, cw - 8, 6, 3);
+    // Carved-recess depth: dark inner shadow along the top lip (the chamber
+    // recedes into the rock) + a faint warm floor catch where torchlight reaches
+    // in. Replaces the old glossy top sheen so the cell reads as a hollow stone
+    // chamber, not a button.
+    g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.34 : 0.20);
+    g.fillRoundedRect(cx + 3, cy + 2, cw - 6, 8, 4);
+    if (isUnlocked) {
+      g.fillStyle(0xffb347, 0.06);
+      g.fillRoundedRect(cx + 4, cy + ch - 9, cw - 8, 6, 3);
+    }
     // Accent border — thicker for built/broken to pop
     g.lineStyle(isBroken || isBuilt ? 3 : 2, borderC, borderA);
     g.strokeRoundedRect(cx, cy, cw, ch, 10);
