@@ -7,6 +7,7 @@ import { loadGameState, saveGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
+import { ENDLESS_MODIFIERS } from '../data/endlessModifiers';
 import {
   CX, HDR_H, BOT_H, PAD,
   TRIBE_META, TRIBE_REWARD_MONSTER,
@@ -22,7 +23,7 @@ export class CodexScene extends Phaser.Scene {
   private expandedTribes: Set<TribeId> = new Set(['dokkaebi']); // first open by default
   private gs = loadGameState();
   private showOwnedOnly  = false;
-  private codexTab: 'monsters' | 'invaders' = 'monsters';
+  private codexTab: 'monsters' | 'invaders' | 'modifiers' = 'monsters';
   private detailOverlayRef: { current: Phaser.GameObjects.Container | null } = { current: null };
 
   constructor() { super({ key: 'CodexScene' }); }
@@ -68,14 +69,16 @@ export class CodexScene extends Phaser.Scene {
     // ── Tab bar (shared primitive) ──
     addTabBar(this, {
       tabs: [
-        { id: 'monsters', label: '🏰 수호자' },
-        { id: 'invaders', label: '👺 적군'   },
+        { id: 'monsters',  label: '🏰 수호자' },
+        { id: 'invaders',  label: '👺 적군'   },
+        { id: 'modifiers', label: '⚔ 도전 변수' },
       ],
       active:  this.codexTab,
       y:       56,
       accent:  CASUAL.BLUE,
       height:  38,
       depth:   10,
+      fontSize: '12px',
       onSelect: (id) => {
         if (this.codexTab !== id) {
           this.registry.set('codexActiveTab', id);
@@ -90,11 +93,11 @@ export class CodexScene extends Phaser.Scene {
       const total  = allIds.length;
       const owned  = allIds.filter(id => this.isOwned(id)).length;
       const pct    = Math.round((owned / total) * 100);
-      this.add.text(CX - 36, 70, `전체 도감: ${owned} / ${total}  (${pct}%)`, {
+      this.add.text(CX - 36, 99, `전체 도감: ${owned} / ${total}  (${pct}%)`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
 
-      const bx = PAD, by = 79, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 7;
+      const bx = PAD, by = 108, bw = CANVAS_WIDTH - PAD * 2 - 72, bh = 7;
       const barBg = this.add.graphics().setDepth(10);
       barBg.fillStyle(CASUAL.PANEL_SOFT, 1);
       barBg.fillRoundedRect(bx, by, bw, bh, 3);
@@ -104,7 +107,7 @@ export class CodexScene extends Phaser.Scene {
       barBg.fillRoundedRect(bx, by, Math.max(4, bw * (owned / total)), bh, 3);
 
       // Filter toggle chip
-      const chipX = CANVAS_WIDTH - PAD - 64, chipY = 68, chipW = 60, chipH = 20;
+      const chipX = CANVAS_WIDTH - PAD - 64, chipY = 96, chipW = 60, chipH = 20;
       const toggleBg = this.add.graphics().setDepth(10);
       if (this.showOwnedOnly) {
         toggleBg.fillStyle(CASUAL.EDGE, 0.25);
@@ -132,9 +135,13 @@ export class CodexScene extends Phaser.Scene {
           this.registry.set('codexOwnedFilter', !this.showOwnedOnly);
           this.scene.restart();
         });
-    } else {
+    } else if (this.codexTab === 'invaders') {
       const invTotal = Object.keys(INVADER_DEFS).length;
-      this.add.text(CX, 72, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
+      this.add.text(CX, 101, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      }).setOrigin(0.5).setDepth(10);
+    } else {
+      this.add.text(CX, 101, `무한 던전 도전 변수 ${ENDLESS_MODIFIERS.length}종 · 런마다 1개 무작위`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
     }
@@ -155,6 +162,10 @@ export class CodexScene extends Phaser.Scene {
 
     if (this.codexTab === 'invaders') {
       this.buildInvaderContent();
+      return;
+    }
+    if (this.codexTab === 'modifiers') {
+      this.buildModifierContent();
       return;
     }
 
@@ -497,6 +508,67 @@ export class CodexScene extends Phaser.Scene {
         cursorY += rowH + 2;
       }
       cursorY += 8;
+    }
+
+    this.maxScrollY = Math.max(0, cursorY - (CANVAS_HEIGHT - HDR_H - BOT_H));
+  }
+
+  // ─── Challenge-modifier content (무한 던전 도전 변수) ─────────────────────────
+
+  private buildModifierContent(): void {
+    let cursorY = 8;
+
+    const intro = this.add.text(CX, cursorY + 4,
+      '무한 던전 진입 시 매 런 하나가 무작위로 적용됩니다.\n위험이 클수록 골드 보상도 커집니다.',
+      { fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+        align: 'center', lineSpacing: 3 },
+    ).setOrigin(0.5, 0);
+    this.contentCtr.add(intro);
+    cursorY += 40;
+
+    for (const m of ENDLESS_MODIFIERS) {
+      const rowH = 50;
+      const x = PAD + 4;
+      const w = CANVAS_WIDTH - PAD * 2 - 8;
+
+      const card = this.add.graphics();
+      this.contentCtr.add(card);
+      card.fillStyle(CASUAL.SHADOW, 0.14);
+      card.fillRoundedRect(x, cursorY + 3, w, rowH, 8);
+      card.fillStyle(CASUAL.PANEL, 1);
+      card.fillRoundedRect(x, cursorY, w, rowH, 8);
+      card.fillStyle(0xffffff, 0.12);
+      card.fillRoundedRect(x + 5, cursorY + 3, w - 10, 4, 2);
+      card.lineStyle(2, CASUAL.EDGE, 1);
+      card.strokeRoundedRect(x, cursorY, w, rowH, 8);
+      card.fillStyle(CASUAL.RED, 0.85);
+      card.fillRoundedRect(x + 6, cursorY + 6, 5, rowH - 12, 3);
+
+      const icon = this.add.text(x + 34, cursorY + rowH / 2, m.icon, {
+        fontFamily: 'sans-serif', fontSize: '24px',
+      }).setOrigin(0.5);
+      this.contentCtr.add(icon);
+
+      const name = this.add.text(x + 58, cursorY + 9, m.name, {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      }).setOrigin(0, 0);
+      this.contentCtr.add(name);
+
+      const rwdPct = Math.round((m.rewardMult - 1) * 100);
+      const pill = this.add.text(x + w - 10, cursorY + 11, `보상 +${rwdPct}%`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+      }).setOrigin(1, 0);
+      this.contentCtr.add(pill);
+
+      // Strip the trailing reward clause — it is shown in the gold pill instead.
+      const descBody = m.desc.split(' · 보상')[0];
+      const desc = this.add.text(x + 58, cursorY + 28, descBody, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+        wordWrap: { width: w - 58 - 12 },
+      }).setOrigin(0, 0);
+      this.contentCtr.add(desc);
+
+      cursorY += rowH + 6;
     }
 
     this.maxScrollY = Math.max(0, cursorY - (CANVAS_HEIGHT - HDR_H - BOT_H));

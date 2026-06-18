@@ -63,7 +63,7 @@ export const TRIBE_REWARD_MONSTER: Record<string, MonsterId> = {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export const CX    = CANVAS_WIDTH / 2;
-export const HDR_H = 94;  // addSceneHeader (~56) + addTabBar (38)
+export const HDR_H = 120;  // addSceneHeader (~56) + addTabBar (38) + stats row (~26)
 export const BOT_H = 64;
 export const PAD   = 12;
 
