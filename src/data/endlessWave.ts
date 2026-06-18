@@ -133,11 +133,31 @@ export function buildEndlessSpawnQueue(
     queue.push({ def: makeScaledDef('primordial_guard', { hp: Math.round(INVADER_DEFS['primordial_guard'].hp * hpMult * 3), isMiniBoss: true }), delay: 2500 });
   }
 
-  // Wave 100+: primordial_guard + void_soldier elite wave every 10 levels after 90
-  if (w > 90 && (w - 90) % 10 === 0) {
-    queue.push({ def: makeScaledDef('primordial_guard', { hp: Math.round(INVADER_DEFS['primordial_guard'].hp * hpMult * 2), isMiniBoss: true }), delay: 0 });
-    queue.push({ def: makeScaledDef('void_soldier',    { hp: Math.round(INVADER_DEFS['void_soldier'].hp    * hpMult * 1.5) }), delay: 1200 });
-    queue.push({ def: makeScaledDef('abyss_berserker', { hp: Math.round(INVADER_DEFS['abyss_berserker'].hp * hpMult * 1.5) }), delay: 1200 });
+  // Wave 100+: rotating elite milestone every 10 waves. Four distinct champion
+  // compositions cycle by milestone index so deep endless runs don't repeat the
+  // same wave. ms 0 keeps the original 원초 군단 (wave 100 unchanged). Champions
+  // use isMiniBoss + hp multipliers only — no boss-phase scene wiring needed.
+  if (w >= 100 && (w - 100) % 10 === 0) {
+    const ms = ((w - 100) / 10) % 4;
+    const champ = (type: InvaderType, mult: number): void => {
+      queue.push({ def: makeScaledDef(type, { hp: Math.round(INVADER_DEFS[type].hp * hpMult * mult), isMiniBoss: true }), delay: 0 });
+    };
+    const add = (type: InvaderType, mult: number): void => {
+      queue.push({ def: makeScaledDef(type, { hp: Math.round(INVADER_DEFS[type].hp * hpMult * mult) }), delay: 1200 });
+    };
+    if (ms === 0) {
+      // 원초 군단 — primordial bruisers (original composition)
+      champ('primordial_guard', 2); add('void_soldier', 1.5); add('abyss_berserker', 1.5);
+    } else if (ms === 1) {
+      // 천상 강습 — celestial assault
+      champ('sky_titan', 2); add('radiant_seraph', 1.6); add('heaven_general', 1.4);
+    } else if (ms === 2) {
+      // 거신 봉기 — twin-titan wall
+      champ('void_colossus', 2.5); add('titan_sentinel', 1.6); add('titan_sentinel', 1.6);
+    } else {
+      // 역병 쇄도 — plague swarm
+      champ('plague_herald', 1.8); add('shadow_wraith', 1.3); add('void_soldier', 1.2);
+    }
   }
 
   // ── Standard fillers ───────────────────────────────────────────────────────

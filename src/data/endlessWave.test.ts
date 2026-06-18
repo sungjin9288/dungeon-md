@@ -226,10 +226,21 @@ describe('buildEndlessSpawnQueue — milestone waves', () => {
     expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(false);
   });
 
-  it('wave 110 fires the post-90 milestone (wave 110 has primordial_guard)', () => {
-    // (110 - 90) % 10 === 0 → milestone fires
+  it('wave 110 fires a rotated milestone — celestial sky_titan champion', () => {
+    // (110-100)%10===0, ms=1 → 천상 강습 composition led by a sky_titan champion
     const q = buildEndlessSpawnQueue(110);
-    expect(q.some(e => e.def.type === 'primordial_guard' && e.def.isMiniBoss)).toBe(true);
+    expect(q.some(e => e.def.isMiniBoss === true)).toBe(true);
+    expect(q.some(e => e.def.type === 'sky_titan' && e.def.isMiniBoss)).toBe(true);
+  });
+
+  it('post-100 milestones rotate through 4 distinct champions then wrap', () => {
+    // Champion is the first isMiniBoss entry (milestone pushed before fillers).
+    const champ = (w: number) => buildEndlessSpawnQueue(w).find(e => e.def.isMiniBoss)?.def.type;
+    expect(champ(100)).toBe('primordial_guard'); // ms0 원초 군단 (unchanged)
+    expect(champ(110)).toBe('sky_titan');        // ms1 천상 강습
+    expect(champ(120)).toBe('void_colossus');    // ms2 거신 봉기
+    expect(champ(130)).toBe('plague_herald');    // ms3 역병 쇄도
+    expect(champ(140)).toBe('primordial_guard'); // wraps to ms0
   });
 
   it('waves 20–90 (all mini-boss milestones) each add at least one isMiniBoss entry', () => {
