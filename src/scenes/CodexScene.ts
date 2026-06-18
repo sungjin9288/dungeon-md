@@ -8,6 +8,7 @@ import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
 import { ENDLESS_MODIFIERS } from '../data/endlessModifiers';
+import { getTraitBlurb } from '../data/invaderTraits';
 import {
   CX, HDR_H, BOT_H, PAD,
   TRIBE_META, TRIBE_REWARD_MONSTER,
@@ -474,9 +475,16 @@ export class CodexScene extends Phaser.Scene {
       this.contentCtr.add(countLabel);
       cursorY += 32;
 
-      // Invader rows
+      // Invader rows. Behavior-bearing invaders get a taller two-line row: the
+      // full tactical blurb (getTraitBlurb) is the permanent codex home for the
+      // trait the in-battle banner teaches transiently; boss-phase behaviors
+      // (no blurb) fall back to the terse BEHAVIOR_SHORT label.
       for (const def of defs) {
-        const rowH = 26;
+        const traitText = def.behavior
+          ? (getTraitBlurb(def.behavior) ?? BEHAVIOR_SHORT[def.behavior] ?? def.behavior)
+          : '';
+        const headH = 26;
+        const rowH  = traitText ? 42 : headH;
         const rowG = this.add.graphics();
         this.contentCtr.add(rowG);
         rowG.fillStyle(def.isBoss ? 0x1a0020 : 0x0e0c06, 1);
@@ -486,24 +494,32 @@ export class CodexScene extends Phaser.Scene {
           rowG.strokeRoundedRect(PAD + 4, cursorY, CANVAS_WIDTH - PAD * 2 - 8, rowH, 4);
         }
 
-        // Colored dot
+        // Colored dot (centered on the header band)
         rowG.fillStyle(def.color, 1);
-        rowG.fillCircle(PAD + 18, cursorY + rowH / 2, def.isBoss ? 6 : 4);
+        rowG.fillCircle(PAD + 18, cursorY + headH / 2, def.isBoss ? 6 : 4);
 
         const nameColor = def.isBoss ? '#ffcc44' : CSS.PARCHMENT_DIM;
         const bossTag   = def.isBoss ? ' 👑' : (def.isMiniBoss ? ' ⭐' : '');
-        const nameT = this.add.text(PAD + 28, cursorY + rowH / 2, `${def.koreanName}${bossTag}`, {
+        const nameT = this.add.text(PAD + 28, cursorY + headH / 2, `${def.koreanName}${bossTag}`, {
           fontFamily: 'Georgia, serif', fontSize: '11px', color: nameColor,
         }).setOrigin(0, 0.5);
         this.contentCtr.add(nameT);
 
-        // Stats (right-aligned)
-        const behStr = def.behavior ? (BEHAVIOR_SHORT[def.behavior] ?? def.behavior) : '';
-        const statsStr = `HP ${def.hp}  ·  속${def.speed}  ·  피${def.damage}${behStr ? '  ·  ' + behStr : ''}`;
-        const statsT = this.add.text(CANVAS_WIDTH - PAD - 8, cursorY + rowH / 2, statsStr, {
+        // Stats (right-aligned, on the header band)
+        const statsStr = `HP ${def.hp}  ·  속${def.speed}  ·  피${def.damage}`;
+        const statsT = this.add.text(CANVAS_WIDTH - PAD - 8, cursorY + headH / 2, statsStr, {
           fontFamily: 'sans-serif', fontSize: '9px', color: CSS.PARCHMENT_MUTED,
         }).setOrigin(1, 0.5);
         this.contentCtr.add(statsT);
+
+        // Trait blurb on a second line.
+        if (traitText) {
+          const traitT = this.add.text(PAD + 28, cursorY + headH, traitText, {
+            fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+            wordWrap: { width: CANVAS_WIDTH - PAD * 2 - 8 - 36 },
+          }).setOrigin(0, 0);
+          this.contentCtr.add(traitT);
+        }
 
         cursorY += rowH + 2;
       }
