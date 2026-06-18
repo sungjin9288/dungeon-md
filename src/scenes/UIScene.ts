@@ -16,7 +16,7 @@ export class UIScene extends Phaser.Scene {
   private pauseBtn!: Phaser.GameObjects.Text;
   private remainingText?: Phaser.GameObjects.Text;
   private remainingPillBg?: Phaser.GameObjects.Graphics;
-  private currentSpeed: 1 | 2 = 1;
+  private currentSpeed: 1 | 2 | 3 = 1;
   private isPaused = false;
   private vignetteG?: Phaser.GameObjects.Graphics;
   private hpPulseOverlay?: Phaser.GameObjects.Graphics;
@@ -129,9 +129,10 @@ export class UIScene extends Phaser.Scene {
       color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.speedBtn.on('pointerdown', () => {
-      this.currentSpeed = this.currentSpeed === 1 ? 2 : 1;
+      // Cycle 1× → 2× → 3× → 1× (3× = grinding-friendly ultra speed).
+      this.currentSpeed = (this.currentSpeed >= 3 ? 1 : this.currentSpeed + 1) as 1 | 2 | 3;
       this.speedBtn.setText(this.currentSpeed + 'x');
-      this.speedBtn.setColor(this.currentSpeed === 2 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
+      this.speedBtn.setColor(this.currentSpeed > 1 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
       this.registry.set('battleSpeed', this.currentSpeed);
       this.showSpeedToast(this.currentSpeed);
     });
@@ -439,11 +440,13 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private showSpeedToast(speed: 1 | 2): void {
-    const toast = this.add.text(CANVAS_WIDTH / 2, 120,
-      speed === 2 ? '⚡ 2× 배속 적용' : '▶ 1× 일반 속도', {
+  private showSpeedToast(speed: 1 | 2 | 3): void {
+    const label = speed === 3 ? '⚡⚡ 3× 초고속 적용'
+                : speed === 2 ? '⚡ 2× 배속 적용'
+                :               '▶ 1× 일반 속도';
+    const toast = this.add.text(CANVAS_WIDTH / 2, 120, label, {
         fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-        color: speed === 2 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK,
+        color: speed > 1 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK,
         backgroundColor: CASUAL_CSS.CREAM, padding: { x: 14, y: 6 },
       }).setOrigin(0.5).setDepth(200).setAlpha(0);
     this.tweens.add({

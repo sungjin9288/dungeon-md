@@ -221,6 +221,6 @@ export function setupEvents(scene: DungeonScene): void {
   scene.events.on('invaderKilledRow', (_inv: Invader, row: number) => scene.handleInvaderKilledRow(row));
   scene.events.on('roomDestroyed',    (row: number, col: number)   => scene.handleRoomDestroyed(row, col));
   scene.events.on('permafrostShatter',(source: Invader)            => scene.handlePermafrostShatter(source));
-  scene.registry.events.on('changedata-battleSpeed',  (_: unknown, v: 1 | 2)   => scene.setSpeed(v));
+  scene.registry.events.on('changedata-battleSpeed',  (_: unknown, v: 1 | 2 | 3) => scene.setSpeed(v));
   scene.registry.events.on('changedata-battlePaused', (_: unknown, p: boolean) => scene.handleBattlePauseChange(p));
 }

@@ -210,7 +210,7 @@ export class DungeonScene extends Phaser.Scene {
   theme!: DungeonTheme;
 
   // ── Battle speed ─────────────────────────────────────────────────────────
-  speedMult: 1 | 2 = 1;
+  speedMult: 1 | 2 | 3 = 1;
 
   // ── Low-HP vignette ──────────────────────────────────────────────────────
   lowHpVignette?: Phaser.GameObjects.Graphics;
@@ -593,7 +593,7 @@ export class DungeonScene extends Phaser.Scene {
     _runCombat(this, now);
   }
 
-  /** @internal */ setSpeed(mult: 1 | 2): void {
+  /** @internal */ setSpeed(mult: 1 | 2 | 3): void {
     this.speedMult = mult;
     this.time.timeScale = mult;
     this.tweens.timeScale = mult;
