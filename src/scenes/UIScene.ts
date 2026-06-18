@@ -4,6 +4,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout
 import { getReducedMotion } from '../utils/reducedMotion';
 import { getEndlessModifierById } from '../data/endlessModifiers';
 import type { TraitCalloutPayload } from '../combat/TraitCallout';
+import { loadBattleSpeed, saveBattleSpeed } from '../data/battleSpeedSetting';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -123,18 +124,24 @@ export class UIScene extends Phaser.Scene {
     speedPill.fillStyle(0xffffff, 0.14);
     speedPill.fillRoundedRect(106, st + 62, 28, 3, 2);
 
-    this.speedBtn = this.add.text(120, st + 71, '1x', {
+    // Restore the persisted speed preference (sticks across battles).
+    this.currentSpeed = loadBattleSpeed();
+    this.speedBtn = this.add.text(120, st + 71, this.currentSpeed + 'x', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK_SOFT,
+      color: this.currentSpeed > 1 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    // Apply the restored speed to the battle (init seeded 1×, so a non-1×
+    // preference registers as a change → DungeonScene.setSpeed via changedata).
+    this.registry.set('battleSpeed', this.currentSpeed);
     this.speedBtn.on('pointerdown', () => {
       // Cycle 1× → 2× → 3× → 1× (3× = grinding-friendly ultra speed).
       this.currentSpeed = (this.currentSpeed >= 3 ? 1 : this.currentSpeed + 1) as 1 | 2 | 3;
       this.speedBtn.setText(this.currentSpeed + 'x');
       this.speedBtn.setColor(this.currentSpeed > 1 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
       this.registry.set('battleSpeed', this.currentSpeed);
+      saveBattleSpeed(this.currentSpeed);
       this.showSpeedToast(this.currentSpeed);
     });
 

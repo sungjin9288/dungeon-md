@@ -72,6 +72,11 @@ export function resolveStageSetup(
   // — on a key's very first set, which UIScene's listener would otherwise miss).
   registry.set('traitCallout', null);
 
+  // Seed battle speed to 1× so UIScene's restore of the saved 2×/3× preference
+  // (set after setupEvents wires the changedata-battleSpeed listener) registers
+  // as a *change* and applies to DungeonScene. Same setdata→changedata caveat.
+  registry.set('battleSpeed', 1);
+
   // ── Resolve wave config + grid shape ─────────────────────────────────────────
   const allStages: StageConfig[] = [
     ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3,
