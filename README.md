@@ -64,18 +64,16 @@ Mobile reference audit checked on 2026-05-20:
 6. `Reward and unlock pass`: 방 해금, 방 레벨업, 몬스터 성장, 장비 장착, 함정 설치에는 120-320ms의 짧은 reward motion과 before/after 수치 피드백을 붙입니다.
 7. `Mobile production pass`: 390x844, 360x800, 430x932 viewport에서 text overflow, touch target, safe-area, console error, build size warning을 반복 검증합니다.
 
-현재까지 완료된 디자인 기반 작업:
+디자인 로드맵 진행 상태 (2026-06): 위 6단계 + 모바일 7패스는 모두 완료되었습니다.
 
-- 홈 던전 맵은 방 카드 나열에서 dungeon overview 방향으로 전환했습니다.
-- 방 클릭 시 선택 방이 중앙으로 확대되는 focus zoom 전환을 추가했습니다.
-- 방 상세 상단에 `다음 행동` directive를 추가했습니다.
-- 방 내부 preview와 하단 섹션에 다음 행동 target ring을 추가했습니다.
+- 홈은 수직 던전 전경(`DungeonBoardLayout` 단일 진실원)으로 재구조화 — 입구/층/심장부, 방별 활동 aura, 다음 행동 pin.
+- 막사는 캐릭터 중심 성장 화면, 공방은 추천 제작 + 즉시 장착 흐름, 홈/방/전투준비가 공통 readiness directive를 공유.
+- 스테이지 선택은 세로 여정 지도(점등 트레일), 리워드/언락 모션은 `getReducedMotion()`·`popIn()`으로 중앙화.
+- 코드 정비: `src/` 전체 800줄 초과 파일 0개 (대형 씬·오브젝트를 Shared 순수헬퍼 + 렌더 모듈로 분할).
+- 밸런스 가드 상시화: 캠페인 난이도 곡선(`balanceAudit`), 지혜 트리 경제(`wisdomEconomy`), 골드 경제(`goldEconomy`).
+- 무한 던전 도전 변수(런별 modifier) 등 기존 시스템 심화.
 
-다음 구현 우선순위:
-
-1. `Monster raising pass`를 시작해 막사 첫 화면을 캐릭터 중심 성장 화면으로 재설계합니다.
-2. 이후 `Forge recommendation pass`로 장비 제작과 방 readiness 상승을 연결합니다.
-3. 마지막으로 홈 command deck과 전투 준비 화면을 같은 readiness directive 언어로 통합합니다.
+추가 작업은 신규 콘텐츠·출시 준비(native cap sync, 스토어 메타데이터) 중심으로 진행합니다.
 
 ## Project Layout
 
@@ -154,6 +152,8 @@ Then open `http://localhost:8083`.
 `DungeonScene` runs the battle, while `UIScene` is launched alongside it for battle HUD. Scene lifecycle changes must explicitly consider both scenes so overlay state does not leak.
 
 Content registries such as monsters, invaders, rooms, themes, quests, banners, daily content, and stages are covered by consistency tests. Add or update tests when adding registry entries.
+
+Balance is guarded by data-driven tests: `balanceAudit.test.ts` (campaign difficulty curve — chapter finale is the peak, no threatless stage), `wisdomEconomy.test.ts` (crystal cost-to-max pacing), and `goldEconomy.test.ts` (every stage affordable). Edits to stage waves, invader stats, room costs, or wisdom branch costs should keep these green.
 
 ## State Transition Pattern
 
