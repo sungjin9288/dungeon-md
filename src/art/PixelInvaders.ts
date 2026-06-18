@@ -137,6 +137,7 @@ const INVADER_LOOK: Partial<Record<InvaderType, Look>> = {
   mercenary_captain:    [SOLDIER, 'berserker'],
   trap_breaker:         [SOLDIER, 'steel'],
   fox_queen:            [FOX,     'beast'],
+  fox_spirit:           [FOX,     'beast'],
   // ── Chapter 3 ──
   undying_knight:       [KNIGHT,  'undead'],
   scarecrow_mage:       [MAGE,    'undead'],

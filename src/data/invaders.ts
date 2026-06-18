@@ -3,7 +3,7 @@ export type InvaderType =
   // ─── Chapter 2 ───
   | 'berserker' | 'shadow_ninja' | 'siege_soldier' | 'holy_paladin'
   | 'iron_golem' | 'high_priest' | 'mercenary_captain' | 'trap_breaker'
-  | 'fox_queen'
+  | 'fox_queen' | 'fox_spirit'
   // ─── Chapter 3 ───
   | 'undying_knight'
   | 'scarecrow_mage'
@@ -142,6 +142,14 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
     type: 'fox_queen', koreanName: '여우 여왕 (보스)', chapter: 2,
     hp: 1600, speed: 45, reward: 400, damage: 500,
     color: 0xff6600, radius: 22, behavior: 'FOX_QUEEN_PHASE', isMiniBoss: true,
+  },
+  // Lesser fox elite that closes Ch2 stages S11–S19 (the full fox_queen is the
+  // S20 chapter boss). Keeps the fox motif while sitting ~28 dpsWall — above Ch2
+  // regulars (~24) yet below Ch3 regulars (33.8), so Ch2→Ch3 no longer inverts.
+  fox_spirit: {
+    type: 'fox_spirit', koreanName: '여우 정령', chapter: 2,
+    hp: 360, speed: 50, reward: 70, damage: 200,
+    color: 0xff9944, radius: 16,
   },
 
   // ─── Chapter 3 ────────────────────────────────────────────────────────────

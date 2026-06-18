@@ -16,7 +16,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 180, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'siege_soldier', count: 4, spawnDelay: 1300 }, { type: 'berserker', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 210, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1250 }, { type: 'holy_paladin', count: 4, spawnDelay: 1250 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 260, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1150 }, { type: 'siege_soldier', count: 4, spawnDelay: 1150 }, { type: 'trap_breaker', count: 5, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 550, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 550, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -32,7 +32,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 190, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'holy_paladin', count: 4, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 220, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1250 }, { type: 'siege_soldier', count: 4, spawnDelay: 1250 }, { type: 'trap_breaker', count: 5, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 280, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1150 }, { type: 'holy_paladin', count: 4, spawnDelay: 1150 }, { type: 'high_priest', count: 5, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 600, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'trap_breaker', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 600, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'trap_breaker', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -48,7 +48,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 200, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'siege_soldier', count: 4, spawnDelay: 1300 }, { type: 'trap_breaker', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 230, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1250 }, { type: 'holy_paladin', count: 4, spawnDelay: 1250 }, { type: 'high_priest', count: 5, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 290, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1150 }, { type: 'siege_soldier', count: 4, spawnDelay: 1150 }, { type: 'berserker', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 650, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'high_priest', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 650, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'high_priest', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -64,7 +64,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 205, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'holy_paladin', count: 4, spawnDelay: 1300 }, { type: 'high_priest', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 240, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1250 }, { type: 'siege_soldier', count: 4, spawnDelay: 1250 }, { type: 'berserker', count: 5, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 300, invaders: [{ type: 'iron_golem', count: 1, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1150 }, { type: 'holy_paladin', count: 4, spawnDelay: 1150 }, { type: 'shadow_ninja', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 700, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 700, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'berserker', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -80,7 +80,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 210, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1300 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1300 }, { type: 'siege_soldier', count: 3, spawnDelay: 1300 }, { type: 'berserker', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 250, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1250 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1250 }, { type: 'holy_paladin', count: 4, spawnDelay: 1250 }, { type: 'shadow_ninja', count: 4, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 310, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1150 }, { type: 'siege_soldier', count: 4, spawnDelay: 1150 }, { type: 'trap_breaker', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 750, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 750, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
     ],
   },
   // Stages 16–20 follow the same escalation pattern
@@ -97,7 +97,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 215, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1300 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1300 }, { type: 'holy_paladin', count: 3, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 255, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1250 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1250 }, { type: 'siege_soldier', count: 4, spawnDelay: 1250 }, { type: 'trap_breaker', count: 4, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 320, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1150 }, { type: 'holy_paladin', count: 4, spawnDelay: 1150 }, { type: 'high_priest', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 800, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'trap_breaker', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 800, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'trap_breaker', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -113,7 +113,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 225, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1300 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1300 }, { type: 'siege_soldier', count: 3, spawnDelay: 1300 }, { type: 'trap_breaker', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 265, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1250 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1250 }, { type: 'holy_paladin', count: 4, spawnDelay: 1250 }, { type: 'high_priest', count: 4, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 330, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1150 }, { type: 'siege_soldier', count: 4, spawnDelay: 1150 }, { type: 'berserker', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 850, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'high_priest', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 850, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'high_priest', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -129,7 +129,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 235, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1300 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1300 }, { type: 'holy_paladin', count: 3, spawnDelay: 1300 }, { type: 'high_priest', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 270, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1250 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1250 }, { type: 'siege_soldier', count: 4, spawnDelay: 1250 }, { type: 'berserker', count: 4, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 340, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 2, spawnDelay: 1150 }, { type: 'holy_paladin', count: 3, spawnDelay: 1150 }, { type: 'shadow_ninja', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 900, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'berserker', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 900, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'berserker', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {
@@ -145,7 +145,7 @@ export const CHAPTER_2: StageConfig[] = [
       { wave: 7, clearReward: 245, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1300 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1300 }, { type: 'siege_soldier', count: 4, spawnDelay: 1300 }, { type: 'berserker', count: 4, spawnDelay: 1300 }] },
       { wave: 8, clearReward: 280, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1250 }, { type: 'mercenary_captain', count: 1, spawnDelay: 1250 }, { type: 'holy_paladin', count: 4, spawnDelay: 1250 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1250 }] },
       { wave: 9, clearReward: 360, invaders: [{ type: 'iron_golem', count: 2, spawnDelay: 1150 }, { type: 'mercenary_captain', count: 2, spawnDelay: 1150 }, { type: 'siege_soldier', count: 4, spawnDelay: 1150 }, { type: 'trap_breaker', count: 4, spawnDelay: 1150 }] },
-      { wave: 10, clearReward: 950, invaders: [{ type: 'fox_queen', count: 1, spawnDelay: 0, isBoss: true }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
+      { wave: 10, clearReward: 950, invaders: [{ type: 'fox_spirit', count: 1, spawnDelay: 0 }, { type: 'iron_golem', count: 1, spawnDelay: 1300 }, { type: 'shadow_ninja', count: 5, spawnDelay: 1300 }] },
     ],
   },
   {

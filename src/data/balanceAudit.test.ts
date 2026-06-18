@@ -10,11 +10,12 @@
  * edit (e.g. a mid-chapter stage made tougher than its own boss finale, or a
  * stage with no real threat) is caught in CI.
  *
- * AUDIT NOTE (2026-06-18): Ch2 is an intentional-looking outlier — the fox_queen
- * mini-boss (wall 112.5) closes EVERY Ch2 stage (fox-themed chapter), so Ch2's
- * regular-stage wall sits ~3× above Ch3's regular stages (33.8). That is a
- * cross-chapter inversion flagged for design review, NOT asserted here (it may
- * be a deliberate motif). The guards below hold for all 8 chapters as-is.
+ * AUDIT NOTE (2026-06-18): The audit found a Ch2 inversion — the full fox_queen
+ * mini-boss (wall 112.5) closed EVERY Ch2 stage, putting Ch2's regular stages
+ * ~3× above Ch3's (33.8). Fix: S11–S19 now close with a lesser `fox_spirit`
+ * (wall ~28, theme preserved); the full fox_queen is reserved for the S20
+ * chapter boss. Ch2 regular wall (28) now sits just under Ch3 (33.8) — curve
+ * resolved. The chapter-finale-is-peak guard still holds (S20 112.5 > 28).
  */
 
 import { describe, it, expect } from 'vitest';
