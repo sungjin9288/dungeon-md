@@ -372,6 +372,26 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     reward: { gems: 100 },
     getProgress: ctx => Math.min(ctx.endlessHighScore, 100),
   },
+  {
+    id: 'endless_wave150',
+    name: '심연의 정복자',
+    description: '무한 던전 150웨이브를 달성하세요. (후반 정예 군세 돌파)',
+    icon: '👑',
+    category: 'endless',
+    target: 150,
+    reward: { gems: 150, soulCrystals: 50 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 150),
+  },
+  {
+    id: 'endless_wave200',
+    name: '무한의 군주',
+    description: '무한 던전 200웨이브를 달성하세요.',
+    icon: '♾️',
+    category: 'endless',
+    target: 200,
+    reward: { gems: 250, soulCrystals: 100 },
+    getProgress: ctx => Math.min(ctx.endlessHighScore, 200),
+  },
 
   // ── Mastery ───────────────────────────────────────────────────────────────
   {
