@@ -11,6 +11,7 @@ import { CASUAL } from '../constants/colors';
 import { getUnlockedSlots } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 
 // ─── Dungeon atmosphere helpers ──────────────────────────────────────────────
 // Make surfaces read as carved STONE, not flat UI fills: mortar courses + a
@@ -278,13 +279,20 @@ export function drawDungeonMapBackdrop(
   const mapW = boardRect.w;
   const mapH = boardRect.h;
 
-  // ── Outer dungeon tray: dark stone body + chunky brown edge + drop shadow ──
-  g.fillStyle(CASUAL.SHADOW, 0.45);
-  g.fillRoundedRect(mapX + 3, mapY + 5, mapW, mapH, 14);
-  g.fillStyle(CASUAL.EDGE, 1);
-  g.fillRoundedRect(mapX, mapY, mapW, mapH, 14);
-  g.fillStyle(CASUAL.BG_BOTTOM, 1);
-  g.fillRoundedRect(mapX + 3, mapY + 3, mapW - 6, mapH - 6, 12);
+  // ── Painted illustrated dungeon backdrop fills the board interior ──────────
+  // Canvas-baked (stone masonry, radial torch glows, descending arches, heart
+  // glow) — a real painted shaft, not flat fills. Sits behind every element.
+  const inX = mapX + 3, inY = mapY + 3, inW = mapW - 6, inH = mapH - 6;
+  const bdKey = bakeDungeonBackdrop(
+    scene, `dungeonBackdrop_${Math.round(inW)}x${Math.round(inH)}`,
+    Math.round(inW * 2), Math.round(inH * 2),
+  );
+  const backdrop = scene.add.image(inX, inY, bdKey).setOrigin(0, 0).setDisplaySize(inW, inH);
+  c.add(backdrop);
+  c.sendToBack(backdrop);
+  // Chunky brown edge frame on top (rounded stroke hides the art's square corners).
+  g.lineStyle(7, CASUAL.EDGE, 1);
+  g.strokeRoundedRect(mapX + 3.5, mapY + 3.5, mapW - 7, mapH - 7, 12);
 
   // ── Entrance strip — drawn by drawDungeonEntranceGate (skip pre-fill here) ──
   // Just draw a bottom seam for the entrance → B1 transition
@@ -298,29 +306,14 @@ export function drawDungeonMapBackdrop(
   g.lineStyle(1, CASUAL.GOLD, 0.24);
   g.lineBetween(mapX + 8, heartTopY, mapX + mapW - 8, heartTopY);
 
-  // ── Per-floor stone shelves (each a horizontal band) ──────────────────────
-  // Tone gets slightly darker/deeper as floors descend.
-  const bandBaseColors = [0x2e2418, 0x271e13, 0x211810];  // B1 lightest, B3 darkest
+  // ── Per-floor dividers + label chips (painted backdrop is the stone) ──────
   for (const band of floors) {
-    const { bandRect, labelPos, label, floor } = band;
-    const bx = bandRect.x + 3;
-    const by = bandRect.y;
-    const bw = bandRect.w - 6;
-    const bh = bandRect.h;
+    const { bandRect, labelPos, label } = band;
+    // Faint divider seam at the band top — chambers read per descending floor.
+    g.lineStyle(1, CASUAL.EDGE_SOFT, 0.16);
+    g.lineBetween(bandRect.x + 10, bandRect.y, bandRect.x + bandRect.w - 10, bandRect.y);
 
-    // Band fill — dark stone shelf
-    g.fillStyle(bandBaseColors[floor] ?? CASUAL.PANEL, 0.96);
-    g.fillRoundedRect(bx, by, bw, bh, 8);
-    // Carved stone-block texture (mortar courses) — reads as stacked masonry
-    drawStoneCourses(g, bx, by, bw, bh);
-    // Subtle lighter stone border
-    g.lineStyle(1.2, CASUAL.EDGE_SOFT, 0.24 + floor * 0.05);
-    g.strokeRoundedRect(bx, by, bw, bh, 8);
-    // Top highlight strip (light rim to give 3D ledge feel)
-    g.fillStyle(0xffffff, 0.05);
-    g.fillRoundedRect(bx + 4, by + 2, bw - 8, 6, 3);
-
-    // Phase D: Floor label chip — floats above the band's top seam.
+    // Floor label chip — floats above the band's top seam.
     // labelPos.y = bandTop (the top edge of this band).
     // Chip is centred on that y so it straddles the gap between bands,
     // keeping it clear of cell content.  depth 12/13 so it sits above cells.
@@ -349,21 +342,6 @@ export function drawDungeonMapBackdrop(
     }).setOrigin(0.5).setDepth(13));
   }
 
-  // ── Wall torches: warm light pools on the stone (signature dungeon lighting) ──
-  // A sconce pair per floor band lights the chambers; pools fade into darkness.
-  for (const band of floors) {
-    const ty = band.bandRect.y + band.bandRect.h / 2;
-    drawTorchLight(g, mapX + 20, ty);
-    drawTorchLight(g, mapX + mapW - 20, ty);
-  }
-
-  // ── Vignette: darken the board perimeter for an enclosed underground feel ──
-  // Layered insets → a gradient-ish darkening toward the stone walls.
-  g.lineStyle(28, CASUAL.SHADOW, 0.16);
-  g.strokeRoundedRect(mapX + 14, mapY + 14, mapW - 28, mapH - 28, 12);
-  g.lineStyle(14, CASUAL.SHADOW, 0.18);
-  g.strokeRoundedRect(mapX + 7, mapY + 7, mapW - 14, mapH - 14, 13);
-
   // ── Per-room card backing (Phase D: state-legibility pass) ───────────────
   // States: built(green/active), broken(red), locked/excavate(brown dim), empty(faint)
   const { slotW, slotH } = scene.boardLayout;
@@ -378,48 +356,30 @@ export function drawDungeonMapBackdrop(
     const isBroken  = !!slot?.roomType && slot.hp <= 0;
     const isEmpty   = isUnlocked && !slot?.roomType;
 
-    // Choose fill + border based on state
-    const cardFill  = isBroken ? 0x2a0808 : isBuilt ? CASUAL.PANEL_SOFT : isUnlocked ? CASUAL.PANEL : 0x1a1208;
-    const cardAlpha = isUnlocked ? 1 : 0.72;
+    // Cells are translucent ALCOVES so the painted dungeon shows through —
+    // rooms read as framed openings in the illustration, not opaque cards.
+    const cardFill  = isBroken ? 0x2a0808 : isBuilt ? CASUAL.PANEL_SOFT : 0x140c05;
+    const cardAlpha = isBuilt ? 0.80 : isBroken ? 0.55 : isEmpty ? 0.20 : 0.32;
     const borderC   = isBroken ? CASUAL.RED : isBuilt ? scene.getRoomActivityColor(slot) : isUnlocked ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
-    const borderA   = isBroken ? 0.72 : isBuilt ? 0.60 : isEmpty ? 0.42 : 0.18;
+    const borderA   = isBroken ? 0.80 : isBuilt ? 0.70 : isEmpty ? 0.50 : 0.32;
 
-    // Shadow
-    g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.32 : 0.12);
+    // Soft drop shadow + translucent recessed alcove face
+    g.fillStyle(CASUAL.SHADOW, 0.30);
     g.fillRoundedRect(cx + 1, cy + 3, cw, ch, 10);
-    // Card — a hollow stone chamber carved into the wall
     g.fillStyle(cardFill, cardAlpha);
     g.fillRoundedRect(cx, cy, cw, ch, 10);
-    // Carved masonry texture inside the chamber
-    drawStoneCourses(g, cx + 2, cy + 2, cw - 4, ch - 4, 11);
+    // Dark inner top lip — the alcove recedes into the painted rock
+    g.fillStyle(CASUAL.SHADOW, 0.26);
+    g.fillRoundedRect(cx + 3, cy + 2, cw - 6, 7, 4);
 
     // State-specific interior hints
     if (isEmpty) {
-      // Dashed / faint grid lines to suggest "empty slot ready for a room"
-      g.lineStyle(1, CASUAL.GREEN, 0.18);
+      g.lineStyle(1, CASUAL.GREEN, 0.20);
       g.lineBetween(cx + 8, cy + ch / 2, cx + cw - 8, cy + ch / 2);
       g.lineBetween(cx + cw / 2, cy + 8, cx + cw / 2, cy + ch - 8);
-    } else if (!isUnlocked) {
-      // Locked slot: crosshatch hint (굴착 needed)
-      g.fillStyle(CASUAL.EDGE_SOFT, 0.10);
-      for (let li = 0; li < 4; li++) {
-        g.fillRect(cx + 6 + li * (cw - 12) / 3, cy + 4, 1, ch - 8);
-      }
     } else if (isBroken) {
-      // Broken: red tint fill
-      g.fillStyle(CASUAL.RED, 0.08);
+      g.fillStyle(CASUAL.RED, 0.10);
       g.fillRoundedRect(cx + 2, cy + 2, cw - 4, ch - 4, 8);
-    }
-
-    // Carved-recess depth: dark inner shadow along the top lip (the chamber
-    // recedes into the rock) + a faint warm floor catch where torchlight reaches
-    // in. Replaces the old glossy top sheen so the cell reads as a hollow stone
-    // chamber, not a button.
-    g.fillStyle(CASUAL.SHADOW, isUnlocked ? 0.34 : 0.20);
-    g.fillRoundedRect(cx + 3, cy + 2, cw - 6, 8, 4);
-    if (isUnlocked) {
-      g.fillStyle(0xffb347, 0.06);
-      g.fillRoundedRect(cx + 4, cy + ch - 9, cw - 8, 6, 3);
     }
     // Accent border — thicker for built/broken to pop
     g.lineStyle(isBroken || isBuilt ? 3 : 2, borderC, borderA);
