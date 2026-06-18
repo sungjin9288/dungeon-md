@@ -26,6 +26,20 @@ describe('ENDLESS_MODIFIERS', () => {
     const ids = ENDLESS_MODIFIERS.map(m => m.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it('offers a full roster (>=12) with eliteBias kept within [0,1]', () => {
+    expect(ENDLESS_MODIFIERS.length).toBeGreaterThanOrEqual(12);
+    for (const m of ENDLESS_MODIFIERS) {
+      expect(m.eliteBias, `${m.id} eliteBias`).toBeGreaterThanOrEqual(0);
+      expect(m.eliteBias, `${m.id} eliteBias`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('resolves the second-wave roster ids (glacial/blitz/golden/juggernaut/tempest/cursed)', () => {
+    for (const id of ['glacial', 'blitz', 'golden', 'juggernaut', 'tempest', 'cursed']) {
+      expect(getEndlessModifierById(id)?.id, `modifier ${id}`).toBe(id);
+    }
+  });
 });
 
 describe('rollEndlessModifier', () => {

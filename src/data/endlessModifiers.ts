@@ -56,6 +56,36 @@ export const ENDLESS_MODIFIERS: readonly EndlessModifier[] = [
     desc: '체력 +25%, 속도 +15% · 보상 +30%',
     hpMult: 1.25, speedMult: 1.15, countMult: 1, rewardMult: 1.3, eliteBias: 0,
   },
+  {
+    id: 'glacial', name: '빙하 군세', icon: '🧊',
+    desc: '느리지만 단단: 체력 +70%, 속도 -30% · 보상 +35%',
+    hpMult: 1.7, speedMult: 0.7, countMult: 1, rewardMult: 1.35, eliteBias: 0,
+  },
+  {
+    id: 'blitz', name: '전격전', icon: '💨',
+    desc: '고속·다수·취약: 속도 +45%, 수 +35%, 체력 -30% · 보상 +45%',
+    hpMult: 0.7, speedMult: 1.45, countMult: 1.35, rewardMult: 1.45, eliteBias: 0,
+  },
+  {
+    id: 'golden', name: '황금 침공', icon: '💰',
+    desc: '탐욕의 군세: 체력 +20% · 보상 +80%',
+    hpMult: 1.2, speedMult: 1.05, countMult: 1.1, rewardMult: 1.8, eliteBias: 0,
+  },
+  {
+    id: 'juggernaut', name: '거신 군단', icon: '🗿',
+    desc: '소수 거신: 수 -25%, 체력 +100%, 속도 -15% · 보상 +55%',
+    hpMult: 2.0, speedMult: 0.85, countMult: 0.75, rewardMult: 1.55, eliteBias: 0.35,
+  },
+  {
+    id: 'tempest', name: '대격동', icon: '🌀',
+    desc: '전방위 격화: 체력·속도·수 +30% · 보상 +55%',
+    hpMult: 1.3, speedMult: 1.3, countMult: 1.3, rewardMult: 1.55, eliteBias: 0.2,
+  },
+  {
+    id: 'cursed', name: '저주받은 군세', icon: '💀',
+    desc: '저주의 정예: 체력 +45%, 속도 +20%, 수 +15% · 보상 +60%',
+    hpMult: 1.45, speedMult: 1.2, countMult: 1.15, rewardMult: 1.6, eliteBias: 0.25,
+  },
 ];
 
 /** Look up a modifier by id (e.g. when restoring from the registry). */
