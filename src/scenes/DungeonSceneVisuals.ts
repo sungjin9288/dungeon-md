@@ -221,6 +221,17 @@ export function setupEvents(scene: DungeonScene): void {
   scene.events.on('invaderKilledRow', (_inv: Invader, row: number) => scene.handleInvaderKilledRow(row));
   scene.events.on('roomDestroyed',    (row: number, col: number)   => scene.handleRoomDestroyed(row, col));
   scene.events.on('permafrostShatter',(source: Invader)            => scene.handlePermafrostShatter(source));
-  scene.registry.events.on('changedata-battleSpeed',  (_: unknown, v: 1 | 2 | 3) => scene.setSpeed(v));
-  scene.registry.events.on('changedata-battlePaused', (_: unknown, p: boolean) => scene.handleBattlePauseChange(p));
+
+  // `registry.events` is GAME-global: unlike `scene.events`, its listeners are
+  // NOT torn down on scene shutdown, so without explicit cleanup they stack on
+  // every battle (endless 재도전 등) and fire stale handlers on the reused
+  // DungeonScene instance. Remove them on SHUTDOWN (mirrors UIScene's `on()`).
+  const onSpeed  = (_: unknown, v: 1 | 2 | 3) => scene.setSpeed(v);
+  const onPaused = (_: unknown, p: boolean)   => scene.handleBattlePauseChange(p);
+  scene.registry.events.on('changedata-battleSpeed',  onSpeed);
+  scene.registry.events.on('changedata-battlePaused', onPaused);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    scene.registry.events.off('changedata-battleSpeed',  onSpeed);
+    scene.registry.events.off('changedata-battlePaused', onPaused);
+  });
 }

@@ -77,6 +77,11 @@ export function resolveStageSetup(
   // as a *change* and applies to DungeonScene. Same setdata→changedata caveat.
   registry.set('battleSpeed', 1);
 
+  // Seed pause to false so the FIRST pause tap of a session registers as a
+  // *change* (changedata-battlePaused) rather than a silent first-set (setdata),
+  // which previously left the very first pause of a run not actually pausing.
+  registry.set('battlePaused', false);
+
   // ── Resolve wave config + grid shape ─────────────────────────────────────────
   const allStages: StageConfig[] = [
     ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3,
