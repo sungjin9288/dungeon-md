@@ -6,6 +6,8 @@ Phaser 3 + TypeScript + Vite + Capacitor 기반의 모바일 dungeon defense RPG
 
 현재 개발 방향은 release stability와 testable state transition입니다. 이미 전투, 스테이지, 퀘스트, 소환, 상점, 병영, 합성, 제작, 도감, 업적, daily/weekly 콘텐츠가 들어와 있으므로 신규 기능을 크게 늘리기보다 다음 순서로 완성도를 올립니다.
 
+최근 심화(콘텐츠/QoL/전술 가시성): 엔들리스 도전 변수 **12종** + 후반(100+) 마일스톤 4종 회전, 코덱스 **도전 변수 탭** + 적군 탭 전술 특성 상시 표기, 전투 **배속 3×**(설정 영속), 부족 시너지 **×8 "전설" 캡스톤**, 전투 중 특수 침략자 **특성 안내 배너**, 심층 엔들리스 업적(150·200파).
+
 1. 플레이어 진행도에 영향을 주는 `GameState` 변경을 immutable update로 통일합니다.
 2. UI scene 안의 구매, 보상, 퀘스트 완료 같은 상태 전이를 `src/data` pure function으로 분리합니다.
 3. 분리한 상태 전이는 unit test로 고정합니다.
@@ -154,6 +156,10 @@ Then open `http://localhost:8083`.
 Content registries such as monsters, invaders, rooms, themes, quests, banners, daily content, and stages are covered by consistency tests. Add or update tests when adding registry entries.
 
 Balance is guarded by data-driven tests: `balanceAudit.test.ts` (campaign difficulty curve — chapter finale is the peak, no threatless stage), `wisdomEconomy.test.ts` (crystal cost-to-max pacing), and `goldEconomy.test.ts` (every stage affordable). Edits to stage waves, invader stats, room costs, or wisdom branch costs should keep these green.
+
+Battle-time HUD signals from `DungeonScene` reach the (zoom-free) `UIScene` through the shared `registry`, not direct calls — `DungeonScene` uses a DPR-zoom world camera, so a screen-fixed banner/toast must be rendered by `UIScene`. Caveat: Phaser fires `setdata` (not `changedata-<key>`) on a key's *first* `set`, so any `changedata-<key>` listener needs the key pre-seeded once at battle init (see `DungeonSceneInit` seeding `traitCallout`/`battleSpeed`). The in-battle trait-callout banner (`src/combat/TraitCallout.ts` signals → `UIScene.showTraitBanner`, descriptions in `src/data/invaderTraits.ts`, also surfaced permanently in the codex invader tab) follows this pattern.
+
+UI-only preferences that should persist without bloating the (migration-sensitive) game save get their own small `localStorage` store, mirroring audio settings — e.g. `src/data/battleSpeedSetting.ts` keeps the chosen 1×/2×/3× across battles.
 
 ## State Transition Pattern
 
