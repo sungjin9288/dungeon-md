@@ -189,6 +189,9 @@ export class UIScene extends Phaser.Scene {
       this.add.zone(12 + mw / 2, my + 9, mw, 18)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.showModifierToast(modifier.icon, modifier.name, modifier.desc));
+      // Reveal the rolled challenge variable once at run start (a beat after the
+      // HUD settles). UIScene runs at real time (unaffected by battle speed).
+      this.time.delayedCall(500, () => this.showModifierToast(modifier.icon, modifier.name, modifier.desc));
     }
 
     // ── Gold pill ─────────────────────────────────────────
