@@ -138,7 +138,7 @@ export class SynergyManager {
 
     for (const syn of this.activeSynergies) {
       const emoji      = TRIBE_EMOJI[syn.tribe] ?? '❓';
-      const tierDot    = syn.tier.count >= 6 ? '●●●' : syn.tier.count >= 4 ? '●●' : '●';
+      const tierDot    = syn.tier.count >= 8 ? '●●●●' : syn.tier.count >= 6 ? '●●●' : syn.tier.count >= 4 ? '●●' : '●';
       const label      = `${emoji} ×${syn.count} ${tierDot}`;
       const fillCol    = TRIBE_FILL[syn.tribe] ?? CASUAL.GOLD;
       const edgeCol    = TRIBE_EDGE[syn.tribe] ?? CASUAL.GOLD_DK;

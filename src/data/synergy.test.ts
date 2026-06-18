@@ -22,17 +22,36 @@ describe('TRIBE_SYNERGIES', () => {
     expect(new Set(ids).size).toBe(9);
   });
 
-  it('every tribe has exactly 3 tiers', () => {
+  it('every tribe has exactly 4 tiers (2/4/6/8)', () => {
     for (const syn of TRIBE_SYNERGIES) {
-      expect(syn.tiers, `${syn.tribe} tiers`).toHaveLength(3);
+      expect(syn.tiers, `${syn.tribe} tiers`).toHaveLength(4);
     }
   });
 
-  it('tier counts are always 2, 4, 6 in order', () => {
+  it('tier counts are always 2, 4, 6, 8 in order', () => {
     for (const syn of TRIBE_SYNERGIES) {
       expect(syn.tiers[0].count).toBe(2);
       expect(syn.tiers[1].count).toBe(4);
       expect(syn.tiers[2].count).toBe(6);
+      expect(syn.tiers[3].count).toBe(8);
+    }
+  });
+
+  it('every tribe has an ×8 "전설" capstone that strictly out-scales its ×6 tier', () => {
+    // The 8-tier must carry the 6-tier special forward (so 6→8 never loses an
+    // effect) and raise atkMult — and stay within a sane balance cap (≤ 2.0×).
+    for (const syn of TRIBE_SYNERGIES) {
+      const t6 = syn.tiers[2];
+      const t8 = syn.tiers[3];
+      expect(t8.count, `${syn.tribe} capstone count`).toBe(8);
+      // atkMult rises 6→8
+      expect(t8.effect.atkMult ?? 1, `${syn.tribe} ×8 atkMult`).toBeGreaterThan(t6.effect.atkMult ?? 1);
+      // capped for balance
+      expect(t8.effect.atkMult ?? 1, `${syn.tribe} ×8 atkMult cap`).toBeLessThanOrEqual(2.0);
+      // carries the 6-tier special forward (if the 6-tier had one)
+      if (t6.effect.special !== undefined) {
+        expect(t8.effect.special, `${syn.tribe} ×8 keeps ×6 special`).toBe(t6.effect.special);
+      }
     }
   });
 
@@ -139,10 +158,18 @@ describe('calcTribeSynergies', () => {
     expect(result[0].tier.count).toBe(6);
   });
 
-  it('activates tier-3 even when count exceeds 6', () => {
-    const counts = new Map<TribeId, number>([['sea', 9]]);
+  it('activates tier-3 (×6) at 6–7, not yet the ×8 capstone', () => {
+    const counts = new Map<TribeId, number>([['sea', 7]]);
     const result = calcTribeSynergies(counts);
     expect(result[0].tier.count).toBe(6);
+  });
+
+  it('activates the ×8 "전설" capstone at 8+ mono-tribe monsters', () => {
+    const counts = new Map<TribeId, number>([['sea', 9]]);
+    const result = calcTribeSynergies(counts);
+    expect(result[0].tier.count).toBe(8);
+    // capstone carries the ×6 tsunami special forward
+    expect(result[0].tier.effect.special).toBe('SEA_TSUNAMI');
   });
 
   it('activates multiple tribes simultaneously', () => {
@@ -444,13 +471,14 @@ describe('TRIBE_SYNERGIES — tier-3 always has atkMult or special', () => {
     }
   });
 
-  it('all 9 tribes have their highest atkMult at tier-3', () => {
+  it('atkMult rises monotonically across tiers, peaking at the ×8 capstone', () => {
     for (const syn of TRIBE_SYNERGIES) {
-      const t1atk = syn.tiers[0].effect.atkMult ?? 1;
-      const t2atk = syn.tiers[1].effect.atkMult ?? 1;
-      const t3atk = syn.tiers[2].effect.atkMult ?? 1;
-      expect(t3atk, `${syn.tribe} tier-3 atkMult not highest`).toBeGreaterThanOrEqual(t2atk);
-      expect(t3atk, `${syn.tribe} tier-3 atkMult not highest`).toBeGreaterThanOrEqual(t1atk);
+      const atk = syn.tiers.map(t => t.effect.atkMult ?? 1);
+      for (let i = 1; i < atk.length; i++) {
+        expect(atk[i], `${syn.tribe} tier ${i} atkMult should be >= prior tier`).toBeGreaterThanOrEqual(atk[i - 1]);
+      }
+      // The ×8 capstone holds the highest atkMult.
+      expect(atk[3], `${syn.tribe} ×8 is the peak atkMult`).toBe(Math.max(...atk));
     }
   });
 });

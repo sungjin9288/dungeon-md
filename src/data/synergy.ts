@@ -19,7 +19,7 @@ export interface SynergyEffect {
 // ─── Tribe Synergy ─────────────────────────────────────────────────────────────
 
 export interface TribeSynergyTier {
-  count:  2 | 4 | 6;
+  count:  2 | 4 | 6 | 8;   // 8 = "전설" capstone for a full mono-tribe board
   name:   string;       // Korean display name
   desc:   string;       // Korean description
   effect: SynergyEffect;
@@ -40,6 +40,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { atkMult: 1.25, special: 'DOKKAEBI_RANGE_UP' } },
       { count: 6, name: '도깨비 신위', desc: '전원 ATK +40%, 첫타 기절 부여',
         effect: { atkMult: 1.40, special: 'DOKKAEBI_STUN_ALL' } },
+      { count: 8, name: '도깨비 군왕', desc: '전설: 전원 ATK +60%, 첫타 기절 유지',
+        effect: { atkMult: 1.60, special: 'DOKKAEBI_STUN_ALL' } },
     ],
   },
   {
@@ -51,6 +53,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { spdMult: 0.90, special: 'GUMIHO_CHARM_15' } },
       { count: 6, name: '구미호 각성', desc: 'ATK +30%, 환상 분신 소환',
         effect: { atkMult: 1.30, special: 'GUMIHO_CLONE' } },
+      { count: 8, name: '구미호 천호', desc: '전설: ATK +55%, 환상 분신 유지',
+        effect: { atkMult: 1.55, special: 'GUMIHO_CLONE' } },
     ],
   },
   {
@@ -62,6 +66,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { special: 'DRAGON_DEF_25_FIRE_IMMUNE' } },
       { count: 6, name: '용의 숨결', desc: 'ATK +40%, 매 웨이브 시작 시 AoE',
         effect: { atkMult: 1.40, special: 'DRAGON_BREATH_AOE' } },
+      { count: 8, name: '용제', desc: '전설: ATK +65%, 웨이브 시작 AoE 유지',
+        effect: { atkMult: 1.65, special: 'DRAGON_BREATH_AOE' } },
     ],
   },
   {
@@ -73,6 +79,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { goldMult: 1.50, special: 'UNDERWORLD_REVIVE_10' } },
       { count: 6, name: '사신의 낫', desc: 'ATK +35%, 즉사 임계치 +10%',
         effect: { atkMult: 1.35, special: 'UNDERWORLD_EXECUTE_UP' } },
+      { count: 8, name: '명계의 군주', desc: '전설: ATK +55%, 즉사 임계치 유지',
+        effect: { atkMult: 1.55, special: 'UNDERWORLD_EXECUTE_UP' } },
     ],
   },
   {
@@ -84,6 +92,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { special: 'SANSIN_HEAL_30_HP_UP' } },
       { count: 6, name: '산신 현현', desc: 'ATK +30%, 자연 재생 (방 HP 자동 회복)',
         effect: { atkMult: 1.30, special: 'SANSIN_REGEN' } },
+      { count: 8, name: '산군', desc: '전설: ATK +55%, 자연 재생 유지',
+        effect: { atkMult: 1.55, special: 'SANSIN_REGEN' } },
     ],
   },
   {
@@ -95,6 +105,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { spdMult: 0.85, special: 'SEA_PUSH_40' } },
       { count: 6, name: '해신 분노', desc: 'ATK +35%, 매 웨이브 쓰나미 AoE',
         effect: { atkMult: 1.35, special: 'SEA_TSUNAMI' } },
+      { count: 8, name: '해제', desc: '전설: ATK +60%, 쓰나미 AoE 유지',
+        effect: { atkMult: 1.60, special: 'SEA_TSUNAMI' } },
     ],
   },
   {
@@ -106,6 +118,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { atkMult: 1.15, spdMult: 1.15, special: 'MASK_TAUNT_LONG' } },
       { count: 6, name: '축제 광란', desc: '전원 ATK +35%, 적 혼란 효과',
         effect: { atkMult: 1.35, special: 'MASK_CONFUSION' } },
+      { count: 8, name: '대탈굿', desc: '전설: 전원 ATK +55%, 적 혼란 유지',
+        effect: { atkMult: 1.55, special: 'MASK_CONFUSION' } },
     ],
   },
   {
@@ -117,6 +131,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { spdMult: 1.20, special: 'MOONLIGHT_HEAL_UP' } },
       { count: 6, name: '보름달 각성', desc: 'ATK +35%, 주기적 전체 치유',
         effect: { atkMult: 1.35, special: 'MOONLIGHT_MASS_HEAL' } },
+      { count: 8, name: '월령 군주', desc: '전설: ATK +55%, 주기적 전체 치유 유지',
+        effect: { atkMult: 1.55, special: 'MOONLIGHT_MASS_HEAL' } },
     ],
   },
   {
@@ -128,6 +144,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
         effect: { atkMult: 1.35, special: 'CELESTIAL_PIERCE' } },
       { count: 6, name: '천제의 강림', desc: 'ATK +50%, 웨이브 시작 시 전체 침략자 느리게',
         effect: { atkMult: 1.50, special: 'CELESTIAL_DESCENT' } },
+      { count: 8, name: '천제 군림', desc: '전설: ATK +75%, 전체 침략자 둔화 유지',
+        effect: { atkMult: 1.75, special: 'CELESTIAL_DESCENT' } },
     ],
   },
 ];
