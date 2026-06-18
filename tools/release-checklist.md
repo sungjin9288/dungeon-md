@@ -1,11 +1,14 @@
 # 던전 수호자 v1.0.0 — App Store 출시 체크리스트
 
-## 빌드 상태 (최종 확인: 2026-06-11)
-- [x] `npm run build` — TypeScript 에러 0, 테스트 2,389개 통과
-- [x] `npx cap sync` — iOS + Android 동기화 완료 (Safe Area·세로잠금·퀘스트/부활 수정 포함)
-- [x] 번들 크기: index 498kB + tone 251kB + phaser 1479kB (gzip 합계 ~535kB)
+## 빌드 상태 (최종 확인: 2026-06-18 — HEAD 재검증)
+- [x] `npm run build` — TypeScript 에러 0, 테스트 2,605개 / 73 파일 전부 통과 (tsc·vitest 그린)
+- [x] `npx cap sync` — 2026-06-18 dist → iOS + Android 재동기화 (`LANG=en_US.UTF-8`, pod install OK).
+      `public/` 웹 자산은 gitignore 파생물이라 추적 diff 없음(정상).
+- [x] 번들 크기(gzip): phaser 340kB + app-gameplay 235kB + app-data 85kB + tone 64kB + 그 외 ~19kB
+      = **합계 ~743kB gzip** (raw ~2.99MB). manualChunks로 phaser/tone/data/gameplay 분리.
 - [x] 버전: 1.0.0 / 빌드: 1
-- [x] **출하 번들 standalone 검증** — 시뮬레이터에 dev 서버 없이 설치, 부팅→홈 진입·Safe Area·튜토리얼 정상 (iPhone 17 Pro Max)
+- [x] **출하 번들 standalone 검증** — 시뮬레이터에 dev 서버 없이 설치, 부팅→홈 진입·Safe Area·튜토리얼 정상 (iPhone 17 Pro Max).
+      ※ 2026-06-11 번들 기준 검증. 이후 추가분은 콘텐츠/로직(챕터·엔드리스 변수·밸런스)이라 부팅·Safe Area·튜토리얼 경로 불변.
 
 ---
 
@@ -34,7 +37,12 @@ ios/App/App/Assets.xcassets/AppIcon.appiconset/
 - 추가 커스텀이 필요하면 `ios/App/App/Assets.xcassets/Splash.imageset/` 수정
 
 ### 5. 스크린샷 촬영 (Simulator)
-> ✅ 2026-06-11 — `tools/screenshots/01~05.png` 캡처 완료 (iPhone 17 Pro Max, 1320×2868 6.9")
+> ⚠️ **재촬영 필요 (2026-06-18 발견)** — 현재 `tools/screenshots/*`는 2026-06-12(dd89fb1)가 마지막인데,
+> 이후 **캐주얼 reskin(6-15~16) → 홈 수직 던전 전경 재구조 Phase A–D(6-16~17) → 스테이지 지도화(6-17, 20bdde4)**가
+> 들어와 **01-home·02-stage-select는 실제 UI와 완전히 다른 화면**(평면 그리드/구 홈). App Store는 스크린샷이
+> 실제 앱과 일치해야 하므로 업로드 전 5종(+iPad 3종) 전부 재촬영 대상. 03-summon/04-codex/05-barracks도 헤더·탭바
+> 통일(영역 B) 이후라 재촬영 권장.
+> ✅ 2026-06-11 — `tools/screenshots/01~05.png` 캡처 (iPhone 17 Pro Max, 1320×2868 6.9") — ⚠️ 위 사유로 stale
 > 방법: dev 서버 `?scene=`/`?skipTutorial=1` 파라미터(main.ts DEV 전용) + simctl screenshot. 상태바 9:41 정리.
 > ✅ Safe Area 가림 발견 → 수정 완료 (contentInset 'never' + body env() 패딩 + #game-root) → 전체 재촬영
 ```
