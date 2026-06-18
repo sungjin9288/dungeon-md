@@ -3,6 +3,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TOP_BAR_HEIGHT } from '../constants/layout';
 import { getReducedMotion } from '../utils/reducedMotion';
 import { getEndlessModifierById } from '../data/endlessModifiers';
+import type { TraitCalloutPayload } from '../combat/TraitCallout';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -378,6 +379,9 @@ export class UIScene extends Phaser.Scene {
     on('changedata-gems', (_: unknown, v: number) => {
       this.gems = v; this.gemsText?.setText(v.toLocaleString('ko-KR'));
     });
+    on('changedata-traitCallout', (_: unknown, v: TraitCalloutPayload | null) => {
+      if (v) this.showTraitBanner(v.title, v.blurb);
+    });
     on('changedata-hp', (_: unknown, v: number) => {
       if (v < this.hp) {
         this.flashDamageVignette();
@@ -437,6 +441,40 @@ export class UIScene extends Phaser.Scene {
         this.remainingText?.setText('');
         this.remainingPillBg?.setAlpha(0);
       }
+    });
+  }
+
+  /** First-appearance trait callout for a special invader (rendered in the HUD). */
+  private showTraitBanner(title: string, blurb: string): void {
+    const y = 158;
+    const titleT = this.add.text(0, -9, `⚠ ${title}`, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+    }).setOrigin(0.5);
+    const blurbT = this.add.text(0, 9, blurb, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    }).setOrigin(0.5);
+
+    const w = Math.max(titleT.width, blurbT.width) + 28;
+    const h = 40;
+    const bg = this.add.graphics();
+    bg.fillStyle(CASUAL.SHADOW, 0.3);
+    bg.fillRoundedRect(-w / 2, -h / 2 + 2, w, h, 9);
+    bg.fillStyle(CASUAL.PANEL, 0.98);
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 9);
+    bg.fillStyle(0xffffff, 0.1);
+    bg.fillRoundedRect(-w / 2 + 5, -h / 2 + 3, w - 10, 4, 2);
+    bg.lineStyle(2, CASUAL.RED, 0.9);
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 9);
+
+    const ctr = this.add.container(CANVAS_WIDTH / 2, y, [bg, titleT, blurbT]).setDepth(330).setAlpha(0);
+    const reduced = getReducedMotion();
+    this.tweens.add({
+      targets: ctr, alpha: 1, y: reduced ? y : y - 8,
+      duration: reduced ? 120 : 240, ease: 'Back.easeOut',
+    });
+    this.tweens.add({
+      targets: ctr, alpha: 0, delay: 1900, duration: 420,
+      onComplete: () => ctr.destroy(),
     });
   }
 

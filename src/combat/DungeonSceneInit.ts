@@ -67,6 +67,11 @@ export function resolveStageSetup(
   // non-endless stages so no stale chip shows.
   registry.set('endlessModifier', isEndless ? rollEndlessModifier().id : null);
 
+  // Pre-seed the trait-callout key to null so the first real callout fires a
+  // 'changedata-traitCallout' event (Phaser emits 'setdata' — not 'changedata'
+  // — on a key's very first set, which UIScene's listener would otherwise miss).
+  registry.set('traitCallout', null);
+
   // ── Resolve wave config + grid shape ─────────────────────────────────────────
   const allStages: StageConfig[] = [
     ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3,

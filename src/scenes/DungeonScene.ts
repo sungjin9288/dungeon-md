@@ -120,6 +120,8 @@ export class DungeonScene extends Phaser.Scene {
   // ── Combat ─────────────────────────────────────────────────────────────────
   invaderPath!: Phaser.Curves.Path;
   activeInvaders: Invader[] = [];
+  /** Invader behaviors already announced (trait callout) — once per run. */
+  seenTraitBehaviors: Set<string> = new Set();
 
   // ── UI ─────────────────────────────────────────────────────────────────────
   panel!:         RoomSelectionPanel;

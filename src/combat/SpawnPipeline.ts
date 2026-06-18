@@ -18,6 +18,7 @@ import type { WeeklyBoss } from '../data/daily';
 import type { BossContext } from './BossBehaviors';
 import { resolveSpawnDef } from './spawnDefResolve';
 import { playInvaderSpawnEntrance } from './ImpactVfx';
+import { announceTraitOnce } from './TraitCallout';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
@@ -29,6 +30,8 @@ export interface SpawnPipelineContext {
   readonly dailySpeedMult: number;
   /** Active weekly boss config (weeklyBossMode), or null outside the mode. */
   readonly weeklyBoss:     WeeklyBoss | null;
+  /** Behaviors already announced this run — for the once-per-trait callout. */
+  readonly seenTraits:     Set<string>;
 
   get waveActive():    boolean;
   get activeInvaders(): Invader[];
@@ -81,6 +84,9 @@ export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef):
   ctx.setRemainingInvadersRegistry(ctx.activeInvaders.filter(i => i.active).length);
 
   ctx.applyBehavior(inv, modDef);
+
+  // Teach the player about a special enemy the first time it appears.
+  announceTraitOnce(ctx.scene, ctx.seenTraits, inv);
 }
 
 // ─── spawnInvaderByType ───────────────────────────────────────────────────────

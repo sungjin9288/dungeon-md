@@ -221,6 +221,7 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
     waveSpdMult:     ds.waveSpdMult,
     dailySpeedMult:  ds.dailyMode?.modifiers.invaderSpeedMult ?? 1,
     weeklyBoss:      ds.weeklyBossMode,
+    seenTraits:      ds.seenTraitBehaviors,
     get waveActive()     { return ds.waveActive; },
     get activeInvaders() { return ds.activeInvaders; },
     get spawnQueue()     { return ds.spawnQueue; },
