@@ -64,11 +64,13 @@ export const CASUAL = {
   SHADOW:      0x070402,   // 드롭 섀도 (거의 검정)
   INK:         0xf0e6c8,   // 다크 면 위 양피지 글자
   INK_SOFT:    0xc8b896,   // 보조 글자 (양피지 디밍)
-  GREEN:       0x5fc760,  GREEN_DK: 0x2f8f3a,   // 실행/긍정
-  GOLD:        0xffc63a,  GOLD_DK:  0xd9971f,   // 재화/보상
-  BLUE:        0x4aa8ee,  BLUE_DK:  0x2470c0,   // 정보
-  RED:         0xf2624c,  RED_DK:   0xc23a2c,   // 경고/위험
-  PURPLE:      0xb070e8,  PURPLE_DK: 0x7a3fc0,  // 특수/소환
+  // 던전 톤(Phase 2): 채움색을 횃불 아래 금속/이끼 톤으로 낮춤(캔디감 제거).
+  // 텍스트 대비는 CASUAL_CSS(밝은 값)가 따로 담당 — 가독성 유지.
+  GREEN:       0x44a05a,  GREEN_DK: 0x256434,   // 실행/긍정 — 깊은 이끼 에메랄드
+  GOLD:        0xe0a52c,  GOLD_DK:  0xa9791a,   // 재화/보상 — 횃불 황동
+  BLUE:        0x3f93cf,  BLUE_DK:  0x205f9e,   // 정보 — 차분한 강철 청
+  RED:         0xd2503c,  RED_DK:   0x9e2e23,   // 경고/위험 — 핏빛
+  PURPLE:      0x9a5fce,  PURPLE_DK: 0x66339e,  // 특수/소환 — 자수정
 } as const;
 
 /** CASUAL CSS strings for Text — 다크 베이스이므로 텍스트 액센트는 밝게(대비) */
