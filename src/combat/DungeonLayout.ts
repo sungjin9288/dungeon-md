@@ -263,8 +263,8 @@ function drawDungeonDefenseFrame(
   shadowG.fillStyle(CASUAL.SHADOW, 0.5);
   shadowG.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
 
-  const bdKey = bakeDungeonBackdrop(scene, `battleBackdrop_${panelW}x${panelH}`, panelW, panelH);
-  scene.add.image(panelX, panelY, bdKey).setOrigin(0, 0).setDepth(-15);
+  const bdKey = bakeDungeonBackdrop(scene, `battleBackdrop_${panelW}x${panelH}`, panelW, panelH, 'bg-dungeon-chamber');
+  scene.add.image(panelX, panelY, bdKey).setOrigin(0, 0).setDisplaySize(panelW, panelH).setDepth(-15);
 
   const g = scene.add.graphics().setDepth(-12);
   g.lineStyle(3, CASUAL.EDGE, 1);

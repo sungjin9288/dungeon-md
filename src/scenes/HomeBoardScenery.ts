@@ -240,6 +240,7 @@ export function drawDungeonMapBackdrop(
   const bdKey = bakeDungeonBackdrop(
     scene, `dungeonBackdrop_${Math.round(inW)}x${Math.round(inH)}`,
     Math.round(inW * 2), Math.round(inH * 2),
+    'bg-dungeon-shaft',
   );
   const backdrop = scene.add.image(inX, inY, bdKey).setOrigin(0, 0).setDisplaySize(inW, inH);
   c.add(backdrop);

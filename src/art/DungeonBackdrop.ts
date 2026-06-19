@@ -12,10 +12,18 @@
 
 import Phaser from 'phaser';
 
-/** Bake (idempotently) the painted dungeon backdrop and return its texture key. */
+/**
+ * Resolve the dungeon backdrop texture key for a slot of `w`×`h`.
+ *
+ * If `realAssetKey` is supplied and that texture was loaded (drop illustrated
+ * art into `public/assets/backgrounds/` — see that folder's README), it wins and
+ * the caller scales it to the slot via `setDisplaySize`. Otherwise we bake (once
+ * per key+size) the procedural Canvas painting as the fallback.
+ */
 export function bakeDungeonBackdrop(
-  scene: Phaser.Scene, key: string, w: number, h: number,
+  scene: Phaser.Scene, key: string, w: number, h: number, realAssetKey?: string,
 ): string {
+  if (realAssetKey && scene.textures.exists(realAssetKey)) return realAssetKey;
   if (scene.textures.exists(key)) return key;
   const tex = scene.textures.createCanvas(key, Math.ceil(w), Math.ceil(h));
   if (!tex) return key;
