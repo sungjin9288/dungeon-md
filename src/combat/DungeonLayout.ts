@@ -555,15 +555,16 @@ export function paintWaveButton(
   g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, hover: boolean,
 ): void {
   g.clear();
-  const fillTop = hover ? 0x36d994 : 0x21b777;
-  const fillBottom = hover ? 0x0c6f58 : 0x0a5849;
-  const border = hover ? COLORS.TORCH_AMBER : 0x8cffc1;
+  // Warm ember CTA — torch-lit, fits the dark dungeon while still popping.
+  const fillTop = hover ? 0xe8902c : 0xc9781f;
+  const fillBottom = hover ? 0x854019 : 0x6e3410;
+  const border = hover ? COLORS.TORCH_AMBER : 0xf0b85a;
 
   g.fillStyle(0x020711, 0.62);
   g.fillRoundedRect(x - 6, y + 7, w + 12, h + 8, 15);
   g.fillStyle(0x1f1305, 0.82);
   g.fillRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
-  g.lineStyle(1, 0x55b88a, hover ? 0.42 : 0.28);
+  g.lineStyle(1, 0x8a5a2a, hover ? 0.42 : 0.28);
   g.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
 
   g.fillGradientStyle(fillTop, fillTop, fillBottom, fillBottom, 1, 1, 1, 1);
@@ -627,7 +628,7 @@ export function buildWaveStartButton(
     fontSize: '17px',
     fontStyle: 'bold',
     color: '#fff8d8',
-    stroke: '#06351f',
+    stroke: '#2a1404',
     strokeThickness: 3,
   }).setOrigin(0.5).setDepth(61);
 
