@@ -15,6 +15,8 @@ import {
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
+import { canClaimAttendance } from '../data/attendance';
+import { showAttendancePanel } from './AttendancePanel';
 
 interface ShowChallengePanelFn {
   (): void;
@@ -239,6 +241,35 @@ export function buildDailyContentPanel(
   chalZone.on('pointerdown', () => {
     audioManager.playSfx('button_click');
     onShowChallengePanel();
+  });
+
+  // ── Attendance (login reward) tile ──
+  const attendBtnY = chalBtnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
+  const attendClaimable = canClaimAttendance(gs, today);
+  drawEventTileShell(scene, btnX, attendBtnY, {
+    accentColor: CASUAL.GOLD,
+    done: !attendClaimable,
+  });
+  scene.add.text(btnX + tileCenter, attendBtnY + 14, attendClaimable ? '📅' : '✅', {
+    fontFamily: 'sans-serif', fontSize: '15px',
+  }).setOrigin(0.5).setDepth(11);
+  scene.add.text(btnX + tileCenter, attendBtnY + 30, '출석', {
+    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+    color: attendClaimable ? CASUAL_CSS.GOLD : CASUAL_CSS.GREEN,
+  }).setOrigin(0.5).setDepth(11);
+  if (attendClaimable) {
+    const badge = scene.add.graphics().setDepth(13);
+    badge.fillStyle(CASUAL.RED, 1);
+    badge.fillCircle(btnX + EVENT_TILE_SIZE - 5, attendBtnY + 5, 5);
+    scene.add.text(btnX + EVENT_TILE_SIZE - 5, attendBtnY + 5, '!', {
+      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(14);
+  }
+  const attendZone = scene.add.zone(btnX + tileCenter, attendBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
+    .setInteractive().setDepth(12);
+  attendZone.on('pointerdown', () => {
+    audioManager.playSfx('button_click');
+    showAttendancePanel(scene);
   });
 }
 
