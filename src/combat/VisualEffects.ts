@@ -179,7 +179,8 @@ export function showTideWave(
   scene.tweens.add({ targets: g, scaleX: 3, scaleY: 3, alpha: 0, duration: 350,
     onComplete: () => g.destroy() });
   const t = scene.add.text(tx, ty - 18, '밀어냄!', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#44aaff',
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#6cc0ff',
+    stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(51);
   scene.tweens.add({ targets: t, y: ty - 45, alpha: 0, duration: 500, onComplete: () => t.destroy() });
 }
@@ -203,6 +204,7 @@ export function showGoldFloat(
 ): void {
   const t = scene.add.text(x, y, text, {
     fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
+    stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(95);
   scene.tweens.add({
     targets: t, y: y - 35, alpha: 0, duration: 900,
@@ -256,7 +258,8 @@ export function showHealEffect(
 
   // "+N" float above target
   const t = scene.add.text(target.x, target.y - 20, `+${amount}`, {
-    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#44ff44',
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#5cff7a',
+    stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(50);
   scene.tweens.add({ targets: t, y: target.y - 50, alpha: 0, duration: 600, onComplete: () => t.destroy() });
 
@@ -306,6 +309,7 @@ export function showSoulHarvestExec(
     onComplete: () => g.destroy() });
   const t = scene.add.text(x, y - 20, '💀 처형 +5💰', {
     fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#cc88ff',
+    stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(56);
   scene.tweens.add({ targets: t, y: y - 50, alpha: 0, duration: 700, onComplete: () => t.destroy() });
 }
@@ -329,6 +333,7 @@ export function triggerDragonRoar(
 
   const t = scene.add.text(x, y - 24, '🐲 포효!', {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: '#ff8844',
+    stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(56);
   scene.tweens.add({ targets: t, y: t.y - 36, alpha: 0, duration: 900, onComplete: () => t.destroy() });
   logger.debug('[DRAGONS_ROAR] all invaders slowed 50% for 3s');
