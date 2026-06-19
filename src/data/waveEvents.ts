@@ -5,7 +5,8 @@
 
 export type WaveEventType =
   | 'merchant' | 'supply' | 'curse' | 'rally' | 'fog'
-  | 'void_storm' | 'ancient_blessing' | 'crimson_curse';
+  | 'void_storm' | 'ancient_blessing' | 'crimson_curse'
+  | 'gold_vein' | 'raiders' | 'guardian_rite' | 'unsealing' | 'time_warp';
 
 export interface WaveEventDef {
   type:        WaveEventType;
@@ -72,6 +73,42 @@ export const WAVE_EVENTS: WaveEventDef[] = [
     icon: '🩸',
     description: '침략자 HP +50% · 보상 ×3',
     color: '#dd2244',
+  },
+  // ── Batch: 5 more variety events (composed from existing effect primitives) ──
+  {
+    type: 'gold_vein',
+    name: '황금 광맥',
+    icon: '🪙',
+    description: '이번 웨이브 보상 골드 ×2.5',
+    color: '#ffaa22',
+  },
+  {
+    type: 'raiders',
+    name: '약탈자 무리',
+    icon: '⚡',
+    description: '침략자 속도 +30% · HP +20% · 보상 ×2.2',
+    color: '#ee6622',
+  },
+  {
+    type: 'guardian_rite',
+    name: '수호 의식',
+    icon: '🛡️',
+    description: '모든 몬스터 ATK +40%',
+    color: '#55ccaa',
+  },
+  {
+    type: 'unsealing',
+    name: '봉인 해제',
+    icon: '⛓️',
+    description: '침략자 HP +60% · 몬스터 ATK +30% · 보상 ×2.5',
+    color: '#aa66ee',
+  },
+  {
+    type: 'time_warp',
+    name: '시간 왜곡',
+    icon: '⏳',
+    description: '침략자 속도 -30% · 몬스터 ATK +15%',
+    color: '#66ccee',
   },
 ];
 

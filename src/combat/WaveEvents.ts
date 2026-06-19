@@ -190,6 +190,26 @@ export function applyWaveEvent(ctx: WaveEventContext, evt: WaveEventDef): void {
       ctx.waveHpMult   = 1.5;
       ctx.waveGoldMult = 3.0;
       break;
+    case 'gold_vein':
+      ctx.waveGoldMult = 2.5;
+      break;
+    case 'raiders':
+      ctx.waveSpdMult  = 1.3;
+      ctx.waveHpMult   = 1.2;
+      ctx.waveGoldMult = 2.2;
+      break;
+    case 'guardian_rite':
+      ctx.waveAtkMult = 1.4;
+      break;
+    case 'unsealing':
+      ctx.waveHpMult   = 1.6;
+      ctx.waveAtkMult  = 1.3;
+      ctx.waveGoldMult = 2.5;
+      break;
+    case 'time_warp':
+      ctx.waveSpdMult = 0.7;
+      ctx.waveAtkMult = 1.15;
+      break;
   }
   logger.debug(`[EVENT] ${evt.name} applied: gold×${ctx.waveGoldMult} hp×${ctx.waveHpMult} atk×${ctx.waveAtkMult} spd×${ctx.waveSpdMult}`);
 }

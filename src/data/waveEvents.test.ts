@@ -4,8 +4,8 @@ import { WAVE_EVENTS, rollWaveEvent } from './waveEvents';
 // ─── WAVE_EVENTS data integrity ───────────────────────────────────────────────
 
 describe('WAVE_EVENTS', () => {
-  it('contains exactly 8 event types', () => {
-    expect(WAVE_EVENTS.length).toBe(8);
+  it('contains exactly 13 event types', () => {
+    expect(WAVE_EVENTS.length).toBe(13);
   });
 
   it('has unique event types', () => {
@@ -149,7 +149,7 @@ describe('WAVE_EVENTS — colors and effect characterization', () => {
     expect(e.description).toMatch(/ATK\s*\+\d+%/);
   });
 
-  it('all 8 colors are distinct', () => {
+  it('all 13 colors are distinct', () => {
     const colors = WAVE_EVENTS.map(e => e.color);
     expect(new Set(colors).size).toBe(colors.length);
   });
@@ -217,7 +217,7 @@ describe('rollWaveEvent', () => {
     expect(rate).toBeLessThan(0.40);
   });
 
-  it('when an event fires, it is always one of the 8 defined types', () => {
+  it('when an event fires, it is always one of the 13 defined types', () => {
     const validTypes = new Set(WAVE_EVENTS.map(e => e.type));
     for (let stageId = 0; stageId < 100; stageId++) {
       const evt = rollWaveEvent(4, 10, stageId);
@@ -233,10 +233,10 @@ describe('rollWaveEvent', () => {
   });
 
   it('wave=2 (minimum eligible) returns an event for stageId=4', () => {
-    // seededHash(2, 4) % 100 < 30 → triggers; verified via npx tsx probe
+    // seededHash(2, 4) % 100 = 28 < 30 → triggers; idx = hash % 13 = 10 → guardian_rite
     const evt = rollWaveEvent(2, 10, 4);
     expect(evt).not.toBeNull();
-    expect(evt!.type).toBe('fog');
+    expect(evt!.type).toBe('guardian_rite');
   });
 
   it('wave=maxWave-1 (one before boss) is eligible for events', () => {
@@ -246,7 +246,7 @@ describe('rollWaveEvent', () => {
     expect(evt!.type).toBe('fog');
   });
 
-  it('all 8 event types are reachable across wave/stageId combinations', () => {
+  it('all 13 event types are reachable across wave/stageId combinations', () => {
     const seen = new Set<string>();
     for (let wave = 2; wave < 20; wave++) {
       for (let s = 0; s < 200; s++) {
@@ -264,34 +264,34 @@ describe('rollWaveEvent', () => {
     expect(rollWaveEvent(2, 10, 1)).toBeNull();
   });
 
-  it('returns supply for wave=3, stageId=5 (hash%100=1 → triggers, idx→supply)', () => {
+  it('returns void_storm for wave=3, stageId=5 (hash%100=1 → triggers, idx=hash%13=5)', () => {
     const evt = rollWaveEvent(3, 10, 5);
-    expect(evt).not.toBeNull();
-    expect(evt!.type).toBe('supply');
-  });
-
-  it('returns merchant for wave=5, stageId=1 (deterministic)', () => {
-    const evt = rollWaveEvent(5, 20, 1);
-    expect(evt).not.toBeNull();
-    expect(evt!.type).toBe('merchant');
-  });
-
-  it('returns void_storm for wave=12, stageId=1 (deterministic)', () => {
-    const evt = rollWaveEvent(12, 20, 1);
     expect(evt).not.toBeNull();
     expect(evt!.type).toBe('void_storm');
   });
 
-  it('returns ancient_blessing for wave=4, stageId=2 (deterministic)', () => {
+  it('returns raiders for wave=5, stageId=1 (deterministic, idx=hash%13=9)', () => {
+    const evt = rollWaveEvent(5, 20, 1);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('raiders');
+  });
+
+  it('returns merchant for wave=12, stageId=1 (deterministic, idx=hash%13=0)', () => {
+    const evt = rollWaveEvent(12, 20, 1);
+    expect(evt).not.toBeNull();
+    expect(evt!.type).toBe('merchant');
+  });
+
+  it('returns fog for wave=4, stageId=2 (deterministic, idx=hash%13=4)', () => {
     const evt = rollWaveEvent(4, 20, 2);
     expect(evt).not.toBeNull();
-    expect(evt!.type).toBe('ancient_blessing');
+    expect(evt!.type).toBe('fog');
   });
 
   it('returned event is the same object reference as in WAVE_EVENTS (not a copy)', () => {
-    const evt = rollWaveEvent(3, 10, 5); // known to return supply
-    const supplyDef = WAVE_EVENTS.find(e => e.type === 'supply');
-    expect(evt).toBe(supplyDef);
+    const evt = rollWaveEvent(3, 10, 5); // known to return void_storm
+    const voidStormDef = WAVE_EVENTS.find(e => e.type === 'void_storm');
+    expect(evt).toBe(voidStormDef);
   });
 });
 
@@ -302,8 +302,12 @@ describe('WAVE_EVENTS — array order, key set & description numeric pins', () =
     expect(WAVE_EVENTS[0].type).toBe('merchant');
   });
 
-  it('WAVE_EVENTS[7] is crimson_curse (last defined)', () => {
+  it('WAVE_EVENTS[7] is crimson_curse (last of the original batch)', () => {
     expect(WAVE_EVENTS[7].type).toBe('crimson_curse');
+  });
+
+  it('WAVE_EVENTS[12] is time_warp (last defined)', () => {
+    expect(WAVE_EVENTS[12].type).toBe('time_warp');
   });
 
   it('every WaveEventDef has exactly the 5 expected keys', () => {
@@ -405,5 +409,56 @@ describe('WAVE_EVENTS — index[3]/[4] pins & new-event description %', () => {
 
   it('rollWaveEvent(0, 10, 1) returns null (wave=0 is below minimum 2)', () => {
     expect(rollWaveEvent(0, 10, 1)).toBeNull();
+  });
+});
+
+// ─── WAVE_EVENTS — 5 newest variety events ───────────────────────────────────
+
+describe('WAVE_EVENTS — 5 newest variety events', () => {
+  const get = (t: string) => WAVE_EVENTS.find(e => e.type === t)!;
+
+  it('includes the 5 newest event types', () => {
+    const types = WAVE_EVENTS.map(e => e.type);
+    expect(types).toContain('gold_vein');
+    expect(types).toContain('raiders');
+    expect(types).toContain('guardian_rite');
+    expect(types).toContain('unsealing');
+    expect(types).toContain('time_warp');
+  });
+
+  it('gold_vein: 황금 광맥 🪙, reward gold ×2.5', () => {
+    expect(get('gold_vein').name).toBe('황금 광맥');
+    expect(get('gold_vein').icon).toBe('🪙');
+    expect(get('gold_vein').description).toContain('×2.5');
+  });
+
+  it('raiders: 약탈자 무리, speed boost + ×2.2 reward', () => {
+    expect(get('raiders').name).toBe('약탈자 무리');
+    expect(get('raiders').description).toMatch(/속도\s*\+/);
+    expect(get('raiders').description).toContain('×2.2');
+  });
+
+  it('guardian_rite: 수호 의식, ATK +40%', () => {
+    expect(get('guardian_rite').name).toBe('수호 의식');
+    expect(get('guardian_rite').description).toContain('+40%');
+  });
+
+  it('unsealing: 봉인 해제, HP +60% and ATK +30%', () => {
+    expect(get('unsealing').name).toBe('봉인 해제');
+    expect(get('unsealing').description).toContain('+60%');
+    expect(get('unsealing').description).toContain('+30%');
+  });
+
+  it('time_warp: 시간 왜곡, speed -30%', () => {
+    expect(get('time_warp').name).toBe('시간 왜곡');
+    expect(get('time_warp').description).toMatch(/속도\s*-30%/);
+  });
+
+  it('WAVE_EVENTS[8..12] are the 5 newest, in order', () => {
+    expect(WAVE_EVENTS[8].type).toBe('gold_vein');
+    expect(WAVE_EVENTS[9].type).toBe('raiders');
+    expect(WAVE_EVENTS[10].type).toBe('guardian_rite');
+    expect(WAVE_EVENTS[11].type).toBe('unsealing');
+    expect(WAVE_EVENTS[12].type).toBe('time_warp');
   });
 });
