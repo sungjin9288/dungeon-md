@@ -11,7 +11,6 @@ import { calculateRoomLoadoutStatus, calculateRoomMetrics } from '../data/dungeo
 import { getRoomActionRecommendation } from '../data/roomActionRecommendations';
 import { SLOT_UNLOCK_LEVELS, ROOM_SLOT_TYPE_DEFS } from '../data/wisdom';
 import type { DungeonTheme } from '../themes/themes';
-import { drawRoughEdgeRect, strokeRoughEdgeRect } from '../themes/decorations';
 import type { GameState } from '../data/wisdom';
 import { resolveMonsterTypeId } from './MonsterPortraitView';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
@@ -307,71 +306,6 @@ function drawHomeEmptyRoomLoadoutCue(
   drawHomeSocketChip(scene, c, g, x + 51, y + 51, 'T', status.trapCount, status.trapCapacity, HOME_TRAP_SLOT_COLOR);
 }
 
-
-// Deterministic 0..1 from an integer seed (stable per slot, no Math.random).
-function seededUnit(seed: number, salt: number): number {
-  const v = Math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
-  return v - Math.floor(v);
-}
-
-function drawLockedExcavationFace(
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  seed: number,
-): void {
-  // Unexcavated rock — a craggy earth/stone face the player will dig out.
-  // Reads as "solid rock to excavate" so locked slots feel like dungeon
-  // expansion, not just sealed panels. (README: 잠긴 칸 = 파내는 암반)
-  const ix = x + 8, iy = y + 8, iw = SLOT_W - 16, ih = SLOT_H - 16;
-
-  // Raw rock fill — earthy dark stone, darker than the lit rooms.
-  g.fillStyle(0x1c150b, 1);
-  g.fillRoundedRect(ix, iy, iw, ih, 7);
-  // Top-lit rock shelf + deep lower shadow for carved-into-earth depth.
-  g.fillStyle(0x2a2012, 0.9);
-  g.fillRoundedRect(ix, iy, iw, ih * 0.42, { tl: 7, tr: 7, bl: 0, br: 0 });
-  g.fillStyle(0x000000, 0.28);
-  g.fillRoundedRect(ix, iy + ih * 0.62, iw, ih * 0.38, { tl: 0, tr: 0, bl: 7, br: 7 });
-
-  // Embedded boulders (deterministic lumps).
-  for (let i = 0; i < 5; i++) {
-    const bx = ix + 8 + seededUnit(seed, i) * (iw - 16);
-    const by = iy + 10 + seededUnit(seed, i + 9) * (ih - 22);
-    const r = 4 + seededUnit(seed, i + 3) * 5;
-    g.fillStyle(0x342819, 0.8);
-    g.fillCircle(bx, by, r);
-    g.fillStyle(0x120d06, 0.5);
-    g.fillCircle(bx + 1.5, by + 1.8, r * 0.7);
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.22);
-    g.fillCircle(bx - r * 0.4, by - r * 0.45, r * 0.4);
-  }
-
-  // Cracks splitting the rock.
-  g.lineStyle(1.5, 0x0c0804, 0.7);
-  const mx = ix + iw / 2;
-  g.lineBetween(mx, iy + 6, mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5);
-  g.lineBetween(mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5, ix + 10, iy + ih - 6);
-  g.lineBetween(mx - 6 + seededUnit(seed, 1) * 12, iy + ih * 0.5, ix + iw - 12, iy + ih - 8);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.18);
-  g.lineBetween(mx + 1, iy + 6, mx - 5 + seededUnit(seed, 1) * 12, iy + ih * 0.5);
-
-  // Ore / gem glints — hints of reward buried in the rock.
-  const oreColors = [CASUAL.GOLD, CASUAL.BLUE, CASUAL.PURPLE];
-  for (let i = 0; i < 3; i++) {
-    const ox = ix + 12 + seededUnit(seed, i + 20) * (iw - 24);
-    const oy = iy + 14 + seededUnit(seed, i + 27) * (ih - 28);
-    g.fillStyle(oreColors[i % oreColors.length], 0.55);
-    g.fillCircle(ox, oy, 1.8);
-    g.fillStyle(0xffffff, 0.5);
-    g.fillCircle(ox - 0.6, oy - 0.6, 0.7);
-  }
-
-  // Chiseled rock rim.
-  g.lineStyle(2, CASUAL.EDGE, 0.5);
-  g.strokeRoundedRect(ix, iy, iw, ih, 7);
-}
-
 function drawConstructionScaffold(
   g: Phaser.GameObjects.Graphics,
   x: number,
@@ -458,46 +392,23 @@ export function drawBattleSlot(
   const { scene, gs } = ctx;
 
   if (!unlocked) {
-    // Sealed dungeon chamber — a barred cell mouth carved into raw rock.
-    // (Replaces the old pickaxe/"굴착" affordance that read as an idle-miner
-    //  grid rather than a dungeon you unseal.)
-    drawRoughEdgeRect(g, 0x140d07, 1, x, y, SLOT_W, SLOT_H, index * 17);
-    strokeRoughEdgeRect(g, CASUAL.EDGE, 0.55, 2.5, x, y, SLOT_W, SLOT_H, index * 17);
-    drawLockedExcavationFace(g, x, y, index * 17);
+    // Sealed chamber — a dim veil lets the painted dungeon backdrop show through
+    // (rooms read as framed openings in the illustration, Dungeon-Maker style),
+    // with a lock + unlock-level plaque. No opaque rock / bars.
     const cx = x + SLOT_W / 2;
     const cy = y + SLOT_H / 2;
-    // Recessed chamber mouth — a dark archway carved into the wall
-    const mw = 58, mh = 50, mTop = cy - 30;
-    g.fillStyle(0x000000, 0.62);
-    g.fillRoundedRect(cx - mw / 2, mTop, mw, mh, 7);
-    g.fillStyle(0x1c1409, 0.5);
-    g.fillRoundedRect(cx - mw / 2 + 2, mTop + 2, mw - 4, mh - 4, 6);
-    // Iron bars + crossbar — an unmistakable dungeon cell gate
-    const barTop = mTop + 3, barBtm = mTop + mh - 4;
-    g.lineStyle(3, 0x3e352b, 0.95);
-    for (let b = 0; b < 3; b++) {
-      const bxp = cx - mw / 2 + 12 + b * (mw - 24) / 2;
-      g.lineBetween(bxp, barTop, bxp, barBtm);
-    }
-    g.lineBetween(cx - mw / 2 + 5, mTop + mh * 0.42, cx + mw / 2 - 5, mTop + mh * 0.42);
-    // Cold iron highlight along each bar
-    g.lineStyle(1, 0x6a5e4e, 0.5);
-    for (let b = 0; b < 3; b++) {
-      const bxp = cx - mw / 2 + 12 + b * (mw - 24) / 2 - 1;
-      g.lineBetween(bxp, barTop, bxp, barBtm);
-    }
-    // Central iron padlock on the gate
-    g.fillStyle(0x241a10, 1);     g.fillCircle(cx, cy + 1, 6);
-    g.lineStyle(2, 0x5a4a36, 0.9); g.strokeCircle(cx, cy + 1, 6);
-    g.fillStyle(0xc8921a, 0.85);  g.fillCircle(cx, cy + 1, 1.6);
-    // Unlock-level stone plaque — muted carved stone, not a bright gold pill
+    g.fillStyle(0x07040c, 0.5);
+    g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 10);
+    g.lineStyle(2, CASUAL.EDGE, 0.5);
+    g.strokeRoundedRect(x + 1, y + 1, SLOT_W - 2, SLOT_H - 2, 10);
+    c.add(scene.add.text(cx, cy - 6, '🔒', { fontSize: '22px' }).setOrigin(0.5).setAlpha(0.82));
     const reqLv = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
-    g.fillStyle(0x140d07, 0.96);
-    g.fillRoundedRect(cx - 26, cy + 22, 52, 16, 4);
-    g.lineStyle(1.2, CASUAL.EDGE, 0.7);
-    g.strokeRoundedRect(cx - 26, cy + 22, 52, 16, 4);
-    c.add(scene.add.text(cx, cy + 30, `🔒 Lv.${reqLv}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+    g.fillStyle(0x140d07, 0.92);
+    g.fillRoundedRect(cx - 24, cy + 16, 48, 16, 4);
+    g.lineStyle(1, CASUAL.EDGE, 0.6);
+    g.strokeRoundedRect(cx - 24, cy + 16, 48, 16, 4);
+    c.add(scene.add.text(cx, cy + 24, `Lv.${reqLv}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0.9));
     return;
