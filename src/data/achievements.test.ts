@@ -41,8 +41,8 @@ function makeCtx(overrides: Partial<AchievementContext> = {}): AchievementContex
 // ─── ACHIEVEMENT_DEFS data integrity ─────────────────────────────────────────
 
 describe('ACHIEVEMENT_DEFS', () => {
-  it('contains exactly 72 achievements', () => {
-    expect(ACHIEVEMENT_DEFS).toHaveLength(72);
+  it('contains exactly 76 achievements', () => {
+    expect(ACHIEVEMENT_DEFS).toHaveLength(76);
   });
 
   it('has unique ids', () => {

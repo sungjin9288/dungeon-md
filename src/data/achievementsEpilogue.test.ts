@@ -294,8 +294,8 @@ describe('EPILOGUE_ACHIEVEMENT_DEFS — array index pins', () => {
 // ─── combined count & category cross-checks ──────────────────────────────────
 
 describe('EPILOGUE_ACHIEVEMENT_DEFS — combined count & cross-checks', () => {
-  it('ACHIEVEMENT_DEFS (72) + EPILOGUE_ACHIEVEMENT_DEFS (5) = 77 total', () => {
-    expect(ACHIEVEMENT_DEFS.length + EPILOGUE_ACHIEVEMENT_DEFS.length).toBe(77);
+  it('ACHIEVEMENT_DEFS (76) + EPILOGUE_ACHIEVEMENT_DEFS (5) = 81 total', () => {
+    expect(ACHIEVEMENT_DEFS.length + EPILOGUE_ACHIEVEMENT_DEFS.length).toBe(81);
   });
 
   it('fusion_30 and fusion_50 both have category "collection"', () => {
