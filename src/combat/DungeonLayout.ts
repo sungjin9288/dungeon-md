@@ -16,6 +16,7 @@ import {
 } from '../constants/layout';
 import type { DungeonTheme } from '../themes/themes';
 import { drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes/decorations';
+import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 import { getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
 import { MONSTER_DEFS, resolveMonsterDef } from '../data/monsters';
@@ -252,18 +253,23 @@ function drawDungeonDefenseFrame(
   const gridH = GRID_ROWS * effectiveCellSize;
   const x = GRID_X;
   const y = GRID_Y;
-  const g = scene.add.graphics().setDepth(-12);
+  // Play-area: painted dungeon backdrop (matches the home board) behind
+  // translucent cells, framed by a brown stone border. Drop shadow sits
+  // behind the painting so it never darkens the illustration.
+  const panelX = x - 16, panelY = y - 18;
+  const panelW = gridW + 32, panelH = gridH + 36;
 
-  // Play-area panel — cream body, brown rounded border, warm drop shadow.
-  g.fillStyle(CASUAL.SHADOW, 0.4);
-  g.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x - 12, y - 14, gridW + 24, 12, 9);
+  const shadowG = scene.add.graphics().setDepth(-16);
+  shadowG.fillStyle(CASUAL.SHADOW, 0.5);
+  shadowG.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
+
+  const bdKey = bakeDungeonBackdrop(scene, `battleBackdrop_${panelW}x${panelH}`, panelW, panelH);
+  scene.add.image(panelX, panelY, bdKey).setOrigin(0, 0).setDepth(-15);
+
+  const g = scene.add.graphics().setDepth(-12);
   g.lineStyle(3, CASUAL.EDGE, 1);
-  g.strokeRoundedRect(x - 16, y - 18, gridW + 32, gridH + 36, 15);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+  g.strokeRoundedRect(panelX, panelY, panelW, panelH, 15);
+  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
   g.strokeRoundedRect(x - 7, y - 8, gridW + 14, gridH + 16, 10);
 
   for (let row = 0; row < GRID_ROWS; row++) {
@@ -273,23 +279,21 @@ function drawDungeonDefenseFrame(
       const inset = 9;
       const accent = row === 0 ? CASUAL.GOLD : row === 1 ? CASUAL.GREEN : CASUAL.PURPLE;
       const cw = effectiveCellSize - inset * 2;
-      // Cream cell body + white top highlight.
-      g.fillStyle(CASUAL.PANEL, 1);
+      // Translucent dark alcove — the painted dungeon shows through empty slots.
+      g.fillStyle(CASUAL.SHADOW, 0.3);
       g.fillRoundedRect(cellX + inset, cellY + inset, cw, cw, 12);
-      g.fillStyle(0xffffff, 0.55);
-      g.fillRoundedRect(cellX + inset + 8, cellY + inset + 8, cw - 16, 18, 7);
-      // Chunky saturated per-row border.
-      g.lineStyle(2.5, accent, 0.9);
+      // Per-row accent border (slot identity), toned for the dark backdrop.
+      g.lineStyle(2, accent, 0.6);
       g.strokeRoundedRect(cellX + inset, cellY + inset, cw, cw, 12);
-      // Saturated bottom accent strip.
-      g.fillStyle(accent, 0.85);
-      g.fillRoundedRect(cellX + inset + 10, cellY + effectiveCellSize - inset - 10, cw - 20, 4, 2);
+      // Faint bottom accent strip.
+      g.fillStyle(accent, 0.55);
+      g.fillRoundedRect(cellX + inset + 10, cellY + effectiveCellSize - inset - 10, cw - 20, 3, 2);
     }
   }
 
   // Entry gate — bright red nub on cream.
   const gateY = y + effectiveCellSize / 2;
-  g.fillStyle(0xffffff, 0.95);
+  g.fillStyle(CASUAL.PANEL, 0.95);
   g.fillRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
   g.lineStyle(2.5, CASUAL.RED, 1);
   g.strokeRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
