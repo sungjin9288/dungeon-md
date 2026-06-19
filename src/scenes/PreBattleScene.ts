@@ -28,7 +28,7 @@ export class PreBattleScene extends Phaser.Scene {
     const questId = this.registry.get('questId')        as string        | undefined;
     const gs      = loadGameState();
 
-    // ─ Bright casual storybook background (gradient + sun glow + polka dots) ──
+    // ─ Dark dungeon ambient (torchlit gradient + drifting ember motes) ───────
     applyCasualBackground(this);
 
     // ─ Back button — cream candy pill ────────────────────────────────────────
@@ -136,8 +136,8 @@ export class PreBattleScene extends Phaser.Scene {
       activeSynergies.forEach(([tribe, count]) => {
         const label = `✨ ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
         const chip = this.add.text(chipX, synY, label, {
-          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          backgroundColor: '#ffc63a', padding: { x: 8, y: 4 },
+          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+          backgroundColor: '#2b2114', padding: { x: 8, y: 4 },
         });
         chip.setInteractive({ useHandCursor: true });
         chip.on('pointerdown', () => {
@@ -197,8 +197,8 @@ export class PreBattleScene extends Phaser.Scene {
       .filter((s): s is ActiveSkill => s != null);
     if (ownedSkills.length > 0) {
       const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `🎯 스킬 ×${ownedSkills.length}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.WHITE,
-        backgroundColor: '#2f8f3a', padding: { x: 8, y: 4 },
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
+        backgroundColor: '#2b2114', padding: { x: 8, y: 4 },
       }).setOrigin(1, 0);
       skillChip.setInteractive({ useHandCursor: true });
       skillChip.on('pointerdown', () => {
