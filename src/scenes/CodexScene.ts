@@ -8,6 +8,7 @@ import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
 import { ENDLESS_MODIFIERS } from '../data/endlessModifiers';
+import { WAVE_EVENTS } from '../data/waveEvents';
 import { getTraitBlurb } from '../data/invaderTraits';
 import {
   CX, HDR_H, BOT_H, PAD,
@@ -24,7 +25,7 @@ export class CodexScene extends Phaser.Scene {
   private expandedTribes: Set<TribeId> = new Set(['dokkaebi']); // first open by default
   private gs = loadGameState();
   private showOwnedOnly  = false;
-  private codexTab: 'monsters' | 'invaders' | 'modifiers' = 'monsters';
+  private codexTab: 'monsters' | 'invaders' | 'modifiers' | 'events' = 'monsters';
   private detailOverlayRef: { current: Phaser.GameObjects.Container | null } = { current: null };
 
   constructor() { super({ key: 'CodexScene' }); }
@@ -73,6 +74,7 @@ export class CodexScene extends Phaser.Scene {
         { id: 'monsters',  label: '🏰 수호자' },
         { id: 'invaders',  label: '👺 적군'   },
         { id: 'modifiers', label: '⚔ 도전 변수' },
+        { id: 'events',    label: '🎲 이벤트' },
       ],
       active:  this.codexTab,
       y:       56,
@@ -141,8 +143,12 @@ export class CodexScene extends Phaser.Scene {
       this.add.text(CX, 101, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
-    } else {
+    } else if (this.codexTab === 'modifiers') {
       this.add.text(CX, 101, `무한 던전 도전 변수 ${ENDLESS_MODIFIERS.length}종 · 런마다 1개 무작위`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      }).setOrigin(0.5).setDepth(10);
+    } else {
+      this.add.text(CX, 101, `웨이브 이벤트 ${WAVE_EVENTS.length}종 · 웨이브 사이 무작위 등장`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
     }
@@ -167,6 +173,10 @@ export class CodexScene extends Phaser.Scene {
     }
     if (this.codexTab === 'modifiers') {
       this.buildModifierContent();
+      return;
+    }
+    if (this.codexTab === 'events') {
+      this.buildEventContent();
       return;
     }
 
@@ -579,6 +589,60 @@ export class CodexScene extends Phaser.Scene {
       // Strip the trailing reward clause — it is shown in the gold pill instead.
       const descBody = m.desc.split(' · 보상')[0];
       const desc = this.add.text(x + 58, cursorY + 28, descBody, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+        wordWrap: { width: w - 58 - 12 },
+      }).setOrigin(0, 0);
+      this.contentCtr.add(desc);
+
+      cursorY += rowH + 6;
+    }
+
+    this.maxScrollY = Math.max(0, cursorY - (CANVAS_HEIGHT - HDR_H - BOT_H));
+  }
+
+  // ─── Wave-event content (웨이브 이벤트) ──────────────────────────────────────
+
+  private buildEventContent(): void {
+    let cursorY = 8;
+
+    const intro = this.add.text(CX, cursorY + 4,
+      '전투 중 웨이브 사이에 무작위로 등장해 그 웨이브를 변화시킵니다.\n축복은 아군을, 저주는 적을 강화하지만 그만큼 보상도 커집니다.',
+      { fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+        align: 'center', lineSpacing: 3 },
+    ).setOrigin(0.5, 0);
+    this.contentCtr.add(intro);
+    cursorY += 40;
+
+    for (const evt of WAVE_EVENTS) {
+      const rowH = 50;
+      const x = PAD + 4;
+      const w = CANVAS_WIDTH - PAD * 2 - 8;
+      const accent = parseInt(evt.color.slice(1), 16);
+
+      const card = this.add.graphics();
+      this.contentCtr.add(card);
+      card.fillStyle(CASUAL.SHADOW, 0.14);
+      card.fillRoundedRect(x, cursorY + 3, w, rowH, 8);
+      card.fillStyle(CASUAL.PANEL, 1);
+      card.fillRoundedRect(x, cursorY, w, rowH, 8);
+      card.fillStyle(0xffffff, 0.12);
+      card.fillRoundedRect(x + 5, cursorY + 3, w - 10, 4, 2);
+      card.lineStyle(2, CASUAL.EDGE, 1);
+      card.strokeRoundedRect(x, cursorY, w, rowH, 8);
+      card.fillStyle(accent, 0.9);
+      card.fillRoundedRect(x + 6, cursorY + 6, 5, rowH - 12, 3);
+
+      const icon = this.add.text(x + 34, cursorY + rowH / 2, evt.icon, {
+        fontFamily: 'sans-serif', fontSize: '24px',
+      }).setOrigin(0.5);
+      this.contentCtr.add(icon);
+
+      const name = this.add.text(x + 58, cursorY + 9, evt.name, {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      }).setOrigin(0, 0);
+      this.contentCtr.add(name);
+
+      const desc = this.add.text(x + 58, cursorY + 28, evt.description, {
         fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
         wordWrap: { width: w - 58 - 12 },
       }).setOrigin(0, 0);
