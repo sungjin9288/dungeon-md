@@ -238,6 +238,9 @@ export interface GameState {
   // Streak tracking
   consecutiveDays: number;
   lastPlayDate:    string;   // ISO date string YYYY-MM-DD
+  // Daily attendance (login) rewards
+  attendanceDay:       number;   // total attendance rewards claimed (drives the 7-day cycle)
+  lastAttendanceClaim: string;   // ISO date of the last attendance claim ('' = never)
   // Game completion
   gameCompleted?:  boolean;
   // Monster barracks
@@ -325,6 +328,8 @@ function defaultGameState(): GameState {
     achievements:     {},
     consecutiveDays:   0,
     lastPlayDate:      '',
+    attendanceDay:        0,
+    lastAttendanceClaim:  '',
     ownedMonsters:     STARTER_ROSTER.map(id => defaultOwnedMonster(id)),
     ownedEquipment:    ['dokkaebi_club', 'golden_armor', 'lucky_charm'],   // starter equipment
     ownedActiveSkills: ['fire_burst', 'heal_room'],                         // starter active skills
@@ -647,6 +652,8 @@ export function startPrestige(state: GameState): GameState {
     endlessHighScore:       state.endlessHighScore,
     consecutiveDays:        state.consecutiveDays,
     lastPlayDate:           state.lastPlayDate,
+    attendanceDay:          state.attendanceDay ?? 0,
+    lastAttendanceClaim:    state.lastAttendanceClaim ?? '',
     // ── Prestige level ─────────────────────────────────────────────────────
     prestigeLevel: nextPrestige,
   };
