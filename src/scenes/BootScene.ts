@@ -59,6 +59,12 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
     });
 
+    // Illustrated dungeon backdrops — override the procedural Canvas painting on
+    // the home (shaft) and battle (chamber) boards. If a file is absent the
+    // backdrop helper falls back to the painted canvas (see DungeonBackdrop.ts).
+    this.load.image('bg-dungeon-shaft',   '/assets/backgrounds/dungeon-shaft.png');
+    this.load.image('bg-dungeon-chamber', '/assets/backgrounds/dungeon-chamber.png');
+
     // Fail-safe: if loader somehow stalls, force-complete after 8 s
     this.load.once('complete', () => { /* normal path */ });
     this.time.delayedCall(8000, () => {
