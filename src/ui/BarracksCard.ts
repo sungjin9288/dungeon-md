@@ -132,9 +132,9 @@ export function buildMonsterCard(
     const focusChip = scene.add.text(x + 10, y + 12, '방 선택', {
       fontFamily:      'sans-serif',
       fontSize:        '9px',
-      color:           '#061016',
+      color:           '#9fe07a',
       fontStyle:       'bold',
-      backgroundColor: '#c8e8b0',
+      backgroundColor: '#16240f',
       padding:         { x: 5, y: 2 },
     }).setOrigin(0, 0.5);
     ctx.contentContainer.add(focusChip);
@@ -310,7 +310,7 @@ export function buildSummonSlot(
   }).setOrigin(0, 0.5));
   ctx.contentContainer.add(scene.add.text(x + CARD_W - 14, y + 15, 'NEW', {
     fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold',
-    color: '#241300', backgroundColor: '#ffd878', padding: { x: 5, y: 2 },
+    color: '#ffd24a', backgroundColor: '#3a2410', padding: { x: 5, y: 2 },
   }).setOrigin(1, 0.5));
 
   ctx.contentContainer.add(scene.add.text(x + CARD_W / 2, y + 68, '✨', {

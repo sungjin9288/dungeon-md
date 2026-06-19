@@ -644,8 +644,8 @@ export class AncestralWisdomScene extends Phaser.Scene {
 
     const toast = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 선조의 지혜 완전 해방! ✨', {
       fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
-      color: CASUAL_CSS.GOLD, stroke: '#ffffff', strokeThickness: 4,
-      backgroundColor: '#fff6e6',
+      color: CASUAL_CSS.GOLD, stroke: '#2a1606', strokeThickness: 4,
+      backgroundColor: '#1c1408',
       padding: { x: 16, y: 10 },
     }).setOrigin(0.5).setDepth(401).setAlpha(0);
 
