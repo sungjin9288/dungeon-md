@@ -269,15 +269,15 @@ class SkillSlot {
     }
 
     if (this.skill && !this.cooldownActive) {
-      // ─── ready: bright candy button (mirrors addPrimaryActionButton) ───
-      // chunky colored bottom edge (the candy base)
+      // ─── ready: category-colored action button (de-glossed for dark tone) ───
+      // colored bottom edge (depth base)
       this.bg.fillStyle(accentDk, 1);
       this.bg.fillRoundedRect(0, 4, SLOT_SIZE, SLOT_SIZE - 2, r);
-      // saturated bright cap
+      // category-accent cap
       this.bg.fillStyle(accent, 1);
       this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
-      // glossy white top highlight
-      this.bg.fillStyle(0xffffff, 0.32);
+      // soft top highlight (de-glossed to match the dark dungeon tone)
+      this.bg.fillStyle(0xffffff, 0.14);
       this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 16, 7);
       // thick rounded brown border
       this.bg.lineStyle(this.highlight ? 2.5 : 2, CASUAL.EDGE, 1);
