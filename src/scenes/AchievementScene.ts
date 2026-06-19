@@ -10,7 +10,7 @@ import {
   type AchievementContext,
   type AchievementDef,
 } from '../data/achievements';
-import { claimAchievementReward } from '../data/rewardTransactions';
+import { claimAchievementReward, claimAllAchievementRewards } from '../data/rewardTransactions';
 import { unlockAvailableAchievements } from '../data/progressionTransactions';
 import { addSceneHeader, addTabBar, type TabBarTab } from '../ui/GameUiPrimitives';
 
@@ -48,6 +48,7 @@ export class AchievementScene extends Phaser.Scene {
   private tabContainer?:      Phaser.GameObjects.Container;
   private listContainer!:     Phaser.GameObjects.Container;
   private maskGraphics!:      Phaser.GameObjects.Graphics;
+  private claimAllButton?:    Phaser.GameObjects.Container;
 
   constructor() { super({ key: 'AchievementScene' }); }
 
@@ -64,6 +65,7 @@ export class AchievementScene extends Phaser.Scene {
     this.buildHeader();
     this.buildTabs();
     this.buildList();
+    this.buildClaimAllButton();
     this.setupScrollInput();
 
     // Fade in
@@ -364,6 +366,49 @@ export class AchievementScene extends Phaser.Scene {
     const parts: string[] = [];
     if (reward.gems)         parts.push(`💎 +${reward.gems} 젬`);
     if (reward.soulCrystals) parts.push(`💠 +${reward.soulCrystals} SC`);
+    this.showRewardToast(parts.join('  '));
+  }
+
+  // ─── Claim-all (QoL: 일괄 수령) ────────────────────────────────────────────
+  private buildClaimAllButton(): void {
+    if (this.claimAllButton) { this.claimAllButton.destroy(); this.claimAllButton = undefined; }
+
+    const ach = this.gameState.achievements ?? {};
+    const claimable = ACHIEVEMENT_DEFS.filter(
+      d => ach[d.id]?.unlocked && !ach[d.id]?.rewardClaimed,
+    ).length;
+    if (claimable === 0) return;   // nothing to claim → no button
+
+    const w = 104, h = 30;
+    const c = this.add.container(CANVAS_WIDTH - 12 - w / 2, 28).setDepth(20);
+    const g = this.add.graphics();
+    g.fillStyle(CASUAL.SHADOW, 0.45);   g.fillRoundedRect(-w / 2, -h / 2 + 2, w, h, 9);
+    g.fillStyle(CASUAL.GREEN, 1);       g.fillRoundedRect(-w / 2, -h / 2, w, h, 9);
+    g.fillStyle(0xffffff, 0.14);        g.fillRoundedRect(-w / 2 + 4, -h / 2 + 3, w - 8, 4, 3);
+    g.lineStyle(2, CASUAL.GREEN_DK, 1); g.strokeRoundedRect(-w / 2, -h / 2, w, h, 9);
+    c.add(g);
+    c.add(this.add.text(0, 0, `전체 수령 ${claimable}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: CASUAL_CSS.WHITE, stroke: '#06351f', strokeThickness: 2,
+    }).setOrigin(0.5));
+    const zone = this.add.zone(0, 0, w, h).setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => this.claimAll());
+    c.add(zone);
+    this.claimAllButton = c;
+  }
+
+  private claimAll(): void {
+    const r = claimAllAchievementRewards(loadGameState(), ACHIEVEMENT_DEFS);
+    if (r.claimedCount === 0) return;
+
+    saveGameState(r.state);
+    this.gameState = r.state;
+    this.buildList();
+    this.buildClaimAllButton();   // re-evaluates → hides itself when none remain
+
+    const parts: string[] = [`✅ ${r.claimedCount}개 수령`];
+    if (r.gems)         parts.push(`💎 +${r.gems}`);
+    if (r.soulCrystals) parts.push(`💠 +${r.soulCrystals}`);
     this.showRewardToast(parts.join('  '));
   }
 

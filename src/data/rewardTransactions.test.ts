@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultOwnedMonster } from './barracks';
 import {
   claimAchievementReward,
+  claimAllAchievementRewards,
   claimCodexTribeReward,
 } from './rewardTransactions';
 import type { GameState } from './wisdom';
@@ -77,6 +78,71 @@ describe('rewardTransactions — achievement rewards', () => {
     if (result.ok) return;
     expect(result.reason).toBe('achievement_reward_already_claimed');
     expect(result.state).toBe(state);
+  });
+});
+
+describe('rewardTransactions — claim all achievement rewards', () => {
+  const defs = [
+    { id: 'a', reward: { gems: 5, soulCrystals: 7 } },
+    { id: 'b', reward: { gems: 10 } },
+    { id: 'c', reward: { soulCrystals: 3 } },
+    { id: 'd', reward: { gems: 99 } },
+  ];
+
+  it('claims every unlocked + unclaimed reward, summing currencies', () => {
+    const state = makeState({
+      gems: 1, soulCrystals: 2,
+      achievements: {
+        a: { unlocked: true, current: 1 },
+        b: { unlocked: true, current: 1, rewardClaimed: true },
+        c: { unlocked: true, current: 1 },
+        d: { unlocked: false, current: 0 },
+      },
+    });
+
+    const r = claimAllAchievementRewards(state, defs);
+
+    expect(r.claimedCount).toBe(2);        // a + c
+    expect(r.gems).toBe(5);                // a:5 only
+    expect(r.soulCrystals).toBe(10);       // a:7 + c:3
+    expect(r.state.gems).toBe(6);
+    expect(r.state.soulCrystals).toBe(12);
+    expect(r.state.achievements.a.rewardClaimed).toBe(true);
+    expect(r.state.achievements.c.rewardClaimed).toBe(true);
+    expect(r.state.achievements.b.rewardClaimed).toBe(true);
+    expect(r.state.achievements.d.rewardClaimed).toBeUndefined();
+    // immutability — input untouched
+    expect(state.gems).toBe(1);
+    expect(state.achievements.a.rewardClaimed).toBeUndefined();
+  });
+
+  it('returns claimedCount 0 and the same state reference when nothing is claimable', () => {
+    const state = makeState({
+      achievements: {
+        a: { unlocked: true, current: 1, rewardClaimed: true },
+        d: { unlocked: false, current: 0 },
+      },
+    });
+
+    const r = claimAllAchievementRewards(state, defs);
+
+    expect(r.claimedCount).toBe(0);
+    expect(r.gems).toBe(0);
+    expect(r.soulCrystals).toBe(0);
+    expect(r.state).toBe(state);
+  });
+
+  it('is idempotent — a second claim-all yields nothing', () => {
+    const state = makeState({
+      achievements: { a: { unlocked: true, current: 1 } },
+    });
+
+    const first = claimAllAchievementRewards(state, defs);
+    expect(first.claimedCount).toBe(1);
+
+    const second = claimAllAchievementRewards(first.state, defs);
+    expect(second.claimedCount).toBe(0);
+    expect(second.state).toBe(first.state);
   });
 });
 

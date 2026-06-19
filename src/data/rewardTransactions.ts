@@ -40,6 +40,38 @@ export function claimAchievementReward(
   };
 }
 
+export interface ClaimAllAchievementsResult {
+  state:        GameState;
+  claimedCount: number;
+  gems:         number;
+  soulCrystals: number;
+}
+
+/**
+ * Claim every unlocked-but-unclaimed achievement reward in one pass (QoL).
+ * Folds over the per-achievement primitive so the same guards apply; returns
+ * the input state reference unchanged when nothing was claimable.
+ */
+export function claimAllAchievementRewards(
+  state: GameState,
+  defs: readonly { id: string; reward: AchievementReward }[],
+): ClaimAllAchievementsResult {
+  let cur = state;
+  let claimedCount = 0;
+  let gems = 0;
+  let soulCrystals = 0;
+  for (const def of defs) {
+    const res = claimAchievementReward(cur, def.id, def.reward);
+    if (res.ok) {
+      cur = res.state;
+      claimedCount += 1;
+      gems += def.reward.gems ?? 0;
+      soulCrystals += def.reward.soulCrystals ?? 0;
+    }
+  }
+  return { state: cur, claimedCount, gems, soulCrystals };
+}
+
 export function claimCodexTribeReward(
   state: GameState,
   tribeId: string,
