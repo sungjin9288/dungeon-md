@@ -13,52 +13,6 @@ import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { getReducedMotion } from '../utils/reducedMotion';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 
-// ─── Dungeon atmosphere helpers ──────────────────────────────────────────────
-// Make surfaces read as carved STONE, not flat UI fills: mortar courses + a
-// deterministic stone speckle. Pure Graphics, no per-frame cost.
-
-/** Stacked-stone-block texture: horizontal mortar courses + staggered head joints. */
-export function drawStoneCourses(
-  g: Phaser.GameObjects.Graphics,
-  x: number, y: number, w: number, h: number,
-  course = 13,
-): void {
-  g.lineStyle(1, 0x000000, 0.22);
-  let row = 0;
-  for (let cy = y + course; cy < y + h - 2; cy += course, row++) {
-    g.lineBetween(x + 3, cy, x + w - 3, cy);           // mortar course (bed joint)
-    // staggered vertical head joints, offset every other row (running bond)
-    const off = (row % 2) * (course * 1.6);
-    for (let hx = x + 6 + off; hx < x + w - 4; hx += course * 3.2) {
-      g.lineBetween(hx, cy, hx, Math.min(cy + course, y + h - 2));
-    }
-  }
-  // faint top highlight on each block top (light catching the stone lip)
-  g.lineStyle(1, 0xffffff, 0.04);
-  for (let cy = y + course; cy < y + h - 2; cy += course) {
-    g.lineBetween(x + 3, cy + 1, x + w - 3, cy + 1);
-  }
-}
-
-/** Warm radial torch light-pool (stacked alpha circles) + a flame + bright core. */
-export function drawTorchLight(
-  g: Phaser.GameObjects.Graphics,
-  x: number, y: number, scale = 1,
-): void {
-  // light pool — large soft warm glow fading outward (bold: real chiaroscuro)
-  g.fillStyle(0xff8a2a, 0.07); g.fillCircle(x, y, 64 * scale);
-  g.fillStyle(0xff8a2a, 0.10); g.fillCircle(x, y, 46 * scale);
-  g.fillStyle(0xff9a30, 0.14); g.fillCircle(x, y, 30 * scale);
-  g.fillStyle(0xffb347, 0.20); g.fillCircle(x, y, 18 * scale);
-  // iron bracket
-  g.fillStyle(0x140d07, 1);    g.fillRect(x - 2.5, y, 5, 11 * scale);
-  // flame (bigger, brighter)
-  g.fillStyle(0xc8521a, 0.95); g.fillEllipse(x, y - 3 * scale, 9 * scale, 15 * scale);
-  g.fillStyle(0xffa028, 1);    g.fillEllipse(x, y - 4 * scale, 6 * scale, 11 * scale);
-  g.fillStyle(0xffe89a, 1);    g.fillEllipse(x, y - 5 * scale, 3 * scale, 6 * scale);
-  g.fillStyle(0xffffff, 0.85); g.fillEllipse(x, y - 5 * scale, 1.4 * scale, 3 * scale);
-}
-
 // ─── Entrance gate ─────────────────────────────────────────────────────────────
 
 export function drawDungeonEntranceGate(
