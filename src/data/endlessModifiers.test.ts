@@ -40,6 +40,16 @@ describe('ENDLESS_MODIFIERS', () => {
       expect(getEndlessModifierById(id)?.id, `modifier ${id}`).toBe(id);
     }
   });
+
+  it('resolves the newest roster ids (glass_cannon/vanguard/treasure/doomtide/phantom)', () => {
+    for (const id of ['glass_cannon', 'vanguard', 'treasure', 'doomtide', 'phantom']) {
+      expect(getEndlessModifierById(id)?.id, `modifier ${id}`).toBe(id);
+    }
+  });
+
+  it('offers an expanded roster of at least 17 modifiers', () => {
+    expect(ENDLESS_MODIFIERS.length).toBeGreaterThanOrEqual(17);
+  });
 });
 
 describe('rollEndlessModifier', () => {

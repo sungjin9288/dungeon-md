@@ -86,6 +86,32 @@ export const ENDLESS_MODIFIERS: readonly EndlessModifier[] = [
     desc: '저주의 정예: 체력 +45%, 속도 +20%, 수 +15% · 보상 +60%',
     hpMult: 1.45, speedMult: 1.2, countMult: 1.15, rewardMult: 1.6, eliteBias: 0.25,
   },
+  // ── Batch: 5 more modifiers (extreme / edge archetypes) ────────────────────
+  {
+    id: 'glass_cannon', name: '유리 군세', icon: '🔮',
+    desc: '초고속 다수, 극도로 취약: 속도 +50%, 수 +50%, 체력 -50% · 보상 +50%',
+    hpMult: 0.5, speedMult: 1.5, countMult: 1.5, rewardMult: 1.5, eliteBias: 0,
+  },
+  {
+    id: 'vanguard', name: '선봉 정예', icon: '⚔️',
+    desc: '최정예 행군: 체력 +50%, 수 -15% · 보상 +50%',
+    hpMult: 1.5, speedMult: 1.05, countMult: 0.85, rewardMult: 1.5, eliteBias: 0.5,
+  },
+  {
+    id: 'treasure', name: '보물 호송', icon: '🏆',
+    desc: '풍요의 호송대: 체력 +15% · 보상 +100%',
+    hpMult: 1.15, speedMult: 1.05, countMult: 1, rewardMult: 2.0, eliteBias: 0,
+  },
+  {
+    id: 'doomtide', name: '종말의 밀물', icon: '🌊',
+    desc: '전방위 종말: 체력 +50%, 속도 +30%, 수 +40% · 보상 +75%',
+    hpMult: 1.5, speedMult: 1.3, countMult: 1.4, rewardMult: 1.75, eliteBias: 0.3,
+  },
+  {
+    id: 'phantom', name: '환영 군세', icon: '👻',
+    desc: '빠르고 정예롭되 취약: 속도 +40%, 수 +20%, 체력 -15% · 보상 +45%',
+    hpMult: 0.85, speedMult: 1.4, countMult: 1.2, rewardMult: 1.45, eliteBias: 0.2,
+  },
 ];
 
 /** Look up a modifier by id (e.g. when restoring from the registry). */
