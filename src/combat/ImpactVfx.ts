@@ -62,9 +62,7 @@ export function showBossWarning(
   };
   const bossQuote = bossGrp ? (BOSS_QUOTES[bossGrp.type] ?? null) : null;
 
-  // 0ms: BGM slowdown + dark overlay
-  audioManager.rampBpm(80, 1.5);
-
+  // 0ms: dark overlay
   const overlay = scene.add.graphics().setDepth(198).setAlpha(0);
   overlay.fillStyle(0x000000, 0.75);
   overlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -157,10 +155,9 @@ export function showBossWarning(
     });
   });
 
-  // 2700ms: Zoom restore + BGM accelerate + overlay fade
+  // 2700ms: Zoom restore + overlay fade
   scene.time.delayedCall(2700, () => {
     cam.zoomTo(1.0, 500, 'Sine.easeOut');
-    audioManager.rampBpm(130, 2);
     scene.tweens.add({
       targets: overlay, alpha: 0, duration: 600,
       onComplete: () => overlay.destroy(),
