@@ -134,8 +134,8 @@ describe('getMonsterAtk', () => {
 // ─── ACTIVE_SKILLS data integrity ─────────────────────────────────────────────
 
 describe('ACTIVE_SKILLS', () => {
-  it('contains exactly 15 skills', () => {
-    expect(ACTIVE_SKILLS).toHaveLength(15);
+  it('contains exactly 18 skills', () => {
+    expect(ACTIVE_SKILLS).toHaveLength(18);
   });
 
   it('has unique ids', () => {
@@ -184,26 +184,26 @@ describe('ACTIVE_SKILLS', () => {
 describe('ACTIVE_SKILLS — category counts', () => {
   const byCat = (cat: string) => ACTIVE_SKILLS.filter(s => s.category === cat);
 
-  it('has exactly 5 combat skills', () => {
-    expect(byCat('combat')).toHaveLength(5);
+  it('has exactly 6 combat skills', () => {
+    expect(byCat('combat')).toHaveLength(6);
   });
 
-  it('has exactly 3 defense skills', () => {
-    expect(byCat('defense')).toHaveLength(3);
+  it('has exactly 4 defense skills', () => {
+    expect(byCat('defense')).toHaveLength(4);
   });
 
-  it('has exactly 7 support skills', () => {
-    expect(byCat('support')).toHaveLength(7);
+  it('has exactly 8 support skills', () => {
+    expect(byCat('support')).toHaveLength(8);
   });
 
-  it('combat skill ids are fire_burst, ice_arrow, lightning, poison_cloud, heavy_strike', () => {
+  it('combat skill ids include the originals plus meteor', () => {
     const ids = byCat('combat').map(s => s.id).sort();
-    expect(ids).toEqual(['fire_burst', 'heavy_strike', 'ice_arrow', 'lightning', 'poison_cloud'].sort());
+    expect(ids).toEqual(['fire_burst', 'heavy_strike', 'ice_arrow', 'lightning', 'meteor', 'poison_cloud'].sort());
   });
 
-  it('defense skill ids are fortress, heal_room, shield', () => {
+  it('defense skill ids are fortress, heal_room, shield, emergency_repair', () => {
     const ids = byCat('defense').map(s => s.id).sort();
-    expect(ids).toEqual(['fortress', 'heal_room', 'shield'].sort());
+    expect(ids).toEqual(['emergency_repair', 'fortress', 'heal_room', 'shield'].sort());
   });
 });
 

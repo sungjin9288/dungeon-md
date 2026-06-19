@@ -51,6 +51,9 @@ const SKILL_VISUALS: Record<string, SkillVisualSpec> = {
   curse_all:    { icon: '🔮', color: 0x9944ff, css: '#b27cff' },
   healing_rain: { icon: '🌧️', color: 0x44ccff, css: '#68ddff' },
   rage:         { icon: '😤', color: 0xff5555, css: '#ff6666' },
+  meteor:           { icon: '☄️', color: 0xff4422, css: '#ff6644' },
+  emergency_repair: { icon: '🔧', color: 0x66ddff, css: '#88e6ff' },
+  war_cry:          { icon: '📣', color: 0xff6644, css: '#ff8866' },
 };
 
 function getSkillVisual(skillId: string): SkillVisualSpec {
@@ -364,6 +367,37 @@ export function activateSkillEffect(skillId: string, ctx: ActiveSkillContext): v
       if (room.roomData) room.roomData.rageUntil = now + 10000;
       showRoomBloom(scene, room, visual);
       flashText(ctx, '😤 분노!', '#ff4444');
+      break;
+    }
+    case 'meteor': {
+      showLaneSweep(ctx, visual);
+      invaders.forEach(inv => {
+        skillHitFlash(scene, inv, 0xff4422);
+        inv.takeDamage(150);
+      });
+      flashText(ctx, '☄️ 메테오! -150', '#ff4422');
+      break;
+    }
+    case 'emergency_repair': {
+      for (const r of roomGrid)
+        for (const d of r)
+          if (d) {
+            d.roomHp = Math.min(d.maxRoomHp, d.roomHp + 80);
+            d.immuneUntil = now + 3000;
+          }
+      rooms.forEach(rRow => rRow.forEach(r => {
+        r?.updateHpBar?.();
+        if (r?.roomData) showRoomBloom(scene, r, visual);
+      }));
+      flashText(ctx, '🔧 긴급 수리!', '#66ddff');
+      break;
+    }
+    case 'war_cry': {
+      for (const r of roomGrid)
+        for (const d of r)
+          if (d) d.rageUntil = now + 8000;
+      rooms.forEach(rRow => rRow.forEach(r => { if (r?.roomData) showRoomBloom(scene, r, visual); }));
+      flashText(ctx, '📣 격노의 함성!', '#ff6644');
       break;
     }
     default:

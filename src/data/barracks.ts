@@ -533,6 +533,13 @@ export const ACTIVE_SKILLS: ActiveSkill[] = [
     desc: '전체 방 HP +30',               cooldown: 25, goldCost: 130, gemCost: 26 },
   { id: 'rage',          name: '분노',       icon: '😤', category: 'support',
     desc: '선택 몬스터 ATK +100% / 10s',  cooldown: 30, goldCost: 160, gemCost: 32 },
+  // ── Batch: 3 new active skills (effects reuse existing combat primitives) ──
+  { id: 'meteor',           name: '메테오',      icon: '☄️', category: 'combat',
+    desc: '전체 침략자 직격 피해 150',     cooldown: 28, goldCost: 200, gemCost: 40 },
+  { id: 'emergency_repair', name: '긴급 수리',   icon: '🔧', category: 'defense',
+    desc: '전체 방 HP +80 · 3s 면역',      cooldown: 40, goldCost: 220, gemCost: 44 },
+  { id: 'war_cry',          name: '격노의 함성', icon: '📣', category: 'support',
+    desc: '전체 방 ATK 강화 8s',           cooldown: 35, goldCost: 190, gemCost: 38 },
 ];
 
 // ─── Equipment ────────────────────────────────────────────────────────────────
