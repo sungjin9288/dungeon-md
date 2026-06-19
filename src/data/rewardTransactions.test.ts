@@ -3,6 +3,7 @@ import { defaultOwnedMonster } from './barracks';
 import {
   claimAchievementReward,
   claimAllAchievementRewards,
+  claimAllCodexTribeRewards,
   claimCodexTribeReward,
 } from './rewardTransactions';
 import type { GameState } from './wisdom';
@@ -213,5 +214,36 @@ describe('rewardTransactions — codex tribe rewards', () => {
     if (result.ok) return;
     expect(result.reason).toBe('unknown_codex_reward');
     expect(result.state).toBe(state);
+  });
+});
+
+describe('rewardTransactions — claim all codex tribe rewards', () => {
+  it('claims every supplied tribe, skipping already-claimed, granting reward monsters', () => {
+    const state = makeState({
+      ownedMonsters: [defaultOwnedMonster('dokkaebi_warrior')],
+      codexRewardsClaimed: ['gumiho'],
+      completedTribes: 1,
+    });
+
+    const r = claimAllCodexTribeRewards(state, [
+      { tribeId: 'gumiho',   rewardMonsterId: 'dokkaebi_god_king' }, // already claimed → skip
+      { tribeId: 'dokkaebi', rewardMonsterId: 'dokkaebi_god_king' },
+    ]);
+
+    expect(r.claimedCount).toBe(1); // only dokkaebi
+    expect(r.state.codexRewardsClaimed).toContain('dokkaebi');
+    expect(r.state.ownedMonsters.map(m => m.id)).toContain('dokkaebi_god_king');
+    // immutability — input untouched
+    expect(state.codexRewardsClaimed).toEqual(['gumiho']);
+    expect(state.ownedMonsters.map(m => m.id)).toEqual(['dokkaebi_warrior']);
+  });
+
+  it('returns claimedCount 0 and the same state when nothing is claimable', () => {
+    const state = makeState({ codexRewardsClaimed: ['dokkaebi'] });
+    const r = claimAllCodexTribeRewards(state, [
+      { tribeId: 'dokkaebi', rewardMonsterId: 'dokkaebi_god_king' },
+    ]);
+    expect(r.claimedCount).toBe(0);
+    expect(r.state).toBe(state);
   });
 });

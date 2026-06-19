@@ -5,7 +5,7 @@ import { applyCasualBackground } from '../ui/AmbientBackground';
 import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
-import { claimCodexTribeReward } from '../data/rewardTransactions';
+import { claimCodexTribeReward, claimAllCodexTribeRewards } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
 import { ENDLESS_MODIFIERS } from '../data/endlessModifiers';
 import { WAVE_EVENTS } from '../data/waveEvents';
@@ -182,6 +182,28 @@ export class CodexScene extends Phaser.Scene {
 
     let cursorY = 8;
 
+    // QoL: claim every completed tribe's reward in one tap.
+    const claimableTribes = this.getClaimableTribes();
+    if (claimableTribes.length > 0) {
+      const barH = 34, bx = PAD + 4, bw = CANVAS_WIDTH - PAD * 2 - 8;
+      const bar = this.add.graphics();
+      bar.fillStyle(CASUAL.SHADOW, 0.4);    bar.fillRoundedRect(bx, cursorY + 2, bw, barH, 9);
+      bar.fillStyle(CASUAL.GREEN, 1);        bar.fillRoundedRect(bx, cursorY, bw, barH, 9);
+      bar.fillStyle(0xffffff, 0.14);         bar.fillRoundedRect(bx + 5, cursorY + 3, bw - 10, 4, 3);
+      bar.lineStyle(2, CASUAL.GREEN_DK, 1);  bar.strokeRoundedRect(bx, cursorY, bw, barH, 9);
+      this.contentCtr.add(bar);
+      this.contentCtr.add(this.add.text(bx + bw / 2, cursorY + barH / 2,
+        `🎁 부족 보상 전체 수령 ${claimableTribes.length}`, {
+          fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+          color: CASUAL_CSS.WHITE, stroke: '#06351f', strokeThickness: 2,
+        }).setOrigin(0.5));
+      const zone = this.add.zone(bx + bw / 2, cursorY + barH / 2, bw, barH)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.claimAllTribes());
+      this.contentCtr.add(zone);
+      cursorY += barH + 10;
+    }
+
     TRIBE_META.forEach(tribe => {
       const allTribeMonsters = (Object.values(MONSTER_DEFS)).filter(
         m => m.tribe === tribe.id,
@@ -355,6 +377,30 @@ export class CodexScene extends Phaser.Scene {
 
     saveGameState(result.state);
     this.gs = result.state;
+  }
+
+  /** Tribes fully collected, not yet claimed, and with a reward monster defined. */
+  private getClaimableTribes(): { tribeId: string; rewardMonsterId: MonsterId }[] {
+    const claimed = this.gs.codexRewardsClaimed ?? [];
+    const out: { tribeId: string; rewardMonsterId: MonsterId }[] = [];
+    for (const tribe of TRIBE_META) {
+      const monsters = (Object.values(MONSTER_DEFS)).filter(m => m.tribe === tribe.id);
+      if (monsters.length === 0) continue;
+      const owned = monsters.filter(m => this.isOwned(m.id)).length;
+      const rewardId = TRIBE_REWARD_MONSTER[tribe.id];
+      if (owned === monsters.length && !claimed.includes(tribe.id) && rewardId) {
+        out.push({ tribeId: tribe.id, rewardMonsterId: rewardId });
+      }
+    }
+    return out;
+  }
+
+  private claimAllTribes(): void {
+    const r = claimAllCodexTribeRewards(loadGameState(), this.getClaimableTribes());
+    if (r.claimedCount === 0) return;
+    saveGameState(r.state);
+    this.gs = r.state;
+    this.scene.restart();   // rebuild grid + drop claimed reward bars/buttons
   }
 
   // ─── Scroll ────────────────────────────────────────────────────────────────

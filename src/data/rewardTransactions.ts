@@ -101,3 +101,29 @@ export function claimCodexTribeReward(
     },
   };
 }
+
+export interface ClaimAllCodexResult {
+  state:        GameState;
+  claimedCount: number;
+}
+
+/**
+ * Claim every supplied (completed + unclaimed) codex tribe reward in one pass (QoL).
+ * The caller computes which tribes are fully collected + unclaimed; this folds the
+ * per-tribe primitive (whose guards skip already-claimed / unknown rewards).
+ */
+export function claimAllCodexTribeRewards(
+  state: GameState,
+  claimable: readonly { tribeId: string; rewardMonsterId: MonsterId }[],
+): ClaimAllCodexResult {
+  let cur = state;
+  let claimedCount = 0;
+  for (const { tribeId, rewardMonsterId } of claimable) {
+    const res = claimCodexTribeReward(cur, tribeId, rewardMonsterId);
+    if (res.ok) {
+      cur = res.state;
+      claimedCount += 1;
+    }
+  }
+  return { state: cur, claimedCount };
+}
