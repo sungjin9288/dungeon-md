@@ -71,3 +71,52 @@ describe('campaign difficulty-curve guard', () => {
     expect(finales[finales.length - 1]).toBeGreaterThan(finales[0] * 3);
   });
 });
+
+// ─── Economy-curve guard ─────────────────────────────────────────────────────
+// Complements the difficulty guard: locks in the reward economy so an accidental
+// edit (a zero-reward wave, a boss that pays less than its opener, or a chapter
+// whose payout regressed below Ch1) is caught in CI.
+
+/** Total clear-reward gold a stage pays across all its waves. */
+function stageReward(stage: StageConfig): number {
+  return stage.waves.reduce((sum, w) => sum + (w.clearReward ?? 0), 0);
+}
+
+describe('campaign economy-curve guard', () => {
+  it('every wave grants a positive clear reward (no free waves)', () => {
+    for (const chapter of CHAPTERS) {
+      for (const stage of chapter) {
+        for (const w of stage.waves) {
+          expect(w.clearReward ?? 0, `stage ${stage.id} wave ${w.wave} reward`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('every stage has positive startGold and dungeonHp', () => {
+    for (const chapter of CHAPTERS) {
+      for (const stage of chapter) {
+        expect(stage.startGold, `stage ${stage.id} startGold`).toBeGreaterThan(0);
+        expect(stage.dungeonHp, `stage ${stage.id} dungeonHp`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('within a stage the boss (last) wave pays at least as much as the opening wave', () => {
+    for (const chapter of CHAPTERS) {
+      for (const stage of chapter) {
+        if (stage.waves.length < 2) continue;
+        const first = stage.waves[0].clearReward ?? 0;
+        const last  = stage.waves[stage.waves.length - 1].clearReward ?? 0;
+        expect(last, `stage ${stage.id} last-wave ${last} < opener ${first}`).toBeGreaterThanOrEqual(first);
+      }
+    }
+  });
+
+  it('campaign economy scales up — final chapter finale out-rewards the Ch1 finale', () => {
+    const c1Finale   = stageReward(CHAPTER_1[CHAPTER_1.length - 1]);
+    const lastCh     = CHAPTERS[CHAPTERS.length - 1];
+    const lastFinale = stageReward(lastCh[lastCh.length - 1]);
+    expect(lastFinale, `final finale ${lastFinale} ≤ Ch1 finale ${c1Finale}`).toBeGreaterThan(c1Finale);
+  });
+});
