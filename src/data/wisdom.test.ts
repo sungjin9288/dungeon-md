@@ -24,6 +24,7 @@ import {
   startPrestige,
   type GameState,
 } from './wisdom';
+import { defaultOwnedMonster } from './barracks';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -740,5 +741,30 @@ describe('startPrestige', () => {
     startPrestige(state);
     expect(state.homeGold).toBe(snapshot.homeGold);
     expect(state.stageProgress).toEqual(snapshot.stageProgress);
+  });
+
+  // Guards the highest-stakes carry-over: collection + codex + meta must survive
+  // prestige. A field accidentally added to the reset list (or dropped) = real
+  // player data loss. The earlier tests cover currency/wisdom only.
+  it('preserves collection & meta progression (monsters, achievements, codex claims, endless, attendance)', () => {
+    const state = loadGameState();
+    state.ownedMonsters       = [defaultOwnedMonster('dokkaebi_warrior')];
+    state.achievements        = { first_blood: { unlocked: true, current: 0, unlockedAt: 1 } };
+    state.codexRewardsClaimed = ['dokkaebi'];
+    state.completedTribes     = 1;
+    state.endlessHighScore    = 250;
+    state.attendanceDay       = 5;
+    state.lastAttendanceClaim = '2026-06-20';
+
+    const next = startPrestige(state);
+
+    expect(next.ownedMonsters).toHaveLength(1);
+    expect(next.ownedMonsters[0].id).toBe('dokkaebi_warrior');
+    expect(next.achievements.first_blood?.unlocked).toBe(true);
+    expect(next.codexRewardsClaimed).toEqual(['dokkaebi']);
+    expect(next.completedTribes).toBe(1);
+    expect(next.endlessHighScore).toBe(250);
+    expect(next.attendanceDay).toBe(5);
+    expect(next.lastAttendanceClaim).toBe('2026-06-20');
   });
 });
