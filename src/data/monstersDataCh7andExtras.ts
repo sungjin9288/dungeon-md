@@ -76,6 +76,15 @@ export const MONSTERS_CH7: Partial<Record<MonsterId, MonsterDef>> = {
     accentColor: 0xffd700, unlockStage: 72,
     tribe: 'celestial', element: 'holy', rarityTier: 'L', unlockMethod: 'summon',
   },
+  empyrean_sovereign: {
+    id: 'empyrean_sovereign', name: '천계 군주', emoji: '🌌', chapter: 7,
+    type: 'magic', roomTypes: ['scroll_library', 'celestial_shrine', 'void_forge'],
+    baseDamage: 72, attackCooldown: 1700, range: 3,
+    passive: 'KINGS_RALLY',
+    passiveDesc: '전 던전 몬스터 공격력·속도 +20% (8초, 재사용 30초)',
+    accentColor: 0xe7d3ff, unlockStage: 74,
+    tribe: 'celestial', element: 'holy', rarityTier: 'L', unlockMethod: 'summon',
+  },
 };
 
 export const SKIN_DATA: MonsterSkin[] = [
@@ -224,5 +233,5 @@ export const TRIBE_TOTALS: Record<TribeId, number> = {
   mask:       10,  // 2 existing (iron_mask, mask_dancer) + 8 new
   moonlight:  11,  // 2 existing (celestial_dancer, three_legged_crow) + 9 new
   dragon:     10,  // 1 existing (mountain_god) + 9 new
-  celestial:   8,  // 8 new Ch7 monsters
+  celestial:   9,  // 8 Ch7 monsters + empyrean_sovereign (L)
 };

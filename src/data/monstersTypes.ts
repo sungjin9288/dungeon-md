@@ -215,7 +215,8 @@ export type MonsterId =
   | 'divine_healer'
   | 'starlight_knight'
   | 'celestial_sage'
-  | 'god_realm_general';
+  | 'god_realm_general'
+  | 'empyrean_sovereign';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 

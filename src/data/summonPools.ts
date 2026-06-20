@@ -135,7 +135,7 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     // Ch5
     'sea_dragon_lord', 'fox_spirit_elder',
     // Ch7 — 천상족
-    'god_realm_general',
+    'god_realm_general', 'empyrean_sovereign',
   ],
 };
 
