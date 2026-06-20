@@ -491,7 +491,7 @@ export class CodexScene extends Phaser.Scene {
     const CH_COLOR: Record<number, number> = {
       1: 0x8b6040, 2: 0xcc2200, 3: 0x207040,
       4: 0x5020a0, 5: 0x0060b0, 6: 0xc05000,
-      7: 0xc09000, 8: 0x7700cc,
+      7: 0xc09000, 8: 0x7700cc, 9: 0x9000d8,
     };
 
     // Group by chapter
@@ -504,7 +504,7 @@ export class CodexScene extends Phaser.Scene {
 
     let cursorY = 8;
 
-    for (const ch of [1, 2, 3, 4, 5, 6, 7, 8] as const) {
+    for (const ch of [1, 2, 3, 4, 5, 6, 7, 8, 9] as const) {
       const defs = byChapter.get(ch);
       if (!defs) continue;
       const chColor = CH_COLOR[ch] ?? 0x888888;
