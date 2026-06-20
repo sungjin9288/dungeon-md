@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
+import { addSceneAtmosphere } from '../ui/SceneAtmosphere';
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
@@ -71,6 +72,7 @@ export class StageSelectScene extends Phaser.Scene {
     if (this.frontierIdx < 0) this.frontierIdx = this.progress.length; // all cleared
 
     this.drawBackground();
+    addSceneAtmosphere(this);
     this.drawHeader();
     this.drawChapter1Path();
     for (let i = 0; i < CHAPTER_SECTION_DATA.length; i++) {
