@@ -210,28 +210,20 @@ export const SKIN_DATA: MonsterSkin[] = [
 ];
 
 /**
- * Total monster count per tribe (includes all rarities and unlock methods).
- * dokkaebi: 2 existing + 17 new = 19
- * gumiho:   2 existing + 13 new = 15
- * sansin:   4 existing + 7 new  = 11  (gold_turtle, sage, frost_spirit, white_tiger, moon_rabbit_sage → actually recounting below)
- * sea:      1 existing + 8 new  = 9   (sea_god_spear + 8)
- * underworld: 3 existing + 9 new = 12 (death_messenger, ghost_hunter, venom_warrior + 9)
- * mask:     2 existing + 8 new  = 10  (iron_mask, mask_dancer + 8)
- * moonlight: 2 existing + 9 new = 11  (celestial_dancer, three_legged_crow + 9)
- * dragon:   1 existing + 9 new  = 10  (mountain_god + 9)
- *
- * Sansin existing: gold_turtle, sage, frost_spirit, white_tiger, moon_rabbit_sage = 5
- * Sansin new: deer_god, bear_god, mountain_spirit_boy, phoenix, thousand_pine,
- *             mountain_spirit, mountain_god_complete = 7  →  total 12
+ * Total monster count per tribe (all rarities + unlock methods).
+ * Kept in sync with the actual MONSTER_DEFS roster below. Note: the live codex
+ * derives its X/Y from getMonstersForTribe().length (CodexScene), so these
+ * values are a reference/roadmap mirror — keep them equal to the real def count
+ * when adding tribe monsters so flavor text ("N종 도감 완성") stays accurate.
  */
 export const TRIBE_TOTALS: Record<TribeId, number> = {
   dokkaebi:   20,  // 3 existing (dokkaebi_warrior, dokkaebi_junior, fire_dokkaebi) + 17 new
-  gumiho:     15,  // 2 existing (gumiho_guardian, fox_shaman) + 13 new
-  sansin:     12,  // 5 existing (gold_turtle, sage, frost_spirit, white_tiger, moon_rabbit_sage) + 7 new
+  gumiho:     16,  // synced to actual gumiho defs
+  sansin:     14,  // synced to actual sansin defs
   sea:        12,  // sea roster incl. tide_leviathan (E) — synced to actual defs
-  underworld: 12,  // 3 existing (death_messenger, ghost_hunter, venom_warrior) + 9 new
-  mask:       10,  // 2 existing (iron_mask, mask_dancer) + 8 new
-  moonlight:  11,  // 2 existing (celestial_dancer, three_legged_crow) + 9 new
+  underworld: 13,  // synced to actual underworld defs
+  mask:       11,  // synced to actual mask defs
+  moonlight:  12,  // synced to actual moonlight defs
   dragon:     11,  // dragon roster incl. twilight_dragon (E)
   celestial:   9,  // 8 Ch7 monsters + empyrean_sovereign (L)
 };
