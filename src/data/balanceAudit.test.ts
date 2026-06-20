@@ -25,6 +25,7 @@ import {
   CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
   type StageConfig,
 } from './stages';
+import { simulateDungeon } from './simulation';
 
 const PATH_LENGTH_PX = 640;
 const CHAPTERS: StageConfig[][] = [
@@ -118,5 +119,33 @@ describe('campaign economy-curve guard', () => {
     const lastCh     = CHAPTERS[CHAPTERS.length - 1];
     const lastFinale = stageReward(lastCh[lastCh.length - 1]);
     expect(lastFinale, `final finale ${lastFinale} ≤ Ch1 finale ${c1Finale}`).toBeGreaterThan(c1Finale);
+  });
+});
+
+// ─── Simulated-threat guard (headless simulateDungeon) ───────────────────────
+// Runs the real combat sim against an UNDEFENDED dungeon at a high reference HP
+// (so it never floors) to measure each stage's total wave threat — a real-combat
+// cross-check complementing the per-invader dpsWall gate.
+
+const REF_HP = 10_000_000;
+function undefendedDamage(stage: StageConfig): number {
+  const r = simulateDungeon([], [], stage.waves, REF_HP);
+  return REF_HP - r.finalHp;
+}
+
+describe('campaign simulated-threat guard', () => {
+  it('every stage deals real damage to an undefended dungeon (no zero-threat stage)', () => {
+    for (const chapter of CHAPTERS) {
+      for (const stage of chapter) {
+        expect(undefendedDamage(stage), `stage ${stage.id} undefended damage`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('simulated wave threat trends upward — final-chapter finale far exceeds the Ch1 finale', () => {
+    const c1     = undefendedDamage(CHAPTER_1[CHAPTER_1.length - 1]);
+    const lastCh = CHAPTERS[CHAPTERS.length - 1];
+    const cLast  = undefendedDamage(lastCh[lastCh.length - 1]);
+    expect(cLast, `final finale threat ${cLast} vs Ch1 finale ${c1}`).toBeGreaterThan(c1 * 2);
   });
 });
