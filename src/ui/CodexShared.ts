@@ -99,3 +99,23 @@ export function getRarityMeta(
 export function truncateLabel(value: string, maxChars: number): string {
   return value.length > maxChars ? `${value.slice(0, maxChars)}…` : value;
 }
+
+/**
+ * A tribe's codex completion reward is claimable when every NON-reward monster
+ * in the tribe is owned and the reward has not been claimed yet.
+ *
+ * The reward monster is excluded from the requirement on purpose: it is granted
+ * BY claiming (unlockMethod 'codex_reward', not in any summon pool), so counting
+ * it toward completion makes the tribe permanently unclaimable (a soft-lock).
+ */
+export function isTribeClaimable(
+  tribeMonsterIds: readonly MonsterId[],
+  rewardMonsterId: MonsterId | undefined,
+  isOwned: (id: MonsterId) => boolean,
+  alreadyClaimed: boolean,
+): boolean {
+  if (!rewardMonsterId || alreadyClaimed) return false;
+  const required = tribeMonsterIds.filter(id => id !== rewardMonsterId);
+  if (required.length === 0) return false;
+  return required.every(id => isOwned(id));
+}

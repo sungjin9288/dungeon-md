@@ -12,7 +12,7 @@ import { WAVE_EVENTS } from '../data/waveEvents';
 import { getTraitBlurb } from '../data/invaderTraits';
 import {
   CX, HDR_H, BOT_H, PAD,
-  TRIBE_META, TRIBE_REWARD_MONSTER,
+  TRIBE_META, TRIBE_REWARD_MONSTER, isTribeClaimable,
 } from '../ui/CodexShared';
 import { drawMonsterCell, drawSetBonus, type CodexCellContext } from '../ui/CodexCell';
 
@@ -384,11 +384,14 @@ export class CodexScene extends Phaser.Scene {
     const claimed = this.gs.codexRewardsClaimed ?? [];
     const out: { tribeId: string; rewardMonsterId: MonsterId }[] = [];
     for (const tribe of TRIBE_META) {
-      const monsters = (Object.values(MONSTER_DEFS)).filter(m => m.tribe === tribe.id);
-      if (monsters.length === 0) continue;
-      const owned = monsters.filter(m => this.isOwned(m.id)).length;
+      const monsterIds = (Object.values(MONSTER_DEFS))
+        .filter(m => m.tribe === tribe.id)
+        .map(m => m.id);
+      if (monsterIds.length === 0) continue;
       const rewardId = TRIBE_REWARD_MONSTER[tribe.id];
-      if (owned === monsters.length && !claimed.includes(tribe.id) && rewardId) {
+      // Completion excludes the reward monster itself (granted by claiming) —
+      // otherwise the tribe is permanently unclaimable. See isTribeClaimable.
+      if (rewardId && isTribeClaimable(monsterIds, rewardId, id => this.isOwned(id), claimed.includes(tribe.id))) {
         out.push({ tribeId: tribe.id, rewardMonsterId: rewardId });
       }
     }

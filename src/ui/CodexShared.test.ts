@@ -8,6 +8,7 @@ import {
   getDexNo,
   getRarityMeta,
   truncateLabel,
+  isTribeClaimable,
   CODEX_RARITY_META,
   TRIBE_META,
   TRIBE_REWARD_MONSTER,
@@ -89,5 +90,42 @@ describe('TRIBE_META', () => {
     TRIBE_META.forEach(tribe => {
       expect(TRIBE_REWARD_MONSTER[tribe.id]).toBeDefined();
     });
+  });
+});
+
+// ─── isTribeClaimable ──────────────────────────────────────────────────────────
+
+describe('isTribeClaimable', () => {
+  const TRIBE = ['a', 'b', 'reward'] as unknown as MonsterId[];
+  const REWARD = 'reward' as unknown as MonsterId;
+  const OWN_AB = ['a', 'b'] as unknown as MonsterId[];
+  const OWN_A = ['a'] as unknown as MonsterId[];
+  const OWN_ALL = ['a', 'b', 'reward'] as unknown as MonsterId[];
+  const ownedBy = (ids: readonly MonsterId[]) => (id: MonsterId) => ids.includes(id);
+
+  it('is claimable when every NON-reward monster is owned (reward itself NOT owned)', () => {
+    // The core soft-lock fix: reward monster is granted BY claiming, so it must
+    // be excluded from the completion requirement.
+    expect(isTribeClaimable(TRIBE, REWARD, ownedBy(OWN_AB), false)).toBe(true);
+  });
+
+  it('stays claimable when the reward is also already owned (until claimed flag set)', () => {
+    expect(isTribeClaimable(TRIBE, REWARD, ownedBy(OWN_ALL), false)).toBe(true);
+  });
+
+  it('is NOT claimable when a non-reward monster is missing', () => {
+    expect(isTribeClaimable(TRIBE, REWARD, ownedBy(OWN_A), false)).toBe(false);
+  });
+
+  it('is NOT claimable when already claimed', () => {
+    expect(isTribeClaimable(TRIBE, REWARD, ownedBy(OWN_AB), true)).toBe(false);
+  });
+
+  it('is NOT claimable when there is no reward monster', () => {
+    expect(isTribeClaimable(TRIBE, undefined, ownedBy(OWN_AB), false)).toBe(false);
+  });
+
+  it('is NOT claimable when the tribe has only the reward monster (nothing to collect)', () => {
+    expect(isTribeClaimable([REWARD], REWARD, () => true, false)).toBe(false);
   });
 });
