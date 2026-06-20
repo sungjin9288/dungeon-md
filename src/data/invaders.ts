@@ -40,7 +40,9 @@ export type InvaderType =
   | 'void_soldier'
   | 'abyss_berserker'
   | 'primordial_guard'
-  | 'primordial_titan';
+  | 'primordial_titan'
+  // ─── Endless-only variety (no campaign placement) ───
+  | 'raider' | 'plague_rat' | 'bone_archer';
 
 export type InvaderBehavior =
   | 'VOID_PHASE'         // immune to traps for 5s after spawn (purple aura)
@@ -324,4 +326,8 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
     hp: 14000, speed: 18, reward: 6000, damage: 2000,
     color: 0x660099, radius: 46, behavior: 'PRIMORDIAL_PHASE', isBoss: true,
   },
+  // ─── Endless-only variety (no special behavior; pure stat archetypes) ───────
+  raider:      { type: 'raider',      koreanName: '약탈자',    hp: 240, speed: 95,  reward: 35, damage: 130, color: 0xc44a2a, radius: 13, endlessOnly: true },
+  plague_rat:  { type: 'plague_rat',  koreanName: '역병 쥐떼', hp: 90,  speed: 115, reward: 18, damage: 70,  color: 0x6a8a3a, radius: 10, endlessOnly: true },
+  bone_archer: { type: 'bone_archer', koreanName: '해골 궁수', hp: 200, speed: 78,  reward: 45, damage: 150, color: 0xc8c0a8, radius: 13, endlessOnly: true },
 };

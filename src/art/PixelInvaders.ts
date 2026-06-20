@@ -175,6 +175,10 @@ const INVADER_LOOK: Partial<Record<InvaderType, Look>> = {
   abyss_berserker:      [SOLDIER, 'berserker'],
   primordial_guard:     [KNIGHT,  'golem'],
   primordial_titan:     [GOLEM,   'golem'],
+  // ── Endless-only variety ──
+  raider:               [SOLDIER, 'berserker'],
+  plague_rat:           [BEAST,   'venom'],
+  bone_archer:          [ARCHER,  'undead'],
 };
 
 const DEFAULT_LOOK: Look = [SOLDIER, 'steel'];

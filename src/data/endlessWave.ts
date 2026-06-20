@@ -15,8 +15,8 @@ import type { EndlessModifier } from './endlessModifiers';
 
 const T1: InvaderType[] = ['peasant', 'soldier', 'knight', 'shaman'];
 const T1_LATE: InvaderType[] = ['void', 'undying'];
-const T2: InvaderType[] = ['berserker', 'shadow_ninja', 'siege_soldier', 'high_priest', 'holy_paladin', 'mercenary_captain', 'trap_breaker', 'iron_golem'];
-const T3: InvaderType[] = ['undying_knight', 'scarecrow_mage', 'venom_dancer', 'void_assassin'];
+const T2: InvaderType[] = ['berserker', 'shadow_ninja', 'siege_soldier', 'high_priest', 'holy_paladin', 'mercenary_captain', 'trap_breaker', 'iron_golem', 'raider', 'plague_rat'];
+const T3: InvaderType[] = ['undying_knight', 'scarecrow_mage', 'venom_dancer', 'void_assassin', 'bone_archer'];
 const T4: InvaderType[] = ['void_assassin_elite'];
 const T5: InvaderType[] = ['void_invader', 'undying_warrior'];
 const T6: InvaderType[] = ['mirror_knight', 'shadow_wraith', 'celestial_crusader', 'plague_herald', 'swarm_larva', 'void_colossus', 'titan_sentinel'];
