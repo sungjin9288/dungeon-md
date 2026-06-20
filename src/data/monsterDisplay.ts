@@ -79,7 +79,9 @@ export const MONSTER_EMOJI: Record<string, string> = {
   gold_dragon_sage:     '🟡', black_dragon_assassin: '⚫',
   white_dragon_healer:  '⚪', blue_dragon_archmage:  '🐲',
   banya_guardian:       '🔱', dragon_avatar:         '🐉',
-  five_dragon_complete: '🌟',
+  twilight_dragon:      '🐲', five_dragon_complete:  '🌟',
+  // ── Sea / Celestial additions ─────────────────────────────────────────────
+  tide_leviathan:       '🐳', empyrean_sovereign:    '🌌',
 };
 
 export const MONSTER_NAME: Record<string, string> = {
@@ -158,5 +160,7 @@ export const MONSTER_NAME: Record<string, string> = {
   gold_dragon_sage:     '황룡 현자',     black_dragon_assassin: '흑룡 암살자',
   white_dragon_healer:  '백룡 치유사',   blue_dragon_archmage:  '청룡 대마법사',
   banya_guardian:       '반야 수호자',   dragon_avatar:         '용의 화신',
-  five_dragon_complete: '오룡 완성체',
+  twilight_dragon:      '황혼룡',        five_dragon_complete:  '오룡 완성체',
+  // ── Sea / Celestial additions ─────────────────────────────────────────────
+  tide_leviathan:       '심해 거수',      empyrean_sovereign:    '천계 군주',
 };

@@ -116,7 +116,7 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     // Ch6 — 산신족
     'phoenix', 'thousand_pine',
     // Ch6 — 해신족
-    'kraken_soldier', 'dragon_king_guardian',
+    'kraken_soldier', 'dragon_king_guardian', 'tide_leviathan',
     // Ch6 — 저승족
     'hell_guard', 'yomra_warrior', 'ghost_king', 'spirit_summoner',
     // Ch6 — 탈족
@@ -125,7 +125,7 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'galaxy_warrior', 'full_moon_sorcerer', 'solar_eclipse_warrior', 'lunar_eclipse_mage',
     // Ch6 — 용족
     'red_dragon_warrior', 'blue_dragon_guardian', 'gold_dragon_sage',
-    'black_dragon_assassin', 'white_dragon_healer',
+    'black_dragon_assassin', 'white_dragon_healer', 'twilight_dragon',
     // Ch7 — 천상족
     'solar_warrior', 'divine_healer', 'starlight_knight', 'celestial_sage',
   ],

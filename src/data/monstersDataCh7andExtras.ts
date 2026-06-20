@@ -228,10 +228,10 @@ export const TRIBE_TOTALS: Record<TribeId, number> = {
   dokkaebi:   20,  // 3 existing (dokkaebi_warrior, dokkaebi_junior, fire_dokkaebi) + 17 new
   gumiho:     15,  // 2 existing (gumiho_guardian, fox_shaman) + 13 new
   sansin:     12,  // 5 existing (gold_turtle, sage, frost_spirit, white_tiger, moon_rabbit_sage) + 7 new
-  sea:        10,  // 2 existing (sea_god_spear, great_serpent) + 8 new
+  sea:        12,  // sea roster incl. tide_leviathan (E) — synced to actual defs
   underworld: 12,  // 3 existing (death_messenger, ghost_hunter, venom_warrior) + 9 new
   mask:       10,  // 2 existing (iron_mask, mask_dancer) + 8 new
   moonlight:  11,  // 2 existing (celestial_dancer, three_legged_crow) + 9 new
-  dragon:     10,  // 1 existing (mountain_god) + 9 new
+  dragon:     11,  // dragon roster incl. twilight_dragon (E)
   celestial:   9,  // 8 Ch7 monsters + empyrean_sovereign (L)
 };

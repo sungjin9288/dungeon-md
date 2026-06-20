@@ -167,6 +167,7 @@ export type MonsterId =
   | 'shark_warrior'
   | 'kraken_soldier'
   | 'dragon_king_guardian'
+  | 'tide_leviathan'
   | 'sea_god_complete'
   // ─── Chapter 6 — underworld tribe ───
   | 'skeleton_knight'
@@ -206,6 +207,7 @@ export type MonsterId =
   | 'blue_dragon_archmage'
   | 'banya_guardian'
   | 'dragon_avatar'
+  | 'twilight_dragon'
   | 'five_dragon_complete'
   // ─── Chapter 7: 천계족 ───
   | 'celestial_guardian'
