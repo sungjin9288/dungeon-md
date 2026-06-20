@@ -115,6 +115,45 @@ describe('progressionTransactions — achievements', () => {
     expect(result.unlockedIds).toEqual([]);
     expect(result.state).toBe(state);
   });
+
+  // Regression guard: the higher-tier batch achievements must unlock end-to-end
+  // when their tracked metric crosses target. Catches a getProgress reading a
+  // field that buildAchievementContext doesn't populate (would stay 0 forever).
+  it('unlocks the higher-tier batch achievements when their metric crosses target', () => {
+    const state = makeState({
+      totalKills: 10000,
+      totalGoldEarned: 1000000,
+      endlessHighScore: 300,
+      ownedMonsters: Array.from({ length: 200 }, () =>
+        defaultOwnedMonster('dokkaebi_warrior'),
+      ),
+    });
+
+    const result = unlockAvailableAchievements(state, 1234);
+
+    expect(result.unlockedIds).toContain('slayer_10000');
+    expect(result.unlockedIds).toContain('gold_million');
+    expect(result.unlockedIds).toContain('endless_wave300');
+    expect(result.unlockedIds).toContain('codex_200');
+  });
+
+  it('does NOT unlock the batch achievements one short of target', () => {
+    const state = makeState({
+      totalKills: 9999,
+      totalGoldEarned: 999999,
+      endlessHighScore: 299,
+      ownedMonsters: Array.from({ length: 199 }, () =>
+        defaultOwnedMonster('dokkaebi_warrior'),
+      ),
+    });
+
+    const result = unlockAvailableAchievements(state, 1234);
+
+    expect(result.unlockedIds).not.toContain('slayer_10000');
+    expect(result.unlockedIds).not.toContain('gold_million');
+    expect(result.unlockedIds).not.toContain('endless_wave300');
+    expect(result.unlockedIds).not.toContain('codex_200');
+  });
 });
 
 describe('progressionTransactions — monster XP', () => {
