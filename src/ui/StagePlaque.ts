@@ -123,6 +123,15 @@ export const CHAPTER_PLAQUE_THEMES: PlaqueTheme[] = [
     clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
     starColor: STAR_GOLD_CSS, bossEmoji: '🌑', accent: CASUAL.PURPLE_DK, showHpBar: false,
   },
+  // [7] Ch9 — 공허 너머 (deep void purple)
+  {
+    lockedBg: CASUAL.PANEL_SOFT, lockedBorder: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    unclearedBg: CASUAL.PANEL, unclearedBorder: CASUAL.PURPLE,
+    unclearedHoverBg: CASUAL.PANEL, unclearedHoverBorder: CASUAL.PURPLE_DK,
+    unclearedLabelColor: CASUAL_CSS.INK, unclearedStarColor: EMPTY_STAR_CSS,
+    clearedBg: CASUAL.PANEL, clearedBorder: CASUAL.GOLD, clearedLabelColor: CASUAL_CSS.INK,
+    starColor: STAR_GOLD_CSS, bossEmoji: '🌌', accent: CASUAL.PURPLE_DK, showHpBar: false,
+  },
 ];
 
 // ── ChapterSectionData ────────────────────────────────────────────────────────
@@ -352,13 +361,25 @@ export const CHAPTER_SECTION_DATA: ChapterSectionData[] = [
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.GOLD,
     lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
   },
-  // Ch8 — 8 stages, section start 3602, path start 3628
+  // Ch8 — 8 stages, section start 3602, path start 3628 (path bottom ≈ 3964)
   {
     num: 8, name: '원초의 심연', stageCount: 8,
     unlockIdx: 71, unlockMsg: '⛓ 스테이지 72를 클리어하면 열립니다',
     startIdx: 72,
     divY: 3602, labelY: 3590, progressBarY: 3605, bannerY: 3608, gridStartY: 3628,
     cols: 4, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
+    activeDivColor: CASUAL.PURPLE_DK, activeTextColor: CASUAL_CSS.PURPLE,
+    lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
+    bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE_DK,
+    lockedMsgColor: CASUAL_CSS.INK_SOFT, lockedNameColor: CASUAL_CSS.INK,
+  },
+  // Ch9 — 10 stages, section start 3998, path start 4024 (path bottom ≈ 4448)
+  {
+    num: 9, name: '공허 너머', stageCount: 10,
+    unlockIdx: 79, unlockMsg: '⛓ 스테이지 80을 클리어하면 열립니다',
+    startIdx: 80,
+    divY: 3998, labelY: 3986, progressBarY: 4001, bannerY: 4004, gridStartY: 4024,
+    cols: 5, rows: 2, bw: JOURNEY_NODE_W, bh: JOURNEY_NODE_H, gapX: 0, gapY: 0,
     activeDivColor: CASUAL.PURPLE_DK, activeTextColor: CASUAL_CSS.PURPLE,
     lockedDivColor: CASUAL.EDGE_SOFT, lockedLabelColor: CASUAL_CSS.INK_SOFT,
     bannerBg: CASUAL.PANEL_SOFT, bannerBorder: CASUAL.PURPLE_DK,

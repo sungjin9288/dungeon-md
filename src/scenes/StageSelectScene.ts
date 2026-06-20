@@ -48,15 +48,17 @@ export class StageSelectScene extends Phaser.Scene {
   private progress: StageProgress[] = [];
   private isDragging    = false;
   private dragStartY    = 0;
-  // Journey path layout: 8 chapters total. Heights:
-  //   Ch1–2,4–7 (10 stages): 424px path + 60px header = 484px
-  //   Ch3 (12 stages):        512px path + 60px header = 572px
-  //   Ch8 (8 stages):         336px path + 60px header = 396px
+  // Journey path layout: 9 chapters total. Heights:
+  //   Ch1–2,4–7,9 (10 stages): 424px path + 60px header = 484px
+  //   Ch3 (12 stages):         512px path + 60px header = 572px
+  //   Ch8 (8 stages):          336px path + 60px header = 396px
+  // Ch9 (st81–90) sits below Ch8 (path bottom ≈ 4448), pushing the hub buttons
+  // down by one 10-stage section (+484) from their pre-Ch9 positions.
   // Total content bottom = deepest hub button row (abyss/생산/장식):
-  //   btnY 4174 + btnH 48 + 28 padding ≈ 4250.
+  //   btnY 4658 + btnH 48 + 28 padding ≈ 4734.
   // Scroll clamp is derived live from this + the DPR-zoom camera offset
   // (see the pointermove handler) so the true top (world y=0) stays reachable.
-  private contentHeight = 4250;
+  private contentHeight = 4734;
   private frontierIdx   = 0;
 
   constructor() { super({ key: 'StageSelectScene' }); }
@@ -221,7 +223,7 @@ export class StageSelectScene extends Phaser.Scene {
 
   // ─── Wisdom button ───────────────────────────────────────────────────────
   // Hub buttons sit after all 8 chapter path sections.
-  // Ch8 bottom: 3628 + journeyPathHeight(8)=336 = 3964, +40 gap → 4004.
+  // Ch9 bottom: 4024 + journeyPathHeight(10)=424 = 4448, +40 gap → 4488.
 
   private drawWisdomButton(): void {
     const gameState = loadGameState();
@@ -229,7 +231,7 @@ export class StageSelectScene extends Phaser.Scene {
 
     const btnW = 240, btnH = 48;
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
-    const btnY = 4004;
+    const btnY = 4488;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -247,7 +249,7 @@ export class StageSelectScene extends Phaser.Scene {
 
     const btnW = 114, btnH = 44;
     const btnX = CANVAS_WIDTH / 2 - btnW - 4;
-    const btnY = 4062;
+    const btnY = 4546;
 
     if (stage10Cleared) {
       this.buildCasualButton(
@@ -286,7 +288,7 @@ export class StageSelectScene extends Phaser.Scene {
   private drawAchievementButton(): void {
     const btnW = 114, btnH = 44;
     const btnX = CANVAS_WIDTH / 2 + 4;
-    const btnY = 4062;
+    const btnY = 4546;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -302,7 +304,7 @@ export class StageSelectScene extends Phaser.Scene {
   private drawBarracksButton(): void {
     const btnW = 240, btnH = 48;
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
-    const btnY = 4116;
+    const btnY = 4600;
 
     this.buildCasualButton(
       btnX, btnY, btnW, btnH,
@@ -318,7 +320,7 @@ export class StageSelectScene extends Phaser.Scene {
     const gap = 8, totalW = 362, btnH = 48;
     const btnW = (totalW - gap * 2) / 3;
     const startX = CANVAS_WIDTH / 2 - totalW / 2;
-    const btnY = 4174;
+    const btnY = 4658;
 
     this.buildCasualButton(
       startX, btnY, btnW, btnH, '🕳 심연',
