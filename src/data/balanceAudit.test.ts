@@ -22,14 +22,14 @@ import { describe, it, expect } from 'vitest';
 import { INVADER_DEFS } from './invaders';
 import {
   CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4,
-  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
+  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8, CHAPTER_9,
   type StageConfig,
 } from './stages';
 import { simulateDungeon } from './simulation';
 
 const PATH_LENGTH_PX = 640;
 const CHAPTERS: StageConfig[][] = [
-  CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
+  CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8, CHAPTER_9,
 ];
 
 /** Sustained DPS needed to kill a stage's toughest invader within its travel window. */

@@ -41,6 +41,9 @@ export type InvaderType =
   | 'abyss_berserker'
   | 'primordial_guard'
   | 'primordial_titan'
+  // ─── Chapter 9 (공허 너머) ───
+  | 'abyss_reaver'
+  | 'void_sovereign'
   // ─── Endless-only variety (no campaign placement) ───
   | 'raider' | 'plague_rat' | 'bone_archer';
 
@@ -325,6 +328,17 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
     type: 'primordial_titan', koreanName: '원초신 (최종 보스)', chapter: 8,
     hp: 14000, speed: 18, reward: 6000, damage: 2000,
     color: 0x660099, radius: 46, behavior: 'PRIMORDIAL_PHASE', isBoss: true,
+  },
+  // ─── Chapter 9: 공허 너머 (reuse existing behaviors — data-driven) ───
+  abyss_reaver: {
+    type: 'abyss_reaver', koreanName: '심연 약탈자', chapter: 9,
+    hp: 1300, speed: 88, reward: 125, damage: 190,
+    color: 0x4a0070, radius: 16, behavior: 'BERSERKER_RAGE',
+  },
+  void_sovereign: {
+    type: 'void_sovereign', koreanName: '공허 군주 (최종 보스)', chapter: 9,
+    hp: 22000, speed: 20, reward: 10000, damage: 3000,
+    color: 0x8800cc, radius: 50, behavior: 'PRIMORDIAL_PHASE', isBoss: true,
   },
   // ─── Endless-only variety (no special behavior; pure stat archetypes) ───────
   raider:      { type: 'raider',      koreanName: '약탈자',    hp: 240, speed: 95,  reward: 35, damage: 130, color: 0xc44a2a, radius: 13, endlessOnly: true },

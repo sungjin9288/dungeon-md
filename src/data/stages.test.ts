@@ -8,6 +8,7 @@ import {
   CHAPTER_6,
   CHAPTER_7,
   CHAPTER_8,
+  CHAPTER_9,
   type StageConfig,
   type WaveSpec,
 } from './stages';
@@ -16,7 +17,7 @@ import { INVADER_DEFS, type InvaderType } from './invaders';
 
 const ALL_CHAPTERS = [
   CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4,
-  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8,
+  CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8, CHAPTER_9,
 ] as const;
 
 const ALL_STAGES: StageConfig[] = ALL_CHAPTERS.flat();
@@ -24,8 +25,8 @@ const ALL_STAGES: StageConfig[] = ALL_CHAPTERS.flat();
 // ─── Total stage count ────────────────────────────────────────────────────────
 
 describe('stages — total count', () => {
-  it('all chapters combined equal 80 stages', () => {
-    expect(ALL_STAGES.length).toBe(80);
+  it('all chapters combined equal 90 stages', () => {
+    expect(ALL_STAGES.length).toBe(90);
   });
 
   it('CHAPTER_1 has 10 stages', () => {
@@ -42,6 +43,10 @@ describe('stages — total count', () => {
 
   it('CHAPTER_8 has 8 stages', () => {
     expect(CHAPTER_8).toHaveLength(8);
+  });
+
+  it('CHAPTER_9 has 10 stages', () => {
+    expect(CHAPTER_9).toHaveLength(10);
   });
 });
 
@@ -60,17 +65,17 @@ describe('StageConfig — structural integrity', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('stage ids span exactly 1–80 with no gaps', () => {
+  it('stage ids span exactly 1–90 with no gaps', () => {
     const ids = ALL_STAGES.map(s => s.id).sort((a, b) => a - b);
     for (let i = 0; i < ids.length; i++) {
       expect(ids[i], `expected id ${i + 1}`).toBe(i + 1);
     }
   });
 
-  it('every stage has a chapter value 1–8', () => {
+  it('every stage has a chapter value 1–9', () => {
     for (const s of ALL_STAGES) {
       expect(s.chapter, `stage ${s.id} chapter`).toBeGreaterThanOrEqual(1);
-      expect(s.chapter, `stage ${s.id} chapter`).toBeLessThanOrEqual(8);
+      expect(s.chapter, `stage ${s.id} chapter`).toBeLessThanOrEqual(9);
     }
   });
 
@@ -552,11 +557,17 @@ describe('CHAPTER_8 — primordial_titan final boss', () => {
     expect(titanInEarly).toBe(false);
   });
 
-  it('stage 80 wave 15 clearReward = 8000 (highest in game)', () => {
+  it('stage 80 wave 15 clearReward = 8000 (Ch8 finale)', () => {
+    expect(finalWave.clearReward).toBe(8000);
+  });
+
+  it('Ch9 finale (stage 90) pays the highest clear reward in the game', () => {
     const allRewards = ALL_STAGES.flatMap(st => st.waves.map(w => w.clearReward ?? 0));
     const maxReward = Math.max(...allRewards);
-    expect(finalWave.clearReward).toBe(maxReward);
-    expect(finalWave.clearReward).toBe(8000);
+    const stage90  = CHAPTER_9.find(s => s.id === 90)!;
+    const s90Final = stage90.waves[stage90.waves.length - 1];
+    expect(s90Final.clearReward).toBe(maxReward);
+    expect(s90Final.clearReward).toBe(9500);
   });
 
   it('stage 80 wave 14 has primordial_guard with isBoss = true (penultimate boss wave)', () => {

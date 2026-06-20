@@ -175,6 +175,9 @@ const INVADER_LOOK: Partial<Record<InvaderType, Look>> = {
   abyss_berserker:      [SOLDIER, 'berserker'],
   primordial_guard:     [KNIGHT,  'golem'],
   primordial_titan:     [GOLEM,   'golem'],
+  // ── Chapter 9: 공허 너머 ──
+  abyss_reaver:         [KNIGHT,  'void'],
+  void_sovereign:       [GOLEM,   'void'],
   // ── Endless-only variety ──
   raider:               [SOLDIER, 'berserker'],
   plague_rat:           [BEAST,   'venom'],

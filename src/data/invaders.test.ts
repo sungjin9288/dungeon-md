@@ -126,9 +126,11 @@ describe('boss flags', () => {
     expect(INVADER_DEFS['primordial_titan'].isBoss).toBe(true);
   });
 
-  it('primordial_titan has the highest hp of all invaders', () => {
+  it('void_sovereign (Ch9 apex) has the highest hp of all invaders', () => {
     const maxHp = Math.max(...ALL_DEFS.map(d => d.hp));
-    expect(INVADER_DEFS['primordial_titan'].hp).toBe(maxHp);
+    expect(INVADER_DEFS['void_sovereign'].hp).toBe(maxHp);
+    // Ch9 apex must out-tank the Ch8 final boss for the difficulty curve to escalate.
+    expect(INVADER_DEFS['void_sovereign'].hp).toBeGreaterThan(INVADER_DEFS['primordial_titan'].hp);
   });
 
   it('regular invaders (peasant, soldier) are not flagged as boss', () => {

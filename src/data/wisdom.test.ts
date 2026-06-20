@@ -167,7 +167,7 @@ describe('loadGameState / saveGameState', () => {
     expect(state.homeGold).toBe(200);
     expect(state.equippedTheme).toBe('cave');
     expect(state.ownedThemes).toEqual(['cave']);
-    expect(state.stageProgress).toHaveLength(80);
+    expect(state.stageProgress).toHaveLength(90);
     expect(state.stageProgress[0].unlocked).toBe(true);
     expect(state.stageProgress[1].unlocked).toBe(false);
   });
@@ -202,7 +202,7 @@ describe('loadGameState / saveGameState', () => {
     // Defaults should fill in missing fields
     expect(state.equippedTheme).toBe('cave');
     expect(state.wisdomTree).toBeDefined();
-    expect(state.stageProgress).toHaveLength(80);
+    expect(state.stageProgress).toHaveLength(90);
   });
 });
 

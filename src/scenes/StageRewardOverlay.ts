@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
-import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8 } from '../data/stages';
+import { CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7, CHAPTER_8, CHAPTER_9 } from '../data/stages';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton, type InfoRowOptions } from '../ui/GameUiPrimitives';
 
-const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8];
+const ALL_STAGES = [...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3, ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7, ...CHAPTER_8, ...CHAPTER_9];
 
 const CHAPTER_NAMES: Record<number, string> = {
   1: '버려진 던전', 2: '독사의 늪', 3: '화염 산맥',

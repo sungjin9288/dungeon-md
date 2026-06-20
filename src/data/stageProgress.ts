@@ -10,7 +10,7 @@ import { type StageProgressEntry } from './wisdom';
 
 export type StageProgress = StageProgressEntry;
 
-export const TOTAL_STAGES = 80;
+export const TOTAL_STAGES = 90;
 
 // ─── Per-stage boot config ────────────────────────────────────────────────────
 // Minimal configs used to launch DungeonScene (slots, chapter, bossWave flag).
@@ -104,6 +104,17 @@ export const STAGE_CONFIGS = [
   { stageNumber: 78, slots: 18, unlockedStage: 78, chapter: 8 },
   { stageNumber: 79, slots: 18, unlockedStage: 79, chapter: 8 },
   { stageNumber: 80, slots: 18, unlockedStage: 79, chapter: 8, bossWave: true },
+  // ── Chapter 9: 공허 너머 ──
+  { stageNumber: 81, slots: 18, unlockedStage: 81, chapter: 9 },
+  { stageNumber: 82, slots: 18, unlockedStage: 82, chapter: 9 },
+  { stageNumber: 83, slots: 18, unlockedStage: 83, chapter: 9 },
+  { stageNumber: 84, slots: 18, unlockedStage: 84, chapter: 9 },
+  { stageNumber: 85, slots: 18, unlockedStage: 85, chapter: 9 },
+  { stageNumber: 86, slots: 18, unlockedStage: 86, chapter: 9 },
+  { stageNumber: 87, slots: 18, unlockedStage: 87, chapter: 9 },
+  { stageNumber: 88, slots: 18, unlockedStage: 88, chapter: 9 },
+  { stageNumber: 89, slots: 18, unlockedStage: 89, chapter: 9 },
+  { stageNumber: 90, slots: 18, unlockedStage: 89, chapter: 9, bossWave: true },
 ];
 
 // ─── Persistence ──────────────────────────────────────────────────────────────

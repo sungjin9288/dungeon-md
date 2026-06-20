@@ -8,3 +8,4 @@ export { CHAPTER_5 } from './stagesChapter5';
 export { CHAPTER_6 } from './stagesChapter6';
 export { CHAPTER_7 } from './stagesChapter7';
 export { CHAPTER_8 } from './stagesChapter8';
+export { CHAPTER_9 } from './stagesChapter9';

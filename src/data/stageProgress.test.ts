@@ -15,15 +15,15 @@ beforeEach(() => {
 // ─── STAGE_CONFIGS data integrity ────────────────────────────────────────────
 
 describe('STAGE_CONFIGS', () => {
-  it('contains exactly 80 entries', () => {
-    expect(STAGE_CONFIGS).toHaveLength(80);
+  it('contains exactly 90 entries', () => {
+    expect(STAGE_CONFIGS).toHaveLength(90);
   });
 
-  it('TOTAL_STAGES constant equals 80', () => {
-    expect(TOTAL_STAGES).toBe(80);
+  it('TOTAL_STAGES constant equals 90', () => {
+    expect(TOTAL_STAGES).toBe(90);
   });
 
-  it('stageNumber runs 1–80 in order', () => {
+  it('stageNumber runs 1–90 in order', () => {
     STAGE_CONFIGS.forEach((cfg, i) => {
       expect(cfg.stageNumber).toBe(i + 1);
     });
@@ -36,10 +36,10 @@ describe('STAGE_CONFIGS', () => {
     }
   });
 
-  it('all chapter values are between 1 and 8', () => {
+  it('all chapter values are between 1 and 9', () => {
     for (const cfg of STAGE_CONFIGS) {
       expect(cfg.chapter).toBeGreaterThanOrEqual(1);
-      expect(cfg.chapter).toBeLessThanOrEqual(8);
+      expect(cfg.chapter).toBeLessThanOrEqual(9);
     }
   });
 
@@ -49,13 +49,13 @@ describe('STAGE_CONFIGS', () => {
     }
   });
 
-  it('boss stages are at stageNumbers 10, 20, 32, 42, 52, 62, 72, 80', () => {
+  it('boss stages are at stageNumbers 10, 20, 32, 42, 52, 62, 72, 80, 90', () => {
     const bosses = STAGE_CONFIGS.filter(c => c.bossWave).map(c => c.stageNumber);
-    expect(bosses).toEqual([10, 20, 32, 42, 52, 62, 72, 80]);
+    expect(bosses).toEqual([10, 20, 32, 42, 52, 62, 72, 80, 90]);
   });
 
   it('non-boss stages do not have bossWave: true', () => {
-    const bossNums = new Set([10, 20, 32, 42, 52, 62, 72, 80]);
+    const bossNums = new Set([10, 20, 32, 42, 52, 62, 72, 80, 90]);
     for (const cfg of STAGE_CONFIGS) {
       if (!bossNums.has(cfg.stageNumber)) {
         expect(cfg.bossWave ?? false, `stage ${cfg.stageNumber}`).toBe(false);
@@ -153,9 +153,9 @@ describe('STAGE_CONFIGS — chapter layout', () => {
     expect(STAGE_CONFIGS[39].chapter).toBe(4);
   });
 
-  it('total boss-wave stages equals exactly 8', () => {
+  it('total boss-wave stages equals exactly 9', () => {
     const bosses = STAGE_CONFIGS.filter(s => s.bossWave === true);
-    expect(bosses).toHaveLength(8);
+    expect(bosses).toHaveLength(9);
   });
 });
 
@@ -427,11 +427,11 @@ describe('STAGE_CONFIGS — structural invariants', () => {
     expect(prog[2].unlocked).toBe(true);
   });
 
-  it('loadProgress with an exactly-80-entry save does not pad or trim', () => {
-    const full = Array.from({ length: 80 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 }));
+  it('loadProgress with an exactly-90-entry save does not pad or trim', () => {
+    const full = Array.from({ length: 90 }, (_, i) => ({ unlocked: i === 0, bestStars: 0 }));
     saveProgress(full);
     const loaded = loadProgress();
-    expect(loaded).toHaveLength(80);
+    expect(loaded).toHaveLength(90);
   });
 
   it('recordClear return value matches a subsequent loadProgress() call', () => {
