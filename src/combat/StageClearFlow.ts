@@ -88,9 +88,10 @@ export function showChapterClear(ctx: ResultFlowContext): void {
 
   const chLabel = `${ctx.stageChapter}장`;
 
-  // Game complete: stage 80 (final stage of Ch8 — primordial_titan)
+  // Game complete: stage 90 (true final stage of Ch9 — void_sovereign).
+  // Ch8 stage 80 now falls through to the normal "8장 클리어" chapter-clear path.
   const stageCfgX = scene.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-  if (stageCfgX?.stageNumber === 80) {
+  if (stageCfgX?.stageNumber === 90) {
     scene.time.delayedCall(200, () => showGameComplete(ctx));
     return;
   }
