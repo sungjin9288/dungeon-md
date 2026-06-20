@@ -543,6 +543,28 @@ export const BLUEPRINT_DEFS: Record<string, BlueprintDef> = {
     materials: { boss_essence: 8, magic_dust: 8, soul_fragment: 12, ice_crystal: 6 },
     resultId: 'eq_primordial_gem', resultEmoji: '💜',
   },
+  // ─── Batch: 3 more legendary blueprints (end-game gear, existing materials) ──
+  bp_ember_reaver: {
+    id: 'bp_ember_reaver', name: '잿불 사신낫', type: 'weapon', rarity: 4,
+    statDesc: 'ATK +50% · 처형 확률 15%',
+    stats: { atkMultiplier: 0.50, executeChance: 0.15 },
+    materials: { boss_essence: 3, dok_fragment: 14, iron_shard: 9 },
+    resultId: 'eq_ember_reaver', resultEmoji: '🔥',
+  },
+  bp_aegis_bulwark: {
+    id: 'bp_aegis_bulwark', name: '이지스 성벽', type: 'armor', rarity: 4,
+    statDesc: '방 HP +400 · 골드 +20%',
+    stats: { roomHPBonus: 400, goldBonus: 0.20 },
+    materials: { boss_essence: 2, iron_shard: 14, old_cloth: 9 },
+    resultId: 'eq_aegis_bulwark', resultEmoji: '🏰',
+  },
+  bp_chrono_charm: {
+    id: 'bp_chrono_charm', name: '시간의 부적', type: 'accessory', rarity: 4,
+    statDesc: '스킬 쿨다운 -30% · 영혼 결정체 +25%',
+    stats: { skillCDReduction: 0.30, scEarnBonus: 0.25 },
+    materials: { soul_fragment: 12, magic_dust: 7, ice_crystal: 6 },
+    resultId: 'eq_chrono_charm', resultEmoji: '⏳',
+  },
 };
 
 export const STARTER_BLUEPRINTS = ['bp_dokkaebi_club', 'bp_iron_armor'];

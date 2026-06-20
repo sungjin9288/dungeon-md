@@ -632,6 +632,10 @@ export const EQUIPMENT_STATS: Record<string, EquipmentStats> = {
   eq_void_blade:       { atkMult: 0.60, skillCdMult: 0.75 },
   eq_abyss_mail:       { roomHpBonus: 800 },
   eq_primordial_gem:   { atkMult: 0.80, crystalMult: 0.30 },
+  // New legendary blueprints
+  eq_ember_reaver:     { atkMult: 0.50, executeChance: 0.15 },
+  eq_aegis_bulwark:    { roomHpBonus: 400, goldMult: 0.20 },
+  eq_chrono_charm:     { skillCdMult: 0.70, crystalMult: 0.25 },
 };
 
 export function getEquipmentStats(equipId: string | null): EquipmentStats {
