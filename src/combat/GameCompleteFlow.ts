@@ -1,5 +1,5 @@
 // ─── Game Complete Flow ───────────────────────────────────────────────────────
-// Handles the full-game-clear screen triggered when stageNumber 80 is beaten.
+// Handles the full-game-clear screen triggered when stageNumber 90 (Ch9 finale) is beaten.
 // Extracted from StageClearFlow.ts so that the standard chapter-clear path
 // (showChapterClear) and the once-per-playthrough celebration screen live in
 // separate modules.

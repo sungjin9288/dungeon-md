@@ -1,6 +1,6 @@
 // ─── StageClearFlow ───────────────────────────────────────────────────────────
 // Handles the animated stage-clear overlay after each chapter is beaten.
-// Full-game-clear (stageNumber 80) delegates immediately to GameCompleteFlow.
+// Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
 import { audioManager } from '../audio/AudioManager';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
