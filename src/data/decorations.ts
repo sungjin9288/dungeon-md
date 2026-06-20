@@ -71,9 +71,16 @@ export const SET_DEFS: Record<string, SetDef> = {
       { count: 3, bonus: { trapDmgPct: 30 } },
     ],
   },
+  abyssal: {
+    id: 'abyssal', name: '심연의 보고', emoji: '🔮', desc: '골드·내구도 동시 강화',
+    tiers: [
+      { count: 2, bonus: { idleGoldPct: 8, dungeonHpPct: 6 } },
+      { count: 3, bonus: { idleGoldPct: 20, dungeonHpPct: 18 } },
+    ],
+  },
 };
 
-export const SET_ORDER: readonly string[] = ['bounty', 'guardian', 'trapper'];
+export const SET_ORDER: readonly string[] = ['bounty', 'guardian', 'trapper', 'abyssal'];
 
 // ─── Decorations (3 sets × 3 pieces) ──────────────────────────────────────────
 export const DECORATION_DEFS: Record<string, DecorationDef> = {
@@ -89,6 +96,10 @@ export const DECORATION_DEFS: Record<string, DecorationDef> = {
   spike_rack:    { id: 'spike_rack',    name: '가시 거치대', emoji: '🦔', setId: 'trapper',  desc: '날카로운 가시 거치대', cost: { kind: 'craft', materials: { iron_shard: 5, common_ore: 4 } } },
   poison_vat:    { id: 'poison_vat',    name: '독 항아리',   emoji: '🧪', setId: 'trapper',  desc: '맹독이 든 항아리',     cost: { kind: 'craft', materials: { herb: 6, magic_dust: 3 } } },
   mana_snare:    { id: 'mana_snare',    name: '마력 덫',     emoji: '🕸', setId: 'trapper',  desc: '마력으로 짠 덫',       cost: { kind: 'craft', materials: { magic_dust: 5, old_cloth: 4 } } },
+  // 심연의 보고 — crafted from high-tier materials
+  abyss_crystal: { id: 'abyss_crystal', name: '심연 수정',     emoji: '🔮', setId: 'abyssal', desc: '심연의 기운이 깃든 수정', cost: { kind: 'craft', materials: { soul_fragment: 4, magic_dust: 3 } } },
+  void_chalice:  { id: 'void_chalice',  name: '공허의 성배',   emoji: '🏆', setId: 'abyssal', desc: '공허를 담은 성배',       cost: { kind: 'craft', materials: { boss_essence: 1, soul_fragment: 5 } } },
+  abyss_obelisk: { id: 'abyss_obelisk', name: '심연 오벨리스크', emoji: '🗿', setId: 'abyssal', desc: '심연을 향해 솟은 비석',   cost: { kind: 'craft', materials: { boss_essence: 2, iron_shard: 6, magic_dust: 4 } } },
 };
 
 /** Number of decoration slots (max placed at once) for a DM level. */
