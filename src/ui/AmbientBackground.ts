@@ -17,6 +17,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL } from '../constants/colors';
+import { addSceneAtmosphere } from './SceneAtmosphere';
 
 const CASUAL_BG_FLAG = 'casualBgApplied';
 
@@ -40,4 +41,9 @@ export function applyCasualBackground(scene: Phaser.Scene): void {
   for (let row = 0, y = 70; y < bottom; y += 70, row++) {
     for (let x = (row % 2) * 34 + 18; x < CANVAS_WIDTH; x += 68) bg.fillCircle(x, y, 2.2);
   }
+
+  // Premium atmosphere on top of the flat base: animated embers, torch glow,
+  // edge vignette. Idempotent + reduced-motion gated. Lifts every dark scene
+  // that shares this backdrop toward a management-game look.
+  addSceneAtmosphere(scene);
 }

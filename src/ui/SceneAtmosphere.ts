@@ -81,7 +81,15 @@ export interface AtmosphereOptions {
  * Adds the atmosphere layers to a scene. Call once in create() after the
  * background is drawn. Safe on any scene; respects reduced-motion for embers.
  */
+const ATMO_FLAG = '__atmosphereApplied';
+
 export function addSceneAtmosphere(scene: Phaser.Scene, opts: AtmosphereOptions = {}): void {
+  // Idempotent per scene-run: safe if called both directly and via
+  // applyCasualBackground. Reset on shutdown so a re-entered scene re-applies.
+  if (scene.data?.get(ATMO_FLAG)) return;
+  scene.data?.set(ATMO_FLAG, true);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.data?.set(ATMO_FLAG, false));
+
   bakeTextures(scene);
   const base = opts.baseDepth ?? -4;
 
