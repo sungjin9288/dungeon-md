@@ -182,6 +182,13 @@ describe('STAGE_CINEMATICS', () => {
     expect(STAGE_CINEMATICS[80]).toBe('primordial_titan_boss_intro');
   });
 
+  it('Ch9: stage 81 opens the chapter, stage 90 introduces the void sovereign', () => {
+    expect(STAGE_CINEMATICS[81]).toBe('ch9_opening');
+    expect(STAGE_CINEMATICS[90]).toBe('void_sovereign_boss_intro');
+    expect(getCinematic('ch9_opening')).toBeDefined();
+    expect(getCinematic('void_sovereign_boss_intro')).toBeDefined();
+  });
+
   it('every mapped cinematic id exists in CINEMATICS', () => {
     for (const [stage, cinematicId] of Object.entries(STAGE_CINEMATICS)) {
       expect(
@@ -199,11 +206,11 @@ describe('STAGE_CINEMATICS', () => {
     }
   });
 
-  it('all stage keys are within [1, 80] bounds', () => {
+  it('all stage keys are within [1, 90] bounds', () => {
     for (const key of Object.keys(STAGE_CINEMATICS)) {
       const n = Number(key);
       expect(n).toBeGreaterThanOrEqual(1);
-      expect(n).toBeLessThanOrEqual(80);
+      expect(n).toBeLessThanOrEqual(90);
     }
   });
 
@@ -377,12 +384,12 @@ describe('CINEMATICS — stage20 and Ch8 cinematic spot-checks', () => {
 // ─── CINEMATICS — exact counts, line counts & pause pins ─────────────────────
 
 describe('CINEMATICS — exact counts, line counts & pause pins', () => {
-  it('CINEMATICS contains exactly 19 entries', () => {
-    expect(CINEMATICS).toHaveLength(19);
+  it('CINEMATICS contains exactly 21 entries', () => {
+    expect(CINEMATICS).toHaveLength(21);
   });
 
-  it('STAGE_CINEMATICS contains exactly 15 stage mappings', () => {
-    expect(Object.keys(STAGE_CINEMATICS)).toHaveLength(15);
+  it('STAGE_CINEMATICS contains exactly 17 stage mappings', () => {
+    expect(Object.keys(STAGE_CINEMATICS)).toHaveLength(17);
   });
 
   it('ch1_opening has exactly 5 lines', () => {

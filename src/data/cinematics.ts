@@ -251,6 +251,37 @@ export const CINEMATICS: CinematicDef[] = [
         text: '하지만... 던전의 여정은 끝이 없다. 더 강해져라, 수호자여.' },
     ],
   },
+  // ─── Chapter 9: 공허 너머 ──────────────────────────────────────────────────
+  {
+    id: 'ch9_opening',
+    lines: [
+      { speaker: '산신령',    emoji: '⛩️', side: 'left',
+        text: '원초신마저 쓰러뜨렸다... 창조의 끝에 도달한 것이다.' },
+      { speaker: '산신령',    emoji: '⛩️', side: 'left',
+        text: '그러나 창조의 너머에도 무언가가 있다. 모든 것을 삼키는 공허, 그 자체가.' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '원초신보다 더한 게 있다고?! 대체 끝이 어디야!' },
+      { speaker: '구미호',    emoji: '🦊', side: 'right',
+        text: '...여기서 멈추면, 우리 던전도 결국 그 공허에 삼켜질 거예요.' },
+      { speaker: '산신령',    emoji: '⛩️', side: 'left',
+        text: '공허의 군주가 이미 이쪽을 바라보고 있다. 마지막 여정이다, 수호자여.', pause: 800 },
+    ],
+  },
+  {
+    id: 'void_sovereign_boss_intro',
+    lines: [
+      { speaker: '공허 군주', emoji: '🌌', side: 'left',
+        text: '...기어이 여기까지 왔는가. 창조의 잔재여.' },
+      { speaker: '공허 군주', emoji: '🌌', side: 'left',
+        text: '별도, 신도, 꿈도 — 모든 것은 결국 나의 침묵 속으로 돌아간다.' },
+      { speaker: '공허 군주', emoji: '🌌', side: 'left',
+        text: '너의 작은 던전 역시 예외는 아니다. 이제, 무(無)로 돌아가라.' },
+      { speaker: '도깨비 전사', emoji: '👹', side: 'right',
+        text: '웃기지 마라!! 우리 던전은 무가 아니라 — 모두의 전부니까!!' },
+      { speaker: '구미호',    emoji: '🦊', side: 'right',
+        text: '모두의 마음이 이 안에 있어요. 그게 공허보다 강하다는 걸 보여주죠!!', pause: 1000 },
+    ],
+  },
 ];
 
 export function getCinematic(id: string): CinematicDef | undefined {
@@ -274,4 +305,6 @@ export const STAGE_CINEMATICS: Record<number, string> = {
   72: 'god_emperor_boss_intro',
   73: 'ch8_opening',
   80: 'primordial_titan_boss_intro',
+  81: 'ch9_opening',
+  90: 'void_sovereign_boss_intro',
 };
