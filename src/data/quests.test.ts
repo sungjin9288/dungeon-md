@@ -642,9 +642,9 @@ describe('EQ chain — data integrity', () => {
     }
   });
 
-  it('all EQ quests are chapter 8', () => {
+  it('all EQ quests are chapter 9 (post-Ch9 epilogue)', () => {
     for (const id of EQ_IDS) {
-      expect(getQuest(id)!.chapter, `${id} chapter`).toBe(8);
+      expect(getQuest(id)!.chapter, `${id} chapter`).toBe(9);
     }
   });
 
@@ -654,8 +654,9 @@ describe('EQ chain — data integrity', () => {
     }
   });
 
-  it('MQ-044 nextQuestId points to EQ-001 (chain entry)', () => {
-    expect(getQuest('MQ-044')!.nextQuestId).toBe('EQ-001');
+  it('MQ-044 links into Ch9 (MQ-045); MQ-047 finale enters the EQ chain', () => {
+    expect(getQuest('MQ-044')!.nextQuestId).toBe('MQ-045');
+    expect(getQuest('MQ-047')!.nextQuestId).toBe('EQ-001');
   });
 
   it('chain order is EQ-001 → EQ-002 → EQ-003 → EQ-004 → EQ-005 → null', () => {

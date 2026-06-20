@@ -161,7 +161,7 @@ export function settleCompletedHomeMainQuest(state: GameState): HomeMainQuestCom
     completion,
     pendingUnlock: completion.unlocks[0] ?? null,
     chapterCompleted: completion.completedQuest.id === 'MQ-010',
-    gameCompleted: completion.completedQuest.id === 'MQ-044',
+    gameCompleted: completion.completedQuest.id === 'MQ-047',
     unlockedBlueprintIds: rewardResult.unlockedBlueprintIds,
     awakeningStonesAwarded: rewardResult.awakeningStonesAwarded,
   };

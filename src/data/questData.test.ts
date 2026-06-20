@@ -11,8 +11,8 @@ const VALID_OBJECTIVE_TYPES = new Set<ObjectiveType>([
 // ─── MAIN_QUESTS — total count ────────────────────────────────────────────────
 
 describe('MAIN_QUESTS — total count', () => {
-  it('contains exactly 49 quests (MQ-001 to MQ-044 + EQ-001 to EQ-005)', () => {
-    expect(MAIN_QUESTS).toHaveLength(49);
+  it('contains exactly 52 quests (MQ-001 to MQ-047 + EQ-001 to EQ-005)', () => {
+    expect(MAIN_QUESTS).toHaveLength(52);
   });
 
   it('first quest is MQ-001', () => {
@@ -52,10 +52,10 @@ describe('MAIN_QUESTS — field integrity', () => {
     }
   });
 
-  it('every chapter value is between 1 and 8', () => {
+  it('every chapter value is between 1 and 9', () => {
     for (const q of MAIN_QUESTS) {
       expect(q.chapter, `${q.id} chapter`).toBeGreaterThanOrEqual(1);
-      expect(q.chapter, `${q.id} chapter`).toBeLessThanOrEqual(8);
+      expect(q.chapter, `${q.id} chapter`).toBeLessThanOrEqual(9);
     }
   });
 
@@ -127,10 +127,13 @@ describe('MAIN_QUESTS — chain ordering', () => {
     }
   });
 
-  it('MQ-044 links to EQ-001 (chapter 8 → epilogue transition)', () => {
+  it('MQ-044 links to MQ-045 (Ch8 → Ch9 transition), MQ-047 finale links to EQ-001', () => {
     const mq044 = MAIN_QUESTS.find(q => q.id === 'MQ-044');
     expect(mq044).toBeDefined();
-    expect(mq044!.nextQuestId).toBe('EQ-001');
+    expect(mq044!.nextQuestId).toBe('MQ-045');
+    const mq047 = MAIN_QUESTS.find(q => q.id === 'MQ-047');
+    expect(mq047!.chapter).toBe(9);
+    expect(mq047!.nextQuestId).toBe('EQ-001');
   });
 
   it('chapters are non-decreasing across the quest chain (no going back)', () => {
@@ -318,16 +321,20 @@ describe('MAIN_QUESTS — per-chapter counts', () => {
     expect(byChapter(7)).toHaveLength(4);
   });
 
-  it('Ch8 has exactly 15 quests (MQ-035–MQ-044 + EQ-001–EQ-005)', () => {
-    expect(byChapter(8)).toHaveLength(15);
+  it('Ch8 has exactly 10 quests (MQ-035–MQ-044)', () => {
+    expect(byChapter(8)).toHaveLength(10);
   });
 
-  it('Ch1 + Ch4 + Ch8 are the three largest chapter blocks', () => {
-    const counts = [1, 2, 3, 4, 5, 6, 7, 8].map(ch => byChapter(ch).length);
+  it('Ch9 has exactly 8 quests (MQ-045–MQ-047 + EQ-001–EQ-005)', () => {
+    expect(byChapter(9)).toHaveLength(8);
+  });
+
+  it('Ch1 + Ch8 + Ch9 are the three largest chapter blocks', () => {
+    const counts = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(ch => byChapter(ch).length);
     const top3 = [...counts].sort((a, b) => b - a).slice(0, 3);
     expect(top3).toContain(byChapter(1).length); // 10
-    expect(top3).toContain(byChapter(4).length); // 6
-    expect(top3).toContain(byChapter(8).length); // 15
+    expect(top3).toContain(byChapter(8).length); // 10
+    expect(top3).toContain(byChapter(9).length); // 8
   });
 });
 
@@ -392,10 +399,10 @@ describe('MAIN_QUESTS — chain start and terminal', () => {
     expect(q.nextQuestId).toBe('MQ-002');
   });
 
-  it('EQ-005 is the terminal quest (chapter=8, nextQuestId=null)', () => {
+  it('EQ-005 is the terminal quest (chapter=9, nextQuestId=null)', () => {
     const q = MAIN_QUESTS[MAIN_QUESTS.length - 1];
     expect(q.id).toBe('EQ-005');
-    expect(q.chapter).toBe(8);
+    expect(q.chapter).toBe(9);
     expect(q.nextQuestId).toBeNull();
   });
 
@@ -473,9 +480,9 @@ describe('MAIN_QUESTS — reward pins, objective counts & collect_gold escalatio
 // ─── MAIN_QUESTS — all IDs unique ────────────────────────────────────────────
 
 describe('MAIN_QUESTS — all IDs unique', () => {
-  it('all 49 quest IDs are distinct (no duplicate entries)', () => {
+  it('all 52 quest IDs are distinct (no duplicate entries)', () => {
     const ids = MAIN_QUESTS.map(q => q.id);
-    expect(new Set(ids).size).toBe(49);
+    expect(new Set(ids).size).toBe(52);
   });
 });
 

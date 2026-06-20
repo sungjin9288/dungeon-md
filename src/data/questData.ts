@@ -638,20 +638,58 @@ export const MAIN_QUESTS: MainQuest[] = [
     id: 'MQ-044', chapter: 8, autoTrigger: true,
     title: '원초의 심연 정복',
     npcSpeaker: '원초신', npcEmoji: '🔮',
-    description: '드디어 원초의 심연 최심부에 도달했다.\n모든 것의 시작이자 끝인 존재를 무찔러라.\n이것이 던전 수호자의 진정한 마지막 시련이다.',
+    description: '드디어 원초의 심연 최심부에 도달했다.\n모든 것의 시작이자 끝, 원초신을 무찔러라.\n…그러나 창조의 너머에서, 더 깊은 무언가가 눈을 뜨고 있다.',
     objectives: [
       { id: 'O1', type: 'complete_stage', target: 80, current: 0, description: '스테이지 80 클리어' },
     ],
     reward: { gold: 50000, dmXP: 10000, soulCrystals: 1000, gems: 500,
               unlocks: ['abyss_title', 'primordial_skin'] },
+    nextQuestId: 'MQ-045',
+  },
+
+  // ── Chapter 9: 공허 너머 (MQ-045 ~ MQ-047) ───────────────────────────────────
+  // 원초신 너머의 진짜 최종장. MQ-047(공허 군주)이 게임 완료 지점.
+  {
+    id: 'MQ-045', chapter: 9, autoTrigger: true,
+    title: '공허의 균열',
+    npcSpeaker: '산신령', npcEmoji: '⛩️',
+    description: '원초신마저 쓰러뜨렸으나, 그 너머 공허가 입을 벌렸다.\n창조의 끝에서 균열을 넘어, 84번 관문까지 전진하라.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 84,     current: 0, description: '스테이지 84 클리어' },
+      { id: 'O2', type: 'collect_gold',   target: 150000, current: 0, description: '골드 150,000 누적 획득' },
+    ],
+    reward: { gold: 25000, dmXP: 5000, soulCrystals: 600, gems: 200 },
+    nextQuestId: 'MQ-046',
+  },
+  {
+    id: 'MQ-046', chapter: 9, autoTrigger: true,
+    title: '심연의 약탈자',
+    npcSpeaker: '산신령', npcEmoji: '⛩️',
+    description: '공허의 약탈자들이 던전을 무로 되돌리려 몰려온다.\n88번 관문까지 돌파하고 심연의 군세를 물리쳐라.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 88, current: 0, description: '스테이지 88 클리어' },
+    ],
+    reward: { gold: 35000, dmXP: 7000, soulCrystals: 800, gems: 300 },
+    nextQuestId: 'MQ-047',
+  },
+  {
+    id: 'MQ-047', chapter: 9, autoTrigger: true,
+    title: '공허 군주의 강림',
+    npcSpeaker: '공허 군주', npcEmoji: '🌌',
+    description: '공허의 군주가 강림했다. 모든 것을 침묵으로 되돌리려는 종말의 의지.\n90번 관문에서 그를 쓰러뜨리고, 던전의 진정한 수호자가 되어라.\n이것이 마지막 시련이다.',
+    objectives: [
+      { id: 'O1', type: 'complete_stage', target: 90, current: 0, description: '스테이지 90 클리어' },
+    ],
+    reward: { gold: 80000, dmXP: 15000, soulCrystals: 1500, gems: 800,
+              unlocks: ['void_title', 'sovereign_skin'] },
     nextQuestId: 'EQ-001',
   },
 
   // ── 에필로그 퀘스트 체인 (EQ-001 ~ EQ-005) ──────────────────────────────────
-  // 심연 정복 이후의 포스트게임 목표. MQ-044 완료 직후 자동 시작.
+  // 공허 군주(MQ-047)를 넘어선 뒤의 포스트게임 목표. MQ-047 완료 직후 자동 시작.
 
   {
-    id: 'EQ-001', chapter: 8, autoTrigger: true,
+    id: 'EQ-001', chapter: 9, autoTrigger: true,
     title: '심연의 메아리',
     npcSpeaker: '원초신', npcEmoji: '🌑',
     description: '심연은 정복됐지만 메아리는 아직 울린다.\n소환의 힘을 키우고 더 많은 골드를 쌓아라.\n전설은 이제부터가 시작이다.',
@@ -663,7 +701,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     nextQuestId: 'EQ-002',
   },
   {
-    id: 'EQ-002', chapter: 8, autoTrigger: true,
+    id: 'EQ-002', chapter: 9, autoTrigger: true,
     title: '합성의 달인',
     npcSpeaker: '원초신', npcEmoji: '🌑',
     description: '강함은 힘의 융합에서 비롯된다.\n몬스터를 합성하여 더욱 강한 전력을 갖추고\n던전 마스터로서의 역량을 증명하라.',
@@ -675,7 +713,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     nextQuestId: 'EQ-003',
   },
   {
-    id: 'EQ-003', chapter: 8, autoTrigger: true,
+    id: 'EQ-003', chapter: 9, autoTrigger: true,
     title: '끝없는 소환',
     npcSpeaker: '원초신', npcEmoji: '🌑',
     description: '원초의 힘이 세상에 퍼지기 시작했다.\n소환의 의식을 반복하여 전설급 전력을 완성하고\n부를 축적하여 진정한 던전의 주인임을 보여라.',
@@ -688,7 +726,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     nextQuestId: 'EQ-004',
   },
   {
-    id: 'EQ-004', chapter: 8, autoTrigger: true,
+    id: 'EQ-004', chapter: 9, autoTrigger: true,
     title: '성장의 증거',
     npcSpeaker: '원초신', npcEmoji: '🌑',
     description: '던전은 네 힘을 기억한다.\n합성을 거듭하여 군대를 완성하고\n전설의 경지에 오른 던전 마스터임을 증명하라.',
@@ -700,7 +738,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     nextQuestId: 'EQ-005',
   },
   {
-    id: 'EQ-005', chapter: 8, autoTrigger: true,
+    id: 'EQ-005', chapter: 9, autoTrigger: true,
     title: '전설의 던전 마스터',
     npcSpeaker: '원초신', npcEmoji: '🌑',
     description: '태초의 심연부터 천계까지—\n네가 걸어온 모든 길이 전설로 남는다.\n소환과 부의 정점에 서서 진정한 마스터임을 완성하라.',
