@@ -7,6 +7,7 @@ import type { DungeonTheme } from '../themes/themes';
 import type { DungeonSlot } from '../data/wisdom';
 import { SLOT_W, SLOT_H } from './RoomSlotRenderer';
 import type { DungeonBoardLayout } from './DungeonBoardLayout';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── Layout context ───────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ export function drawSynergyConnectors(
   unlockedCount: number,
 ): void {
   const { scene, slots, gridCols, gridRows, slotPadX, slotPadY, gridStartY, layout } = ctx;
+  const reducedMotion = getReducedMotion();
 
   const pairs: Array<[number, number]> = [];
   for (let row = 0; row < gridRows; row++) {
@@ -120,14 +122,19 @@ export function drawSynergyConnectors(
     const dot = scene.add.graphics();
     dot.fillStyle(color, 0.58);
     dot.fillCircle(0, 0, 2.2);
-    dot.setPosition(from.x, from.y);
     c.add(dot);
-    scene.tweens.add({
-      targets: dot, x: to.x, y: to.y,
-      duration: 1450 + Math.random() * 700,
-      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      delay: Math.random() * 800,
-    });
+    if (reducedMotion) {
+      // Static node at the channel midpoint — the link still reads, no travel.
+      dot.setPosition((from.x + to.x) / 2, (from.y + to.y) / 2);
+    } else {
+      dot.setPosition(from.x, from.y);
+      scene.tweens.add({
+        targets: dot, x: to.x, y: to.y,
+        duration: 1450 + Math.random() * 700,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        delay: Math.random() * 800,
+      });
+    }
   }
 }
 

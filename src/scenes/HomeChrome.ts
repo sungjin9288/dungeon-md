@@ -234,6 +234,7 @@ export function buildBottomNav(scene: DungeonHomeScene): void {
 
 export function addAmbientEffects(scene: DungeonHomeScene): void {
   const t = scene.theme;
+  const reducedMotion = getReducedMotion();
   const gridTop    = GRID_START_Y;
   const gridBottom = GRID_START_Y + GRID_ROWS_HOME * (SLOT_H + SLOT_PAD_Y);
 
@@ -263,12 +264,19 @@ export function addAmbientEffects(scene: DungeonHomeScene): void {
     glow.fillStyle(t.glowColor, 0.18);
     glow.fillCircle(x, y, 6);
   });
-  scene.tweens.add({
-    targets: glow, alpha: { from: 0.6, to: 1.0 },
-    duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-  });
+  // Reduced motion: keep the corner glows lit at full alpha (no perpetual pulse).
+  if (reducedMotion) {
+    glow.setAlpha(1.0);
+  } else {
+    scene.tweens.add({
+      targets: glow, alpha: { from: 0.6, to: 1.0 },
+      duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+  }
 
-  if (t.decorations.includes('water_drips')) {
+  // Water drips are a perpetual self-rescheduling effect — skip entirely under
+  // reduced motion (decorative only; the cave reads fine without them).
+  if (!reducedMotion && t.decorations.includes('water_drips')) {
     const dripXs = [45, 130, 220, 310, 365];
     for (const dx of dripXs) addWaterDrip(scene, t, dx, gridTop - 2, gridTop + 60, 16);
   }
