@@ -247,6 +247,7 @@ export function addRoomActivityAura(
   y: number,
   slot: DungeonSlot,
   idx: number,
+  reducedMotion: boolean,
 ): void {
   const isBroken = Boolean(slot.roomType && slot.hp <= 0);
   const monsterCount = (slot.monsterIds ?? []).filter(Boolean).length;
@@ -275,6 +276,7 @@ export function addRoomActivityAura(
   motePositions.forEach((pos, moteIdx) => {
     const mote = scene.add.circle(pos.x, pos.y, moteIdx % 2 === 0 ? 2.4 : 1.8, accent, isBroken ? 0.36 : 0.34 + activity * 0.24);
     aura.add(mote);
+    if (reducedMotion) return;   // static mote — no perpetual drift
     scene.tweens.add({
       targets: mote,
       alpha: isBroken ? 0.08 : 0.12,
@@ -294,7 +296,7 @@ export function addRoomActivityAura(
   }
 
   c.add(aura);
-  if (hasActiveLoadout || isBroken) {
+  if (!reducedMotion && (hasActiveLoadout || isBroken)) {
     scene.tweens.add({
       targets: aura,
       scaleX: isBroken ? 1.04 : 1.08,
@@ -428,6 +430,7 @@ export function getRoomActivityColor(
 export function makeRoomSlotCtx(scene: DungeonHomeScene): RoomSlotContext {
   return {
     scene, theme: scene.theme, gs: scene.gs,
+    reducedMotion: getReducedMotion(),
     applyIdleAnimation: (emoji, monsterId, compact) =>
       applyIdleAnimation(scene, emoji, monsterId, compact),
   };

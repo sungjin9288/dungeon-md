@@ -351,6 +351,7 @@ function addRoomShine(
   accent: number,
   readiness: number,
   seed: number,
+  reducedMotion: boolean,
 ): void {
   if (readiness < 55) return;
   const shine = scene.add.graphics();
@@ -360,6 +361,11 @@ function addRoomShine(
   shine.lineBetween(x + 18, y + SLOT_H - 20, x + SLOT_W - 18, y + SLOT_H - 24);
   shine.setAlpha(0.18);
   c.add(shine);
+  // Reduced motion: keep the shine visible at a steady mid alpha (no shimmer).
+  if (reducedMotion) {
+    shine.setAlpha(0.30);
+    return;
+  }
   scene.tweens.add({
     targets: shine,
     alpha: 0.42,
@@ -377,6 +383,8 @@ export interface RoomSlotContext {
   readonly scene: Phaser.Scene;
   readonly theme: DungeonTheme;
   readonly gs: GameState;
+  /** Whether the user prefers reduced motion — gates perpetual decorative tweens. */
+  readonly reducedMotion: boolean;
   applyIdleAnimation(emoji: Phaser.GameObjects.Text, monsterId: string, compact: boolean): void;
 }
 
@@ -480,7 +488,7 @@ export function drawBattleSlot(
     g.fillStyle(0xffffff, 0.12);
     g.fillRoundedRect(x + 8, y + 6, SLOT_W - 16, 16, 7);
     drawPixelRoom(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
-    addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index);
+    addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index, ctx.reducedMotion);
     drawEquipmentPowerAura(scene, c, g, x, y, roomMetrics.equipmentPower, primaryEquipment);
 
     // Chunky saturated accent border.
@@ -517,12 +525,15 @@ export function drawBattleSlot(
     const spriteKey = generateMonsterSprite(scene, (typeIdForSlot ?? primaryMonsterId ?? '') as MonsterId);
     const sprite = scene.add.image(cx, cy + 8, spriteKey).setOrigin(0.5).setScale(1.25);
     c.add(sprite);
-    scene.tweens.add({
-      targets: sprite,
-      y: cy + 3,
-      duration: 1300 + (index % 4) * 130,
-      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    // Reduced motion: the sprite stands still (no perpetual idle bob).
+    if (!ctx.reducedMotion) {
+      scene.tweens.add({
+        targets: sprite,
+        y: cy + 3,
+        duration: 1300 + (index % 4) * 130,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
     if (primaryEquipment) {
       drawEquipmentBadge(scene, c, g, x + SLOT_W - 20, y + SLOT_H / 2 - 8, primaryEquipment);
     }
@@ -591,7 +602,7 @@ export function drawBattleSlot(
       const cx = x + SLOT_W / 2;
       const roomAccent = ROOM_TYPE_ACCENT[slot?.roomType ?? ''] ?? CASUAL.GOLD;
       drawPixelRoom(g, x, y, slot?.roomType, roomAccent, roomMetrics.readiness);
-      addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index);
+      addRoomShine(scene, c, x, y, roomAccent, roomMetrics.readiness, index, ctx.reducedMotion);
       c.add(scene.add.text(cx, y + SLOT_H / 2 - 10, td?.icon ?? '▣', {
         fontFamily: 'sans-serif',
         fontSize: '28px',

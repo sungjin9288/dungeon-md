@@ -762,6 +762,7 @@ export function addDungeonActivityLayer(
   c: Phaser.GameObjects.Container,
   unlockedCount: number,
 ): void {
+  const reducedMotion = getReducedMotion();
   for (let idx = 0; idx < unlockedCount; idx++) {
     const slot = scene.gs.dungeonSlots?.[idx];
     if (!slot?.roomType) continue;
@@ -769,7 +770,7 @@ export function addDungeonActivityLayer(
     const actCell = scene.boardLayout.cellsByIdx.get(idx);
     const cx = actCell?.center.x ?? 0;
     const cy = actCell?.center.y ?? 0;
-    _addRoomActivityAura(scene, c, cx, cy, slot, idx);
+    _addRoomActivityAura(scene, c, cx, cy, slot, idx, reducedMotion);
   }
 }
 
