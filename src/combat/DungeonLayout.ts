@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { Torch } from '../objects/Torch';
 import { COLORS, CSS, CASUAL } from '../constants/colors';
+import { addSceneAtmosphere } from '../ui/SceneAtmosphere';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   GRID_ROWS, GRID_X, GRID_Y,
@@ -241,6 +242,10 @@ export function drawDungeonBackground(
   // Faint warm rock strata texture (uses CASUAL.EDGE_SOFT via override theme).
   drawCaveWallTexture(g, decorTheme, 0, TOP_BAR_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
   drawDungeonDefenseFrame(scene, t, effectiveCols, effectiveCellSize);
+
+  // Atmosphere over the surround: torch glow + drifting embers for depth/life.
+  // Vignette OFF — never darken battle edges where invaders enter (readability).
+  addSceneAtmosphere(scene, { vignette: false });
 }
 
 function drawDungeonDefenseFrame(
