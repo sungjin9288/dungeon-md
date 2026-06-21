@@ -11,6 +11,7 @@ import { getQuest } from '../data/quests';
 import { showAudioSettings } from './AudioSettingsPanel';
 import { openQuestLog, type QuestLogState } from './QuestLogPanel';
 import { openPrestigeModal, buildPrestigeBadge } from './PrestigeModal';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── DM Title data ────────────────────────────────────────────────────────────
 // Maps unlockedFeatures key → display label + color.
@@ -235,6 +236,9 @@ export function buildHeaderTorch(
     flame.fillCircle(x, y - 6, 10 * scale);
   };
   drawFlame(1);
+
+  // Flame flicker is decorative — under reduced motion the torch stays lit but still.
+  if (getReducedMotion()) return;
 
   const flickerState = { s: 1 };
   scene.tweens.add({
