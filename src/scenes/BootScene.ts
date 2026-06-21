@@ -59,6 +59,15 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-dungeon-shaft',   '/assets/backgrounds/dungeon-shaft.png');
     this.load.image('bg-dungeon-chamber', '/assets/backgrounds/dungeon-chamber.png');
 
+    // Per-chapter battle backdrops (optional). Drop backgrounds/battle-ch{N}.png
+    // and add N here → that chapter's battle uses it instead of the universal
+    // chamber (see ASSET_GUIDE.md / drawDungeonDefenseFrame). Empty = all chapters
+    // share the chamber. Listed-only loading keeps boot 404-free.
+    const BATTLE_BG_CHAPTERS: number[] = [];
+    BATTLE_BG_CHAPTERS.forEach(n => {
+      this.load.image(`bg-battle-ch${n}`, `/assets/backgrounds/battle-ch${n}.png`);
+    });
+
     // Fail-safe: if loader somehow stalls, force-complete after 8 s
     this.load.once('complete', () => { /* normal path */ });
     this.time.delayedCall(8000, () => {

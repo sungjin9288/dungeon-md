@@ -24,13 +24,14 @@
   magic/support} 역할이 드러나는 포즈, 정사각 흉상 초상.`
   예) `…"공허 군주" — 천계족 어둠속성 전설등급 최종보스, 무(無)를 두른 위압적 정면 흉상.`
 
-## 우선순위 2 — 챕터별 전투 배경
+## 우선순위 2 — 챕터별 전투 배경 (배선 완료)
 현재 전투 플레이존은 단일 `dungeon-chamber.png`를 공유한다. 챕터별 환경을 주면 변화가 크다.
+배선은 끝났다 — `drawDungeonDefenseFrame`이 `bg-battle-ch{chapter}` 텍스처가 있으면 그걸,
+없으면 chamber→절차적으로 자동 폴백한다.
 - **경로**: `public/assets/backgrounds/battle-ch{1..9}.png`
 - **치수**: 1254×1254 권장(정사각, cover 스케일). 어둡게, 중앙은 비워(방 그리드가 위에 올라감).
-- **드롭인**: `BootScene`에 `load.image('bg-battle-ch{N}', …)` 추가 + `drawDungeonDefenseFrame`
-  의 `bakeDungeonBackdrop(..., 'bg-dungeon-chamber')`를 챕터 키 우선으로 해석하도록 1곳 배선
-  (요청 시 처리). 미존재 시 chamber→절차적 폴백.
+- **드롭인(2스텝)**: ① 파일을 위 경로에 넣고 ② `src/scenes/BootScene.ts`의
+  `BATTLE_BG_CHAPTERS` 배열에 챕터 번호 N 추가. 끝. (목록에 없으면 로드 안 함 → 404 없음.)
 - **프롬프트**: `{공통}, {챕터 테마} 전투 동굴 내부 — 정사각, 어두운 중앙(빈 무대) + 가장자리
   횃불·구조물.` 챕터 테마: 1 도깨비숲 / 2 구미호계곡 / 3 용왕해저궁 / 4 저승관문 / 5 삼신산 /
   6 영원의왕좌 / 7 신계침공 / 8 원초의심연 / 9 공허 너머.

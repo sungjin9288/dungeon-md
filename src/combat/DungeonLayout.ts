@@ -192,6 +192,7 @@ export function drawDungeonBackground(
   theme:             DungeonTheme,
   effectiveCols:     number,
   effectiveCellSize: number,
+  chapter            = 1,
 ): void {
   const t = theme;
   // Warm-stone override fed to the shared decoration helpers (visual-only).
@@ -241,7 +242,7 @@ export function drawDungeonBackground(
 
   // Faint warm rock strata texture (uses CASUAL.EDGE_SOFT via override theme).
   drawCaveWallTexture(g, decorTheme, 0, TOP_BAR_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
-  drawDungeonDefenseFrame(scene, t, effectiveCols, effectiveCellSize);
+  drawDungeonDefenseFrame(scene, t, effectiveCols, effectiveCellSize, chapter);
 
   // Atmosphere over the surround: torch glow + drifting embers for depth/life.
   // Vignette OFF — never darken battle edges where invaders enter (readability).
@@ -253,6 +254,7 @@ function drawDungeonDefenseFrame(
   _theme: DungeonTheme,   // visual-only reskin ignores the dark theme; uses CASUAL palette
   effectiveCols: number,
   effectiveCellSize: number,
+  chapter = 1,
 ): void {
   const gridW = effectiveCols * effectiveCellSize;
   const gridH = GRID_ROWS * effectiveCellSize;
@@ -268,7 +270,11 @@ function drawDungeonDefenseFrame(
   shadowG.fillStyle(CASUAL.SHADOW, 0.5);
   shadowG.fillRoundedRect(x - 22, y - 24, gridW + 44, gridH + 48, 18);
 
-  const bdKey = bakeDungeonBackdrop(scene, `battleBackdrop_${panelW}x${panelH}`, panelW, panelH, 'bg-dungeon-chamber');
+  // Per-chapter illustrated backdrop if dropped in (bg-battle-ch{N}); else the
+  // universal chamber; else the procedural Canvas painting. See ASSET_GUIDE.md.
+  const chapterKey = `bg-battle-ch${chapter}`;
+  const realKey = scene.textures.exists(chapterKey) ? chapterKey : 'bg-dungeon-chamber';
+  const bdKey = bakeDungeonBackdrop(scene, `battleBackdrop_ch${chapter}_${panelW}x${panelH}`, panelW, panelH, realKey);
   scene.add.image(panelX, panelY, bdKey).setOrigin(0, 0).setDisplaySize(panelW, panelH).setDepth(-15);
 
   const g = scene.add.graphics().setDepth(-12);

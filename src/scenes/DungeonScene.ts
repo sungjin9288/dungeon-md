@@ -423,7 +423,7 @@ export class DungeonScene extends Phaser.Scene {
   // original private call sites (`this.drawBackground()` etc.) intact.
 
   private drawBackground(): void {
-    drawDungeonBackground(this, this.theme, this.effectiveCols, this.effectiveCellSize);
+    drawDungeonBackground(this, this.theme, this.effectiveCols, this.effectiveCellSize, this.stageChapter);
   }
 
   private buildPath(): void {
