@@ -189,6 +189,27 @@ export function generatePortrait(
   const def = MONSTER_DEFS[monsterId];
   if (!def) return key;
 
+  // Illustrated portrait: if an AI illustration is loaded for this monster (and
+  // no skin recolor is requested), composite it instead of the pixel art — gives
+  // the collection screens a management-game look. Monsters without an
+  // illustration fall through to the procedural pixel portrait below.
+  const aiKey = `monster-ai-${monsterId}`;
+  if (!skinId && scene.textures.exists(aiKey)) {
+    const src = scene.textures.get(aiKey).getSourceImage() as CanvasImageSource;
+    const sz = 256;
+    const aiCanvas = document.createElement('canvas');
+    aiCanvas.width = sz;
+    aiCanvas.height = sz;
+    const aictx = aiCanvas.getContext('2d');
+    if (aictx) {
+      aictx.imageSmoothingEnabled = true;
+      aictx.drawImage(src, 0, 0, sz, sz);
+      scene.textures.addCanvas(key, aiCanvas);
+      generated.add(key);
+      return key;
+    }
+  }
+
   // Create off-screen canvas
   const canvas = document.createElement('canvas');
   canvas.width = 64;

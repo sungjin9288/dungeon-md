@@ -8,7 +8,8 @@
     "preview": "vite preview --port 8084",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "gen:portraits": "node scripts/gen-portrait-manifest.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",

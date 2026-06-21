@@ -5,6 +5,7 @@ import { INVADER_DEFS, type InvaderType } from '../data/invaders';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { getMonsterSpriteData, drawMonsterSprite } from '../art/PixelMonsters';
 import { getInvaderSpriteData } from '../art/PixelInvaders';
+import { PORTRAIT_IDS } from '../data/portraitManifest';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
@@ -43,19 +44,12 @@ export class BootScene extends Phaser.Scene {
     // Invaders are now procedural pixel art (see PixelInvaders.ts) — no AI
     // invader sprites to preload.
 
-    // Load AI-generated monster portraits (Ch1-5 pre-loaded; Ch6+ loaded lazily)
-    // Ch7 assets are NOT pre-loaded here — large files caused loader deadlock
-    // (inflight=0 / list>0 stall in Phaser 3.90). They use procedural fallback.
-    const monsterIds = [
-      // Ch1–5
-      'dokkaebi_warrior','dokkaebi_junior','village_archer','gold_turtle','fire_dokkaebi','sage',
-      'gumiho_guardian','frost_spirit','white_tiger','sea_god_spear','fox_shaman','iron_mask',
-      'death_messenger','thunder_hero','ghost_hunter','mask_dancer','venom_warrior',
-      'celestial_dancer','three_legged_crow','great_serpent','moon_rabbit_sage',
-      'mountain_god','volcanic_warrior','storm_archer','abyss_mage','celestial_healer',
-      'mask_berserker','sea_dragon_lord','fox_spirit_elder',
-    ];
-    monsterIds.forEach(id => {
+    // Load AI-illustrated monster portraits that actually exist on disk
+    // (PORTRAIT_IDS is generated from public/assets/monsters/ by
+    // `npm run gen:portraits`). Portraits are kept ≤256px / ~150KB so preloading
+    // them never re-triggers the Phaser 3.90 loader stall the oversized Ch7 jpgs
+    // once caused. Missing monsters fall back to procedural PixelMonsters art.
+    PORTRAIT_IDS.forEach(id => {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
     });
 
