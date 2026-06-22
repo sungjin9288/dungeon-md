@@ -11,6 +11,7 @@ import {
 } from '../data/fusion';
 import { logger } from '../utils/logger';
 import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   type TabId, type FusionTabContext,
   TAB_ACCENT, TAB_ACCENT_CSS,
@@ -198,6 +199,10 @@ export class FusionScene extends Phaser.Scene {
     this.cauldronEmoji = this.add.text(cx, cy, '🪄', {
       fontFamily: 'sans-serif', fontSize: '52px',
     }).setOrigin(0.5).setDepth(5);
+
+    // Cauldron bob, glow pulse and rising bubbles are decorative — under reduced
+    // motion the cauldron + glow stay drawn but perfectly still.
+    if (getReducedMotion()) return;
 
     this.tweens.add({
       targets: this.cauldronEmoji, y: cy - 7,

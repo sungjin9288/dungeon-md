@@ -8,6 +8,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type GameState } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
+import { getReducedMotion } from '../utils/reducedMotion';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 import { addMonsterPortrait } from '../ui/MonsterPortraitView';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -74,14 +75,16 @@ export function drawDefenseActionTargetBadge(
     fontStyle: 'bold',
   }).setOrigin(0.5);
 
-  scene.tweens.add({
-    targets: [ring, badge, text],
-    alpha: { from: 0.68, to: 1 },
-    duration: 720,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut',
-  });
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: [ring, badge, text],
+      alpha: { from: 0.68, to: 1 },
+      duration: 720,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
 }
 
 export function drawDefenseQueueBadge(
@@ -152,14 +155,16 @@ export function drawDefenseRouteActionRing(
   pulse.lineStyle(1, accent, isPrimary ? 0.36 : 0.22);
   pulse.strokeRoundedRect(x - 7, y - 8, w + 14, h + 16, 9);
 
-  scene.tweens.add({
-    targets: [ring, pulse],
-    alpha: { from: isPrimary ? 0.7 : 0.52, to: 1 },
-    duration: isPrimary ? 680 : 920,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut',
-  });
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: [ring, pulse],
+      alpha: { from: isPrimary ? 0.7 : 0.52, to: 1 },
+      duration: isPrimary ? 680 : 920,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
 }
 
 export function drawDefenseRoomCardShell(

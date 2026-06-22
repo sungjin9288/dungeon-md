@@ -10,6 +10,7 @@ import {
   getMonsterBaseDamage, getNextEvolution,
 } from '../data/fusion';
 import { applyFusionEvolution } from '../data/fusionTransactions';
+import { getReducedMotion } from '../utils/reducedMotion';
 import { logger } from '../utils/logger';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -107,10 +108,13 @@ export function buildEvolutionTab(
         fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
         backgroundColor: CASUAL_CSS.GREEN, padding: { x: 28, y: 10 },
       }).setOrigin(0.5).setInteractive();
-      ctx.scene.tweens.add({
-        targets: execBtn, alpha: { from: 0.8, to: 1.0 },
-        duration: 800, yoyo: true, repeat: -1,
-      });
+      // Decorative button glow — execBtn stays fully visible when gated.
+      if (!getReducedMotion()) {
+        ctx.scene.tweens.add({
+          targets: execBtn, alpha: { from: 0.8, to: 1.0 },
+          duration: 800, yoyo: true, repeat: -1,
+        });
+      }
       execBtn.on('pointerdown', () => {
         ctx.scene.tweens.add({ targets: execBtn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
         showConfirmDialog(

@@ -8,6 +8,7 @@ import {
   type BranchDef, type GameState,
 } from '../data/wisdom';
 import { addSceneHeader } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 const ALTAR_X  = 195;
 const ALTAR_Y  = 422;
@@ -69,18 +70,21 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const dur   = Phaser.Math.Between(6000, 12000);
       const moveY = Phaser.Math.Between(80, 160);
 
-      this.tweens.add({
-        targets: g,
-        y: y - moveY,
-        alpha: 0,
-        duration: dur,
-        repeat: -1,
-        repeatDelay: Phaser.Math.Between(0, 4000),
-        onRepeat: () => {
-          g.y     = Phaser.Math.Between(CANVAS_HEIGHT / 2, CANVAS_HEIGHT + 60);
-          g.alpha = Phaser.Math.FloatBetween(0.04, 0.15);
-        },
-      });
+      // Floating background motes are decorative — skip under reduced motion.
+      if (!getReducedMotion()) {
+        this.tweens.add({
+          targets: g,
+          y: y - moveY,
+          alpha: 0,
+          duration: dur,
+          repeat: -1,
+          repeatDelay: Phaser.Math.Between(0, 4000),
+          onRepeat: () => {
+            g.y     = Phaser.Math.Between(CANVAS_HEIGHT / 2, CANVAS_HEIGHT + 60);
+            g.alpha = Phaser.Math.FloatBetween(0.04, 0.15);
+          },
+        });
+      }
     }
   }
 
@@ -137,15 +141,17 @@ export class AncestralWisdomScene extends Phaser.Scene {
     // Altar icon
     this.add.text(ALTAR_X, ALTAR_Y, '⛩', { fontSize: '24px' }).setOrigin(0.5);
 
-    // Rotating outer ring tween
-    this.tweens.add({
-      targets: glow,
-      alpha: { from: 0.5, to: 1 },
-      duration: 2200,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    // Rotating outer ring tween — decorative halo pulse.
+    if (!getReducedMotion()) {
+      this.tweens.add({
+        targets: glow,
+        alpha: { from: 0.5, to: 1 },
+        duration: 2200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   // ─── Connecting lines ────────────────────────────────────────────────────────
@@ -158,6 +164,10 @@ export class AncestralWisdomScene extends Phaser.Scene {
       const staticLine = this.add.graphics();
       staticLine.lineStyle(2.5, CASUAL.EDGE_SOFT, 0.85);
       staticLine.lineBetween(ALTAR_X, ALTAR_Y, x, y);
+
+      // The travelling gold pulse is decorative — under reduced motion keep only
+      // the static connector line.
+      if (getReducedMotion()) return;
 
       // Animated gold pulse line (travels from altar to node)
       const pulseGfx = this.add.graphics();

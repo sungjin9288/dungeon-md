@@ -11,6 +11,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, getPrestigeDmgMult } from '../data/wisdom';
 import { applyPrestigeStart } from '../data/prestigeTransactions';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 const CX = CANVAS_WIDTH / 2;
 const PRESTIGE_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -115,13 +116,15 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
   });
   addToContainer(container, badge.bg, badge.iconText, badge.labelText, badge.valueText);
 
-  scene.tweens.add({
-    targets: [badge.bg, badge.iconText, badge.labelText, badge.valueText],
-    alpha: 0.72,
-    duration: 700,
-    yoyo: true,
-    repeat: -1,
-  });
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: [badge.bg, badge.iconText, badge.labelText, badge.valueText],
+      alpha: 0.72,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
 
   // ── Bonus display ──────────────────────────────────────────────────────────
   const bonusY = panelY + 138;

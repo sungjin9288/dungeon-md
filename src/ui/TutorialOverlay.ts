@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS, CSS } from '../constants/colors';
 import { TUTORIAL_DONE_STAGE } from '../data/tutorialTransactions';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── Tutorial step definitions ────────────────────────────────────────────────
 
@@ -95,13 +96,16 @@ export class TutorialOverlay {
       border.lineStyle(2.5, COLORS.TORCH_GOLD, 0.9);
       border.strokeRoundedRect(x - 4, y - 4, w + 8, h + 8, 8);
 
-      s.tweens.add({
-        targets: border,
-        alpha: { from: 0.4, to: 1 },
-        yoyo: true,
-        repeat: -1,
-        duration: 700,
-      });
+      // Decorative highlight pulse — the static border still marks the target.
+      if (!getReducedMotion()) {
+        s.tweens.add({
+          targets: border,
+          alpha: { from: 0.4, to: 1 },
+          yoyo: true,
+          repeat: -1,
+          duration: 700,
+        });
+      }
 
       ctr.add([mask, hole, border]);
     } else {
@@ -111,13 +115,16 @@ export class TutorialOverlay {
     // ── Arrow ─────────────────────────────────────────────────────────────
     const arrow = s.add.graphics();
     this.drawArrow(arrow, step.arrowFrom, step.arrowTo);
-    s.tweens.add({
-      targets: arrow,
-      alpha: { from: 0.5, to: 1 },
-      yoyo: true,
-      repeat: -1,
-      duration: 600,
-    });
+    // Decorative arrow pulse — the static arrow still points at the target.
+    if (!getReducedMotion()) {
+      s.tweens.add({
+        targets: arrow,
+        alpha: { from: 0.5, to: 1 },
+        yoyo: true,
+        repeat: -1,
+        duration: 600,
+      });
+    }
     ctr.add(arrow);
 
     // ── Tooltip card ──────────────────────────────────────────────────────

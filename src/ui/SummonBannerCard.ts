@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { MONSTER_DEFS } from '../data/monsters';
 import { getBannerTimeLeft, type SeasonBanner } from '../data/banners';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 /**
  * Builds a full-width seasonal banner card and adds it to `container`.
@@ -35,26 +36,36 @@ export function buildBannerCard(
   // ── Pulsing border (animated via time event) ──────────────────
   const borderG = scene.add.graphics();
   container.add(borderG);
-  let pulseT = 0;
-  scene.time.addEvent({
-    delay: 33, repeat: -1,
-    callback: () => {
-      if (!borderG.active) return;
-      pulseT += 0.05;
-      const alpha = 0.55 + 0.45 * Math.sin(pulseT * 2.5);
-      const glow  = 0.18 + 0.18 * Math.sin(pulseT * 1.8);
-      borderG.clear();
-      // Outer glow
-      borderG.lineStyle(4, banner.borderColor, glow);
-      borderG.strokeRoundedRect(BX - 1, topY - 1, BW + 2, BANER_H + 2, 11);
-      // Main border
-      borderG.lineStyle(1.5, banner.borderColor, alpha);
-      borderG.strokeRoundedRect(BX, topY, BW, BANER_H, 10);
-      // Inner highlight
-      borderG.lineStyle(1, banner.glowColor, glow * 0.5);
-      borderG.lineBetween(BX + 12, topY + 1, BX + BW - 12, topY + 1);
-    },
-  });
+  if (getReducedMotion()) {
+    // Static banner border — no perpetual pulse under reduced motion.
+    borderG.lineStyle(4, banner.borderColor, 0.27);
+    borderG.strokeRoundedRect(BX - 1, topY - 1, BW + 2, BANER_H + 2, 11);
+    borderG.lineStyle(1.5, banner.borderColor, 0.9);
+    borderG.strokeRoundedRect(BX, topY, BW, BANER_H, 10);
+    borderG.lineStyle(1, banner.glowColor, 0.18);
+    borderG.lineBetween(BX + 12, topY + 1, BX + BW - 12, topY + 1);
+  } else {
+    let pulseT = 0;
+    scene.time.addEvent({
+      delay: 33, repeat: -1,
+      callback: () => {
+        if (!borderG.active) return;
+        pulseT += 0.05;
+        const alpha = 0.55 + 0.45 * Math.sin(pulseT * 2.5);
+        const glow  = 0.18 + 0.18 * Math.sin(pulseT * 1.8);
+        borderG.clear();
+        // Outer glow
+        borderG.lineStyle(4, banner.borderColor, glow);
+        borderG.strokeRoundedRect(BX - 1, topY - 1, BW + 2, BANER_H + 2, 11);
+        // Main border
+        borderG.lineStyle(1.5, banner.borderColor, alpha);
+        borderG.strokeRoundedRect(BX, topY, BW, BANER_H, 10);
+        // Inner highlight
+        borderG.lineStyle(1, banner.glowColor, glow * 0.5);
+        borderG.lineBetween(BX + 12, topY + 1, BX + BW - 12, topY + 1);
+      },
+    });
+  }
 
   // ── Season badge (top-left) ───────────────────────────────────
   const badgeBg = scene.add.graphics();

@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   getQuest, applySubQuestClaim, prepareSubQuestLogViewState,
   type MainQuest,
@@ -242,10 +243,13 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
     targets: c, scaleX: 1, scaleY: 1, alpha: 1,
     duration: 320, ease: 'Back.easeOut',
   });
-  scene.tweens.add({
-    targets: [btn.bg, btn.text], alpha: 0.6, yoyo: true, repeat: -1,
-    duration: 900, ease: 'Sine.easeInOut', delay: 500,
-  });
+  // Decorative claim-button glow pulse — button stays fully visible when gated.
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: [btn.bg, btn.text], alpha: 0.6, yoyo: true, repeat: -1,
+      duration: 900, ease: 'Sine.easeInOut', delay: 500,
+    });
+  }
 }
 
 function buildQuestRewardRows(

@@ -4,6 +4,7 @@ import { applyCasualBackground } from '../ui/AmbientBackground';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { SKIN_DATA } from '../data/monsters';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   ACHIEVEMENT_DEFS,
   type AchievementCategory,
@@ -248,14 +249,17 @@ export class AchievementScene extends Phaser.Scene {
       const glowRing = this.add.graphics();
       glowRing.lineStyle(3, CASUAL.GREEN, 0.7);
       glowRing.strokeRoundedRect(x - 2, y - 2, CARD_W + 4, CARD_H + 4, 11);
-      this.tweens.add({
-        targets: glowRing,
-        alpha: { from: 0.25, to: 0.85 },
-        duration: 750,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
+      // Decorative pulse — static green ring + NEW badge already mark claimable.
+      if (!getReducedMotion()) {
+        this.tweens.add({
+          targets: glowRing,
+          alpha: { from: 0.25, to: 0.85 },
+          duration: 750,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
 
       const badgeBg = this.add.graphics();
       badgeBg.fillStyle(CASUAL.GREEN, 1);

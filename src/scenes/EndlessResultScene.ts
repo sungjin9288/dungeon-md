@@ -3,6 +3,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { getEndlessModifierById } from '../data/endlessModifiers';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── EndlessResultScene ───────────────────────────────────────────────────────
 //
@@ -91,14 +92,17 @@ export class EndlessResultScene extends Phaser.Scene {
         fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold',
         color: CASUAL_CSS.GOLD, stroke: '#ffffff', strokeThickness: 3,
       }).setOrigin(0.5);
-      this.tweens.add({
-        targets: flash,
-        alpha: { from: 1, to: 0.3 },
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.InOut',
-      });
+      // Decorative flash — the record label stays fully visible when gated.
+      if (!getReducedMotion()) {
+        this.tweens.add({
+          targets: flash,
+          alpha: { from: 1, to: 0.3 },
+          duration: 600,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.InOut',
+        });
+      }
     }
 
     const rowY = result.isNewRecord ? ty + 108 : ty + 84;
