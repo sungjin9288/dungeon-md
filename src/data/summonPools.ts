@@ -103,6 +103,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'celestial_guardian', 'sky_archer', 'heaven_mage',
     // Ch8 — 원초족
     'abyssal_seer', 'chaos_reaver',
+    // Ch9 — 공허족
+    'void_acolyte', 'rift_stalker',
   ],
   // ─── Epic (29종) ─────────────────────────────────────────────────────────
   epic: [
@@ -132,6 +134,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'solar_warrior', 'divine_healer', 'starlight_knight', 'celestial_sage',
     // Ch8 — 원초족
     'void_harbinger', 'primordial_shaman', 'abyssal_warden', 'soul_devourer',
+    // Ch9 — 공허족
+    'void_archon', 'null_sorcerer', 'abyss_titan', 'soul_reaver',
   ],
   // ─── Legendary (3종) ─────────────────────────────────────────────────────
   legendary: [
@@ -142,6 +146,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'god_realm_general', 'empyrean_sovereign',
     // Ch8 — 원초족
     'eternal_colossus', 'primordial_devourer',
+    // Ch9 — 공허족
+    'void_monarch', 'oblivion_devourer',
   ],
 };
 

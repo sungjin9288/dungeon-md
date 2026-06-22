@@ -227,4 +227,5 @@ export const TRIBE_TOTALS: Record<TribeId, number> = {
   dragon:     11,  // dragon roster incl. twilight_dragon (E)
   celestial:   9,  // 8 Ch7 monsters + empyrean_sovereign (L)
   primordial:  8,  // Ch8 원초족 (eternal_colossus = codex reward)
+  void:        8,  // Ch9 공허족 (void_monarch = codex reward)
 };

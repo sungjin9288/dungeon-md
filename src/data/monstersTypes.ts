@@ -12,7 +12,8 @@ export type TribeId =
   | 'mask'
   | 'moonlight'
   | 'celestial'
-  | 'primordial';
+  | 'primordial'
+  | 'void';
 
 export type ElementId =
   | 'fire'
@@ -228,7 +229,16 @@ export type MonsterId =
   | 'abyssal_warden'
   | 'soul_devourer'
   | 'eternal_colossus'
-  | 'primordial_devourer';
+  | 'primordial_devourer'
+  // ─── Chapter 9: 공허족 (Beyond the Void) ───
+  | 'void_acolyte'
+  | 'rift_stalker'
+  | 'void_archon'
+  | 'null_sorcerer'
+  | 'abyss_titan'
+  | 'soul_reaver'
+  | 'void_monarch'
+  | 'oblivion_devourer';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 

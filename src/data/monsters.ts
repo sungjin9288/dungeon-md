@@ -20,6 +20,7 @@ import {
   TRIBE_TOTALS as _TRIBE_TOTALS,
 } from './monstersDataCh7andExtras';
 import { MONSTERS_CH8 } from './monstersDataCh8';
+import { MONSTERS_CH9 } from './monstersDataCh9';
 
 // ─── Assembled lookup ─────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ export const MONSTER_DEFS: Record<MonsterId, MonsterDef> = {
   ...MONSTERS_CH6,
   ...MONSTERS_CH7,
   ...MONSTERS_CH8,
+  ...MONSTERS_CH9,
 } as Record<MonsterId, MonsterDef>;
 
 // ─── Re-export data constants ────────────────────────────────────────────────

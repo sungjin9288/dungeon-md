@@ -87,6 +87,11 @@ export const MONSTER_EMOJI: Record<string, string> = {
   void_harbinger:    '🏹', primordial_shaman:   '🌀',
   abyssal_warden:    '🛡️', soul_devourer:       '☠️',
   eternal_colossus:  '🗿', primordial_devourer: '🌌',
+  // ── Ch9 공허족 ────────────────────────────────────────────────────────────
+  void_acolyte:   '🕯️', rift_stalker:      '🌑',
+  void_archon:    '🏹', null_sorcerer:     '🌀',
+  abyss_titan:    '🗿', soul_reaver:       '☠️',
+  void_monarch:   '👑', oblivion_devourer: '🌌',
 };
 
 export const MONSTER_NAME: Record<string, string> = {
@@ -173,4 +178,9 @@ export const MONSTER_NAME: Record<string, string> = {
   void_harbinger:    '공허 전령',    primordial_shaman:   '원초 주술사',
   abyssal_warden:    '심연 수호자',  soul_devourer:       '영혼 포식자',
   eternal_colossus:  '영원의 거신',  primordial_devourer: '원초 포식자',
+  // ── Ch9 공허족 ────────────────────────────────────────────────────────────
+  void_acolyte:   '공허 추종자',  rift_stalker:      '균열 추적자',
+  void_archon:    '공허 집정관',  null_sorcerer:     '무의 술사',
+  abyss_titan:    '심연 거신',    soul_reaver:       '영혼 약탈자',
+  void_monarch:   '공허 군왕',    oblivion_devourer: '망각의 포식자',
 };

@@ -48,6 +48,9 @@ export const TRIBE_META: TribeMeta[] = [
   { id: 'primordial', name: '원초족',    emoji: '🌌', color: 0x8800cc,
     bonus: '원초족 ATK +25%',
     reward: '영원의 거신 (전설) 해금' },
+  { id: 'void',       name: '공허족',    emoji: '🕳️', color: 0xbb55ff,
+    bonus: '공허족 ATK +25%',
+    reward: '공허 군왕 (전설) 해금' },
 ];
 
 // Tribe ID → reward monster to unlock on 100% completion
@@ -62,6 +65,7 @@ export const TRIBE_REWARD_MONSTER: Record<string, MonsterId> = {
   dragon:     'five_dragon_complete',
   celestial:  'god_realm_general',
   primordial: 'eternal_colossus',
+  void:       'void_monarch',
 };
 
 // ─── Layout ───────────────────────────────────────────────────────────────────

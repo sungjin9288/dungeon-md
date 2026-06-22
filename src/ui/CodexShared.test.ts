@@ -82,8 +82,8 @@ describe('truncateLabel', () => {
 // ─── TRIBE_META sanity ────────────────────────────────────────────────────────
 
 describe('TRIBE_META', () => {
-  it('has 10 tribes defined', () => {
-    expect(TRIBE_META.length).toBe(10);
+  it('has 11 tribes defined', () => {
+    expect(TRIBE_META.length).toBe(11);
   });
 
   it('every tribe has a reward entry in TRIBE_REWARD_MONSTER', () => {
