@@ -7,6 +7,8 @@ import {
   type AchievementContext,
   type AchievementCategory,
 } from './achievements';
+import { TOTAL_STAGES } from './stageProgress';
+import { TRIBE_TOTALS } from './monsters';
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -306,9 +308,9 @@ describe('getProgress — build', () => {
     expect(def.getProgress(makeCtx({ stageProgress: stages }))).toBe(2);
   });
 
-  it('all_3star: requires 80 for target', () => {
+  it('all_3star: target equals the full stage count (all stages)', () => {
     const def = getAchievementDef('all_3star')!;
-    expect(def.target).toBe(80);
+    expect(def.target).toBe(TOTAL_STAGES);
   });
 });
 
@@ -624,9 +626,9 @@ describe('getProgress — collection (extended)', () => {
     expect(def.getProgress(makeCtx({ completedTribes: 1 }))).toBe(1);
   });
 
-  it('tribe_complete_all: target is 8', () => {
+  it('tribe_complete_all: target equals the full tribe count (all tribes)', () => {
     const def = getAchievementDef('tribe_complete_all')!;
-    expect(def.target).toBe(8);
+    expect(def.target).toBe(Object.keys(TRIBE_TOTALS).length);
     expect(def.getProgress(makeCtx({ completedTribes: 5 }))).toBe(5);
   });
 

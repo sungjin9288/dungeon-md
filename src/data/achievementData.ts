@@ -3,6 +3,9 @@
  * the 800-line file limit. Import via achievements.ts (public API unchanged).
  */
 
+import { TRIBE_TOTALS } from './monsters';
+import { TOTAL_STAGES } from './stageProgress';
+
 // ─── Types & Interfaces ───────────────────────────────────────────────────────
 
 export type AchievementCategory =
@@ -303,10 +306,10 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'all_3star',
     name: '완벽한 정복자',
-    description: '모든 80개 스테이지를 별 3개로 클리어하세요.',
+    description: '모든 스테이지를 별 3개로 클리어하세요.',
     icon: '🌠',
     category: 'build',
-    target: 80,
+    target: TOTAL_STAGES,  // 전체 스테이지 수(현재 90) — 챕터 추가 시 자동 반영
     reward: { gems: 400, soulCrystals: 100 },
     getProgress: ctx => ctx.stageProgress.filter(s => s.bestStars === 3).length,
   },
@@ -488,11 +491,11 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   },
   {
     id: 'tribe_complete_all',
-    name: '팔족 정복자',
-    description: '모든 8부족 도감을 완성하세요.',
+    name: '전 부족 정복자',
+    description: '모든 부족 도감을 완성하세요.',
     icon: '👑',
     category: 'collection',
-    target: 8,
+    target: Object.keys(TRIBE_TOTALS).length,  // 전체 부족 수(현재 11) — 부족 추가 시 자동 반영
     reward: { gems: 100 },
     getProgress: ctx => ctx.completedTribes,
   },
