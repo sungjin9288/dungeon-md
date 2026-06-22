@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "gen:portraits": "node scripts/gen-portrait-manifest.mjs"
+    "gen:portraits": "node scripts/gen-portrait-manifest.mjs",
+    "gen:art-brief": "node scripts/gen-art-brief.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",
