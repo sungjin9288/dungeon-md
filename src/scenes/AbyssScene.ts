@@ -36,6 +36,10 @@ export class AbyssScene extends Phaser.Scene {
   private maxScrollY = 0;
   private dragStartY = 0;
   private dragging = false;
+  // DPR camera base scroll (the "top" set by main.ts applyDprCamera's centerOn).
+  // Vertical scroll runs in [baseScrollY, baseScrollY + maxScrollY].
+  private baseScrollX = 0;
+  private baseScrollY = 0;
 
   constructor() { super({ key: 'AbyssScene' }); }
 
@@ -79,7 +83,6 @@ export class AbyssScene extends Phaser.Scene {
 
   private render(): void {
     this.children.removeAll();
-    this.cameras.main.setScroll(0, 0);
 
     addSceneHeader(this, {
       title: '심연',
@@ -88,7 +91,14 @@ export class AbyssScene extends Phaser.Scene {
     });
 
     this.drawStatusBar();
-    this.drawFloorList();
+    this.drawFloorList();   // sets maxScrollY + camera bounds
+    // Reset to the DPR-centered top and capture it as the scroll base. The old
+    // setScroll(0,0) clamped to the BOTTOM (main.ts applyDprCamera offsets the
+    // camera so the real top is scroll≈(-dpr-derived), not 0). Vertical scroll
+    // runs in [baseScrollY, baseScrollY + maxScrollY] from this top.
+    this.cameras.main.centerOn(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    this.baseScrollX = this.cameras.main.scrollX;
+    this.baseScrollY = this.cameras.main.scrollY;
     this.setupScroll();
     this.drawCraftShortcuts();
   }
@@ -240,12 +250,17 @@ export class AbyssScene extends Phaser.Scene {
 
   // ─── Scroll (camera drag) ──────────────────────────────────────────────────
   private setupScroll(): void {
+    // Scroll tracked as an offset in [0, maxScrollY] relative to the DPR base
+    // (baseScrollY) — raw camera scroll would break since the DPR camera's
+    // "top" is baseScrollY (negative), not 0.
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      this.dragging = true; this.dragStartY = p.y + this.cameras.main.scrollY;
+      this.dragging = true;
+      this.dragStartY = p.y + (this.cameras.main.scrollY - this.baseScrollY);
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.dragging) return;
-      this.cameras.main.setScroll(0, Phaser.Math.Clamp(this.dragStartY - p.y, 0, this.maxScrollY));
+      const offset = Phaser.Math.Clamp(this.dragStartY - p.y, 0, this.maxScrollY);
+      this.cameras.main.setScroll(this.baseScrollX, this.baseScrollY + offset);
     });
     this.input.on('pointerup', () => { this.dragging = false; });
   }
