@@ -9,10 +9,8 @@
 //                          by combat multipliers.
 
 import Phaser from 'phaser';
-import {
-  CHAPTER_1, CHAPTER_2, CHAPTER_3, CHAPTER_4, CHAPTER_5, CHAPTER_6, CHAPTER_7,
-  type WaveSpec, type StageConfig,
-} from '../data/stages';
+import { type WaveSpec } from '../data/stages';
+import { ALL_STAGES } from '../data/allStages';
 import { loadGameState, getUnlockedSlots, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
@@ -83,11 +81,8 @@ export function resolveStageSetup(
   registry.set('battlePaused', false);
 
   // ── Resolve wave config + grid shape ─────────────────────────────────────────
-  const allStages: StageConfig[] = [
-    ...CHAPTER_1, ...CHAPTER_2, ...CHAPTER_3,
-    ...CHAPTER_4, ...CHAPTER_5, ...CHAPTER_6, ...CHAPTER_7,
-  ];
-
+  // ALL_STAGES is the single canonical 90-stage union (see data/allStages.ts);
+  // never re-inline a per-chapter spread here or a new chapter will be missed.
   let waveConfigs:    WaveSpec[];
   let stageChapter:   number;
   let effectiveCols:  number;
@@ -107,7 +102,7 @@ export function resolveStageSetup(
     stageNumber    = 0;   // inline invasion — no stage number
   } else {
     stageNumber    = stageCfg?.stageNumber ?? 1;
-    const stageDef = allStages.find(s => s.id === stageNumber) ?? CHAPTER_1[0];
+    const stageDef = ALL_STAGES.find(s => s.id === stageNumber) ?? ALL_STAGES[0];
     waveConfigs    = stageDef.waves;
     stageChapter   = stageDef.chapter;
     effectiveCols  = stageDef.gridCols ?? GRID_COLS;
