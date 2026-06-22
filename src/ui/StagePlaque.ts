@@ -17,6 +17,7 @@ import { CANVAS_WIDTH } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import type { StageProgress } from '../data/stageProgress';
 import { addPanelShadow } from './PanelDepth';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ── PlaqueTheme ───────────────────────────────────────────────────────────────
 // Casual-toy reskin: stage cards are now cream cells on the bright board. Each
@@ -540,14 +541,17 @@ function _drawFrontierCue(
   const ring = scene.add.graphics();
   ring.lineStyle(2.5, color, 1);
   ring.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 8);
-  scene.tweens.add({
-    targets: ring,
-    alpha: { from: 0.35, to: 1 },
-    duration: 850,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut',
-  });
+  // Pulse is decorative — the static ring + ▶ cue already mark the frontier.
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: ring,
+      alpha: { from: 0.35, to: 1 },
+      duration: 850,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
 
   const cue = scene.add.graphics();
   cue.fillStyle(color, 0.95);
@@ -567,14 +571,17 @@ function _drawBossRing(
   const ring = scene.add.graphics();
   ring.lineStyle(2, CASUAL.RED, 0.85);
   ring.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 7);
-  scene.tweens.add({
-    targets: ring,
-    alpha: { from: 0.4, to: 1 },
-    duration: 900,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut',
-  });
+  // Pulse is decorative — the static red ring already marks the boss cell.
+  if (!getReducedMotion()) {
+    scene.tweens.add({
+      targets: ring,
+      alpha: { from: 0.4, to: 1 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
 }
 
 // ── _drawHpDisplay ────────────────────────────────────────────────────────────
