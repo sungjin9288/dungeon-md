@@ -364,6 +364,124 @@ export function addProgressBar(
   return { track, fill };
 }
 
+// ─── Pill Tag ──────────────────────────────────────────────────────────────
+// 컴팩트 라운드 태그: 선택적 아이콘 + 라벨을 채워진 알약 위에. 상태 뱃지
+// (Lv.N / 미건설), 자원·생산률 칩, 희귀도 태그 등 타이쿤 'juice' 요소에 공용.
+// 텍스트 폭에 맞춰 자동 크기. 컨테이너 + 측정폭을 돌려줘 호출부가 이어 배치.
+
+export interface PillTagOptions {
+  readonly x: number;            // 좌측 끝
+  readonly y: number;            // 수직 중심
+  readonly label: string;
+  readonly icon?: string;
+  readonly fillColor?: number;
+  readonly fillAlpha?: number;
+  readonly borderColor?: number;
+  readonly borderAlpha?: number;
+  readonly textColor?: string;
+  readonly fontSize?: string;
+  readonly height?: number;
+  readonly paddingX?: number;
+  readonly glowColor?: number;   // 알약 뒤 소프트 글로우(시선 유도)
+  readonly depth?: number;
+}
+
+export interface PillTagRefs {
+  readonly container: Phaser.GameObjects.Container;
+  readonly width: number;
+}
+
+export function addPillTag(scene: Phaser.Scene, o: PillTagOptions): PillTagRefs {
+  const {
+    x, y, label, icon,
+    fillColor = CASUAL.PANEL_SOFT, fillAlpha = 1,
+    borderColor = CASUAL.EDGE_SOFT, borderAlpha = 0.9,
+    textColor = CASUAL_CSS.INK, fontSize = '10px',
+    height = 18, paddingX = 8, glowColor, depth,
+  } = o;
+
+  const txtObj = scene.add.text(0, 0, (icon ? icon + ' ' : '') + label, {
+    fontFamily: 'sans-serif', fontSize, color: textColor, fontStyle: 'bold',
+  }).setOrigin(0, 0.5);
+  const w = Math.ceil(txtObj.width) + paddingX * 2;
+  txtObj.setPosition(x + paddingX, y);
+
+  const r = height / 2;
+  const g = scene.add.graphics();
+  if (glowColor !== undefined) {
+    g.fillStyle(glowColor, 0.22);
+    g.fillRoundedRect(x - 3, y - r - 3, w + 6, height + 6, r + 3);
+  }
+  g.fillStyle(fillColor, fillAlpha);
+  g.fillRoundedRect(x, y - r, w, height, r);
+  g.fillStyle(0xffffff, 0.10);
+  g.fillRoundedRect(x + 3, y - r + 2, w - 6, 3, 2);
+  g.lineStyle(1.5, borderColor, borderAlpha);
+  g.strokeRoundedRect(x, y - r, w, height, r);
+
+  // container children order [g, txtObj] → 텍스트가 알약 위에 렌더
+  const container = scene.add.container(0, 0, [g, txtObj]);
+  if (depth !== undefined) container.setDepth(depth);
+  return { container, width: w };
+}
+
+// ─── Icon Medallion ──────────────────────────────────────────────────────────
+// 액센트 링 + 소프트 글로우를 두른 아이콘 디스크. 평면 다크 사각 타일 대신
+// 캐릭터·시설·기능 아이콘을 '메달리온'으로 띄워 타이쿤 카드의 시선 앵커로.
+
+export interface IconMedallionOptions {
+  readonly cx: number;
+  readonly cy: number;
+  readonly size: number;         // 지름 / 사각 한 변
+  readonly emoji: string;
+  readonly accent?: number;      // 링 + 글로우 색
+  readonly rounded?: boolean;    // 라운드 사각(기본) vs 원형
+  readonly glow?: boolean;
+  readonly depth?: number;
+}
+
+export interface IconMedallionRefs {
+  readonly container: Phaser.GameObjects.Container;
+}
+
+export function addIconMedallion(scene: Phaser.Scene, o: IconMedallionOptions): IconMedallionRefs {
+  const { cx, cy, size, emoji, accent = CASUAL.GOLD, rounded = true, glow = true, depth } = o;
+  const half = size / 2;
+  const r = rounded ? Math.max(8, size * 0.28) : half;
+
+  const g = scene.add.graphics();
+  if (glow) {
+    g.fillStyle(accent, 0.16);
+    if (rounded) g.fillRoundedRect(cx - half - 3, cy - half - 3, size + 6, size + 6, r + 3);
+    else g.fillCircle(cx, cy, half + 4);
+  }
+  // recessed dark base (drop)
+  g.fillStyle(CASUAL.SHADOW, 0.55);
+  if (rounded) g.fillRoundedRect(cx - half, cy - half + 2, size, size, r);
+  else g.fillCircle(cx, cy + 2, half);
+  // body
+  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  if (rounded) g.fillRoundedRect(cx - half, cy - half, size, size, r);
+  else g.fillCircle(cx, cy, half);
+  // accent tint toward bottom + top gloss
+  g.fillStyle(accent, 0.14);
+  if (rounded) g.fillRoundedRect(cx - half + 3, cy + 1, size - 6, half - 3, Math.max(4, r - 4));
+  else g.fillCircle(cx, cy + half * 0.4, half * 0.66);
+  g.fillStyle(0xffffff, 0.10);
+  if (rounded) g.fillRoundedRect(cx - half + 4, cy - half + 4, size - 8, Math.max(6, size * 0.30), Math.max(4, r - 4));
+  // accent ring
+  g.lineStyle(2, accent, 0.95);
+  if (rounded) g.strokeRoundedRect(cx - half, cy - half, size, size, r);
+  else g.strokeCircle(cx, cy, half);
+
+  const icon = scene.add.text(cx, cy, emoji, {
+    fontFamily: 'sans-serif', fontSize: `${Math.round(size * 0.5)}px`,
+  }).setOrigin(0.5);
+  const container = scene.add.container(0, 0, [g, icon]);
+  if (depth !== undefined) container.setDepth(depth);
+  return { container };
+}
+
 // ─── Scene Header ─────────────────────────────────────────────────────────────
 // 표준 씬 헤더: 좌측 뒤로 버튼 + 중앙 Georgia serif 골드 타이틀(+서브타이틀).
 // 우측 부가 요소(타이머·도감 버튼 등)는 씬이 표준 좌표에 직접 배치한다.

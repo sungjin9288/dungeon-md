@@ -17,7 +17,8 @@ import {
 } from '../data/production';
 import { buildOrUpgradeFacility } from '../data/productionTransactions';
 import { computeIdleReward, collectIdleIncome, hasIdlePayout, type IdleReward } from '../data/idleIncome';
-import { addSceneHeader, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { addSceneHeader, addPrimaryActionButton, addPillTag, addIconMedallion } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 const CARD_X = 14;
 const CARD_W = CANVAS_WIDTH - 28;
@@ -79,8 +80,19 @@ export class ProductionScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
 
     const payable = hasIdlePayout(reward);
+    const btnX = CANVAS_WIDTH - 14 - 86;
+    // pulsing glow when production is ready to collect — the tycoon "come tap me" cue
+    if (payable) {
+      const glow = this.add.graphics();
+      glow.fillStyle(CASUAL.GOLD, 0.34);
+      glow.fillRoundedRect(btnX - 5, y + 9, 96, 40, 16);
+      // perpetual pulse is decorative → gate behind reduced-motion (static glow stays)
+      if (!getReducedMotion()) {
+        this.tweens.add({ targets: glow, alpha: { from: 0.45, to: 1 }, duration: 760, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+    }
     addPrimaryActionButton(this, {
-      x: CANVAS_WIDTH - 14 - 86, y: y + 11, w: 86, h: 34, label: '수령', fontSize: '14px',
+      x: btnX, y: y + 11, w: 86, h: 34, label: payable ? '✨ 수령' : '수령', fontSize: '14px',
       enabled: payable,
       fillColor: CASUAL.GREEN, hoverFillColor: 0x6fdc70, borderColor: CASUAL.GREEN_DK,
       onPress: () => this.collect(),
@@ -103,34 +115,48 @@ export class ProductionScene extends Phaser.Scene {
     const built = level > 0;
     const accent = built ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
 
+    // Card body — raised stone with chiseled bottom + lit top bevel.
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.32); g.fillRoundedRect(CARD_X, y + 3, CARD_W, CARD_H, 12);
-    g.fillStyle(CASUAL.PANEL, 1);     g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 12);
-    g.fillStyle(0xffffff, 0.06);      g.fillRoundedRect(CARD_X + 5, y + 3, CARD_W - 10, 4, 2);
-    g.lineStyle(3, accent, built ? 1 : 0.8); g.strokeRoundedRect(CARD_X, y, CARD_W, CARD_H, 12);
+    g.fillStyle(CASUAL.SHADOW, 0.34); g.fillRoundedRect(CARD_X, y + 4, CARD_W, CARD_H, 14);
+    g.fillStyle(CASUAL.PANEL, 1);     g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 14);
+    // built facilities glow with a warm gold tint so "active" cards read at a glance
+    if (built) { g.fillStyle(CASUAL.GOLD, 0.07); g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 14); }
+    g.fillStyle(0xffffff, 0.06);      g.fillRoundedRect(CARD_X + 6, y + 4, CARD_W - 12, 5, 3);
+    // bottom inner shade for depth
+    g.fillStyle(CASUAL.SHADOW, 0.22);  g.fillRoundedRect(CARD_X + 6, y + CARD_H * 0.62, CARD_W - 12, CARD_H * 0.34, 8);
+    g.lineStyle(3, accent, built ? 1 : 0.75); g.strokeRoundedRect(CARD_X, y, CARD_W, CARD_H, 14);
+    // left accent strip — "active production" signal on built cards
+    if (built) { g.fillStyle(CASUAL.GOLD, 0.9); g.fillRoundedRect(CARD_X + 3, y + 10, 4, CARD_H - 20, 2); }
 
-    // Emoji tile
-    g.fillStyle(CASUAL.PANEL_SOFT, 1); g.fillRoundedRect(CARD_X + 10, y + 12, 56, 56, 10);
-    g.lineStyle(2, accent, 0.9);       g.strokeRoundedRect(CARD_X + 10, y + 12, 56, 56, 10);
-    this.add.text(CARD_X + 38, y + 40, def.emoji, { fontFamily: 'sans-serif', fontSize: '28px' }).setOrigin(0.5);
+    // Icon medallion (accent ring + glow) instead of a flat dark tile
+    addIconMedallion(this, { cx: CARD_X + 42, cy: y + CARD_H / 2, size: 58, emoji: def.emoji, accent, glow: built });
 
-    // Name + level
-    this.add.text(CARD_X + 78, y + 14, def.name, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    // Name
+    const nameText = this.add.text(CARD_X + 82, y + 15, def.name, {
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
     }).setOrigin(0, 0);
-    this.add.text(CARD_X + 78 + def.name.length * 15 + 8, y + 17, built ? `Lv.${level}` : '미건설', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: built ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0);
+    // State badge pill — Lv.N (gold) / 미건설 (muted)
+    addPillTag(this, {
+      x: CARD_X + 82 + Math.ceil(nameText.width) + 8, y: y + 22,
+      label: built ? `Lv.${level}` : '미건설',
+      fillColor: built ? CASUAL.GOLD : CASUAL.PANEL_SOFT,
+      borderColor: built ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT,
+      textColor: built ? '#2b2114' : CASUAL_CSS.INK_SOFT,
+      fontSize: '10px', height: 17,
+    });
 
-    // Production rate
+    // Production-rate chip (icon + per-hour output)
     const rate = facilityRatePerHour(def, built ? level : 1);
     const outIcon = def.output.kind === 'gold' ? '💰' : (MATERIAL_DEFS[def.output.materialId]?.emoji ?? '❔');
-    const outName = def.output.kind === 'gold' ? '골드' : (MATERIAL_DEFS[def.output.materialId]?.name ?? '재료');
-    this.add.text(CARD_X + 78, y + 38, `${outIcon} ${outName}  ${built ? '' : '건설 시 '}+${rate}/시간`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: built ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0);
-    this.add.text(CARD_X + 78, y + 56, def.desc, {
+    addPillTag(this, {
+      x: CARD_X + 82, y: y + 44,
+      icon: outIcon, label: `${built ? '' : '건설 시 '}+${rate}/시간`,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: built ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT,
+      textColor: built ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+      fontSize: '10px', height: 18,
+    });
+    this.add.text(CARD_X + 82, y + 66, def.desc, {
       fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
 
@@ -138,11 +164,19 @@ export class ProductionScene extends Phaser.Scene {
     const cost = facilityUpgradeCost(def, level);
     const btnX = CARD_X + CARD_W - 102, btnW = 92, btnY = y + 26, btnH = 40;
     if (cost === null) {
-      this.add.text(btnX + btnW / 2, btnY + btnH / 2, 'MAX', {
-        fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-      }).setOrigin(0.5);
+      addPillTag(this, {
+        x: btnX + 22, y: btnY + btnH / 2, icon: '👑', label: 'MAX',
+        fillColor: CASUAL.GOLD, borderColor: CASUAL.GOLD_DK, textColor: '#2b2114',
+        fontSize: '12px', height: 26, glowColor: CASUAL.GOLD,
+      });
     } else {
       const affordable = this.gs.homeGold >= cost;
+      // affordable CTA glow — draws the eye to the actionable button
+      if (affordable) {
+        const glow = this.add.graphics();
+        glow.fillStyle(built ? CASUAL.BLUE : CASUAL.GREEN, 0.30);
+        glow.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 10, 16);
+      }
       addPrimaryActionButton(this, {
         x: btnX, y: btnY, w: btnW, h: btnH,
         label: built ? `Lv.${level}→${level + 1}` : '건설',
@@ -153,7 +187,7 @@ export class ProductionScene extends Phaser.Scene {
         borderColor: built ? CASUAL.BLUE_DK : CASUAL.GREEN_DK,
         onPress: () => this.build(id),
       });
-      this.add.text(btnX + btnW / 2, btnY + btnH + 6, `💰${cost.toLocaleString('ko-KR')}`, {
+      this.add.text(btnX + btnW / 2, btnY + btnH + 7, `💰${cost.toLocaleString('ko-KR')}`, {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
         color: affordable ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
       }).setOrigin(0.5);
