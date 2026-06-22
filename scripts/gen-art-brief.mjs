@@ -34,7 +34,7 @@ const TYPE_KO = {
   melee: '근접 전사(탱커/돌격)', ranged: '원거리 궁수', magic: '마법사', support: '지원/힐러',
 };
 
-const COMMON = '한국 설화 기반 다크 던전 판타지, 페인터리 일러스트(픽셀아트 아님), 따뜻한 횃불 조명 + 깊은 그림자, 모바일 경영/수집 게임 품질(쿠키런 킹덤·AFK 저니 톤), 응집된 팔레트(먹색 베이스 + 황금/주황 토치 + 보라/청록 마법광), 한 세트로 보이는 일관성, 텍스트·UI 없음, 512×512 정사각 중앙 정렬 흉상';
+const COMMON = '한국 설화 기반 다크 던전 판타지, 페인터리 일러스트(픽셀아트 아님), 따뜻한 횃불 조명 + 깊은 그림자, 모바일 경영/수집 게임 품질(쿠키런 킹덤·AFK 저니 톤), 응집된 팔레트(먹색 베이스 + 황금/주황 토치 + 보라/청록 마법광), 한 세트로 보이는 일관성, 텍스트·UI 없음, 정사각 중앙 정렬 흉상';
 
 // ── Parse monster defs ───────────────────────────────────────────────────────
 function field(block, key) {
@@ -109,10 +109,13 @@ lines.push(`- 일러스트 완료(JPG 있음): **${done.length}종**`);
 lines.push(`- **일러스트 필요(픽셀 폴백 중): ${missing.length}종**`);
 lines.push('');
 lines.push('## 워크플로 (이미지 생성 → 반영)');
-lines.push('1. 아래 프롬프트로 이미지 생성 (Claude design / GPT image), **512×512 정사각 흉상**.');
-lines.push('2. `public/assets/monsters/{id}.jpg` 로 저장 (파일명 = 표의 `id`, **반드시 정확히**).');
-lines.push('3. `npm run gen:portraits` 실행 → `PORTRAIT_IDS` 자동 갱신 → 부팅 시 자동 로드.');
-lines.push('4. 코드 변경 불필요 — 코덱스/병영/소환이 `monster-ai-{id}` 텍스처를 자동 우선 사용.');
+lines.push('1. 아래 프롬프트 **블록 하나씩** 복붙해 생성 (Claude design / GPT image) — 모델당 1프롬프트=1장. 고해상도 정사각 흉상으로 생성.');
+lines.push('2. **반드시 다운스케일·압축**: `256×256` JPEG, 품질 ~85%, **≤150KB** (기존 37종 실측 규격). 안 그러면 Phaser 3.90 로더 스톨 위험(BootScene 주석 참고). `sips -z 256 256 -s format jpeg in.png --out {id}.jpg` 활용 가능.');
+lines.push('3. `public/assets/monsters/{id}.jpg` 로 저장 (파일명 = 각 항목의 `id`, **반드시 정확히** — 1글자 달라도 조용히 픽셀 폴백).');
+lines.push('4. `npm run gen:portraits` 실행 → `PORTRAIT_IDS` 자동 갱신 → 부팅 시 자동 로드.');
+lines.push('5. 코드 변경 불필요 — 코덱스/병영/소환이 `monster-ai-{id}` 텍스처를 자동 우선 사용.');
+lines.push('');
+lines.push('> **일관성 팁**: 99종이 "한 세트"로 보여야 함. 모델은 호출 간 스타일을 기억하지 않으니, 먼저 1~2종을 생성해 스타일 앵커로 확정한 뒤 이후 생성 때 그 결과(또는 기존 37종 중 1장)를 레퍼런스 이미지로 첨부 권장.');
 lines.push('');
 lines.push('## 공통 아트 디렉션');
 lines.push(`> ${COMMON}`);
