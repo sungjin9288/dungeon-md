@@ -124,8 +124,10 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
     color: 0xe8d060, radius: 14, behavior: 'DIVINE_WARD',
   },
   iron_golem: {
+    // hp 500→600 (thr 21.9→26.3): gives Ch2 a difficulty step over Ch1 without
+    // touching Ch3 (where undying_knight thr28 dominates) — balance curve smoothing.
     type: 'iron_golem', koreanName: '철 골렘', chapter: 2,
-    hp: 500, speed: 28, reward: 80, damage: 300,
+    hp: 600, speed: 28, reward: 80, damage: 300,
     color: 0x708090, radius: 18, behavior: 'IRON_BODY',
   },
   high_priest: {
@@ -331,8 +333,10 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
   },
   // ─── Chapter 9: 공허 너머 (reuse existing behaviors — data-driven) ───
   abyss_reaver: {
+    // hp 1300→2000 (thr 179→275): lifts the Ch9 run-up toward the primordial_titan
+    // finale (thr 394) so the final-boss stage is a 1.4× step, not a 2.2× cliff.
     type: 'abyss_reaver', koreanName: '심연 약탈자', chapter: 9,
-    hp: 1300, speed: 88, reward: 125, damage: 190,
+    hp: 2000, speed: 88, reward: 125, damage: 190,
     color: 0x4a0070, radius: 16, behavior: 'BERSERKER_RAGE',
   },
   void_sovereign: {
