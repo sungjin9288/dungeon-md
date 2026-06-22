@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
+import { getReducedMotion } from '../utils/reducedMotion';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
 import {
   drawStoneVisual,
@@ -43,6 +44,8 @@ export class Room extends Phaser.GameObjects.Container {
   private candleTween?: Phaser.Tweens.Tween;
   private emptyLabel?: Phaser.GameObjects.Text;
   private selectionTween?: Phaser.Tweens.Tween;
+  /** Decorative room motion (candle/selection/broken-glow/water) is gated by this. */
+  private readonly reducedMotion = getReducedMotion();
   /** @internal */ levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   private roomTypeBadge?: Phaser.GameObjects.Text;
@@ -123,12 +126,14 @@ export class Room extends Phaser.GameObjects.Container {
     }).setOrigin(0.5, 0);
     this.add(this.emptyLabel);
 
-    this.candleTween = scene.tweens.add({
-      targets: this.candleGfx,
-      scaleX: { from: 0.88, to: 1.12 }, scaleY: { from: 0.9, to: 1.1 },
-      alpha:  { from: 0.5,  to: 0.75 },
-      duration: Phaser.Math.Between(650, 1000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    if (!this.reducedMotion) {
+      this.candleTween = scene.tweens.add({
+        targets: this.candleGfx,
+        scaleX: { from: 0.88, to: 1.12 }, scaleY: { from: 0.9, to: 1.1 },
+        alpha:  { from: 0.5,  to: 0.75 },
+        duration: Phaser.Math.Between(650, 1000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
   }
 
   private drawCandle(): void {
@@ -169,10 +174,12 @@ export class Room extends Phaser.GameObjects.Container {
     this.outline.clear();
     this.outline.lineStyle(3, CASUAL.GOLD, 1);
     this.outline.strokeRoundedRect(-this.cs/2 + 5, -this.cs/2 + 5, this.cs - 10, this.cs - 10, 11);
-    this.selectionTween = this.scene.tweens.add({
-      targets: this.outline, alpha: { from: 0.6, to: 1.0 },
-      duration: 400, yoyo: true, repeat: -1,
-    });
+    if (!this.reducedMotion) {
+      this.selectionTween = this.scene.tweens.add({
+        targets: this.outline, alpha: { from: 0.6, to: 1.0 },
+        duration: 400, yoyo: true, repeat: -1,
+      });
+    }
   }
 
   deselect(): void {
@@ -453,10 +460,12 @@ export class Room extends Phaser.GameObjects.Container {
     glow.lineStyle(3, CASUAL.RED, 0.8);
     glow.strokeRoundedRect(-s / 2 + 5, -s / 2 + 5, s - 10, s - 10, 11);
     this.add(glow);
-    this.scene.tweens.add({
-      targets: glow, alpha: { from: 0.8, to: 0.15 },
-      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    if (!this.reducedMotion) {
+      this.scene.tweens.add({
+        targets: glow, alpha: { from: 0.8, to: 0.15 },
+        duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
 
     this.add(this.scene.add.text(0, s / 2 - 10, '파손', {
       fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.WHITE,
@@ -531,28 +540,37 @@ export class Room extends Phaser.GameObjects.Container {
     this.waterRipple = scene.add.graphics().setDepth(this.depth + 2);
     this.add(wg);
     this.add(this.waterRipple);
-    // Use a scene update interval via tweens
-    scene.tweens.add({
-      targets: { t: 0 }, t: Math.PI * 2,
-      duration: 2000, repeat: -1, ease: 'Linear',
-      onUpdate: (tween) => {
-        if (!this.waterRipple || !this.active) return;
-        this.waterRipple.clear();
-        const t = tween.getValue() as number;
-        // Draw 3 sine-wave lines
-        this.waterRipple.lineStyle(1.5, CASUAL.BLUE_DK, 0.6);
-        for (let row = 0; row < 3; row++) {
-          const y0 = -s / 2 + 12 + row * 14;
-          this.waterRipple.beginPath();
-          for (let px = -s / 2 + 4; px <= s / 2 - 4; px += 4) {
-            const wy = y0 + Math.sin(t + px * 0.1 + row * 1.2) * 3;
-            if (px === -s / 2 + 4) this.waterRipple.moveTo(px, wy);
-            else this.waterRipple.lineTo(px, wy);
+    if (this.reducedMotion) {
+      // Static water surface — flat lines, no perpetual ripple animation.
+      this.waterRipple.lineStyle(1.5, CASUAL.BLUE_DK, 0.5);
+      for (let row = 0; row < 3; row++) {
+        const y0 = -s / 2 + 12 + row * 14;
+        this.waterRipple.lineBetween(-s / 2 + 4, y0, s / 2 - 4, y0);
+      }
+    } else {
+      // Use a scene update interval via tweens
+      scene.tweens.add({
+        targets: { t: 0 }, t: Math.PI * 2,
+        duration: 2000, repeat: -1, ease: 'Linear',
+        onUpdate: (tween) => {
+          if (!this.waterRipple || !this.active) return;
+          this.waterRipple.clear();
+          const t = tween.getValue() as number;
+          // Draw 3 sine-wave lines
+          this.waterRipple.lineStyle(1.5, CASUAL.BLUE_DK, 0.6);
+          for (let row = 0; row < 3; row++) {
+            const y0 = -s / 2 + 12 + row * 14;
+            this.waterRipple.beginPath();
+            for (let px = -s / 2 + 4; px <= s / 2 - 4; px += 4) {
+              const wy = y0 + Math.sin(t + px * 0.1 + row * 1.2) * 3;
+              if (px === -s / 2 + 4) this.waterRipple.moveTo(px, wy);
+              else this.waterRipple.lineTo(px, wy);
+            }
+            this.waterRipple.strokePath();
           }
-          this.waterRipple.strokePath();
-        }
-      },
-    });
+        },
+      });
+    }
     // Disable interaction for water cells
     this.removeInteractive();
   }

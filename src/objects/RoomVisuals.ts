@@ -15,6 +15,7 @@ import { generateMonsterSprite } from '../art/PortraitGenerator';
 import { resolveMonsterTypeId } from '../ui/MonsterPortraitView';
 import type { MonsterId } from '../data/monsters';
 import type { RoomLoadoutVisualOptions } from './Room';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── drawStone ───────────────────────────────────────────────────────────────
 
@@ -288,12 +289,15 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
     const sprite = room.scene.add.image(0, centerY, spriteKey).setOrigin(0.5).setScale(1.25);
     room.slotLoadoutSprite = sprite;
     room.add(sprite);
-    room.slotLoadoutTween = room.scene.tweens.add({
-      targets: sprite,
-      y: centerY - 4,
-      duration: 1300 + (room.row * 3 + room.col) % 4 * 130,
-      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
+    // Idle bob is decorative — under reduced motion the guardian stands still.
+    if (!getReducedMotion()) {
+      room.slotLoadoutTween = room.scene.tweens.add({
+        targets: sprite,
+        y: centerY - 4,
+        duration: 1300 + (room.row * 3 + room.col) % 4 * 130,
+        yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
   } else {
     const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
     const guardian = room.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
