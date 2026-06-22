@@ -40,7 +40,10 @@ export class ProductionScene extends Phaser.Scene {
 
   private render(): void {
     this.children.removeAll();
-    this.cameras.main.setScroll(0, 0);
+    // NOTE: do NOT setScroll(0,0) here. main.ts applyDprCamera centers the camera
+    // (zoom=dpr + centerOn) on scene CREATE only; this view doesn't scroll, so
+    // resetting scroll on a re-render (after build/collect) would de-center the
+    // whole scene until the next scene change. Leave the DPR-centered camera alone.
 
     addSceneHeader(this, {
       title: '🏭 생산 시설',
