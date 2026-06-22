@@ -274,6 +274,8 @@ const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
   { description: '구미호 종족만으로 웨이브 5개 클리어', objective: { type: 'tribe_only', target: 5, filter: 'gumiho'    }, reward: { gems: 50 } },
   { description: '용족만으로 웨이브 5개 클리어',      objective: { type: 'tribe_only', target: 5, filter: 'dragon'    }, reward: { gems: 55 } },
   { description: '천상 종족만으로 웨이브 5개 클리어',  objective: { type: 'tribe_only', target: 5, filter: 'celestial' }, reward: { gems: 55 } },
+  { description: '원초족만으로 웨이브 5개 클리어',    objective: { type: 'tribe_only', target: 5, filter: 'primordial' }, reward: { gems: 60 } },
+  { description: '공허족만으로 웨이브 5개 클리어',    objective: { type: 'tribe_only', target: 5, filter: 'void'       }, reward: { gems: 60 } },
   // ── skill_use (고급) ─────────────────────────────────────────────────────────
   { description: '액티브 스킬 15회 사용', objective: { type: 'skill_use', target: 15 }, reward: { gems: 55 } },
   { description: '액티브 스킬 25회 사용', objective: { type: 'skill_use', target: 25 }, reward: { gems: 75, xpBooks: 1 } },
@@ -305,6 +307,8 @@ const CHALLENGE_TEMPLATES: Omit<DailyChallenge, 'id'>[] = [
   { description: '용족만으로 웨이브 7개 클리어',       objective: { type: 'tribe_only', target: 7, filter: 'dragon'     }, reward: { gems: 75, xpBooks: 1 } },
   { description: '천상 종족만으로 웨이브 7개 클리어',  objective: { type: 'tribe_only', target: 7, filter: 'celestial'  }, reward: { gems: 75, xpBooks: 1 } },
   { description: '탈 종족만으로 웨이브 7개 클리어',    objective: { type: 'tribe_only', target: 7, filter: 'mask'       }, reward: { gems: 70, xpBooks: 1 } },
+  { description: '원초족만으로 웨이브 7개 클리어',    objective: { type: 'tribe_only', target: 7, filter: 'primordial' }, reward: { gems: 80, xpBooks: 1 } },
+  { description: '공허족만으로 웨이브 7개 클리어',    objective: { type: 'tribe_only', target: 7, filter: 'void'       }, reward: { gems: 80, xpBooks: 1 } },
 ];
 
 export function getDailyChallenges(): DailyChallenge[] {
