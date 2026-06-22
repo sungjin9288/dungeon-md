@@ -385,7 +385,6 @@ export interface RoomSlotContext {
   readonly gs: GameState;
   /** Whether the user prefers reduced motion — gates perpetual decorative tweens. */
   readonly reducedMotion: boolean;
-  applyIdleAnimation(emoji: Phaser.GameObjects.Text, monsterId: string, compact: boolean): void;
 }
 
 // ─── drawBattleSlot ────────────────────────────────────────────────────────

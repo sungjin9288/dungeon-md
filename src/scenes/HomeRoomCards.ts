@@ -17,7 +17,6 @@ import {
   drawBattleSlot as _drawBattleSlot,
   SLOT_W, SLOT_H,
 } from '../ui/RoomSlotRenderer';
-import { applyIdleAnimation as _applyIdleAnimation } from '../ui/MonsterAnimations';
 import {
   type SynergyDrawContext,
   drawSynergyConnectors,
@@ -431,8 +430,6 @@ export function makeRoomSlotCtx(scene: DungeonHomeScene): RoomSlotContext {
   return {
     scene, theme: scene.theme, gs: scene.gs,
     reducedMotion: getReducedMotion(),
-    applyIdleAnimation: (emoji, monsterId, compact) =>
-      applyIdleAnimation(scene, emoji, monsterId, compact),
   };
 }
 
@@ -524,15 +521,4 @@ export function addRoomChangedPulse(
       if (scene.pendingRoomFeedback?.slotIdx === slotIdx) scene.pendingRoomFeedback = null;
     },
   });
-}
-
-// ─── applyIdleAnimation ───────────────────────────────────────────────────────
-
-export function applyIdleAnimation(
-  scene: DungeonHomeScene,
-  emoji: Phaser.GameObjects.Text,
-  monsterId: string,
-  _compact = false,
-): void {
-  _applyIdleAnimation(scene, emoji, monsterId);
 }
