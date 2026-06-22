@@ -693,10 +693,10 @@ describe('MATERIAL_DEFS — per-material spot-checks', () => {
 describe('HYBRID_DEFS — per-hybrid spot-checks', () => {
   const h = (id: string) => HYBRID_DEFS[id];
 
-  it('ice_dragon_lord has the highest baseDamage (36) of all hybrids', () => {
+  it('oblivion_emperor (Ch8/9 ultimate fusion) has the highest baseDamage (44) of all hybrids', () => {
     const maxDmg = Math.max(...Object.values(HYBRID_DEFS).map(d => d.baseDamage));
-    expect(h('ice_dragon_lord').baseDamage).toBe(maxDmg);
-    expect(h('ice_dragon_lord').baseDamage).toBe(36);
+    expect(h('oblivion_emperor').baseDamage).toBe(maxDmg);
+    expect(h('oblivion_emperor').baseDamage).toBe(44);
   });
 
   it('golden_dokkaebi has GOLD_KILL passive and gold roomType', () => {

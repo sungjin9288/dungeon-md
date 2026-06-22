@@ -214,6 +214,22 @@ export const HYBRID_DEFS: Record<string, HybridDef> = {
     passive: 'DIVINE_PROPHECY', passiveDesc: '처치 시 5% 확률로 던전 HP 5% 회복 + 전체 방 ATK +10% (5초)',
     roomTypes: ['celestial_shrine', 'void_forge'],
   },
+  // ─── Ch8/9 원초·공허 hybrids ────────────────────────────────────────────────
+  abyssal_overlord: {
+    id: 'abyssal_overlord', name: '심연 패왕', emoji: '🌑👑', rarity: 4, baseDamage: 40,
+    passive: 'ABYSSAL_DOMINION', passiveDesc: '인접 방 ATK +30% + 받는 던전 피해 15% 감소',
+    roomTypes: ['guardian', 'void_forge'],
+  },
+  void_archmage: {
+    id: 'void_archmage', name: '공허 대현자', emoji: '🌌🔮', rarity: 4, baseDamage: 34,
+    passive: 'NULL_FIELD', passiveDesc: '공격이 전열 관통 + 10% 즉사 확률',
+    roomTypes: ['scroll_library', 'void_forge'],
+  },
+  oblivion_emperor: {
+    id: 'oblivion_emperor', name: '망각의 황제', emoji: '👑🕳️', rarity: 4, baseDamage: 44,
+    passive: 'OBLIVION_REIGN', passiveDesc: '전 던전 몬스터 ATK·SPD +25% + 5번째 공격마다 전체 적 처형',
+    roomTypes: ['guardian', 'celestial_shrine', 'void_forge'],
+  },
 };
 
 // Canonical 10-entry lookup: sort both IDs alphabetically → join with '+'
@@ -240,6 +256,10 @@ export const COMBINATION_TABLE: Record<string, string> = {
   // ─── Ch7 celestial combinations ───
   'celestial_guardian+sky_archer':    'celestial_sentinel',
   'divine_healer+heaven_mage':        'divine_oracle',
+  // ─── Ch8/9 원초·공허 combinations (keys = base ids sorted alphabetically) ───
+  'abyssal_warden+soul_devourer':     'abyssal_overlord',   // 원초 E + 원초 E
+  'null_sorcerer+void_archon':        'void_archmage',      // 공허 E + 공허 E
+  'eternal_colossus+void_monarch':    'oblivion_emperor',   // 원초 L + 공허 L (교차)
 };
 
 export function combinationKey(idA: string, idB: string): string {
