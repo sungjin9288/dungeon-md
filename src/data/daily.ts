@@ -196,6 +196,7 @@ export const WEEKLY_BOSS_POOL: ReadonlyArray<{ name: string; bossType: InvaderTy
   { name: '신황제의 시련',      bossType: 'god_emperor',           hp: 120000 },
   { name: '천룡의 분노',        bossType: 'celestial_dragon',      hp:  80000 },
   { name: '원초신의 강림',      bossType: 'primordial_titan',      hp: 180000 },
+  { name: '공허 군주의 강림',   bossType: 'void_sovereign',        hp: 220000 },
 ];
 
 export function getWeeklyBoss(): WeeklyBoss {

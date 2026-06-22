@@ -151,18 +151,20 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   // ── Ch8 원초의 심연 기념 배너 (2027-02-01 ~ 2027-03-31) ────────────────────────
   {
     id:               'ch8_abyss_2027',
-    name:             '원초의 심연 배너',
-    subname:          '🌑 Ch8 정복 기념 한정 배너',
+    name:             '심연·공허 군주 배너',
+    subname:          '🌑 Ch8·9 정복 기념 한정 배너',
     icon:             '🌑',
-    description:      '원초의 심연을 정복한 영웅들을 위해! 전설급 전사 등장률 대폭 상승!',
+    description:      '원초의 심연과 공허 너머를 정복한 영웅들을 위해! 최강 전설 등장률 대폭 상승!',
     season:           'special',
     bgColor:          0x03000a,
     borderColor:      0x9940ff,
     glowColor:        0xcc77ff,
     accentCss:        '#cc77ff',
+    // 원초족·공허족 전설 4종 피처드 (god_realm_general·abyss_mage는 기존 핀 유지)
     featuredMonsters: [
-      'god_realm_general', 'blue_dragon_archmage', 'sea_dragon_lord',
-      'abyss_mage', 'ghost_king', 'black_dragon_assassin',
+      'god_realm_general', 'abyss_mage',
+      'eternal_colossus', 'primordial_devourer',
+      'void_monarch', 'oblivion_devourer',
     ],
     boostedRarity:    'legendary',
     rateMultiplier:   0.70,

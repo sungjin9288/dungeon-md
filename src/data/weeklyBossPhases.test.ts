@@ -150,8 +150,8 @@ describe('getWeeklyBossPhaseMod', () => {
 // ─── WEEKLY_BOSS_POOL ↔ INVADER_DEFS integration ──────────────────────────────
 
 describe('WEEKLY_BOSS_POOL — invader def integration', () => {
-  it('has exactly 8 entries', () => {
-    expect(WEEKLY_BOSS_POOL).toHaveLength(8);
+  it('has exactly 9 entries', () => {
+    expect(WEEKLY_BOSS_POOL).toHaveLength(9);
   });
 
   it('every bossType exists in INVADER_DEFS and is a boss or mini-boss', () => {
@@ -169,10 +169,10 @@ describe('WEEKLY_BOSS_POOL — invader def integration', () => {
     }
   });
 
-  it('pool hp values stay within the documented 40k–180k band', () => {
+  it('pool hp values stay within the documented 40k–220k band', () => {
     for (const entry of WEEKLY_BOSS_POOL) {
       expect(entry.hp).toBeGreaterThanOrEqual(40_000);
-      expect(entry.hp).toBeLessThanOrEqual(180_000);
+      expect(entry.hp).toBeLessThanOrEqual(220_000);  // raised for Ch9 void_sovereign (10× base 22k)
     }
   });
 
