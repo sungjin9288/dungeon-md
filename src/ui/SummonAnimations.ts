@@ -6,6 +6,7 @@ import { loadGameState } from '../data/wisdom';
 import { generatePortrait } from '../art/PortraitGenerator';
 import { addPrimaryActionButton } from './GameUiPrimitives';
 import { popIn } from './motion';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   RARITY_COLORS, RARITY_CSS, RARITY_STARS, RARITY_KO,
 } from '../data/summonPools';
@@ -139,28 +140,33 @@ export function playSinglePullAnimation(
   const chargeG = scene.add.graphics().setDepth(92);
   ov.add(chargeG);
   let chargeT = 0;
-  const chargeTimer = scene.time.addEvent({
-    delay: 33, repeat: -1,
-    callback: () => {
-      chargeT += 0.05;
-      chargeG.clear();
-      for (let i = 0; i < 5; i++) {
-        const angle = (i / 5) * Math.PI * 2 + chargeT * 3;
-        const rx = CX + Math.cos(angle) * (50 + chargeT * 4);
-        const ry = PORTAL_CY + Math.sin(angle) * (18 + chargeT * 1.5);
-        chargeG.fillStyle(rColor, Math.min(0.9, 0.2 + chargeT * 0.15));
-        chargeG.fillCircle(rx, ry, 5 + chargeT);
-      }
-      // Screen darkening
-      darkOverlay.clear();
-      darkOverlay.fillStyle(0x000000, Math.min(0.8, chargeT * 0.12));
-      darkOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    },
-  });
+  // The spinning, accelerating rune-ring charge is a vestibular trigger — skip it
+  // under reduced motion (the reveal flash + result still play).
+  let chargeTimer: Phaser.Time.TimerEvent | undefined;
+  if (!getReducedMotion()) {
+    chargeTimer = scene.time.addEvent({
+      delay: 33, repeat: -1,
+      callback: () => {
+        chargeT += 0.05;
+        chargeG.clear();
+        for (let i = 0; i < 5; i++) {
+          const angle = (i / 5) * Math.PI * 2 + chargeT * 3;
+          const rx = CX + Math.cos(angle) * (50 + chargeT * 4);
+          const ry = PORTAL_CY + Math.sin(angle) * (18 + chargeT * 1.5);
+          chargeG.fillStyle(rColor, Math.min(0.9, 0.2 + chargeT * 0.15));
+          chargeG.fillCircle(rx, ry, 5 + chargeT);
+        }
+        // Screen darkening
+        darkOverlay.clear();
+        darkOverlay.fillStyle(0x000000, Math.min(0.8, chargeT * 0.12));
+        darkOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      },
+    });
+  }
 
   // ── Phase 2: Portal opens (0.8-1.8s) ──
   wait(scene,800, () => {
-    chargeTimer.destroy();
+    chargeTimer?.destroy();
     chargeG.clear();
 
     // Flash
@@ -407,28 +413,37 @@ export function playMultiPullAnimation(
   const darkG = scene.add.graphics().setDepth(90);
   ov.add(darkG);
   let t0 = 0;
-  const chargeTimer = scene.time.addEvent({
-    delay: 33, repeat: -1,
-    callback: () => {
-      t0 += 0.06;
-      darkG.clear();
-      darkG.fillStyle(0x000000, Math.min(0.85, t0 * 0.08));
-      darkG.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      // 10 orbital circles
-      for (let i = 0; i < 10; i++) {
-        const angle = (i / 10) * Math.PI * 2 + t0 * 2;
-        const rOuter = 70 + Math.sin(t0 * 2 + i) * 10;
-        const rx = CX + Math.cos(angle) * rOuter;
-        const ry = PORTAL_CY + Math.sin(angle) * rOuter * 0.35;
-        darkG.fillStyle(RARITY_COLORS[i < 4 ? 0 : i < 7 ? 1 : 3], 0.6);
-        darkG.fillCircle(rx, ry, 5);
-      }
-    },
-  });
+  // The spinning orbital charge is a vestibular trigger — skip under reduced
+  // motion (the sequential reveals still play). Draw a static dim so the
+  // sequential reveals still read on a darkened backdrop.
+  let chargeTimer: Phaser.Time.TimerEvent | undefined;
+  if (getReducedMotion()) {
+    darkG.fillStyle(0x000000, 0.85);
+    darkG.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  } else {
+    chargeTimer = scene.time.addEvent({
+      delay: 33, repeat: -1,
+      callback: () => {
+        t0 += 0.06;
+        darkG.clear();
+        darkG.fillStyle(0x000000, Math.min(0.85, t0 * 0.08));
+        darkG.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // 10 orbital circles
+        for (let i = 0; i < 10; i++) {
+          const angle = (i / 10) * Math.PI * 2 + t0 * 2;
+          const rOuter = 70 + Math.sin(t0 * 2 + i) * 10;
+          const rx = CX + Math.cos(angle) * rOuter;
+          const ry = PORTAL_CY + Math.sin(angle) * rOuter * 0.35;
+          darkG.fillStyle(RARITY_COLORS[i < 4 ? 0 : i < 7 ? 1 : 3], 0.6);
+          darkG.fillCircle(rx, ry, 5);
+        }
+      },
+    });
+  }
 
   // ── Phase 2: Sequential reveals (1-4s) ──
   wait(scene, 1000, () => {
-    chargeTimer.destroy();
+    chargeTimer?.destroy();
     darkG.clear();
     darkG.fillStyle(0x000000, 0.92);
     darkG.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
