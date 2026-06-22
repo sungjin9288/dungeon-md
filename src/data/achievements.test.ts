@@ -44,7 +44,7 @@ function makeCtx(overrides: Partial<AchievementContext> = {}): AchievementContex
 
 describe('ACHIEVEMENT_DEFS', () => {
   it('contains exactly 76 achievements', () => {
-    expect(ACHIEVEMENT_DEFS).toHaveLength(76);
+    expect(ACHIEVEMENT_DEFS).toHaveLength(79);
   });
 
   it('has unique ids', () => {
@@ -612,6 +612,28 @@ describe('getProgress — mastery (extended)', () => {
     const prog2 = Array.from({ length: 80 }, () => ({ unlocked: true, bestStars: 2 }));
     expect(def.getProgress(makeCtx({ stageProgress: prog2 }))).toBe(0);
     const prog3 = Array.from({ length: 80 }, () => ({ unlocked: true, bestStars: 3 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog3 }))).toBe(1);
+  });
+
+  it('ch9_first: 1 when stageProgress[80].bestStars > 0 (Ch9 first stage 81)', () => {
+    const def = getAchievementDef('ch9_first')!;
+    const prog = Array.from({ length: 90 }, () => ({ unlocked: true, bestStars: 1 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('ch9_clear: 1 when stageProgress[89].bestStars > 0 (finale stage 90)', () => {
+    const def = getAchievementDef('ch9_clear')!;
+    const prog = Array.from({ length: 90 }, () => ({ unlocked: true, bestStars: 1 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog }))).toBe(1);
+    expect(def.getProgress(emptyCtx)).toBe(0);
+  });
+
+  it('ch9_3star: 1 only when stageProgress[89].bestStars >= 3', () => {
+    const def = getAchievementDef('ch9_3star')!;
+    const prog2 = Array.from({ length: 90 }, () => ({ unlocked: true, bestStars: 2 }));
+    expect(def.getProgress(makeCtx({ stageProgress: prog2 }))).toBe(0);
+    const prog3 = Array.from({ length: 90 }, () => ({ unlocked: true, bestStars: 3 }));
     expect(def.getProgress(makeCtx({ stageProgress: prog3 }))).toBe(1);
   });
 });

@@ -28,6 +28,7 @@ export function applyChapterTheme(
     case 6: applyChapter6Theme(scene, effectiveCellSize, reducedMotion); break;
     case 7: applyChapter7Theme(scene, effectiveCellSize, reducedMotion); break;
     case 8: applyChapter8Theme(scene, effectiveCellSize, reducedMotion); break;
+    case 9: applyChapter9Theme(scene, effectiveCellSize, reducedMotion); break;
     // Chapter 1 has no overlay theme
   }
 }
@@ -344,4 +345,73 @@ function applyChapter8Theme(scene: Phaser.Scene, effectiveCellSize: number, redu
   });
 
   logger.debug('[CH8 THEME] primordial abyss applied');
+}
+
+// ─── Ch9: Beyond the Void / Oblivion ──────────────────────────────────────────
+
+function applyChapter9Theme(scene: Phaser.Scene, effectiveCellSize: number, reducedMotion: boolean): void {
+  // 공허 너머 — reality collapsing into oblivion. Distinct from Ch8's purple
+  // abyss: absolute black with cold white/cyan void-light tearing through.
+  const oblivion = scene.add.graphics().setDepth(5);
+  oblivion.fillStyle(0x010104, 1);
+  oblivion.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  oblivion.setAlpha(0.36);
+  const cs = effectiveCellSize;
+  if (!reducedMotion) {
+    scene.tweens.add({
+      targets: oblivion,
+      alpha: { from: 0.28, to: 0.46 },
+      duration: 7000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    // Collapsing ring — reality pulled INWARD toward the void (vs Ch8's outward pulse)
+    const ringCx = CANVAS_WIDTH / 2;
+    const ringCy = GRID_Y + GRID_ROWS * cs * 0.6;
+    const ringGfx = scene.add.graphics().setDepth(6);
+    let ringR = 160;
+    scene.time.addEvent({
+      delay: 60,
+      repeat: -1,
+      callback: () => {
+        ringGfx.clear();
+        ringR = ringR <= 4 ? 160 : ringR - 0.9;
+        const a = (ringR / 160) * 0.14;
+        ringGfx.lineStyle(1.5, 0xaaddff, a);
+        ringGfx.strokeEllipse(ringCx, ringCy, ringR * 2.6, ringR * 1.1);
+      },
+    });
+
+    // Cold reality-tear motes — pale white/cyan, erratic drift
+    scene.add.particles(CANVAS_WIDTH / 2, GRID_Y + GRID_ROWS * cs / 2, 'dust', {
+      x: { min: -CANVAS_WIDTH / 2, max: CANVAS_WIDTH / 2 },
+      y: { min: -GRID_ROWS * cs / 2, max: GRID_ROWS * cs / 2 },
+      speedX: { min: -6, max: 6 }, speedY: { min: -8, max: 4 },
+      alpha: { min: 0.05, max: 0.30 },
+      scale: { min: 0.10, max: 0.45 },
+      tint: [0xffffff, 0xaaddff, 0x88aacc, 0xddeeff],
+      lifespan: { min: 5000, max: 11000 }, frequency: 300, quantity: 1,
+    }).setDepth(33);
+  }
+
+  // White fracture lines along the floor — light leaking through torn reality
+  const bY = GRID_Y + GRID_ROWS * cs + 10;
+  const fractGfx = scene.add.graphics().setDepth(8);
+  const fractSegs = [
+    { x: 25,  forks: [[0, 0], [16, -32], [30, -18], [46, -40], [58, -22]] },
+    { x: 145, forks: [[0, 0], [14, -26], [30, -14], [44, -36]] },
+    { x: 255, forks: [[0, 0], [18, -30], [34, -16], [50, -38], [62, -20]] },
+    { x: 335, forks: [[0, 0], [14, -24], [30, -10], [44, -32]] },
+  ];
+  fractSegs.forEach(({ x, forks }) => {
+    fractGfx.lineStyle(1, 0xffffff, 0.20);
+    for (let i = 1; i < forks.length; i++) {
+      const [ax, ay] = forks[i - 1];
+      const [bx, by] = forks[i];
+      fractGfx.lineBetween(x + ax, bY + ay, x + bx, bY + by);
+    }
+    fractGfx.lineStyle(1, 0xaaddff, 0.12);
+    fractGfx.lineBetween(x, bY, x + forks[forks.length - 1][0], bY + forks[forks.length - 1][1]);
+  });
+
+  logger.debug('[CH9 THEME] beyond the void applied');
 }

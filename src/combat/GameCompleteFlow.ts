@@ -9,6 +9,7 @@
 // subsequent clears.
 
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { TOTAL_STAGES } from '../data/stageProgress';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyGameCompletionReward } from '../data/storyTransactions';
 import { logger } from '../utils/logger';
@@ -97,22 +98,23 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   });
 
   // ── Title ──────────────────────────────────────────────────────────────────
-  const titleT = scene.add.text(cx, 130, '⚔️ 신계 정복 완료! ⚔️', {
+  const titleT = scene.add.text(cx, 130, '⚔️ 공허 정복 완료! ⚔️', {
     fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: '#ffd700',
   }).setOrigin(0.5).setAlpha(0).setScale(0.8);
   ov.add(titleT);
   scene.tweens.add({ targets: titleT, alpha: 1, scaleX: 1, scaleY: 1, duration: 700, delay: 200, ease: 'Back.out' });
 
-  const subT = scene.add.text(cx, 172, '원초신을 쓰러뜨리고 8개 챕터를 완전 정복!', {
+  const subT = scene.add.text(cx, 172, '공허 군주를 쓰러뜨리고 9개 챕터를 완전 정복!', {
     fontFamily: 'sans-serif', fontSize: '12px', color: '#ffeeaa',
   }).setOrigin(0.5).setAlpha(0);
   ov.add(subT);
   scene.tweens.add({ targets: subT, alpha: 1, duration: 400, delay: 600 });
 
   // Animated chapter stars (one by one)
-  const STAR_LABELS = ['Ch1', 'Ch2', 'Ch3', 'Ch4', 'Ch5', 'Ch6', 'Ch7'];
+  const STAR_LABELS = ['Ch1', 'Ch2', 'Ch3', 'Ch4', 'Ch5', 'Ch6', 'Ch7', 'Ch8', 'Ch9'];
+  const STAR_GAP = 38;  // tightened so all 9 stars fit the 390px canvas
   STAR_LABELS.forEach((label, idx) => {
-    const sx     = cx - 126 + idx * 42;
+    const sx     = cx - ((STAR_LABELS.length - 1) * STAR_GAP) / 2 + idx * STAR_GAP;
     const starG  = scene.add.text(sx, 222, '★', {
       fontFamily: 'sans-serif', fontSize: '28px', color: '#ffd700',
     }).setOrigin(0.5).setAlpha(0).setScale(0);
@@ -147,7 +149,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   scene.tweens.add({ targets: panelBg, alpha: 1, duration: 400, delay: 1700 });
 
   const stats: [string, string][] = [
-    ['클리어 스테이지',    `${totalStages} / 80`],
+    ['클리어 스테이지',    `${totalStages} / ${TOTAL_STAGES}`],
     ['최종 던전 HP',       `${ctx.dungeonHp} / ${ctx.maxHp}`],
     ['보너스 영혼 결정체', `+${crystalBonus} 💠`],
     ['던전 마스터 레벨',   `${gs2.dmLevel ?? 1}`],
@@ -225,5 +227,5 @@ export function showGameComplete(ctx: ResultFlowContext): void {
     scene.scene.start('DungeonHomeScene');
   });
 
-  logger.debug(`[GAME COMPLETE] all 8 chapters cleared! +${crystalBonus} soul crystals`);
+  logger.debug(`[GAME COMPLETE] all 9 chapters cleared! +${crystalBonus} soul crystals`);
 }

@@ -29,9 +29,9 @@ describe('STAGE_CONFIGS', () => {
     });
   });
 
-  it('chapter values span 1–8', () => {
+  it('chapter values span 1–9', () => {
     const chapters = new Set(STAGE_CONFIGS.map(c => c.chapter));
-    for (let ch = 1; ch <= 8; ch++) {
+    for (let ch = 1; ch <= 9; ch++) {
       expect(chapters.has(ch), `chapter ${ch} present`).toBe(true);
     }
   });
@@ -105,9 +105,9 @@ describe('STAGE_CONFIGS — chapter layout', () => {
     expect(ch8[ch8.length - 1].stageNumber).toBe(80);
   });
 
-  it('every chapter from 1 to 8 is represented', () => {
+  it('every chapter from 1 to 9 is represented', () => {
     const chapters = new Set(STAGE_CONFIGS.map(s => s.chapter));
-    for (let ch = 1; ch <= 8; ch++) {
+    for (let ch = 1; ch <= 9; ch++) {
       expect(chapters.has(ch), `chapter ${ch} missing`).toBe(true);
     }
   });
@@ -397,7 +397,7 @@ describe('STAGE_CONFIGS — structural invariants', () => {
   });
 
   it('first stage of each chapter has unlockedStage === stageNumber (self-gate)', () => {
-    const firstByChapter: Record<number, number> = { 1: 1, 2: 11, 3: 21, 4: 33, 5: 43, 6: 53, 7: 63, 8: 73 };
+    const firstByChapter: Record<number, number> = { 1: 1, 2: 11, 3: 21, 4: 33, 5: 43, 6: 53, 7: 63, 8: 73, 9: 81 };
     for (const [ch, firstStage] of Object.entries(firstByChapter)) {
       const cfg = STAGE_CONFIGS.find(c => c.chapter === +ch && c.stageNumber === firstStage)!;
       expect(cfg.unlockedStage, `Ch${ch} first stage`).toBe(firstStage);
@@ -405,7 +405,7 @@ describe('STAGE_CONFIGS — structural invariants', () => {
   });
 
   it('boss stage is always the last stage in its chapter', () => {
-    for (let ch = 1; ch <= 8; ch++) {
+    for (let ch = 1; ch <= 9; ch++) {
       const chStages = STAGE_CONFIGS.filter(c => c.chapter === ch);
       const lastStage = chStages[chStages.length - 1];
       expect(lastStage.bossWave, `Ch${ch} last stage should be boss`).toBe(true);

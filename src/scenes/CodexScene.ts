@@ -140,7 +140,7 @@ export class CodexScene extends Phaser.Scene {
         });
     } else if (this.codexTab === 'invaders') {
       const invTotal = Object.keys(INVADER_DEFS).length;
-      this.add.text(CX, 101, `침략자 총 ${invTotal}종 · 챕터 1–8`, {
+      this.add.text(CX, 101, `침략자 총 ${invTotal}종 · 챕터 1–9`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
       }).setOrigin(0.5).setDepth(10);
     } else if (this.codexTab === 'modifiers') {

@@ -1,8 +1,8 @@
 /**
  * New Game+ / Prestige confirmation modal.
  *
- * Shows when the player has completed all 8 chapters and taps
- * the prestige button in DungeonHomeScene settings.
+ * Shows when the player has completed all 9 chapters (gameCompleted via MQ-047)
+ * and taps the prestige button in DungeonHomeScene settings.
  */
 
 import Phaser from 'phaser';

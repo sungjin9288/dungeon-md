@@ -220,9 +220,7 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   // ─── Wisdom button ───────────────────────────────────────────────────────
-
-  // ─── Wisdom button ───────────────────────────────────────────────────────
-  // Hub buttons sit after all 8 chapter path sections.
+  // Hub buttons sit after all 9 chapter path sections.
   // Ch9 bottom: 4024 + journeyPathHeight(10)=424 = 4448, +40 gap → 4488.
 
   private drawWisdomButton(): void {

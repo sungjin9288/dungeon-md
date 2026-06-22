@@ -758,6 +758,38 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     getProgress: ctx => (ctx.stageProgress[79]?.bestStars >= 3 ? 1 : 0),
   },
 
+  // ── Chapter 9: 공허 너머 ───────────────────────────────────────────────────
+  {
+    id: 'ch9_first',
+    name: '공허의 문턱',
+    description: 'Chapter 9 — 공허 너머 첫 스테이지(81)를 클리어하세요.',
+    icon: '🌌',
+    category: 'growth',
+    target: 1,
+    reward: { gems: 100, soulCrystals: 40 },
+    getProgress: ctx => (ctx.stageProgress[80]?.bestStars > 0 ? 1 : 0),
+  },
+  {
+    id: 'ch9_clear',
+    name: '공허의 정복자',
+    description: '공허 군주를 쓰러뜨리고 공허 너머를 정복하세요 (스테이지 90 클리어).',
+    icon: '👁️',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 1000, soulCrystals: 400 },
+    getProgress: ctx => (ctx.stageProgress[89]?.bestStars > 0 ? 1 : 0),
+  },
+  {
+    id: 'ch9_3star',
+    name: '공허의 초월자',
+    description: '공허 너머 최종 스테이지(90)에서 별 3개를 획득하세요.',
+    icon: '♾️',
+    category: 'mastery',
+    target: 1,
+    reward: { gems: 400, soulCrystals: 120 },
+    getProgress: ctx => (ctx.stageProgress[89]?.bestStars >= 3 ? 1 : 0),
+  },
+
   // ── 지혜의 나무 ───────────────────────────────────────────────────────────────
   {
     id: 'wisdom_ch8',
