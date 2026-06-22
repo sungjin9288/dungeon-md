@@ -4,12 +4,14 @@
 // procedural PixelMonsters art. Regenerate with: npm run gen:portraits
 export const PORTRAIT_IDS: readonly string[] = [
   "abyss_mage",
+  "black_dragon_dokkaebi",
   "celestial_dancer",
   "celestial_guardian",
   "celestial_healer",
   "celestial_sage",
   "death_messenger",
   "divine_healer",
+  "dokkaebi_general",
   "dokkaebi_junior",
   "dokkaebi_warrior",
   "fire_dokkaebi",
