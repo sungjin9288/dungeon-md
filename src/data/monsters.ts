@@ -19,6 +19,7 @@ import {
   SKIN_DATA as _SKIN_DATA,
   TRIBE_TOTALS as _TRIBE_TOTALS,
 } from './monstersDataCh7andExtras';
+import { MONSTERS_CH8 } from './monstersDataCh8';
 
 // ─── Assembled lookup ─────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ export const MONSTER_DEFS: Record<MonsterId, MonsterDef> = {
   ...MONSTERS_CH1_5,
   ...MONSTERS_CH6,
   ...MONSTERS_CH7,
+  ...MONSTERS_CH8,
 } as Record<MonsterId, MonsterDef>;
 
 // ─── Re-export data constants ────────────────────────────────────────────────

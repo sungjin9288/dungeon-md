@@ -82,6 +82,11 @@ export const MONSTER_EMOJI: Record<string, string> = {
   twilight_dragon:      '🐲', five_dragon_complete:  '🌟',
   // ── Sea / Celestial additions ─────────────────────────────────────────────
   tide_leviathan:       '🐳', empyrean_sovereign:    '🌌',
+  // ── Ch8 원초족 ────────────────────────────────────────────────────────────
+  abyssal_seer:      '👁️', chaos_reaver:        '🌋',
+  void_harbinger:    '🏹', primordial_shaman:   '🌀',
+  abyssal_warden:    '🛡️', soul_devourer:       '☠️',
+  eternal_colossus:  '🗿', primordial_devourer: '🌌',
 };
 
 export const MONSTER_NAME: Record<string, string> = {
@@ -163,4 +168,9 @@ export const MONSTER_NAME: Record<string, string> = {
   twilight_dragon:      '황혼룡',        five_dragon_complete:  '오룡 완성체',
   // ── Sea / Celestial additions ─────────────────────────────────────────────
   tide_leviathan:       '심해 거수',      empyrean_sovereign:    '천계 군주',
+  // ── Ch8 원초족 ────────────────────────────────────────────────────────────
+  abyssal_seer:      '심연 예언자',  chaos_reaver:        '혼돈 약탈자',
+  void_harbinger:    '공허 전령',    primordial_shaman:   '원초 주술사',
+  abyssal_warden:    '심연 수호자',  soul_devourer:       '영혼 포식자',
+  eternal_colossus:  '영원의 거신',  primordial_devourer: '원초 포식자',
 };

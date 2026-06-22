@@ -226,4 +226,5 @@ export const TRIBE_TOTALS: Record<TribeId, number> = {
   moonlight:  12,  // synced to actual moonlight defs
   dragon:     11,  // dragon roster incl. twilight_dragon (E)
   celestial:   9,  // 8 Ch7 monsters + empyrean_sovereign (L)
+  primordial:  8,  // Ch8 원초족 (eternal_colossus = codex reward)
 };

@@ -11,7 +11,8 @@ export type TribeId =
   | 'sea'
   | 'mask'
   | 'moonlight'
-  | 'celestial';
+  | 'celestial'
+  | 'primordial';
 
 export type ElementId =
   | 'fire'
@@ -218,7 +219,16 @@ export type MonsterId =
   | 'starlight_knight'
   | 'celestial_sage'
   | 'god_realm_general'
-  | 'empyrean_sovereign';
+  | 'empyrean_sovereign'
+  // ─── Chapter 8: 원초족 (Primordial Abyss) ───
+  | 'abyssal_seer'
+  | 'chaos_reaver'
+  | 'void_harbinger'
+  | 'primordial_shaman'
+  | 'abyssal_warden'
+  | 'soul_devourer'
+  | 'eternal_colossus'
+  | 'primordial_devourer';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 

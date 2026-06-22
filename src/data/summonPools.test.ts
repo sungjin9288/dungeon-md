@@ -450,8 +450,8 @@ describe('RARITY_POOLS — exact sizes, additional members & type-def order', ()
     expect(RARITY_POOLS.uncommon).toHaveLength(12);
   });
 
-  it('legendary pool has exactly 7 entries', () => {
-    expect(RARITY_POOLS.legendary).toHaveLength(7);
+  it('legendary pool has exactly 9 entries', () => {
+    expect(RARITY_POOLS.legendary).toHaveLength(9);
   });
 
   it('empyrean_sovereign is in the legendary pool', () => {

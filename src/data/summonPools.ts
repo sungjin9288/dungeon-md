@@ -101,6 +101,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'moonlight_rabbit', 'starlight_fairy', 'crescent_archer', 'moonlight_tiger',
     // Ch7 — 천상족
     'celestial_guardian', 'sky_archer', 'heaven_mage',
+    // Ch8 — 원초족
+    'abyssal_seer', 'chaos_reaver',
   ],
   // ─── Epic (29종) ─────────────────────────────────────────────────────────
   epic: [
@@ -128,6 +130,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'black_dragon_assassin', 'white_dragon_healer', 'twilight_dragon',
     // Ch7 — 천상족
     'solar_warrior', 'divine_healer', 'starlight_knight', 'celestial_sage',
+    // Ch8 — 원초족
+    'void_harbinger', 'primordial_shaman', 'abyssal_warden', 'soul_devourer',
   ],
   // ─── Legendary (3종) ─────────────────────────────────────────────────────
   legendary: [
@@ -136,6 +140,8 @@ export const RARITY_POOLS: Record<SummonRarity, MonsterId[]> = {
     'sea_dragon_lord', 'fox_spirit_elder',
     // Ch7 — 천상족
     'god_realm_general', 'empyrean_sovereign',
+    // Ch8 — 원초족
+    'eternal_colossus', 'primordial_devourer',
   ],
 };
 

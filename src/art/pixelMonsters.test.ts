@@ -514,8 +514,8 @@ describe('getRarityPalette — L exact pins; tribe & silhouette fallback spot-ch
 });
 
 describe('TRIBE_PALETTES — count, shadow slots & additional exact pins', () => {
-  it('TRIBE_PALETTES has exactly 9 entries (one per tribe)', () => {
-    expect(Object.keys(TRIBE_PALETTES)).toHaveLength(9);
+  it('TRIBE_PALETTES has exactly 10 entries (one per tribe)', () => {
+    expect(Object.keys(TRIBE_PALETTES)).toHaveLength(10);
   });
 
   it('mask palette[2] = 0x804040 (dark red-brown primary)', () => {
