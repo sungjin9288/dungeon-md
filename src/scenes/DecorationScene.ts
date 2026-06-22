@@ -15,7 +15,7 @@ import {
   computeDecorationBonuses, decorationSlots, type DecorationDef, type DecorationBonuses,
 } from '../data/decorations';
 import { acquireDecoration, placeDecoration, unplaceDecoration } from '../data/decorationTransactions';
-import { addSceneHeader, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { addSceneHeader, addPrimaryActionButton, addPillTag, addIconMedallion } from '../ui/GameUiPrimitives';
 
 const PAD = 14;
 const W = CANVAS_WIDTH - PAD * 2;
@@ -141,34 +141,52 @@ export class DecorationScene extends Phaser.Scene {
     const def = DECORATION_DEFS[id];
     const owned = (this.gs.ownedDecorations ?? []).includes(id);
     const placed = (this.gs.placedDecorations ?? []).includes(id);
-    const accent = SET_ACCENT[def.setId] ?? CASUAL.GOLD;
+    const setAccent = SET_ACCENT[def.setId] ?? CASUAL.GOLD;
+    const cardAccent = placed ? CASUAL.GREEN : owned ? setAccent : CASUAL.EDGE;
 
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.28); g.fillRoundedRect(PAD, y + 3, W, CARD_H, 10);
-    g.fillStyle(placed ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1); g.fillRoundedRect(PAD, y, W, CARD_H, 10);
-    g.lineStyle(2.5, placed ? accent : CASUAL.EDGE, placed ? 1 : 0.7); g.strokeRoundedRect(PAD, y, W, CARD_H, 10);
+    g.fillStyle(CASUAL.SHADOW, 0.3);  g.fillRoundedRect(PAD, y + 4, W, CARD_H, 11);
+    g.fillStyle(placed ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1); g.fillRoundedRect(PAD, y, W, CARD_H, 11);
+    if (placed) { g.fillStyle(CASUAL.GREEN, 0.06); g.fillRoundedRect(PAD, y, W, CARD_H, 11); }
+    g.fillStyle(0xffffff, 0.06); g.fillRoundedRect(PAD + 6, y + 4, W - 12, 4, 2);
+    g.lineStyle(2.5, cardAccent, placed ? 1 : 0.75); g.strokeRoundedRect(PAD, y, W, CARD_H, 11);
+    // left accent strip signals an active (placed) decoration at a glance
+    if (placed) { g.fillStyle(CASUAL.GREEN, 0.9); g.fillRoundedRect(PAD + 3, y + 9, 4, CARD_H - 18, 2); }
 
-    // Emoji tile
-    g.fillStyle(CASUAL.PANEL_SOFT, 1); g.fillRoundedRect(PAD + 8, y + 8, 48, 48, 8);
-    g.lineStyle(1.5, accent, 0.8);     g.strokeRoundedRect(PAD + 8, y + 8, 48, 48, 8);
-    this.add.text(PAD + 32, y + 32, def.emoji, { fontFamily: 'sans-serif', fontSize: '24px' }).setOrigin(0.5).setAlpha(owned ? 1 : 0.45);
+    // Icon medallion (set-accent ring + glow) instead of a flat tile
+    const medAccent = placed ? CASUAL.GREEN : owned ? setAccent : CASUAL.EDGE_SOFT;
+    addIconMedallion(this, { cx: PAD + 36, cy: y + CARD_H / 2, size: 48, emoji: def.emoji, accent: medAccent, glow: owned });
 
-    this.add.text(PAD + 66, y + 14, def.name, {
+    this.add.text(PAD + 70, y + 12, def.name, {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: owned ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
-    this.add.text(PAD + 66, y + 33, def.desc, {
+    this.add.text(PAD + 70, y + 30, def.desc, {
       fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0, 0);
+    // State badge pill — 배치 중 (green) / 보유 (muted)
     if (placed) {
-      this.add.text(PAD + 66, y + 47, '✔ 배치됨', {
-        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
-      }).setOrigin(0, 0);
+      addPillTag(this, {
+        x: PAD + 70, y: y + 50, icon: '✔', label: '배치 중',
+        fillColor: CASUAL.GREEN, borderColor: CASUAL.GREEN_DK, textColor: CASUAL_CSS.WHITE,
+        fontSize: '9px', height: 16,
+      });
+    } else if (owned) {
+      addPillTag(this, {
+        x: PAD + 70, y: y + 50, label: '보유',
+        fillColor: CASUAL.PANEL_SOFT, borderColor: CASUAL.EDGE_SOFT, textColor: CASUAL_CSS.INK_SOFT,
+        fontSize: '9px', height: 16,
+      });
     }
 
-    // Action button (right)
+    // Action button (right) + affordable-CTA glow
     const btnX = PAD + W - 92, btnW = 84, btnY = y + 14, btnH = 36;
+    const drawGlow = (col: number): void => {
+      const gl = this.add.graphics();
+      gl.fillStyle(col, 0.30); gl.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 8, 14);
+    };
     if (!owned) {
       const affordable = this.canAfford(def);
+      if (affordable) drawGlow(CASUAL.GOLD);
       addPrimaryActionButton(this, {
         x: btnX, y: btnY, w: btnW, h: btnH, label: '획득', fontSize: '13px',
         enabled: affordable,
@@ -187,6 +205,7 @@ export class DecorationScene extends Phaser.Scene {
       });
     } else {
       const hasSlot = (this.gs.placedDecorations ?? []).length < decorationSlots(this.gs.dmLevel);
+      if (hasSlot) drawGlow(CASUAL.GREEN);
       addPrimaryActionButton(this, {
         x: btnX, y: btnY, w: btnW, h: btnH, label: '배치', fontSize: '13px',
         enabled: hasSlot,
