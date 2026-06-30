@@ -5,6 +5,7 @@
 export const PORTRAIT_IDS: readonly string[] = [
   "abyss_mage",
   "black_dragon_dokkaebi",
+  "blue_dragon_archmage",
   "celestial_dancer",
   "celestial_guardian",
   "celestial_healer",
@@ -12,7 +13,10 @@ export const PORTRAIT_IDS: readonly string[] = [
   "death_messenger",
   "divine_healer",
   "dokkaebi_general",
+  "dokkaebi_god_king",
   "dokkaebi_junior",
+  "dokkaebi_king",
+  "dokkaebi_shaman",
   "dokkaebi_warrior",
   "fire_dokkaebi",
   "fox_shaman",
