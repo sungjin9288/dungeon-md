@@ -11,7 +11,7 @@ import type { Room } from './Room';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { ROOM_DEFS } from '../data/rooms';
 import { drawPixelRoom } from '../art/PixelRoom';
-import { generateMonsterSprite } from '../art/PortraitGenerator';
+import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
 import { resolveMonsterTypeId } from '../ui/MonsterPortraitView';
 import type { MonsterId } from '../data/monsters';
 import type { RoomLoadoutVisualOptions } from './Room';
@@ -285,8 +285,13 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
     : null;
   const spriteId = (monsterTypeId ?? options.primaryMonsterId ?? '') as MonsterId;
   if (hasGuardian && spriteId) {
-    const spriteKey = generateMonsterSprite(room.scene, spriteId);
-    const sprite = room.scene.add.image(0, centerY, spriteKey).setOrigin(0.5).setScale(1.25);
+    // Illustrated guardians (AI portrait loaded) stand as a framed medallion;
+    // monsters without art fall back to the procedural pixel body sprite.
+    const tokenKey = generateRoomToken(room.scene, spriteId);
+    const sprite = tokenKey
+      ? room.scene.add.image(0, centerY, tokenKey).setOrigin(0.5).setDisplaySize(46, 46)
+      : room.scene.add.image(0, centerY, generateMonsterSprite(room.scene, spriteId))
+          .setOrigin(0.5).setScale(1.25);
     room.slotLoadoutSprite = sprite;
     room.add(sprite);
     // Idle bob is decorative — under reduced motion the guardian stands still.

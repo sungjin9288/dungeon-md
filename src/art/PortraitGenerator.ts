@@ -286,6 +286,69 @@ export function generateMonsterSprite(scene: Phaser.Scene, monsterId: MonsterId)
 }
 
 /**
+ * Build a circular illustrated "guardian token" for placing a monster directly
+ * into a dungeon room (battle board + home placement board). The square AI
+ * illustration is clipped to a disc with a rarity-tinted ring so an illustrated
+ * monster reads as a collectible hero standing the room.
+ *
+ * Returns the texture key, or `null` when no AI illustration is loaded for this
+ * monster — callers fall back to the procedural pixel body sprite in that case.
+ * Cached — safe to call repeatedly.
+ */
+export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): string | null {
+  const aiKey = `monster-ai-${monsterId}`;
+  if (!scene.textures.exists(aiKey)) return null;
+
+  const key = `roomtoken-${monsterId}`;
+  if (generated.has(key)) return key;
+  if (scene.textures.exists(key)) { generated.add(key); return key; }
+
+  const def = MONSTER_DEFS[monsterId];
+  const ring = RARITY_BORDER[def?.rarityTier ?? 'C'] ?? RARITY_BORDER.C;
+
+  const D = 96; // 2x the ~48px display size — crisp under the DPR camera
+  const canvas = document.createElement('canvas');
+  canvas.width = D;
+  canvas.height = D;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  const src = scene.textures.get(aiKey).getSourceImage() as CanvasImageSource;
+  const r = D / 2;
+
+  // Circular-clipped illustration (square source → centred bust fills the disc).
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(r, r, r - 3, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(src, 0, 0, D, D);
+  // Bottom vignette so the disc reads as seated, not a flat sticker.
+  const vg = ctx.createLinearGradient(0, r, 0, D);
+  vg.addColorStop(0, 'rgba(10,4,0,0)');
+  vg.addColorStop(1, 'rgba(10,4,0,0.35)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, r, D, r);
+  ctx.restore();
+
+  // Framed medallion ring: dark seat + rarity colour + soft inner highlight.
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(8,4,0,0.85)';
+  ctx.beginPath(); ctx.arc(r, r, r - 2.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = ring;
+  ctx.beginPath(); ctx.arc(r, r, r - 4, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath(); ctx.arc(r, r, r - 6.5, 0, Math.PI * 2); ctx.stroke();
+
+  scene.textures.addCanvas(key, canvas);
+  generated.add(key);
+  return key;
+}
+
+/**
  * Ensure a portrait exists, generating if needed.
  * Returns true if the texture is ready.
  */

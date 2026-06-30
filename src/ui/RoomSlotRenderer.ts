@@ -15,7 +15,7 @@ import type { GameState } from '../data/wisdom';
 import { resolveMonsterTypeId } from './MonsterPortraitView';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
 import { drawPixelRoom } from '../art/PixelRoom';
-import { generateMonsterSprite } from '../art/PortraitGenerator';
+import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
 import type { MonsterId } from '../data/monsters';
 
 // ─── Shared layout constants ───────────────────────────────────────────────
@@ -520,15 +520,21 @@ export function drawBattleSlot(
     }
     c.add(glowG);
 
-    // Pixel monster sprite (transparent) standing inside the pixel room.
-    const spriteKey = generateMonsterSprite(scene, (typeIdForSlot ?? primaryMonsterId ?? '') as MonsterId);
-    const sprite = scene.add.image(cx, cy + 8, spriteKey).setOrigin(0.5).setScale(1.25);
+    // Guardian visual: illustrated monsters stand as a framed medallion;
+    // monsters without AI art fall back to the procedural pixel body sprite.
+    const occupantId = (typeIdForSlot ?? primaryMonsterId ?? '') as MonsterId;
+    const tokenKey = generateRoomToken(scene, occupantId);
+    const baseY = tokenKey ? cy + 4 : cy + 8;
+    const sprite = tokenKey
+      ? scene.add.image(cx, baseY, tokenKey).setOrigin(0.5).setDisplaySize(46, 46)
+      : scene.add.image(cx, baseY, generateMonsterSprite(scene, occupantId))
+          .setOrigin(0.5).setScale(1.25);
     c.add(sprite);
     // Reduced motion: the sprite stands still (no perpetual idle bob).
     if (!ctx.reducedMotion) {
       scene.tweens.add({
         targets: sprite,
-        y: cy + 3,
+        y: baseY - 5,
         duration: 1300 + (index % 4) * 130,
         yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       });
