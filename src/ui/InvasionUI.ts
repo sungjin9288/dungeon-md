@@ -10,6 +10,7 @@ import { getQuest, type InvasionConfig } from '../data/quests';
 import type { GameState } from '../data/wisdom';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { SLOT_H } from './RoomSlotRenderer';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -254,6 +255,10 @@ export function goToPreBattle(
   scene.registry.set('invasionConfig', quest?.invasionOnComplete ?? state.invasionConfig);
   scene.registry.set('questId', gs.activeMainQuestId);
 
+  if (getReducedMotion()) {
+    scene.scene.start('PreBattleScene');
+    return;
+  }
   scene.cameras.main.fadeOut(280, 0, 0, 0);
   scene.cameras.main.once('camerafadeoutcomplete', () => {
     scene.scene.start('PreBattleScene');

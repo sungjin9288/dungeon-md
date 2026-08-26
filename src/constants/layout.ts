@@ -1,6 +1,12 @@
 export const CANVAS_WIDTH  = 390;
 export const CANVAS_HEIGHT = 844;
 
+// Shared shell geometry. Battle and room-grid geometry below intentionally
+// remains unchanged; root scenes use these constants for fixed chrome only.
+export const ROOT_NAV_HEIGHT = 64;
+export const ROOT_NAV_Y = CANVAS_HEIGHT - ROOT_NAV_HEIGHT;
+export const SCENE_HEADER_TOUCH_HEIGHT = 44;
+
 export const GRID_COLS  = 3;
 export const GRID_ROWS  = 3;   // 3×3 = 9 max rooms
 export const CELL_SIZE  = 110;

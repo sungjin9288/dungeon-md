@@ -12,6 +12,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
   type DungeonSlot } from '../data/wisdom';
 import type { PickerNavCallbacks } from './RoomPickerModals';
+import type { RoomEditorSocketState } from './RoomEditorPreviewState';
 
 export type { PickerNavCallbacks };
 
@@ -376,9 +377,12 @@ export function drawMonsterPreviewPedestal(
   x: number,
   y: number,
   accent: number,
-  filled: boolean,
+  state: RoomEditorSocketState,
   slotLabel: string,
 ): void {
+  const filled = state === 'assigned';
+  const isTarget = state === 'target';
+  const isDisabled = state === 'disabled';
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.SHADOW, 0.22);
   g.fillEllipse(x, y + 24, 66, 18);
@@ -404,6 +408,15 @@ export function drawMonsterPreviewPedestal(
       const angle = Math.PI / 2 * i + Math.PI / 4;
       g.fillStyle(accent, 0.4);
       g.fillCircle(x + Math.cos(angle) * 18, y + Math.sin(angle) * 18, 1.8);
+    }
+    if (isTarget) {
+      g.fillStyle(accent, 0.86);
+      g.fillTriangle(x, y - 24, x - 5, y - 16, x + 5, y - 16);
+    }
+    if (isDisabled) {
+      g.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
+      g.lineBetween(x - 12, y - 12, x + 12, y + 12);
+      g.lineBetween(x + 12, y - 12, x - 12, y + 12);
     }
   }
   g.fillStyle(accent, filled ? 0.26 : 0.14);
@@ -451,19 +464,28 @@ export function drawInteriorEquipmentSocket(
   x: number,
   y: number,
   accent: number,
+  state: RoomEditorSocketState,
 ): void {
+  const isDisabled = state === 'disabled';
+  const isTarget = state === 'target';
+  const isAssigned = state === 'assigned';
+  const edge = isDisabled ? CASUAL.EDGE_SOFT : isAssigned ? CASUAL.GOLD_DK : CASUAL.PURPLE;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
+  g.fillStyle(isDisabled ? CASUAL.PANEL : CASUAL.PANEL_SOFT, isDisabled ? 0.58 : 0.9);
   g.fillRoundedRect(x - 10, y - 8, 20, 16, 5);
-  g.lineStyle(1, CASUAL.PURPLE, 0.7);
+  g.lineStyle(1, edge, isDisabled ? 0.45 : 0.7);
   g.strokeRoundedRect(x - 10, y - 8, 20, 16, 5);
-  g.fillStyle(accent, 0.16);
+  g.fillStyle(accent, isDisabled ? 0.06 : 0.16);
   g.fillCircle(x, y, 7);
+  if (isDisabled) {
+    g.lineStyle(1.4, CASUAL.EDGE_SOFT, 0.85);
+    g.lineBetween(x - 7, y - 6, x + 7, y + 6);
+  }
   c.add(g);
-  c.add(scene.add.text(x, y - 0.5, '+', {
+  c.add(scene.add.text(x, y - 0.5, isDisabled ? '×' : isAssigned ? '✓' : isTarget ? '↗' : '+', {
     fontFamily: 'Georgia, serif',
     fontSize: '13px',
-    color: CASUAL_CSS.PURPLE,
+    color: isDisabled ? CASUAL_CSS.INK_SOFT : isAssigned ? CASUAL_CSS.GOLD : CASUAL_CSS.PURPLE,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -564,23 +586,6 @@ export function addPreviewHitZone(
   c.add(zone);
 }
 
-export function getPreviewSlotPosition(
-  index: number,
-  total: number,
-  x: number,
-  y: number,
-  w: number,
-  rowGap: number,
-): { x: number; y: number } {
-  const perRow = Math.min(3, Math.max(1, total));
-  const row = Math.floor(index / perRow);
-  const col = index % perRow;
-  const countInRow = Math.min(perRow, total - row * perRow);
-  const gap = countInRow <= 1 ? 0 : Math.min(54, w / (countInRow - 1));
-  const startX = x + w / 2 - gap * (countInRow - 1) / 2;
-  return { x: startX + col * gap, y: y + row * rowGap };
-}
-
 export function drawTrapPreviewSlot(
   scene: Phaser.Scene,
   c: Phaser.GameObjects.Container,
@@ -588,9 +593,11 @@ export function drawTrapPreviewSlot(
   y: number,
   icon: string,
   accent: number,
-  filled: boolean,
+  state: Extract<RoomEditorSocketState, 'assigned' | 'available' | 'target'>,
   slotLabel: string,
 ): void {
+  const filled = state === 'assigned';
+  const isTarget = state === 'target';
   const g = scene.add.graphics();
   const edge = filled ? CASUAL.GOLD : accent;
   g.fillStyle(CASUAL.SHADOW, 0.2);
@@ -618,6 +625,10 @@ export function drawTrapPreviewSlot(
     g.fillCircle(x, y, 16);
     g.lineStyle(1, edge, 0.45);
     g.strokeCircle(x, y, 13);
+    if (isTarget) {
+      g.fillStyle(edge, 0.84);
+      g.fillTriangle(x, y - 21, x - 4, y - 14, x + 4, y - 14);
+    }
   }
   g.fillStyle(CASUAL.PANEL, filled ? 0.5 : 0.3);
   g.fillCircle(x - 14, y - 8, 1.5);
@@ -634,7 +645,7 @@ export function drawTrapPreviewSlot(
     fontSize: '7px',
     color: filled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0.5));
-  c.add(scene.add.text(x, filled ? y : y - 0.5, filled ? icon : '+', {
+  c.add(scene.add.text(x, filled ? y : y - 0.5, filled ? icon : isTarget ? '↗' : '+', {
     fontFamily: 'sans-serif',
     fontSize: filled ? '16px' : '18px',
     color: filled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK,
@@ -647,7 +658,9 @@ export function drawMonsterAnchor(
   x: number,
   y: number,
   accent: number,
+  state: RoomEditorSocketState,
 ): void {
+  const isTarget = state === 'target';
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
   g.fillCircle(x, y, 15);
@@ -664,8 +677,12 @@ export function drawMonsterAnchor(
     const angle = Math.PI / 2 * i + Math.PI / 4;
     g.fillCircle(x + Math.cos(angle) * 17, y + Math.sin(angle) * 17, 1.8);
   }
+  if (isTarget) {
+    g.fillStyle(accent, 0.9);
+    g.fillTriangle(x, y - 25, x - 5, y - 16, x + 5, y - 16);
+  }
   c.add(g);
-  c.add(scene.add.text(x, y - 1, '+', {
+  c.add(scene.add.text(x, y - 1, isTarget ? '↗' : '+', {
     fontFamily: 'Georgia, serif',
     fontSize: '16px',
     color: CASUAL_CSS.INK,

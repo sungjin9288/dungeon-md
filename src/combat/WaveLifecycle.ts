@@ -6,8 +6,8 @@
 //   showEndlessResult()      — save, set registry, transition to result scene
 //   checkWaveEnd()           — per-frame guard that fires the wave-clear flow
 
-import Phaser from 'phaser';
-import { Invader } from '../objects/Invader';
+import type Phaser from 'phaser';
+import type { Invader } from '../objects/Invader';
 import { INVADER_DEFS } from '../data/invaders';
 import type { WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState } from '../data/wisdom';
@@ -120,6 +120,7 @@ export interface CheckWaveEndContext {
 
   get waveEndChecked():       boolean;   set waveEndChecked(v: boolean);
   get waveHasSpawned():       boolean;
+  get spawnQueue():           ReadonlyArray<unknown>;
   get activeInvaders():       Invader[]; set activeInvaders(v: Invader[]);
   get killCounterText():      Phaser.GameObjects.Text | undefined;
   set killCounterText(v:      Phaser.GameObjects.Text | undefined);
@@ -139,6 +140,7 @@ export interface CheckWaveEndContext {
 export function checkWaveEnd(ctx: CheckWaveEndContext): void {
   if (ctx.waveEndChecked) return;
   if (!ctx.waveHasSpawned) return;
+  if (ctx.spawnQueue.length > 0) return;
   if (ctx.activeInvaders.filter(i => i.active).length > 0) return;
 
   ctx.waveEndChecked = true;
@@ -151,8 +153,8 @@ export function checkWaveEnd(ctx: CheckWaveEndContext): void {
   }
 
   ctx.scene.time.delayedCall(800, () => {
-    // A straggler may have entered during the grace window
-    if (ctx.activeInvaders.filter(i => i.active).length > 0) {
+    // A straggler or newly queued spawn may have entered during the grace window.
+    if (ctx.spawnQueue.length > 0 || ctx.activeInvaders.filter(i => i.active).length > 0) {
       ctx.waveEndChecked = false;
       return;
     }

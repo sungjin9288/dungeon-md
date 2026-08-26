@@ -57,7 +57,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 24, chapter: 3, koreanName: '독 소용돌이', gridCols: 4,
     dungeonHp: 2600, startGold: 570,
-    waterCells: [12, 15],
+    waterCells: [8, 11],
     waves: [
       { wave: 1,  clearReward: 100, invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 120, invaders: [{ type: 'shadow_ninja', count: 7, spawnDelay: 1700 }] },
@@ -74,7 +74,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 25, chapter: 3, koreanName: '흑산호 궁전', gridCols: 4,
     dungeonHp: 2800, startGold: 600,
-    waterCells: [3, 8, 13],
+    waterCells: [3, 8, 9],
     waves: [
       { wave: 1,  clearReward: 105, invaders: [{ type: 'shadow_ninja', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 130, invaders: [{ type: 'berserker', count: 8, spawnDelay: 1700 }] },
@@ -91,7 +91,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 26, chapter: 3, koreanName: '용의 무덤', gridCols: 4,
     dungeonHp: 3000, startGold: 620,
-    waterCells: [0, 7, 14],
+    waterCells: [0, 7, 10],
     waves: [
       { wave: 1,  clearReward: 110, invaders: [{ type: 'berserker', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 135, invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1700 }] },
@@ -108,7 +108,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 27, chapter: 3, koreanName: '심해 회랑', gridCols: 4,
     dungeonHp: 3200, startGold: 650,
-    waterCells: [1, 9, 14],
+    waterCells: [1, 9, 10],
     waves: [
       { wave: 1,  clearReward: 115, invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 140, invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1700 }] },
@@ -125,7 +125,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 28, chapter: 3, koreanName: '독가시 미로', gridCols: 4,
     dungeonHp: 3400, startGold: 680,
-    waterCells: [2, 8, 11, 13],
+    waterCells: [2, 8, 9, 11],
     waves: [
       { wave: 1,  clearReward: 120, invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 145, invaders: [{ type: 'shadow_ninja', count: 8, spawnDelay: 1700 }] },
@@ -142,7 +142,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 29, chapter: 3, koreanName: '용골 전장', gridCols: 4,
     dungeonHp: 3600, startGold: 700,
-    waterCells: [0, 5, 10, 14, 3],
+    waterCells: [0, 3, 5, 9, 10],
     waves: [
       { wave: 1,  clearReward: 125, invaders: [{ type: 'shadow_ninja', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 150, invaders: [{ type: 'berserker', count: 9, spawnDelay: 1700 }] },
@@ -159,7 +159,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 30, chapter: 3, koreanName: '해룡 요새', gridCols: 4,
     dungeonHp: 3800, startGold: 720,
-    waterCells: [3, 5, 10, 12, 15],
+    waterCells: [3, 5, 8, 10, 11],
     waves: [
       { wave: 1,  clearReward: 130, invaders: [{ type: 'berserker', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 155, invaders: [{ type: 'venom_dancer', count: 9, spawnDelay: 1700 }] },
@@ -176,7 +176,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 31, chapter: 3, koreanName: '용왕의 전전실', gridCols: 4,
     dungeonHp: 4000, startGold: 750,
-    waterCells: [1, 4, 9, 13, 15],
+    waterCells: [1, 4, 8, 9, 11],
     waves: [
       { wave: 1,  clearReward: 135, invaders: [{ type: 'venom_dancer', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 160, invaders: [{ type: 'scarecrow_mage', count: 9, spawnDelay: 1700 }] },
@@ -193,7 +193,7 @@ export const CHAPTER_3: StageConfig[] = [
   {
     id: 32, chapter: 3, koreanName: '용왕 해저궁 (BOSS)', gridCols: 4,
     dungeonHp: 4500, startGold: 800,
-    waterCells: [0, 3, 5, 10, 12, 15],
+    waterCells: [0, 3, 5, 8, 10, 11],
     waves: [
       { wave: 1,  clearReward: 140, invaders: [{ type: 'scarecrow_mage', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 165, invaders: [{ type: 'shadow_ninja', count: 9, spawnDelay: 1700 }] },

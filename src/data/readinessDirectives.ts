@@ -8,6 +8,8 @@ export type ReadinessDirectiveKind =
   | 'power-risk'
   | 'battle-ready';
 
+export type ReadinessDirectiveCopyInput = ReadinessDirectiveKind | 'battle-recovery';
+
 export type ReadinessDirectiveSeverity = 'danger' | 'warning' | 'ready';
 
 export interface ReadinessDirectiveContext {
@@ -23,6 +25,8 @@ export interface ReadinessDirectiveContext {
   readonly readiness?: number;
   readonly currentPower?: number;
   readonly requiredPower?: number;
+  readonly currentHp?: number;
+  readonly maxHp?: number;
 }
 
 export interface ReadinessDirectiveCopy {
@@ -48,8 +52,19 @@ function formatPower(ctx: ReadinessDirectiveContext): string {
   return required > 0 ? `권장 DEF ${required} / 현재 DEF ${current}` : `현재 DEF ${current}`;
 }
 
+function formatDurability(ctx: ReadinessDirectiveContext): string {
+  const current = Math.max(0, Math.round(ctx.currentHp ?? 0));
+  const max = Math.max(0, Math.round(ctx.maxHp ?? 0));
+  return `${current}/${max}`;
+}
+
+function formatReadiness(ctx: ReadinessDirectiveContext): string {
+  const readiness = Math.max(0, Math.round(ctx.readiness ?? 0));
+  return readiness > 100 ? '100%+' : `${readiness}%`;
+}
+
 export function getReadinessDirectiveCopy(
-  kind: ReadinessDirectiveKind,
+  kind: ReadinessDirectiveCopyInput,
   ctx: ReadinessDirectiveContext = {},
 ): ReadinessDirectiveCopy {
   const label = roomLabel(ctx);
@@ -141,11 +156,34 @@ export function getReadinessDirectiveCopy(
       return {
         icon: '⚒',
         title: '장비 제작 보강',
-        body: `${label} 준비도 ${ctx.readiness ?? 0}%입니다. 장비 제작으로 수호자 전력을 올리세요.`,
+        body: `${label} 준비도 ${formatReadiness(ctx)}입니다. 장비 제작으로 수호자 전력을 올리세요.`,
         ctaLabel: '제작 이동',
         chip: '보강',
         statLabel: '준비',
         accent: 0x66e0c6,
+        severity: 'warning',
+      };
+    case 'battle-recovery':
+      if (!ctx.roomLabel && typeof ctx.roomOrdinal !== 'number') {
+        return {
+          icon: '🛡',
+          title: '전투 후 점검',
+          body: '방 내구도는 유지됩니다. 배치와 성장을 점검하세요.',
+          ctaLabel: '편성 점검',
+          chip: '점검',
+          statLabel: '준비',
+          accent: 0xffb84d,
+          severity: 'warning',
+        };
+      }
+      return {
+        icon: '🛠',
+        title: '전투 후 복구',
+        body: `${label} 현재 내구도 ${formatDurability(ctx)}입니다. 수리로 다음 수비를 준비하세요.`,
+        ctaLabel: `${label} 수리`,
+        chip: '복구',
+        statLabel: '내구',
+        accent: 0xffb84d,
         severity: 'warning',
       };
     case 'power-risk':

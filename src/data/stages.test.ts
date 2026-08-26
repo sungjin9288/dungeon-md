@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { GRID_COLS, GRID_ROWS } from '../constants/layout';
 import {
   CHAPTER_1,
   CHAPTER_2,
@@ -103,6 +104,36 @@ describe('StageConfig — structural integrity', () => {
         expect(s.koreanName.length, `stage ${s.id} koreanName`).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('every water cell is unique and inside the runtime grid', () => {
+    for (const s of ALL_STAGES) {
+      const waterCells = s.waterCells ?? [];
+      const cellCount = (s.gridCols ?? GRID_COLS) * GRID_ROWS;
+      expect(new Set(waterCells).size, `stage ${s.id} duplicate water cell`).toBe(waterCells.length);
+      for (const index of waterCells) {
+        expect(Number.isInteger(index), `stage ${s.id} water cell ${index}`).toBe(true);
+        expect(index, `stage ${s.id} water cell ${index}`).toBeGreaterThanOrEqual(0);
+        expect(index, `stage ${s.id} water cell ${index}`).toBeLessThan(cellCount);
+      }
+    }
+  });
+
+  it('keeps Chapter 3 water layouts inside its fixed 4×3 board', () => {
+    expect(CHAPTER_3.map(s => s.waterCells ?? [])).toEqual([
+      [0],
+      [3],
+      [0, 3],
+      [8, 11],
+      [3, 8, 9],
+      [0, 7, 10],
+      [1, 9, 10],
+      [2, 8, 9, 11],
+      [0, 3, 5, 9, 10],
+      [3, 5, 8, 10, 11],
+      [1, 4, 8, 9, 11],
+      [0, 3, 5, 8, 10, 11],
+    ]);
   });
 });
 

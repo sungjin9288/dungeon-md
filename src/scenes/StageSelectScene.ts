@@ -1,7 +1,14 @@
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { CANVAS_WIDTH } from '../constants/layout';
+import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
+import { getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
+import {
+  buildHomeZoneNavigation,
+  buildZoneBackButton,
+  getLogicalViewportPointerY,
+  getSceneFixedShellViewportOffset,
+} from '../ui/GameZoneNavigation';
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
@@ -60,6 +67,7 @@ export class StageSelectScene extends Phaser.Scene {
   // (see the pointermove handler) so the true top (world y=0) stays reachable.
   private contentHeight = 4734;
   private frontierIdx   = 0;
+  private fixedHeaderContainer?: Phaser.GameObjects.Container;
 
   constructor() { super({ key: 'StageSelectScene' }); }
 
@@ -88,6 +96,9 @@ export class StageSelectScene extends Phaser.Scene {
     this.drawAchievementButton();
     this.drawBarracksButton();
     this.drawAbyssButton();
+    buildHomeZoneNavigation(this, 'invasion', (zone) => {
+      this.scene.start(getZoneDestination(zone));
+    });
 
     // Camera scroll via drag.
     // NOTE: main.ts applyDprCamera() zooms the camera by dpr and centerOn()s the
@@ -97,16 +108,23 @@ export class StageSelectScene extends Phaser.Scene {
     // live from the camera's current zoom + height (DPR-agnostic).
     this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, this.contentHeight);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      const pointerY = getLogicalViewportPointerY(p.y, this.cameras.main.zoom);
+      // Fixed header and root navigation are controls, never drag handles.
+      if (pointerY < 124 || pointerY >= ROOT_NAV_Y) {
+        this.isDragging = false;
+        return;
+      }
       this.isDragging = true;
-      this.dragStartY = p.y + this.cameras.main.scrollY;
+      this.dragStartY = pointerY + this.cameras.main.scrollY;
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.isDragging) return;
       const cam = this.cameras.main;
+      const pointerY = getLogicalViewportPointerY(p.y, cam.zoom);
       const viewH = cam.height / cam.zoom;                 // visible world px (≈ CANVAS_HEIGHT)
       const topScrollY = -(cam.height - viewH) / 2;        // scroll that shows world y=0
       const bottomScrollY = topScrollY + Math.max(0, this.contentHeight - viewH);
-      const newScrollY = Phaser.Math.Clamp(this.dragStartY - p.y, topScrollY, bottomScrollY);
+      const newScrollY = Phaser.Math.Clamp(this.dragStartY - pointerY, topScrollY, bottomScrollY);
       cam.setScroll(0, newScrollY);
     });
     this.input.on('pointerup', () => { this.isDragging = false; });
@@ -120,7 +138,11 @@ export class StageSelectScene extends Phaser.Scene {
     applyCasualBackground(this);
 
     // Top header band (cream with white top highlight + brown bottom edge).
-    const g = this.add.graphics().setScrollFactor(0).setDepth(-10);
+    const offset = getSceneFixedShellViewportOffset(this);
+    const header = this.add.container(offset.x, offset.y).setScrollFactor(0).setDepth(-10);
+    this.fixedHeaderContainer = header;
+    const g = this.add.graphics();
+    header.add(g);
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 124);
     g.fillStyle(0xffffff, 0.12);
@@ -134,18 +156,24 @@ export class StageSelectScene extends Phaser.Scene {
   // ─── Header ─────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
+    this.fixedHeaderContainer?.setDepth(10);
     // Phase B2: ornate header flourish — diamond ornaments flanking the title
-    this.drawTitleFlourish(CANVAS_WIDTH / 2, 48, '도깨비 숲', 26);
+    this.drawTitleFlourish(CANVAS_WIDTH / 2, 48, '침공 · 도깨비 숲', 20);
+    buildZoneBackButton(this, {
+      label: '← 던전',
+      onBack: () => this.scene.start(getContextualBackTarget('StageSelectScene')),
+    });
 
-    this.add.text(CANVAS_WIDTH / 2, 84, 'Chapter 1  —  10 스테이지', {
+    const subtitle = this.add.text(CANVAS_WIDTH / 2, 84, 'Chapter 1  —  10 스테이지', {
       fontFamily: 'sans-serif',
       fontSize: '12px',
       color: CASUAL_CSS.INK_SOFT,
       letterSpacing: 2,
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
+    this.fixedHeaderContainer?.add(subtitle);
 
     // Decorative double divider line
-    const div = this.add.graphics();
+    const div = this.add.graphics().setScrollFactor(0);
     div.lineStyle(1, CASUAL.EDGE, 0.55);
     div.lineBetween(30, 102, CANVAS_WIDTH - 30, 102);
     div.lineStyle(0.5, CASUAL.EDGE_SOFT, 0.4);
@@ -154,8 +182,9 @@ export class StageSelectScene extends Phaser.Scene {
     div.fillStyle(CASUAL.GOLD, 1);
     div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 98);
     div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 108);
+    this.fixedHeaderContainer?.add(div);
 
-    drawChapterProgressBar(this, 0, 10, 116, this.progress);
+    drawChapterProgressBar(this, 0, 10, 116, this.progress, this.fixedHeaderContainer);
   }
 
   /**
@@ -168,27 +197,30 @@ export class StageSelectScene extends Phaser.Scene {
       fontSize: `${fontSize}px`, fontStyle: 'bold',
       color: CASUAL_CSS.INK,
       stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
+    this.fixedHeaderContainer?.add(title);
 
     // Measure title bounds to place ornaments
     const bounds = title.getBounds();
     const padX = 14;
 
     // Left ornament — small diamond + short line
-    const ornL = this.add.graphics();
+    const ornL = this.add.graphics().setScrollFactor(0);
     ornL.fillStyle(CASUAL.GOLD, 1);
     const lx = bounds.left - padX;
     ornL.fillTriangle(lx - 5, cy, lx, cy - 4, lx, cy + 4);
     ornL.lineStyle(1.5, CASUAL.EDGE, 0.7);
     ornL.lineBetween(lx - 22, cy, lx - 7, cy);
+    this.fixedHeaderContainer?.add(ornL);
 
     // Right ornament — mirror
-    const ornR = this.add.graphics();
+    const ornR = this.add.graphics().setScrollFactor(0);
     ornR.fillStyle(CASUAL.GOLD, 1);
     const rx = bounds.right + padX;
     ornR.fillTriangle(rx + 5, cy, rx, cy - 4, rx, cy + 4);
     ornR.lineStyle(1.5, CASUAL.EDGE, 0.7);
     ornR.lineBetween(rx + 7, cy, rx + 22, cy);
+    this.fixedHeaderContainer?.add(ornR);
   }
 
   // ─── Chapter 1 journey path ──────────────────────────────────────────────

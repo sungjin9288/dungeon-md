@@ -53,6 +53,9 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
 
   const depth = 500;
   const container = scene.add.container(0, 0).setDepth(depth);
+  const inputBlocker = scene.add.zone(CX, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT)
+    .setInteractive();
+  container.add(inputBlocker);
 
   // ── Dim overlay ────────────────────────────────────────────────────────────
   const dim = scene.add.graphics();
@@ -288,11 +291,11 @@ export function buildPrestigeBadge(scene: Phaser.Scene, x: number, y: number, pr
   const badge = scene.add.container(x, y);
 
   const frame = addFramedPanel(scene, {
-    x: -40,
-    y: -12,
-    w: 80,
-    h: 24,
-    radius: 9,
+    x: -26,
+    y: -10,
+    w: 52,
+    h: 20,
+    radius: 8,
     fillColor: CASUAL.PANEL,
     borderColor: CASUAL.PURPLE,
     borderAlpha: 1,
@@ -305,7 +308,7 @@ export function buildPrestigeBadge(scene: Phaser.Scene, x: number, y: number, pr
   addToContainer(badge, frame.shadow, frame.panel, frame.glow);
 
   const t = scene.add.text(0, 0, `${label.emoji} ×${prestigeLevel}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
   }).setOrigin(0.5);
   badge.add(t);
   return badge;

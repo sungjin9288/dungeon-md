@@ -4,7 +4,12 @@
 
 import { MONSTER_DEFS } from './monsters';
 import { getMonsterAtk, getEquipmentStats, type EquipmentStats, type OwnedMonster } from './barracks';
-import { RARITY_COLORS, type BlueprintDef } from './fusion';
+import { BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, type BlueprintDef } from './fusion';
+import { canCraftBlueprint } from './forgeTransactions';
+import {
+  projectRoomReinforcement,
+  type RoomReinforcementProjection,
+} from './reinforcementRecommendations';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot, type GameState, type RoomSlotType,
@@ -18,10 +23,36 @@ export interface ForgeRecommendation {
   readonly monsterEmoji: string;
   readonly monsterLevel: number;
   readonly roomLabel: string;
+  readonly roomContextLabel: string;
   readonly targetLine: string;
-  readonly powerDelta: number;
+  /** Numeric room power is available only for an actual assigned room. */
+  readonly powerDelta: number | null;
+  readonly equipmentImprovement: number;
+  readonly improvementLabel: string;
+  readonly room: RoomReinforcementProjection;
   readonly accent: number;
   readonly kind: 'focus' | 'deployed' | 'open-room' | 'bench';
+}
+
+export interface ForgeMaterialProjection {
+  readonly id: string;
+  readonly name: string;
+  readonly emoji: string;
+  readonly have: number;
+  readonly need: number;
+  readonly missing: number;
+}
+
+export interface ForgeBlueprintProjection {
+  readonly blueprint: BlueprintDef;
+  readonly recommendation: ForgeRecommendation | null;
+  readonly craftable: boolean;
+  readonly materials: readonly ForgeMaterialProjection[];
+  readonly materialHave: number;
+  readonly materialNeed: number;
+  readonly materialMissing: number;
+  readonly whyNow: string;
+  readonly priority: number;
 }
 
 export interface ForgeFocusContext {
@@ -47,14 +78,15 @@ export function getBlueprintRecommendation(
   }
 
   const ranked = gs.ownedMonsters
-    .map(monster => {
+    .map((monster, rosterIndex) => {
       const recommendation = buildBlueprintRecommendation(gs, bp, monster, null);
       return {
         recommendation,
         score: scoreBlueprintRecommendation(bp, monster, recommendation),
+        rosterIndex,
       };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || a.rosterIndex - b.rosterIndex);
 
   return ranked[0]?.recommendation ?? null;
 }
@@ -63,37 +95,37 @@ export function buildBlueprintRecommendation(
   gs: GameState,
   bp: BlueprintDef,
   monster: OwnedMonster,
-  focusSourceLabel: string | null,
+  _focusSourceLabel: string | null,
   forcedKind?: ForgeRecommendation['kind'],
 ): ForgeRecommendation {
   const def = getMonsterDefForOwned(monster.id);
-  const assignedRoom = findMonsterRoom(gs, monster.id);
-  const openRoom = assignedRoom ? null : findOpenMonsterRoom(gs, monster);
+  const room = projectRoomReinforcement(gs, monster.id, { equipment: bp.resultId });
+  const assignedRoom = room.kind === 'assigned' ? findMonsterRoom(gs, monster.id) : null;
+  const openRoom = room.kind === 'recommended' ? findOpenMonsterRoom(gs, monster) : null;
   const kind = forcedKind
     ?? (assignedRoom ? 'deployed' : openRoom ? 'open-room' : 'bench');
-  const roomRef = assignedRoom ?? openRoom;
-  const roomLabel = kind === 'focus' && focusSourceLabel
-    ? focusSourceLabel
-    : roomRef
-      ? `방 #${roomRef.index + 1}`
-      : '막사 대기';
-  const roomTypeName = roomRef?.slot.roomType
-    ? getRoomTypeName(roomRef.slot.roomType)
-    : kind === 'bench'
-      ? '배치 대기'
-      : '방 보강';
-  const powerDelta = getBlueprintPowerDelta(monster, bp);
+  const powerDelta = room.power?.delta ?? null;
+  const equipmentImprovement = getBlueprintPowerDelta(monster, bp);
   const monsterName = def?.name ?? monster.id;
-  const targetLine = `${monsterName} · ${roomLabel} ${roomTypeName} 장착 시 방 전력 +${powerDelta} 예상`;
+  const improvementLabel = equipmentImprovement > 0
+    ? `장비 영향 +${equipmentImprovement}`
+    : '개선 없음';
+  const targetLine = room.power
+    ? `${monsterName} · ${room.roomLabel} · 방 전력 ${room.power.before}→${room.power.after} 예상`
+    : `${monsterName} · ${room.roomContextLabel} · 배치 전 방 전력 추정 없음`;
 
   return {
     monsterId: monster.id,
     monsterName,
     monsterEmoji: def?.emoji ?? '👹',
     monsterLevel: monster.level,
-    roomLabel,
+    roomLabel: room.roomLabel,
+    roomContextLabel: room.roomContextLabel,
     targetLine,
     powerDelta,
+    equipmentImprovement,
+    improvementLabel,
+    room,
     accent: def?.accentColor ?? getForgeRarityHex(bp.rarity),
     kind,
   };
@@ -105,7 +137,8 @@ export function scoreBlueprintRecommendation(
   recommendation: ForgeRecommendation,
 ): number {
   const def = getMonsterDefForOwned(monster.id);
-  let score = recommendation.powerDelta;
+  let score = recommendation.equipmentImprovement;
+  score += Math.max(0, recommendation.powerDelta ?? 0);
   if (!monster.equipment) score += 36;
   if (recommendation.kind === 'focus') score += 80;
   if (recommendation.kind === 'deployed') score += 28;
@@ -133,6 +166,123 @@ export function getBlueprintPowerDelta(monster: OwnedMonster, bp: BlueprintDef):
   const nextPower = calculateEquipmentImpactPower(baseAtk, getEquipmentStats(bp.resultId));
   const currentPower = calculateEquipmentImpactPower(baseAtk, getEquipmentStats(monster.equipment));
   return Math.max(0, nextPower - currentPower);
+}
+
+export function getForgeBlueprintProjection(
+  gs: GameState,
+  bp: BlueprintDef,
+  focus: ForgeFocusContext = { monsterId: null, sourceLabel: null },
+): ForgeBlueprintProjection {
+  const materials = Object.entries(bp.materials).map(([id, need]) => {
+    const have = Math.max(0, gs.materials?.[id] ?? 0);
+    const material = MATERIAL_DEFS[id];
+    return {
+      id,
+      name: material?.name ?? id,
+      emoji: material?.emoji ?? '◇',
+      have,
+      need,
+      missing: Math.max(0, need - have),
+    };
+  });
+  const materialHave = materials.reduce((sum, material) => sum + Math.min(material.have, material.need), 0);
+  const materialNeed = materials.reduce((sum, material) => sum + material.need, 0);
+  const materialMissing = materials.reduce((sum, material) => sum + material.missing, 0);
+  const craftable = canCraftBlueprint(bp, gs.materials ?? {});
+  const recommendation = getBlueprintRecommendation(gs, bp, focus);
+  const positiveAssignedGain = recommendation?.room.kind === 'assigned'
+    ? Math.max(0, recommendation.powerDelta ?? 0)
+    : 0;
+  const improvement = recommendation?.equipmentImprovement ?? 0;
+  const whyNow = craftable
+    ? `${materialHave}/${materialNeed} 재료 충족 · ${recommendation?.improvementLabel ?? '장착 대상 없음'}`
+    : `재료 부족 ${materialMissing} · 보유 ${materialHave}/${materialNeed}`;
+  const priority = (craftable ? 100000 : 0)
+    + positiveAssignedGain * 100
+    + Math.max(0, improvement) * 10
+    + bp.rarity;
+
+  return {
+    blueprint: bp,
+    recommendation,
+    craftable,
+    materials,
+    materialHave,
+    materialNeed,
+    materialMissing,
+    whyNow,
+    priority,
+  };
+}
+
+export function rankForgeBlueprints(
+  gs: GameState,
+  focus: ForgeFocusContext = { monsterId: null, sourceLabel: null },
+): ForgeBlueprintProjection[] {
+  return (gs.blueprints ?? [])
+    .map((blueprintId, registryIndex) => ({ blueprint: BLUEPRINT_DEFS[blueprintId], registryIndex }))
+    .filter((entry): entry is { blueprint: BlueprintDef; registryIndex: number } => Boolean(entry.blueprint))
+    .map(entry => ({ ...getForgeBlueprintProjection(gs, entry.blueprint, focus), registryIndex: entry.registryIndex }))
+    .sort((a, b) => {
+      const craftableDiff = Number(b.craftable) - Number(a.craftable);
+      if (craftableDiff) return craftableDiff;
+      const aAssignedGain = a.recommendation?.room.kind === 'assigned' ? Math.max(0, a.recommendation.powerDelta ?? 0) : 0;
+      const bAssignedGain = b.recommendation?.room.kind === 'assigned' ? Math.max(0, b.recommendation.powerDelta ?? 0) : 0;
+      if (bAssignedGain !== aAssignedGain) return bAssignedGain - aAssignedGain;
+      const improvementDiff = (b.recommendation?.equipmentImprovement ?? 0) - (a.recommendation?.equipmentImprovement ?? 0);
+      if (improvementDiff) return improvementDiff;
+      if (b.blueprint.rarity !== a.blueprint.rarity) return b.blueprint.rarity - a.blueprint.rarity;
+      return a.registryIndex - b.registryIndex;
+    })
+    .map(({ registryIndex: _registryIndex, ...projection }) => projection);
+}
+
+export interface ForgeTargetProjection {
+  readonly monster: OwnedMonster;
+  readonly recommendation: ForgeRecommendation | null;
+  readonly bestBlueprint: ForgeBlueprintProjection | null;
+  readonly priority: number;
+  readonly rosterIndex: number;
+}
+
+export function rankForgeTargets(
+  gs: GameState,
+  focusMonsterId: string | null,
+): ForgeTargetProjection[] {
+  return gs.ownedMonsters
+    .map((monster, rosterIndex) => {
+      const bestBlueprint = rankForgeBlueprints(gs, { monsterId: monster.id, sourceLabel: null })[0] ?? null;
+      const recommendation = bestBlueprint?.recommendation ?? null;
+      const assignedGain = recommendation?.room.kind === 'assigned' ? Math.max(0, recommendation.powerDelta ?? 0) : 0;
+      const priority = (monster.id === focusMonsterId ? 1000000 : 0)
+        + (bestBlueprint?.craftable ? 10000 : 0)
+        + assignedGain * 100
+        + Math.max(0, recommendation?.equipmentImprovement ?? 0) * 10
+        + monster.level;
+      return { monster, recommendation, bestBlueprint, priority, rosterIndex };
+    })
+    .sort((a, b) => b.priority - a.priority || a.rosterIndex - b.rosterIndex);
+}
+
+/**
+ * Keeps target controls reachable when focus ranking moves the active monster
+ * to the top: the visible rail advances one stable roster position at a time.
+ */
+export function cycleForgeTargetsByRoster(
+  gs: GameState,
+  focusMonsterId: string | null,
+): ForgeTargetProjection[] {
+  const rankedTargets = rankForgeTargets(gs, focusMonsterId);
+  if (rankedTargets.length === 0) return [];
+
+  const targetsById = new Map(rankedTargets.map(target => [target.monster.id, target]));
+  const rosterTargets = gs.ownedMonsters
+    .map(monster => targetsById.get(monster.id))
+    .filter((target): target is ForgeTargetProjection => Boolean(target));
+  const startMonsterId = focusMonsterId ?? rankedTargets[0].monster.id;
+  const startIndex = Math.max(0, rosterTargets.findIndex(target => target.monster.id === startMonsterId));
+
+  return rosterTargets.map((_, index) => rosterTargets[(startIndex + index) % rosterTargets.length]);
 }
 
 export function getOwnedMonsterAttack(monster: OwnedMonster): number {

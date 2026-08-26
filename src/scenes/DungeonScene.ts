@@ -26,6 +26,7 @@ import { SkillHUD } from '../combat/SkillHUD';
 import { MonsterSwapManager } from '../combat/MonsterSwap';
 import { SynergyManager } from '../combat/SynergyManager';
 import { processSpawnQueue as _processSpawnQueue, spawnInvaderByType as _spawnInvaderByType } from '../combat/SpawnPipeline';
+import { registerDynamicSpawn as _registerDynamicSpawn } from '../combat/waveSpawnAccounting';
 import { showSkillPopup as _showSkillPopup } from '../combat/SkillPopup';
 import { handleInvaderKilled as _handleInvaderKilled } from '../combat/KillHandler';
 import { spawnBuildParticles as _spawnBuildParticles, showRangePreview as _showRangePreview, hideRangePreview as _hideRangePreview } from '../combat/RoomVfx';
@@ -230,6 +231,11 @@ export class DungeonScene extends Phaser.Scene {
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   create(): void {
+    // Phaser reuses the Scene instance after stop/start, but does not call this
+    // class method automatically. Bind it once per activation so combat event
+    // listeners and timers cannot stack across consecutive battles.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+
     // ── Wisdom bonuses ────────────────────────────────────────────────────────
     const gameState       = loadGameState();
     this.wisdomBonuses    = getWisdomBonuses(gameState);
@@ -581,6 +587,7 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   spawnInvader(type: InvaderType): void {
+    _registerDynamicSpawn(this);
     _spawnInvaderByType(buildSpawnPipelineCtx(this), type);
   }
 

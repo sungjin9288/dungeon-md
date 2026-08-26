@@ -1,19 +1,20 @@
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { CANVAS_WIDTH } from '../constants/layout';
+import { CANVAS_WIDTH, SCENE_HEADER_TOUCH_HEIGHT } from '../constants/layout';
 import { addInnerGlow, addPanelShadow } from './PanelDepth';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export const GAME_UI = {
   radius: {
-    panel: 16,
-    button: 14,
-    row: 11,
+    panel: 10,
+    button: 9,
+    row: 7,
   },
   touch: {
     primaryHeight: 48,
-    compactHeight: 34,
+    compactHeight: 44,
   },
-  /** 타이포 3계층 — 캐주얼 토이: 전부 굵은 sans (제목은 약간 더 큼) */
+  /** Compact mobile sans; hierarchy comes from size and spacing. */
   fonts: {
     title:   'sans-serif',
     body:    'sans-serif',
@@ -24,7 +25,7 @@ export const GAME_UI = {
     rowFill: CASUAL.PANEL_SOFT,
     rowBorder: CASUAL.EDGE_SOFT,
     primaryFill: CASUAL.GREEN,
-    primaryHoverFill: 0x6fdc70,
+    primaryHoverFill: 0x66c69a,
     primaryBorder: CASUAL.GREEN_DK,
     primaryHoverBorder: CASUAL.GREEN_DK,
     mutedText: CASUAL_CSS.INK_SOFT,
@@ -71,42 +72,31 @@ export function addFramedPanel(
     fillColor = GAME_UI.colors.panelFill,
     borderColor = CASUAL.EDGE,
     borderAlpha = 1,
-    borderWidth = 3,
+    borderWidth = 1.5,
     accentColor,
     accentAlpha = 1,
     glowColor = borderColor,
     glowOpacity = 0,
-    shadowOpacity = 0.28,
-    shadowOffsetY = 5,
+    shadowOpacity = 0.18,
+    shadowOffsetY = 3,
   } = options;
 
-  // Chunky drop shadow (casual toy depth)
+  // Quiet depth: a short shadow, one stone face, and a functional edge.
   const shadow = addPanelShadow(scene, x, y, w, h, radius, {
     offsetY: shadowOffsetY,
     opacity: shadowOpacity,
   });
 
   const panel = scene.add.graphics();
-  // dark bottom edge — gives the stone card a chiseled thickness
-  panel.fillStyle(CASUAL.SHADOW, 0.5);
-  panel.fillRoundedRect(x, y + 4, w, h, radius);
-  // stone body
   panel.fillStyle(fillColor, 1);
   panel.fillRoundedRect(x, y, w, h, radius);
-  // subtle lit top bevel (torch-lit stone edge, not a bright gloss)
-  panel.fillStyle(0xffffff, 0.07);
-  panel.fillRoundedRect(x + 5, y + 4, w - 10, Math.min(16, h * 0.3), Math.max(6, radius - 4));
-  // soft inner shadow toward the bottom for depth
-  panel.fillStyle(CASUAL.SHADOW, 0.28);
-  panel.fillRoundedRect(x + 5, y + h * 0.6, w - 10, h * 0.4 - 5, Math.max(6, radius - 4));
-  // thick rounded brown border
   panel.lineStyle(borderWidth, borderColor, borderAlpha);
   panel.strokeRoundedRect(x, y, w, h, radius);
 
-  // optional accent header pill (saturated cap across the top)
+  // Optional semantic marker: a narrow rule, never a decorative cap.
   if (accentColor !== undefined) {
     panel.fillStyle(accentColor, accentAlpha);
-    panel.fillRoundedRect(x + 6, y + 6, Math.max(8, w - 12), Math.min(8, h * 0.16), 4);
+    panel.fillRect(x + 1, y + 1, 3, Math.max(8, h - 2));
   }
 
   const glow = addInnerGlow(scene, x, y, w, h, radius, glowColor, glowOpacity);
@@ -153,21 +143,13 @@ export function addInfoRow(
   } = options;
 
   const bg = scene.add.graphics();
-  // soft stone pill row
+  // Low-contrast information row; value position carries the hierarchy.
   bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  bg.fillStyle(0xffffff, 0.07);
-  bg.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
-  bg.lineStyle(2, borderColor, 0.9);
+  bg.lineStyle(1, borderColor, 0.55);
   bg.strokeRoundedRect(x, y, w, h, GAME_UI.radius.row);
-  // icon disc (warm tan)
-  bg.fillStyle(CASUAL.EDGE_SOFT, 0.45);
-  bg.fillCircle(x + 14, y + h / 2, 9);
-  // value chip (dark inset so the value text reads)
-  const valueChipW = Math.max(24, Math.min(64, w - 40));
-  const valueChipX = x + Math.max(30, w - valueChipW - 6);
-  bg.fillStyle(CASUAL.SHADOW, 0.4);
-  bg.fillRoundedRect(valueChipX, y + 4, valueChipW, h - 8, 6);
+  bg.fillStyle(borderColor, 0.16);
+  bg.fillRect(x, y, 3, h);
 
   const iconText = scene.add.text(x + 14, y + h / 2, icon, {
     fontFamily: 'sans-serif',
@@ -175,7 +157,7 @@ export function addInfoRow(
   }).setOrigin(0.5);
   const labelText = scene.add.text(x + 31, y + h / 2, label, {
     fontFamily: 'sans-serif',
-    fontSize: '10px',
+    fontSize: '11px',
     color: labelColor,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5);
@@ -245,17 +227,12 @@ export function addPrimaryActionButton(
   const bg = scene.add.graphics();
   const draw = (fill: number, border: number): void => {
     bg.clear();
-    // thick colored bottom edge (the candy-button base)
-    bg.fillStyle(border, 1);
-    bg.fillRoundedRect(x, y + 4, w, h, r);
-    // bright cap
     bg.fillStyle(fill, 1);
-    bg.fillRoundedRect(x, y, w, h - 2, r);
-    // glossy top highlight
-    bg.fillStyle(0xffffff, 0.32);
-    bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), Math.max(5, r - 4));
+    bg.fillRoundedRect(x, y, w, h, r);
+    bg.lineStyle(1.5, border, 0.95);
+    bg.strokeRoundedRect(x, y, w, h, r);
     if (w >= 92 && enabled) {
-      bg.fillStyle(0xffffff, 0.85);
+      bg.fillStyle(0xffffff, 0.76);
       bg.fillTriangle(x + w - 16, y + h / 2 - 1, x + w - 24, y + h / 2 - 6, x + w - 24, y + h / 2 + 4);
     }
   };
@@ -281,6 +258,10 @@ export function addPrimaryActionButton(
     });
 
     const press = (): void => {
+      if (getReducedMotion()) {
+        onPress();
+        return;
+      }
       scene.tweens.add({
         targets: [bg, text],
         alpha: 0.7,
@@ -340,18 +321,19 @@ export function addProgressBar(
   } = options;
   const clamped = Phaser.Math.Clamp(ratio, 0, 1);
   const targetW = clamped <= 0 ? 0 : Math.max(2, w * clamped);
+  const effectiveAnimate = animate && !getReducedMotion();
 
   const track = scene.add.graphics();
   track.fillStyle(trackColor, 1);
   track.fillRoundedRect(x, y, w, h, Math.max(2, h / 2));
-  track.lineStyle(2, borderColor, borderAlpha);
+  track.lineStyle(1, borderColor, borderAlpha);
   track.strokeRoundedRect(x, y, w, h, Math.max(2, h / 2));
 
-  const fill = scene.add.rectangle(x, y, animate && targetW > 0 ? 1 : targetW, h, fillColor)
+  const fill = scene.add.rectangle(x, y, effectiveAnimate && targetW > 0 ? 1 : targetW, h, fillColor)
     .setOrigin(0, 0);
   if (targetW <= 0) {
     fill.setVisible(false);
-  } else if (animate) {
+  } else if (effectiveAnimate) {
     scene.tweens.add({
       targets: fill,
       displayWidth: targetW,
@@ -395,8 +377,8 @@ export function addPillTag(scene: Phaser.Scene, o: PillTagOptions): PillTagRefs 
   const {
     x, y, label, icon,
     fillColor = CASUAL.PANEL_SOFT, fillAlpha = 1,
-    borderColor = CASUAL.EDGE_SOFT, borderAlpha = 0.9,
-    textColor = CASUAL_CSS.INK, fontSize = '10px',
+    borderColor = CASUAL.EDGE_SOFT, borderAlpha = 0.65,
+    textColor = CASUAL_CSS.INK, fontSize = '11px',
     height = 18, paddingX = 8, glowColor, depth,
   } = o;
 
@@ -409,15 +391,13 @@ export function addPillTag(scene: Phaser.Scene, o: PillTagOptions): PillTagRefs 
   const r = height / 2;
   const g = scene.add.graphics();
   if (glowColor !== undefined) {
-    g.fillStyle(glowColor, 0.22);
-    g.fillRoundedRect(x - 3, y - r - 3, w + 6, height + 6, r + 3);
+    g.fillStyle(glowColor, 0.10);
+    g.fillRoundedRect(x - 2, y - r - 2, w + 4, height + 4, Math.min(6, r + 2));
   }
   g.fillStyle(fillColor, fillAlpha);
-  g.fillRoundedRect(x, y - r, w, height, r);
-  g.fillStyle(0xffffff, 0.10);
-  g.fillRoundedRect(x + 3, y - r + 2, w - 6, 3, 2);
-  g.lineStyle(1.5, borderColor, borderAlpha);
-  g.strokeRoundedRect(x, y - r, w, height, r);
+  g.fillRoundedRect(x, y - r, w, height, Math.min(6, r));
+  g.lineStyle(1, borderColor, borderAlpha);
+  g.strokeRoundedRect(x, y - r, w, height, Math.min(6, r));
 
   // container children order [g, txtObj] → 텍스트가 알약 위에 렌더
   const container = scene.add.container(0, 0, [g, txtObj]);
@@ -447,30 +427,22 @@ export interface IconMedallionRefs {
 export function addIconMedallion(scene: Phaser.Scene, o: IconMedallionOptions): IconMedallionRefs {
   const { cx, cy, size, emoji, accent = CASUAL.GOLD, rounded = true, glow = true, depth } = o;
   const half = size / 2;
-  const r = rounded ? Math.max(8, size * 0.28) : half;
+  const r = rounded ? Math.max(6, size * 0.20) : half;
 
   const g = scene.add.graphics();
   if (glow) {
-    g.fillStyle(accent, 0.16);
+    g.fillStyle(accent, 0.09);
     if (rounded) g.fillRoundedRect(cx - half - 3, cy - half - 3, size + 6, size + 6, r + 3);
     else g.fillCircle(cx, cy, half + 4);
   }
-  // recessed dark base (drop)
-  g.fillStyle(CASUAL.SHADOW, 0.55);
-  if (rounded) g.fillRoundedRect(cx - half, cy - half + 2, size, size, r);
-  else g.fillCircle(cx, cy + 2, half);
-  // body
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
   if (rounded) g.fillRoundedRect(cx - half, cy - half, size, size, r);
   else g.fillCircle(cx, cy, half);
-  // accent tint toward bottom + top gloss
-  g.fillStyle(accent, 0.14);
+  // Restrained semantic tint.
+  g.fillStyle(accent, 0.10);
   if (rounded) g.fillRoundedRect(cx - half + 3, cy + 1, size - 6, half - 3, Math.max(4, r - 4));
   else g.fillCircle(cx, cy + half * 0.4, half * 0.66);
-  g.fillStyle(0xffffff, 0.10);
-  if (rounded) g.fillRoundedRect(cx - half + 4, cy - half + 4, size - 8, Math.max(6, size * 0.30), Math.max(4, r - 4));
-  // accent ring
-  g.lineStyle(2, accent, 0.95);
+  g.lineStyle(1.5, accent, 0.82);
   if (rounded) g.strokeRoundedRect(cx - half, cy - half, size, size, r);
   else g.strokeCircle(cx, cy, half);
 
@@ -512,18 +484,15 @@ export function addSceneHeader(
   const depth = o.depth ?? 10;
   const container = scene.add.container(0, 0).setDepth(depth);
 
-  // chunky cream back pill
+  // Utility action: quiet visual with a 58×44 hit surface.
   const backW = 58;
   const backX = 14;
+  const backH = 32;
   const backG = scene.add.graphics();
-  backG.fillStyle(CASUAL.SHADOW, 0.2);
-  backG.fillRoundedRect(backX, y - 13 + 3, backW, 26, 13);
   backG.fillStyle(CASUAL.PANEL, 1);
-  backG.fillRoundedRect(backX, y - 13, backW, 26, 13);
-  backG.fillStyle(0xffffff, 0.1);
-  backG.fillRoundedRect(backX + 4, y - 11, backW - 8, 5, 3);
-  backG.lineStyle(2.5, CASUAL.EDGE, 1);
-  backG.strokeRoundedRect(backX, y - 13, backW, 26, 13);
+  backG.fillRoundedRect(backX, y - backH / 2, backW, backH, 7);
+  backG.lineStyle(1, CASUAL.EDGE_SOFT, 0.7);
+  backG.strokeRoundedRect(backX, y - backH / 2, backW, backH, 7);
   container.add(backG);
 
   const back = scene.add.text(backX + backW / 2, y, o.backLabel ?? '← 뒤로', {
@@ -531,7 +500,7 @@ export function addSceneHeader(
   }).setOrigin(0.5);
   container.add(back);
 
-  const backZone = scene.add.zone(backX, y - 13, backW, 26).setOrigin(0)
+  const backZone = scene.add.zone(backX, y - 22, backW, 44).setOrigin(0)
     .setInteractive({ useHandCursor: true });
   backZone.on('pointerdown', o.onBack);
   container.add(backZone);
@@ -539,13 +508,13 @@ export function addSceneHeader(
   const title = scene.add.text(CANVAS_WIDTH / 2, y, o.title, {
     fontFamily: 'sans-serif', fontSize: '21px', fontStyle: 'bold',
     color: o.titleCSS ?? CASUAL_CSS.INK,
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#05060c', strokeThickness: 2,
   }).setOrigin(0.5);
   container.add(title);
 
   if (o.subtitle) {
     container.add(scene.add.text(title.x, y + 18, o.subtitle, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 
@@ -587,7 +556,7 @@ export function addTabBar<T extends string>(
   scene: Phaser.Scene,
   o: TabBarOptions<T>,
 ): TabBarRefs {
-  const height  = o.height ?? 38;
+  const height  = o.height ?? 44;
   const depth   = o.depth ?? 10;
   const width   = o.width ?? CANVAS_WIDTH;
   const accent  = o.accent ?? CASUAL.GOLD;
@@ -598,10 +567,8 @@ export function addTabBar<T extends string>(
   const bg = scene.add.graphics();
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, 0, width, height);
-  bg.fillStyle(0xffffff, 0.08);
-  bg.fillRect(0, 0, width, 2);
-  bg.fillStyle(CASUAL.EDGE, 1);
-  bg.fillRect(0, height - 3, width, 3);
+  bg.fillStyle(CASUAL.EDGE_SOFT, 0.45);
+  bg.fillRect(0, height - 1, width, 1);
   container.add(bg);
 
   const tabW = width / o.tabs.length;
@@ -611,14 +578,11 @@ export function addTabBar<T extends string>(
     const cx = i * tabW + tabW / 2;
 
     if (isActive) {
-      // saturated rounded active pill
       const fill = scene.add.graphics();
-      fill.fillStyle(CASUAL.EDGE, 0.25);
-      fill.fillRoundedRect(i * tabW + 5, 5 + 2, tabW - 10, height - 12, 11);
+      fill.fillStyle(tabAccent, 0.14);
+      fill.fillRect(i * tabW + 6, 0, tabW - 12, height);
       fill.fillStyle(tabAccent, 1);
-      fill.fillRoundedRect(i * tabW + 5, 5, tabW - 10, height - 12, 11);
-      fill.fillStyle(0xffffff, 0.32);
-      fill.fillRoundedRect(i * tabW + 9, 8, tabW - 18, 6, 3);
+      fill.fillRect(i * tabW + 10, height - 3, tabW - 20, 3);
       container.add(fill);
     }
 
@@ -643,7 +607,8 @@ export function addTabBar<T extends string>(
       }).setOrigin(0.5));
     }
 
-    const zone = scene.add.zone(i * tabW, 0, tabW, height)
+    const touchHeight = Math.max(height, SCENE_HEADER_TOUCH_HEIGHT);
+    const zone = scene.add.zone(i * tabW, (height - touchHeight) / 2, tabW, touchHeight)
       .setOrigin(0).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => { if (!isActive) o.onSelect(tab.id); });
     container.add(zone);

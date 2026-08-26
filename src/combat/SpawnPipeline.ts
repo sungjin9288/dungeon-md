@@ -1,9 +1,9 @@
 // ─── SpawnPipeline ────────────────────────────────────────────────────────────
 // Handles the two-step invader spawn pipeline:
 //
-//   processSpawnQueue() — schedules each item in the queue with timed delays,
-//                         then clears the queue. Called by WaveStart after
-//                         building the wave's spawn list.
+//   processSpawnQueue() — schedules each item in the queue with timed delays.
+//                         Items stay queued until their timer fires so wave-end
+//                         detection can distinguish pending from completed spawns.
 //
 //   spawnInvaderWithDef() — creates one Invader, applies wave-event HP/speed
 //                           modifiers, plays spawn VFX, applies synergy slow,
@@ -45,20 +45,26 @@ export interface SpawnPipelineContext {
 }
 
 // ─── processSpawnQueue ────────────────────────────────────────────────────────
-// Iterates the queued items, schedules each via scene.time.delayedCall, then
-// clears the queue. The closure re-reads ctx.waveActive at fire-time so a
-// cancelled wave (waveActive = false) suppresses late spawns.
+// Iterates the queued items and schedules each via scene.time.delayedCall. A
+// queued item is removed only when its timer fires. The membership check also
+// prevents a stale timer from spawning into a later wave after the queue was
+// replaced.
 
 export function processSpawnQueue(ctx: SpawnPipelineContext, initialDelay: number): void {
   let acc = initialDelay;
   ctx.spawnQueue.forEach((item) => {
     ctx.scene.time.delayedCall(acc, () => {
+      const pendingIndex = ctx.spawnQueue.indexOf(item);
+      if (pendingIndex < 0) return;
+      ctx.spawnQueue = [
+        ...ctx.spawnQueue.slice(0, pendingIndex),
+        ...ctx.spawnQueue.slice(pendingIndex + 1),
+      ];
       if (!ctx.waveActive) return;
       spawnInvaderWithDef(ctx, item.def);
     });
     acc += item.delay;
   });
-  ctx.spawnQueue = [];
 }
 
 // ─── spawnInvaderWithDef ──────────────────────────────────────────────────────

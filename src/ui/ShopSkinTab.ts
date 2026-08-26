@@ -81,7 +81,7 @@ export function buildSkinTab(
     }).setOrigin(0.5).setDepth(6);
     contentCtr.add(ft);
 
-    const fz = scene.add.zone(i * fW + fW / 2, TOP + 13, fW - 8, 26)
+    const fz = scene.add.zone(i * fW + fW / 2, TOP + 13, fW - 8, 44)
       .setInteractive().setDepth(7);
     contentCtr.add(fz);
     fz.on('pointerdown', () => {
@@ -304,7 +304,7 @@ function drawSkinCard(
       color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(7));
 
-    const zone = scene.add.zone(bx + btnW2 / 2, by + btnH2 / 2, btnW2, btnH2)
+    const zone = scene.add.zone(bx + btnW2 / 2, by + btnH2 / 2, btnW2, 44)
       .setInteractive().setDepth(8);
     contentCtr.add(zone);
     zone.on('pointerdown', () => {
@@ -323,7 +323,7 @@ function drawSkinCard(
 
     const pbx = bx - 64, pby = by;
     drawPreviewPill(scene, contentCtr, pbx, pby);
-    const pz = scene.add.zone(pbx + 28, pby + 13, 56, 26).setInteractive().setDepth(8);
+    const pz = scene.add.zone(pbx + 28, pby + 13, 56, 44).setInteractive().setDepth(8);
     contentCtr.add(pz);
     pz.on('pointerdown', () => showPreviewModal(ctx, skin));
 
@@ -337,7 +337,7 @@ function drawSkinCard(
 
     const pbx = bx - 64, pby = by;
     drawPreviewPill(scene, contentCtr, pbx, pby);
-    const pz = scene.add.zone(pbx + 28, pby + 13, 56, 26).setInteractive().setDepth(8);
+    const pz = scene.add.zone(pbx + 28, pby + 13, 56, 44).setInteractive().setDepth(8);
     contentCtr.add(pz);
     pz.on('pointerdown', () => showPreviewModal(ctx, skin));
 
@@ -355,7 +355,7 @@ function drawSkinCard(
       color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(7));
 
-    const zone = scene.add.zone(bx + btnW2 / 2, by + btnH2 / 2, btnW2, btnH2)
+    const zone = scene.add.zone(bx + btnW2 / 2, by + btnH2 / 2, btnW2, 44)
       .setInteractive().setDepth(8);
     contentCtr.add(zone);
     zone.on('pointerdown', () => {
@@ -476,7 +476,7 @@ export function showPreviewModal(
   ov.add(scene.add.text(px + 16 + 50, py + ph - 34, '닫기', {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
   }).setOrigin(0.5));
-  const closeZ = scene.add.zone(px + 16 + 50, py + ph - 34, 100, 36).setInteractive();
+  const closeZ = scene.add.zone(px + 16 + 50, py + ph - 34, 100, 44).setInteractive();
   ov.add(closeZ);
   closeZ.on('pointerdown', () => { ov.destroy(); });
 
@@ -498,7 +498,7 @@ export function showPreviewModal(
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
     color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
   }).setOrigin(0.5));
-  const actZ = scene.add.zone(px + pw - 16 - actW / 2, py + ph - 34, actW, 36).setInteractive();
+  const actZ = scene.add.zone(px + pw - 16 - actW / 2, py + ph - 34, actW, 44).setInteractive();
   ov.add(actZ);
   actZ.on('pointerdown', () => {
     const state = loadGameState();

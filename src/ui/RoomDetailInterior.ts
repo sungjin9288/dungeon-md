@@ -1,5 +1,5 @@
 import { fitSlotLabel } from './RoomDetailCompactCards';
-import { addPreviewHitZone, drawInteriorChamber, drawInteriorDungeonEditorDetails, drawInteriorEquipmentAura, drawInteriorEquipmentBadge, drawInteriorEquipmentSocket, drawInteriorRoomFixture, drawInteriorRoomPlaque, drawInteriorSlotActionChip, drawMonsterAnchor, drawMonsterPreviewPedestal, drawPreviewTargetRing, drawTrapPreviewSlot, getPreviewSlotPosition } from './RoomDetailInteriorDecor';
+import { addPreviewHitZone, drawInteriorChamber, drawInteriorDungeonEditorDetails, drawInteriorEquipmentAura, drawInteriorEquipmentBadge, drawInteriorEquipmentSocket, drawInteriorRoomFixture, drawInteriorRoomPlaque, drawInteriorSlotActionChip, drawMonsterAnchor, drawMonsterPreviewPedestal, drawPreviewTargetRing, drawTrapPreviewSlot } from './RoomDetailInteriorDecor';
 // ─── Room Detail Interior Preview ─────────────────────────────────────────────
 // RoomDetailOverlay에서 분리한 방 내부 프리뷰 + 컴팩트 로드아웃 드로잉 계층.
 // 진입점: buildRoomInteriorPreview (열린 방), drawUnbuiltRoomBlueprintPreview(본체 잔류).
@@ -11,7 +11,7 @@ import { addPreviewHitZone, drawInteriorChamber, drawInteriorDungeonEditorDetail
 
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, type DungeonSlot, type GameState } from '../data/wisdom';
+import { ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type GameState } from '../data/wisdom';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
 import { TRAP_DEFS } from '../data/traps';
 import { getRoomDesignRecommendation, type RoomDesignRecommendation } from '../data/roomDesignRecommendations';
@@ -20,12 +20,19 @@ import { addFramedPanel } from './GameUiPrimitives';
 import { addMonsterPortrait } from './MonsterPortraitView';
 import { showTrapPicker, showMonsterPicker } from './RoomPickerModals';
 import type { PickerNavCallbacks } from './RoomPickerModals';
+import {
+  deriveRoomEditorPreviewState,
+  getRoomEditorPreviewLayout,
+  type RoomEditorPreviewAction,
+  type RoomEditorPreviewLayout,
+  type RoomEditorPreviewState,
+} from './RoomEditorPreviewState';
 
 export type { PickerNavCallbacks };
 
 
 import {
-  findFirstEmptySlot, formatSignedPower, getEquippedItem,
+  formatSignedPower, getEquippedItem,
   navigateFromRoomDetail, shouldHighlightDirectiveTarget,
   EquipmentBadge, ROOM_TYPE_ACCENT, RoomDetailCallbacks, RoomDetailState, RoomDirective } from './RoomDetailShared';
 
@@ -101,14 +108,18 @@ export function buildRoomInteriorPreview(
     return panelH;
   }
 
-  const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+  const preview = deriveRoomEditorPreviewState(gs, slot, directive.target);
+  const previewLayout = getRoomEditorPreviewLayout(preview, {
+    chamberX,
+    chamberY,
+    chamberWidth: chamberW,
+    chamberHeight: chamberH,
+  });
+  const cap = preview.capacity;
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
-  const monsterCount = slot.monsterIds.filter(Boolean).length;
-  const trapCount = slot.trapIds.filter(Boolean).length;
-  const equippedCount = slot.monsterIds
-    .filter((monsterId): monsterId is string => typeof monsterId === 'string')
-    .filter(monsterId => Boolean(getEquippedItem(gs, monsterId)))
-    .length;
+  const monsterCount = preview.monsterCount;
+  const trapCount = preview.trapCount;
+  const equippedCount = preview.equippedCount;
 
   drawInteriorChamber(scene, c, g, chamberX, chamberY, chamberW, chamberH, accent, slot);
   drawInteriorDungeonEditorDetails(g, chamberX, chamberY, chamberW, chamberH, accent, slot.roomLevel, roomMetrics.readiness);
@@ -125,9 +136,7 @@ export function buildRoomInteriorPreview(
     chamberW,
     chamberH,
     accent,
-    slot,
-    cap.monsters,
-    cap.traps,
+    previewLayout,
     roomMetrics.readiness,
   );
   if (shouldHighlightDirectiveTarget(directive, 'type')) {
@@ -169,76 +178,92 @@ export function buildRoomInteriorPreview(
     fontSize: '10px',
     color: CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
-  const firstTrapSlot = findFirstEmptySlot(slot.trapIds, cap.traps);
-  const firstMonsterSlot = findFirstEmptySlot(slot.monsterIds, cap.monsters);
-  for (let i = 0; i < cap.traps; i++) {
-    const trapId = slot.trapIds[i];
-    const trap = trapId ? TRAP_DEFS.find(t => t.id === trapId) : undefined;
-    const pos = getPreviewSlotPosition(i, cap.traps, chamberX + 60, chamberY + Math.round(chamberH * 0.27), chamberW - 120, 28);
-    drawTrapPreviewSlot(scene, c, pos.x, pos.y, trap?.emoji ?? 'T', accent, !!trap, `T${i + 1}`);
-    drawInteriorSlotActionChip(scene, c, pos.x, pos.y + 18, trap ? '교체' : '설치', trap ? 0xffc44d : accent, !!trap);
-    if (shouldHighlightDirectiveTarget(directive, 'trap') && i === firstTrapSlot && !trap) {
-      drawPreviewTargetRing(scene, c, pos.x, pos.y + 8, 92, 52, directive.accent, '설치');
+  for (const { socket: trapSocket, x, y } of previewLayout.traps) {
+    const trap = trapSocket.trapId ? TRAP_DEFS.find(t => t.id === trapSocket.trapId) : undefined;
+    const isAssigned = trapSocket.state === 'assigned';
+    drawTrapPreviewSlot(
+      scene,
+      c,
+      x,
+      y,
+      trap?.emoji ?? (isAssigned ? '?' : 'T'),
+      accent,
+      trapSocket.state,
+      `T${trapSocket.slotIndex + 1}`,
+    );
+    drawInteriorSlotActionChip(scene, c, x, y + 18, isAssigned ? '교체' : '설치', isAssigned ? 0xffc44d : accent, isAssigned);
+    if (trapSocket.state === 'target') {
+      drawPreviewTargetRing(scene, c, x, y + 8, 92, 52, directive.accent, '설치');
     }
-    addPreviewHitZone(scene, c, pos.x, pos.y + 8, 42, 44, () => {
-      showTrapPicker(scene, state, theme, cb, nav, slotIdx, i);
-    });
+    const hitZone = findPreviewHitZone(previewLayout, 'trap-picker', trapSocket.slotIndex);
+    if (hitZone) {
+      addPreviewHitZone(scene, c, hitZone.x, hitZone.y, hitZone.width, hitZone.height, () => {
+        showTrapPicker(scene, state, theme, cb, nav, slotIdx, trapSocket.slotIndex);
+      });
+    }
   }
 
-  for (let i = 0; i < cap.monsters; i++) {
-    const monsterId = slot.monsterIds[i];
-    const pos = getPreviewSlotPosition(i, cap.monsters, chamberX + 58, chamberY + Math.round(chamberH * 0.68), chamberW - 116, 34);
-    const owned = monsterId ? gs.ownedMonsters.find(m => m.id === monsterId) : undefined;
-    const equipment = getEquippedItem(gs, monsterId);
+  for (const { socket: monsterSocket, x, y } of previewLayout.monsters) {
+    const monsterId = monsterSocket.monsterId;
+    const equipmentSocket = preview.equipment[monsterSocket.slotIndex];
+    const equipment = equipmentSocket?.state === 'assigned'
+      ? getEquippedItem(gs, monsterId)
+      : null;
     if (monsterId) {
-      drawMonsterPreviewPedestal(scene, c, pos.x, pos.y, accent, true, `M${i + 1}`);
-      addMonsterPortrait(scene, c, pos.x, pos.y, monsterId, {
+      drawMonsterPreviewPedestal(scene, c, x, y, accent, monsterSocket.state, `M${monsterSocket.slotIndex + 1}`);
+      addMonsterPortrait(scene, c, x, y, monsterId, {
         size: 38,
         frameColor: accent,
         glowColor: accent,
         bgColor: CASUAL.PANEL_SOFT,
         equippedSkins: gs.equippedSkins ?? {} });
-      c.add(scene.add.text(pos.x, pos.y + 28, owned ? `Lv.${owned.level}` : '배치됨', {
+      c.add(scene.add.text(x, y + 28, monsterSocket.hasOwnedMetadata ? `Lv.${monsterSocket.level}` : '?', {
         fontFamily: 'sans-serif',
-        fontSize: '8px',
+        fontSize: monsterSocket.hasOwnedMetadata ? '8px' : '12px',
         color: CASUAL_CSS.GOLD,
         fontStyle: 'bold' }).setOrigin(0.5));
-      drawInteriorSlotActionChip(scene, c, pos.x - 22, pos.y - 26, '성장', CASUAL.GREEN, true);
+      drawInteriorSlotActionChip(scene, c, x - 22, y - 26, monsterSocket.hasOwnedMetadata ? '성장' : '교체', CASUAL.GREEN, true);
       if (equipment) {
-        drawInteriorEquipmentBadge(scene, c, pos.x + 23, pos.y - 17, equipment, accent);
+        drawInteriorEquipmentBadge(scene, c, x + 23, y - 17, equipment, accent);
       } else {
-        drawInteriorEquipmentSocket(scene, c, pos.x + 23, pos.y - 17, accent);
+        drawInteriorEquipmentSocket(scene, c, x + 23, y - 17, accent, equipmentSocket?.state ?? 'disabled');
+      }
+      if (equipmentSocket?.state === 'target') {
+        drawPreviewTargetRing(scene, c, x + 23, y - 17, 76, 44, directive.accent, '제작');
       }
     } else {
-      drawMonsterPreviewPedestal(scene, c, pos.x, pos.y, accent, false, `M${i + 1}`);
-      drawMonsterAnchor(scene, c, pos.x, pos.y, accent);
-      drawInteriorSlotActionChip(scene, c, pos.x, pos.y + 27, '배치', accent, false);
-      if (shouldHighlightDirectiveTarget(directive, 'monster') && i === firstMonsterSlot) {
-        drawPreviewTargetRing(scene, c, pos.x, pos.y + 2, 98, 68, directive.accent, '배치');
+      drawMonsterPreviewPedestal(scene, c, x, y, accent, monsterSocket.state, `M${monsterSocket.slotIndex + 1}`);
+      drawMonsterAnchor(scene, c, x, y, accent, monsterSocket.state);
+      drawInteriorSlotActionChip(scene, c, x, y + 27, '배치', accent, false);
+      if (monsterSocket.state === 'target') {
+        drawPreviewTargetRing(scene, c, x, y + 2, 98, 68, directive.accent, '배치');
       }
     }
-    addPreviewHitZone(scene, c, pos.x, pos.y, 52, 64, () => {
-      if (monsterId && owned) {
+    const pickerZone = findPreviewHitZone(previewLayout, 'monster-picker', monsterSocket.slotIndex);
+    if (pickerZone) {
+      addPreviewHitZone(scene, c, pickerZone.x, pickerZone.y, pickerZone.width, pickerZone.height, () => {
+        showMonsterPicker(scene, state, theme, cb, nav, slotIdx, monsterSocket.slotIndex);
+      });
+    }
+    const growthZone = findPreviewHitZone(previewLayout, 'monster-growth', monsterSocket.slotIndex);
+    if (growthZone && monsterId) {
+      addPreviewHitZone(scene, c, growthZone.x, growthZone.y, growthZone.width, growthZone.height, () => {
         navigateToFocusedMonster(scene, state, cb, monsterId, slotIdx);
-        return;
-      }
-      showMonsterPicker(scene, state, theme, cb, nav, slotIdx, i);
-    });
-    if (monsterId && owned) {
-      addPreviewHitZone(scene, c, pos.x + 23, pos.y - 17, 28, 26, () => {
+      });
+    }
+    const forgeZone = findPreviewHitZone(previewLayout, 'forge', monsterSocket.slotIndex);
+    if (forgeZone && monsterId) {
+      addPreviewHitZone(scene, c, forgeZone.x, forgeZone.y, forgeZone.width, forgeZone.height, () => {
         navigateToFocusedForge(scene, state, cb, monsterId, slotIdx);
       });
     }
   }
 
   drawInteriorEquipmentSummary(
-    scene, state, cb, c, g, gs, slot, slotIdx,
-    secX + 16, secY + panelH - 36, secW - 32, accent, monsterCount, equippedCount,
+    scene, state, cb, c, g, gs, preview, slotIdx,
+    secX + 16, secY + panelH - 36, secW - 32, accent,
     roomMetrics.equipmentPower,
   );
-  if (shouldHighlightDirectiveTarget(directive, 'growth')) {
-    drawPreviewTargetRing(scene, c, secX + secW / 2, secY + panelH - 22, secW - 28, 34, directive.accent, '성장/장비');
-  }
 
   return panelH;
 }
@@ -376,31 +401,49 @@ function drawInteriorEquipmentSummary(
   c: Phaser.GameObjects.Container,
   g: Phaser.GameObjects.Graphics,
   gs: GameState,
-  slot: DungeonSlot,
+  preview: RoomEditorPreviewState,
   slotIdx: number,
   x: number,
   y: number,
   w: number,
   accent: number,
-  monsterCount: number,
-  equippedCount: number,
   equipmentPower: number,
 ): void {
-  const firstMonsterId = slot.monsterIds.find((monsterId): monsterId is string => typeof monsterId === 'string');
-  const equipmentEntries = slot.monsterIds
-    .filter((monsterId): monsterId is string => typeof monsterId === 'string')
-    .map(monsterId => getEquippedItem(gs, monsterId))
+  const actionableEquipment = preview.equipment.filter(socket => socket.state !== 'disabled');
+  const firstMonsterId = actionableEquipment.find(socket => socket.monsterId)?.monsterId;
+  const equipmentEntries = preview.equipment
+    .filter((socket): socket is typeof socket & { monsterId: string } =>
+      socket.state === 'assigned' && typeof socket.monsterId === 'string',
+    )
+    .map(socket => getEquippedItem(gs, socket.monsterId))
     .filter((equipment): equipment is EquipmentBadge => Boolean(equipment));
   const primaryEquipment = equipmentEntries[0] ?? null;
-  const actionLabel = firstMonsterId ? (primaryEquipment ? '교체' : '제작') : '대기';
-  const assignedMonsterIds = slot.monsterIds.filter((monsterId): monsterId is string => typeof monsterId === 'string');
-  const assignedCount = Math.max(1, assignedMonsterIds.length, monsterCount);
-  const fullyEquipped = firstMonsterId && equippedCount >= assignedCount;
-  const statusLabel = !firstMonsterId ? 'EMPTY' : fullyEquipped ? 'READY' : 'NEED';
-  const statusColor = !firstMonsterId ? CASUAL.EDGE_SOFT : fullyEquipped ? CASUAL.GREEN : CASUAL.GOLD;
+  const assignedMonsterIds = preview.monsters
+    .map(socket => socket.monsterId)
+    .filter((monsterId): monsterId is string => typeof monsterId === 'string');
+  const assignedCount = Math.max(1, assignedMonsterIds.length);
+  const hasDisabledEquipment = preview.equipment.some(socket =>
+    Boolean(socket.monsterId) && socket.state === 'disabled',
+  );
+  const fullyEquipped = actionableEquipment.length > 0 && preview.equippedCount >= actionableEquipment.length;
+  const actionLabel = firstMonsterId ? (primaryEquipment ? '교체' : '제작') : hasDisabledEquipment ? '잠김' : '대기';
+  const statusLabel = assignedMonsterIds.length === 0
+    ? 'EMPTY'
+    : hasDisabledEquipment
+      ? 'LOCK'
+      : fullyEquipped
+        ? 'READY'
+        : 'NEED';
+  const statusColor = assignedMonsterIds.length === 0 || hasDisabledEquipment
+    ? CASUAL.EDGE_SOFT
+    : fullyEquipped
+      ? CASUAL.GREEN
+      : CASUAL.GOLD;
   const text = primaryEquipment
     ? `${primaryEquipment.icon} ${primaryEquipment.name} · ${primaryEquipment.effect}${equipmentEntries.length > 1 ? ` · +${equipmentEntries.length - 1}` : ''}`
-    : firstMonsterId
+    : hasDisabledEquipment
+      ? '⚙ 소유 정보 없음 · 장비 편집 잠김'
+      : firstMonsterId
       ? '⚙ 장비 미장착 · 제작으로 방 전력 보강'
       : '⚙ 수호자 배치 후 장비 강화 가능';
 
@@ -435,7 +478,7 @@ function drawInteriorEquipmentSummary(
     fontSize: '7px',
     color: firstMonsterId ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0.5));
-  c.add(scene.add.text(titleX + 44, y + 9.5, `장비 ${equippedCount}/${assignedCount}`, {
+  c.add(scene.add.text(titleX + 44, y + 9.5, `장비 ${preview.equippedCount}/${assignedCount}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: primaryEquipment ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
@@ -455,19 +498,20 @@ function drawInteriorEquipmentSummary(
     color: equipmentPower > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
     fontStyle: 'bold' }).setOrigin(0.5));
 
-  const pipCount = Math.min(4, assignedCount);
+  const pipCount = Math.min(4, preview.equipment.length);
   const pipGap = 11;
   const pipStartX = pipAreaX + 5;
   for (let i = 0; i < pipCount; i++) {
     const pipX = pipStartX + i * pipGap;
-    const monsterId = assignedMonsterIds[i];
-    const equipped = Boolean(monsterId && getEquippedItem(gs, monsterId));
+    const equipmentSocket = preview.equipment[i];
+    const equipped = equipmentSocket?.state === 'assigned';
+    const disabled = equipmentSocket?.state === 'disabled';
     g.fillStyle(equipped ? CASUAL.GOLD : CASUAL.PANEL, equipped ? 0.95 : 0.85);
     g.fillRoundedRect(pipX, y + 18, 8, 8, 3);
     g.lineStyle(1, equipped ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, equipped ? 0.7 : 0.5);
     g.strokeRoundedRect(pipX, y + 18, 8, 8, 3);
     if (!equipped) {
-      c.add(scene.add.text(pipX + 4, y + 22, '+', {
+      c.add(scene.add.text(pipX + 4, y + 22, disabled ? '×' : '+', {
         fontFamily: 'sans-serif',
         fontSize: '7px',
         color: CASUAL_CSS.INK_SOFT,
@@ -492,6 +536,14 @@ function drawInteriorEquipmentSummary(
   }
 }
 
+function findPreviewHitZone(
+  layout: RoomEditorPreviewLayout,
+  action: RoomEditorPreviewAction,
+  slotIndex: number,
+) {
+  return layout.hitZones.find(zone => zone.action === action && zone.slotIndex === slotIndex);
+}
+
 function drawInteriorLoadoutBands(
   scene: Phaser.Scene,
   c: Phaser.GameObjects.Container,
@@ -509,7 +561,7 @@ function drawInteriorLoadoutBands(
   readiness: number,
 ): void {
   const trapY = y + Math.round(h * 0.27);
-  const guardY = y + Math.round(h * 0.68);
+  const guardY = y + Math.round(h * 0.66);
   const readinessColor = readiness >= 78 ? CASUAL.GREEN : readiness >= 45 ? CASUAL.GOLD : CASUAL.RED;
   const floorTop = y + Math.round(h * 0.43);
 
@@ -595,16 +647,14 @@ function drawInteriorPlacementScaffold(
   w: number,
   h: number,
   accent: number,
-  slot: DungeonSlot,
-  monsterCap: number,
-  trapCap: number,
+  layout: RoomEditorPreviewLayout,
   readiness: number,
 ): void {
   const glow = Phaser.Math.Clamp(readiness / 100, 0, 1);
   const coreX = x + w / 2;
   const coreY = y + h - 27;
   const trapBusY = y + Math.round(h * 0.27) + 2;
-  const guardBusY = y + Math.round(h * 0.68) + 18;
+  const guardBusY = y + Math.round(h * 0.66) + 18;
 
   g.lineStyle(1, accent, 0.16 + glow * 0.1);
   g.lineBetween(x + 46, trapBusY, x + w - 46, trapBusY);
@@ -612,52 +662,50 @@ function drawInteriorPlacementScaffold(
   g.lineStyle(1, CASUAL.EDGE_SOFT, 0.08 + glow * 0.05);
   g.lineBetween(coreX, y + Math.round(h * 0.44), coreX, y + h - 22);
 
-  for (let i = 0; i < trapCap; i += 1) {
-    const pos = getPreviewSlotPosition(i, trapCap, x + 60, y + Math.round(h * 0.27), w - 120, 28);
-    const filled = Boolean(slot.trapIds?.[i]);
+  for (const { socket, x: posX, y: posY } of layout.traps) {
+    const filled = socket.state === 'assigned';
     const color = filled ? CASUAL.GOLD : accent;
     const alpha = filled ? 0.28 + glow * 0.1 : 0.14 + glow * 0.05;
 
     g.lineStyle(1, color, alpha);
-    g.lineBetween(pos.x, pos.y + 14, pos.x, trapBusY);
-    g.lineBetween(pos.x, trapBusY, coreX + (pos.x < coreX ? -18 : 18), y + Math.round(h * 0.43));
+    g.lineBetween(posX, posY + 14, posX, trapBusY);
+    g.lineBetween(posX, trapBusY, coreX + (posX < coreX ? -18 : 18), y + Math.round(h * 0.43));
     g.fillStyle(color, alpha * 0.68);
     g.beginPath();
-    g.moveTo(pos.x, pos.y - 25);
-    g.lineTo(pos.x + 29, pos.y - 6);
-    g.lineTo(pos.x + 21, pos.y + 20);
-    g.lineTo(pos.x - 21, pos.y + 20);
-    g.lineTo(pos.x - 29, pos.y - 6);
+    g.moveTo(posX, posY - 25);
+    g.lineTo(posX + 29, posY - 6);
+    g.lineTo(posX + 21, posY + 20);
+    g.lineTo(posX - 21, posY + 20);
+    g.lineTo(posX - 29, posY - 6);
     g.closePath();
     g.fillPath();
     g.lineStyle(1, color, filled ? 0.4 : 0.22);
     g.strokePath();
     g.fillStyle(CASUAL.SHADOW, 0.14);
-    g.fillCircle(pos.x, pos.y + 2, 18);
+    g.fillCircle(posX, posY + 2, 18);
     g.fillStyle(color, filled ? 0.28 : 0.14);
-    g.fillCircle(pos.x, pos.y + 2, 8);
+    g.fillCircle(posX, posY + 2, 8);
   }
 
-  for (let i = 0; i < monsterCap; i += 1) {
-    const pos = getPreviewSlotPosition(i, monsterCap, x + 58, y + Math.round(h * 0.68), w - 116, 34);
-    const filled = Boolean(slot.monsterIds?.[i]);
+  for (const { socket, x: posX, y: posY } of layout.monsters) {
+    const filled = socket.state === 'assigned';
     const color = filled ? accent : CASUAL.GREEN;
     const alpha = filled ? 0.26 + glow * 0.12 : 0.12 + glow * 0.05;
 
     g.lineStyle(1, color, alpha);
-    g.lineBetween(pos.x, pos.y + 24, pos.x, guardBusY);
-    g.lineBetween(pos.x, guardBusY, coreX + (pos.x < coreX ? -22 : 22), coreY - 18);
+    g.lineBetween(posX, posY + 24, posX, guardBusY);
+    g.lineBetween(posX, guardBusY, coreX + (posX < coreX ? -22 : 22), coreY - 18);
     g.fillStyle(color, alpha * 0.64);
-    g.fillEllipse(pos.x, pos.y + 15, 70, 25);
+    g.fillEllipse(posX, posY + 15, 70, 25);
     g.lineStyle(1, color, filled ? 0.38 : 0.2);
-    g.strokeEllipse(pos.x, pos.y + 15, 62, 20);
-    g.strokeCircle(pos.x, pos.y + 1, filled ? 27 : 23);
+    g.strokeEllipse(posX, posY + 15, 62, 20);
+    g.strokeCircle(posX, posY + 1, filled ? 27 : 23);
     g.lineStyle(1, CASUAL.EDGE_SOFT, filled ? 0.12 : 0.06);
-    g.lineBetween(pos.x - 21, pos.y + 15, pos.x + 21, pos.y + 15);
-    g.lineBetween(pos.x, pos.y - 8, pos.x, pos.y + 29);
+    g.lineBetween(posX - 21, posY + 15, posX + 21, posY + 15);
+    g.lineBetween(posX, posY - 8, posX, posY + 29);
     g.fillStyle(color, filled ? 0.24 : 0.12);
-    g.fillCircle(pos.x - 25, pos.y + 17, 2);
-    g.fillCircle(pos.x + 25, pos.y + 17, 2);
+    g.fillCircle(posX - 25, posY + 17, 2);
+    g.fillCircle(posX + 25, posY + 17, 2);
   }
 
   g.fillStyle(accent, 0.08 + glow * 0.08);

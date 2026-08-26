@@ -52,7 +52,7 @@ export function rebuildHistory(
   const history = (gs.summonHistory ?? []).slice().reverse().slice(0, 100);
 
   // ── Filter tabs ─────────────────────────────────────────────────────────────
-  const filterY = CARDS_Y - 4;
+  const filterY = CARDS_Y + 16;
   type FilterEntry = { label: string; val: HistoryFilter };
   const filters: FilterEntry[] = [
     { label: '전체',   val: 'all'  },
@@ -89,10 +89,12 @@ export function rebuildHistory(
       color:           isActive ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
       stroke:          isActive ? '#00000033' : '#00000000',
       strokeThickness: isActive ? 3 : 0,
-    }).setOrigin(0.5).setInteractive();
-
-    ft.on('pointerdown', () => ctx.onFilterChange(f.val));
+    }).setOrigin(0.5);
     c.add(ft);
+    const filterZone = scene.add.zone(fx, filterY + 2, 80, 44)
+      .setInteractive({ useHandCursor: true });
+    filterZone.on('pointerdown', () => ctx.onFilterChange(f.val));
+    c.add(filterZone);
   });
 
   // ── Filtered rows ────────────────────────────────────────────────────────────
@@ -107,7 +109,7 @@ export function rebuildHistory(
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
   } else {
-    let ry = CARDS_Y + 26;
+    let ry = CARDS_Y + 52;
     filtered.slice(0, 11).forEach(rec => {
       const def = MONSTER_DEFS[rec.monsterId as MonsterId];
       if (!def) return;

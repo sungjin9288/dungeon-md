@@ -722,6 +722,7 @@ export function drawChapterProgressBar(
   count:    number,
   y:        number,
   progress: StageProgress[],
+  target?:  Phaser.GameObjects.Container,
 ): void {
   const slice     = progress.slice(startIdx, startIdx + count);
   const cleared   = slice.filter(p => p.bestStars > 0).length;
@@ -736,13 +737,16 @@ export function drawChapterProgressBar(
   const fillColor = pct >= 1 ? CASUAL.GOLD : pct >= 0.5 ? CASUAL.GREEN : CASUAL.BLUE;
   bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(bx, y, Math.max(4, bw * pct), bh, 2);
-  scene.add.text(bx + bw - 2, y - 2, `${cleared}/${count}`, {
+  if (target) target.add(bg.setScrollFactor(0));
+  const countLabel = scene.add.text(bx + bw - 2, y - 2, `${cleared}/${count}`, {
     fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(1, 1);
+  if (target) target.add(countLabel.setScrollFactor(0));
   const starColor = totalStars === maxStars ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT;
-  scene.add.text(bx + 2, y - 2, `★ ${totalStars}/${maxStars}`, {
+  const starLabel = scene.add.text(bx + 2, y - 2, `★ ${totalStars}/${maxStars}`, {
     fontFamily: 'sans-serif', fontSize: '9px', color: starColor,
   }).setOrigin(0, 1);
+  if (target) target.add(starLabel.setScrollFactor(0));
 }
 
 // ── addStarPop ────────────────────────────────────────────────────────────────

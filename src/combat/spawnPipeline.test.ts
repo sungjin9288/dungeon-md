@@ -1,11 +1,28 @@
 import { describe, it, expect } from 'vitest';
 import { resolveSpawnDef } from './spawnDefResolve';
+import { registerDynamicSpawn } from './waveSpawnAccounting';
 import { INVADER_DEFS } from '../data/invaders';
 import type { WeeklyBoss } from '../data/daily';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const NEUTRAL_MULTS = { waveHpMult: 1, waveSpdMult: 1, dailySpeedMult: 1 };
+
+describe('dynamic spawn accounting', () => {
+  it('increments the runtime total and refreshes the kill counter denominator', () => {
+    const labels: string[] = [];
+    const ctx = {
+      waveInvaderTotal: 9,
+      killsThisWave: 9,
+      killCounterText: { setText: (text: string) => labels.push(text) },
+    };
+
+    registerDynamicSpawn(ctx);
+
+    expect(ctx.waveInvaderTotal).toBe(10);
+    expect(labels).toEqual(['💀 9 / 10']);
+  });
+});
 
 function makeWeeklyBoss(overrides: Partial<WeeklyBoss> = {}): WeeklyBoss {
   return {

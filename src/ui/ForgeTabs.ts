@@ -7,28 +7,27 @@ import { CANVAS_WIDTH } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { BLUEPRINT_DEFS, RARITY_COLORS, RARITY_NAMES } from '../data/fusion';
 import type { BlueprintDef } from '../data/fusion';
-import { canCraftBlueprint, getDismantleReturns } from '../data/forgeTransactions';
-import { getBlueprintRecommendation } from '../data/forgeRecommendations';
-import { dropsInAbyss } from '../data/abyss';
+import { getDismantleReturns } from '../data/forgeTransactions';
+import { rankForgeBlueprints } from '../data/forgeRecommendations';
 import {
   LIST_PAD,
   rarityHex,
   getForgeRarityStars,
   getForgeTypeMeta,
   getMaterialDisplay,
-  summarizeBlueprintEffects,
   summarizeEquipmentEffects,
-  getBlueprintMaterialProgress,
   getEquipmentHolderDisplay,
+  getMonsterEquipmentDisplay,
+  formatForgeMaterialStatus,
   truncateLabel,
   type ForgeContext,
 } from './ForgeShared';
 import {
   drawEffectChips,
-  drawProgressTrack,
   buildWorkbenchPanel,
   buildForgeTargetRail,
 } from './ForgeWorkbench';
+import { addMonsterPortrait } from './MonsterPortraitView';
 
 // ─── drawBlueprintCardShell ───────────────────────────────────────────────────
 
@@ -142,11 +141,14 @@ export function buildCraftTab(
   c: Phaser.GameObjects.Container,
 ): void {
   const { gs } = ctx;
-  const owned = gs.blueprints ?? [];
   const workbenchEndY = buildWorkbenchPanel(scene, ctx, c, 'craft');
   const listStartY = buildForgeTargetRail(scene, ctx, c, workbenchEndY);
+  const ranked = rankForgeBlueprints(gs, {
+    monsterId: ctx.focusMonsterId,
+    sourceLabel: ctx.focusSourceLabel,
+  });
 
-  if (owned.length === 0) {
+  if (ranked.length === 0) {
     c.add(scene.add.text(CANVAS_WIDTH / 2, listStartY + 18, '보유한 설계도가 없습니다.\n전투에서 설계도를 획득하세요.', {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
       align: 'center', lineSpacing: 6,
@@ -156,161 +158,122 @@ export function buildCraftTab(
 
   let oy = listStartY;
   const pad = LIST_PAD;
-  const rowH = 108;
+  const rowH = 166;
 
-  const mats = gs.materials ?? {};
-  const sortedOwned = [...owned].sort((a, b) => {
-    const bpA = BLUEPRINT_DEFS[a];
-    const bpB = BLUEPRINT_DEFS[b];
-    if (!bpA || !bpB) return 0;
-    const craftA = canCraftBlueprint(bpA, mats) ? 1 : 0;
-    const craftB = canCraftBlueprint(bpB, mats) ? 1 : 0;
-    if (craftB !== craftA) return craftB - craftA;
-    const ratioA = getBlueprintMaterialProgress(bpA, mats).ratio;
-    const ratioB = getBlueprintMaterialProgress(bpB, mats).ratio;
-    if (ratioB !== ratioA) return ratioB - ratioA;
-    return (bpB.rarity ?? 0) - (bpA.rarity ?? 0);
-  });
-
-  sortedOwned.forEach((bpId, index) => {
-    const bp = BLUEPRINT_DEFS[bpId];
-    if (!bp) return;
-
-    const isSelected = ctx.selectedBpId === bpId;
-    const canCraft = canCraftBlueprint(bp, gs.materials ?? {});
-    const progress = getBlueprintMaterialProgress(bp, gs.materials ?? {});
+  ranked.forEach(projection => {
+    const { blueprint: bp, recommendation, craftable, materials, whyNow } = projection;
+    const isSelected = ctx.selectedBpId === bp.id;
     const rarityColor = RARITY_COLORS[bp.rarity] ?? '#aaaaaa';
     const rarityHexVal = rarityHex(bp.rarity);
-    const typeMeta = getForgeTypeMeta(bp.type);
-    const cardNo = String(index + 1).padStart(3, '0');
-    const effectLabels = summarizeBlueprintEffects(bp);
-    const recommendation = getBlueprintRecommendation(gs, bp, { monsterId: ctx.focusMonsterId, sourceLabel: ctx.focusSourceLabel });
-    const missingTotal = Math.max(0, progress.need - progress.have);
-    const craftStateLabel = canCraft ? '단조 가능' : `부족 ${missingTotal}`;
-    const recommendationLine = recommendation
-      ? `추천 ${recommendation.monsterEmoji}${truncateLabel(recommendation.monsterName, 4)} · ${recommendation.roomLabel} · +${recommendation.powerDelta}`
-      : bp.statDesc;
+    const targetEquipment = recommendation
+      ? getMonsterEquipmentDisplay(gs, recommendation.monsterId)
+      : null;
+    const targetLine = recommendation
+      ? `${recommendation.monsterName} Lv.${recommendation.monsterLevel} · ${targetEquipment ? `${targetEquipment.emoji} ${targetEquipment.name}` : '장비 없음'}`
+      : '장착 대상 없음';
+    const roomLine = recommendation?.room.readiness
+      ? `${recommendation.room.roomLabel} 실제 배치 · 준비 ${recommendation.room.readiness.before}→${recommendation.room.readiness.after}`
+      : recommendation
+        ? `${recommendation.room.roomLabel} · ${recommendation.room.roomContextLabel}`
+        : '추천 대상 없음';
+    const powerLine = recommendation?.room.power
+      ? `전력 ${recommendation.room.power.before}→${recommendation.room.power.after} 예상`
+      : recommendation
+        ? '준비도·방 전력은 실제 배치 후 계산'
+        : '준비도·방 전력 추정 없음';
+    const materialLine = materials
+      .map(formatForgeMaterialStatus)
+      .reduce<string[]>((lines, material, index) => {
+        const lineIndex = Math.floor(index / 2);
+        lines[lineIndex] = lines[lineIndex] ? `${lines[lineIndex]} · ${material}` : material;
+        return lines;
+      }, [])
+      .join('\n');
 
     const bg = scene.add.graphics();
     bg.fillStyle(isSelected ? 0x2d1808 : 0x170d06, 1);
     bg.fillRoundedRect(pad, oy, CANVAS_WIDTH - pad * 2, rowH - 4, 10);
     bg.fillStyle(0x060402, 0.42);
     bg.fillRoundedRect(pad + 5, oy + 5, CANVAS_WIDTH - pad * 2 - 10, rowH - 14, 8);
-    bg.fillStyle(rarityHexVal, canCraft ? 0.12 : 0.05);
+    bg.fillStyle(rarityHexVal, craftable ? 0.12 : 0.05);
     bg.fillRoundedRect(pad + 6, oy + 7, 58, rowH - 18, 8);
-    bg.lineStyle(1.5, isSelected ? 0xffaa44 : (canCraft ? rarityHexVal : 0x2a1a00), canCraft ? 0.92 : 0.78);
+    bg.lineStyle(1.5, isSelected ? 0xffaa44 : (craftable ? rarityHexVal : 0x2a1a00), craftable ? 0.92 : 0.78);
     bg.strokeRoundedRect(pad, oy, CANVAS_WIDTH - pad * 2, rowH - 4, 10);
     bg.lineStyle(1, 0xffffff, isSelected ? 0.16 : 0.08);
     bg.lineBetween(pad + 74, oy + 12, pad + 74, oy + rowH - 18);
     c.add(bg);
 
-    drawBlueprintCardShell(
-      scene, c, pad, oy, rowH, bp, cardNo, typeMeta,
-      rarityHexVal, canCraft, isSelected, progress.ratio, Boolean(recommendation),
-    );
-
-    const typeBadge = scene.add.graphics();
-    typeBadge.fillStyle(typeMeta.hex, canCraft ? 0.16 : 0.08);
-    typeBadge.fillRoundedRect(pad + 15, oy + 53, 40, 15, 6);
-    typeBadge.lineStyle(0.8, typeMeta.hex, canCraft ? 0.52 : 0.24);
-    typeBadge.strokeRoundedRect(pad + 15, oy + 53, 40, 15, 6);
-    c.add(typeBadge);
-
-    c.add(scene.add.text(pad + 35, oy + 31, bp.resultEmoji, {
-      fontFamily: 'sans-serif', fontSize: '29px',
-    }).setOrigin(0.5));
-    c.add(scene.add.text(pad + 35, oy + 60, `${typeMeta.icon} ${typeMeta.label}`, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: typeMeta.color, fontStyle: 'bold',
-    }).setOrigin(0.5));
-    c.add(scene.add.text(pad + 35, oy + 76, getForgeRarityStars(bp.rarity), {
-      fontFamily: 'sans-serif', fontSize: '8px', color: rarityColor,
-    }).setOrigin(0.5));
-    c.add(scene.add.text(pad + 35, oy + 90, RARITY_NAMES[bp.rarity] ?? '특수', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: rarityColor,
-    }).setOrigin(0.5));
-
-    c.add(scene.add.text(pad + 84, oy + 10, truncateLabel(bp.name, recommendation ? 9 : 13), {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: rarityColor,
-    }));
     if (recommendation) {
-      const powerX = CANVAS_WIDTH - pad - 132;
-      const power = scene.add.graphics();
-      power.fillStyle(0x062018, 0.96);
-      power.fillRoundedRect(powerX, oy + 9, 56, 18, 6);
-      power.lineStyle(1, recommendation.accent, 0.68);
-      power.strokeRoundedRect(powerX, oy + 9, 56, 18, 6);
-      power.fillStyle(recommendation.accent, 0.16);
-      power.fillRoundedRect(powerX + 4, oy + 13, 48, 4, 3);
-      c.add(power);
-      c.add(scene.add.text(powerX + 28, oy + 18, `전력 +${recommendation.powerDelta}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: '#b8fff0', fontStyle: 'bold',
+      addMonsterPortrait(scene, c, pad + 35, oy + 35, recommendation.monsterId, {
+        size: 50,
+        frameColor: recommendation.accent,
+        glowColor: recommendation.accent,
+        equippedSkins: gs.equippedSkins,
+      });
+      c.add(scene.add.text(pad + 35, oy + 70, `Lv.${recommendation.monsterLevel}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#fff3d0', fontStyle: 'bold',
+      }).setOrigin(0.5));
+    } else {
+      c.add(scene.add.text(pad + 35, oy + 34, bp.resultEmoji, {
+        fontFamily: 'sans-serif', fontSize: '28px',
       }).setOrigin(0.5));
     }
-    c.add(scene.add.text(pad + 84, oy + 29, recommendationLine, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: recommendation ? '#b8fff0' : '#b68f5e',
-    }));
-    drawEffectChips(scene, c, effectLabels, pad + 84, oy + 46, rarityHexVal, 166);
-
-    c.add(scene.add.text(pad + 84, oy + 69, `재료 준비 ${progress.have}/${progress.need}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: canCraft ? '#8fdc72' : '#c98258',
-    }));
-    const stateChipX = CANVAS_WIDTH - pad - 146;
-    const stateChip = scene.add.graphics();
-    stateChip.fillStyle(canCraft ? 0x0f2410 : 0x2a1208, 0.94);
-    stateChip.fillRoundedRect(stateChipX, oy + 66, 60, 18, 6);
-    stateChip.lineStyle(1, canCraft ? 0x8de36d : 0xcc6644, 0.54);
-    stateChip.strokeRoundedRect(stateChipX, oy + 66, 60, 18, 6);
-    c.add(stateChip);
-    c.add(scene.add.text(stateChipX + 30, oy + 75, craftStateLabel, {
-      fontFamily: 'sans-serif', fontSize: '9px',
-      color: canCraft ? '#b7f0a3' : '#ffb088', fontStyle: 'bold',
+    c.add(scene.add.text(pad + 35, oy + 89, getForgeRarityStars(bp.rarity), {
+      fontFamily: 'sans-serif', fontSize: '10px', color: rarityColor,
+    }).setOrigin(0.5));
+    c.add(scene.add.text(pad + 35, oy + 108, craftable ? '제작 가능' : `부족 ${projection.materialMissing}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: craftable ? '#c8f7b0' : '#ffb088', fontStyle: 'bold',
     }).setOrigin(0.5));
 
-    drawProgressTrack(scene, c, pad + 84, oy + 84, 152, 7, progress.ratio, canCraft ? 0x88cc66 : 0xcc6644);
-
-    const matStr = Object.entries(bp.materials)
-      .map(([id, qty]) => {
-        const have = gs.materials?.[id] ?? 0;
-        const material = getMaterialDisplay(id);
-        const farmable = have < qty && dropsInAbyss(id);
-        return `${material.emoji}${have}/${qty}${farmable ? '🕳' : ''}`;
-      }).join('  ');
-    c.add(scene.add.text(pad + 84, oy + 94, matStr, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: canCraft ? '#b6e58f' : '#d88a66',
+    c.add(scene.add.text(pad + 84, oy + 12, `${bp.resultEmoji} ${bp.name}`, {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: rarityColor, fontStyle: 'bold',
     }));
-
-    const btnW = 70, btnH = 28;
+    c.add(scene.add.text(pad + 84, oy + 26, targetLine, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffe6bd',
+    }));
+    c.add(scene.add.text(pad + 84, oy + 42, whyNow, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: craftable ? '#8fdc72' : '#d88a66',
+    }));
+    c.add(scene.add.text(pad + 84, oy + 58, materialLine, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: craftable ? '#b6e58f' : '#ffb088',
+    }));
+    c.add(scene.add.text(pad + 84, oy + 86, roomLine, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#8fffe0',
+    }));
+    c.add(scene.add.text(pad + 84, oy + 100, powerLine, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#8fffe0',
+    }));
+    const btnW = 66, btnH = 44;
     const btnX = CANVAS_WIDTH - pad * 2 - btnW + 2;
-    const btnY = oy + (rowH - 4 - btnH) / 2;
+    const btnY = oy + 114;
 
     const btnBg = scene.add.graphics();
-    btnBg.fillStyle(canCraft ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, canCraft ? 1 : 0.5);
-    btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 13);
-    btnBg.fillStyle(canCraft ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
-    btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 13);
-    btnBg.fillStyle(0xffffff, canCraft ? 0.32 : 0.2);
+    btnBg.fillStyle(craftable ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, craftable ? 1 : 0.5);
+    btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 10);
+    btnBg.fillStyle(craftable ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
+    btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 10);
+    btnBg.fillStyle(0xffffff, craftable ? 0.32 : 0.2);
     btnBg.fillRoundedRect(btnX + 6, btnY + 5, btnW - 12, 6, 3);
-    btnBg.lineStyle(2, canCraft ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, 1);
-    btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 13);
+    btnBg.lineStyle(2, craftable ? CASUAL.GREEN_DK : CASUAL.EDGE_SOFT, 1);
+    btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 10);
     c.add(btnBg);
 
-    c.add(scene.add.text(btnX + btnW / 2, btnY + btnH / 2, canCraft ? '제작' : '재료 부족', {
-      fontFamily: 'sans-serif', fontSize: canCraft ? '12px' : '10px', fontStyle: 'bold',
-      color: canCraft ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+    c.add(scene.add.text(btnX + btnW / 2, btnY + btnH / 2, craftable ? '제작' : '재료 부족', {
+      fontFamily: 'sans-serif', fontSize: craftable ? '12px' : '10px', fontStyle: 'bold',
+      color: craftable ? '#ffffff' : CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
-
-    if (canCraft) {
-      const zone = scene.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
-        .setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', () => ctx.onConfirmCraft(bpId));
-      c.add(zone);
-    }
 
     const rowZoneW = CANVAS_WIDTH - pad * 3 - btnW - 10;
     const rowZone = scene.add.zone(pad + rowZoneW / 2, oy + (rowH - 4) / 2, rowZoneW, rowH - 4)
       .setInteractive({ useHandCursor: true });
-    rowZone.on('pointerdown', () => ctx.onSelectBlueprint(bpId));
+    rowZone.on('pointerdown', () => ctx.onSelectBlueprint(bp.id));
     c.add(rowZone);
+    if (craftable) {
+      const zone = scene.add.zone(btnX + btnW / 2, btnY + btnH / 2, btnW, btnH)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => ctx.onConfirmCraft(bp.id));
+      c.add(zone);
+    }
 
     oy += rowH;
   });

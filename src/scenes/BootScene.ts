@@ -53,17 +53,18 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
     });
 
-    // Illustrated dungeon backdrops — override the procedural Canvas painting on
-    // the home (shaft) and battle (chamber) boards. If a file is absent the
-    // backdrop helper falls back to the painted canvas (see DungeonBackdrop.ts).
-    this.load.image('bg-dungeon-shaft',   '/assets/backgrounds/dungeon-shaft.png');
+    // Illustrated dungeon backdrops — the original Dokkaebi lair shaft is the
+    // home-board override; the legacy shaft remains available as an unmodified
+    // fallback asset on disk. If a loaded texture is absent, the backdrop helper
+    // falls back to its procedural Canvas painting (see DungeonBackdrop.ts).
+    this.load.image('bg-dungeon-shaft',   '/assets/backgrounds/dokkaebi-lair-shaft.png');
     this.load.image('bg-dungeon-chamber', '/assets/backgrounds/dungeon-chamber.png');
 
     // Per-chapter battle backdrops (optional). Drop backgrounds/battle-ch{N}.png
     // and add N here → that chapter's battle uses it instead of the universal
     // chamber (see ASSET_GUIDE.md / drawDungeonDefenseFrame). Empty = all chapters
     // share the chamber. Listed-only loading keeps boot 404-free.
-    const BATTLE_BG_CHAPTERS: number[] = [];
+    const BATTLE_BG_CHAPTERS: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     BATTLE_BG_CHAPTERS.forEach(n => {
       this.load.image(`bg-battle-ch${n}`, `/assets/backgrounds/battle-ch${n}.png`);
     });

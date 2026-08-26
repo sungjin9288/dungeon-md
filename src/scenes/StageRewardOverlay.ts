@@ -42,7 +42,7 @@ export class StageRewardOverlay extends Phaser.Scene {
     const isCleared  = bestStars > 0;
 
     const cw = 300;
-    const baseCh2 = 244;
+    const baseCh2 = 254;
     const ch2 = isCleared ? baseCh2 + 44 : baseCh2;
     const cx = CANVAS_WIDTH / 2 - cw / 2;
     const cy = CANVAS_HEIGHT / 2 - ch2 / 2;
@@ -145,13 +145,13 @@ export class StageRewardOverlay extends Phaser.Scene {
     }
 
     // Start button
-    const btnY = cy + ch2 - 44;
+    const btnY = cy + ch2 - 54;
     const btnLabel = isCleared ? '🔄  재도전' : '⚔️  시작';
     addPrimaryActionButton(this, {
       x: cx + 18,
       y: btnY,
       w: cw - 36,
-      h: 34,
+      h: 44,
       label: btnLabel,
       fontSize: '14px',
       once: true,

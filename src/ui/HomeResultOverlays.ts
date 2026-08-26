@@ -12,6 +12,7 @@ import {
   buildBattleReturnGrowthSummary,
   type BattleReturnGrowthContext,
 } from './HomeOverlayShared';
+import type { BattleResultCallout } from '../data/battleResultCallout';
 
 // Casual-toy modal chrome — cream cards, brown edges, saturated accents.
 const OVERLAY_FILL = CASUAL.PANEL;          // cream modal body
@@ -35,12 +36,13 @@ export function showBattleReturnOverlay(
   result: { goldEarned: number; dmXP: number },
   onDismiss: () => void,
   growth?: BattleReturnGrowthContext,
+  callout?: BattleResultCallout,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
   c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const growthSummary = buildBattleReturnGrowthSummary(growth);
-  const PW = 310, PH = 268;
+  const PW = 310, PH = callout ? 320 : 268;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
   const panel = addFramedPanel(scene, {
     x: PX,
@@ -103,7 +105,11 @@ export function showBattleReturnOverlay(
     borderColor: growthSummary.borderColor,
   })));
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 188, growthSummary.note, {
+  if (callout) {
+    addBattleCalloutRow(scene, c, callout, PX + 24, PY + 174, PW - 48, 56);
+  }
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + (callout ? 244 : 188), growthSummary.note, {
     fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -213,11 +219,12 @@ export function showDmLevelUpOverlay(
 export function showBattleDefeatOverlay(
   scene: Phaser.Scene,
   onRetry: () => void,
+  callout?: BattleResultCallout,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
   c.add(buildOverlayDim(scene, 0x1a0000, 0.5));
 
-  const PW = 310, PH = 208;
+  const PW = 310, PH = callout ? 286 : 208;
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
   const panel = addFramedPanel(scene, {
     x: PX,
@@ -257,7 +264,11 @@ export function showBattleDefeatOverlay(
   });
   addToContainer(c, ...Object.values(row));
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 122, '수호자들이 물러났습니다.\n다시 방어를 준비하세요.', {
+  if (callout) {
+    addBattleCalloutRow(scene, c, callout, PX + 24, PY + 108, PW - 48, 56);
+  }
+
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + (callout ? 190 : 122), '수호자들이 물러났습니다.\n다시 방어를 준비하세요.', {
     fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK,
     align: 'center', lineSpacing: 5,
   }).setOrigin(0.5));
@@ -371,6 +382,59 @@ function buildOverlayDim(
   dim.fillStyle(fillColor, alpha);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   return dim;
+}
+
+export function addBattleCalloutRow(
+  scene: Phaser.Scene,
+  container: Phaser.GameObjects.Container,
+  callout: BattleResultCallout,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  const bg = scene.add.graphics();
+  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  bg.fillRoundedRect(x, y, w, h, 8);
+  bg.fillStyle(callout.accent, 0.12);
+  bg.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 6);
+  bg.lineStyle(2, callout.accent, 0.9);
+  bg.strokeRoundedRect(x, y, w, h, 8);
+  bg.fillStyle(callout.accent, 0.24);
+  bg.fillCircle(x + 16, y + h / 2, 10);
+  container.add(bg);
+
+  const roomSpecific = Boolean(callout.roomLabel && callout.roleLabel);
+  const targetLabel = roomSpecific
+    ? `${callout.roomLabel} · ${callout.roleLabel}`
+    : callout.title;
+  const detailLabel = roomSpecific ? callout.title : callout.body;
+
+  container.add(scene.add.text(x + 16, y + h / 2, callout.icon, {
+    fontFamily: 'sans-serif', fontSize: '11px',
+  }).setOrigin(0.5));
+  container.add(scene.add.text(x + 32, y + 10, '다음 수비 지시', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  container.add(scene.add.text(x + 32, y + 25, targetLabel, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  container.add(scene.add.text(x + 32, y + 43, detailLabel, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    wordWrap: roomSpecific ? undefined : { width: w - 107 },
+  }).setOrigin(0, 0.5));
+
+  const statX = x + w - 38;
+  container.add(scene.add.text(statX, y + 21, callout.statValue, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0.5));
+  container.add(scene.add.text(statX, y + 41, callout.statLabel, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: toCssColor(callout.accent), fontStyle: 'bold',
+  }).setOrigin(0.5));
+}
+
+function toCssColor(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`;
 }
 
 function addOverlayButton(

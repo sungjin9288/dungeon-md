@@ -7,15 +7,18 @@ import { describe, it, expect } from 'vitest';
 import { loadGameState } from '../data/wisdom';
 import type { GameState, DungeonSlot } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
+import type { RoomActionRecommendation } from '../data/roomActionRecommendations';
 import {
   getDefenseTotals,
   getDefenseRooms,
   getDefenseDirective,
   estimateInvasionPressure,
   formatDefenseReadinessPercent,
+  formatPrestigeBattleBonus,
   shortenLabel,
   getDefenseDirectiveDisplayChip,
   buildDefenseDirective,
+  buildDefenseDirectiveFromRoomAction,
 } from './PreBattleShared';
 import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
 
@@ -91,6 +94,21 @@ describe('formatDefenseReadinessPercent', () => {
 
   it('rounds fractional values', () => {
     expect(formatDefenseReadinessPercent(42.7)).toBe('43%');
+  });
+});
+
+// ─── formatPrestigeBattleBonus ────────────────────────────────────────────────
+
+describe('formatPrestigeBattleBonus', () => {
+  it('hides the combat bonus before the first prestige', () => {
+    expect(formatPrestigeBattleBonus(makeGs({ prestigeLevel: 0 }))).toBeNull();
+  });
+
+  it('uses the production prestige multiplier for the player-facing bonus', () => {
+    expect(formatPrestigeBattleBonus(makeGs({ prestigeLevel: 1 })))
+      .toBe('👑 명성 Lv.1 · 공격 피해 +10% · 전투 배율 ×1.1');
+    expect(formatPrestigeBattleBonus(makeGs({ prestigeLevel: 3 })))
+      .toBe('👑 명성 Lv.3 · 공격 피해 +30% · 전투 배율 ×1.3');
   });
 });
 
@@ -198,6 +216,27 @@ describe('getDefenseDirective', () => {
     const directive = getDefenseDirective(rooms, totals, gs, cfg);
     expect(directive.readiness).toBeGreaterThanOrEqual(100);
     expect(directive.pressure).toBeGreaterThan(0);
+  });
+
+  it('keeps growth guidance on the computed defense readiness', () => {
+    const growthAction: RoomActionRecommendation = {
+      kind: 'growth',
+      slotIdx: 0,
+      icon: '▲',
+      label: '성장',
+      title: '수호자 성장',
+      body: '도깨비 전사 Lv.1 · 목표 Lv.2',
+      ctaLabel: '성장 이동',
+      statLabel: 'Lv',
+      statValue: '1/2',
+      accent: 0x66c08a,
+    };
+
+    const directive = buildDefenseDirectiveFromRoomAction(growthAction, 296, 23);
+
+    expect(directive.readiness).toBe(296);
+    expect(directive.body).toContain('준비도 100%+');
+    expect(directive.body).not.toContain('준비도 1%');
   });
 });
 

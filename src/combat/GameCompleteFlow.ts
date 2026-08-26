@@ -23,6 +23,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   // Persist rewards first (guard against duplicate triggers)
   const crystalBonus = 50;
   const completionResult = applyGameCompletionReward(loadGameState(), crystalBonus);
+  const awardedCrystalBonus = completionResult.soulCrystalBonus;
   if (completionResult.changed) {
     saveGameState(completionResult.state);
     ctx.checkAchievementsAndToast(completionResult.state);
@@ -39,10 +40,12 @@ export function showGameComplete(ctx: ResultFlowContext): void {
 
   // Cinematic already seen — show enhanced summary overlay
   ctx.setWaveActive(false);
-  scene.scene.pause();
 
   const cx = CANVAS_WIDTH / 2;
   const ov = scene.add.container(0, 0).setDepth(400);
+  const inputBlocker = scene.add.zone(cx, CANVAS_HEIGHT / 2, CANVAS_WIDTH, CANVAS_HEIGHT)
+    .setInteractive();
+  ov.add(inputBlocker);
 
   // ── Background ────────────────────────────────────────────────────────────
   const dim = scene.add.graphics();
@@ -151,7 +154,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   const stats: [string, string][] = [
     ['클리어 스테이지',    `${totalStages} / ${TOTAL_STAGES}`],
     ['최종 던전 HP',       `${ctx.dungeonHp} / ${ctx.maxHp}`],
-    ['보너스 영혼 결정체', `+${crystalBonus} 💠`],
+    ['보너스 영혼 결정체', `+${awardedCrystalBonus} 💠`],
     ['던전 마스터 레벨',   `${gs2.dmLevel ?? 1}`],
   ];
   stats.forEach(([label, value], i) => {
@@ -227,5 +230,5 @@ export function showGameComplete(ctx: ResultFlowContext): void {
     scene.scene.start('DungeonHomeScene');
   });
 
-  logger.debug(`[GAME COMPLETE] all 9 chapters cleared! +${crystalBonus} soul crystals`);
+  logger.debug(`[GAME COMPLETE] all 9 chapters cleared! +${awardedCrystalBonus} soul crystals`);
 }

@@ -3,15 +3,13 @@
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
 import type { DungeonHomeScene } from './DungeonHomeScene';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { ACHIEVEMENT_DEFS } from '../data/achievements';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
 import { openRoomDetail as openRoomDetailOverlay } from '../ui/RoomDetailOverlay';
 import { openPlacementTray } from '../ui/DungeonPlacementTray';
 import { drawBattleSlot as _drawBattleSlot, SLOT_W, SLOT_H } from '../ui/RoomSlotRenderer';
-import { openSimulationModal } from '../ui/SimulationModal';
 import { drawStalactites, drawStalagmites, addWaterDrip } from '../themes/decorations';
 import { getReducedMotion } from '../utils/reducedMotion';
 import { audioManager } from '../audio/AudioManager';
@@ -20,8 +18,7 @@ import { addRoomActivityAura as _addRoomActivityAura, drawDungeonRoomAlcove as _
 // ─── Layout constants (must match DungeonHomeScene.ts) ─────────────────────────
 
 const TOP_H = 64;
-const BOT_H = 64;
-const BOT_Y = CANVAS_HEIGHT - BOT_H;
+const BOT_Y = ROOT_NAV_Y;
 
 const GRID_ROWS_HOME = 3;
 const SLOT_PAD_Y = 8;
@@ -36,12 +33,10 @@ export function buildBackground(scene: DungeonHomeScene): void {
   const bg = scene.add.graphics().setDepth(0);
   bg.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
   bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  bg.fillStyle(0xfff7e4, 0.5);
-  bg.fillEllipse(CANVAS_WIDTH / 2, 30, CANVAS_WIDTH * 1.5, 240);
-  bg.fillStyle(CASUAL.BG_DOT, 0.16);
-  for (let row = 0, y = 70; y < CANVAS_HEIGHT; y += 60, row++) {
-    for (let x = (row % 2) * 30 + 16; x < CANVAS_WIDTH; x += 60) bg.fillCircle(x, y, 3.5);
-  }
+  bg.lineStyle(1, CASUAL.EDGE_SOFT, 0.08);
+  bg.lineBetween(18, 122, 92, 78);
+  bg.lineBetween(CANVAS_WIDTH - 18, 154, CANVAS_WIDTH - 82, 102);
+  bg.lineBetween(24, CANVAS_HEIGHT - 128, 102, CANVAS_HEIGHT - 94);
 }
 
 // ─── buildDungeonGrid ────────────────────────────────────────────────────────
@@ -72,23 +67,6 @@ export function buildDungeonGrid(scene: DungeonHomeScene): void {
     for (let x = (r % 2) * 26 + 22; x < CANVAS_WIDTH - 12; x += 52) bg.fillCircle(x, y, 3);
   }
 
-  if (BLUEPRINT_H > 0) {
-    rebuildDungeonBlueprintPanel(scene);
-
-    const simBtnX = CANVAS_WIDTH - 66, simBtnY = BLUEPRINT_Y + 8;
-    const simBg = scene.add.graphics().setDepth(5);
-    simBg.fillStyle(CASUAL.EDGE, 1);
-    simBg.fillRoundedRect(simBtnX, simBtnY + 2, 56, 24, 12);
-    simBg.fillStyle(CASUAL.PANEL, 1);
-    simBg.fillRoundedRect(simBtnX, simBtnY, 56, 23, 12);
-    simBg.fillStyle(0xffffff, 0.12);
-    simBg.fillRoundedRect(simBtnX + 4, simBtnY + 3, 48, 5, 3);
-    const simTxt = scene.add.text(simBtnX + 28, simBtnY + 11, '⚗ 예측', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(6).setInteractive();
-    simTxt.on('pointerdown', () => openSimulationModal(scene, scene.gs, scene.theme));
-  }
-
   scene.rebuildDungeonSlots();
 }
 
@@ -105,128 +83,6 @@ export function rebuildDungeonBlueprintPanel(scene: DungeonHomeScene): void {
     y: BLUEPRINT_Y,
     w: CANVAS_WIDTH - 86,
     h: BLUEPRINT_H,
-  });
-}
-
-// ─── buildBottomNav ───────────────────────────────────────────────────────────
-
-export function buildBottomNav(scene: DungeonHomeScene): void {
-  const g = scene.add.graphics().setDepth(8);
-  g.fillStyle(CASUAL.SHADOW, 1);
-  g.fillRect(0, BOT_Y - 4, CANVAS_WIDTH, BOT_H + 4);
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRect(0, BOT_Y, CANVAS_WIDTH, BOT_H);
-  g.fillStyle(0xffffff, 0.14);
-  g.fillRect(0, BOT_Y, CANVAS_WIDTH, 3);
-  g.lineStyle(3, CASUAL.EDGE, 1);
-  g.lineBetween(0, BOT_Y, CANVAS_WIDTH, BOT_Y);
-
-  const tabs = [
-    { icon: '🏰', label: '던전',  key: 'home',     accent: CASUAL.GOLD,   accentDk: CASUAL.GOLD_DK   },
-    { icon: '👹', label: '막사',  key: 'barracks', accent: CASUAL.RED,    accentDk: CASUAL.RED_DK    },
-    { icon: '🔮', label: '소환',  key: 'summon',   accent: CASUAL.PURPLE, accentDk: CASUAL.PURPLE_DK },
-    { icon: '⚒',  label: '제작',  key: 'forge',    accent: CASUAL.BLUE,   accentDk: CASUAL.BLUE_DK   },
-    { icon: '⚔️', label: '전투',  key: 'battle',   accent: CASUAL.GREEN,  accentDk: CASUAL.GREEN_DK  },
-  ];
-  const tabW = CANVAS_WIDTH / tabs.length;
-  const panelY = BOT_Y + 6;
-  const panelH = BOT_H - 10;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const hasUnclaimedAchievement = ACHIEVEMENT_DEFS.some(d => {
-    const entry = scene.gs.achievements?.[d.id];
-    return entry?.unlocked && !entry.rewardClaimed;
-  });
-
-  tabs.forEach(({ icon, label, key, accent, accentDk }, i) => {
-    const tx       = i * tabW + tabW / 2;
-    const isActive = key === 'home';
-    const panelX = i * tabW + 5;
-    const panelW = tabW - 10;
-
-    if (isActive) {
-      g.fillStyle(accentDk, 1);
-      g.fillRoundedRect(panelX, panelY + 3, panelW, panelH, 11);
-      g.fillStyle(accent, 1);
-      g.fillRoundedRect(panelX, panelY, panelW, panelH - 1, 11);
-      g.fillStyle(0xffffff, 0.32);
-      g.fillRoundedRect(panelX + 5, panelY + 4, panelW - 10, 8, 5);
-    } else {
-      g.fillStyle(CASUAL.PANEL_SOFT, 1);
-      g.fillRoundedRect(panelX, panelY, panelW, panelH, 11);
-      g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
-      g.strokeRoundedRect(panelX, panelY, panelW, panelH, 11);
-    }
-    const iconTxt = scene.add.text(tx, BOT_Y + 11, icon, {
-      fontFamily: 'sans-serif', fontSize: '22px',
-    }).setOrigin(0.5, 0).setDepth(9);
-    const labelTxt = scene.add.text(tx, BOT_Y + 46, label, {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: isActive ? '#ffffff' : CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold',
-      stroke: isActive ? '#' + accentDk.toString(16).padStart(6, '0') : undefined,
-      strokeThickness: isActive ? 3 : 0,
-    }).setOrigin(0.5).setDepth(9);
-
-    const showBadge = (
-      (key === 'barracks' && scene.gs.ownedMonsters.some(m => (m.skillPoints ?? 0) > 0)) ||
-      (key === 'forge'    && (scene.gs.awakeningStones ?? 0) > 0) ||
-      (key === 'summon'   && scene.gs.lastFriendSummon !== today) ||
-      (key === 'battle'   && hasUnclaimedAchievement)
-    );
-    if (showBadge) {
-      const bx = tx + 14;
-      const by = panelY + 9;
-      const badgeG = scene.add.graphics().setDepth(61);
-      badgeG.fillStyle(0xff2222, 1);
-      badgeG.fillCircle(bx, by, 5);
-      badgeG.lineStyle(1, 0xffffff, 0.65);
-      badgeG.strokeCircle(bx, by, 5);
-      scene.add.text(bx, by, '!', {
-        fontFamily: 'sans-serif', fontSize: '8px', color: '#ffffff',
-      }).setOrigin(0.5).setDepth(62);
-    }
-
-    if (!isActive) {
-      const hoverG = scene.add.graphics().setDepth(8.5).setVisible(false);
-      hoverG.fillStyle(accent, 0.22);
-      hoverG.fillRoundedRect(panelX, panelY, panelW, panelH, 11);
-      hoverG.lineStyle(2, accent, 0.9);
-      hoverG.strokeRoundedRect(panelX, panelY, panelW, panelH, 11);
-
-      const zone = scene.add.zone(i * tabW, BOT_Y, tabW, BOT_H)
-        .setOrigin(0, 0)
-        .setDepth(11)
-        .setInteractive({ useHandCursor: true });
-
-      zone.on('pointerover', () => {
-        hoverG.setVisible(true);
-        labelTxt.setColor('#' + accentDk.toString(16).padStart(6, '0'));
-      });
-      zone.on('pointerout', () => {
-        hoverG.setVisible(false);
-        labelTxt.setColor(CASUAL_CSS.INK_SOFT);
-        iconTxt.setScale(1);
-        labelTxt.setScale(1);
-      });
-      zone.on('pointerdown', () => {
-        scene.tweens.add({
-          targets: [iconTxt, labelTxt],
-          scaleX: 0.9,
-          scaleY: 0.9,
-          duration: 80,
-          yoyo: true,
-        });
-        audioManager.playSfx('button_click');
-        scene.cameras.main.fadeOut(220, 0, 0, 0);
-        scene.cameras.main.once('camerafadeoutcomplete', () => {
-          if (key === 'barracks') scene.scene.start('BarracksScene');
-          else if (key === 'summon') scene.scene.start('SummonScene');
-          else if (key === 'forge') scene.scene.start('ForgeScene');
-          else if (key === 'battle') scene.scene.start('StageSelectScene');
-        });
-      });
-    }
   });
 }
 
@@ -544,7 +400,7 @@ export function addPrimaryRoomActionPin(
     fontStyle: 'bold',
   }).setOrigin(0.5);
   pinContainer.add(text);
-  const zone = scene.add.zone(0, 0, 34, 34)
+  const zone = scene.add.zone(0, 0, 44, 44)
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true });
   zone.on('pointerdown', () => {
@@ -573,70 +429,79 @@ export function addActionQueueRankMarkers(
   c: Phaser.GameObjects.Container,
   unlockedCount: number,
 ): void {
-  const actions = getDungeonActionQueue(scene.gs, unlockedCount).slice(0, 3);
-  if (actions.length === 0) return;
-
-  const reducedMotion = getReducedMotion();
-  actions.forEach((action, i) => {
-    const aqCell = scene.boardLayout.cellsByIdx.get(action.slotIdx);
-    const x = aqCell?.center.x ?? 0;
-    const y = (aqCell?.rect.y ?? 0) + 10;
-    const rank = i + 1;
-    addActionQueueRoomSpotlight(scene, c, action, rank, x, y + scene.boardLayout.slotH / 2 - 10, reducedMotion);
-    const markerW = 42;
-    const marker = scene.add.container(x, y).setDepth(14);
-    const bg = scene.add.graphics();
-
-    bg.fillStyle(0x070503, 0.94);
-    bg.fillRoundedRect(-markerW / 2, -10, markerW, 20, 8);
-    bg.lineStyle(1.2, action.accent, 0.86);
-    bg.strokeRoundedRect(-markerW / 2, -10, markerW, 20, 8);
-    bg.fillStyle(action.accent, 0.22);
-    bg.fillRoundedRect(-markerW / 2 + 4, -6, markerW - 8, 12, 6);
-    bg.fillStyle(0x0b0703, 0.92);
-    bg.fillCircle(-markerW / 2 + 11, 0, 9);
-    bg.lineStyle(1, action.accent, 0.76);
-    bg.strokeCircle(-markerW / 2 + 11, 0, 9);
-    bg.fillStyle(0xffffff, 0.18);
-    bg.fillCircle(-markerW / 2 + 8, -3, 2);
-    marker.add(bg);
-
-    marker.add(scene.add.text(-markerW / 2 + 11, 0, String(rank), {
-      fontFamily: 'monospace',
-      fontSize: '10px',
-      color: '#fff6d6',
-      fontStyle: 'bold',
-    }).setOrigin(0.5));
-    marker.add(scene.add.text(8, 0, action.icon, {
-      fontFamily: 'sans-serif',
-      fontSize: '11px',
-      color: '#fff6d6',
-      fontStyle: 'bold',
-    }).setOrigin(0.5));
-
-    const zone = scene.add.zone(0, 0, markerW + 16, 30)
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover', () => marker.setScale(1.06));
-    zone.on('pointerout', () => marker.setScale(1));
-    zone.on('pointerdown', () => {
-      audioManager.playSfx('button_click');
-      scene.selectRoomForPlacement(action.slotIdx);
+  const action = getDungeonActionQueue(scene.gs, unlockedCount)[0];
+  if (!action) {
+    const firstBand = scene.boardLayout.floors[0]?.bandRect;
+    const routeTarget = {
+      x: scene.boardLayout.entrance.x,
+      y: firstBand ? firstBand.y + firstBand.h : scene.boardLayout.heart.y - 28,
+    };
+    addHomeSpatialDirective(scene, c, routeTarget.x, routeTarget.y, '⚔', '방어 준비', CASUAL.GREEN, () => {
+      scene.roomDetailCallbacks.startBattle?.();
     });
-    marker.add(zone);
-    c.add(marker);
+    return;
+  }
 
-    if (reducedMotion) return;
-    scene.tweens.add({
-      targets: marker,
-      y: y - 2,
-      alpha: { from: 0.88, to: 1 },
-      duration: 680 + i * 90,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+  const cell = scene.boardLayout.cellsByIdx.get(action.slotIdx);
+  if (!cell) return;
+  addActionQueueRoomSpotlight(
+    scene,
+    c,
+    action,
+    1,
+    cell.center.x,
+    cell.center.y,
+    getReducedMotion(),
+  );
+  addHomeSpatialDirective(
+    scene,
+    c,
+    cell.center.x,
+    cell.rect.y + 14,
+    action.icon,
+    action.label,
+    action.accent,
+    () => scene.selectRoomForPlacement(action.slotIdx),
+  );
+}
+
+function addHomeSpatialDirective(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  x: number,
+  y: number,
+  icon: string,
+  label: string,
+  accent: number,
+  onPress: () => void,
+): void {
+  const w = Math.max(96, 46 + label.length * 10);
+  const marker = scene.add.container(x, y).setDepth(14);
+  const bg = scene.add.graphics();
+  bg.fillStyle(CASUAL.PANEL, 0.96);
+  bg.fillRoundedRect(-w / 2, -18, w, 36, 8);
+  bg.fillStyle(accent, 0.14);
+  bg.fillRect(-w / 2, -18, 4, 36);
+  bg.lineStyle(1, accent, 0.72);
+  bg.strokeRoundedRect(-w / 2, -18, w, 36, 8);
+  marker.add(bg);
+  marker.add(scene.add.text(-w / 2 + 18, 0, icon, {
+    fontFamily: 'sans-serif', fontSize: '14px', color: '#fff6d6', fontStyle: 'bold',
+  }).setOrigin(0.5));
+  marker.add(scene.add.text(-w / 2 + 34, 0, label, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  const zone = scene.add.zone(0, 0, Math.max(44, w), 44)
+    .setOrigin(0.5)
+    .setInteractive({ useHandCursor: true });
+  zone.on('pointerover', () => marker.setScale(1.03));
+  zone.on('pointerout', () => marker.setScale(1));
+  zone.on('pointerdown', () => {
+    audioManager.playSfx('button_click');
+    onPress();
   });
+  marker.add(zone);
+  c.add(marker);
 }
 
 // ─── addActionQueueRoomSpotlight ──────────────────────────────────────────────
@@ -728,7 +593,7 @@ export function addRoomMaintenanceBadges(
 
     const labelText = scene.add.text(0, -4, label, {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '11px',
       color: '#fff5dc',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -738,7 +603,7 @@ export function addRoomMaintenanceBadges(
       color: '#b8fff0',
       fontStyle: 'bold',
     }).setOrigin(0.5);
-    const zone = scene.add.zone(0, 0, badgeW + 8, 32)
+    const zone = scene.add.zone(0, 0, Math.max(44, badgeW + 8), 44)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerover', () => badge.setScale(1.06));

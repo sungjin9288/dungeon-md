@@ -168,7 +168,7 @@ export function drawPreBattleReturnStrip(
   y: number,
   w: number,
 ): number {
-  const h = 34;
+  const h = 54;
   const g = scene.add.graphics();
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillRoundedRect(x, y, w, h, 9);
@@ -177,30 +177,30 @@ export function drawPreBattleReturnStrip(
   g.lineStyle(3, CASUAL.BLUE, 1);
   g.strokeRoundedRect(x, y, w, h, 9);
   g.fillStyle(CASUAL.BLUE, 0.18);
-  g.fillRoundedRect(x + 8, y + 7, 22, 20, 6);
+  g.fillRoundedRect(x + 8, y + 9, 30, 36, 7);
   c.add(g);
 
-  c.add(scene.add.text(x + 19, y + 17, '⚔', {
+  c.add(scene.add.text(x + 23, y + 27, '⚔', {
     fontFamily: 'sans-serif',
-    fontSize: '11px',
+    fontSize: '13px',
     color: CASUAL_CSS.BLUE }).setOrigin(0.5));
-  c.add(scene.add.text(x + 40, y + 12, '침공 편집 중', {
+  c.add(scene.add.text(x + 48, y + 17, '침공 편집 중', {
     fontFamily: 'sans-serif',
-    fontSize: '10px',
+    fontSize: '12px',
     color: CASUAL_CSS.INK,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 40, y + 24, '정비 후 바로 작전판으로 돌아갈 수 있습니다.', {
+  c.add(scene.add.text(x + 48, y + 31, '정비 후 작전판으로 복귀합니다.', {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '11px',
     color: CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
 
   const button = addPrimaryActionButton(scene, {
-    x: x + w - 92,
+    x: x + w - 110,
     y: y + 5,
-    w: 82,
-    h: 24,
+    w: 100,
+    h: 44,
     label: '침공 복귀',
-    fontSize: '9px',
+    fontSize: '12px',
     fillColor: CASUAL.BLUE,
     hoverFillColor: 0x5cb6f5,
     borderColor: CASUAL.BLUE_DK,

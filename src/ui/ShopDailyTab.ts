@@ -211,7 +211,7 @@ function drawItemCard(
       color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(8));
 
-    const zone = scene.add.zone(btnX + btnW / 2, cy, btnW, btnH)
+    const zone = scene.add.zone(btnX + btnW / 2, cy, btnW, 44)
       .setInteractive().setDepth(9);
     contentCtr.add(zone);
     zone.on('pointerdown', onBuy);

@@ -16,6 +16,8 @@ import { logger } from '../utils/logger';
 import { popIn } from '../ui/motion';
 import type { ResultFlowContext } from './ResultFlow';
 import { showGameComplete } from './GameCompleteFlow';
+import { projectBattleResultCallout } from '../data/battleResultCallout';
+import { addBattleCalloutRow } from '../ui/HomeResultOverlays';
 
 // ── showChapterClear ──────────────────────────────────────────────────────────
 
@@ -57,6 +59,13 @@ export function showChapterClear(ctx: ResultFlowContext): void {
 
   // Full overlay
   const ov = scene.add.container(0, 0).setDepth(310);
+  const returnCallout = ctx.returnTo
+    ? projectBattleResultCallout({
+      outcome: { won: true },
+      slots: ctx.dungeonTrapSlots,
+      recentStartHps: ctx.waveStartSlotHps,
+    })
+    : null;
 
   const dim = scene.add.graphics();
   dim.fillStyle(CASUAL.SHADOW, 0.5);
@@ -66,7 +75,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   scene.tweens.add({ targets: dim, alpha: 1, duration: 600 });
 
   // Card — extra height for monster level chips row
-  const cw = 320, ch = 360;
+  const cw = 320, ch = returnCallout ? 430 : 360;
   const cx = CANVAS_WIDTH / 2 - cw / 2;
   const cy = CANVAS_HEIGHT / 2 - ch / 2;
   const card = scene.add.graphics();
@@ -202,7 +211,11 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   }
 
   // Divider
-  const divY = chipsSource.length > 0 ? cy + 214 : cy + 178;
+  const baseDivY = chipsSource.length > 0 ? cy + 214 : cy + 178;
+  if (returnCallout) {
+    addBattleCalloutRow(scene, ov, returnCallout, cx + 20, baseDivY, cw - 40, 56);
+  }
+  const divY = baseDivY + (returnCallout ? 64 : 0);
   const divG = scene.add.graphics();
   divG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
   divG.lineBetween(cx + 20, divY, cx + cw - 20, divY);
@@ -248,7 +261,13 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       label: ctx.returnTo ? '🏰  던전으로 귀환' : '스테이지 선택으로',
       action: () => {
         if (ctx.returnTo) {
-          scene.registry.set('battleResult', { won: true, goldEarned, dmXP: 150, materialsEarned: { ...ctx.materialsEarnedThisRun } });
+          scene.registry.set('battleResult', {
+            won: true,
+            goldEarned,
+            dmXP: 150,
+            materialsEarned: { ...ctx.materialsEarnedThisRun },
+            ...(returnCallout ? { callout: returnCallout } : {}),
+          });
           ov.destroy();
           scene.scene.stop('UIScene');
           scene.scene.start(ctx.returnTo);

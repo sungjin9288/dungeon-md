@@ -132,7 +132,7 @@ export class CodexScene extends Phaser.Scene {
           stroke: this.showOwnedOnly ? '#00000033' : undefined,
           strokeThickness: this.showOwnedOnly ? 3 : 0 },
       ).setOrigin(0.5).setDepth(10);
-      this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, chipH)
+      this.add.zone(chipX + chipW / 2, chipY + chipH / 2, chipW, 44)
         .setInteractive({ useHandCursor: true }).setDepth(11)
         .on('pointerdown', () => {
           this.registry.set('codexOwnedFilter', !this.showOwnedOnly);

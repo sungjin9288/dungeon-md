@@ -3,6 +3,7 @@
  * PreBattle feature modules.  NO Phaser render logic here.
  */
 import {
+  getPrestigeDmgMult,
   getRoomSlotCapacity,
   getUnlockedSlots,
   ROOM_SLOT_TYPE_DEFS,
@@ -11,7 +12,6 @@ import {
   type RoomSlotType,
 } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
-import type { InvaderType } from '../data/invaders';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import { MONSTER_DEFS } from '../data/monsters';
 import { EQUIPMENT_DEFS, getEquipmentStats, getMonsterAtk, type EquipmentStats } from '../data/barracks';
@@ -29,18 +29,6 @@ function resolveMonsterTypeId(monsterId: string): MonsterId | null {
   );
   return (typeId ?? null) as MonsterId | null;
 }
-
-// ─── Re-export for InvaderType usage in PreBattleScene ───────────────────────
-export type { InvaderType };
-
-// ─── Map invasion invader type names → DungeonScene InvaderType ───────────────
-
-export const INVASION_TYPE_MAP: Record<string, InvaderType> = {
-  peasant_soldier: 'peasant',
-  shield_knight:   'knight',
-  shadow_thief:    'shadow_ninja',
-  field_medic:     'shaman',
-};
 
 export const ENEMY_EMOJI: Record<string, string> = {
   peasant_soldier: '👤', shield_knight:     '🛡️',
@@ -438,7 +426,7 @@ export function buildDefenseDirectiveFromRoomAction(
   return buildDefenseDirective(
     getReadinessDirectiveCopy('forge-equipment', {
       roomLabel,
-      readiness: Number.parseInt(action.statValue, 10) || readiness,
+      readiness,
     }),
     readiness,
     pressure,
@@ -553,6 +541,15 @@ export function getDefenseQueueBadgeLabel(action: RoomActionRecommendation): str
 export function formatDefenseReadinessPercent(readiness: number): string {
   if (readiness > 100) return '100%+';
   return `${Math.max(0, Math.round(readiness))}%`;
+}
+
+export function formatPrestigeBattleBonus(state: GameState): string | null {
+  const prestigeLevel = state.prestigeLevel ?? 0;
+  if (prestigeLevel <= 0) return null;
+
+  const multiplier = getPrestigeDmgMult(state);
+  const bonusPercent = Math.round((multiplier - 1) * 100);
+  return `👑 명성 Lv.${prestigeLevel} · 공격 피해 +${bonusPercent}% · 전투 배율 ×${multiplier.toFixed(1)}`;
 }
 
 export function getDefenseDirectiveDisplayChip(directive: DefenseDirective): string {

@@ -64,7 +64,7 @@ export class FusionScene extends Phaser.Scene {
     this.drawTabBar();
     this.drawCauldron();
     this.renderTabContent();
-    this.cameras.main.fadeIn(200, 0, 0, 0);
+    if (!getReducedMotion()) this.cameras.main.fadeIn(200, 0, 0, 0);
   }
 
   // ─── Background ──────────────────────────────────────────────────────────
@@ -110,6 +110,10 @@ export class FusionScene extends Phaser.Scene {
       title: '🔬 연구소',
       y:     HEADER_H / 2,
       onBack: () => {
+        if (getReducedMotion()) {
+          this.scene.start('DungeonHomeScene');
+          return;
+        }
         this.cameras.main.fadeOut(200, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('DungeonHomeScene'));
       },
@@ -121,9 +125,11 @@ export class FusionScene extends Phaser.Scene {
     const codexBtn = this.add.text(CANVAS_WIDTH - 14, HEADER_H / 2, `조합 도감 [${discovered}/10]`, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
       backgroundColor: CASUAL_CSS.BLUE, padding: { x: 7, y: 4 },
-    }).setOrigin(1, 0.5).setInteractive();
-    codexBtn.on('pointerdown', () => this.openCodex());
-    c.add(codexBtn);
+    }).setOrigin(1, 0.5);
+    const codexZone = this.add.zone(CANVAS_WIDTH - 60, HEADER_H / 2, 92, 44)
+      .setInteractive({ useHandCursor: true });
+    codexZone.on('pointerdown', () => this.openCodex());
+    c.add([codexBtn, codexZone]);
   }
 
   // ─── Tab availability counts ──────────────────────────────────────────────

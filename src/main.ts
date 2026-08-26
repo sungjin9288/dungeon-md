@@ -22,6 +22,7 @@ import { CodexScene }            from './scenes/CodexScene';
 import { StageRewardOverlay }    from './scenes/StageRewardOverlay';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants/layout';
 import { applyCasualBackground } from './ui/AmbientBackground';
+import { getReducedMotion } from './utils/reducedMotion';
 import { getUnlockedSlots, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
 import { calculateRoomMetrics } from './data/dungeonMetrics';
 import { getDungeonActionQueue, getRoomActionRecommendation } from './data/roomActionRecommendations';
@@ -576,7 +577,7 @@ function applyDprCamera(scene: Phaser.Scene): void {
 // the atmosphere → UI layering in sequence.
 function applySceneFadeIn(scene: Phaser.Scene): void {
   const cam = scene.cameras.main;
-  if (!cam) return;
+  if (!cam || getReducedMotion()) return;
   cam.fadeIn(180, 0, 0, 0);
 }
 

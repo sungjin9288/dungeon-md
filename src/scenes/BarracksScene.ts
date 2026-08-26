@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import {
@@ -36,6 +36,12 @@ import {
   computeBarracksDirective,
   type BarracksGrowthHallContext,
 } from '../ui/BarracksGrowthHall';
+import { getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
+import {
+  buildHomeZoneNavigation,
+  buildZoneBackButton,
+  getSceneFixedShellViewportOffset,
+} from '../ui/GameZoneNavigation';
 
 export class BarracksScene extends Phaser.Scene {
   private gs = loadGameState();
@@ -51,11 +57,13 @@ export class BarracksScene extends Phaser.Scene {
   private focusMonsterId: string | null = null;
   private focusSourceLabel: string | null = null;
   private focusRoomSlotIdx: number | null = null;
+  private legionMenuOverlay?: Phaser.GameObjects.Container;
 
   constructor() { super({ key: 'BarracksScene' }); }
 
   create(): void {
     this.gs = loadGameState();
+    this.legionMenuOverlay = undefined;
     this.scrollY = 0;
     this.focusMonsterId = this.consumeFocusMonsterId();
     this.focusSourceLabel = this.consumeFocusSourceLabel();
@@ -68,7 +76,8 @@ export class BarracksScene extends Phaser.Scene {
     this.buildSortChips();
     this.buildFilterChips();
     this.buildContent();
-    this.buildBottomNav();
+    this.buildRootNavigation();
+    this.buildLegionManagementDisclosure();
     this.setupScroll();
 
     if (this.focusMonsterId) {
@@ -102,8 +111,8 @@ export class BarracksScene extends Phaser.Scene {
   }
 
   private drawHeader(): void {
-    this.add.text(CANVAS_WIDTH / 2, 24, '몬스터 성장소', {
-      fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold',
+    this.add.text(CANVAS_WIDTH / 2, 24, '군단 · 몬스터 성장소', {
+      fontFamily: 'sans-serif', fontSize: '19px', fontStyle: 'bold',
       color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
 
@@ -125,7 +134,10 @@ export class BarracksScene extends Phaser.Scene {
       this.drawCollectionProgressChip(CANVAS_WIDTH / 2 - 96, 62, 192, 18);
     }
 
-    this.buildBtn(24, 24, '← 뒤로', 0x2d2416, () => this.scene.start('DungeonHomeScene'));
+    buildZoneBackButton(this, {
+      label: '← 던전',
+      onBack: () => this.scene.start(getContextualBackTarget('BarracksScene')),
+    });
     if (this.focusRoomSlotIdx !== null) {
       this.buildBtn(CANVAS_WIDTH - 76, 24, '방 복귀', 0x0c211b, () => this.returnToFocusedRoom());
     }
@@ -146,10 +158,10 @@ export class BarracksScene extends Phaser.Scene {
     g.fillCircle(x + w - 14, y + 6, 1.2);
 
     this.add.text(x + 14, y + h / 2, '◆', {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#d7fff4', fontStyle: 'bold',
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#d7fff4', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11);
     this.add.text(x + 29, y + h / 2, label, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#b8fff0', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: '#b8fff0', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
   }
 
@@ -172,13 +184,13 @@ export class BarracksScene extends Phaser.Scene {
       fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ffe6ff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11);
     this.add.text(x + 30, y + 7, `도감 ${summary.owned}/${summary.total}`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#ffd6f6', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd6f6', fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
     this.add.text(x + w - 36, y + 7, `R+ ${summary.rareOwned}`, {
-      fontFamily: 'monospace', fontSize: '8px', color: '#e8d098', fontStyle: 'bold',
+      fontFamily: 'monospace', fontSize: '10px', color: '#e8d098', fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(11);
     this.add.text(x + w - 8, y + 7, `L ${summary.legendaryOwned}`, {
-      fontFamily: 'monospace', fontSize: '8px', color: '#ffd878', fontStyle: 'bold',
+      fontFamily: 'monospace', fontSize: '10px', color: '#ffd878', fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(11);
   }
 
@@ -232,7 +244,7 @@ export class BarracksScene extends Phaser.Scene {
       { key: 'atk',    label: '공격력' },
       { key: 'rarity', label: '희귀도' },
     ];
-    const chipW = 82, chipH = 22, chipGap = 6;
+    const chipW = 82, chipH = 44, chipGap = 6;
     const totalW = KEYS.length * chipW + (KEYS.length - 1) * chipGap;
     const startX = (CANVAS_WIDTH - totalW) / 2;
     const chipY  = SORT_CHIP_Y;
@@ -251,7 +263,7 @@ export class BarracksScene extends Phaser.Scene {
       bg.strokeRoundedRect(cx, chipY, chipW, chipH, 4);
 
       const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: isActive ? 'bold' : 'normal',
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: isActive ? 'bold' : 'normal',
         color: isActive ? '#1a0800' : CSS.PARCHMENT_MUTED,
       }).setOrigin(0.5).setDepth(12);
 
@@ -283,7 +295,7 @@ export class BarracksScene extends Phaser.Scene {
       { key: 'magic',   label: '✨마법' },
       { key: 'support', label: '💚지원' },
     ];
-    const chipW = 66, chipH = 20, chipGap = 4;
+    const chipW = 66, chipH = 44, chipGap = 4;
     const totalW = TYPES.length * chipW + (TYPES.length - 1) * chipGap;
     const startX = (CANVAS_WIDTH - totalW) / 2;
     const chipY  = FILTER_CHIP_Y;
@@ -299,7 +311,7 @@ export class BarracksScene extends Phaser.Scene {
       bg.strokeRoundedRect(cx, chipY, chipW, chipH, 3);
 
       const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '10px',
+        fontFamily: 'sans-serif', fontSize: '11px',
         color: isActive ? '#aaccff' : CSS.PARCHMENT_MUTED,
       }).setOrigin(0.5).setDepth(12);
 
@@ -444,48 +456,119 @@ export class BarracksScene extends Phaser.Scene {
     this.showMonsterDetail(target);
   }
 
-  // ─── Bottom Nav ───────────────────────────────────────────────────────────────
+  // ─── Root navigation + Legion disclosure ─────────────────────────────────────
 
-  private buildBottomNav(): void {
-    const navBg = this.add.graphics().setDepth(20);
-    navBg.fillStyle(CASUAL.PANEL, 1);
-    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 72);
-    navBg.fillStyle(0xffffff, 0.14);
-    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 4);
-    navBg.fillStyle(CASUAL.EDGE, 1);
-    navBg.fillRect(0, CANVAS_HEIGHT - 72, CANVAS_WIDTH, 1.5);
+  private buildRootNavigation(): void {
+    buildHomeZoneNavigation(this, 'legion', (zone) => {
+      this.legionMenuOverlay?.destroy();
+      this.scene.start(getZoneDestination(zone));
+    });
+  }
 
-    const btnW = (CANVAS_WIDTH - 28) / 5;
-    const btnDefs = [
-      { label: '⚔️ 막사', accent: CASUAL.RED,    active: true,  action: () => { /* already here */ } },
-      { label: '📖 도감', accent: CASUAL.BLUE,   active: false, action: () => { this.registry.set('previousScene', 'BarracksScene'); this.scene.start('CodexScene'); } },
-      { label: '✨ 소환', accent: CASUAL.PURPLE, active: false, action: () => this.scene.start('SummonScene') },
-      { label: '🛒 스킬', accent: CASUAL.GREEN,  active: false, action: () => this.showSkillShop() },
-      { label: '🏪 상점', accent: CASUAL.GOLD,   active: false, action: () => this.scene.start('ShopScene') },
+  /** One compact disclosure keeps Legion-internal routes reachable without a five-tab footer. */
+  private buildLegionManagementDisclosure(): void {
+    const offset = getSceneFixedShellViewportOffset(this);
+    const shell = this.add.container(offset.x, offset.y).setDepth(26).setScrollFactor(0);
+    const x = CANVAS_WIDTH - 86;
+    const y = ROOT_NAV_Y - 48;
+    const w = 76;
+    const h = 44;
+    const bg = this.add.graphics();
+    shell.add(bg);
+    const draw = (active = false): void => {
+      bg.clear();
+      bg.fillStyle(CASUAL.SHADOW, 0.3);
+      bg.fillRoundedRect(x, y + 3, w, h, 9);
+      bg.fillStyle(active ? CASUAL.RED : CASUAL.PANEL, 1);
+      bg.fillRoundedRect(x, y, w, h, 9);
+      bg.lineStyle(1.5, active ? CASUAL.RED_DK : CASUAL.EDGE, 1);
+      bg.strokeRoundedRect(x, y, w, h, 9);
+    };
+    draw();
+    const label = this.add.text(x + w / 2, y + h / 2, '관리 메뉴', {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    }).setOrigin(0.5).setDepth(27);
+    shell.add(label);
+    const zone = this.add.zone(x, y, w, h).setOrigin(0).setDepth(28)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    shell.add(zone);
+    zone.on('pointerover', () => { draw(true); label.setColor('#ffffff'); });
+    zone.on('pointerout', () => { draw(false); label.setColor(CASUAL_CSS.INK); });
+    zone.on('pointerdown', () => this.toggleLegionManagementMenu());
+  }
+
+  private toggleLegionManagementMenu(): void {
+    if (this.legionMenuOverlay) {
+      this.legionMenuOverlay.destroy();
+      this.legionMenuOverlay = undefined;
+      return;
+    }
+
+    const rows: ReadonlyArray<{ label: string; icon: string; onPress: () => void }> = [
+      { label: '도감', icon: '📖', onPress: () => {
+        this.registry.set('previousScene', 'BarracksScene');
+        this.scene.start('CodexScene');
+      } },
+      { label: '소환', icon: '✨', onPress: () => this.scene.start('SummonScene') },
+      { label: '융합', icon: '🔗', onPress: () => this.scene.start('FusionScene') },
+      { label: '스킬', icon: '🎯', onPress: () => this.showSkillShop() },
+      { label: '상점', icon: '🏪', onPress: () => this.scene.start('ShopScene') },
     ];
+    const rowH = 46;
+    const panelW = 196;
+    const panelH = 44 + rows.length * rowH + 10;
+    const panelX = CANVAS_WIDTH - panelW - 10;
+    const panelY = ROOT_NAV_Y - panelH - 8;
+    const offset = getSceneFixedShellViewportOffset(this);
+    const overlay = this.add.container(offset.x, offset.y).setDepth(120).setScrollFactor(0);
+    this.legionMenuOverlay = overlay;
 
-    btnDefs.forEach(({ label, accent, active, action }, i) => {
-      const bx = 12 + i * (btnW + 4);
-      const by = CANVAS_HEIGHT - 58;
-      const bg = this.add.graphics().setDepth(21);
-      if (active) {
-        bg.fillStyle(CASUAL.EDGE, 0.3);
-        bg.fillRoundedRect(bx, by + 3, btnW, 46, 13);
-        bg.fillStyle(accent, 1);
-        bg.fillRoundedRect(bx, by, btnW, 46, 13);
-        bg.fillStyle(0xffffff, 0.3);
-        bg.fillRoundedRect(bx + 6, by + 5, btnW - 12, 7, 3);
-      }
-      this.add.text(bx + btnW / 2, by + 23, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-        color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT,
-        stroke: active ? '#00000033' : undefined,
-        strokeThickness: active ? 3 : 0,
-      }).setOrigin(0.5).setDepth(22);
-      const zone = this.add.zone(bx + btnW / 2, by + 23, btnW, 46)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(23);
-      zone.on('pointerdown', action);
+    const dismiss = this.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0)
+      .setInteractive().setDepth(0).setScrollFactor(0);
+    dismiss.on('pointerdown', () => {
+      this.legionMenuOverlay?.destroy();
+      this.legionMenuOverlay = undefined;
+    });
+    overlay.add(dismiss);
+
+    const panel = this.add.graphics().setDepth(1);
+    panel.fillStyle(CASUAL.SHADOW, 0.74);
+    panel.fillRoundedRect(panelX + 3, panelY + 4, panelW, panelH, 12);
+    panel.fillStyle(CASUAL.PANEL, 1);
+    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 12);
+    panel.lineStyle(1.5, CASUAL.RED, 0.82);
+    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 12);
+    overlay.add(panel);
+    overlay.add(this.add.text(panelX + 14, panelY + 20, '군단 관리', {
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    }).setOrigin(0, 0.5));
+    overlay.add(this.add.text(panelX + panelW - 14, panelY + 20, '경로 선택', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+    }).setOrigin(1, 0.5));
+
+    rows.forEach((row, index) => {
+      const rowY = panelY + 34 + index * rowH;
+      const rowBg = this.add.graphics().setDepth(1);
+      rowBg.fillStyle(index % 2 === 0 ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      rowBg.fillRoundedRect(panelX + 8, rowY, panelW - 16, rowH - 2, 7);
+      rowBg.lineStyle(1, CASUAL.EDGE_SOFT, 0.55);
+      rowBg.strokeRoundedRect(panelX + 8, rowY, panelW - 16, rowH - 2, 7);
+      overlay.add(rowBg);
+      overlay.add(this.add.text(panelX + 22, rowY + (rowH - 2) / 2, `${row.icon}  ${row.label}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      }).setOrigin(0, 0.5));
+      overlay.add(this.add.text(panelX + panelW - 22, rowY + (rowH - 2) / 2, '›', {
+        fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.INK_SOFT,
+      }).setOrigin(0.5));
+      const rowZone = this.add.zone(panelX + 8, rowY, panelW - 16, rowH - 2).setOrigin(0)
+        .setDepth(2).setScrollFactor(0).setInteractive({ useHandCursor: true });
+      rowZone.on('pointerdown', () => {
+        overlay.destroy();
+        this.legionMenuOverlay = undefined;
+        row.onPress();
+      });
+      overlay.add(rowZone);
     });
   }
 
@@ -507,7 +590,7 @@ export class BarracksScene extends Phaser.Scene {
     let dragging = false;
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.detailOverlay || this.shopOverlay) return;
+      if (this.detailOverlay || this.shopOverlay || this.legionMenuOverlay) return;
       startY   = p.y;
       dragging = true;
     });
@@ -527,15 +610,15 @@ export class BarracksScene extends Phaser.Scene {
     const w = label.length * 8 + 18;
     const g = this.add.graphics().setDepth(15);
     g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(x - 4, y - 11, w, 28, 13);
+    g.fillRoundedRect(x - 4, y - 19, w, 44, 13);
     g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x - 4, y - 14, w, 26, 13);
+    g.fillRoundedRect(x - 4, y - 22, w, 44, 13);
     g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x, y - 12, w - 8, 5, 3);
-    this.add.text(x - 4 + w / 2, y - 1, label, {
+    g.fillRoundedRect(x, y - 18, w - 8, 7, 3);
+    this.add.text(x - 4 + w / 2, y, label, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(16);
-    const zone = this.add.zone(x - 4, y - 14, w, 28).setOrigin(0).setDepth(16)
+    const zone = this.add.zone(x - 4, y - 22, w, 44).setOrigin(0).setDepth(16)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', cb);
   }

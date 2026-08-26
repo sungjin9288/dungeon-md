@@ -41,13 +41,13 @@ export function drawDungeonRouteNetwork(
   const t = scene.theme;
 
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 31, CASUAL.EDGE, 0.5, i);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 22, CASUAL.EDGE, 0.34, i);
   }
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 23, CASUAL.EDGE_SOFT, 0.85, i + 1);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 14, CASUAL.EDGE_SOFT, 0.56, i + 1);
   }
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 12, CASUAL.PANEL_SOFT, 0.6, i + 2);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 6, CASUAL.PANEL_SOFT, 0.48, i + 2);
   }
 
   for (let i = 0; i < route.length - 1; i++) {
@@ -130,7 +130,7 @@ export function drawDungeonRouteWallStones(
     const tpos = i / (count + 1);
     const cx = passage.from.x + dx * tpos;
     const cy = passage.from.y + dy * tpos;
-    const offset = i % 2 === 0 ? 9 : -9;
+    const offset = i % 2 === 0 ? 7 : -7;
     const sx = cx + px * offset;
     const sy = cy + py * offset;
     const stoneW = Math.abs(dx) >= Math.abs(dy) ? 11 : 7;

@@ -420,6 +420,7 @@ export function buildCheckWaveEndCtx(ds: DungeonScene): CheckWaveEndContext {
     get waveEndChecked()        { return ds.waveEndChecked; },
     set waveEndChecked(v)       { ds.waveEndChecked = v; },
     get waveHasSpawned()        { return ds.waveHasSpawned; },
+    get spawnQueue()            { return ds.spawnQueue; },
     get activeInvaders()        { return ds.activeInvaders; },
     set activeInvaders(v)       { ds.activeInvaders = v; },
     get killCounterText()       { return ds.killCounterText; },

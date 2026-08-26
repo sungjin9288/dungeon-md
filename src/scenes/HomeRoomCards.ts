@@ -7,8 +7,8 @@
  */
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
-import { CANVAS_WIDTH } from '../constants/layout';
-import { COLORS } from '../constants/colors';
+import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
+import { CASUAL, CASUAL_CSS, COLORS } from '../constants/colors';
 import { getUnlockedSlots, type DungeonSlot } from '../data/wisdom';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
 import { logger } from '../utils/logger';
@@ -24,13 +24,12 @@ import {
 } from '../ui/DungeonSynergy';
 import { buildDungeonBoardLayout } from '../ui/DungeonBoardLayout';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { addMonsterPortrait } from '../ui/MonsterPortraitView';
 
 // ─── Layout constants (must match DungeonHomeScene.ts) ─────────────────────
 
 const TOP_H            = 64;
-const BOT_H            = 64;
-const CANVAS_HEIGHT_LOCAL = 844;
-const BOT_Y            = CANVAS_HEIGHT_LOCAL - BOT_H;
+const BOT_Y            = ROOT_NAV_Y;
 
 const GRID_COLS_HOME   = 3;
 const GRID_ROWS_HOME   = 3;
@@ -117,9 +116,7 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     if (idx === changedIdx && isUnlocked) addRoomChangedPulse(scene, c, sx, sy, idx);
     if (idx === scene.selectedRoomIdx && isUnlocked) {
       const hl = scene.add.graphics().setDepth(9);
-      hl.lineStyle(3, COLORS.JADE, 1);
-      hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
-      hl.lineStyle(6, COLORS.JADE, 0.25);
+      hl.lineStyle(2, COLORS.JADE, 1);
       hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
       c.add(hl);
     }
@@ -139,11 +136,45 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     }
   }
 
-  addDungeonCrewLayer(scene, c, unlockedCount);
-  scene.addPrimaryRoomActionPin(c, unlockedCount);
+  addFeaturedGuardian(scene, c, unlockedCount);
   scene.addActionQueueRankMarkers(c, unlockedCount);
-  scene.addRoomMaintenanceBadges(c, unlockedCount);
   drawSynergySummary(synergyCtx, c, CANVAS_WIDTH);
+}
+
+function addFeaturedGuardian(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  unlockedCount: number,
+): void {
+  for (let idx = 0; idx < unlockedCount; idx++) {
+    const slot = scene.gs.dungeonSlots?.[idx];
+    const monsterId = slot?.roomType && slot.hp > 0
+      ? (slot.monsterIds ?? []).find((id): id is string => Boolean(id))
+      : null;
+    const cell = scene.boardLayout.cellsByIdx.get(idx);
+    if (!monsterId || !cell) continue;
+
+    const anchor = scene.add.container(cell.center.x, cell.center.y - 1).setDepth(8);
+    const accent = scene.getRoomActivityColor(slot);
+    addMonsterPortrait(scene, anchor, 0, -1, monsterId, {
+      size: 68,
+      frameColor: accent,
+      glowColor: accent,
+      bgColor: CASUAL.PANEL,
+      equippedSkins: scene.gs.equippedSkins,
+    });
+    const labelBg = scene.add.graphics();
+    labelBg.fillStyle(CASUAL.PANEL, 0.92);
+    labelBg.fillRoundedRect(-38, 29, 76, 18, 5);
+    labelBg.fillStyle(accent, 0.9);
+    labelBg.fillRect(-38, 29, 3, 18);
+    anchor.add(labelBg);
+    anchor.add(scene.add.text(0, 38, '상주 수호자', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    }).setOrigin(0.5));
+    c.add(anchor);
+    return;
+  }
 }
 
 // ─── drawDungeonRoomAlcove ────────────────────────────────────────────────────

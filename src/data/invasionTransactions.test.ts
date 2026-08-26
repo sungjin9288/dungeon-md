@@ -5,6 +5,7 @@ import {
   type BattleReturnResult,
 } from './invasionTransactions';
 import type { GameState } from './wisdom';
+import { projectBattleResultCallout } from './battleResultCallout';
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -126,5 +127,32 @@ describe('invasionTransactions — battle return settlement', () => {
   it('exposes the DM XP threshold used by the home UI', () => {
     expect(xpForDmLevel(1)).toBe(100);
     expect(xpForDmLevel(5)).toBe(500);
+  });
+
+  it('ignores the optional presentation callout during settlement', () => {
+    const state = makeState({
+      homeGold: 20,
+      dmXP: 10,
+      materials: { common_ore: 1 },
+    });
+    const callout = projectBattleResultCallout({
+      outcome: true,
+      slots: [{ roomType: 'combat', hp: 100, maxHp: 100 }],
+    });
+    const withoutCallout = applyBattleReturnSettlement(state, makeResult({
+      won: true,
+      goldEarned: 50,
+      dmXP: 20,
+      materialsEarned: { magic_dust: 1 },
+    }));
+    const withCallout = applyBattleReturnSettlement(state, makeResult({
+      won: true,
+      goldEarned: 50,
+      dmXP: 20,
+      materialsEarned: { magic_dust: 1 },
+      callout: callout ?? undefined,
+    }));
+
+    expect(withCallout).toEqual(withoutCallout);
   });
 });

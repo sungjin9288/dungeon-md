@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CANVAS_HEIGHT } from '../constants/layout';
+import { ROOT_NAV_Y } from '../constants/layout';
 import {
   loadGameState, saveGameState,
   type DungeonSlot,
@@ -19,6 +19,7 @@ import {
   type QuestLogState,
 } from '../ui/QuestLogPanel';
 import { buildDailyContentPanel, showChallengePanel } from '../ui/DailyContentPanel';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   createRoomDetailState,
   type RoomDetailState,
@@ -63,6 +64,8 @@ import {
 import {
   buildCommandDeck as _buildCommandDeck,
 } from './HomeCommandDeck';
+import { getZoneDestination } from '../data/navigationContract';
+import { buildHomeZoneNavigation } from '../ui/GameZoneNavigation';
 import {
   maybeShowIdleIncome as _maybeShowIdleIncome,
   formatIdleDuration as _formatIdleDuration,
@@ -85,7 +88,6 @@ import {
   buildBackground as _buildBackground,
   buildDungeonGrid as _buildDungeonGrid,
   rebuildDungeonBlueprintPanel as _rebuildDungeonBlueprintPanel,
-  buildBottomNav as _buildBottomNav,
   addAmbientEffects as _addAmbientEffects,
   openRoomDetail as _openRoomDetail,
   selectRoomForPlacement as _selectRoomForPlacement,
@@ -101,8 +103,7 @@ import {
 // ─── Layout constants ──────────────────────────────────────────────────────────
 
 const TOP_H = 64;
-const BOT_H = 64;
-const BOT_Y = CANVAS_HEIGHT - BOT_H;
+const BOT_Y = ROOT_NAV_Y;
 
 function xpForLevel(lv: number): number { return xpForDmLevel(lv); }
 
@@ -273,7 +274,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       this.time.delayedCall(800, () => showChapterCompleteOverlay(this));
     }
 
-    this.cameras.main.fadeIn(250, 0, 0, 0);
+    if (!getReducedMotion()) this.cameras.main.fadeIn(250, 0, 0, 0);
     audioManager.resume().then(() => audioManager.playBgm('home'));
     this.maybeOpenFocusedDungeonSlot();
     this.maybeShowTutorial();
@@ -415,6 +416,10 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   /** @internal */ navigateFromHome(sceneKey: string): void {
+    if (getReducedMotion()) {
+      this.scene.start(sceneKey);
+      return;
+    }
     this.cameras.main.fadeOut(220, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(sceneKey));
   }
@@ -433,7 +438,11 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   // ─── Bottom nav ───────────────────────────────────────────────────────────────
 
-  private buildBottomNav(): void { _buildBottomNav(this); }
+  private buildBottomNav(): void {
+    buildHomeZoneNavigation(this, 'dungeon', (zone) => {
+      this.navigateFromHome(getZoneDestination(zone));
+    });
+  }
 
   // ─── Ambient effects ──────────────────────────────────────────────────────────
 

@@ -14,6 +14,7 @@ import {
   summarizeStatEffects,
   getForgeNeedLabel,
   buildForgeTargetCue,
+  formatForgeMaterialStatus,
 } from './ForgeShared';
 import type { GameState } from '../data/wisdom';
 import type { OwnedMonster } from '../data/barracks';
@@ -49,6 +50,21 @@ describe('getBlueprintMaterialProgress', () => {
     const { have, need, ratio } = getBlueprintMaterialProgress(bp, surplus);
     expect(have).toBe(need);
     expect(ratio).toBe(1);
+  });
+});
+
+describe('formatForgeMaterialStatus', () => {
+  const material = {
+    id: 'iron_shard', name: '철 조각', emoji: '⚙️', have: 2, need: 3, missing: 1,
+  };
+
+  it('labels a missing material with the exact deficit', () => {
+    expect(formatForgeMaterialStatus(material)).toBe('⚙️2/3 부족 1');
+  });
+
+  it('labels a fulfilled material without a false zero deficit', () => {
+    expect(formatForgeMaterialStatus({ ...material, have: 3, missing: 0 }))
+      .toBe('⚙️3/3 충족');
   });
 });
 

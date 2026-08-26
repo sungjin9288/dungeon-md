@@ -4,12 +4,14 @@ import {
   type ObjectiveUpdate,
 } from './quests';
 import type { GameState, QuestProgress } from './wisdom';
+import type { BattleResultCallout } from './battleResultCallout';
 
 export interface BattleReturnResult {
   won:              boolean;
   goldEarned:       number;
   dmXP:             number;
   materialsEarned?: Record<string, number>;
+  readonly callout?: BattleResultCallout;
 }
 
 export interface BattleReturnSettlement {

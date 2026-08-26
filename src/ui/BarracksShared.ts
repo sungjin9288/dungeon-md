@@ -27,8 +27,8 @@ export const CARD_START_X    = 14;
 export const GROWTH_PANEL_Y  = 88;
 export const GROWTH_PANEL_H  = 112;
 export const SORT_CHIP_Y     = GROWTH_PANEL_Y + GROWTH_PANEL_H + 8;
-export const FILTER_CHIP_Y   = SORT_CHIP_Y + 28;
-export const CARD_START_Y    = FILTER_CHIP_Y + 30;
+export const FILTER_CHIP_Y   = SORT_CHIP_Y + 48;
+export const CARD_START_Y    = FILTER_CHIP_Y + 48;
 
 // ─── Type aliases ─────────────────────────────────────────────────────────────
 

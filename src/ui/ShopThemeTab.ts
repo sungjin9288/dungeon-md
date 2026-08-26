@@ -183,7 +183,7 @@ function drawThemeCard(
     color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(7));
 
-  const zone = scene.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH)
+  const zone = scene.add.zone(bx + btnW / 2, by + btnH / 2, btnW, 44)
     .setInteractive().setDepth(8);
   contentCtr.add(zone);
 

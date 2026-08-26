@@ -9,7 +9,7 @@ import { MONSTER_DEFS } from '../data/monsters';
 import { EQUIPMENT_DEFS, type OwnedMonster } from '../data/barracks';
 import {
   getMonsterDefForOwned, findMonsterRoom, findOpenMonsterRoom,
-  type ForgeMonsterDef,
+  type ForgeMaterialProjection, type ForgeMonsterDef,
 } from '../data/forgeRecommendations';
 import type { GameState } from '../data/wisdom';
 import type { CraftedEquipment } from '../data/forgeTransactions';
@@ -17,7 +17,7 @@ import type { CraftedEquipment } from '../data/forgeTransactions';
 // ─── Layout Constants ─────────────────────────────────────────────────────────
 
 export const HEADER_H    = 64;
-export const TAB_H       = 40;
+export const TAB_H       = 44;
 export const CONTENT_Y   = HEADER_H + TAB_H;
 export const WORKBENCH_H = 136;
 export const LIST_PAD    = 12;
@@ -93,6 +93,11 @@ export function getBlueprintMaterialProgress(
   const have = Object.entries(bp.materials)
     .reduce((sum, [id, qty]) => sum + Math.min(qty, materials[id] ?? 0), 0);
   return { have, need, ratio: need > 0 ? have / need : 1 };
+}
+
+export function formatForgeMaterialStatus(material: ForgeMaterialProjection): string {
+  const status = material.missing > 0 ? `부족 ${material.missing}` : '충족';
+  return `${material.emoji}${material.have}/${material.need} ${status}`;
 }
 
 export function rarityHex(rarity: number): number {

@@ -22,6 +22,10 @@ import {
 import { getRoomDesignRecommendation } from '../data/roomDesignRecommendations';
 import { getMonsterLoadoutRecommendation, getTrapLoadoutRecommendation } from '../data/roomLoadoutRecommendations';
 import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
+import {
+  getPlacementTrayOpeningTab,
+  type PlacementTrayTab,
+} from './DungeonPlacementTrayState';
 
 export interface PlacementTrayCtx {
   scene:        Phaser.Scene;
@@ -32,8 +36,6 @@ export interface PlacementTrayCtx {
   onClose:      () => void;                    // deselect room
 }
 
-type TrayTab = 'type' | 'monster' | 'trap';
-
 const TAB_BAR_H = 64;
 const TRAY_H    = 238;
 const TRAY_Y    = CANVAS_HEIGHT - TAB_BAR_H - TRAY_H;
@@ -43,13 +45,17 @@ const VIEW_X = 6;
 const VIEW_W = CANVAS_WIDTH - 12;
 
 let container: Phaser.GameObjects.Container | null = null;
-let activeTab: TrayTab = 'monster';
+let activeTab: PlacementTrayTab = 'monster';
 let activeSlot = -1;
 let ctxRef: PlacementTrayCtx | null = null;
 
 export function openPlacementTray(ctx: PlacementTrayCtx, slotIdx: number): void {
   ctxRef = ctx;
   activeSlot = slotIdx;
+  activeTab = getPlacementTrayOpeningTab(
+    activeTab,
+    ctx.getGameState().dungeonSlots?.[slotIdx],
+  );
   render();
 }
 
@@ -240,7 +246,7 @@ function render(): void {
   }
 
   // ── Tabs ─────────────────────────────────────────────────────────────────
-  const tabs: { id: TrayTab; label: string }[] = [
+  const tabs: { id: PlacementTrayTab; label: string }[] = [
     { id: 'type', label: '방 설계' },
     { id: 'monster', label: '몬스터' },
     { id: 'trap', label: '함정' },
@@ -402,6 +408,8 @@ function buildStrip(
     let startPX = 0, dragBase = 0, dragging = false;
     const dz = s.add.zone(CANVAS_WIDTH / 2, y + h / 2, VIEW_W, h + 8).setInteractive().setDepth(120);
     c.add(dz);
+    // Keep the drag surface behind the item container so cards receive taps.
+    c.moveBelow<Phaser.GameObjects.GameObject>(dz, inner);
     dz.on('pointerdown', (p: Phaser.Input.Pointer) => { dragging = true; startPX = p.x; dragBase = inner.x; });
     dz.on('pointerup', () => { dragging = false; });
     dz.on('pointerout', () => { dragging = false; });

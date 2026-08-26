@@ -79,9 +79,9 @@ sips -s format jpeg -s formatOptions 82 -Z 256 원본파일.png --out "public/as
 
 완료한 항목은 `[ ]`를 `[x]`로 바꿔 표시하세요.
 
-- [ ] `storm_dokkaebi.jpg` — 🌪️ 폭풍 도깨비  ·  에픽 · 마법사 · 번개
-- [ ] `gold_dokkaebi.jpg` — 💰 황금 도깨비  ·  에픽 · 지원/힐러 · 신성
-- [ ] `fire_dokkaebi_king.jpg` — 🔥 불꽃 도깨비 왕  ·  에픽 · 근접 전사(탱커/돌격) · 화염
+- [x] `storm_dokkaebi.jpg` — 🌪️ 폭풍 도깨비  ·  에픽 · 마법사 · 번개
+- [x] `gold_dokkaebi.jpg` — 💰 황금 도깨비  ·  에픽 · 지원/힐러 · 신성
+- [x] `fire_dokkaebi_king.jpg` — 🔥 불꽃 도깨비 왕  ·  에픽 · 근접 전사(탱커/돌격) · 화염
 - [ ] `dokkaebi_captain.jpg` — 👹 도깨비 대장  ·  희귀 · 근접 전사(탱커/돌격) · 화염
 - [ ] `dokkaebi_bomber.jpg` — 💣 도깨비 폭격수  ·  희귀 · 원거리 궁수 · 번개
 - [ ] `dokkaebi_duelist.jpg` — ⚔️ 도깨비 쌍검사  ·  희귀 · 근접 전사(탱커/돌격) · 암흑

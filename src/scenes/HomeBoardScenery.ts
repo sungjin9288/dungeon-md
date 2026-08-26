@@ -10,7 +10,6 @@ import Phaser from 'phaser';
 import { CASUAL } from '../constants/colors';
 import { getUnlockedSlots } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
-import { getReducedMotion } from '../utils/reducedMotion';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 
 // ─── Entrance gate ─────────────────────────────────────────────────────────────
@@ -23,86 +22,41 @@ export function drawDungeonEntranceGate(
   y: number,
   accent: number,
 ): void {
-  // Phase D: Full-width top banner — clearer "침입문" label, bigger arch gate,
-  // downward chevrons showing where invaders breach.
-  const { boardRect } = scene.boardLayout;
-  const bx  = boardRect.x + 3;
-  const bw  = boardRect.w - 6;
-  const top = boardRect.y + 3;
-  const btm = boardRect.y + (scene.boardLayout.entrance.y - boardRect.y) * 2 + 4;
-  const bannerH = btm - top;
+  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const readiness = calculateDungeonMetrics(scene.gs, unlockedSlots).readiness;
+  const statusLabel = readiness >= 80 ? '수비선 안정' : '침입 경로 경계';
+  const statusColor = readiness >= 80 ? CASUAL.GREEN : accent;
+  const archW = 72;
+  const archH = 24;
 
-  // Red threat glow fill
-  g.fillStyle(0x3a0808, 0.96);
-  g.fillRoundedRect(bx, top, bw, bannerH, 10);
-  g.fillStyle(accent, 0.14);
-  g.fillRoundedRect(bx, top, bw, bannerH, 10);
-  // Highlight top rim
-  g.fillStyle(0xffffff, 0.07);
-  g.fillRoundedRect(bx + 4, top + 3, bw - 8, 6, 4);
-  // Border
-  g.lineStyle(2, accent, 0.60);
-  g.strokeRoundedRect(bx, top, bw, bannerH, 10);
+  // Open arch and route throat: the threat belongs to the shaft, not a dashboard card.
+  g.fillStyle(CASUAL.PANEL, 0.78);
+  g.fillRoundedRect(x - archW / 2, y - 6, archW, archH, 18);
+  g.fillStyle(CASUAL.BG_BOTTOM, 1);
+  g.fillRoundedRect(x - 22, y - 2, 44, archH, 16);
+  g.lineStyle(2, statusColor, 0.82);
+  g.beginPath();
+  g.arc(x, y + 12, 23, Math.PI, Math.PI * 2);
+  g.strokePath();
+  g.lineBetween(x - 23, y + 12, x - 23, y + 22);
+  g.lineBetween(x + 23, y + 12, x + 23, y + 22);
+  g.lineStyle(2, statusColor, 0.72);
+  g.lineBetween(x, y + 13, x, y + 30);
+  g.fillStyle(statusColor, 0.84);
+  g.fillTriangle(x - 5, y + 25, x + 5, y + 25, x, y + 31);
 
-  // Arch gate symbol — centred, slightly bigger than before
-  const gR = 14;
-  g.fillStyle(0x050302, 0.92);
-  g.fillCircle(x, y, gR);
-  g.fillRoundedRect(x - gR + 2, y, (gR - 2) * 2, gR + 4, 4);
-  g.lineStyle(2, accent, 0.80);
-  g.strokeCircle(x, y, gR);
-  // Inner arch highlight
-  g.lineStyle(1, 0xffffff, 0.16);
-  g.strokeCircle(x, y, gR - 4);
-
-  // Downward threat chevrons (invaders pour downward)
-  g.lineStyle(2.2, accent, 0.82);
-  for (let k = 0; k < 3; k++) {
-    const cy2 = y + 2 + k * 6;
-    g.lineBetween(x - 7, cy2, x, cy2 + 5);
-    g.lineBetween(x + 7, cy2, x, cy2 + 5);
-  }
-
-  // Labels — left and right of the banner
-  c.add(scene.add.text(bx + 12, y, '침입문', {
+  c.add(scene.add.text(x - 48, y + 5, '침입문', {
     fontFamily: 'sans-serif',
-    fontSize: '13px',
-    color: '#ffb8b8',
+    fontSize: '12px',
+    color: '#f2e7d0',
     fontStyle: 'bold',
-    stroke: '#1a0000', strokeThickness: 4,
-  }).setOrigin(0, 0.5).setAlpha(0.98).setDepth(3));
-
-  // Threat sub-label right side
-  c.add(scene.add.text(bx + bw - 12, y, '▼ 침략', {
+  }).setOrigin(1, 0.5).setDepth(3));
+  c.add(scene.add.text(x + 48, y + 5, statusLabel, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#ff8888',
+    color: `#${statusColor.toString(16).padStart(6, '0')}`,
     fontStyle: 'bold',
-    stroke: '#1a0000', strokeThickness: 3,
-  }).setOrigin(1, 0.5).setAlpha(0.80).setDepth(3));
-
-  // Phase D motion: entrance "breach" pulse (tween on a pre-built ring graphic)
-  const reducedMotion = getReducedMotion();
-  if (!reducedMotion) {
-    const pulse = scene.add.graphics();
-    pulse.lineStyle(2.5, accent, 0.56);
-    pulse.strokeCircle(x, y, gR + 2);
-    pulse.lineStyle(1, accent, 0.28);
-    pulse.strokeCircle(x, y, gR + 6);
-    c.add(pulse);
-    scene.tweens.add({
-      targets: pulse,
-      scaleX: 1.30,
-      scaleY: 1.30,
-      alpha: 0,
-      duration: 1400,
-      repeat: -1,
-      ease: 'Sine.easeOut',
-      onRepeat: () => {
-        pulse.setScale(1).setAlpha(0.56);
-      },
-    });
-  }
+  }).setOrigin(0, 0.5).setDepth(3));
 }
 
 // ─── Heart core ────────────────────────────────────────────────────────────────
@@ -115,8 +69,6 @@ export function drawDungeonHeartCore(
   y: number,
   _accent: number,
 ): void {
-  // Phase D: readiness-linked heart glow.
-  // Low readiness (<40) → alarmed red; mid (40-70) → amber; high (>70) → calm gold.
   const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
   const readiness = dungeonMetrics.readiness;
@@ -124,99 +76,34 @@ export function drawDungeonHeartCore(
     : readiness >= 40 ? 0xffaa22
     : 0xff5544;
 
-  const glowAlphaBase = readiness >= 70 ? 0.10
-    : readiness >= 40 ? 0.15
-    : 0.22;   // more alarmed = stronger glow
-
-  // Full-width bottom plinth — protected core, the thing under threat.
-  const { boardRect } = scene.boardLayout;
-  const bx       = boardRect.x + 3;
-  const bw       = boardRect.w - 6;
-  const plinthTop = y - 20;
-  const plinthBtm = boardRect.y + boardRect.h - 3;
-  const plinthH   = plinthBtm - plinthTop;
-
-  // Plinth background — darker stone with accent tint
-  g.fillStyle(readiness >= 70 ? 0x2a1a00 : readiness >= 40 ? 0x2a1400 : 0x2a0808, 0.96);
-  g.fillRoundedRect(bx, plinthTop, bw, plinthH, 10);
-  g.fillStyle(accent, glowAlphaBase);
-  g.fillRoundedRect(bx, plinthTop, bw, plinthH, 10);
-  // Highlight rim
-  g.fillStyle(0xffffff, 0.05);
-  g.fillRoundedRect(bx + 4, plinthTop + 3, bw - 8, 6, 4);
-  // Border
-  g.lineStyle(2, accent, readiness >= 70 ? 0.50 : readiness >= 40 ? 0.60 : 0.72);
-  g.strokeRoundedRect(bx, plinthTop, bw, plinthH, 10);
-  // Top seam line
-  g.lineStyle(1.5, accent, 0.42);
-  g.lineBetween(bx + 8, plinthTop, bx + bw - 8, plinthTop);
-
-  // Core orb — larger in Phase D, radius 16
-  const oR = 16;
-  g.fillStyle(0x050302, 0.90);
+  const oR = 15;
+  g.fillStyle(accent, 0.10);
+  g.fillCircle(x, y, oR + 8);
+  g.fillStyle(CASUAL.PANEL, 0.96);
   g.fillCircle(x, y, oR);
-  // Outer glow rings
-  g.fillStyle(accent, glowAlphaBase * 1.6);
-  g.fillCircle(x, y, oR + 7);
-  g.fillStyle(accent, glowAlphaBase * 0.9);
-  g.fillCircle(x, y, oR + 14);
-  // Orb fill
-  g.fillStyle(accent, 0.22);
-  g.fillCircle(x, y, oR);
-  // Ring borders
-  g.lineStyle(2, accent, readiness >= 70 ? 0.72 : 0.85);
+  g.lineStyle(2, accent, 0.78);
   g.strokeCircle(x, y, oR);
   g.lineStyle(1, 0xffffff, 0.20);
   g.strokeCircle(x, y, oR - 5);
-  // Core bright dot
   g.fillStyle(accent, 0.88);
   g.fillCircle(x, y, 5);
-  g.fillStyle(0xffffff, 0.45);
-  g.fillCircle(x - 2, y - 2, 2.2);
 
-  // Labels
-  c.add(scene.add.text(bx + 12, y, '심장부', {
+  c.add(scene.add.text(x + 28, y - 7, '던전 심장부', {
     fontFamily: 'sans-serif',
-    fontSize: '13px',
+    fontSize: '12px',
     color: readiness >= 70 ? '#ffd24a' : readiness >= 40 ? '#ffaa44' : '#ff7766',
     fontStyle: 'bold',
-    stroke: '#1a1002', strokeThickness: 4,
-  }).setOrigin(0, 0.5).setAlpha(0.98).setDepth(3));
-
-  // Readiness sub-label right side
+  }).setOrigin(0, 0.5).setDepth(3));
   const readinessLabel = readiness >= 70 ? '✦ 수호' : readiness >= 40 ? '△ 경계' : '! 위협';
-  c.add(scene.add.text(bx + bw - 12, y, readinessLabel, {
+  c.add(scene.add.text(x + 28, y + 8, `${readinessLabel} · 준비도 ${readiness}%`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: readiness >= 70 ? '#ffd24a' : readiness >= 40 ? '#ffbb55' : '#ff8866',
     fontStyle: 'bold',
-    stroke: '#1a1002', strokeThickness: 3,
-  }).setOrigin(1, 0.5).setAlpha(0.84).setDepth(3));
-
-  // Phase D motion: heart glow pulse tied to readiness — alarmed = faster pulse
-  const reducedMotion = getReducedMotion();
-  if (!reducedMotion) {
-    const glowPulse = scene.add.graphics();
-    glowPulse.lineStyle(2, accent, 0.52);
-    glowPulse.strokeCircle(x, y, oR + 2);
-    glowPulse.lineStyle(1, accent, 0.24);
-    glowPulse.strokeCircle(x, y, oR + 8);
-    c.add(glowPulse);
-    // Faster pulse when readiness is low (more alarmed feel)
-    const pulseDuration = readiness >= 70 ? 2200 : readiness >= 40 ? 1600 : 1000;
-    scene.tweens.add({
-      targets: glowPulse,
-      scaleX: 1.28,
-      scaleY: 1.28,
-      alpha: 0,
-      duration: pulseDuration,
-      repeat: -1,
-      ease: 'Sine.easeOut',
-      onRepeat: () => {
-        glowPulse.setScale(1).setAlpha(0.52);
-      },
-    });
-  }
+  }).setOrigin(0, 0.5).setDepth(3));
+  c.add(scene.add.text(x, y + 29, '🔒 잠긴 심도', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#8f91ad', fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(3));
 }
 
 // ─── Map backdrop ──────────────────────────────────────────────────────────────
@@ -245,8 +132,8 @@ export function drawDungeonMapBackdrop(
   const backdrop = scene.add.image(inX, inY, bdKey).setOrigin(0, 0).setDisplaySize(inW, inH);
   c.add(backdrop);
   c.sendToBack(backdrop);
-  // Chunky brown edge frame on top (rounded stroke hides the art's square corners).
-  g.lineStyle(7, CASUAL.EDGE, 1);
+  // Thin functional edge keeps the painted shaft atmospheric, not clickable.
+  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.48);
   g.strokeRoundedRect(mapX + 3.5, mapY + 3.5, mapW - 7, mapH - 7, 12);
 
   // ── Entrance strip — drawn by drawDungeonEntranceGate (skip pre-fill here) ──
@@ -268,32 +155,15 @@ export function drawDungeonMapBackdrop(
     g.lineStyle(1, CASUAL.EDGE_SOFT, 0.16);
     g.lineBetween(bandRect.x + 10, bandRect.y, bandRect.x + bandRect.w - 10, bandRect.y);
 
-    // Floor label chip — floats above the band's top seam.
-    // labelPos.y = bandTop (the top edge of this band).
-    // Chip is centred on that y so it straddles the gap between bands,
-    // keeping it clear of cell content.  depth 12/13 so it sits above cells.
     const chipX = labelPos.x;
-    const chipY = labelPos.y;   // = bandTop
-    const chipW = 38;
-    const chipH = 22;
-    // Use a separate graphics at depth 12 so it draws over band fill and cells
+    const chipY = labelPos.y;
     const chipG = scene.add.graphics().setDepth(12);
-    // Chip shadow
-    chipG.fillStyle(CASUAL.SHADOW, 0.60);
-    chipG.fillRoundedRect(chipX - chipW / 2 + 2, chipY - chipH / 2 + 2, chipW, chipH, 6);
-    // Chip body — slightly lighter stone
-    chipG.fillStyle(CASUAL.EDGE, 1);
-    chipG.fillRoundedRect(chipX - chipW / 2, chipY - chipH / 2, chipW, chipH, 6);
-    chipG.fillStyle(0xffffff, 0.10);
-    chipG.fillRoundedRect(chipX - chipW / 2 + 3, chipY - chipH / 2 + 3, chipW - 6, 4, 3);
-    // Chip border
-    chipG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.82);
-    chipG.strokeRoundedRect(chipX - chipW / 2, chipY - chipH / 2, chipW, chipH, 6);
+    chipG.lineStyle(1, CASUAL.EDGE_SOFT, 0.62);
+    chipG.lineBetween(chipX - 22, chipY, chipX - 10, chipY);
+    chipG.lineBetween(chipX + 10, chipY, chipX + 22, chipY);
     c.add(chipG);
-    // Label text — large and bold, clearly legible
     c.add(scene.add.text(chipX, chipY, label, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#f0e6c8', fontStyle: 'bold',
-      stroke: '#0a0806', strokeThickness: 3,
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#d7d8e8', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(13));
   }
 
@@ -319,8 +189,8 @@ export function drawDungeonMapBackdrop(
     const borderA   = isBroken ? 0.80 : isBuilt ? 0.70 : isEmpty ? 0.50 : 0.32;
 
     // Soft drop shadow + translucent recessed alcove face
-    g.fillStyle(CASUAL.SHADOW, 0.30);
-    g.fillRoundedRect(cx + 1, cy + 3, cw, ch, 10);
+    g.fillStyle(CASUAL.SHADOW, 0.16);
+    g.fillRoundedRect(cx + 1, cy + 2, cw, ch, 10);
     g.fillStyle(cardFill, cardAlpha);
     g.fillRoundedRect(cx, cy, cw, ch, 10);
     // Dark inner top lip — the alcove recedes into the painted rock
@@ -336,8 +206,8 @@ export function drawDungeonMapBackdrop(
       g.fillStyle(CASUAL.RED, 0.10);
       g.fillRoundedRect(cx + 2, cy + 2, cw - 4, ch - 4, 8);
     }
-    // Accent border — thicker for built/broken to pop
-    g.lineStyle(isBroken || isBuilt ? 3 : 2, borderC, borderA);
+    // State edge is functional; labels/icons inside the slot carry the same meaning.
+    g.lineStyle(isBroken || isBuilt ? 1.5 : 1, borderC, borderA);
     g.strokeRoundedRect(cx, cy, cw, ch, 10);
   }
   void slotW; void slotH; // referenced by drawBattleSlot callers via boardLayout

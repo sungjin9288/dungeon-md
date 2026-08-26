@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_HEIGHT } from '../constants/layout';
 import { ZONE_ACCENTS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import {
@@ -39,6 +39,10 @@ import {
 import { drawEffectChips, drawForgeRecommendationPreview } from '../ui/ForgeWorkbench';
 import { buildCraftTab, buildDismantleTab } from '../ui/ForgeTabs';
 import { showCraftAnimation, addModalButton } from '../ui/ForgeCraftFx';
+import { createForgeFocusContext, getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
+import { getReducedMotion } from '../utils/reducedMotion';
+import { findAssignedRoom } from '../data/reinforcementRecommendations';
+import { buildHomeZoneNavigation, buildZoneBackButton } from '../ui/GameZoneNavigation';
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 // 제작소 씬. 렌더(워크벤치/탭/카드)·연출(FX)·순수 헬퍼는 ForgeShared/ForgeWorkbench/
@@ -69,13 +73,15 @@ export class ForgeScene extends Phaser.Scene {
     this.focusMonsterId = this.peekFocusMonsterId();
     this.focusSourceLabel = this.peekFocusSourceLabel();
     this.focusRoomSlotIdx = this.peekFocusRoomSlotIdx();
+    this.refreshFocusContext(loadGameState(), this.focusMonsterId);
 
     this.drawBackground();
     this.drawHeader();
     this.drawTabBar();
     this.renderContent();
+    this.buildRootNavigation();
 
-    this.cameras.main.fadeIn(220, 0, 0, 0);
+    if (!getReducedMotion()) this.cameras.main.fadeIn(220, 0, 0, 0);
   }
 
   // ─── Background ──────────────────────────────────────────────────────────
@@ -89,7 +95,7 @@ export class ForgeScene extends Phaser.Scene {
     const trayX = 10;
     const trayY = CONTENT_Y + 8;
     const trayW = CANVAS_WIDTH - 20;
-    const trayH = CANVAS_HEIGHT - CONTENT_Y - 18;
+    const trayH = CANVAS_HEIGHT - CONTENT_Y - ROOT_NAV_HEIGHT - 18;
     g.fillStyle(CASUAL.SHADOW, 0.16);
     g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 18);
     g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
@@ -117,41 +123,53 @@ export class ForgeScene extends Phaser.Scene {
     g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
     c.add(g);
 
-    c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 - 7, '장비 제작소', {
-      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold',
+    c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 - 7, '공방 · 제작소', {
+      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
       color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5));
     const gs = loadGameState();
     const focusName = getFocusMonsterName(gs, this.focusMonsterId);
     const headerSub = focusName
       ? `${this.focusSourceLabel ?? '선택 수호자'} · ${focusName} 장비 보강`
-      : '몬스터 장비를 제작하고 바로 장착';
+      : '장비 제작 · 바로 장착';
     c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 + 14, headerSub, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
 
-    this.buildBtn(c, 14, HEADER_H / 2 - 13, '← 뒤로', () => {
-      this.cameras.main.fadeOut(200, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(this.returnScene));
+    buildZoneBackButton(this, {
+      label: this.returnScene === 'BarracksScene' ? '← 군단' : '← 던전',
+      width: 68,
+      onBack: () => {
+        const target = this.returnScene || getContextualBackTarget('ForgeScene');
+        if (getReducedMotion()) {
+          this.scene.start(target);
+          return;
+        }
+        this.cameras.main.fadeOut(200, 0, 0, 0);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start(target);
+        });
+      },
     });
 
     // Farm-loop shortcut: jump to the Abyss to gather crafting materials.
     if (this.focusRoomSlotIdx === null) {
-      this.buildBtn(c, 80, HEADER_H / 2 - 13, '🕳 심연', () => this.scene.start('AbyssScene'));
+      this.buildBtn(c, 80, 10, '🕳 심연', () => this.scene.start('AbyssScene'));
     }
 
     if (this.focusRoomSlotIdx !== null) {
       const returnX = CANVAS_WIDTH - 78;
-      const returnY = HEADER_H / 2 - 13;
+      const returnY = 10;
       const returnW = 66;
+      const returnH = 44;
       const returnBg = this.add.graphics();
       returnBg.fillStyle(CASUAL.GREEN_DK, 1);
-      returnBg.fillRoundedRect(returnX, returnY + 3, returnW, 26, 13);
+      returnBg.fillRoundedRect(returnX, returnY + 3, returnW, returnH, 13);
       returnBg.fillStyle(CASUAL.GREEN, 1);
-      returnBg.fillRoundedRect(returnX, returnY, returnW, 26, 13);
+      returnBg.fillRoundedRect(returnX, returnY, returnW, returnH, 13);
       returnBg.fillStyle(0xffffff, 0.32);
-      returnBg.fillRoundedRect(returnX + 6, returnY + 4, returnW - 12, 5, 3);
+      returnBg.fillRoundedRect(returnX + 6, returnY + 4, returnW - 12, 7, 3);
       c.add(returnBg);
 
       const returnText = this.add.text(returnX + returnW / 2, returnY + 13, '방 복귀', {
@@ -159,8 +177,8 @@ export class ForgeScene extends Phaser.Scene {
         fontSize: '11px',
         color: '#ffffff',
         fontStyle: 'bold',
-      }).setOrigin(0.5);
-      const returnZone = this.add.zone(returnX, returnY, returnW, 26)
+      }).setOrigin(0.5).setY(returnY + returnH / 2);
+      const returnZone = this.add.zone(returnX, returnY, returnW, returnH)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true });
       returnZone.on('pointerdown', () => this.returnToFocusedRoom());
@@ -184,7 +202,7 @@ export class ForgeScene extends Phaser.Scene {
     const stones = gs.awakeningStones ?? 0;
     if (this.focusRoomSlotIdx === null) {
       c.add(this.add.text(CANVAS_WIDTH - 12, HEADER_H - 14, `각성석: ${stones}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
       }).setOrigin(1, 1));
     }
   }
@@ -200,16 +218,16 @@ export class ForgeScene extends Phaser.Scene {
     const w = label.length * 8 + 18;
     const g = this.add.graphics();
     g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(x, y + 3, w, 26, 13);
+    g.fillRoundedRect(x, y + 3, w, 44, 13);
     g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x, y, w, 26, 13);
+    g.fillRoundedRect(x, y, w, 44, 13);
     g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x + 4, y + 2, w - 8, 5, 3);
+    g.fillRoundedRect(x + 4, y + 4, w - 8, 7, 3);
     c.add(g);
-    c.add(this.add.text(x + w / 2, y + 13, label, {
+    c.add(this.add.text(x + w / 2, y + 22, label, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5));
-    const zone = this.add.zone(x, y, w, 26).setOrigin(0)
+    const zone = this.add.zone(x, y, w, 44).setOrigin(0)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', cb);
     c.add(zone);
@@ -239,16 +257,31 @@ export class ForgeScene extends Phaser.Scene {
 
   private preserveFocusContext(): void {
     if (this.focusMonsterId) this.registry.set('focusMonsterId', this.focusMonsterId);
+    else this.registry.remove('focusMonsterId');
     if (this.focusSourceLabel) this.registry.set('focusSourceLabel', this.focusSourceLabel);
+    else this.registry.remove('focusSourceLabel');
     if (this.focusRoomSlotIdx !== null) this.registry.set('focusRoomSlotIdx', this.focusRoomSlotIdx);
+    else this.registry.remove('focusRoomSlotIdx');
+  }
+
+  /** Recompute return context from the target's current, actual room assignment. */
+  private refreshFocusContext(gs: GameState, monsterId: string | null): number | null {
+    const assignedRoom = monsterId ? findAssignedRoom(gs, monsterId) : null;
+    const next = createForgeFocusContext(monsterId, assignedRoom?.index ?? null);
+    this.focusMonsterId = next.monsterId;
+    this.focusSourceLabel = next.sourceLabel;
+    this.focusRoomSlotIdx = next.roomSlotIdx;
+    this.preserveFocusContext();
+    return next.roomSlotIdx;
   }
 
   private returnToFocusedRoom(): void {
+    this.refreshFocusContext(loadGameState(), this.focusMonsterId);
     if (this.focusRoomSlotIdx === null) {
       this.scene.start('DungeonHomeScene');
       return;
     }
-    this.registry.set('focusRoomSlotIdx', this.focusRoomSlotIdx);
+    this.preserveFocusContext();
     this.scene.start('DungeonHomeScene');
   }
 
@@ -257,17 +290,17 @@ export class ForgeScene extends Phaser.Scene {
     afterGs: GameState,
     monsterId: string,
     bp: BlueprintDef,
+    roomSlotIdx: number,
   ): void {
-    if (this.focusRoomSlotIdx === null) return;
-    const target = getFocusMonsterDisplay(afterGs, this.focusMonsterId);
-    const sourceLabel = this.focusSourceLabel ?? `방 #${this.focusRoomSlotIdx + 1} 수호자`;
-    const beforeSlot = beforeGs.dungeonSlots?.[this.focusRoomSlotIdx];
-    const afterSlot = afterGs.dungeonSlots?.[this.focusRoomSlotIdx];
+    const target = getFocusMonsterDisplay(afterGs, monsterId);
+    const sourceLabel = `방 #${roomSlotIdx + 1} 수호자`;
+    const beforeSlot = beforeGs.dungeonSlots?.[roomSlotIdx];
+    const afterSlot = afterGs.dungeonSlots?.[roomSlotIdx];
     const beforePower = beforeSlot ? calculateRoomMetrics(beforeGs, beforeSlot).threatScore : null;
     const afterPower = afterSlot ? calculateRoomMetrics(afterGs, afterSlot).threatScore : null;
     const feedback: RoomEquipmentFeedback = {
       kind: 'equipment',
-      slotIdx: this.focusRoomSlotIdx,
+      slotIdx: roomSlotIdx,
       monsterId,
       sourceLabel,
       title: '장비 장착 완료',
@@ -307,6 +340,12 @@ export class ForgeScene extends Phaser.Scene {
     }).container;
   }
 
+  private buildRootNavigation(): void {
+    buildHomeZoneNavigation(this, 'forge', (zone) => {
+      this.scene.start(getZoneDestination(zone));
+    });
+  }
+
   // ─── Content dispatch ────────────────────────────────────────────────────
 
   /** Build the read-only context + action callbacks passed to render modules. */
@@ -318,9 +357,8 @@ export class ForgeScene extends Phaser.Scene {
       focusSourceLabel: this.focusSourceLabel,
       selectedBpId:     this.selectedBpId,
       selectedEqIdx:    this.selectedEqIdx,
-      onFocusChange: (monsterId, roomLabel) => {
-        this.focusMonsterId = monsterId;
-        this.focusSourceLabel = roomLabel;
+      onFocusChange: (monsterId) => {
+        this.refreshFocusContext(loadGameState(), monsterId);
         this.drawHeader();
         this.renderContent();
       },
@@ -393,15 +431,19 @@ export class ForgeScene extends Phaser.Scene {
   /** Equip the freshly crafted item; returns success. Handles room-return nav vs. in-place toast. */
   private equipFromForge(targetMonsterId: string, bp: BlueprintDef): boolean {
     const beforeState = loadGameState();
+    const shouldReturnToFocusedRoom = this.focusMonsterId !== null;
     const result = equipMonsterEquipment(beforeState, targetMonsterId, bp.resultId);
     if (!result.ok) {
       this.showToast('장착 실패', '#ff6666');
       return false;
     }
     saveGameState(result.state);
-    if (this.focusMonsterId) {
-      this.registerRoomEquipmentFeedback(beforeState, result.state, this.focusMonsterId, bp);
-      this.preserveFocusContext();
+    const afterState = loadGameState();
+    if (shouldReturnToFocusedRoom) {
+      const roomSlotIdx = this.refreshFocusContext(afterState, targetMonsterId);
+      if (roomSlotIdx !== null) {
+        this.registerRoomEquipmentFeedback(beforeState, afterState, targetMonsterId, bp, roomSlotIdx);
+      }
       this.scene.start(this.returnScene);
       return true;
     }
@@ -439,11 +481,11 @@ export class ForgeScene extends Phaser.Scene {
     const accent = rarityHex(bp.rarity);
     const materialY = recommendation ? cy - ph / 2 + 164 : cy - ph / 2 + 112;
     const box = this.add.graphics();
-    box.fillStyle(0x1a0800, 1);
+    box.fillStyle(CASUAL.PANEL, 1);
     box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
     box.fillStyle(accent, 0.12);
     box.fillRoundedRect(cx - pw / 2 + 12, cy - ph / 2 + 38, pw - 24, 44, 9);
-    box.fillStyle(0x060402, 0.34);
+    box.fillStyle(CASUAL.SHADOW, 0.34);
     box.fillRoundedRect(cx - pw / 2 + 18, materialY - 8, pw - 36, materialCount * 16 + 36, 8);
     box.lineStyle(2, accent, 0.96);
     box.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
@@ -481,8 +523,8 @@ export class ForgeScene extends Phaser.Scene {
     }).setOrigin(0.5, 0));
 
     const buttonY = cy + ph / 2 - 42;
-    addModalButton(this, ov, cx - 112, buttonY, 96, 30, '취소', 0x7c5633, 'secondary', () => ov.destroy());
-    addModalButton(this, ov, cx + 16, buttonY, 96, 30, '제작', accent, 'primary', () => {
+    addModalButton(this, ov, cx - 112, buttonY, 96, 44, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
+    addModalButton(this, ov, cx + 16, buttonY, 96, 44, '제작', accent, 'primary', () => {
       ov.destroy();
       this.executeCraft(bpId);
     });
@@ -516,10 +558,10 @@ export class ForgeScene extends Phaser.Scene {
     const cx = CANVAS_WIDTH / 2, cy = CANVAS_HEIGHT / 2;
 
     const box = this.add.graphics();
-    box.fillStyle(0x1a0800, 1);
+    box.fillStyle(CASUAL.PANEL, 1);
     box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
     if (holder) {
-      box.fillStyle(0x3a1308, 0.72);
+      box.fillStyle(CASUAL.RED_DK, 0.72);
       box.fillRoundedRect(cx - pw / 2 + 18, cy - ph / 2 + 74, pw - 36, 28, 8);
     }
     box.lineStyle(2, 0xcc4400, 0.9);
@@ -545,8 +587,8 @@ export class ForgeScene extends Phaser.Scene {
     }
 
     const buttonY = cy + ph / 2 - 40;
-    addModalButton(this, ov, cx - 112, buttonY, 96, 30, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
-    addModalButton(this, ov, cx + 16, buttonY, 96, 30, '분해', CASUAL.RED, 'primary', () => {
+    addModalButton(this, ov, cx - 112, buttonY, 96, 44, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
+    addModalButton(this, ov, cx + 16, buttonY, 96, 44, '분해', CASUAL.RED, 'primary', () => {
       ov.destroy();
       this.executeDismantle(idx, bp);
     });

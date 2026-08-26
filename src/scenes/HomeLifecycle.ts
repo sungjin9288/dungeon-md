@@ -22,6 +22,7 @@ import {
 } from '../data/questLifecycleTransactions';
 import { settleTutorialStageAdvance } from '../data/tutorialTransactions';
 import { TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE } from '../ui/TutorialOverlay';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   showQuestCompleteOverlay,
   showGameCompleteOverlay,
@@ -333,6 +334,10 @@ export function resumePreBattleFromRoomEdit(scene: DungeonHomeScene): void {
   if (!scene.registry.get('questId')) {
     scene.registry.set('questId', scene.gs.activeMainQuestId);
   }
+  if (getReducedMotion()) {
+    scene.scene.start('PreBattleScene');
+    return;
+  }
   scene.cameras.main.fadeOut(220, 0, 0, 0);
   scene.cameras.main.once('camerafadeoutcomplete', () => {
     scene.scene.start('PreBattleScene');
@@ -482,10 +487,10 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
       scene.time.delayedCall(400, () => {
         showBattleReturnOverlay(scene, result, () => {
           if (done) handleQuestComplete(scene, done);
-        }, battleReturnGrowth);
+        }, battleReturnGrowth, result.callout);
       });
     } else {
-      scene.time.delayedCall(400, () => showBattleReturnOverlay(scene, result, afterReturn, battleReturnGrowth));
+      scene.time.delayedCall(400, () => showBattleReturnOverlay(scene, result, afterReturn, battleReturnGrowth, result.callout));
     }
   } else {
     scene.time.delayedCall(400, () => showBattleDefeatOverlay(
@@ -494,6 +499,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
         scene, scene.invasionState,
         () => goToPreBattle(scene, scene.gs, scene.invasionState),
       ),
+      result.callout,
     ));
   }
 }

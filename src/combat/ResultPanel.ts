@@ -20,6 +20,8 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import { enableWaveButton } from './WaveLifecycle';
 import type { ResultFlowContext } from './ResultFlow';
 import { logger } from '../utils/logger';
+import { projectBattleResultCallout, type BattleResultCallout } from '../data/battleResultCallout';
+import { addBattleCalloutRow } from '../ui/HomeResultOverlays';
 
 // ─── showResultPanel ──────────────────────────────────────────────────────────
 
@@ -28,6 +30,13 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   if (ctx.resultOverlay) ctx.resultOverlay.destroy();
   const ov = scene.add.container(0, 0).setDepth(300);
   ctx.setResultOverlay(ov);
+  const failCallout = isFail && ctx.returnTo
+    ? projectBattleResultCallout({
+      outcome: { won: false },
+      slots: ctx.dungeonTrapSlots,
+      recentStartHps: ctx.waveStartSlotHps,
+    })
+    : null;
 
   // Compute wave stat summary
   const damagedCount  = ctx.dungeonTrapSlots.filter(
@@ -50,7 +59,9 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   const matRowCount = Math.min(Math.ceil(matEntries.length / 3), 2);
   const statsH = matEntries.length === 0 ? 60 : matRowCount === 1 ? 100 : 136;
   const failOptionCount = (ctx.returnTo ? 1 : 0) + 3; // returnTo + ad + gems + reset
-  const ch     = isFail ? 105 + failOptionCount * 54 : 200 + statsH;
+  const ch     = isFail
+    ? 105 + failOptionCount * 54 + (failCallout ? 75 : 0)
+    : 200 + statsH;
   const cx     = CANVAS_WIDTH  / 2 - cw / 2;
   const cy     = CANVAS_HEIGHT / 2 - ch / 2;
 
@@ -83,7 +94,7 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   if (!isFail) {
     buildSuccessContent(ctx, ov, cx, cy, cw, ch, stars, reward, damagedCount, destroyedCount);
   } else {
-    buildFailContent(ctx, ov, cx, cy, cw);
+    buildFailContent(ctx, ov, cx, cy, cw, failCallout);
   }
 }
 
@@ -297,6 +308,7 @@ function buildFailContent(
   ctx: ResultFlowContext,
   ov: Phaser.GameObjects.Container,
   cx: number, cy: number, cw: number,
+  callout: BattleResultCallout | null,
 ): void {
   const scene = ctx.scene;
 
@@ -306,27 +318,31 @@ function buildFailContent(
   ov.add(failMsg);
   scene.tweens.add({ targets: failMsg, alpha: 1, duration: 300, delay: 200 });
 
-  // Weakest room hint — find slot with the most relative HP loss
-  let worstIdx  = -1;
-  let worstLoss = 0;
-  ctx.dungeonTrapSlots.forEach((slot, i) => {
-    if (!slot || slot.maxHp <= 0) return;
-    const max     = slot.maxHp;
-    const startHp = ctx.waveStartSlotHps[i] ?? max;
-    const loss    = (startHp - slot.hp) / max;
-    if (loss > worstLoss) { worstLoss = loss; worstIdx = i; }
-  });
-  if (worstIdx >= 0 && worstLoss > 0.05) {
-    const wRow   = Math.floor(worstIdx / ctx.effectiveCols) + 1;
-    const wCol   = worstIdx % ctx.effectiveCols + 1;
-    const dmgPct = Math.round(worstLoss * 100);
-    const hintT  = scene.add.text(CANVAS_WIDTH / 2, cy + 93,
-      `⚠  취약 지점: ${wRow}행 ${wCol}열  (피해 ${dmgPct}%)`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.RED,
-      stroke: '#ffffff', strokeThickness: 2,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(hintT);
-    scene.tweens.add({ targets: hintT, alpha: 1, duration: 300, delay: 350 });
+  if (callout) {
+    addBattleCalloutRow(scene, ov, callout, cx + 20, cy + 104, cw - 40, 56);
+  } else {
+    // Keep the generic weakest-room hint for non-return chapter flows.
+    let worstIdx  = -1;
+    let worstLoss = 0;
+    ctx.dungeonTrapSlots.forEach((slot, i) => {
+      if (!slot || slot.maxHp <= 0) return;
+      const max     = slot.maxHp;
+      const startHp = ctx.waveStartSlotHps[i] ?? max;
+      const loss    = (startHp - slot.hp) / max;
+      if (loss > worstLoss) { worstLoss = loss; worstIdx = i; }
+    });
+    if (worstIdx >= 0 && worstLoss > 0.05) {
+      const wRow   = Math.floor(worstIdx / ctx.effectiveCols) + 1;
+      const wCol   = worstIdx % ctx.effectiveCols + 1;
+      const dmgPct = Math.round(worstLoss * 100);
+      const hintT  = scene.add.text(CANVAS_WIDTH / 2, cy + 93,
+        `⚠  취약 지점: ${wRow}행 ${wCol}열  (피해 ${dmgPct}%)`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.RED,
+        stroke: '#ffffff', strokeThickness: 2,
+      }).setOrigin(0.5).setAlpha(0);
+      ov.add(hintT);
+      scene.tweens.add({ targets: hintT, alpha: 1, duration: 300, delay: 350 });
+    }
   }
 
   const options: Array<{ label: string; action: () => void; cap: number; base: number }> = [
@@ -337,6 +353,7 @@ function buildFailContent(
         scene.registry.set('battleResult', {
           won: false, goldEarned: ctx.gold, dmXP: 30,
           materialsEarned: { ...ctx.materialsEarnedThisRun },
+          ...(callout ? { callout } : {}),
         });
         ov.destroy();
         scene.scene.start(ctx.returnTo ?? 'DungeonHomeScene');
@@ -348,7 +365,7 @@ function buildFailContent(
   ];
 
   options.forEach(({ label, action, cap, base }, i) => {
-    const oy = cy + 115 + i * 54;
+    const oy = cy + (callout ? 190 : 115) + i * 54;
     const isSecondary = cap === CASUAL.PANEL;
     const obW = cw - 40, obH = 44, obX = cx + 20, obY = oy - 20, obR = 8;
     const ob = scene.add.graphics();

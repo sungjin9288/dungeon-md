@@ -17,12 +17,13 @@ import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
 import { canClaimAttendance } from '../data/attendance';
 import { showAttendancePanel } from './AttendancePanel';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 interface ShowChallengePanelFn {
   (): void;
 }
 
-const EVENT_TILE_SIZE = 42;
+const EVENT_TILE_SIZE = 44;
 const EVENT_TILE_GAP = 8;
 // Casual-toy challenge modal palette (used only by showChallengePanel).
 const CHALLENGE_PANEL_FILL = CASUAL.PANEL;       // cream modal body
@@ -108,7 +109,7 @@ export function buildDailyContentPanel(
   // Rule sub-label / done countdown (small, inside button)
   if (!dailyDone) {
     scene.add.text(btnX + tileCenter, btnY + 30, ruleLabel.text, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: ruleLabel.color,
+      fontFamily: 'sans-serif', fontSize: '10px', color: ruleLabel.color,
     }).setOrigin(0.5).setDepth(11);
   } else {
     const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
@@ -136,6 +137,10 @@ export function buildDailyContentPanel(
         endless: false,
       });
       scene.registry.set('dailyMode', daily);
+      if (getReducedMotion()) {
+        scene.scene.start('DungeonScene');
+        return;
+      }
       scene.cameras.main.fadeOut(220, 0, 0, 0);
       scene.cameras.main.once('camerafadeoutcomplete', () => {
         scene.scene.start('DungeonScene');
@@ -159,7 +164,7 @@ export function buildDailyContentPanel(
   if (!weeklyDone) {
     const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
     scene.add.text(btnX + tileCenter, weekBtnY + 30, bossShort, {
-      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(11);
   } else {
     const now2 = new Date();
@@ -199,6 +204,11 @@ export function buildDailyContentPanel(
     });
     scene.registry.set('returnTo', 'DungeonHomeScene');
     scene.registry.set('weeklyBossMode', { boss: weeklyBoss });
+    if (getReducedMotion()) {
+      scene.scene.stop('DungeonHomeScene');
+      scene.scene.start('DungeonScene');
+      return;
+    }
     scene.cameras.main.fadeOut(220, 0, 0, 0);
     scene.cameras.main.once('camerafadeoutcomplete', () => {
       scene.scene.stop('DungeonHomeScene');
@@ -219,7 +229,7 @@ export function buildDailyContentPanel(
   }).setOrigin(0.5).setDepth(11);
 
   scene.add.text(btnX + tileCenter, chalBtnY + 30, `${completedCount}/3`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(11);
 
   // Mini dot indicators — one per challenge
@@ -254,7 +264,7 @@ export function buildDailyContentPanel(
     fontFamily: 'sans-serif', fontSize: '15px',
   }).setOrigin(0.5).setDepth(11);
   scene.add.text(btnX + tileCenter, attendBtnY + 30, '출석', {
-    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
     color: attendClaimable ? CASUAL_CSS.GOLD : CASUAL_CSS.GREEN,
   }).setOrigin(0.5).setDepth(11);
   if (attendClaimable) {

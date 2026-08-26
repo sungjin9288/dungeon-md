@@ -28,6 +28,13 @@ export interface WaveSimResult {
   difficulty:   'easy' | 'medium' | 'hard' | 'extreme';
 }
 
+export interface SimulationDiagnostic {
+  readonly kind: 'unknown-invader-type';
+  readonly waveNum: number;
+  readonly invaderType: string;
+  readonly count: number;
+}
+
 export interface SimResult {
   totalDps:    number;
   waveResults: WaveSimResult[];
@@ -36,6 +43,7 @@ export interface SimResult {
   winPct:      number;      // 0–100
   worstWave:   number;      // 1-indexed wave with most HP lost
   recommendation: string;
+  diagnostics: SimulationDiagnostic[];
 }
 
 /** Resolve the base monster type key from an owned-monster ID. */
@@ -92,6 +100,7 @@ export function simulateDungeon(
   const waveResults: WaveSimResult[] = [];
   let worstWave = 0;
   let worstHpLost = 0;
+  const diagnostics: SimulationDiagnostic[] = [];
 
   for (let wi = 0; wi < waves.length; wi++) {
     const wave = waves[wi];
@@ -103,7 +112,15 @@ export function simulateDungeon(
 
     for (const grp of wave.invaders) {
       const def = INVADER_DEFS[grp.type];
-      if (!def) continue;
+      if (!def) {
+        diagnostics.push({
+          kind: 'unknown-invader-type',
+          waveNum: wi + 1,
+          invaderType: grp.type,
+          count: grp.count,
+        });
+        continue;
+      }
 
       // Effective travel time (seconds) through the dungeon path
       const travelSec = PATH_LENGTH_PX / def.speed;
@@ -159,5 +176,5 @@ export function simulateDungeon(
   else if (winPct >= 80) recommendation = '현재 배치로 클리어 가능!';
   else                   recommendation = '업그레이드로 생존율을 높이세요';
 
-  return { totalDps: dps, waveResults, finalHp: hp, startHp, winPct, worstWave, recommendation };
+  return { totalDps: dps, waveResults, finalHp: hp, startHp, winPct, worstWave, recommendation, diagnostics };
 }

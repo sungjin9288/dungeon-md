@@ -16,6 +16,7 @@
  */
 
 import Phaser from 'phaser';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 const DEFAULT_FADE_MS = 180;
 
@@ -26,7 +27,7 @@ export function fadeToScene(
   durationMs: number = DEFAULT_FADE_MS,
 ): void {
   const cam = scene.cameras.main;
-  if (!cam) {
+  if (!cam || getReducedMotion()) {
     scene.scene.start(nextSceneKey, data);
     return;
   }
@@ -53,7 +54,7 @@ export function fadeOutAndStop(
   durationMs: number = DEFAULT_FADE_MS,
 ): void {
   const cam = scene.cameras.main;
-  if (!cam) {
+  if (!cam || getReducedMotion()) {
     scene.scene.stop();
     return;
   }

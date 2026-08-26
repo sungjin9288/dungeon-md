@@ -7,8 +7,9 @@ import { TRIBE_SYNERGIES } from '../data/synergy';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
+import { buildStoryInvasionTarget, type StoryInvasionTarget } from '../data/battleForecast';
+import { openSimulationModal } from '../ui/SimulationModal';
 import {
-  INVASION_TYPE_MAP,
   ENEMY_EMOJI,
   ENEMY_NAME,
   ACCENT,
@@ -16,9 +17,10 @@ import {
   getMonsterDef,
   getDefenseActionButtonLabel,
   formatDefenseReadinessPercent,
+  formatPrestigeBattleBonus,
 } from '../ui/PreBattleShared';
-import type { InvaderType } from '../data/invaders';
 import { buildDefenseLoadout } from '../ui/PreBattleDefenseUI';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export class PreBattleScene extends Phaser.Scene {
   constructor() { super({ key: 'PreBattleScene' }); }
@@ -27,28 +29,33 @@ export class PreBattleScene extends Phaser.Scene {
     const cfg     = this.registry.get('invasionConfig') as InvasionConfig | undefined;
     const questId = this.registry.get('questId')        as string        | undefined;
     const gs      = loadGameState();
+    const invasionTarget = cfg ? buildStoryInvasionTarget(cfg) : null;
 
     // ─ Dark dungeon ambient (torchlit gradient + drifting ember motes) ───────
     applyCasualBackground(this);
 
     // ─ Back button — cream candy pill ────────────────────────────────────────
+    const backX = 10;
+    const backY = 8;
+    const backW = 76;
+    const backH = 44;
     const backBg = this.add.graphics();
     const drawBack = (fill: number = CASUAL.PANEL, border: number = CASUAL.EDGE): void => {
       backBg.clear();
       backBg.fillStyle(CASUAL.EDGE, 1);
-      backBg.fillRoundedRect(10, 12, 70, 28, 13);
+      backBg.fillRoundedRect(backX, backY + 3, backW, backH, 13);
       backBg.fillStyle(fill, 1);
-      backBg.fillRoundedRect(10, 10, 70, 26, 13);
+      backBg.fillRoundedRect(backX, backY, backW, backH, 13);
       backBg.fillStyle(0xffffff, 0.12);
-      backBg.fillRoundedRect(14, 12, 62, 5, 3);
+      backBg.fillRoundedRect(backX + 4, backY + 4, backW - 8, 7, 3);
       backBg.lineStyle(2, border, 1);
-      backBg.strokeRoundedRect(10, 10, 70, 26, 13);
+      backBg.strokeRoundedRect(backX, backY, backW, backH, 13);
     };
     drawBack();
-    const backBtn = this.add.text(45, 23, '← 취소', {
+    const backBtn = this.add.text(backX + backW / 2, backY + backH / 2, '← 취소', {
       fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5);
-    const backZone = this.add.zone(10, 10, 70, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    const backZone = this.add.zone(backX, backY, backW, backH).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     backZone.on('pointerover', () => {
       backBtn.setColor(CASUAL_CSS.INK_SOFT);
       drawBack(CASUAL.PANEL_SOFT, CASUAL.GOLD_DK);
@@ -89,7 +96,7 @@ export class PreBattleScene extends Phaser.Scene {
       stroke: '#ffffff', strokeThickness: 4,
     }).setOrigin(0.5);
     this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     }).setOrigin(0.5);
 
     this.add.text(22, iY + 76, '예상 적군:', {
@@ -135,9 +142,9 @@ export class PreBattleScene extends Phaser.Scene {
       let chipX = 14;
       activeSynergies.forEach(([tribe, count]) => {
         const label = `✨ ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
-        const chip = this.add.text(chipX, synY, label, {
-          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-          backgroundColor: '#2b2114', padding: { x: 8, y: 4 },
+      const chip = this.add.text(chipX, synY, label, {
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+          backgroundColor: CASUAL_CSS.PANEL_SOFT, padding: { x: 8, y: 17 },
         });
         chip.setInteractive({ useHandCursor: true });
         chip.on('pointerdown', () => {
@@ -163,14 +170,14 @@ export class PreBattleScene extends Phaser.Scene {
             .setName('synTooltip').setDepth(200);
 
           const bg = this.add.graphics();
-          bg.fillStyle(0x221504, 0.97);
+          bg.fillStyle(CASUAL.PANEL, 0.97);
           bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
           bg.lineStyle(1, ACCENT.gold, 0.7);
           bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
           ov.add(bg);
 
           lines.forEach((line, i) => {
-            const color = i === 0 ? '#ffdf6e' : line.startsWith('ⓘ') ? '#907a58' : '#f0e6c8';
+            const color = i === 0 ? CASUAL_CSS.GOLD : line.startsWith('ⓘ') ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.INK;
             const fs = i === 0 ? '12px' : '10px';
             ov.add(this.add.text(0, -popH + 14 + i * 18, line, {
               fontFamily: 'sans-serif', fontSize: fs, color,
@@ -187,7 +194,7 @@ export class PreBattleScene extends Phaser.Scene {
       });
     } else {
       this.add.text(14, synY + 2, '시너지 없음', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
       }).setOrigin(0, 0);
     }
 
@@ -197,8 +204,8 @@ export class PreBattleScene extends Phaser.Scene {
       .filter((s): s is ActiveSkill => s != null);
     if (ownedSkills.length > 0) {
       const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `🎯 스킬 ×${ownedSkills.length}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
-        backgroundColor: '#2b2114', padding: { x: 8, y: 4 },
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
+        backgroundColor: CASUAL_CSS.PANEL_SOFT, padding: { x: 8, y: 17 },
       }).setOrigin(1, 0);
       skillChip.setInteractive({ useHandCursor: true });
       skillChip.on('pointerdown', () => {
@@ -218,15 +225,15 @@ export class PreBattleScene extends Phaser.Scene {
           .setName('skillTooltip').setDepth(200);
 
         const bg = this.add.graphics();
-        bg.fillStyle(0x221504, 0.97);
+        bg.fillStyle(CASUAL.PANEL, 0.97);
         bg.fillRoundedRect(-popW / 2, -popH, popW, popH, 6);
         bg.lineStyle(1, ACCENT.sky, 0.7);
         bg.strokeRoundedRect(-popW / 2, -popH, popW, popH, 6);
         ov.add(bg);
 
         lines.forEach((line, i) => {
-          const color = line.kind === 'title' ? '#e8c468'
-            : line.kind === 'name' ? '#f0e6c8' : '#907a58';
+          const color = line.kind === 'title' ? CASUAL_CSS.GOLD
+            : line.kind === 'name' ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT;
           const fs = line.kind === 'title' ? '12px' : '10px';
           ov.add(this.add.text(0, -popH + 12 + i * 17, line.text, {
             fontFamily: 'sans-serif', fontSize: fs, color,
@@ -243,9 +250,9 @@ export class PreBattleScene extends Phaser.Scene {
     }
 
     // ─ BOTTOM: Battle Command Frame ──────────────────────────────────────────
-    const commandY = dY + dH + 30;
-    const commandH = 72;
-    const startY = commandY + 22;
+    const commandY = dY + dH + 70;
+    const commandH = 160;
+    const forecastY = commandY + 27;
     const commandStatus =
       directive.severity === 'ready' ? '출격 가능' :
       directive.severity === 'warning' ? '보강 권장' : '위험';
@@ -253,6 +260,7 @@ export class PreBattleScene extends Phaser.Scene {
       ? `${defenseTotals.totalPower}/${directive.pressure}`
       : `${defenseTotals.totalPower}`;
     const readinessText = formatDefenseReadinessPercent(directive.readiness);
+    const prestigeBattleBonus = formatPrestigeBattleBonus(gs);
 
     const commandBg = this.add.graphics();
     // chunky cream command tray
@@ -272,14 +280,14 @@ export class PreBattleScene extends Phaser.Scene {
 
     this.add.text(24, commandY + 10, '출격 명령', {
       fontFamily: 'sans-serif',
-      fontSize: '10px',
+      fontSize: '11px',
       fontStyle: 'bold',
       color: CASUAL_CSS.INK,
     }).setOrigin(0, 0.5);
 
     this.add.text(92, commandY + 10, commandStatus, {
       fontFamily: 'sans-serif',
-      fontSize: '10px',
+      fontSize: '11px',
       fontStyle: 'bold',
       color: directive.severity === 'ready' ? CASUAL_CSS.GREEN :
         directive.severity === 'warning' ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
@@ -292,11 +300,27 @@ export class PreBattleScene extends Phaser.Scene {
       color: CASUAL_CSS.INK,
     }).setOrigin(1, 0.5);
 
+    addPrimaryActionButton(this, {
+      x: 14,
+      y: forecastY,
+      w: CANVAS_WIDTH - 28,
+      h: 44,
+      label: '⚗  전투 예측',
+      fontSize: '12px',
+      fillColor: CASUAL.PANEL_SOFT,
+      hoverFillColor: CASUAL.PANEL,
+      borderColor: CASUAL.EDGE,
+      hoverBorderColor: CASUAL.GOLD_DK,
+      textColor: CASUAL_CSS.INK,
+      onPress: () => openSimulationModal(this, gs, invasionTarget),
+    });
+
+    const actionY = forecastY + 52;
     if (directive.actionLabel) {
-      // secondary "go fix it" → cream pill
+      // Secondary edit/forecast actions stay quiet; launch remains the only dominant CTA.
       addPrimaryActionButton(this, {
         x: 14,
-        y: startY,
+        y: actionY,
         w: 124,
         h: 48,
         label: getDefenseActionButtonLabel(directive),
@@ -317,39 +341,50 @@ export class PreBattleScene extends Phaser.Scene {
       // primary "방어 시작" → bright candy button (GREEN normal, RED if risky)
       addPrimaryActionButton(this, {
         x: 148,
-        y: startY,
+        y: actionY,
         w: 228,
         h: 48,
         label: '🛡️  방어 시작',
         fontSize: '15px',
         fillColor: directive.severity === 'danger' ? CASUAL.RED : CASUAL.GREEN,
-        hoverFillColor: directive.severity === 'danger' ? 0xff7a64 : 0x6fdc70,
+        hoverFillColor: directive.severity === 'danger' ? CASUAL.RED : CASUAL.GREEN,
         borderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
         hoverBorderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
         textColor: CASUAL_CSS.WHITE,
+        enabled: Boolean(invasionTarget?.stage),
         once: true,
-        onPress: () => this.launchBattle(cfg, questId),
+        onPress: () => this.launchBattle(invasionTarget, questId),
       });
     } else {
       // primary "방어 시작!" → bright GREEN candy button
       addPrimaryActionButton(this, {
         x: CANVAS_WIDTH / 2 - 146,
-        y: startY,
+        y: actionY,
         w: 292,
         h: 48,
         label: '🛡️   방어 시작!',
         fillColor: CASUAL.GREEN,
-        hoverFillColor: 0x6fdc70,
+        hoverFillColor: CASUAL.GREEN,
         borderColor: CASUAL.GREEN_DK,
         hoverBorderColor: CASUAL.GREEN_DK,
         textColor: CASUAL_CSS.WHITE,
+        enabled: Boolean(invasionTarget?.stage),
         once: true,
-        onPress: () => this.launchBattle(cfg, questId),
+        onPress: () => this.launchBattle(invasionTarget, questId),
       });
     }
 
+    if (prestigeBattleBonus) {
+      this.add.text(CANVAS_WIDTH / 2, commandY + 143, prestigeBattleBonus, {
+        fontFamily: 'sans-serif',
+        fontSize: '10px',
+        fontStyle: 'bold',
+        color: CASUAL_CSS.GOLD,
+      }).setName('prestigeBattleBonus').setOrigin(0.5);
+    }
+
     // Fade in
-    this.cameras.main.fadeIn(300, 0, 0, 0);
+    if (!getReducedMotion()) this.cameras.main.fadeIn(300, 0, 0, 0);
   }
 
   private returnToDungeonRoom(slotIdx: number): void {
@@ -358,33 +393,18 @@ export class PreBattleScene extends Phaser.Scene {
     this.scene.start('DungeonHomeScene');
   }
 
-  private launchBattle(cfg: InvasionConfig | undefined, questId: string | undefined): void {
-    if (!cfg) return;
+  private launchBattle(target: StoryInvasionTarget | null, questId: string | undefined): void {
+    if (!target?.stage) return;
 
-    // Convert InvasionConfig → StageConfig format that DungeonScene understands
-    const waveSpecs = cfg.waves.map(w => ({
-      wave:        w.waveNumber,
-      clearReward: 120,
-      invaders:    w.invaders.map(inv => ({
-        // Use explicit mapping first; if missing, pass through as-is (Ch8+ types match InvaderType directly)
-        type:       (INVASION_TYPE_MAP[inv.type] ?? inv.type) as InvaderType,
-        count:      inv.count,
-        spawnDelay: 2200,
-      })),
-    }));
-
-    this.registry.set('stageConfig', {
-      id:         999,
-      chapter:    1,
-      koreanName: cfg.name,
-      dungeonHp:  800,
-      startGold:  400,
-      waves:      waveSpecs,
-    });
+    this.registry.set('stageConfig', target.stage);
     this.registry.set('returnTo',  'DungeonHomeScene');
     this.registry.set('questId',   questId ?? '');
     this.registry.remove('invasionConfig');  // don't re-trigger on restart
 
+    if (getReducedMotion()) {
+      this.scene.start('DungeonScene');
+      return;
+    }
     this.cameras.main.fadeOut(350, 0, 0, 0);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       this.scene.start('DungeonScene');

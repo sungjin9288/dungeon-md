@@ -359,7 +359,7 @@ function showCraftCompleteCard(
 
   drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 92, cy + 34, accent, 184);
 
-  c.add(scene.add.text(cx, recommendation ? cy + 54 : cy + 58, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
+  c.add(scene.add.text(cx, cy + 58, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#ccb083',
   }).setOrigin(0.5));
 
@@ -369,7 +369,7 @@ function showCraftCompleteCard(
       c,
       recommendation,
       cx - 112,
-      cy + 62,
+      cy + 70,
       224,
       48,
       '추천 장착 대상',

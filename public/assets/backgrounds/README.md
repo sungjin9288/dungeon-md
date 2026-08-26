@@ -1,5 +1,7 @@
 # 던전 배경 아트 (선택) — 일러스트 배경 던전
 
+> Runtime 규격과 originality의 최종 권위는 `docs/MONSTER_DUNGEON_DESIGN.md`다. 모든 per-chapter battle PNG는 정확히 1024×1024, 512 KiB 이하이며 중앙 70%×70%를 calm overlay zone으로 유지한다.
+
 이 폴더에 PNG를 떨어뜨리면, 절차적 Canvas 페인팅(`src/art/DungeonBackdrop.ts`)
 **대신** 그 이미지가 던전 배경으로 쓰입니다. 파일이 없으면 자동으로 Canvas 페인팅으로
 폴백하므로, 아무 것도 안 넣어도 게임은 정상 동작합니다.
@@ -13,6 +15,15 @@
 |------|-----------|-----------|--------------------|
 | `dungeon-shaft.png`   | `bg-dungeon-shaft`   | 홈 보드(수직 던전 전경) | **768 × 1280** (세로 ~3:5) |
 | `dungeon-chamber.png` | `bg-dungeon-chamber` | 전투 보드(3×3 방어 격자) | **1024 × 1024** (정사각) |
+| `battle-ch1.png` | `bg-battle-ch1` | Chapter 1 전투 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch2.png` | `bg-battle-ch2` | Chapter 2 구미호 계곡 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch3.png` | `bg-battle-ch3` | Chapter 3 용왕 해저궁 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch4.png` | `bg-battle-ch4` | Chapter 4 저승관문 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch5.png` | `bg-battle-ch5` | Chapter 5 삼신산 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch6.png` | `bg-battle-ch6` | Chapter 6 영원의 왕좌 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch7.png` | `bg-battle-ch7` | Chapter 7 신계 침공 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch8.png` | `bg-battle-ch8` | Chapter 8 원초의 심연 전용 | **1024 × 1024**, 512 KiB 이하 |
+| `battle-ch9.png` | `bg-battle-ch9` | Chapter 9 공허 너머 전용 | **1024 × 1024**, 512 KiB 이하 |
 
 - 포맷: PNG (불투명). 모바일 캔버스 390×844, 고DPR이라 위 해상도면 선명합니다.
 - 이미지는 슬롯에 맞춰 자동 스케일(`setDisplaySize`)됩니다 — 비율이 위와 비슷할수록 덜 늘어납니다.
@@ -40,8 +51,8 @@ this.load.image('bg-dungeon-chamber', '/assets/backgrounds/dungeon-chamber.png')
 횃불의 따뜻한 빛 웅덩이가 파고드는, 조용한 암흑 권능의 공간이어야 합니다.
 
 **Shared style (두 프롬프트에 공통으로 붙이세요):**
-> Painterly hand-drawn dark-fantasy game background, in the style of premium mobile
-> games like AFK Journey and Dungeon Maker and Korean fantasy manhwa illustration.
+> Original painterly hand-drawn dark-fantasy game background with a cohesive Korean
+> folk-craft vocabulary; do not imitate a named game, artwork, artist, or trade dress.
 > Mood: an ancient underground dungeon that is the player's OWN lair — ominous and
 > mysterious yet warm and lived-in, a place of quiet dark power, NOT gory horror.
 > Deep shadow carved by warm pools of torchlight (strong chiaroscuro), drifting dust

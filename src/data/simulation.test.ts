@@ -457,11 +457,14 @@ describe('calcDungeonDps — trap combos & level pins', () => {
 // ─── simulateDungeon — unknown invader type & multi-wave worst ────────────────
 
 describe('simulateDungeon — unknown invader type & multi-wave tracking', () => {
-  it('unknown invader type in wave is gracefully skipped (invaderCount=0, hpLost=0)', () => {
+  it('reports each unknown invader type instead of silently omitting it', () => {
     const unknownWave: WaveSpec = { invaders: [{ type: 'unknown_xyz' as any, count: 5, spawnDelay: 0 }] };
     const r = simulateDungeon([], [], [unknownWave], 1000);
     expect(r.waveResults[0].invaderCount).toBe(0);
     expect(r.waveResults[0].hpLost).toBe(0);
+    expect(r.diagnostics).toEqual([{
+      kind: 'unknown-invader-type', waveNum: 1, invaderType: 'unknown_xyz', count: 5,
+    }]);
   });
 
   it('3-wave scenario: worstWave identifies the 3rd wave with most hpLost', () => {
@@ -507,10 +510,10 @@ describe('calcDungeonDps — two monsters in same slot & level=10 pin', () => {
     expect(calcDungeonDps([negHpSlot], [])).toBe(0);
   });
 
-  it('SimResult has exactly 7 top-level keys', () => {
+  it('SimResult has exactly 8 top-level keys', () => {
     const r = simulateDungeon([], [], [], 100);
     expect(Object.keys(r).sort()).toStrictEqual(
-      ['finalHp', 'recommendation', 'startHp', 'totalDps', 'waveResults', 'winPct', 'worstWave'],
+      ['diagnostics', 'finalHp', 'recommendation', 'startHp', 'totalDps', 'waveResults', 'winPct', 'worstWave'],
     );
   });
 

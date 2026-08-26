@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
+import { addTabBar } from '../ui/GameUiPrimitives';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
@@ -18,6 +18,9 @@ import {
 } from '../data/summonPools';
 import { CX, CARD_W, CARD_H, CARD_GAP, CARD_ML, CARDS_Y, PORTAL_CY, TAB_Y } from '../ui/SummonShared';
 import { drawCollectionShowcase } from '../ui/SummonShowcase';
+import { getContextualBackTarget } from '../data/navigationContract';
+import { buildZoneBackButton } from '../ui/GameZoneNavigation';
+import { getReducedMotion } from '../utils/reducedMotion';
 import {
   buildHistoryTab, rebuildHistory,
   type SummonHistoryContext, type HistoryFilter,
@@ -54,18 +57,20 @@ export class SummonScene extends Phaser.Scene {
     // Bright casual storybook backdrop (gradient + sun glow + polka dots).
     applyCasualBackground(this);
 
-    // Rune particles — summon ambiance over the bright backdrop.
-    this.add.particles(CX, CANVAS_HEIGHT / 2, 'dust', {
-      x: { min: -CX, max: CX },
-      y: { min: -CANVAS_HEIGHT / 2, max: CANVAS_HEIGHT / 2 },
-      alpha: { min: 0.03, max: 0.2 },
-      scale: { min: 0.1, max: 0.4 },
-      tint: [0x9966ff, 0xcc44ff, 0x4444ff, 0xffffff],
-      lifespan: { min: 2500, max: 6000 },
-      speedX: { min: -5, max: 5 },
-      speedY: { min: -5, max: 5 },
-      frequency: 120, quantity: 1,
-    }).setDepth(0);
+    // Rune particles are decorative; reduced-motion keeps the static portal only.
+    if (!getReducedMotion()) {
+      this.add.particles(CX, CANVAS_HEIGHT / 2, 'dust', {
+        x: { min: -CX, max: CX },
+        y: { min: -CANVAS_HEIGHT / 2, max: CANVAS_HEIGHT / 2 },
+        alpha: { min: 0.03, max: 0.2 },
+        scale: { min: 0.1, max: 0.4 },
+        tint: [0x9966ff, 0xcc44ff, 0x4444ff, 0xffffff],
+        lifespan: { min: 2500, max: 6000 },
+        speedX: { min: -5, max: 5 },
+        speedY: { min: -5, max: 5 },
+        frequency: 120, quantity: 1,
+      }).setDepth(0);
+    }
   }
 
   // ─── Portal animation ────────────────────────────────────────────────────────
@@ -74,48 +79,53 @@ export class SummonScene extends Phaser.Scene {
     this.portalGraphics = this.add.graphics().setDepth(3);
     this.runeGraphics   = this.add.graphics().setDepth(4);
 
-    // Portal + floating runes — redrawn every frame via time event
-    this.time.addEvent({
-      delay: 33, repeat: -1,
-      callback: () => {
-        if (!this.portalGraphics.active) return;
-        const t = this.time.now * 0.001;
-        this.portalGraphics.clear();
+    // Portal + floating runes — reduced-motion draws one stable frame.
+    const drawPortalFrame = (t: number): void => {
+      if (!this.portalGraphics.active) return;
+      this.portalGraphics.clear();
 
-        // Outer glow rings (3 rings, different speeds + radii) — CASUAL palette
-        const rings = [
-          { r: 52, speed: 0.4,  color: CASUAL.PURPLE_DK, alpha: 0.18 },
-          { r: 40, speed: 0.7,  color: CASUAL.PURPLE,    alpha: 0.30 },
-          { r: 28, speed: 1.1,  color: 0xd49cff,         alpha: 0.45 },
-        ];
-        for (const ring of rings) {
-          const pulse = 1 + 0.08 * Math.sin(t * ring.speed * 2.5);
-          this.portalGraphics.lineStyle(3, ring.color, ring.alpha * (0.8 + 0.2 * Math.sin(t * ring.speed)));
-          this.portalGraphics.strokeCircle(CX, PORTAL_CY, ring.r * pulse);
-        }
+      // Outer glow rings (3 rings, different speeds + radii) — CASUAL palette
+      const rings = [
+        { r: 52, speed: 0.4,  color: CASUAL.PURPLE_DK, alpha: 0.18 },
+        { r: 40, speed: 0.7,  color: CASUAL.PURPLE,    alpha: 0.30 },
+        { r: 28, speed: 1.1,  color: 0xd49cff,         alpha: 0.45 },
+      ];
+      for (const ring of rings) {
+        const pulse = 1 + 0.08 * Math.sin(t * ring.speed * 2.5);
+        this.portalGraphics.lineStyle(3, ring.color, ring.alpha * (0.8 + 0.2 * Math.sin(t * ring.speed)));
+        this.portalGraphics.strokeCircle(CX, PORTAL_CY, ring.r * pulse);
+      }
 
-        // Inner core glow — CASUAL.PURPLE
-        for (let r = 18; r >= 4; r -= 3) {
-          this.portalGraphics.fillStyle(CASUAL.PURPLE, 0.04 * (20 - r));
-          this.portalGraphics.fillCircle(CX, PORTAL_CY, r);
-        }
+      // Inner core glow — CASUAL.PURPLE
+      for (let r = 18; r >= 4; r -= 3) {
+        this.portalGraphics.fillStyle(CASUAL.PURPLE, 0.04 * (20 - r));
+        this.portalGraphics.fillCircle(CX, PORTAL_CY, r);
+      }
 
-        // Center orb
-        this.portalGraphics.fillStyle(0xffffff, 0.7 + 0.15 * Math.sin(t * 3));
-        this.portalGraphics.fillCircle(CX, PORTAL_CY, 6);
+      // Center orb
+      this.portalGraphics.fillStyle(0xffffff, 0.7 + 0.15 * Math.sin(t * 3));
+      this.portalGraphics.fillCircle(CX, PORTAL_CY, 6);
 
-        // Floating runes (8 small circles orbiting) — CASUAL.PURPLE tint
-        this.runeGraphics.clear();
-        for (let i = 0; i < 8; i++) {
-          const angle = (i / 8) * Math.PI * 2 + t * 0.6;
-          const rx    = CX + Math.cos(angle) * 60;
-          const ry    = PORTAL_CY + Math.sin(angle) * 22;
-          const alpha = 0.25 + 0.25 * Math.sin(t * 1.5 + i);
-          this.runeGraphics.fillStyle(CASUAL.PURPLE, alpha);
-          this.runeGraphics.fillCircle(rx, ry, 3.5);
-        }
-      },
-    });
+      // Floating runes (8 small circles orbiting) — CASUAL.PURPLE tint
+      this.runeGraphics.clear();
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + t * 0.6;
+        const rx    = CX + Math.cos(angle) * 60;
+        const ry    = PORTAL_CY + Math.sin(angle) * 22;
+        const alpha = 0.25 + 0.25 * Math.sin(t * 1.5 + i);
+        this.runeGraphics.fillStyle(CASUAL.PURPLE, alpha);
+        this.runeGraphics.fillCircle(rx, ry, 3.5);
+      }
+    };
+    if (getReducedMotion()) {
+      drawPortalFrame(0);
+    } else {
+      this.time.addEvent({
+        delay: 33,
+        repeat: -1,
+        callback: () => drawPortalFrame(this.time.now * 0.001),
+      });
+    }
 
     // Portal emoji label above
     this.add.text(CX, PORTAL_CY - 22, '🌌', {
@@ -126,11 +136,14 @@ export class SummonScene extends Phaser.Scene {
   // ─── Header ─────────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
-    addSceneHeader(this, {
-      title:  '✨ 몬스터 소환',
-      y:      22,
-      onBack: () => this.scene.start('DungeonHomeScene'),
+    buildZoneBackButton(this, {
+      label: '← 군단',
+      onBack: () => this.scene.start(getContextualBackTarget('SummonScene')),
     });
+    this.add.text(CX, 22, '군단 · 몬스터 소환', {
+      fontFamily: 'sans-serif', fontSize: '19px', fontStyle: 'bold',
+      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(10);
 
     // Resource bar
     const gs = loadGameState();
@@ -263,7 +276,7 @@ export class SummonScene extends Phaser.Scene {
     c.add(dg);
 
     // ── Buttons ──────────────────────────────────────────────────
-    const btnY = cardTop + 108;
+    const btnY = cardTop + 106;
     this.makeCardBtn(c, def, cx + (def.cost10 !== null ? -44 : 0), btnY, '1회', () => this.executePull(def.id, 1));
     if (def.cost10 !== null) {
       this.makeCardBtn(c, def, cx + 44, btnY, '10회', () => this.executePull(def.id, 10));
@@ -273,11 +286,15 @@ export class SummonScene extends Phaser.Scene {
 
     // ── 확률 보기 ────────────────────────────────────────────────
     if (def.id !== 'friendship') {
-      const rateT = this.add.text(cx, cardTop + 130, '확률 보기 ▼', {
+      const rateY = cardTop + 176;
+      const rateT = this.add.text(cx, rateY, '확률 보기 ▼', {
         fontFamily: 'sans-serif', fontSize: '11px', color: '#664488',
-      }).setOrigin(0.5).setInteractive();
-      rateT.on('pointerdown', () => this.showRatesModal(def.id));
+      }).setOrigin(0.5);
       c.add(rateT);
+      const rateZone = this.add.zone(cx, rateY, 96, 44)
+        .setInteractive({ useHandCursor: true });
+      rateZone.on('pointerdown', () => this.showRatesModal(def.id));
+      c.add(rateZone);
     }
 
     // ── Pity bar (normal / special only) ─────────────────────────
@@ -287,7 +304,7 @@ export class SummonScene extends Phaser.Scene {
       const pct     = pity.count / pity.guaranteed;
       const barX    = cx - CARD_W / 2 + 12;
       const barW    = CARD_W - 24;
-      const barY    = cardTop + 144;
+      const barY    = cardTop + 134;
 
       const pg = this.add.graphics();
       pg.fillStyle(0x1c1208, 1);
@@ -302,7 +319,7 @@ export class SummonScene extends Phaser.Scene {
       }).setOrigin(0.5));
 
       // desc badge
-      c.add(this.add.text(cx, cardTop + 170, def.desc, {
+      c.add(this.add.text(cx, cardTop + 158, def.desc, {
         fontFamily: 'sans-serif', fontSize: '7px', color: '#444466',
       }).setOrigin(0.5));
     } else {
@@ -425,12 +442,12 @@ export class SummonScene extends Phaser.Scene {
 
     const t = this.add.text(cx, y, label, {
       fontFamily: 'sans-serif', fontSize: '11px', color: def.accent,
-    }).setOrigin(0.5).setInteractive();
-    t.on('pointerdown', cb);
+    }).setOrigin(0.5);
     c.add(t);
 
     // Hit zone
-    const zone = this.add.zone(cx, y, w + 4, h + 4).setInteractive();
+    const zone = this.add.zone(cx, y, w + 4, 44)
+      .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', cb);
     c.add(zone);
   }

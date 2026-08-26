@@ -15,7 +15,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { RoomDetailState, RoomDetailCallbacks } from './RoomDetailOverlay';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
-import { addMonsterPortrait } from './MonsterPortraitView';
+import { addMonsterPortrait, setMonsterPortraitAlpha } from './MonsterPortraitView';
 import { showRoomGrowthFeedback } from './RoomGrowthFeedback';
 import {
   PICKER_SLIDE_MS,
@@ -342,9 +342,7 @@ export function showMonsterPicker(
       bgColor: 0x070908,
       equippedSkins: gs.equippedSkins ?? {},
     });
-    portrait.frame.setAlpha(alpha);
-    portrait.image?.setAlpha(alpha);
-    portrait.fallbackText?.setAlpha(alpha);
+    setMonsterPortraitAlpha(portrait, alpha);
     if (equipmentIcon) {
       const gear = scene.add.graphics();
       gear.fillStyle(0xffffff, enabled ? 0.95 : 0.6);
