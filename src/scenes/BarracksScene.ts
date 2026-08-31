@@ -7,7 +7,7 @@ import {
   getUnlockedSlots,
   type OwnedMonster,
 } from '../data/wisdom';
-import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
 import { showMonsterDetailPanel, showSkillShopPanel } from '../ui/MonsterDetailPanel';
 
@@ -197,18 +197,18 @@ export class BarracksScene extends Phaser.Scene {
   private getCollectionSummary(): {
     owned: number; total: number; rareOwned: number; legendaryOwned: number; percent: number;
   } {
-    const ownedTypes = new Set<string>();
-    const allIds     = Object.keys(MONSTER_DEFS);
+    const ownedTypes = new Set<MonsterId>();
+    const allIds     = Object.keys(MONSTER_DEFS) as MonsterId[];
     for (const monster of this.gs.ownedMonsters) {
-      const typeId = allIds.find(id => monster.id === id || monster.id.startsWith(`${id}_`));
+      const typeId = resolveMonsterTypeId(monster.id);
       if (typeId) ownedTypes.add(typeId);
     }
     const rareOwned = Array.from(ownedTypes).filter(id => {
-      const rarity = MONSTER_DEFS[id as MonsterId]?.rarityTier;
+      const rarity = MONSTER_DEFS[id]?.rarityTier;
       return rarity === 'R' || rarity === 'E' || rarity === 'L';
     }).length;
     const legendaryOwned = Array.from(ownedTypes).filter(id => (
-      MONSTER_DEFS[id as MonsterId]?.rarityTier === 'L'
+      MONSTER_DEFS[id]?.rarityTier === 'L'
     )).length;
     const total = allIds.length;
     return {

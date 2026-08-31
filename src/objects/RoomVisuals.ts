@@ -12,8 +12,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { ROOM_DEFS } from '../data/rooms';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
-import { resolveMonsterTypeId } from '../ui/MonsterPortraitView';
-import type { MonsterId } from '../data/monsters';
+import { resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import type { RoomLoadoutVisualOptions } from './Room';
 import { getReducedMotion } from '../utils/reducedMotion';
 

@@ -13,22 +13,12 @@ import {
 } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
 import { EQUIPMENT_DEFS, getEquipmentStats, getMonsterAtk, type EquipmentStats } from '../data/barracks';
 import { MONSTER_EMOJI, MONSTER_NAME } from '../data/monsterDisplay';
 import { TRAP_DEFS } from '../data/traps';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { CASUAL } from '../constants/colors';
-import type { MonsterId } from '../data/monsters';
-
-// ─── Local re-implementation of resolveMonsterTypeId (avoids Phaser import) ──
-// Identical logic to MonsterPortraitView.resolveMonsterTypeId.
-function resolveMonsterTypeId(monsterId: string): MonsterId | null {
-  const typeId = Object.keys(MONSTER_DEFS).find(
-    id => monsterId === id || monsterId.startsWith(`${id}_`),
-  );
-  return (typeId ?? null) as MonsterId | null;
-}
 
 export const ENEMY_EMOJI: Record<string, string> = {
   peasant_soldier: '👤', shield_knight:     '🛡️',

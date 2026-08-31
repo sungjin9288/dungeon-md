@@ -42,6 +42,22 @@ export const TRIBE_TOTALS = _TRIBE_TOTALS;
 import type { ElementId } from './monstersTypes';
 import type { RoomType } from './rooms';
 
+/** Resolves an owned monster ID to its exact or longest delimited base type. */
+export function resolveMonsterTypeId(monsterId: string): MonsterId | null {
+  if (!monsterId) return null;
+  if (Object.prototype.hasOwnProperty.call(MONSTER_DEFS, monsterId)) {
+    return monsterId as MonsterId;
+  }
+
+  let longestMatch: MonsterId | null = null;
+  for (const candidate of Object.keys(MONSTER_DEFS) as MonsterId[]) {
+    if (monsterId.startsWith(`${candidate}_`) && (!longestMatch || candidate.length > longestMatch.length)) {
+      longestMatch = candidate;
+    }
+  }
+  return longestMatch;
+}
+
 /** Returns all monsters that can be placed in this room type at the given stage. */
 export function getMonstersForRoom(
   roomType: RoomType,

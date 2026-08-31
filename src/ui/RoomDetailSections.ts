@@ -12,7 +12,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   calculateRoomMetricDelta,
@@ -247,7 +247,7 @@ export function buildMonsterSection(
     const cardY  = secY + 34 + row * (cardH + gap);
     const mId    = slot.monsterIds[mi];
     const om     = mId ? gs.ownedMonsters.find(m => m.id === mId) : null;
-    const typeId = om ? (Object.keys(MONSTER_DEFS).find(k => om.id === k || om.id.startsWith(k + '_')) ?? om.id) : null;
+    const typeId = om ? (resolveMonsterTypeId(om.id) ?? om.id) : null;
     const mDef   = typeId ? MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS] : null;
 
     drawCompactLoadoutSlotFrame(scene, c, cardX, cardY, cardW, cardH, MONSTER_ROW_ACCENT, !!mDef && !!om, `M${mi + 1}`);

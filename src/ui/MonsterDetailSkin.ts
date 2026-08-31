@@ -9,6 +9,7 @@ import {
   MONSTER_DEFS,
   getSkinForMonster,
   getSkinsForMonster,
+  resolveMonsterTypeId,
   type MonsterSkin,
 } from '../data/monsters';
 import { equipSkin, purchaseSkin, unequipSkin } from '../data/shopTransactions';
@@ -32,7 +33,7 @@ export function buildSkinSlot(
 ): void {
   const { scene } = ctx;
   const gs          = loadGameState();
-  const typeId      = Object.keys(MONSTER_DEFS).find(k => m.id === k || m.id.startsWith(k + '_')) ?? m.id;
+  const typeId      = resolveMonsterTypeId(m.id) ?? m.id;
   const allSkins    = getSkinsForMonster(typeId);
   const ownedSkinIds = gs.ownedSkins?.[typeId] ?? [];
   const owned       = allSkins.filter(s => ownedSkinIds.includes(s.id));

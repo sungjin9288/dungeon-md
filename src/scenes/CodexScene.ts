@@ -4,7 +4,7 @@ import { CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { MONSTER_DEFS, type MonsterId, type TribeId } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId, type TribeId } from '../data/monsters';
 import { claimCodexTribeReward, claimAllCodexTribeRewards } from '../data/rewardTransactions';
 import { INVADER_DEFS } from '../data/invaders';
 import { ENDLESS_MODIFIERS } from '../data/endlessModifiers';
@@ -706,11 +706,6 @@ export class CodexScene extends Phaser.Scene {
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
   private isOwned(monsterId: MonsterId): boolean {
-    return this.gs.ownedMonsters.some(om => {
-      const typeId = Object.keys(MONSTER_DEFS).find(
-        k => om.id === k || om.id.startsWith(k + '_'),
-      ) ?? om.id;
-      return typeId === monsterId;
-    });
+    return this.gs.ownedMonsters.some(om => resolveMonsterTypeId(om.id) === monsterId);
   }
 }

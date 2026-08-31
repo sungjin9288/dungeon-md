@@ -9,7 +9,7 @@ import {
   ROOM_SLOT_TYPE_DEFS,
   type GameState,
 } from './wisdom';
-import { MONSTER_DEFS } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
 
 export type RoomActionKind =
   | 'design'
@@ -222,9 +222,7 @@ export function getRoomActionRecommendation(
 }
 
 function getMonsterDisplayName(monsterId: string): string {
-  const typeId = Object.keys(MONSTER_DEFS).find(id =>
-    monsterId === id || monsterId.startsWith(`${id}_`),
-  ) as keyof typeof MONSTER_DEFS | undefined;
+  const typeId = resolveMonsterTypeId(monsterId);
   return typeId ? MONSTER_DEFS[typeId].name : monsterId;
 }
 

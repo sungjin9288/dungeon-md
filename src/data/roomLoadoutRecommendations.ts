@@ -3,7 +3,7 @@ import {
   getMonsterAtk,
   type OwnedMonster,
 } from './barracks';
-import { MONSTER_DEFS, type MonsterDef } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterDef } from './monsters';
 import { TRAP_DEFS, type TrapDef } from './traps';
 import type { GameState, RoomSlotType } from './wisdom';
 
@@ -195,10 +195,6 @@ function calculateRecommendedAttack(owned: OwnedMonster, def: MonsterDef): numbe
   if (!owned.equipment) return baseAttack;
   const equipmentStats = getEquipmentStats(owned.equipment);
   return Math.round(baseAttack * (1 + (equipmentStats.atkMult ?? 0)));
-}
-
-function resolveMonsterTypeId(monsterId: string): string | null {
-  return Object.keys(MONSTER_DEFS).find(key => monsterId === key || monsterId.startsWith(`${key}_`)) ?? null;
 }
 
 function collectAssignedMonsterIds(state: GameState): Set<string> {

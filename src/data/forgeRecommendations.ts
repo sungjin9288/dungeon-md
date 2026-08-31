@@ -2,7 +2,7 @@
 // ForgeScene에서 분리한 순수 추천 로직 — 설계도별 최적 장착 대상 산정.
 // 씬 상태(focusMonsterId 등)는 인자로 전달받아 엔진 무관·단위 테스트 가능.
 
-import { MONSTER_DEFS } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
 import { getMonsterAtk, getEquipmentStats, type EquipmentStats, type OwnedMonster } from './barracks';
 import { BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, type BlueprintDef } from './fusion';
 import { canCraftBlueprint } from './forgeTransactions';
@@ -306,11 +306,7 @@ export function calculateEquipmentImpactPower(baseAtk: number, stats: EquipmentS
 }
 
 export function getMonsterDefForOwned(monsterId: string): ForgeMonsterDef | null {
-  const exact = MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS];
-  if (exact) return exact;
-  const baseId = Object.keys(MONSTER_DEFS).find(
-    id => monsterId === id || monsterId.startsWith(`${id}_`),
-  ) as keyof typeof MONSTER_DEFS | undefined;
+  const baseId = resolveMonsterTypeId(monsterId);
   return baseId ? MONSTER_DEFS[baseId] : null;
 }
 

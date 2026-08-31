@@ -9,8 +9,9 @@
 
 - 프로젝트: **던전 수호자** — 한국 전통 설화 기반 모바일 수집형 던전 디펜스 게임 (Phaser 3 + TypeScript)
 - 저장소 루트: `/Users/sungjin/dev/personal/dungeon md/dungeon-phaser`
-- 수집 몬스터 총 136종 중 **49종은 이미 일러스트 완료**, **87종이 미완**
-- 이 지시서는 남은 87종의 일러스트를 생성해 정확한 경로/규격으로 저장하는 작업만 다룹니다.
+- 수집 몬스터 **136종 모두 일러스트 완료**(기존 49종 + 이번 배치 87종, 미완 0종)
+- 2026-09-01에 기존 Chapter 7 천계족 8종을 현재 chibi 스타일로 재생성하고 실제 256×256 JPEG로 정규화했습니다.
+- 이 지시서는 이번 배치 87종의 생성 규격과 완료 이력을 보존합니다. 재생성이 필요한 항목이 생기면 해당 체크를 해제하고 같은 절차를 따릅니다.
 - **게임 코드는 건드리지 않습니다.** 파일명 규칙만 정확히 지키면 게임이 자동으로 일러스트를 인식합니다(별도 코드 작업 불필요).
 
 ---
@@ -67,7 +68,7 @@ sips -s format jpeg -s formatOptions 82 -Z 256 원본파일.png --out "public/as
 
 ## 5. 하지 말아야 할 것
 
-- **이미 완료된 49종**(§0 참고, `docs/monster-art-brief.md` 하단 "이미 완료" 목록)의 기존 파일을 덮어쓰거나 수정하지 않는다.
+- 원래 87종 배치를 재실행할 때는 **기존 49종**(§0 참고, `docs/monster-art-brief.md` 하단 "이미 완료" 목록)을 덮어쓰지 않는다. 단, 위에 기록한 Chapter 7 천계족 8종은 승인된 재생성 결과를 유지한다.
 - `src/**`, `scripts/**` 등 **코드 파일은 절대 수정하지 않는다** — 이미지 파일 생성만 수행한다.
 - `npm run gen:portraits` 등 빌드/스크립트 명령을 실행하지 않는다 — 배선은 별도로 처리된다.
 - `git add`/`git commit`을 실행하지 않는다.
@@ -75,97 +76,97 @@ sips -s format jpeg -s formatOptions 82 -Z 256 원본파일.png --out "public/as
 
 ---
 
-## 6. 진행 체크리스트 (87종)
+## 6. 진행 체크리스트 (87종 완료)
 
 완료한 항목은 `[ ]`를 `[x]`로 바꿔 표시하세요.
 
 - [x] `storm_dokkaebi.jpg` — 🌪️ 폭풍 도깨비  ·  에픽 · 마법사 · 번개
 - [x] `gold_dokkaebi.jpg` — 💰 황금 도깨비  ·  에픽 · 지원/힐러 · 신성
 - [x] `fire_dokkaebi_king.jpg` — 🔥 불꽃 도깨비 왕  ·  에픽 · 근접 전사(탱커/돌격) · 화염
-- [ ] `dokkaebi_captain.jpg` — 👹 도깨비 대장  ·  희귀 · 근접 전사(탱커/돌격) · 화염
-- [ ] `dokkaebi_bomber.jpg` — 💣 도깨비 폭격수  ·  희귀 · 원거리 궁수 · 번개
-- [ ] `dokkaebi_duelist.jpg` — ⚔️ 도깨비 쌍검사  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `poison_dokkaebi.jpg` — ☠️ 독 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `shadow_dokkaebi.jpg` — 🌑 그림자 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `shield_dokkaebi.jpg` — 🛡️ 방패 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 신성
-- [ ] `thunder_dokkaebi.jpg` — ⚡ 번개 도깨비  ·  고급 · 근접 전사(탱커/돌격) · 번개
-- [ ] `ice_dokkaebi.jpg` — ❄️ 얼음 도깨비  ·  고급 · 근접 전사(탱커/돌격) · frost
-- [ ] `healer_dokkaebi.jpg` — 💚 치유 도깨비  ·  고급 · 지원/힐러 · 신성
-- [ ] `sea_god_complete.jpg` — 👑 해신 완성체  ·  전설 · 지원/힐러 · frost
-- [ ] `kraken_soldier.jpg` — 🦑 크라켄 병사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `dragon_king_guardian.jpg` — 🐉 용왕 수호자  ·  에픽 · 근접 전사(탱커/돌격) · frost
-- [ ] `tide_leviathan.jpg` — 🐳 심해 거수  ·  에픽 · 마법사 · frost
-- [ ] `sea_general.jpg` — 🐡 용궁 장수  ·  희귀 · 근접 전사(탱커/돌격) · frost
-- [ ] `sea_witch.jpg` — 🧜 바다 마녀  ·  희귀 · 마법사 · 암흑
-- [ ] `shark_warrior.jpg` — 🦈 상어 전사  ·  희귀 · 근접 전사(탱커/돌격) · frost
-- [ ] `sea_dragon_archer.jpg` — 🏹 해룡 궁수  ·  고급 · 원거리 궁수 · frost
-- [ ] `jellyfish_sorcerer.jpg` — 🪼 해파리 술사  ·  고급 · 마법사 · frost
-- [ ] `underworld_complete.jpg` — 🌟 저승 완성체  ·  전설 · 지원/힐러 · 암흑
-- [ ] `hell_guard.jpg` — ⛩️ 저승 문지기  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `yomra_warrior.jpg` — 👺 염라 전사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `ghost_king.jpg` — 👑 귀왕  ·  에픽 · 마법사 · 암흑
-- [ ] `spirit_summoner.jpg` — 📿 망자 소환사  ·  에픽 · 마법사 · 암흑
-- [ ] `soul_guardian.jpg` — 💀 영혼 수호자  ·  희귀 · 지원/힐러 · 신성
-- [ ] `underworld_archer.jpg` — 🏹 저승 궁수  ·  희귀 · 원거리 궁수 · 암흑
-- [ ] `underworld_witch.jpg` — 🧙 저승 마녀  ·  희귀 · 마법사 · 암흑
-- [ ] `skeleton_knight.jpg` — 💀 해골 기사  ·  고급 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `moonlight_complete.jpg` — ✨ 달빛 완성체  ·  전설 · 지원/힐러 · 신성
-- [ ] `galaxy_warrior.jpg` — 🌌 은하 무사  ·  에픽 · 근접 전사(탱커/돌격) · frost
-- [ ] `full_moon_sorcerer.jpg` — 🌕 보름달 술사  ·  에픽 · 마법사 · 신성
-- [ ] `solar_eclipse_warrior.jpg` — 🌑 일식 전사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `lunar_eclipse_mage.jpg` — 🌒 월식 마법사  ·  에픽 · 마법사 · 암흑
-- [ ] `moonlight_rabbit.jpg` — 🐇 달빛 토끼  ·  희귀 · 지원/힐러 · 신성
-- [ ] `starlight_fairy.jpg` — 🌟 별빛 선녀  ·  희귀 · 지원/힐러 · 신성
-- [ ] `crescent_archer.jpg` — 🌙 초승달 궁수  ·  희귀 · 원거리 궁수 · 암흑
-- [ ] `moonlight_tiger.jpg` — 🐯 달빛 호랑이  ·  희귀 · 근접 전사(탱커/돌격) · frost
-- [ ] `banya_guardian.jpg` — 🔱 반야 수호자  ·  전설 · 근접 전사(탱커/돌격) · 화염
-- [ ] `dragon_avatar.jpg` — 🐉 용의 화신  ·  전설 · 근접 전사(탱커/돌격) · 화염
-- [ ] `five_dragon_complete.jpg` — 🌟 오룡 완성체  ·  전설 · 지원/힐러 · 신성
-- [ ] `red_dragon_warrior.jpg` — 🔴 적룡 전사  ·  에픽 · 근접 전사(탱커/돌격) · 화염
-- [ ] `blue_dragon_guardian.jpg` — 🔵 청룡 수호자  ·  에픽 · 근접 전사(탱커/돌격) · frost
-- [ ] `gold_dragon_sage.jpg` — 🟡 황룡 현자  ·  에픽 · 지원/힐러 · 신성
-- [ ] `black_dragon_assassin.jpg` — ⚫ 흑룡 암살자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `white_dragon_healer.jpg` — ⚪ 백룡 치유사  ·  에픽 · 지원/힐러 · 신성
-- [ ] `twilight_dragon.jpg` — 🐲 황혼룡  ·  에픽 · 마법사 · 암흑
-- [ ] `mask_complete.jpg` — 🌟 탈족 완성체  ·  전설 · 지원/힐러 · 신성
-- [ ] `thunder_mask_warrior.jpg` — ⚡ 번개 마스크 전사  ·  에픽 · 근접 전사(탱커/돌격) · 번개
-- [ ] `glacier_warrior.jpg` — ❄️ 빙하 무사  ·  에픽 · 근접 전사(탱커/돌격) · frost
-- [ ] `great_mask_god.jpg` — 🎭 대탈 신  ·  에픽 · 지원/힐러 · 신성
-- [ ] `bongsan_maskman.jpg` — 🎭 봉산 탈꾼  ·  희귀 · 근접 전사(탱커/돌격) · 신성
-- [ ] `cheoyong_warrior.jpg` — 🎭 처용 전사  ·  희귀 · 근접 전사(탱커/돌격) · 화염
-- [ ] `mask_wizard.jpg` — 🎭 탈 마법사  ·  희귀 · 마법사 · 암흑
-- [ ] `mask_archer.jpg` — 🎭 탈 궁수  ·  고급 · 원거리 궁수 · 번개
-- [ ] `eternal_colossus.jpg` — 🗿 영원의 거신  ·  전설 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `primordial_devourer.jpg` — 🌌 원초 포식자  ·  전설 · 마법사 · 암흑
-- [ ] `void_harbinger.jpg` — 🏹 공허 전령  ·  에픽 · 원거리 궁수 · 암흑
-- [ ] `primordial_shaman.jpg` — 🌀 원초 주술사  ·  에픽 · 마법사 · 번개
-- [ ] `abyssal_warden.jpg` — 🛡️ 심연 수호자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `soul_devourer.jpg` — ☠️ 영혼 포식자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `abyssal_seer.jpg` — 👁️ 심연 예언자  ·  희귀 · 지원/힐러 · 암흑
-- [ ] `chaos_reaver.jpg` — 🌋 혼돈 약탈자  ·  희귀 · 근접 전사(탱커/돌격) · 화염
-- [ ] `void_monarch.jpg` — 👑 공허 군왕  ·  전설 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `oblivion_devourer.jpg` — 🌌 망각의 포식자  ·  전설 · 마법사 · 암흑
-- [ ] `void_archon.jpg` — 🏹 공허 집정관  ·  에픽 · 원거리 궁수 · 암흑
-- [ ] `null_sorcerer.jpg` — 🌀 무의 술사  ·  에픽 · 마법사 · 암흑
-- [ ] `abyss_titan.jpg` — 🗿 심연 거신  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `soul_reaver.jpg` — ☠️ 영혼 약탈자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `void_acolyte.jpg` — 🕯️ 공허 추종자  ·  희귀 · 지원/힐러 · 암흑
-- [ ] `rift_stalker.jpg` — 🌑 균열 추적자  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
-- [ ] `ice_gumiho.jpg` — ❄️ 빙설 구미호  ·  희귀 · 마법사 · frost
-- [ ] `thunder_gumiho.jpg` — ⚡ 번개 구미호  ·  희귀 · 마법사 · 번개
-- [ ] `fox_warrior.jpg` — 🦊 여우 전사  ·  희귀 · 근접 전사(탱커/돌격) · 화염
-- [ ] `three_tail_fox.jpg` — 🦊 꼬리 3개 여우  ·  고급 · 마법사 · 암흑
-- [ ] `spring_gumiho.jpg` — 🌸 봄 구미호  ·  고급 · 지원/힐러 · 신성
-- [ ] `summer_gumiho.jpg` — 🌊 여름 구미호  ·  고급 · 지원/힐러 · 신성
-- [ ] `one_tail_fox.jpg` — 🦊 꼬리 1개 여우  ·  일반 · 마법사 · 암흑
-- [ ] `mountain_spirit.jpg` — ⛩️ 산신령  ·  전설 · 지원/힐러 · 신성
-- [ ] `mountain_god_complete.jpg` — 🌄 산신 완성체  ·  전설 · 지원/힐러 · 신성
-- [ ] `phoenix.jpg` — 🦅 봉황  ·  에픽 · 마법사 · 화염
-- [ ] `thousand_pine.jpg` — 🌲 천년 소나무  ·  에픽 · 지원/힐러 · 신성
-- [ ] `bear_god.jpg` — 🐻 곰 산신  ·  희귀 · 근접 전사(탱커/돌격) · 신성
-- [ ] `mountain_spirit_boy.jpg` — ⛩️ 산신 도령  ·  희귀 · 지원/힐러 · 신성
-- [ ] `deer_god.jpg` — 🦌 사슴 신  ·  고급 · 지원/힐러 · 신성
-- [ ] `empyrean_sovereign.jpg` — 🌌 천계 군주  ·  전설 · 마법사 · 신성
+- [x] `dokkaebi_captain.jpg` — 👹 도깨비 대장  ·  희귀 · 근접 전사(탱커/돌격) · 화염
+- [x] `dokkaebi_bomber.jpg` — 💣 도깨비 폭격수  ·  희귀 · 원거리 궁수 · 번개
+- [x] `dokkaebi_duelist.jpg` — ⚔️ 도깨비 쌍검사  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
+- [x] `poison_dokkaebi.jpg` — ☠️ 독 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
+- [x] `shadow_dokkaebi.jpg` — 🌑 그림자 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
+- [x] `shield_dokkaebi.jpg` — 🛡️ 방패 도깨비  ·  희귀 · 근접 전사(탱커/돌격) · 신성
+- [x] `thunder_dokkaebi.jpg` — ⚡ 번개 도깨비  ·  고급 · 근접 전사(탱커/돌격) · 번개
+- [x] `ice_dokkaebi.jpg` — ❄️ 얼음 도깨비  ·  고급 · 근접 전사(탱커/돌격) · frost
+- [x] `healer_dokkaebi.jpg` — 💚 치유 도깨비  ·  고급 · 지원/힐러 · 신성
+- [x] `sea_god_complete.jpg` — 👑 해신 완성체  ·  전설 · 지원/힐러 · frost
+- [x] `kraken_soldier.jpg` — 🦑 크라켄 병사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `dragon_king_guardian.jpg` — 🐉 용왕 수호자  ·  에픽 · 근접 전사(탱커/돌격) · frost
+- [x] `tide_leviathan.jpg` — 🐳 심해 거수  ·  에픽 · 마법사 · frost
+- [x] `sea_general.jpg` — 🐡 용궁 장수  ·  희귀 · 근접 전사(탱커/돌격) · frost
+- [x] `sea_witch.jpg` — 🧜 바다 마녀  ·  희귀 · 마법사 · 암흑
+- [x] `shark_warrior.jpg` — 🦈 상어 전사  ·  희귀 · 근접 전사(탱커/돌격) · frost
+- [x] `sea_dragon_archer.jpg` — 🏹 해룡 궁수  ·  고급 · 원거리 궁수 · frost
+- [x] `jellyfish_sorcerer.jpg` — 🪼 해파리 술사  ·  고급 · 마법사 · frost
+- [x] `underworld_complete.jpg` — 🌟 저승 완성체  ·  전설 · 지원/힐러 · 암흑
+- [x] `hell_guard.jpg` — ⛩️ 저승 문지기  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `yomra_warrior.jpg` — 👺 염라 전사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `ghost_king.jpg` — 👑 귀왕  ·  에픽 · 마법사 · 암흑
+- [x] `spirit_summoner.jpg` — 📿 망자 소환사  ·  에픽 · 마법사 · 암흑
+- [x] `soul_guardian.jpg` — 💀 영혼 수호자  ·  희귀 · 지원/힐러 · 신성
+- [x] `underworld_archer.jpg` — 🏹 저승 궁수  ·  희귀 · 원거리 궁수 · 암흑
+- [x] `underworld_witch.jpg` — 🧙 저승 마녀  ·  희귀 · 마법사 · 암흑
+- [x] `skeleton_knight.jpg` — 💀 해골 기사  ·  고급 · 근접 전사(탱커/돌격) · 암흑
+- [x] `moonlight_complete.jpg` — ✨ 달빛 완성체  ·  전설 · 지원/힐러 · 신성
+- [x] `galaxy_warrior.jpg` — 🌌 은하 무사  ·  에픽 · 근접 전사(탱커/돌격) · frost
+- [x] `full_moon_sorcerer.jpg` — 🌕 보름달 술사  ·  에픽 · 마법사 · 신성
+- [x] `solar_eclipse_warrior.jpg` — 🌑 일식 전사  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `lunar_eclipse_mage.jpg` — 🌒 월식 마법사  ·  에픽 · 마법사 · 암흑
+- [x] `moonlight_rabbit.jpg` — 🐇 달빛 토끼  ·  희귀 · 지원/힐러 · 신성
+- [x] `starlight_fairy.jpg` — 🌟 별빛 선녀  ·  희귀 · 지원/힐러 · 신성
+- [x] `crescent_archer.jpg` — 🌙 초승달 궁수  ·  희귀 · 원거리 궁수 · 암흑
+- [x] `moonlight_tiger.jpg` — 🐯 달빛 호랑이  ·  희귀 · 근접 전사(탱커/돌격) · frost
+- [x] `banya_guardian.jpg` — 🔱 반야 수호자  ·  전설 · 근접 전사(탱커/돌격) · 화염
+- [x] `dragon_avatar.jpg` — 🐉 용의 화신  ·  전설 · 근접 전사(탱커/돌격) · 화염
+- [x] `five_dragon_complete.jpg` — 🌟 오룡 완성체  ·  전설 · 지원/힐러 · 신성
+- [x] `red_dragon_warrior.jpg` — 🔴 적룡 전사  ·  에픽 · 근접 전사(탱커/돌격) · 화염
+- [x] `blue_dragon_guardian.jpg` — 🔵 청룡 수호자  ·  에픽 · 근접 전사(탱커/돌격) · frost
+- [x] `gold_dragon_sage.jpg` — 🟡 황룡 현자  ·  에픽 · 지원/힐러 · 신성
+- [x] `black_dragon_assassin.jpg` — ⚫ 흑룡 암살자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `white_dragon_healer.jpg` — ⚪ 백룡 치유사  ·  에픽 · 지원/힐러 · 신성
+- [x] `twilight_dragon.jpg` — 🐲 황혼룡  ·  에픽 · 마법사 · 암흑
+- [x] `mask_complete.jpg` — 🌟 탈족 완성체  ·  전설 · 지원/힐러 · 신성
+- [x] `thunder_mask_warrior.jpg` — ⚡ 번개 마스크 전사  ·  에픽 · 근접 전사(탱커/돌격) · 번개
+- [x] `glacier_warrior.jpg` — ❄️ 빙하 무사  ·  에픽 · 근접 전사(탱커/돌격) · frost
+- [x] `great_mask_god.jpg` — 🎭 대탈 신  ·  에픽 · 지원/힐러 · 신성
+- [x] `bongsan_maskman.jpg` — 🎭 봉산 탈꾼  ·  희귀 · 근접 전사(탱커/돌격) · 신성
+- [x] `cheoyong_warrior.jpg` — 🎭 처용 전사  ·  희귀 · 근접 전사(탱커/돌격) · 화염
+- [x] `mask_wizard.jpg` — 🎭 탈 마법사  ·  희귀 · 마법사 · 암흑
+- [x] `mask_archer.jpg` — 🎭 탈 궁수  ·  고급 · 원거리 궁수 · 번개
+- [x] `eternal_colossus.jpg` — 🗿 영원의 거신  ·  전설 · 근접 전사(탱커/돌격) · 암흑
+- [x] `primordial_devourer.jpg` — 🌌 원초 포식자  ·  전설 · 마법사 · 암흑
+- [x] `void_harbinger.jpg` — 🏹 공허 전령  ·  에픽 · 원거리 궁수 · 암흑
+- [x] `primordial_shaman.jpg` — 🌀 원초 주술사  ·  에픽 · 마법사 · 번개
+- [x] `abyssal_warden.jpg` — 🛡️ 심연 수호자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `soul_devourer.jpg` — ☠️ 영혼 포식자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `abyssal_seer.jpg` — 👁️ 심연 예언자  ·  희귀 · 지원/힐러 · 암흑
+- [x] `chaos_reaver.jpg` — 🌋 혼돈 약탈자  ·  희귀 · 근접 전사(탱커/돌격) · 화염
+- [x] `void_monarch.jpg` — 👑 공허 군왕  ·  전설 · 근접 전사(탱커/돌격) · 암흑
+- [x] `oblivion_devourer.jpg` — 🌌 망각의 포식자  ·  전설 · 마법사 · 암흑
+- [x] `void_archon.jpg` — 🏹 공허 집정관  ·  에픽 · 원거리 궁수 · 암흑
+- [x] `null_sorcerer.jpg` — 🌀 무의 술사  ·  에픽 · 마법사 · 암흑
+- [x] `abyss_titan.jpg` — 🗿 심연 거신  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `soul_reaver.jpg` — ☠️ 영혼 약탈자  ·  에픽 · 근접 전사(탱커/돌격) · 암흑
+- [x] `void_acolyte.jpg` — 🕯️ 공허 추종자  ·  희귀 · 지원/힐러 · 암흑
+- [x] `rift_stalker.jpg` — 🌑 균열 추적자  ·  희귀 · 근접 전사(탱커/돌격) · 암흑
+- [x] `ice_gumiho.jpg` — ❄️ 빙설 구미호  ·  희귀 · 마법사 · frost
+- [x] `thunder_gumiho.jpg` — ⚡ 번개 구미호  ·  희귀 · 마법사 · 번개
+- [x] `fox_warrior.jpg` — 🦊 여우 전사  ·  희귀 · 근접 전사(탱커/돌격) · 화염
+- [x] `three_tail_fox.jpg` — 🦊 꼬리 3개 여우  ·  고급 · 마법사 · 암흑
+- [x] `spring_gumiho.jpg` — 🌸 봄 구미호  ·  고급 · 지원/힐러 · 신성
+- [x] `summer_gumiho.jpg` — 🌊 여름 구미호  ·  고급 · 지원/힐러 · 신성
+- [x] `one_tail_fox.jpg` — 🦊 꼬리 1개 여우  ·  일반 · 마법사 · 암흑
+- [x] `mountain_spirit.jpg` — ⛩️ 산신령  ·  전설 · 지원/힐러 · 신성
+- [x] `mountain_god_complete.jpg` — 🌄 산신 완성체  ·  전설 · 지원/힐러 · 신성
+- [x] `phoenix.jpg` — 🦅 봉황  ·  에픽 · 마법사 · 화염
+- [x] `thousand_pine.jpg` — 🌲 천년 소나무  ·  에픽 · 지원/힐러 · 신성
+- [x] `bear_god.jpg` — 🐻 곰 산신  ·  희귀 · 근접 전사(탱커/돌격) · 신성
+- [x] `mountain_spirit_boy.jpg` — ⛩️ 산신 도령  ·  희귀 · 지원/힐러 · 신성
+- [x] `deer_god.jpg` — 🦌 사슴 신  ·  고급 · 지원/힐러 · 신성
+- [x] `empyrean_sovereign.jpg` — 🌌 천계 군주  ·  전설 · 마법사 · 신성
 
 ---
 

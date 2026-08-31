@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { MONSTER_DEFS, getSkinForMonster, type MonsterId } from '../data/monsters';
+import { MONSTER_DEFS, getSkinForMonster, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { generatePortrait } from '../art/PortraitGenerator';
 import { SKILL_TREES } from '../data/barracks';
 import type { loadGameState } from '../data/wisdom';
@@ -85,7 +85,7 @@ export function showCodexMonsterDetail(
   const accent = m.accentColor ?? CASUAL.GOLD;
   const rarity = getCodexDetailRarityMeta(m.rarityTier);
   const dexNo = getCodexDetailDexNo(m.id);
-  const isOwned = gs.ownedMonsters?.some(monster => monster.id === m.id) ?? false;
+  const isOwned = gs.ownedMonsters?.some(monster => resolveMonsterTypeId(monster.id) === m.id) ?? false;
 
   const ctr = scene.add.container(0, 0).setDepth(50);
 

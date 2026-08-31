@@ -8,6 +8,7 @@ import {
   getSkinForMonster,
   getSkinsForMonster,
   resolveMonsterDef,
+  resolveMonsterTypeId,
 } from './monsters';
 import type { MonsterDef } from './monsters';
 
@@ -318,6 +319,30 @@ describe('resolveMonsterDef', () => {
     const result = resolveMonsterDef('dokkaebi_warrior');
     expect(result!.baseDamage).toBe(20);
     expect(result!.attackCooldown).toBe(1500);
+  });
+});
+
+// ─── resolveMonsterTypeId ────────────────────────────────────────────────────
+
+describe('resolveMonsterTypeId', () => {
+  it('keeps exact monster IDs distinct from their shared prefixes', () => {
+    expect(resolveMonsterTypeId('mountain_god')).toBe('mountain_god');
+    expect(resolveMonsterTypeId('mountain_god_complete')).toBe('mountain_god_complete');
+    expect(resolveMonsterTypeId('mountain_spirit')).toBe('mountain_spirit');
+    expect(resolveMonsterTypeId('mountain_spirit_boy')).toBe('mountain_spirit_boy');
+  });
+
+  it('uses the longest delimited base ID for evolved monsters', () => {
+    expect(resolveMonsterTypeId('mountain_god_complete_leg')).toBe('mountain_god_complete');
+    expect(resolveMonsterTypeId('mountain_spirit_boy_leg')).toBe('mountain_spirit_boy');
+    expect(resolveMonsterTypeId('dokkaebi_warrior_leg')).toBe('dokkaebi_warrior');
+  });
+
+  it('rejects near matches, unknown IDs, empty IDs, and inherited properties', () => {
+    expect(resolveMonsterTypeId('mountain_godlike')).toBeNull();
+    expect(resolveMonsterTypeId('unknown')).toBeNull();
+    expect(resolveMonsterTypeId('')).toBeNull();
+    expect(resolveMonsterTypeId('toString')).toBeNull();
   });
 });
 

@@ -10,7 +10,7 @@ import {
   ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel,
   type GameState, type DungeonSlot, type RoomSlotType,
 } from '../data/wisdom';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
@@ -21,7 +21,7 @@ import {
 } from '../data/roomSlotTransactions';
 import { getRoomDesignRecommendation } from '../data/roomDesignRecommendations';
 import { getMonsterLoadoutRecommendation, getTrapLoadoutRecommendation } from '../data/roomLoadoutRecommendations';
-import { addMonsterPortrait, resolveMonsterTypeId } from './MonsterPortraitView';
+import { addMonsterPortrait } from './MonsterPortraitView';
 import {
   getPlacementTrayOpeningTab,
   type PlacementTrayTab,

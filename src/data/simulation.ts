@@ -2,7 +2,7 @@
  * Dungeon simulation — pure math, no Phaser.
  * Estimates battle outcome based on current dungeon config vs stage waves.
  */
-import { MONSTER_DEFS } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
 import { INVADER_DEFS } from './invaders';
 import type { DungeonSlot, OwnedMonster } from './wisdom';
 import type { WaveSpec } from './stages';
@@ -46,14 +46,6 @@ export interface SimResult {
   diagnostics: SimulationDiagnostic[];
 }
 
-/** Resolve the base monster type key from an owned-monster ID. */
-function resolveMonsterKey(mId: string): string | undefined {
-  // Exact match first
-  if (mId in MONSTER_DEFS) return mId;
-  // Prefix match (e.g. "dokkaebi_warrior_abc" → "dokkaebi_warrior")
-  return Object.keys(MONSTER_DEFS).find(k => mId.startsWith(k + '_'));
-}
-
 /** Calculate approximate total DPS of the current dungeon configuration. */
 export function calcDungeonDps(
   slots: DungeonSlot[],
@@ -72,9 +64,9 @@ export function calcDungeonDps(
     // Monster DPS
     for (const mId of slot.monsterIds) {
       if (!mId) continue;
-      const key = resolveMonsterKey(mId);
+      const key = resolveMonsterTypeId(mId);
       if (!key) continue;
-      const def = MONSTER_DEFS[key as keyof typeof MONSTER_DEFS];
+      const def = MONSTER_DEFS[key];
       if (!def || def.attackCooldown === 0) continue;
 
       // Level multiplier from owned-monster record (10% per level above 1)

@@ -9,7 +9,7 @@ import {
   type OwnedMonster,
 } from './barracks';
 import { calculateRoomMetrics } from './dungeonMetrics';
-import { MONSTER_DEFS } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
 import {
   getRoomSlotCapacity,
   ROOM_SLOT_TYPE_DEFS,
@@ -341,6 +341,6 @@ function getGrowthScore(
 }
 
 function getMonsterDef(monsterId: string) {
-  const typeId = Object.keys(MONSTER_DEFS).find(id => monsterId === id || monsterId.startsWith(`${id}_`));
-  return typeId ? MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS] : null;
+  const typeId = resolveMonsterTypeId(monsterId);
+  return typeId ? MONSTER_DEFS[typeId] : null;
 }

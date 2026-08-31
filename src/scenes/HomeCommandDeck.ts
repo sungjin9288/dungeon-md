@@ -16,7 +16,7 @@ import {
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
 import { getHomeReadinessDirective } from '../data/homeReadinessDirective';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { goToPreBattle } from '../ui/InvasionUI';
@@ -182,16 +182,14 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
 function getMonsterCollectionSummary(
   ownedMonsters: readonly OwnedMonster[],
 ): { owned: number; total: number; rareOwned: number; percent: number } {
-  const ownedTypes = new Set<string>();
+  const ownedTypes = new Set<MonsterId>();
   for (const monster of ownedMonsters) {
-    const typeId = Object.keys(MONSTER_DEFS).find(
-      id => monster.id === id || monster.id.startsWith(`${id}_`),
-    );
+    const typeId = resolveMonsterTypeId(monster.id);
     if (typeId) ownedTypes.add(typeId);
   }
   const defs = Object.values(MONSTER_DEFS);
   const rareOwned = Array.from(ownedTypes).filter(id => {
-    const rarity = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS]?.rarityTier;
+    const rarity = MONSTER_DEFS[id]?.rarityTier;
     return rarity === 'E' || rarity === 'L';
   }).length;
   const total = defs.length;

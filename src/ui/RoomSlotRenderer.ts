@@ -5,18 +5,16 @@
  */
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { EQUIPMENT_DEFS } from '../data/barracks';
 import { calculateRoomLoadoutStatus, calculateRoomMetrics } from '../data/dungeonMetrics';
 import { getRoomActionRecommendation } from '../data/roomActionRecommendations';
 import { SLOT_UNLOCK_LEVELS, ROOM_SLOT_TYPE_DEFS } from '../data/wisdom';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
-import { resolveMonsterTypeId } from './MonsterPortraitView';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
-import type { MonsterId } from '../data/monsters';
 
 // ─── Shared layout constants ───────────────────────────────────────────────
 

@@ -7,7 +7,7 @@ import {
 } from '../data/wisdom';
 
 import { xpForDmLevel } from '../data/invasionTransactions';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
 import {
   type HomeMainQuestCompletionResult,
 } from '../data/questLifecycleTransactions';
@@ -425,10 +425,8 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   /** @internal */ resolveMonsterVisual(monsterId: string): { emoji: string; name: string } {
-    const baseId = Object.keys(MONSTER_DEFS).find(
-      id => monsterId === id || monsterId.startsWith(`${id}_`),
-    );
-    const def = baseId ? MONSTER_DEFS[baseId as keyof typeof MONSTER_DEFS] : undefined;
+    const baseId = resolveMonsterTypeId(monsterId);
+    const def = baseId ? MONSTER_DEFS[baseId] : undefined;
     const name = def?.name ?? '수호자';
     return {
       emoji: def?.emoji ?? '👹',

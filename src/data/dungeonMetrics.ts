@@ -1,5 +1,5 @@
 import { getEquipmentStats, getMonsterAtk, type EquipmentStats } from './barracks';
-import { MONSTER_DEFS } from './monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
 import { TRAP_DEFS } from './traps';
 import { getRoomSlotCapacity, type DungeonSlot, type GameState } from './wisdom';
 
@@ -182,11 +182,9 @@ function calculateMonsterPower(state: GameState, slot: DungeonSlot): number {
     if (!monsterId) return sum;
     const owned = state.ownedMonsters.find(monster => monster.id === monsterId);
     if (!owned) return sum;
-    const typeId = Object.keys(MONSTER_DEFS).find(
-      id => owned.id === id || owned.id.startsWith(`${id}_`),
-    );
+    const typeId = resolveMonsterTypeId(owned.id);
     if (!typeId) return sum;
-    const def = MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS];
+    const def = MONSTER_DEFS[typeId];
     return sum + Math.round(getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {}));
   }, 0);
 }
@@ -196,11 +194,9 @@ function calculateEquipmentPower(state: GameState, slot: DungeonSlot): number {
     if (!monsterId) return sum;
     const owned = state.ownedMonsters.find(monster => monster.id === monsterId);
     if (!owned?.equipment) return sum;
-    const typeId = Object.keys(MONSTER_DEFS).find(
-      id => owned.id === id || owned.id.startsWith(`${id}_`),
-    );
+    const typeId = resolveMonsterTypeId(owned.id);
     if (!typeId) return sum;
-    const def = MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS];
+    const def = MONSTER_DEFS[typeId];
     const baseAtk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {});
     return sum + calculateEquipmentImpactPower(baseAtk, getEquipmentStats(owned.equipment));
   }, 0);

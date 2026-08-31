@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { generatePortrait } from '../art/PortraitGenerator';
-import { MONSTER_DEFS, getSkinForMonster, type MonsterId } from '../data/monsters';
+import { MONSTER_DEFS, getSkinForMonster, resolveMonsterTypeId } from '../data/monsters';
 import { getMonsterVisualIdentity } from '../data/monsterVisualIdentity';
 
 export interface MonsterPortraitOptions {
@@ -28,13 +28,6 @@ export function setMonsterPortraitAlpha(portrait: MonsterPortraitRefs, alpha: nu
   portrait.cueGraphic?.setAlpha(alpha);
   portrait.roleCue?.setAlpha(alpha);
   portrait.elementCue?.setAlpha(alpha);
-}
-
-export function resolveMonsterTypeId(monsterId: string): MonsterId | null {
-  const typeId = Object.keys(MONSTER_DEFS).find(
-    id => monsterId === id || monsterId.startsWith(`${id}_`),
-  );
-  return (typeId ?? null) as MonsterId | null;
 }
 
 export function addMonsterPortrait(
