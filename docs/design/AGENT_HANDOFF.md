@@ -452,8 +452,9 @@ release readiness를 의미하지 않는다.
 - ~~Nested modal/selection/result states at 360×800 and 430×932~~
   → CLOSED 2026-09-16. Viewport 축은 구조적으로 닫혔고, modal/selection/result
   17개 상태를 재현 가능한 하네스로 감사했다. 아래 기록 참조.
-- Abyss floor battle: hand-off seam은 닫혔고, 남은 것은 organic play-through
-  (실제 wave를 싸워서 이기는 구간)이다. 아래 2026-09-16 기록 참조.
+- ~~Abyss floor battle의 launch→organic win/loss return full E2E play-through~~
+  → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
+  아래 기록 참조.
 - Whole-app Android/iOS packaging and store release validation
 - ~~Clean commit/merge/release history for the accumulated dirty worktree~~
   → CLOSED 2026-09-16. 아래 기록 참조.
@@ -520,8 +521,30 @@ artifact이므로 실결함으로 계수하지 않는다.
 순회하도록 바꿔 선언과 런타임이 갈라질 수 없게 했다. 회귀 테스트를
 `navigationContract.test.ts`에 추가했다(6→7 케이스).
 
-남은 것: organic play-through. 위 검증은 hand-off 계약과 정산을 닫은 것이지,
-실제 wave를 싸워 이기는 전투 구간을 대체하지 않는다.
+**Abyss organic play-through (CLOSED).** `scripts/verify-abyss-playthrough.mjs`가
+층 진입부터 실제 wave 전투, 실제 result-flow 버튼, 정산까지 왕복한다.
+`{runs:2, hardFailures:0}` (`tools/abyss-playthrough-audit.json`).
+
+- win — 수호자 9종 배치, 3/3 wave를 HP 1000/1000 무손실로 방어 →
+  `highestFloor 0→1`, "1층 정복 완료 · 최심 0→1" + 전리품 영수증
+- loss — 방 미건설, 3/3 wave 동안 심장부 HP 1000→0 →
+  `highestFloor 0` 유지, "1층 원정 실패 · 최심 0층 유지", 열쇠 12/12 미소모
+- 두 경우 모두 `abyssPendingFloor`/`battleResult`/`returnTo` 잔여 0, console error 0
+
+검증 중 확인한 동작: **수호자를 0명 배치해도 패배하지 않는다.** `DungeonLayout`이
+몬스터 없는 슬롯에도 `ROOM_DEFS[roomType].attackCooldown`을 부여해 빈 전투실
+자체가 공격하기 때문이다. 따라서 패배 fixture는 "수호자 미배치"가 아니라
+"방 미건설"(`dungeonSlots: []`)이어야 한다. 이건 결함이 아니라 방 자체가 방어
+주체라는 설계이며, 후속 balance 판단 시 참고할 것.
+
+도구 제약 두 가지를 기록한다:
+- Result 버튼은 tween `onComplete`에서 `onPress()`를 호출하므로 eval 컨텍스트
+  에서는 절대 발화하지 않는다(CLAUDE.md의 알려진 함정). Playwright context를
+  `reducedMotion: 'reduce'`로 열면 버튼이 reduced-motion 직행 경로를 타서
+  실제 핸들러가 실행된다. 이 스크립트가 Playwright를 쓰는 이유다.
+- `window.advanceTime(ms)`는 호출마다 `renderGameToText()`로 게임 전체를
+  직렬화해 반환한다. 작은 step으로 반복 호출하면 시뮬레이션이 아니라 직렬화가
+  병목이 된다. 허용 최대치(10s) 단위로 끊고, wave 정착을 짧은 slice로 폴링할 것.
 
 **Modal/selection/result 전수 (CLOSED).** `scripts/verify-modal-states.mjs`를
 신설해 각 surface의 초기 상태에서 한 단계 더 들어간 17개 상태를 감사했다:

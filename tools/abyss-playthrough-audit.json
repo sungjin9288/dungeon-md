@@ -1,0 +1,143 @@
+{
+  "generatedAt": "2026-09-16T03:45:23.056Z",
+  "base": "http://127.0.0.1:8083",
+  "floor": 1,
+  "scope": "Abyss floor organic play-through: real wave combat through the production wave loop, then the real result-flow button settling the floor. Not a campaign or endless endurance run.",
+  "method": "Playwright context with reducedMotion: reduce so result buttons take their direct onPress path (tween onComplete does not fire under eval). Combat advances through window.advanceTime, the app's own fixed-step driver.",
+  "sourceHashes": {
+    "src/scenes/AbyssScene.ts": "884ec60832accd89305b5f768412d6fbbc604af215b1d52c26981383cf96a56e",
+    "src/combat/StageClearFlow.ts": "956c11c6a8b05bcce9d7b8f04d8a6c7b30c2dea715e2975c73b3410f2c7fd140",
+    "src/combat/ResultPanel.ts": "085d704e69776646eeef99c667b6997ae15788bd22ea4baab804feb986acda8c",
+    "src/combat/WaveLifecycle.ts": "0b3609db370fd61d82184c06ae8d7bc05f4eb00d58ac41e6c3bcc70463876b6d",
+    "scripts/verify-abyss-playthrough.mjs": "8a596995ba028f2cb58662cd7899ec289fcda6c8ec785927a2ca6c0fe5294530"
+  },
+  "runs": [
+    {
+      "mode": "win",
+      "seeded": {
+        "slots": 9,
+        "armed": 9
+      },
+      "battle": {
+        "wave": 3,
+        "maxWave": 3,
+        "dungeonHp": 1000,
+        "maxHp": 1000,
+        "armedRooms": 9,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1000,
+            "settled": true
+          },
+          {
+            "wave": 2,
+            "hp": 1000,
+            "settled": true
+          },
+          {
+            "wave": 3,
+            "hp": 1000,
+            "settled": true
+          }
+        ]
+      },
+      "outcome": "win",
+      "press": {
+        "pressed": true,
+        "label": "던전으로 귀환 · 방어선 확인",
+        "candidates": 3,
+        "battleResult": null
+      },
+      "settled": {
+        "activeScenes": [
+          "AbyssScene"
+        ],
+        "abyss": {
+          "highestFloor": 1,
+          "keys": 12,
+          "lastRefill": "2026-09-16"
+        },
+        "receipt": {
+          "tone": "success",
+          "title": "1층 정복 완료 · 최심 0→1",
+          "detail": "일반 광석 +5 · 낡은 천 +3 · 약초 +3 · 철 조각 +2 · 골드 +39"
+        },
+        "residue": {
+          "abyssPendingFloor": null,
+          "battleResult": null,
+          "returnTo": null
+        }
+      },
+      "errors": [],
+      "screenshot": "tools/screenshots/abyss-playthrough-win.png",
+      "sha256": "6e43a16b5cd741198c19f8d0cf4793fcc256cd1139701a5284bda91173d9c40b"
+    },
+    {
+      "mode": "loss",
+      "seeded": {
+        "slots": 0,
+        "armed": 0
+      },
+      "battle": {
+        "wave": 3,
+        "maxWave": 3,
+        "dungeonHp": 0,
+        "maxHp": 1000,
+        "armedRooms": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 500,
+            "settled": true
+          },
+          {
+            "wave": 2,
+            "hp": 50,
+            "settled": true
+          },
+          {
+            "wave": 3,
+            "hp": 0,
+            "settled": true
+          }
+        ]
+      },
+      "outcome": "loss",
+      "press": {
+        "pressed": true,
+        "label": "던전으로 귀환 · 방어선 보강",
+        "candidates": 1,
+        "battleResult": null
+      },
+      "settled": {
+        "activeScenes": [
+          "AbyssScene"
+        ],
+        "abyss": {
+          "highestFloor": 0,
+          "keys": 12,
+          "lastRefill": "2026-09-16"
+        },
+        "receipt": {
+          "tone": "warning",
+          "title": "1층 원정 실패 · 최심 0층 유지",
+          "detail": "심연 정복 보상 없음 · 같은 층에 다시 도전할 수 있습니다"
+        },
+        "residue": {
+          "abyssPendingFloor": null,
+          "battleResult": null,
+          "returnTo": null
+        }
+      },
+      "errors": [],
+      "screenshot": "tools/screenshots/abyss-playthrough-loss.png",
+      "sha256": "bd0c0d5adf16b5135ba75a8e71880b69760287080e870d9976aa2b2c02a7ae0d"
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "runs": 2,
+    "hardFailures": 0
+  }
+}
