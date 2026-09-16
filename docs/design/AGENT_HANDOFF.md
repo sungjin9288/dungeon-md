@@ -449,12 +449,59 @@ release readiness를 의미하지 않는다.
 - 이전 추천인 progression-valid organic gameplay acceptance(Abyss win/loss,
   campaign/endless endurance)는 후속 목록에 유지한다. 캐릭터 요청이
   balance/data/native 변경 권한을 열지는 않는다.
-- Every nested modal/selection/result state at 360×800 and 430×932; current
-  aggregate matrix covers initial states and Summon active banner only
+- Nested modal/selection/result states: PARTIAL. 아래 2026-09-16 기록 참조.
+  Viewport 축(360×800 / 430×932)은 닫혔고, 남은 것은 modal 상태 자체의 폭이다.
 - Abyss floor battle의 launch→organic win/loss return full E2E play-through
 - Whole-app Android/iOS packaging and store release validation
-- Clean commit/merge/release history for the accumulated dirty worktree
-- Global performance/bundle remediation for the existing large-chunk advisory
+- ~~Clean commit/merge/release history for the accumulated dirty worktree~~
+  → CLOSED 2026-09-16. 아래 기록 참조.
+- ~~Global performance/bundle remediation for the existing large-chunk advisory~~
+  → CLOSED 2026-09-16. 아래 기록 참조.
+
+### 2026-09-16 — worktree 정리 · 번들 · viewport/modal 검증
+
+**Worktree (CLOSED).** 누적 dirty worktree를 4개 논리 commit으로 정리했다:
+`f4ed54a` src 160개(신규 25개 포함) / `fb5e641` 설계 문서·검증 스크립트·
+ritual-v2 아트 / `5e95f39` Capacitor 8 동기화 + native safe-area /
+`34d59b6` 증빙·아트 마스터 + QA 캡처 gitignore. 정리 전 상태에서 신규 소스
+25개가 미추적이었고 그 중 12개(`ShopShared` 5곳, `characterArt` 5곳,
+`HudResourceFormatting` 8곳 등)가 이미 프로덕션 경로에서 import되고 있어
+`git checkout`/`clean` 한 번에 앱이 깨지는 상태였다. 이제 worktree는 clean이다.
+`tools/screenshots/`(117MB), `.playwright-cli/`, `output/playwright/`는
+gitignore로 제외하고, 이미 추적 중이던 캡처 11장은 유지했다.
+
+**Bundle (CLOSED).** `app-gameplay` 단일 청크가 858KB로 Vite 500KB 임계를
+넘고 있었고 `vite.config.ts` 주석의 "stays under 500KB"는 사실과 달랐다.
+`app-scenes`(265KB) / `app-ui`(392KB) / `app-combat`(206KB)로 분리해 모든 앱
+청크를 임계 미만으로 내렸다(`d691af6`). 주석이 우려하던 circular-chunk 위험은
+실측으로 반증했다 — 빌드 경고 0, built output 부팅 후 허브 12개 씬과
+DungeonScene/UIScene 전환 전부 성공, console error 0. `phaser`(1.48MB)는 단일
+vendor 라이브러리라 custom build 없이 분리 불가하며 advisory가 남는 것이
+정상이다. `chunkSizeWarningLimit`은 앱 청크 회귀를 계속 잡기 위해 기본값을
+유지했다. Scene lazy-load는 채택하지 않았다: 20개 씬이 `main.ts`에서 즉시
+등록되고 Capacitor 셸에서 `dist/`를 로컬로 읽으므로, 81개 `scene.start`
+호출부를 async로 바꾸는 위험 대비 전달 이득이 없다.
+
+**Viewport 축 (CLOSED).** `main.ts`는 `Phaser.Scale.FIT` + 고정
+`390×844` 논리 캔버스를 쓴다. 브라우저 viewport가 바뀌어도 논리 좌표계는
+그대로이고 letterbox/scale만 변하므로, 360×800과 430×932는 레이아웃 reflow를
+만들지 않는다. 즉 "360×800 / 430×932에서 다시 본다"는 별도 축이 아니다.
+`verify-web-surfaces.mjs`가 bounds를 390×844로 재는 것도 이 때문에 올바르다.
+디바이스별로 실제 달라지는 것은 safe-area inset이며, 이는 `index.html`의
+`max(env(safe-area), --native-safe-*)`가 담당한다(`5e95f39`).
+
+**Modal 검증 (PARTIAL).** `verify-web-surfaces.mjs` 재실행(현재 분리 빌드
+기준): 45 initial captures / 3 viewports, errors 0, hardFailures 0,
+fixedOverflow 0, scrollBoundaryPartials 0, undersizedTargets 0,
+textBelow10 0. 유일한 flag는 ShopScene 6건 + DungeonHomeScene 1건의
+`overlapCandidates`인데, 실물 확인 결과 썸네일 모서리에 의도적으로 겹쳐 둔
+배지 칩(⚔/◆/✦/◐)이라 결함이 아니다. 중첩 modal은 Shop `외형 검수대`를
+직접 열어 계측했다 — worldView 정확히 390×844, fixedOverflow 0,
+undersized target 0, 10px 미만 텍스트 0, interactive 21개. Barracks 몬스터
+상세 modal도 정상 개방(visible object 105→201)을 확인했다.
+남은 것: 나머지 surface의 confirm/result/picker 상태 전수. 임시 probe가
+보고하는 추가 overflow는 `scrollFactor:0` 고정 하단 내비의 월드 좌표
+artifact이므로 실결함으로 계수하지 않는다.
 
 현재 사용자 요청과 `CHARACTER_ART_REVISION.md`에 따라 다음 한 batch의 exact IDs,
 acceptance와 허용 파일을 먼저 확정한다. Packaging/publishing 권한은 포함되지 않는다.
