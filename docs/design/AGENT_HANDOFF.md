@@ -455,7 +455,9 @@ release readiness를 의미하지 않는다.
 - ~~Abyss floor battle의 launch→organic win/loss return full E2E play-through~~
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
-- Whole-app Android/iOS packaging and store release validation
+- Whole-app Android/iOS packaging and store release validation — PARTIAL.
+  iOS 시뮬레이터 빌드까지는 통과했고, 남은 것은 Android 빌드와 서명/스토어다.
+  아래 2026-09-16 기록 참조.
 - ~~Clean commit/merge/release history for the accumulated dirty worktree~~
   → CLOSED 2026-09-16. 아래 기록 참조.
 - ~~Global performance/bundle remediation for the existing large-chunk advisory~~
@@ -545,6 +547,32 @@ artifact이므로 실결함으로 계수하지 않는다.
 - `window.advanceTime(ms)`는 호출마다 `renderGameToText()`로 게임 전체를
   직렬화해 반환한다. 작은 step으로 반복 호출하면 시뮬레이션이 아니라 직렬화가
   병목이 된다. 허용 최대치(10s) 단위로 끊고, wave 정착을 짧은 slice로 폴링할 것.
+
+**네이티브 패키징 (PARTIAL).** Capacitor 8 업그레이드(`5e95f39`)는 커밋만 되고
+sync/빌드로 검증된 적이 없었다. 이번에 확인한 범위:
+
+- 버전 정합: core/android/ios/cli 모두 8.2.0, 설치본도 동일
+- `npm run build && LANG=en_US.UTF-8 npx cap sync` — android/ios 양쪽 copy·update와
+  `pod install`까지 성공. 이후 `git status` 0 (멱등). 동기화 산출물은 Capacitor가
+  만든 중첩 `.gitignore`(`android/.gitignore:96`, `ios/.gitignore:4`)가 제외하므로
+  추적되지 않는 것이 정상이며, 네이티브 빌드 전 `cap sync` 선행이 필수다.
+- **iOS 시뮬레이터 빌드 `** BUILD SUCCEEDED **`** — Capacitor 8 셸이 실제로
+  컴파일된다. 산출 `App.app/public/assets`에 분리된 청크(`app-scenes`/`app-ui`/
+  `app-combat`)가 그대로 들어간 것도 확인했다.
+- Android 정적 정합성: `variables.gradle`의 minSdk 24 / compileSdk 36 /
+  targetSdk 36이 Capacitor 8 기본값과 일치. Gradle wrapper 8.14.3.
+
+막힌 것(환경 제약, 코드 문제 아님):
+- Android 빌드 — 이 머신에 **JDK 미설치 + ANDROID_HOME 미설정**. Capacitor 8은
+  Java 21을 요구한다.
+- iOS 시뮬레이터 구동 — `xcode-select`가 Xcode.app을 가리키지 않는다. 수정은
+  sudo가 필요해 agent가 할 수 없다:
+  `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+- 서명/스토어 업로드 — 자격증명 필요.
+
+부수 수정: `CLAUDE.md`의 앱 설정 4줄 중 3줄이 실제와 달랐다(버전 1.0/build 1 →
+실제 1.1/2, iOS target 13.0 → 15.0, Android minSdk 22/targetSdk 34 → 24/36).
+실측값으로 고치고 빌드 전제조건 표를 추가했다.
 
 **Modal/selection/result 전수 (CLOSED).** `scripts/verify-modal-states.mjs`를
 신설해 각 surface의 초기 상태에서 한 단계 더 들어간 17개 상태를 감사했다:

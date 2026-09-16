@@ -148,8 +148,26 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 
 ## 앱 설정
 
-- Bundle ID: `com.dungeon.guardian`
-- 버전: 1.0 / build 1
-- iOS deployment target: 13.0
-- Android minSdk: 22 / targetSdk: 34
-- Capacitor: core/android/ios `^8.2.0`
+2026-09-16 네이티브 프로젝트 실측 기준.
+
+- Bundle ID / applicationId: `com.dungeon.guardian`
+- 버전: **1.1 / build 2** (`MARKETING_VERSION` 1.1 · `CURRENT_PROJECT_VERSION` 2 /
+  `versionName "1.1"` · `versionCode 2`)
+- iOS deployment target: **15.0** (Podfile `platform :ios, '15.0'`과 동일)
+- Android **minSdk 24 / compileSdk 36 / targetSdk 36** — Capacitor 8 기본값과 일치
+  (`android/variables.gradle`이 단일 진실원, `app/build.gradle`은 여기서 읽어감)
+- Capacitor: core/android/ios/cli 모두 `8.2.0`
+- Gradle wrapper 8.14.3 · Capacitor 8은 **Java 21**을 요구
+  (`sourceCompatibility/targetCompatibility VERSION_21`)
+
+### 네이티브 빌드 전제조건
+
+| 대상 | 필요한 것 | 검증 명령 |
+|------|-----------|-----------|
+| 동기화 | 없음 (`dist/` 최신이면 됨) | `npm run build && LANG=en_US.UTF-8 npx cap sync` |
+| iOS 빌드 | Xcode + CocoaPods | `xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator build` |
+| Android 빌드 | **JDK 21 + ANDROID_HOME** | `cd android && ./gradlew assembleDebug` |
+
+동기화 산출물(`android/app/src/main/assets/public`, `ios/App/App/public`)은
+Capacitor가 생성한 중첩 `.gitignore`가 제외하므로 커밋되지 않는다. 네이티브
+빌드 전에는 반드시 `cap sync`를 먼저 돌려야 최신 `dist/`가 들어간다.
