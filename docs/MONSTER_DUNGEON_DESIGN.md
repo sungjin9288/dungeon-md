@@ -2,6 +2,29 @@
 
 이 문서는 `dungeon-phaser`의 플레이 화면 디자인에 대한 유일한 권위 문서다. 런타임 color token의 권위는 `src/constants/colors.ts`이며, 이 문서는 token을 복제하지 않고 역할과 사용 규칙만 정의한다.
 
+## Character art revision — 2026-09-05
+
+사용자가 캐릭터 및 전체 디자인을 기획에 맞춰 다시 다듬도록 요청했다. 이전
+136종 JPG의 파일 보유 완료는 새 아트 디렉션 적합을 뜻하지 않는다. 새 방향은
+**아담하고 수집하고 싶은, 손으로 빚은 듯한 설화 수호자**다. 2.5–3등신과 표정은
+유지하고, 인간형 코스튬 반복 대신 종족 silhouette·전투 역할·기와/목재/매듭/청동/
+등불의 재질을 우선한다. Matte painterly character와 charcoal-indigo 공간을 연결한다.
+
+이 요청은 아래 과거 environment-only 생성 범위를 **versioned character cutout**으로
+확장한다. 구체 계획과 acceptance는 `docs/design/CHARACTER_ART_REVISION.md`에 있다.
+현재 첫 배치는 `dokkaebi_warrior`, `gumiho_guardian`, `death_messenger`,
+`mountain_spirit` 네 종뿐이며, 132종의 새 아트가 완료된 것은 아니다. 기존 모든 JPG와
+MonsterDef/tribe/role/rarity/save/전투/route authority를 보존한다.
+
+새 runtime 계약: `public/assets/monsters/ritual-v2/{id}.png`, 512×512 RGBA,
+512 KiB 이하, 실제 alpha와 읽히는 작은 silhouette. `characterArt.ts`의 승인된
+presentation registry만 preload한다. Portrait/room token은 v2→legacy JPG→기존
+procedural 경로, Home world sprite는 v2→procedural(JPG 사용 안 함), Cinematic의
+exact mapped speaker는 v2→legacy JPG→원래 emoji로 fallback한다. Unmapped
+speaker는 원래 emoji를 유지한다. 원본 master와 exact prompt는 `output/character-art/ritual-v2/`
+보존. 새 파일을 legacy `PORTRAIT_IDS`에 섞지 않는다. Story art mapping은 exact
+speaker label에 한정하고, 관계가 다른 캐릭터에 같은 그림을 임의로 붙이지 않는다.
+
 ## D1 approved visual thesis
 
 390×844 세로 화면은 dashboard가 아니라 살아 있는 몬스터 던전의 단면이다. 시각 언어는 **charcoal-indigo stone + Korean folk-craft**다. 숯빛과 쪽빛 석재가 조용한 깊이를 만들고, 단청에서 가져온 제한된 의미색과 손으로 새긴 듯한 얇은 기능선이 상태를 설명한다. 광택, candy button, 갈색 카드 더미보다 공간·크기·silhouette·짧은 label을 먼저 사용한다.
@@ -152,7 +175,9 @@ Home은 dashboard가 아니라 살아 있는 수직 던전, 방 상세는 cutawa
 
 - Reference에서 feature structure만 학습한다. Character, creature, prop, pose, composition, map, screen layout, logo, typography, copy, palette, UI, screenshot, asset file, name, sound, trade dress를 copy/trace/import하지 않는다.
 - Dokkaebi는 project-original folk-craft vocabulary다: brass bell, roof-tile curl, rope, stone, ember, pottery, carved-club abstraction, dancheong-inspired geometric rhythm. 특정 historical artwork, ritual object, living tradition의 exact pattern을 copy하지 않는다.
-- Generated raster art는 environment-only다. Text, UI, watermark, logo, person, monster, signature, protected character, named-game similarity가 없어야 한다.
+- Environment raster에는 text, UI, watermark, logo, person, monster, signature,
+  protected character, named-game similarity가 없어야 한다. 2026-09-05에 승인된
+  character cutout은 별도 versioned asset이며 환경에 baked-in하지 않는다.
 - Reference URL은 provenance record일 뿐 runtime dependency 또는 art source가 아니다. New art starts from this contract, not a reference screenshot.
 
 ### Tone and hierarchy

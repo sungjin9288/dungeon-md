@@ -2,6 +2,23 @@
 
 > Runtime asset 규격과 originality의 최종 권위는 `docs/MONSTER_DUNGEON_DESIGN.md`다. 이 문서는 drop-in 절차만 보조하며, 충돌하면 디자인 문서를 따른다.
 
+## 현재 캐릭터 아트 개정 (2026-09-05)
+
+아래 흰 배경 JPG/프롬프트는 legacy catalog 안내다. 새로운 캐릭터 제작은
+`docs/design/CHARACTER_ART_REVISION.md`와 `output/character-art/ritual-v2/PROMPTS.md`
+를 따른다. 첫 네 종은 `monsters/ritual-v2/{id}.png`의 512×512 RGBA /512 KiB 이하
+cutout으로 연결한다. 실제 alpha를 검사하고, 기존136 JPG는 덮어쓰지 않는다.
+`src/data/characterArt.ts`에 명시된 versioned override만 로드된다. Portrait/room
+token은 v2→legacy JPG→기존 procedural 경로를 사용한다. Home world sprite는
+v2→procedural이며 JPG를 사용하지 않는다. Cinematic의 exact mapped speaker는
+v2→legacy JPG→원래 emoji, unmapped speaker는 원래 emoji를 사용한다.
+새 PNG를 legacy JPG manifest에 추가하거나 경로만 바꿔 같은 texture cache에
+재사용하지 않는다.
+
+검증: `npx vitest run src/data/characterArt.test.ts src/data/portraitManifest.test.ts`,
+Vite 실행 후 `HEADED=1 node scripts/verify-character-art.mjs`. PNG 채널의 존재만으로
+투명을 판정하지 말고 실제 transparent pixel과 renderer 배경을 확인한다.
+
 진짜 "경영물" 룩의 결정적 도약은 **일러스트 에셋**이다. 코드 측 분위기/UI 폴리시는 끝냈고
 (`SceneAtmosphere` + `applyCasualBackground`), 이 문서는 **이미지를 생성해 드롭인하면 즉시
 반영**되도록 슬롯·사양·프롬프트를 정리한다. 모든 슬롯은 폴백이 있어, 파일이 없으면 기존
@@ -14,17 +31,17 @@
 
 ---
 
-## 우선순위 1 — 몬스터 초상 (Ch6–9) · ROI 최고
-수집/도감/병영/소환 결과가 전부 이걸 쓴다. Ch1–5(29종)는 이미 있고, **Ch6–9(약 88종)는
-픽셀 폴백** 중이라 가장 평면적으로 보인다.
+## 우선순위 1 — 몬스터 portrait (배선 완료)
+수집 몬스터 136종 모두가 일러스트 portrait를 사용한다. 실제 상태는
+`npm run check:portraits`와 `src/data/portraitManifest.test.ts`가 검증한다.
 - **경로**: `public/assets/monsters/{monsterId}.jpg`
-- **치수**: 512×512 정사각, 중앙 정렬 흉상, 단색/그라데이션 배경(투명 아님 가능).
-- **드롭인**: 파일 추가 후 `src/scenes/BootScene.ts`의 `monsterIds` 배열에 그 id 추가(1줄).
-  (목록에 없으면 로드 시도 안 함 → 404 없이 픽셀 폴백 유지.)
-- id 목록: `MONSTER_DEFS`의 키 전체에서 Ch1–5 29종을 제외한 나머지. (필요 시 배치로 뽑아줌.)
+- **규격**: 정확히 256×256 JPEG, 150KB 이하, 중앙 정렬 전신 치비, 흰 배경.
+- **드롭인**: 정확한 `monsterId` 파일을 넣고 `npm run check:portraits` →
+  `npm run gen:portraits` → `npm test`를 실행한다. `BootScene` 배열을 수동 수정하지 않는다.
+- 파일/매니페스트에 없는 몬스터는 404 없이 procedural art로 폴백한다.
 - **프롬프트 템플릿**: `{공통}, "{한글명}" — {tribe}족 {element}속성 {rarity}등급, {melee/ranged/
-  magic/support} 역할이 드러나는 포즈, 정사각 흉상 초상.`
-  예) `…"공허 군주" — 천계족 어둠속성 전설등급 최종보스, 무(無)를 두른 위압적 정면 흉상.`
+  magic/support} 역할이 드러나는 포즈, 중앙 정렬 전신 치비.`
+  예) `…"공허 군왕" — 공허족 암흑속성 전설등급, 근접 전사(탱커/돌격) 컨셉이 드러나는 무(無)를 두른 중앙 정렬 전신 치비 포즈.`
 
 ## 우선순위 2 — 챕터별 전투 배경 (배선 완료)
 Chapter 1과 승인된 FC1/FC3/FC4/FC5/FC6/FC7/FC8/FC9 Chapter 2–9는 각각 `battle-ch1.png`부터 `battle-ch9.png`까지 사용한다. 모든 campaign chapter에 전용 battle backdrop이 있으며, 파일이 없거나 texture load가 실패하면 `dungeon-chamber.png`로 안전하게 폴백한다.
@@ -58,4 +75,4 @@ Chapter 1과 승인된 FC1/FC3/FC4/FC5/FC6/FC7/FC8/FC9 Chapter 2–9는 각각 `
 - 분위기(코드, 완료): 모든 다크 씬은 `applyCasualBackground`→`addSceneAtmosphere`로 토치
   글로우+잉걸+비네트를 자동 획득. 전투는 `vignette:false`로 적용.
 
-생성된 에셋을 위 경로에 넣고 알려주면, 남은 배선(프리로드/슬롯)을 즉시 연결한다.
+새 에셋을 추가하거나 교체한 뒤에는 위 검사·생성·테스트 순서로 배선을 동기화한다.

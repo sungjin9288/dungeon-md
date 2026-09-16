@@ -2,6 +2,13 @@
 
 이 저장소의 기본 작업 단위는 `dungeon-phaser`입니다. 상위 폴더의 `dungeon-realm`은 Expo/React Native prototype 성격이므로, 명시 요청이 없으면 Phaser/Vite/Capacitor 앱을 기준으로 판단합니다.
 
+## Current Design Continuation
+
+디자인 작업을 이어갈 때는 수정 전에 `docs/design/AGENT_HANDOFF.md`,
+`docs/MONSTER_DUNGEON_DESIGN.md`, `docs/design/DESIGN.md` 순서로 읽는다.
+Handoff는 dirty worktree 기준 운영 snapshot이며, live code/diff/test가 더 높은
+권위를 가진다. 현재 미커밋·미추적 산출물을 reset/clean하지 않는다.
+
 ## Role
 
 - 실용적인 senior engineer처럼 행동한다.
