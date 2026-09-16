@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Maps immutable failed-attempt audit canonical capture paths to their byte-preserved archived copies.",
+  "attempts": [
+    {
+      "attempt": "02",
+      "audit": {
+        "path": "tools/character-b1-audit-attempt-02.json",
+        "sha256": "fc2b48bfda34c0f9eeecfb3db2cb0d19d830ae06abee3c2bbcda04518f30766e"
+      },
+      "script": {
+        "path": "output/character-art/b1/qa-sol-attempt-02.mjs",
+        "sha256": "c096bd28d8fd7e2d74c8294341d1428ea6cd933c87fa6b20a59540a35dc53658"
+      },
+      "mappings": [
+        {
+          "original": "tools/screenshots/character-b1-home-360x800.png",
+          "archived": "tools/screenshots/character-b1-home-360x800-attempt-02.png",
+          "sha256": "aa3195fe8bfa13827e1cf41f4731de92a8a2be9f209b9c60c108539c2fdb0976"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-360x800.png",
+          "archived": "tools/screenshots/character-b1-barracks-360x800-attempt-02.png",
+          "sha256": "711549987f634d81e5c85df62f04845fe19f4ad66ad218b5ea2dfc79cf8f9b76"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-360x800.png",
+          "archived": "tools/screenshots/character-b1-detail-360x800-attempt-02.png",
+          "sha256": "c83d2db9d5482eecdbceea3ec49529debcb8c861be3aaef23d116edd2debe9d6"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-360x800.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-360x800-attempt-02.png",
+          "sha256": "aa87b2181cfaa944ead2b417d747301661fcc3bb3e8c446b1d3895b4d5a82319"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-360x800.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-360x800-attempt-02.png",
+          "sha256": "52430f8668fda9721bfee787c322f40c19efc8ab9aa5d75e533c4d02e59f5b61"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-360x800.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-360x800-attempt-02.png",
+          "sha256": "e4da2047c20e6c7c3f2b813fe33019d7b5517ebc4c57d1165e792006b87f265e"
+        },
+        {
+          "original": "tools/screenshots/character-b1-home-390x844.png",
+          "archived": "tools/screenshots/character-b1-home-390x844-attempt-02.png",
+          "sha256": "562f80413d3e19d2261aaa7052645a1b52cc49709b6ee14b6069006c91520b1c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-390x844.png",
+          "archived": "tools/screenshots/character-b1-barracks-390x844-attempt-02.png",
+          "sha256": "5731e949a74da2456da4a5dde92275215546b31719e0e770a430dcb95a630745"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-390x844.png",
+          "archived": "tools/screenshots/character-b1-detail-390x844-attempt-02.png",
+          "sha256": "a8d44358fc784b16fa7f0bd99182ea570bd6fe315c3558dafc1f097a0b0c14a0"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-390x844.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-390x844-attempt-02.png",
+          "sha256": "aa8b9850ca21fccd68e25d488775df55554322a8b5d8383ec465f3e91ccab7ae"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-390x844.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-390x844-attempt-02.png",
+          "sha256": "a61b0115cb1a3ec9f0bcc2e291e17aadfa785e13ae71a5b4209db1602d0a4a50"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-390x844-attempt-02.png",
+          "sha256": "d5973ecaa804cd7a6931b50f7aef16da22cc45ce943816c42b4a3e0d22e537f8"
+        },
+        {
+          "original": "tools/screenshots/character-b1-home-430x932.png",
+          "archived": "tools/screenshots/character-b1-home-430x932-attempt-02.png",
+          "sha256": "856e76f4969fb64482e6dfda00cd08c86a6ca725e3029f93905ef49dd589bf8c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-430x932.png",
+          "archived": "tools/screenshots/character-b1-barracks-430x932-attempt-02.png",
+          "sha256": "e273302bbca341b7f25e398d0766bd53b690ce959ac2f1aab2bd130874b935ee"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-430x932.png",
+          "archived": "tools/screenshots/character-b1-detail-430x932-attempt-02.png",
+          "sha256": "77558d19bf72f0a9a81ece6f5fcddc730e5d194b03db36f8df45f80d95c2b7e7"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-430x932.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-430x932-attempt-02.png",
+          "sha256": "0e438972b6602e9b2d3bf6380688f4742b0aa088f18d104f769620d9e641e061"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-430x932.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-430x932-attempt-02.png",
+          "sha256": "2e46266a3df3b47fe497eb8510491146534d24f84da944358478832a096ab1c0"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-430x932.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-430x932-attempt-02.png",
+          "sha256": "ba90c66c95f3c4324ca6d86422a69d0a6c64e45bc75a8ed2e17ee11f51e02828"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-eq005-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-eq005-390x844-attempt-02.png",
+          "sha256": "e92b18b051a6d34f49dc311d5f5d8d7dcc27013cecae6a7b907e62fcdb9047ef"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-unknown-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-unknown-390x844-attempt-02.png",
+          "sha256": "a1909ea678494e943e7fe79af64783daa342cb5f603753425c5e34a55bddc22d"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-no-active-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-no-active-390x844-attempt-02.png",
+          "sha256": "2c36e02e7791587d0acc780f2c88102a0a2c96813b5a05bd8c7f35c94a5bdd22"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-v2-portrait-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-v2-portrait-390x844-attempt-02.png",
+          "sha256": "098f45f357fed944d247238b238847b5b1fdd3d5ef458baccb618b60e0414a82"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-v2-world-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-v2-world-390x844-attempt-02.png",
+          "sha256": "03238fe792229b4293d65ffb773d9033cdb92474ce127209c55132a1f5df66df"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-both-portrait-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-both-portrait-390x844-attempt-02.png",
+          "sha256": "df54e1a480fcb81cf170e73080cfca3e1dee0985b276f97d530d9698169bdcdc"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-both-world-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-both-world-390x844-attempt-02.png",
+          "sha256": "26b6ba41f24c2b6df1662e4b83a6b37292ef3425db75723f0afbdcdfd8a09f41"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-01.png",
+          "archived": "tools/screenshots/character-b1-contact-01-attempt-02.png",
+          "sha256": "f866491803da596a8bb3381822128f5b464216304fddd55cb1919f05f1c8f199"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-02.png",
+          "archived": "tools/screenshots/character-b1-contact-02-attempt-02.png",
+          "sha256": "e9971853a218c1e893cc952a98500ab1158ac5832f45a716f90984327679549c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-03.png",
+          "archived": "tools/screenshots/character-b1-contact-03-attempt-02.png",
+          "sha256": "c1cd00b8216fdae1f441ee559b006109d8926bb243d7b403692c6419d8a82634"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-04.png",
+          "archived": "tools/screenshots/character-b1-contact-04-attempt-02.png",
+          "sha256": "17a2a168a384b7994eac7e262875bbfb5c768aad6c1e21ffb87260581d01a1e9"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-05.png",
+          "archived": "tools/screenshots/character-b1-contact-05-attempt-02.png",
+          "sha256": "e35f3d7d7f9e48a69542399ab8de57c8f7382762509ffcf5aa15f4cf3b340941"
+        }
+      ]
+    },
+    {
+      "attempt": "04",
+      "audit": {
+        "path": "tools/character-b1-audit-attempt-04.json",
+        "sha256": "983dc417e34d427d050352336a449bc20e7da3b578ac5c463b308bd162bc9396"
+      },
+      "script": {
+        "path": "output/character-art/b1/qa-sol-attempt-04.mjs",
+        "sha256": "fdf8c0548bb408ce3cef1e7ca295b215e5c64c4c4724d38cdf2cd03c03f4e7b6"
+      },
+      "mappings": [
+        {
+          "original": "tools/screenshots/character-b1-home-360x800.png",
+          "archived": "tools/screenshots/character-b1-home-360x800-attempt-04.png",
+          "sha256": "aa3195fe8bfa13827e1cf41f4731de92a8a2be9f209b9c60c108539c2fdb0976"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-360x800.png",
+          "archived": "tools/screenshots/character-b1-barracks-360x800-attempt-04.png",
+          "sha256": "711549987f634d81e5c85df62f04845fe19f4ad66ad218b5ea2dfc79cf8f9b76"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-360x800.png",
+          "archived": "tools/screenshots/character-b1-detail-360x800-attempt-04.png",
+          "sha256": "c83d2db9d5482eecdbceea3ec49529debcb8c861be3aaef23d116edd2debe9d6"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-360x800.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-360x800-attempt-04.png",
+          "sha256": "aa87b2181cfaa944ead2b417d747301661fcc3bb3e8c446b1d3895b4d5a82319"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-360x800.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-360x800-attempt-04.png",
+          "sha256": "2d8037c1053d46222ffcd795b9878e380784e68c42d31abe01c68b88b2ae9fd2"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-360x800.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-360x800-attempt-04.png",
+          "sha256": "e4da2047c20e6c7c3f2b813fe33019d7b5517ebc4c57d1165e792006b87f265e"
+        },
+        {
+          "original": "tools/screenshots/character-b1-home-390x844.png",
+          "archived": "tools/screenshots/character-b1-home-390x844-attempt-04.png",
+          "sha256": "562f80413d3e19d2261aaa7052645a1b52cc49709b6ee14b6069006c91520b1c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-390x844.png",
+          "archived": "tools/screenshots/character-b1-barracks-390x844-attempt-04.png",
+          "sha256": "5731e949a74da2456da4a5dde92275215546b31719e0e770a430dcb95a630745"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-390x844.png",
+          "archived": "tools/screenshots/character-b1-detail-390x844-attempt-04.png",
+          "sha256": "a8d44358fc784b16fa7f0bd99182ea570bd6fe315c3558dafc1f097a0b0c14a0"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-390x844.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-390x844-attempt-04.png",
+          "sha256": "aa8b9850ca21fccd68e25d488775df55554322a8b5d8383ec465f3e91ccab7ae"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-390x844.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-390x844-attempt-04.png",
+          "sha256": "f0bbe9d41c6f45160bc90b189091ff5b044ff2024b234b15a7f386960303d27b"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-390x844-attempt-04.png",
+          "sha256": "d5973ecaa804cd7a6931b50f7aef16da22cc45ce943816c42b4a3e0d22e537f8"
+        },
+        {
+          "original": "tools/screenshots/character-b1-home-430x932.png",
+          "archived": "tools/screenshots/character-b1-home-430x932-attempt-04.png",
+          "sha256": "856e76f4969fb64482e6dfda00cd08c86a6ca725e3029f93905ef49dd589bf8c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-barracks-430x932.png",
+          "archived": "tools/screenshots/character-b1-barracks-430x932-attempt-04.png",
+          "sha256": "e273302bbca341b7f25e398d0766bd53b690ce959ac2f1aab2bd130874b935ee"
+        },
+        {
+          "original": "tools/screenshots/character-b1-detail-430x932.png",
+          "archived": "tools/screenshots/character-b1-detail-430x932-attempt-04.png",
+          "sha256": "77558d19bf72f0a9a81ece6f5fcddc730e5d194b03db36f8df45f80d95c2b7e7"
+        },
+        {
+          "original": "tools/screenshots/character-b1-portrait-gallery-430x932.png",
+          "archived": "tools/screenshots/character-b1-portrait-gallery-430x932-attempt-04.png",
+          "sha256": "0e438972b6602e9b2d3bf6380688f4742b0aa088f18d104f769620d9e641e061"
+        },
+        {
+          "original": "tools/screenshots/character-b1-world-gallery-430x932.png",
+          "archived": "tools/screenshots/character-b1-world-gallery-430x932-attempt-04.png",
+          "sha256": "7c665523c1dea7bc5df05224b9db2b66dff8213b839eee4050c981ad454ce115"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-mq008-430x932.png",
+          "archived": "tools/screenshots/character-b1-quest-mq008-430x932-attempt-04.png",
+          "sha256": "ba90c66c95f3c4324ca6d86422a69d0a6c64e45bc75a8ed2e17ee11f51e02828"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-eq005-360x800.png",
+          "archived": "tools/screenshots/character-b1-quest-eq005-360x800-attempt-04.png",
+          "sha256": "96d966c075cbc269052d7ce0ad0211295bbf93ff49486e51347566619132db5c"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-eq005-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-eq005-390x844-attempt-04.png",
+          "sha256": "e92b18b051a6d34f49dc311d5f5d8d7dcc27013cecae6a7b907e62fcdb9047ef"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-eq005-430x932.png",
+          "archived": "tools/screenshots/character-b1-quest-eq005-430x932-attempt-04.png",
+          "sha256": "db2f1029e2834458d2f7390cadd2d0d1d8355feed99733dd6c9bc24054d4904b"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-unknown-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-unknown-390x844-attempt-04.png",
+          "sha256": "a1909ea678494e943e7fe79af64783daa342cb5f603753425c5e34a55bddc22d"
+        },
+        {
+          "original": "tools/screenshots/character-b1-quest-no-active-390x844.png",
+          "archived": "tools/screenshots/character-b1-quest-no-active-390x844-attempt-04.png",
+          "sha256": "a5062f23df733e7549afd2f4efb242a57d4d26441176f89bd5036a28e6942c42"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-v2-portrait-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-v2-portrait-390x844-attempt-04.png",
+          "sha256": "098f45f357fed944d247238b238847b5b1fdd3d5ef458baccb618b60e0414a82"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-v2-world-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-v2-world-390x844-attempt-04.png",
+          "sha256": "b6860d341a2bf167db22264b39f65afe1e26fb7ae86348dfb34ed84506d5c3f9"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-both-portrait-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-both-portrait-390x844-attempt-04.png",
+          "sha256": "df54e1a480fcb81cf170e73080cfca3e1dee0985b276f97d530d9698169bdcdc"
+        },
+        {
+          "original": "tools/screenshots/character-b1-fallback-both-world-390x844.png",
+          "archived": "tools/screenshots/character-b1-fallback-both-world-390x844-attempt-04.png",
+          "sha256": "b03ba842ce03c5f173e0ee99b7f9d4ed45ecb3a10ad31aa1a7efd603f4ea39b8"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-01.png",
+          "archived": "tools/screenshots/character-b1-contact-01-attempt-04.png",
+          "sha256": "b2c71a69344032c020c4139d64076b580c6152e9628b343e99ceb8c16fdc1339"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-02.png",
+          "archived": "tools/screenshots/character-b1-contact-02-attempt-04.png",
+          "sha256": "c26eaa483f65afac723df1cc056739b99b074ed66fc7a7590d9d8afb3ffeeff9"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-03.png",
+          "archived": "tools/screenshots/character-b1-contact-03-attempt-04.png",
+          "sha256": "f8e0076c691b0d134306c9e0458bc539a90fa272fb9fef5ba5c3690546bb8763"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-04.png",
+          "archived": "tools/screenshots/character-b1-contact-04-attempt-04.png",
+          "sha256": "a0fa06c537d97f3e999269a9ba5d661d02cc0dcd1868de403780e24217f5acd4"
+        },
+        {
+          "original": "tools/screenshots/character-b1-contact-05.png",
+          "archived": "tools/screenshots/character-b1-contact-05-attempt-04.png",
+          "sha256": "3c7f05974e3d044cbfaa95e0eaaac7bacb2cdf4f58721d8bc73a418d87bf7ab8"
+        }
+      ]
+    }
+  ]
+}

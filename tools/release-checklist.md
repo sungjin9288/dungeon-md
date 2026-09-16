@@ -1,14 +1,14 @@
-# 던전 수호자 v1.0.0 — App Store 출시 체크리스트
+# 던전 수호자 v1.1 — App Store 출시 체크리스트
 
-## 빌드 상태 (최종 확인: 2026-06-18 — HEAD 재검증)
-- [x] `npm run build` — TypeScript 에러 0, 테스트 2,605개 / 73 파일 전부 통과 (tsc·vitest 그린)
-- [x] `npx cap sync` — 2026-06-18 dist → iOS + Android 재동기화 (`LANG=en_US.UTF-8`, pod install OK).
+## 빌드 상태 (최종 확인: 2026-09-03 — 현재 worktree 재검증)
+- [x] `npm test` + `npm run build` — 테스트 2,818개 / 96 파일 전부 통과, production build 성공
+- [x] `npx cap sync` — 2026-09-03 dist → iOS + Android 재동기화 (`LANG=en_US.UTF-8`, pod install OK).
       `public/` 웹 자산은 gitignore 파생물이라 추적 diff 없음(정상).
-- [x] 번들 크기(gzip): phaser 340kB + app-gameplay 235kB + app-data 85kB + tone 64kB + 그 외 ~19kB
-      = **합계 ~743kB gzip** (raw ~2.99MB). manualChunks로 phaser/tone/data/gameplay 분리.
-- [x] 버전: 1.0.0 / 빌드: 1
-- [x] **출하 번들 standalone 검증** — 시뮬레이터에 dev 서버 없이 설치, 부팅→홈 진입·Safe Area·튜토리얼 정상 (iPhone 17 Pro Max).
-      ※ 2026-06-11 번들 기준 검증. 이후 추가분은 콘텐츠/로직(챕터·엔드리스 변수·밸런스)이라 부팅·Safe Area·튜토리얼 경로 불변.
+- [x] 번들 크기(gzip): phaser 338kB + app-gameplay 239kB + app-data 97kB + tone 62kB + 그 외 ~17kB
+      = **합계 ~753kB gzip** (raw ~3.10MB). manualChunks로 phaser/tone/data/gameplay 분리.
+- [x] iOS 버전: 1.1 / 빌드: 2
+- [x] **출하 번들 standalone 검증** — 2026-09-03 dev server 없이 iPhone 17 Pro Max 시뮬레이터에 설치해
+      부팅→홈·군단·도감·소환·침공 scene 진입과 Safe Area를 실제 입력으로 재검증.
 
 ---
 
@@ -37,24 +37,20 @@ ios/App/App/Assets.xcassets/AppIcon.appiconset/
 - 추가 커스텀이 필요하면 `ios/App/App/Assets.xcassets/Splash.imageset/` 수정
 
 ### 5. 스크린샷 촬영 (Simulator)
-> ⚠️ **재촬영 필요 (2026-06-18 발견)** — 현재 `tools/screenshots/*`는 2026-06-12(dd89fb1)가 마지막인데,
-> 이후 **캐주얼 reskin(6-15~16) → 홈 수직 던전 전경 재구조 Phase A–D(6-16~17) → 스테이지 지도화(6-17, 20bdde4)**가
-> 들어와 **01-home·02-stage-select는 실제 UI와 완전히 다른 화면**(평면 그리드/구 홈). App Store는 스크린샷이
-> 실제 앱과 일치해야 하므로 업로드 전 5종(+iPad 3종) 전부 재촬영 대상. 03-summon/04-codex/05-barracks도 헤더·탭바
-> 통일(영역 B) 이후라 재촬영 권장.
-> ✅ 2026-06-11 — `tools/screenshots/01~05.png` 캡처 (iPhone 17 Pro Max, 1320×2868 6.9") — ⚠️ 위 사유로 stale
-> 방법: dev 서버 `?scene=`/`?skipTutorial=1` 파라미터(main.ts DEV 전용) + simctl screenshot. 상태바 9:41 정리.
-> ✅ Safe Area 가림 발견 → 수정 완료 (contentInset 'never' + body env() 패딩 + #game-root) → 전체 재촬영
+> ✅ 2026-09-03 — `tools/screenshots/01~05.png`를 현재 standalone iOS 번들에서 재촬영
+> (iPhone 17 Pro Max, 1320×2868, 상태바 9:41). dev-only scene jump를 사용하지 않고 실제 화면 입력으로 이동했으며,
+> Home·Stage Select·Summon·Codex·Barracks와 Safe Area를 캡처 후 육안 확인함.
+> ✅ 2026-09-03 — `tools/screenshots/ipad-01~03.png`도 현재 standalone iOS 번들에서 실제 입력으로 재촬영
+> (iPad Pro 13-inch M5, 2064×2752): Home·Stage Select·Summon 확인 완료.
 ```
-iPhone 15 Pro Max (6.7") — 필수
-iPad Pro 12.9" (6세대) — 권장
+iPhone 17 Pro Max (6.9") — 현재 증빙
+iPad Pro 13-inch (M5) — 현재 증빙
 ```
-> ✅ 2026-06-12 — iPad 검증·스크린샷 완료: scale.max 제한 제거로 iPad 풀하이트 렌더
-> (이전: 화면 중앙 소형 표시). `tools/screenshots/ipad-01~03.png` (iPad Pro 13", 2064×2752)
+> iPad는 390×844 portrait game canvas를 풀하이트로 유지하고 좌우 여백을 사용함.
 씬별 캡처 방법:
 1. Simulator에서 게임 실행
 2. 각 씬 진입 후 `Cmd + S` (Screenshot to Desktop)
-3. 해상도: 1290×2796 (iPhone 15 Pro Max)
+3. 현재 해상도: iPhone 1320×2868 / iPad 2064×2752
 
 촬영할 씬 5종:
 | 번호 | 씬 | 내용 |
@@ -62,7 +58,7 @@ iPad Pro 12.9" (6세대) — 권장
 | 01 | DungeonHomeScene | 던전 허브 + 방 배치 |
 | 02 | StageSelectScene | 챕터/스테이지 진행도 |
 | 03 | SummonScene | 소환 제단 + 시즌 배너 |
-| 04 | CodexScene | 117종 몬스터 도감 |
+| 04 | CodexScene | 136종 몬스터 도감 |
 | 05 | BarracksScene | 몬스터 막사 + 스킬 트리 |
 
 ### 6. 아카이브 & 업로드
@@ -165,15 +161,22 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 - [ ] 배터리 과소비 없음
 
 ### UI 확인
-- [x] Safe Area 적용 (노치/Dynamic Island 영역) (2026-06-11 — iPhone 17 Pro Max 시뮬레이터에서 5개 씬 검증)
+- [x] Safe Area 적용 (노치/Dynamic Island 영역) (2026-09-03 — iPhone 17 Pro Max 5개 씬, iPad 3개 씬 재검증)
 - [x] 가로 화면 잠금 (세로 전용) (2026-06-11 — iOS Info.plist Portrait 전용 + UIRequiresFullScreen, Android screenOrientation="portrait")
 - [x] 다크 모드 무관 (게임 자체 테마) (2026-06-12 — prefers-color-scheme:dark 강제 상태에서 동일 렌더, body #1a0f00 고정)
 
-### 네이티브 빌드 검증 (2026-06-11)
-- [x] iOS 시뮬레이터 빌드 — `xcodebuild -workspace App.xcworkspace -scheme App -sdk iphonesimulator` BUILD SUCCEEDED
+### 네이티브 빌드 검증 (현재 상태: 2026-09-03)
+- [x] iOS 시뮬레이터 빌드 — iPhone 17 Pro Max 대상 `xcodebuild` BUILD SUCCEEDED, standalone 설치·구동 확인
+- [ ] 향후 iOS lifecycle 대응 — Xcode 26 runtime이 `UIScene` lifecycle 채택이 곧 필수가 된다고 경고함.
+      현재 실행에는 영향 없지만 다음 native shell 업데이트 범위에서 전환 필요
+- [ ] 향후 iPad orientation 대응 — Xcode 26 runtime이 `UIRequiresFullScreen`이 향후 무시되고 전체 orientation 지원이
+      필요해질 예정이라고 경고함. 현재 portrait 실행에는 영향 없지만 다음 iPadOS 대응 전에 native shell 검토 필요
+- [x] Android 현재 worktree debug 빌드 — Android Studio bundled OpenJDK 21로 `:app:assembleDebug` BUILD SUCCESSFUL
+- [ ] Android 현재 emulator visual smoke — 새 APK cold start와 `DungeonHomeScene` 렌더는 확인했지만 headless AVD의
+      `System UI isn't responding` overlay 때문에 깨끗한 캡처·추가 입력 검증은 보류 (앱 process의 `FATAL EXCEPTION`은 없음)
 - [x] **Android 에뮬레이터 실행 검증** — APK 설치·구동, 게임 홈·튜토리얼 인터랙션 정상,
       세로 잠금 작동(가로 회전 강제에도 ROTATION_0 유지), `tools/screenshots/android-01-home.png`
-      (Medium Phone API 36, 1080×2400. ※ Android 아이콘·스플래시 커스텀 교체 완료 — 게임 문양 + #1A0F00 배경)
+      (2026-06-11 기록: Medium Phone API 36, 1080×2400. ※ Android 아이콘·스플래시 커스텀 교체 완료 — 게임 문양 + #1A0F00 배경)
 - [x] cap sync 정상 (※ `LANG=en_US.UTF-8` 필요 — CocoaPods UTF-8 제약)
 - [x] 앱 아이콘 1024×1024 AppIcon.appiconset 배치 완료
 - [x] public/privacy.html 존재 (Phase B: 웹 호스팅 배포만 남음)
@@ -184,4 +187,4 @@ jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 \
 - [ ] App Store 리뷰 모니터링
 - [ ] 크래시 리포트 확인 (Xcode Organizer)
 - [ ] 사용자 피드백 수집
-- [ ] v1.1.0 계획 (Ch5 콘텐츠, 추가 몬스터)
+- [ ] v1.2.0 계획 (Ch5 콘텐츠, 추가 몬스터)

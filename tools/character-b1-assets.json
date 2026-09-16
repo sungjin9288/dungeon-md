@@ -1,0 +1,109 @@
+{
+  "date": "2026-09-07",
+  "status": "ACCEPTED",
+  "scope": "Parent asset acceptance only; runtime integration pending",
+  "visualReview": "Parent fullsize and48px contact sheet; independent Astra master review PASS",
+  "idempotence": "Actual exporter repeated: all five unchanged/no-write",
+  "assets": [
+    {
+      "id": "village_archer",
+      "path": "public/assets/monsters/ritual-v2/village_archer.png",
+      "sha256": "37c0d57abe5c46ab893efba50a47d6a8c57dad5973e4dc1c28fe50306c90bba1",
+      "master": "output/character-art/ritual-v2/village_archer-master.png",
+      "masterHash": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "bytes": 254847,
+      "transparentFraction": 0.6959342956542969,
+      "maxAlpha": 254,
+      "margins": [
+        88,
+        47,
+        76,
+        51
+      ]
+    },
+    {
+      "id": "dokkaebi_junior",
+      "path": "public/assets/monsters/ritual-v2/dokkaebi_junior.png",
+      "sha256": "9d6091e805c185fd64348dcbd1d0fe76f67182910cda7971271b211bf3f16f20",
+      "master": "output/character-art/ritual-v2/dokkaebi_junior-master.png",
+      "masterHash": "e93d5a8b0a2db4edc57769d8fa60a0ff7602f022c00f8a6b99201c59c4d5050e",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "bytes": 197537,
+      "transparentFraction": 0.7581329345703125,
+      "maxAlpha": 254,
+      "margins": [
+        125,
+        53,
+        103,
+        57
+      ]
+    },
+    {
+      "id": "gold_turtle",
+      "path": "public/assets/monsters/ritual-v2/gold_turtle.png",
+      "sha256": "fd9b0302c37390af96004384dc31097d9c35a5f9dc34e5766ffa62ec763ba167",
+      "master": "output/character-art/ritual-v2/gold_turtle-master.png",
+      "masterHash": "b577c58c25156647ffe4cd5817c757c7e3ecc22277bb19e4b86b3ef1f4784b4a",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "bytes": 290844,
+      "transparentFraction": 0.6321449279785156,
+      "maxAlpha": 253,
+      "margins": [
+        47,
+        86,
+        47,
+        72
+      ]
+    },
+    {
+      "id": "fire_dokkaebi",
+      "path": "public/assets/monsters/ritual-v2/fire_dokkaebi.png",
+      "sha256": "b6826afcb86348b42de259e1522408706e75b122a443be3c646a17b86df0af7b",
+      "master": "output/character-art/ritual-v2/fire_dokkaebi-master.png",
+      "masterHash": "48f441f5bee24cb0fff10f4f966735cf50cd14334a253ee1347257dcea5779c8",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "bytes": 243454,
+      "transparentFraction": 0.6936569213867188,
+      "maxAlpha": 253,
+      "margins": [
+        112,
+        47,
+        116,
+        47
+      ]
+    },
+    {
+      "id": "sage",
+      "path": "public/assets/monsters/ritual-v2/sage.png",
+      "sha256": "53b1ec9946f04be838f82dca2826f7fe45514fe9847ca7515c0d8b9066f74358",
+      "master": "output/character-art/ritual-v2/sage-master.png",
+      "masterHash": "6f6b578a7bdecfbf1d17a1216d52c8f88083f03e1eda219a53ac7d17a25c2fe8",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "bytes": 229586,
+      "transparentFraction": 0.7168159484863281,
+      "maxAlpha": 254,
+      "margins": [
+        119,
+        42,
+        120,
+        45
+      ]
+    }
+  ]
+}

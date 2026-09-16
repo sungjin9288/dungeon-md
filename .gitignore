@@ -11,3 +11,11 @@ android/app/build/
 ios/App/Pods/
 ios/App/App.xcworkspace/xcuserdata/
 .DS_Store
+
+# QA 캡처 산출물 — 회귀 증빙용 로컬 아티팩트(누적 100MB+).
+# 이미 추적 중인 캡처는 그대로 두고, 신규 캡처만 저장소에서 제외한다.
+tools/screenshots/
+
+# Playwright CLI 임시 로그/스냅샷 (재생성 가능)
+.playwright-cli/
+output/playwright/

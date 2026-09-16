@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-07",
+  "scope": "Parent command verification after scoped heading glyph fix, before final browser audit",
+  "headingRecheck": {"testStart":"10:52:51 Asia/Seoul","files":105,"tests":2904,"buildModules":1226,"diffCheck":0,"previousQuestHash":"2a90a845e67edaed287681c4fadae473ce8a2e6162d493b7f9bd5e50b3b2e75a"},
+  "checks": [
+    {
+      "command": "npx vitest run src/data/characterArt.test.ts src/ui/QuestSpeakerView.test.ts src/data/portraitManifest.test.ts",
+      "exitCode": 0,
+      "files": 3,
+      "tests": 61,
+      "testStart": "11:26:03 Asia/Seoul"
+    },
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "files": 105,
+      "tests": 2904
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "modules": 1226,
+      "warning": "Existing Vite chunks larger than500kB advisory retained"
+    },
+    {
+      "command": "npx tsc --noEmit",
+      "exitCode": 0
+    },
+    {
+      "command": "node --test scripts/character-art-export-options.test.mjs",
+      "exitCode": 0,
+      "tests": 13
+    },
+    {
+      "command": "npm run check:portraits",
+      "exitCode": 0,
+      "legacyPortraits": 136
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "sourceHashes": {
+    "scripts/export-character-art.mjs": "c5d9e23151227073d0e3af78d7ac89f03df8ed7fc694d5ebe40770d7e17c9b15",
+    "scripts/character-art-export-options.mjs": "f4163b8cf546bccbe9746bc2e4c38dbd8ec78b1bf5936064d0fa4a76dfbba184",
+    "scripts/character-art-export-options.test.mjs": "6f30ff85e1a3ce88ebd3868173863f2ca7857b67c0e4696cdd28d926c0fd7328",
+    "src/art/PortraitGenerator.ts": "3462e098a5c3b7acf88cfc69bf31fecab4ce9510afbb1f785777c73e5d3356c4",
+    "src/ui/RoomSlotRenderer.ts": "92302a716ddbd1b5200e89dd6f4e69a2757294ee189d53ddce0eec865cc6fba4",
+    "src/objects/RoomVisuals.ts": "3d055b5e44e0ce27dc4c3c7127557d03e20dbddb25984c52d398de96eb8e2045",
+    "src/data/characterArt.ts": "5af28e3c5dbeb04e6256fec1c45c06396592538c2ff43e64ffb4c4480fff10a1",
+    "src/data/characterArt.test.ts": "322d41c2f11abd7c087d65537a8f2933930d4b06e1bd228be62f1c3d51e101bb",
+    "src/scenes/BootScene.ts": "65804de5ed571282c20d68dc4e57f3889ddbd0a688567a4ada19b1a295391c6c",
+    "src/ui/QuestLogPanel.ts": "f02703de4aeca7a5d36194f2f5560209167e457cf361a6e097b0fed7cec91432",
+    "src/ui/QuestSpeakerView.ts": "0acad617a5ca27422ba5e42ff88328f47b17b4fd8bbc923a986f5dd5a1bc9c23",
+    "src/ui/QuestSpeakerView.test.ts": "8c954a60b48b98b010924c83f9f5b8628aea1c7f65a9c28b412a5d46ca3753d3"
+  }
+}

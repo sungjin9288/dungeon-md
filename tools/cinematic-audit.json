@@ -1,0 +1,1637 @@
+{
+  "generatedAt": "2026-09-05T02:30:00.434Z",
+  "sourceHashes": {
+    "src/scenes/CinematicScene.ts": "98bef173d462faec9ca03c8272195b429f8ca9e10f549890b224fcc12cf11560",
+    "src/data/cinematics.ts": "4e387c0d563f56212757e8300cc252ebe358aad06ab8994e14b8d49c3caf0b89",
+    "src/data/storyTransactions.ts": "563fea6e043d02f407657a9dd62bc9a12858c6c8c5ab76600a86ad9c352aff76",
+    "scripts/verify-cinematic.mjs": "64cdc65100ba6173990c04f1285bc7ffa4583ffc843e6109007f22c1d14519a4"
+  },
+  "screenshots": [
+    {
+      "path": "tools/screenshots/cinematic-left-final-390x844.png",
+      "sha256": "6199dba4fafca395a5a5607c2a1003556d567ebbc23607c24bb144ba776128d9",
+      "width": 780,
+      "height": 1688
+    },
+    {
+      "path": "tools/screenshots/cinematic-right-final-390x844.png",
+      "sha256": "2e04e4f480dce00cf434e835aae8062a56ae7b6f604aa50a9639d9fe281a3aa0",
+      "width": 780,
+      "height": 1688
+    },
+    {
+      "path": "tools/screenshots/cinematic-finale-final-390x844.png",
+      "sha256": "56dbdc77560da6278dd261022c0110e6c3d034d9bd31cb1b19662e7dd6adebc5",
+      "width": 780,
+      "height": 1688
+    },
+    {
+      "path": "tools/screenshots/cinematic-left-final-360x800.png",
+      "sha256": "b8c51f80c214af0ba0103e980d13653afcbf716cfb9c18f345c244dc888f2b6b",
+      "width": 720,
+      "height": 1600
+    },
+    {
+      "path": "tools/screenshots/cinematic-right-final-360x800.png",
+      "sha256": "13b4e32cd37a83b17b1344def0e7d23f1037c537655515c96c296745e0b39a21",
+      "width": 720,
+      "height": 1600
+    },
+    {
+      "path": "tools/screenshots/cinematic-left-final-430x932.png",
+      "sha256": "584afd06af319e1e0f1d644ab7de4e303c84e943c42a977e3b900a3c1e157e30",
+      "width": 860,
+      "height": 1864
+    },
+    {
+      "path": "tools/screenshots/cinematic-right-final-430x932.png",
+      "sha256": "71bc9c1ea623a7d6644cb1aebdb7f498ba249f4b74a53b66f1a02b04964edc4f",
+      "width": 860,
+      "height": 1864
+    }
+  ],
+  "viewports": [
+    {
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "index": 0,
+      "canvas": {
+        "x": 0,
+        "y": 15.4609375,
+        "width": 360,
+        "height": 779.0703125
+      },
+      "logicalScale": 0.9230769230769231,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    },
+    {
+      "viewport": {
+        "width": 360,
+        "height": 800
+      },
+      "index": 2,
+      "canvas": {
+        "x": 0,
+        "y": 15.4609375,
+        "width": 360,
+        "height": 779.0703125
+      },
+      "logicalScale": 0.9230769230769231,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "index": 0,
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "logicalScale": 1,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "index": 2,
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844
+      },
+      "logicalScale": 1,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    },
+    {
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "index": 0,
+      "canvas": {
+        "x": 0,
+        "y": 0.71875,
+        "width": 430,
+        "height": 930.5625
+      },
+      "logicalScale": 1.1025641025641026,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    },
+    {
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "index": 2,
+      "canvas": {
+        "x": 0,
+        "y": 0.71875,
+        "width": 430,
+        "height": 930.5625
+      },
+      "logicalScale": 1.1025641025641026,
+      "textCount": 11,
+      "dialogueSize": 18,
+      "inputs": [
+        {
+          "name": "cinematic-skip",
+          "type": 5,
+          "x": 270,
+          "y": 27,
+          "width": 96,
+          "height": 44
+        },
+        {
+          "name": "cinematic-dialogue-tap",
+          "type": 5,
+          "x": 24,
+          "y": 473,
+          "width": 342,
+          "height": 238
+        },
+        {
+          "name": "cinematic-next",
+          "type": 5,
+          "x": 24,
+          "y": 739,
+          "width": 342,
+          "height": 50
+        }
+      ],
+      "overflow": [],
+      "overlaps": []
+    }
+  ],
+  "definitions": [
+    {
+      "motion": "reduce",
+      "id": "ch1_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "stage5_mid",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "stage10_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch1_clear",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch2_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "stage20_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch3_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "dragon_king_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch4_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "death_emissary_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 500
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch7_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "god_emperor_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch6_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch5_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "final_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "eternal_emperor_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch8_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "primordial_titan_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "game_complete",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "ch9_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "reduce",
+      "id": "void_sovereign_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch1_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "stage5_mid",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "stage10_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch1_clear",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch2_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "stage20_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch3_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "dragon_king_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch4_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "death_emissary_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 500
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 500
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch7_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "god_emperor_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch6_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch5_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "final_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "eternal_emperor_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch8_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "primordial_titan_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "game_complete",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "pause": 0
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "ch9_opening",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "left",
+          "pause": 800
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    },
+    {
+      "motion": "no-preference",
+      "id": "void_sovereign_boss_intro",
+      "reached": [
+        {
+          "index": 0,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 1,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 2,
+          "side": "left",
+          "pause": 0
+        },
+        {
+          "index": 3,
+          "side": "right",
+          "pause": 0
+        },
+        {
+          "index": 4,
+          "side": "right",
+          "pause": 1000
+        }
+      ],
+      "seenOnceOnEntry": true,
+      "saveNeutralAfterEntry": true,
+      "nextDataIdentity": true,
+      "routeCount": 1
+    }
+  ],
+  "races": [
+    {
+      "motion": "reduce",
+      "manualCancelsPreviousPause": true
+    },
+    {
+      "motion": "reduce",
+      "duplicateAdvanceAndFinish": true
+    },
+    {
+      "motion": "reduce",
+      "autoPauseRoutesOnce": true
+    },
+    {
+      "motion": "reduce",
+      "earlySkip": true,
+      "missingDefinitionAndData": true
+    },
+    {
+      "motion": "no-preference",
+      "naturalTypewriterCompletion": true
+    },
+    {
+      "motion": "no-preference",
+      "manualCancelsPreviousPause": true
+    },
+    {
+      "motion": "no-preference",
+      "duplicateAdvanceAndFinish": true
+    },
+    {
+      "motion": "no-preference",
+      "autoPauseRoutesOnce": true
+    },
+    {
+      "motion": "no-preference",
+      "earlySkip": true,
+      "missingDefinitionAndData": true
+    },
+    {
+      "freshMissingPayload": true,
+      "seenSaveNeutral": true
+    }
+  ],
+  "lifecycle": [
+    {
+      "motion": "reduce",
+      "cycle": 0,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    },
+    {
+      "motion": "reduce",
+      "cycle": 1,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    },
+    {
+      "motion": "reduce",
+      "cycle": 2,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    },
+    {
+      "motion": "no-preference",
+      "cycle": 0,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    },
+    {
+      "motion": "no-preference",
+      "cycle": 1,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    },
+    {
+      "motion": "no-preference",
+      "cycle": 2,
+      "children": 15,
+      "inputs": 3,
+      "timers": 0,
+      "tweens": 0
+    }
+  ],
+  "errors": [],
+  "status": "PASS"
+}

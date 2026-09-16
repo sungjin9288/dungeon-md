@@ -1,0 +1,8 @@
+{
+  "status": "harness-failed-before-paired-comparison",
+  "reason": "Compiled final sage registry record has no trailing comma; strict response-local ablation regex rejected it. No runtime edits occurred.",
+  "error": "AssertionError exact art record sage: 0 !== 1",
+  "firstCurrentObservedMs": 1993.9149170000005,
+  "firstCurrentMarks": {"preload":1306.7,"loaderStart":1335.3,"loaderComplete":1757.7,"create":1757.8,"invadersDone":1770.9,"monstersDone":1788.2,"homeFrame":1864.3},
+  "limitation": "Transcribed from failed command stdout; process terminated on unhandled route assertion, so this is not a full profile receipt or a performance comparison."
+}

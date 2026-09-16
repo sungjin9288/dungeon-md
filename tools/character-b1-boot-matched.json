@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-07T02:41:06.791Z",
+  "purpose": "Three fresh contexts matched to the preserved baseline URL and single readiness wait. Reports all observations without performance thresholds or causal claims.",
+  "fixture": "warrior-only,MQ-008 incomplete,dmLevel1,homeGold200,onecombatroom,reduce",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "dpr": 2,
+  "reducedMotion": "reduce",
+  "url": "http://127.0.0.1:8083/?skipTutorial=1",
+  "readyCondition": "timer starts before goto; domcontentloaded goto; one wait for Phaser renderer.type === 2 and DungeonHomeScene active; timer stops immediately after that wait",
+  "samples": [
+    {
+      "index": 0,
+      "readyMs": 3391.4347,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    },
+    {
+      "index": 1,
+      "readyMs": 3759.0004,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    },
+    {
+      "index": 2,
+      "readyMs": 2399.664,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    }
+  ],
+  "comparison": {
+    "baselineReadyMs": [
+      1090.2105,
+      615.749333,
+      622.938542
+    ],
+    "finalAuditReadyMs": [
+      1235.6331,
+      788.1334,
+      1250.0634
+    ],
+    "strictSupplementalReadyMs": [
+      3708.4613,
+      1428.7949,
+      1363.9199
+    ],
+    "baselineActualContextVersion": "unavailable",
+    "interpretation": "All series are retained. No speed PASS, regression budget, or causal explanation is asserted."
+  }
+}

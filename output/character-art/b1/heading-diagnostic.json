@@ -1,0 +1,9 @@
+{
+  "date": "2026-09-07",
+  "scope": "Isolated actual QuestLogPanel heading canvas draw; in-page diagnostic only",
+  "before": {"spacing":1,"draws":["\ud83d","\udcdc"," "," ","메","인"," ","퀘","스","트"],"broken":true},
+  "after": {"spacing":0,"draws":["📜  메인 퀘스트"],"broken":false},
+  "cause": "Phaser Text nonzero letterSpacing path splits UTF16 using split(''); surrogate emoji is drawn as separate code units.",
+  "screenshot": "output/character-art/b1/heading-diagnostic.png",
+  "productionFix": "SOL removed only heading letterSpacing:1; real browser assertion RED exit1 with2 surrogate-only draws, GREEN exit0 with full heading; final runtime hash f02703de4aeca7a5d36194f2f5560209167e457cf361a6e097b0fed7cec91432"
+}

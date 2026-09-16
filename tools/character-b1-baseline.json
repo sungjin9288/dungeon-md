@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-07",
+  "fixture": "warrior-only,MQ-008 incomplete,dmLevel1,homeGold200,onecombatroom,reduce",
+  "readyCondition": "WebGL2 and DungeonHomeScene active",
+  "dpr": 2,
+  "textures": 283,
+  "sourcePixels": 22753784,
+  "ritualSourceCount": 4,
+  "ritualBytes": 1170093,
+  "ritualSourceDimensions": [512, 512],
+  "homeGeometry": {"key":"sprite-ritual-v2-dokkaebi_warrior","source":[48,48],"display":[42,42],"viewport":[390,844]},
+  "roomFallbackGeometry": {"fixture":"real drawBattleSlot with source/token cache removal","key":"sprite-dokkaebi_warrior","source":[48,48],"display":[60,60],"viewports":[[360,800],[390,844],[430,932]]},
+  "ownedServer": {"session":59922,"pid":27680,"port":8083},
+  "samples": [
+    {"width":390,"height":844,"readyMs":1090.2105,"errors":[]},
+    {"width":390,"height":844,"readyMs":615.749333,"errors":[]},
+    {"width":390,"height":844,"readyMs":622.938542,"errors":[]},
+    {"width":360,"height":800,"readyMs":608.16975,"errors":[]},
+    {"width":430,"height":932,"readyMs":848.012125,"errors":[]}
+  ],
+  "limitation": "Summary transcribed from successful baseline stdout; full frame arrays were truncated and are not claimed as preserved evidence."
+}

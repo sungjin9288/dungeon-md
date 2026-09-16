@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-07T02:37:46.724Z",
+  "purpose": "Bounded three-fresh-context boot timing recheck; reports variability only and defines no performance pass threshold.",
+  "fixture": "exact minimal baseline fixture",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "dpr": 2,
+  "reducedMotion": "reduce",
+  "readyCondition": "DOM content loaded to live Phaser WebGL context plus active populated DungeonHomeScene, before 260ms settle",
+  "samples": [
+    {
+      "index": 0,
+      "readyMs": 3708.4613,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1&scene=DungeonHomeScene",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    },
+    {
+      "index": 1,
+      "readyMs": 1428.7949,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1&scene=DungeonHomeScene",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    },
+    {
+      "index": 2,
+      "readyMs": 1363.9199,
+      "errors": [],
+      "networkErrors": [],
+      "runtime": {
+        "url": "http://127.0.0.1:8083/?skipTutorial=1&scene=DungeonHomeScene",
+        "rendererType": 2,
+        "graphicsContext": {
+          "constructor": "WebGLRenderingContext",
+          "version": "WebGL 1.0 (OpenGL ES 2.0 Chromium)",
+          "isWebGL2": false
+        },
+        "registeredArtCount": 9,
+        "ritualSourceCount": 9,
+        "sourcePixels": 24142876,
+        "homeActive": true,
+        "homeChildren": 37
+      }
+    }
+  ],
+  "comparison": {
+    "finalAuditReadyMs": [
+      1235.6331,
+      788.1334,
+      1250.0634
+    ],
+    "baselineReadyMs": [
+      1090.2105,
+      615.749333,
+      622.938542
+    ],
+    "baselineContextVersion": "unavailable; historical label inferred from Phaser renderer.type=2",
+    "interpretation": "Observed samples are reported without cherry-picking; no speed PASS or regression budget is claimed."
+  }
+}

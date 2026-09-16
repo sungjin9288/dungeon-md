@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-07T02:29:13.687Z",
+  "base": "http://127.0.0.1:8083",
+  "scope": "B1 five-art character gallery, v2 density, quest folio and bounded real-input QA. Seeded presentation fixtures are not organic acquisition, campaign, native or release evidence.",
+  "ids": [
+    "village_archer",
+    "dokkaebi_junior",
+    "gold_turtle",
+    "fire_dokkaebi",
+    "sage"
+  ],
+  "originalIds": [
+    "dokkaebi_warrior",
+    "gumiho_guardian",
+    "death_messenger",
+    "mountain_spirit"
+  ],
+  "viewports": [
+    {
+      "width": 360,
+      "height": 800
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 430,
+      "height": 932
+    }
+  ],
+  "fixtures": [],
+  "sourceAssets": [
+    {
+      "id": "village_archer",
+      "path": "public/assets/monsters/ritual-v2/village_archer.png",
+      "bytes": 254847,
+      "sha256": "37c0d57abe5c46ab893efba50a47d6a8c57dad5973e4dc1c28fe50306c90bba1",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "master": {
+        "path": "output/character-art/ritual-v2/village_archer-master.png",
+        "bytes": 1722317,
+        "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b"
+      },
+      "approved": {
+        "sha256": "37c0d57abe5c46ab893efba50a47d6a8c57dad5973e4dc1c28fe50306c90bba1",
+        "bytes": 254847,
+        "width": 512,
+        "height": 512,
+        "bitDepth": 8,
+        "colorType": 6,
+        "margins": [
+          88,
+          47,
+          76,
+          51
+        ],
+        "transparentFraction": 0.6959342956542969,
+        "maxAlpha": 254,
+        "master": "output/character-art/ritual-v2/village_archer-master.png",
+        "masterHash": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b"
+      }
+    },
+    {
+      "id": "dokkaebi_junior",
+      "path": "public/assets/monsters/ritual-v2/dokkaebi_junior.png",
+      "bytes": 197537,
+      "sha256": "9d6091e805c185fd64348dcbd1d0fe76f67182910cda7971271b211bf3f16f20",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "master": {
+        "path": "output/character-art/ritual-v2/dokkaebi_junior-master.png",
+        "bytes": 1315335,
+        "sha256": "e93d5a8b0a2db4edc57769d8fa60a0ff7602f022c00f8a6b99201c59c4d5050e"
+      },
+      "approved": {
+        "sha256": "9d6091e805c185fd64348dcbd1d0fe76f67182910cda7971271b211bf3f16f20",
+        "bytes": 197537,
+        "width": 512,
+        "height": 512,
+        "bitDepth": 8,
+        "colorType": 6,
+        "margins": [
+          125,
+          53,
+          103,
+          57
+        ],
+        "transparentFraction": 0.7581329345703125,
+        "maxAlpha": 254,
+        "master": "output/character-art/ritual-v2/dokkaebi_junior-master.png",
+        "masterHash": "e93d5a8b0a2db4edc57769d8fa60a0ff7602f022c00f8a6b99201c59c4d5050e"
+      }
+    },
+    {
+      "id": "gold_turtle",
+      "path": "public/assets/monsters/ritual-v2/gold_turtle.png",
+      "bytes": 290844,
+      "sha256": "fd9b0302c37390af96004384dc31097d9c35a5f9dc34e5766ffa62ec763ba167",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "master": {
+        "path": "output/character-art/ritual-v2/gold_turtle-master.png",
+        "bytes": 2034266,
+        "sha256": "b577c58c25156647ffe4cd5817c757c7e3ecc22277bb19e4b86b3ef1f4784b4a"
+      },
+      "approved": {
+        "sha256": "fd9b0302c37390af96004384dc31097d9c35a5f9dc34e5766ffa62ec763ba167",
+        "bytes": 290844,
+        "width": 512,
+        "height": 512,
+        "bitDepth": 8,
+        "colorType": 6,
+        "margins": [
+          47,
+          86,
+          47,
+          72
+        ],
+        "transparentFraction": 0.6321449279785156,
+        "maxAlpha": 253,
+        "master": "output/character-art/ritual-v2/gold_turtle-master.png",
+        "masterHash": "b577c58c25156647ffe4cd5817c757c7e3ecc22277bb19e4b86b3ef1f4784b4a"
+      }
+    },
+    {
+      "id": "fire_dokkaebi",
+      "path": "public/assets/monsters/ritual-v2/fire_dokkaebi.png",
+      "bytes": 243454,
+      "sha256": "b6826afcb86348b42de259e1522408706e75b122a443be3c646a17b86df0af7b",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "master": {
+        "path": "output/character-art/ritual-v2/fire_dokkaebi-master.png",
+        "bytes": 1660235,
+        "sha256": "48f441f5bee24cb0fff10f4f966735cf50cd14334a253ee1347257dcea5779c8"
+      },
+      "approved": {
+        "sha256": "b6826afcb86348b42de259e1522408706e75b122a443be3c646a17b86df0af7b",
+        "bytes": 243454,
+        "width": 512,
+        "height": 512,
+        "bitDepth": 8,
+        "colorType": 6,
+        "margins": [
+          112,
+          47,
+          116,
+          47
+        ],
+        "transparentFraction": 0.6936569213867188,
+        "maxAlpha": 253,
+        "master": "output/character-art/ritual-v2/fire_dokkaebi-master.png",
+        "masterHash": "48f441f5bee24cb0fff10f4f966735cf50cd14334a253ee1347257dcea5779c8"
+      }
+    },
+    {
+      "id": "sage",
+      "path": "public/assets/monsters/ritual-v2/sage.png",
+      "bytes": 229586,
+      "sha256": "53b1ec9946f04be838f82dca2826f7fe45514fe9847ca7515c0d8b9066f74358",
+      "width": 512,
+      "height": 512,
+      "bitDepth": 8,
+      "colorType": 6,
+      "master": {
+        "path": "output/character-art/ritual-v2/sage-master.png",
+        "bytes": 1629906,
+        "sha256": "6f6b578a7bdecfbf1d17a1216d52c8f88083f03e1eda219a53ac7d17a25c2fe8"
+      },
+      "approved": {
+        "sha256": "53b1ec9946f04be838f82dca2826f7fe45514fe9847ca7515c0d8b9066f74358",
+        "bytes": 229586,
+        "width": 512,
+        "height": 512,
+        "bitDepth": 8,
+        "colorType": 6,
+        "margins": [
+          119,
+          42,
+          120,
+          45
+        ],
+        "transparentFraction": 0.7168159484863281,
+        "maxAlpha": 254,
+        "master": "output/character-art/ritual-v2/sage-master.png",
+        "masterHash": "6f6b578a7bdecfbf1d17a1216d52c8f88083f03e1eda219a53ac7d17a25c2fe8"
+      }
+    }
+  ],
+  "registry": null,
+  "geometry": [],
+  "input": [],
+  "save": [],
+  "fallback": [],
+  "quest": {
+    "resolver": [],
+    "folio": [],
+    "headingRegression": []
+  },
+  "lifecycle": [],
+  "boot": {
+    "samples": [],
+    "baseline": null,
+    "comparison": null
+  },
+  "captures": [],
+  "contactSheets": [],
+  "sourceHashes": {
+    "scripts/verify-character-b1.mjs": "b3e219ea9f231f07d305400f451965c9bd3d0f2aa250a7343375fb0893c4fa0c",
+    "scripts/export-character-art.mjs": "c5d9e23151227073d0e3af78d7ac89f03df8ed7fc694d5ebe40770d7e17c9b15",
+    "scripts/character-art-export-options.mjs": "f4163b8cf546bccbe9746bc2e4c38dbd8ec78b1bf5936064d0fa4a76dfbba184",
+    "scripts/character-art-export-options.test.mjs": "6f30ff85e1a3ce88ebd3868173863f2ca7857b67c0e4696cdd28d926c0fd7328",
+    "src/data/characterArt.ts": "5af28e3c5dbeb04e6256fec1c45c06396592538c2ff43e64ffb4c4480fff10a1",
+    "src/data/characterArt.test.ts": "322d41c2f11abd7c087d65537a8f2933930d4b06e1bd228be62f1c3d51e101bb",
+    "src/art/PortraitGenerator.ts": "3462e098a5c3b7acf88cfc69bf31fecab4ce9510afbb1f785777c73e5d3356c4",
+    "src/ui/MonsterPortraitView.ts": "e2d33919b2bc056f4caae61eac0d51cd0d4723930152b1efb7f9a304b8a017e7",
+    "src/ui/RoomSlotRenderer.ts": "92302a716ddbd1b5200e89dd6f4e69a2757294ee189d53ddce0eec865cc6fba4",
+    "src/objects/RoomVisuals.ts": "3d055b5e44e0ce27dc4c3c7127557d03e20dbddb25984c52d398de96eb8e2045",
+    "src/objects/Room.ts": "ebd78abb9c4abcf6e14eeea2a3af743305577189446d3530cd94ae2a02a9d285",
+    "src/scenes/HomeRoomCards.ts": "882851242e4b4e7c244fcd0e84e42c24e985e68fedebf32f01aa8db7a2d83b4d",
+    "src/ui/QuestSpeakerView.ts": "0acad617a5ca27422ba5e42ff88328f47b17b4fd8bbc923a986f5dd5a1bc9c23",
+    "src/ui/QuestSpeakerView.test.ts": "8c954a60b48b98b010924c83f9f5b8628aea1c7f65a9c28b412a5d46ca3753d3",
+    "src/ui/QuestLogPanel.ts": "f02703de4aeca7a5d36194f2f5560209167e457cf361a6e097b0fed7cec91432",
+    "src/scenes/BootScene.ts": "65804de5ed571282c20d68dc4e57f3889ddbd0a688567a4ada19b1a295391c6c",
+    "src/main.ts": "06f6dff8e7acd35d7e71e06d4d10f2825ba4aafe2e68c6a7e08b644c4532350b"
+  },
+  "protectedHashes": {
+    "baseline": "output/character-art/b1/baseline.json",
+    "total": 1006,
+    "expectedChanges": [
+      {
+        "path": "docs/design/AGENT_HANDOFF.md",
+        "expected": "848fa96808fb5070216d7b65468776279f8787a42a1dedb91b3be5e11a8c6cda",
+        "observed": "c29af4ea1fdd68d3b5b16c495182a3ac9ac4bee7ee1222ebe30df394bebea82d",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "docs/design/CHARACTER_ART_REVISION.md",
+        "expected": "c0827a626d60d5dacc4a7a4eb2a66005db239416ae51704de5402c93291c6401",
+        "observed": "6738988c9df788912a40e8959f35fcedccf920ad92685796005d6245d59722f2",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "docs/design/DESIGN.md",
+        "expected": "a7925e5f946d028b8494033a5441e0221e816604394c9f4fdb70feb677c4480a",
+        "observed": "45625ca51dbae69bc1f8a885ca6077f53c969931a95087557f02127518d0ae3e",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "progress.md",
+        "expected": "494bccfecfc6185eec4c7e69dcad746b3af236cb7827fb8142fa34c0d9cd9078",
+        "observed": "c0b0c3cc073bd8e6b11034bb9206aa591e7a4102e11b80fe72f9c536f701543d",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "scripts/export-character-art.mjs",
+        "expected": "7630ad36a164b97046145110ee6d36c22ddcf5aab9ae5429fbac206fa436530c",
+        "observed": "c5d9e23151227073d0e3af78d7ac89f03df8ed7fc694d5ebe40770d7e17c9b15",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/data/characterArt.test.ts",
+        "expected": "ee49e15b1ed156441ecfd62a4ad1de1d42d2dd7eb997a23854d4402d41c4dee8",
+        "observed": "322d41c2f11abd7c087d65537a8f2933930d4b06e1bd228be62f1c3d51e101bb",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/data/characterArt.ts",
+        "expected": "e3d0c7df64e2bf8c5e8e6a42bc77e34306a7d7a96656c258806ad78de8a68400",
+        "observed": "5af28e3c5dbeb04e6256fec1c45c06396592538c2ff43e64ffb4c4480fff10a1",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/art/PortraitGenerator.ts",
+        "expected": "47b41932adf1f5e996119211877091e75ff2a84c1081c4564f4a04c508146d9f",
+        "observed": "3462e098a5c3b7acf88cfc69bf31fecab4ce9510afbb1f785777c73e5d3356c4",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/objects/RoomVisuals.ts",
+        "expected": "37ece4c1045050469072150c1006357f6db5ce8b569b9e11fd1b453be0d15a56",
+        "observed": "3d055b5e44e0ce27dc4c3c7127557d03e20dbddb25984c52d398de96eb8e2045",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/scenes/BootScene.ts",
+        "expected": "490b85845fa1f9a0c4e544e28bf528d4d2bdb926565052b8afa5b5c3cc531481",
+        "observed": "65804de5ed571282c20d68dc4e57f3889ddbd0a688567a4ada19b1a295391c6c",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/ui/QuestLogPanel.ts",
+        "expected": "d2ee98ca1ea842feb1493f15bb473ae233f8852438c5cd120f079d0a5db16616",
+        "observed": "f02703de4aeca7a5d36194f2f5560209167e457cf361a6e097b0fed7cec91432",
+        "status": "allowlisted-runtime-or-doc-change"
+      },
+      {
+        "path": "src/ui/RoomSlotRenderer.ts",
+        "expected": "48745cffbeb465ce29508e38bca9404c65b56633f8a96feb2b806f7fc9c790ca",
+        "observed": "92302a716ddbd1b5200e89dd6f4e69a2757294ee189d53ddce0eec865cc6fba4",
+        "status": "allowlisted-runtime-or-doc-change"
+      }
+    ],
+    "unexpectedMismatches": []
+  },
+  "expectedRuntimeHashes": {
+    "path": "tools/character-b1-verification.json",
+    "total": 12,
+    "mismatches": []
+  },
+  "errors": [
+    "Error: Home entry failed: TimeoutError: page.waitForFunction: Timeout 30000ms exceeded.; {\"observed\":{\"renderer\":2,\"active\":[\"DungeonHomeScene\"]},\"errors\":[],\"networkErrors\":[{\"url\":\"https://www.google.com/search?q=%E3%85%9C&oq=%E3%85%9C&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBjkwajBqMqgCALACAQ&sourceid=chrome&ie=UTF-8\",\"failure\":\"net::ERR_ABORTED\"}]}"
+  ],
+  "failures": [
+    {
+      "case": "harness",
+      "reason": "unhandled harness error",
+      "detail": "Error: Home entry failed: TimeoutError: page.waitForFunction: Timeout 30000ms exceeded.; {\"observed\":{\"renderer\":2,\"active\":[\"DungeonHomeScene\"]},\"errors\":[],\"networkErrors\":[{\"url\":\"https://www.google.com/search?q=%E3%85%9C&oq=%E3%85%9C&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBBjkwajBqMqgCALACAQ&sourceid=chrome&ie=UTF-8\",\"failure\":\"net::ERR_ABORTED\"}]}"
+    }
+  ],
+  "sourceDrift": [],
+  "unverified": [
+    "No GPU-process memory claim; texture source pixels are an estimate only.",
+    "No comparable frame-array baseline was preserved, so frame comparison remains unavailable.",
+    "Seeded saves do not prove organic acquisition, campaign progression, native behavior or release readiness."
+  ],
+  "summary": {
+    "captures": 0,
+    "contactSheets": 0,
+    "fixtures": 0,
+    "failures": 1,
+    "sourceDrift": 0,
+    "protectedUnexpectedMismatches": 0,
+    "consoleErrors": 0,
+    "networkErrors": 0,
+    "lifecycleStable": true,
+    "bootComparison": "unavailable"
+  }
+}
