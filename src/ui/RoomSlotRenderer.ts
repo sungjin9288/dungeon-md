@@ -5,7 +5,7 @@
  */
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { EQUIPMENT_DEFS } from '../data/barracks';
 import { calculateRoomLoadoutStatus, calculateRoomMetrics } from '../data/dungeonMetrics';
 import { getRoomActionRecommendation } from '../data/roomActionRecommendations';
@@ -158,7 +158,7 @@ function drawEquipmentPowerAura(
   const name = equipment.name.length > 5 ? `${equipment.name.slice(0, 5)}…` : equipment.name;
   const label = scene.add.text(x + SLOT_W / 2, y + 15, name, {
     fontFamily: 'sans-serif',
-    fontSize: '7px',
+    fontSize: '10px',
     color: CASUAL_CSS.GOLD,
     fontStyle: 'bold',
   }).setOrigin(0.5);
@@ -182,14 +182,12 @@ function drawRoomOperationsChip(
   const chipW = 82;
   const chipH = 18;
   const readinessColor = readiness >= 78 ? CASUAL.GREEN : readiness >= 45 ? CASUAL.GOLD : CASUAL.RED;
-  const label = loadoutStatus
-    ? `${roomShortLabel ?? '방'} M${loadoutStatus.monsterCount}`
-    : '운영';
-  const value = loadoutStatus
-    ? `T${loadoutStatus.trapCount} ${Math.round(readiness)}%`
+  void roomShortLabel;
+  const status = loadoutStatus
+    ? `M${loadoutStatus.monsterCount} · T${loadoutStatus.trapCount} · ${Math.round(readiness)}%`
     : threatScore > 0
-    ? `${Math.round(readiness)}%/${Math.min(999, threatScore)}`
-    : `${Math.round(readiness)}%/-`;
+      ? `준비 ${Math.round(readiness)}% · 전력 ${Math.min(999, threatScore)}`
+      : `준비 ${Math.round(readiness)}%`;
 
   g.fillStyle(CASUAL.PANEL_SOFT, 0.96);
   g.fillRoundedRect(chipX, chipY, chipW, chipH, 4);
@@ -205,18 +203,12 @@ function drawRoomOperationsChip(
   );
   g.fillStyle(accent, 0.85);
   g.fillRoundedRect(chipX + 3, chipY + 3, 4, chipH - 7, 2);
-  c.add(scene.add.text(chipX + 10, chipY + 8, label, {
+  c.add(scene.add.text(chipX + chipW / 2, chipY + 8, status, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(chipX + chipW - 5, chipY + 8, value, {
-    fontFamily: 'monospace',
-    fontSize: '9px',
     color: readiness >= 45 ? CASUAL_CSS.INK : CASUAL_CSS.RED,
     fontStyle: 'bold',
-  }).setOrigin(1, 0.5));
+  }).setOrigin(0.5));
 }
 
 function drawRoomNameRibbon(
@@ -249,7 +241,7 @@ function drawRoomNameRibbon(
 
   c.add(scene.add.text(ribbonX + ribbonW / 2, ribbonY + ribbonH / 2 + 0.5, label, {
     fontFamily: 'Georgia, serif',
-    fontSize: '8px',
+    fontSize: '10px',
     color: CASUAL_CSS.WHITE,
     fontStyle: 'bold',
   }).setOrigin(0.5));
@@ -281,7 +273,7 @@ function drawHomeSocketChip(
   }
   c.add(scene.add.text(x + 20, y + 8, label, {
     fontFamily: 'monospace',
-    fontSize: '9px',
+    fontSize: '10px',
     color: complete ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0.5));
@@ -452,7 +444,7 @@ export function drawBattleSlot(
       fontFamily: 'Georgia, serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
     }).setOrigin(0.5));
     c.add(scene.add.text(cx, y + SLOT_H - 10, '수리 필요', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK_SOFT,
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
     }).setOrigin(0.5));
     drawActionHintBadge(scene, c, g, x, y, actionHint);
     // Invasion order badge
@@ -464,14 +456,13 @@ export function drawBattleSlot(
       bg2.lineStyle(1, CASUAL.RED_DK, 0.7);
       bg2.strokeRoundedRect(x + 2, y + 2, 16, 14, 3);
       c.add(bg2);
-      c.add(scene.add.text(x + 10, y + 9, String(order), { fontFamily: 'monospace', fontSize: '9px', color: CASUAL_CSS.WHITE, fontStyle: 'bold' }).setOrigin(0.5));
+      c.add(scene.add.text(x + 10, y + 9, String(order), { fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.WHITE, fontStyle: 'bold' }).setOrigin(0.5));
     }
     return;
   }
 
   const primaryMonsterId = slot?.monsterIds?.[0];
-  const typeIdForSlot = primaryMonsterId ? resolveMonsterTypeId(primaryMonsterId) : null;
-  const monDef = typeIdForSlot ? MONSTER_DEFS[typeIdForSlot] : null;
+  const monDef = primaryMonsterId ? resolveOwnedMonsterProfile(primaryMonsterId) : null;
   const primaryEquipment = getEquippedItem(gs, primaryMonsterId);
 
   if (monDef) {
@@ -520,13 +511,17 @@ export function drawBattleSlot(
 
     // Guardian visual: illustrated monsters stand as a framed medallion;
     // monsters without AI art fall back to the procedural pixel body sprite.
-    const occupantId = (typeIdForSlot ?? primaryMonsterId ?? '') as MonsterId;
-    const tokenKey = generateRoomToken(scene, occupantId);
+    const occupantId = monDef.registryId;
+    const tokenKey = occupantId ? generateRoomToken(scene, occupantId) : null;
     const baseY = tokenKey ? cy + 4 : cy + 8;
     const sprite = tokenKey
       ? scene.add.image(cx, baseY, tokenKey).setOrigin(0.5).setDisplaySize(46, 46)
-      : scene.add.image(cx, baseY, generateMonsterSprite(scene, occupantId))
-          .setOrigin(0.5).setScale(1.25);
+      : occupantId
+        ? scene.add.image(cx, baseY, generateMonsterSprite(scene, occupantId))
+            .setOrigin(0.5).setDisplaySize(60, 60)
+        : scene.add.text(cx, baseY, monDef.emoji, {
+            fontFamily: 'sans-serif', fontSize: '30px',
+          }).setOrigin(0.5);
     c.add(sprite);
     // Reduced motion: the sprite stands still (no perpetual idle bob).
     if (!ctx.reducedMotion) {
@@ -550,7 +545,7 @@ export function drawBattleSlot(
       badgeBg.strokeRoundedRect(x + SLOT_W - 22, y + 2, 20, 13, 3);
       c.add(badgeBg);
       c.add(scene.add.text(x + SLOT_W - 12, y + 8, `Lv${slot.roomLevel}`, {
-        fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
       }).setOrigin(0.5));
     }
 
@@ -662,7 +657,7 @@ export function drawBattleSlot(
     badgeG.strokeRoundedRect(x + 2, y + 2, 16, 14, 3);
     c.add(badgeG);
     c.add(scene.add.text(x + 10, y + 9, String(order), {
-      fontFamily: 'monospace', fontSize: '9px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0.5));
   }
 }

@@ -1,237 +1,150 @@
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
-import { CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { getEndlessModifierById } from '../data/endlessModifiers';
-import { getReducedMotion } from '../utils/reducedMotion';
-
-// ─── EndlessResultScene ───────────────────────────────────────────────────────
-//
-// Shown when the player dies in endless mode.
-// Displays stone-tablet stats: wave reached, kills, gold earned, crystals earned.
-// Crystal formula: base = floor(wave/5) + milestone bonuses, scaled by crystalEarnMult.
+import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { formatHudResourceValue } from '../ui/HudResourceFormatting';
 
 interface EndlessResult {
-  wave:           number;
-  kills:          number;
-  goldEarned:     number;
+  wave: number;
+  kills: number;
+  goldEarned: number;
   crystalsEarned: number;
-  isNewRecord:    boolean;
-  previousBest:   number;
+  isNewRecord: boolean;
+  previousBest: number;
 }
 
+// The combat flow has already awarded this receipt. Rendering never grants again.
 export class EndlessResultScene extends Phaser.Scene {
+  private leaving = false;
+
   constructor() { super({ key: 'EndlessResultScene' }); }
 
   create(): void {
+    this.leaving = false;
     const result = this.registry.get('endlessResult') as EndlessResult | undefined;
     if (!result) {
-      // Fallback — shouldn't happen
       this.scene.start('StageSelectScene');
       return;
     }
 
+    this.cameras.main.setAlpha(1);
     this.drawBackground();
-    this.drawTablet(result);
-    this.drawButtons();
+    this.label(195, 36, '무한 던전 원정록', 21, DUNGEON_UI_CSS.PARCHMENT, true).setOrigin(0.5);
+    this.label(195, 68, '끝난 원정을 돌아보고, 다음 방어를 준비하세요', 11,
+      DUNGEON_UI_CSS.MUTED).setOrigin(0.5);
+    this.drawRecord(result);
+    this.drawLedger(result);
+    this.drawModifier();
+    this.label(195, 628, '영혼 수정 지급 완료', 13, DUNGEON_UI_CSS.JADE, true).setOrigin(0.5);
+    this.label(195, 654, '이번 원정에서 얻은 기록은 다음 도전에도 남습니다', 11,
+      DUNGEON_UI_CSS.MUTED).setOrigin(0.5);
+    this.drawActions();
+  }
 
-    // Slide-in animation
-    this.cameras.main.setAlpha(0);
-    this.tweens.add({
-      targets: this.cameras.main,
-      alpha: 1,
-      duration: 400,
-      ease: 'Power2',
+  private drawBackground(): void {
+    const g = this.add.graphics().setDepth(-900);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(14, 96, CANVAS_WIDTH - 28, 518);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.5);
+    for (let y = 108; y < 610; y += 42) g.lineBetween(22, y, 368, y);
+    // A carved threshold frames the reached wave, without competing with actions.
+    g.fillStyle(DUNGEON_UI.STONE, 1);
+    g.fillRoundedRect(76, 110, 238, 214, 86);
+    g.lineStyle(2, DUNGEON_UI.IRON, 1);
+    g.strokeRoundedRect(76, 110, 238, 214, 86);
+    g.lineStyle(1, DUNGEON_UI.BRASS, 0.4);
+    g.lineBetween(112, 311, 278, 311);
+  }
+
+  private drawRecord(result: EndlessResult): void {
+    const { wave, previousBest, isNewRecord } = result;
+    const status = isNewRecord ? '새로운 최고 기록' : previousBest === 0
+      ? '첫 원정 기록' : wave === previousBest ? '최고 기록과 동률' : '원정 종료';
+    this.label(195, 144, status, 13,
+      isNewRecord ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.BRASS, true).setOrigin(0.5);
+    this.label(195, 205, formatHudResourceValue(wave), 56, DUNGEON_UI_CSS.PARCHMENT, true)
+      .setOrigin(0.5).setName('endless-wave');
+    this.label(195, 249, '도달 웨이브', 12, DUNGEON_UI_CSS.TEXT).setOrigin(0.5);
+    const comparison = previousBest === 0 ? '새로운 여정의 첫 이정표' : wave > previousBest
+      ? `이전 ${formatHudResourceValue(previousBest)}파 · ${formatHudResourceValue(wave - previousBest)}파 돌파`
+      : wave === previousBest ? `이전 최고 ${formatHudResourceValue(previousBest)}파 유지`
+        : `이전 최고 ${formatHudResourceValue(previousBest)}파 · ${formatHudResourceValue(previousBest - wave)}파 차이`;
+    this.label(195, 285, comparison, 11, DUNGEON_UI_CSS.MUTED).setOrigin(0.5);
+  }
+
+  private drawLedger(result: EndlessResult): void {
+    addFramedPanel(this, {
+      x: 28, y: 341, w: 334, h: 167,
+      fillColor: DUNGEON_UI.STONE_RAISED, borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.2,
+    });
+    const rows = [
+      { label: '처치한 침략자', value: result.kills, color: DUNGEON_UI_CSS.PARCHMENT },
+      { label: '원정 중 획득 골드', value: result.goldEarned, color: DUNGEON_UI_CSS.BRASS },
+      { label: '지급된 영혼 수정', value: result.crystalsEarned, color: DUNGEON_UI_CSS.JADE },
+    ];
+    rows.forEach((row, index) => {
+      const y = 373 + index * 52;
+      this.label(44, y, row.label, 12, DUNGEON_UI_CSS.TEXT).setOrigin(0, 0.5);
+      this.label(346, y, row.value.toLocaleString('ko-KR'), 17, row.color, true)
+        .setOrigin(1, 0.5).setName(`endless-stat-${index}`);
+      if (index < rows.length - 1) {
+        const line = this.add.graphics();
+        line.lineStyle(1, DUNGEON_UI.IRON, 0.55);
+        line.lineBetween(44, y + 25, 346, y + 25);
+      }
     });
   }
 
-  // ─── Background ────────────────────────────────────────────────────────────
-
-  private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    applyCasualBackground(this);
+  private drawModifier(): void {
+    const modifier = getEndlessModifierById(this.registry.get('endlessModifier'));
+    this.label(32, 533, '이번 원정의 도전 변수', 11, DUNGEON_UI_CSS.MUTED);
+    this.label(32, 556, modifier ? `${modifier.icon} ${modifier.name}` : '기본 도전', 14,
+      DUNGEON_UI_CSS.PARCHMENT, true);
+    this.label(32, 583, modifier?.desc ?? '적용된 도전 변수 없음', 11,
+      DUNGEON_UI_CSS.TEXT).setWordWrapWidth(326).setLineSpacing(3);
   }
 
-  // ─── Stone tablet ──────────────────────────────────────────────────────────
-
-  private drawTablet(result: EndlessResult): void {
-    const tw = 300, th = 440;
-    const tx = (CANVAS_WIDTH - tw) / 2;
-    const ty = 80;
-
-    // Cream result card
-    const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.22);
-    g.fillRoundedRect(tx, ty + 6, tw, th, 16);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(tx, ty, tw, th, 16);
-    g.lineStyle(3, CASUAL.EDGE, 1);
-    g.strokeRoundedRect(tx, ty, tw, th, 16);
-    // White top highlight
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(tx + 6, ty + 6, tw - 12, 7, 4);
-    // Soft inner border
-    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
-    g.strokeRoundedRect(tx + 8, ty + 8, tw - 16, th - 16, 11);
-
-    // Title
-    const cx = CANVAS_WIDTH / 2;
-    this.add.text(cx, ty + 36, '무한 던전 결과', {
-      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5);
-
-    // Divider
-    const dg = this.add.graphics();
-    dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
-    dg.lineBetween(tx + 20, ty + 56, tx + tw - 20, ty + 56);
-
-    // New record flash
-    if (result.isNewRecord) {
-      const flash = this.add.text(cx, ty + 76, '★ 신기록 ★', {
-        fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold',
-        color: CASUAL_CSS.GOLD, stroke: '#ffffff', strokeThickness: 3,
-      }).setOrigin(0.5);
-      // Decorative flash — the record label stays fully visible when gated.
-      if (!getReducedMotion()) {
-        this.tweens.add({
-          targets: flash,
-          alpha: { from: 1, to: 0.3 },
-          duration: 600,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.InOut',
-        });
-      }
+  private drawActions(): void {
+    const actions = [
+      { name: 'endless-retry', y: 687, label: '다시 도전', primary: true, route: 'DungeonScene' },
+      { name: 'endless-return', y: 751, label: '스테이지 선택', primary: false, route: 'StageSelectScene' },
+    ];
+    for (const action of actions) {
+      const button = addPrimaryActionButton(this, {
+        x: 28, y: action.y, w: 334, h: 50,
+        label: action.label, fontSize: '15px', showArrow: action.primary,
+        fillColor: action.primary ? DUNGEON_UI.BRASS : DUNGEON_UI.STONE,
+        hoverFillColor: action.primary ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.IRON,
+        borderColor: action.primary ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON,
+        textColor: action.primary ? '#171006' : DUNGEON_UI_CSS.TEXT,
+        onPress: () => {
+          if (action.primary) {
+            this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
+          }
+          this.scene.start(action.route);
+        },
+      });
+      button.zone.setName(action.name);
+      const press = button.zone.listeners('pointerdown')[0] as () => void;
+      button.zone.removeAllListeners('pointerdown');
+      button.zone.on('pointerdown', () => {
+        if (this.leaving) return;
+        this.leaving = true;
+        press();
+      });
     }
-
-    const rowY = result.isNewRecord ? ty + 108 : ty + 84;
-
-    this.drawStat(cx, rowY,       '⚔ 도달 웨이브',  String(result.wave),          CASUAL_CSS.INK);
-    this.drawStat(cx, rowY + 56,  '💀 처치 수',      result.kills.toLocaleString(), CASUAL_CSS.INK);
-    this.drawStat(cx, rowY + 112, '🪙 획득 골드',    result.goldEarned.toLocaleString(), CASUAL_CSS.GOLD);
-    this.drawStat(cx, rowY + 168, '💠 획득 수정',    String(result.crystalsEarned), CASUAL_CSS.PURPLE);
-
-    // Crystal formula hint
-    this.add.text(cx, rowY + 215, `(웨이브÷5 + 마일스톤 보너스 × 선조의 지혜)`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5);
-
-    // Previous best comparison
-    if (result.previousBest > 0) {
-      const compY = rowY + 240;
-      const delta = result.wave - result.previousBest;
-      const deltaText = delta > 0
-        ? `▲ ${delta}웨이브 신기록!`
-        : delta === 0
-        ? `= 이전 기록 타이`
-        : `▼ ${Math.abs(delta)}웨이브 (이전: ${result.previousBest}파)`;
-      const deltaColor = delta > 0 ? CASUAL_CSS.GREEN : delta === 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
-
-      this.add.text(cx, compY, `이전 최고: ${result.previousBest}파`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(0.5);
-
-      this.add.text(cx, compY + 18, deltaText, {
-        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: deltaColor,
-      }).setOrigin(0.5);
-    }
-
-    // ── Challenge modifier this run carried (도전 변수) ──────────────────────────
-    const modifier = getEndlessModifierById(this.registry.get('endlessModifier') as string | null);
-    if (modifier) {
-      const my = ty + th - 52;
-      const mw = tw - 48;
-      const mx = (CANVAS_WIDTH - mw) / 2;
-      const chip = this.add.graphics();
-      chip.fillStyle(CASUAL.PANEL_SOFT, 1);
-      chip.fillRoundedRect(mx, my, mw, 34, 9);
-      chip.lineStyle(1.5, CASUAL.PURPLE, 0.9);
-      chip.strokeRoundedRect(mx, my, mw, 34, 9);
-      this.add.text(cx, my + 11, `도전 변수  ${modifier.icon} ${modifier.name}`, {
-        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-      }).setOrigin(0.5);
-      this.add.text(cx, my + 25, modifier.desc, {
-        fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(0.5);
-    }
+    this.label(195, 823, '재도전 시 새로운 도전 변수가 선택됩니다', 11,
+      DUNGEON_UI_CSS.MUTED).setOrigin(0.5);
   }
 
-  private drawStat(cx: number, y: number, label: string, value: string, valueColor: string): void {
-    this.add.text(cx, y, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5);
-    this.add.text(cx, y + 24, value, {
-      fontFamily: 'sans-serif', fontSize: '26px', fontStyle: 'bold',
-      color: valueColor,
-    }).setOrigin(0.5);
-  }
-
-  // ─── Buttons ────────────────────────────────────────────────────────────────
-
-  private drawButtons(): void {
-    const cx  = CANVAS_WIDTH / 2;
-    const by  = 548;
-    const bw  = 130, bh = 44;
-
-    // [다시 도전] — retry endless (primary: green candy)
-    this.makeButton(
-      cx - bw / 2 - 6, by, bw, bh,
-      '다시 도전',
-      CASUAL.GREEN, CASUAL.GREEN_DK, CASUAL_CSS.WHITE, true,
-      () => {
-        this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
-        this.scene.start('DungeonScene');
-      },
-    );
-
-    // [스테이지 선택으로] (secondary: cream pill)
-    this.makeButton(
-      cx + 6, by, bw, bh,
-      '스테이지 선택',
-      CASUAL.PANEL, CASUAL.EDGE, CASUAL_CSS.INK, false,
-      () => this.scene.start('StageSelectScene'),
-    );
-  }
-
-  private makeButton(
-    x: number, y: number, w: number, h: number,
-    label: string,
-    capColor: number, baseColor: number, textColor: string, primary: boolean,
-    onClick: () => void,
-  ): void {
-    const r = 12;
-    const bg = this.add.graphics();
-    const draw = (hovered: boolean) => {
-      bg.clear();
-      // thick colored bottom edge (candy-button base)
-      bg.fillStyle(baseColor, 1);
-      bg.fillRoundedRect(x, y + 4, w, h, r);
-      // bright cap
-      bg.fillStyle(capColor, 1);
-      bg.fillRoundedRect(x, y, w, h - 2, r);
-      // glossy top highlight
-      bg.fillStyle(0xffffff, primary ? 0.32 : 0.5);
-      bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), Math.max(5, r - 4));
-      // hover: bright outline
-      if (hovered) {
-        bg.lineStyle(2, 0xffffff, 0.6);
-        bg.strokeRoundedRect(x, y, w, h - 2, r);
-      }
-    };
-    draw(false);
-
-    this.add.text(x + w / 2, y + (h - 2) / 2, label, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: textColor,
-      stroke: primary ? '#00000033' : undefined,
-      strokeThickness: primary ? 3 : 0,
-    }).setOrigin(0.5);
-
-    const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerover',  () => draw(true));
-    zone.on('pointerout',   () => draw(false));
-    zone.on('pointerdown',  onClick);
+  private label(x: number, y: number, text: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {
+    return this.add.text(x, y, text, {
+      fontFamily: 'sans-serif', fontSize: `${size}px`, color,
+      fontStyle: bold ? 'bold' : 'normal',
+    });
   }
 }

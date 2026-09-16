@@ -2,11 +2,16 @@
 // Handles the animated stage-clear overlay after each chapter is beaten.
 // Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
+import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+} from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { MATERIAL_DEFS } from '../data/fusion';
-import { MONSTER_DEFS } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyClearRewards } from '../data/clearRewards';
@@ -18,6 +23,23 @@ import type { ResultFlowContext } from './ResultFlow';
 import { showGameComplete } from './GameCompleteFlow';
 import { projectBattleResultCallout } from '../data/battleResultCallout';
 import { addBattleCalloutRow } from '../ui/HomeResultOverlays';
+import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
+
+type AlphaTarget = { setAlpha(value: number): unknown };
+
+function revealAlpha(
+  scene: Phaser.Scene,
+  targets: AlphaTarget | AlphaTarget[],
+  duration: number,
+  delay = 0,
+): void {
+  if (getReducedMotion()) {
+    (Array.isArray(targets) ? targets : [targets]).forEach(target => target.setAlpha(1));
+    return;
+  }
+  scene.tweens.add({ targets, alpha: 1, duration, delay });
+}
 
 // ── showChapterClear ──────────────────────────────────────────────────────────
 
@@ -68,32 +90,36 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     : null;
 
   const dim = scene.add.graphics();
-  dim.fillStyle(CASUAL.SHADOW, 0.5);
+  dim.fillStyle(DUNGEON_UI.VOID, 0.72);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setAlpha(0);
   ov.add(dim);
-  scene.tweens.add({ targets: dim, alpha: 1, duration: 600 });
+  revealAlpha(scene, dim, 180);
 
   // Card — extra height for monster level chips row
   const cw = 320, ch = returnCallout ? 430 : 360;
   const cx = CANVAS_WIDTH / 2 - cw / 2;
   const cy = CANVAS_HEIGHT / 2 - ch / 2;
-  const card = scene.add.graphics();
-  // chunky drop shadow
-  card.fillStyle(CASUAL.SHADOW, 0.22);
-  card.fillRoundedRect(cx, cy + 5, cw, ch, 16);
-  // cream body
-  card.fillStyle(CASUAL.PANEL, 1);
-  card.fillRoundedRect(cx, cy, cw, ch, 16);
-  // glossy white top highlight band
-  card.fillStyle(0xffffff, 0.12);
-  card.fillRoundedRect(cx + 6, cy + 6, cw - 12, 18, 8);
-  // thick rounded brown border
-  card.lineStyle(3, CASUAL.EDGE, 1);
-  card.strokeRoundedRect(cx, cy, cw, ch, 16);
-  card.setY(-60).setAlpha(0);
-  ov.add(card);
-  scene.tweens.add({ targets: card, y: 0, alpha: 1, duration: 500, ease: 'Power2.easeOut', delay: 200 });
+  const card = addFramedPanel(scene, {
+    x: cx,
+    y: cy,
+    w: cw,
+    h: ch,
+    radius: 9,
+    fillColor: DUNGEON_UI.STONE,
+    borderColor: DUNGEON_UI.IRON,
+    accentColor: DUNGEON_UI.BRASS,
+    accentAlpha: 0.92,
+    shadowOpacity: 0.72,
+    shadowOffsetY: 5,
+  });
+  const cardObjects = [card.shadow, card.panel, card.glow];
+  if (getReducedMotion()) cardObjects.forEach(obj => obj.setAlpha(1));
+  else {
+    cardObjects.forEach(obj => obj.setY(-60).setAlpha(0));
+    scene.tweens.add({ targets: cardObjects, y: 0, alpha: 1, duration: 260, ease: 'Power2.easeOut' });
+  }
+  ov.add(cardObjects);
 
   const chLabel = `${ctx.stageChapter}장`;
 
@@ -105,18 +131,18 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     return;
   }
   const clearTitle = ctx.dailyMode
-    ? `⚔️  ${ctx.dailyMode.name}  클리어!`
+    ? `${ctx.dailyMode.name} · 작전 완료`
     : ctx.weeklyBossMode
-    ? `👑  ${ctx.weeklyBossMode.name}  격파!`
+    ? `${ctx.weeklyBossMode.name} · 격파`
     : ctx.returnTo
-    ? '🛡️  침략 방어 성공!'
-    : `🎉  ${chLabel} 클리어!`;
+    ? '침공 방어 성공'
+    : `${chLabel} 전선 확보`;
   const title = scene.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
-    fontFamily: 'sans-serif', fontSize: '24px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-    stroke: '#ffffff', strokeThickness: 4,
+    fontFamily: 'sans-serif', fontSize: '24px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+    stroke: '#030504', strokeThickness: 2,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(title);
-  scene.tweens.add({ targets: title, alpha: 1, duration: 300, delay: 500 });
+  revealAlpha(scene, title, 180, 80);
 
   // Animated star pop — 3 individual stars with staggered Back.easeOut
   const starSpacing = 28;
@@ -127,36 +153,37 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       cy + 78,
       isFilled ? '★' : '☆',
       { fontFamily: 'sans-serif', fontSize: '26px',
-        color: isFilled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
+        color: isFilled ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED },
     ).setOrigin(0.5).setScale(0).setAlpha(0);
     ov.add(starT);
     // Gated pop (snaps to final state under prefers-reduced-motion).
-    popIn(scene, starT, { duration: 280, delay: 650 + si * 110 });
+    popIn(scene, starT, { duration: 160, delay: 100 + si * 40 });
   }
 
-  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체  +${crystals} 💠`, {
+  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체 · +${crystals}`, {
     fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(crystalT);
-  scene.tweens.add({ targets: crystalT, alpha: 1, duration: 300, delay: 780 });
+  revealAlpha(scene, crystalT, 180, 150);
 
   // Daily dungeon reward line
   if (ctx.dailyMode) {
     const dailyCrystals = ctx.dailyMode.rewards.crystals;
     const dailyT = scene.add.text(CANVAS_WIDTH / 2, cy + 148, `일일 보상  +${dailyCrystals} 💠  재료 ×${ctx.dailyMode.rewards.materials.length}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(dailyT);
-    scene.tweens.add({ targets: dailyT, alpha: 1, duration: 300, delay: 880 });
+    revealAlpha(scene, dailyT, 180, 180);
   }
 
   // Stats row: gold + kills + waves
-  const statsStr = `💰 ${ctx.gold}골드   💀 ${ctx.killsThisRun}킬   ⚔ ${ctx.wave}웨이브`;
-  const killT = scene.add.text(CANVAS_WIDTH / 2, cy + 152, statsStr, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+  const contentOffset = ctx.dailyMode ? 20 : 0;
+  const statsStr = `황금 ${ctx.gold} · 격퇴 ${ctx.killsThisRun} · 침입 ${ctx.wave}`;
+  const killT = scene.add.text(CANVAS_WIDTH / 2, cy + 152 + contentOffset, statsStr, {
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(killT);
-  scene.tweens.add({ targets: killT, alpha: 1, duration: 300, delay: 880 });
+  revealAlpha(scene, killT, 180, 180);
 
   // Materials earned this run
   const matEntries = Object.entries(ctx.materialsEarnedThisRun).filter(([, q]) => q > 0);
@@ -165,11 +192,11 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       const def = MATERIAL_DEFS[id];
       return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${q}`;
     }).join('  ');
-    const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170, matStr, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+    const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170 + contentOffset, matStr, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5).setAlpha(0);
     ov.add(matT);
-    scene.tweens.add({ targets: matT, alpha: 1, duration: 300, delay: 940 });
+    revealAlpha(scene, matT, 180, 210);
   }
 
   // Monster level chips ("수호자 성장")
@@ -180,48 +207,47 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   });
   const chipsSource = activeMonsters.length > 0 ? activeMonsters : gs3.ownedMonsters.slice(0, 3);
   if (chipsSource.length > 0) {
-    const chipRowY = cy + 182;
-    const chipW = Math.min(80, Math.floor((cw - 32) / chipsSource.length) - 4);
-    const totalChipW = chipsSource.length * (chipW + 4) - 4;
+    const visibleChips = chipsSource.slice(0, 4);
+    const chipRowY = cy + 182 + contentOffset;
+    const chipW = Math.min(80, Math.floor((cw - 32) / visibleChips.length) - 4);
+    const totalChipW = visibleChips.length * (chipW + 4) - 4;
     const chipStartX = cx + (cw - totalChipW) / 2;
-    chipsSource.slice(0, 4).forEach((m, mi) => {
-      const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
+    visibleChips.forEach((m, mi) => {
+      const def = resolveOwnedMonsterProfile(m.id);
       const atk = def ? getMonsterAtk(def.baseDamage, m.level, m.spentSkills) : 0;
       const cx2 = chipStartX + mi * (chipW + 4);
       const chipBg = scene.add.graphics().setAlpha(0);
-      chipBg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      chipBg.fillRoundedRect(cx2, chipRowY, chipW, 26, 6);
-      chipBg.fillStyle(0xffffff, 0.12);
-      chipBg.fillRoundedRect(cx2 + 3, chipRowY + 3, chipW - 6, 3, 2);
-      chipBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
-      chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 26, 6);
+      chipBg.fillStyle(DUNGEON_UI.SOOT, 1);
+      chipBg.fillRoundedRect(cx2, chipRowY, chipW, 32, 5);
+      chipBg.lineStyle(1, DUNGEON_UI.EDGE, 0.75);
+      chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 32, 5);
       ov.add(chipBg);
       const nameLine = def?.name ? def.name.slice(0, 4) : m.id.slice(0, 4);
       const chipT = scene.add.text(cx2 + chipW / 2, chipRowY + 7, `${nameLine}`, {
-        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(chipT);
-      const lvT = scene.add.text(cx2 + chipW / 2, chipRowY + 16, `Lv.${m.level}  ATK ${atk}`, {
-        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
+      const lvT = scene.add.text(cx2 + chipW / 2, chipRowY + 18, `Lv.${m.level} · ATK ${atk}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(lvT);
-      const delay = 950 + mi * 60;
-      scene.tweens.add({ targets: [chipBg, chipT, lvT], alpha: 1, duration: 200, delay });
+      const delay = 220 + mi * 40;
+      revealAlpha(scene, [chipBg, chipT, lvT], 160, delay);
     });
   }
 
   // Divider
-  const baseDivY = chipsSource.length > 0 ? cy + 214 : cy + 178;
+  const baseDivY = (chipsSource.length > 0 ? cy + 220 : cy + 178) + contentOffset;
   if (returnCallout) {
     addBattleCalloutRow(scene, ov, returnCallout, cx + 20, baseDivY, cw - 40, 56);
   }
   const divY = baseDivY + (returnCallout ? 64 : 0);
   const divG = scene.add.graphics();
-  divG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
+  divG.lineStyle(1, DUNGEON_UI.EDGE, 0.55);
   divG.lineBetween(cx + 20, divY, cx + cw - 20, divY);
   divG.setAlpha(0);
   ov.add(divG);
-  scene.tweens.add({ targets: divG, alpha: 1, duration: 300, delay: 900 });
+  revealAlpha(scene, divG, 180, 220);
 
   // Buttons
   const goldEarned = ctx.gold;
@@ -253,12 +279,12 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   const btnData: Array<{ label: string; action: () => void; enabled: boolean }> = [
     // Invasion battles (returnTo set) have no next-stage concept — show only the return button.
     ...(ctx.returnTo ? [] : [{
-      label: nextCfg ? `다음 스테이지 →  (${nextCfg.stageNumber}스테이지)` : '🏆  모든 챕터 클리어!',
+      label: nextCfg ? `다음 관문 · 스테이지 ${nextCfg.stageNumber}` : '모든 전선 확보 완료',
       action: nextCfg ? launchNext : () => {},
       enabled: !!nextCfg,
     }]),
     {
-      label: ctx.returnTo ? '🏰  던전으로 귀환' : '스테이지 선택으로',
+      label: ctx.returnTo ? '던전으로 귀환 · 방어선 확인' : '침공 전선으로',
       action: () => {
         if (ctx.returnTo) {
           scene.registry.set('battleResult', {
@@ -281,39 +307,43 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     },
   ];
   btnData.forEach(({ label, action, enabled }, i) => {
-    const btnY = divY + 22 + i * 48;
-    const bw = cw - 40, bh = 36, bx = cx + 20, br = 12;
-    // i===0 primary green candy; i===1 secondary cream; disabled cream-muted
+    const btnY = divY + 18 + i * 52;
+    const bw = cw - 40, bh = 44, bx = cx + 20;
     const isPrimary = enabled && i === 0;
-    const capColor  = !enabled ? CASUAL.PANEL_SOFT : i === 0 ? CASUAL.GREEN : CASUAL.PANEL;
-    const baseColor = !enabled ? CASUAL.EDGE_SOFT  : i === 0 ? CASUAL.GREEN_DK : CASUAL.EDGE;
-    const btnBg = scene.add.graphics();
-    // thick colored bottom edge (candy-button base)
-    btnBg.fillStyle(baseColor, 1);
-    btnBg.fillRoundedRect(bx, btnY + 3, bw, bh, br);
-    // bright cap
-    btnBg.fillStyle(capColor, 1);
-    btnBg.fillRoundedRect(bx, btnY, bw, bh - 1, br);
-    // glossy top highlight
-    btnBg.fillStyle(0xffffff, isPrimary ? 0.3 : 0.5);
-    btnBg.fillRoundedRect(bx + 5, btnY + 3, bw - 10, 11, 5);
-    btnBg.setAlpha(0);
-    ov.add(btnBg);
-    scene.tweens.add({ targets: btnBg, alpha: 1, duration: 250, delay: 1000 + i * 120 });
+    const capColor  = !enabled ? DUNGEON_UI.SOOT : i === 0 ? DUNGEON_UI.JADE : DUNGEON_UI.STONE_RAISED;
+    const baseColor = !enabled ? DUNGEON_UI.IRON : i === 0 ? DUNGEON_UI.JADE : DUNGEON_UI.EDGE;
+    const button = addPrimaryActionButton(scene, {
+      x: bx,
+      y: btnY,
+      w: bw,
+      h: bh,
+      label,
+      fontSize: '13px',
+      enabled,
+      fillColor: capColor,
+      hoverFillColor: isPrimary ? 0x5aad86 : DUNGEON_UI.IRON,
+      borderColor: baseColor,
+      hoverBorderColor: isPrimary ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      textColor: isPrimary ? '#ffffff' : DUNGEON_UI_CSS.TEXT,
+      disabledTextColor: DUNGEON_UI_CSS.MUTED,
+      showArrow: isPrimary,
+      once: true,
+      onPress: action,
+    });
+    button.bg.setAlpha(0);
+    button.text.setAlpha(0);
+    if (enabled) button.zone.disableInteractive();
+    ov.add([button.bg, button.text, button.zone]);
 
-    const btnT = scene.add.text(CANVAS_WIDTH / 2, btnY + 18, label, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: !enabled ? CASUAL_CSS.INK_SOFT : isPrimary ? CASUAL_CSS.WHITE : CASUAL_CSS.INK,
-      stroke: isPrimary ? '#00000033' : undefined,
-      strokeThickness: isPrimary ? 3 : 0,
-    }).setOrigin(0.5).setAlpha(0);
-    ov.add(btnT);
-    scene.tweens.add({ targets: btnT, alpha: 1, duration: 250, delay: 1000 + i * 120 });
-
+    const revealDelay = 260 + i * 60;
+    revealAlpha(scene, [button.bg, button.text], 220, revealDelay);
     if (enabled) {
-      const zone = scene.add.zone(CANVAS_WIDTH / 2, btnY + 18, cw - 40, 36).setInteractive();
-      ov.add(zone);
-      zone.on('pointerdown', action);
+      if (getReducedMotion()) button.zone.setInteractive({ useHandCursor: true });
+      else scene.time.delayedCall(revealDelay, () => {
+        if (button.zone.scene) button.zone.setInteractive({ useHandCursor: true });
+      });
     }
   });
 }

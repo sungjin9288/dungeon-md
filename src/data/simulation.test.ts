@@ -99,6 +99,16 @@ describe('calcDungeonDps', () => {
     expect(calcDungeonDps([prefixSlot], [])).toBeCloseTo(calcDungeonDps([exactSlot], []), 5);
   });
 
+  it('uses evolved damage for an evolved owned-monster id', () => {
+    const slot = makeSlot(['dokkaebi_warrior_leg']);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo(57 / 1.5, 5);
+  });
+
+  it('includes fusion-only hybrids in the battle estimate', () => {
+    const slot = makeSlot(['storm_spirit']);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo(24 / 2, 5);
+  });
+
   it('level 5 monster contributes exactly 1.4× the DPS of level 1', () => {
     const slot  = makeSlot(['dokkaebi_warrior']);
     const owned = (level: number) => [{ id: 'dokkaebi_warrior', level, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];

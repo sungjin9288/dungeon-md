@@ -7,12 +7,12 @@ import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { ACTIVE_SKILLS } from '../data/barracks';
 import type { EquipmentStats } from '../data/barracks';
-import { HYBRID_DEFS } from '../data/fusion';
-import { MONSTER_DEFS } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { loadGameState } from '../data/wisdom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export interface SkillPopupContext {
   readonly scene:         Phaser.Scene;
@@ -26,7 +26,7 @@ export interface SkillPopupContext {
 }
 
 const CARD_W = 116;
-const CARD_H = 88;
+const CARD_H = 100;
 const CARD_GAP = 8;
 const PANEL_PAD = 10;
 
@@ -66,9 +66,7 @@ function getSlotIndex(row: number, col: number): number | null {
 
 function getMonsterName(monsterId: string | null | undefined): string {
   if (!monsterId) return '수호자';
-  return MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS]?.name
-    ?? HYBRID_DEFS[monsterId]?.name
-    ?? monsterId;
+  return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
 }
 
 /**
@@ -104,38 +102,42 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const tipY = Phaser.Math.Clamp(room.y - 86, 118, CANVAS_HEIGHT - tipH - 122);
     const tip = scene.add.container(0, 0).setDepth(211).setAlpha(0);
     const bg = scene.add.graphics();
-    bg.fillStyle(CASUAL.SHADOW, 0.2);
-    bg.fillRoundedRect(tipX, tipY + 4, tipW, tipH, 9);
-    bg.fillStyle(CASUAL.PANEL, 1);
-    bg.fillRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(tipX + 5, tipY + 4, tipW - 10, 4, 3);
-    bg.fillStyle(CASUAL.GOLD, 0.5);
-    bg.fillRoundedRect(tipX + 8, tipY + 8, 34, tipH - 16, 7);
-    bg.lineStyle(3, CASUAL.EDGE, 1);
-    bg.strokeRoundedRect(tipX, tipY, tipW, tipH, 9);
-    bg.fillStyle(CASUAL.GOLD, 0.5);
-    bg.fillRoundedRect(tipX + 48, tipY + 12, tipW - 62, 3, 2);
+    bg.fillStyle(DUNGEON_UI.VOID, 0.65);
+    bg.fillRoundedRect(tipX + 2, tipY + 4, tipW, tipH, 7);
+    bg.fillStyle(DUNGEON_UI.STONE, 1);
+    bg.fillRoundedRect(tipX, tipY, tipW, tipH, 7);
+    bg.fillStyle(DUNGEON_UI.BRASS, 0.9);
+    bg.fillRect(tipX + 1, tipY + 9, 3, tipH - 18);
+    bg.fillStyle(DUNGEON_UI.SOOT, 1);
+    bg.fillRoundedRect(tipX + 9, tipY + 9, 34, tipH - 18, 5);
+    bg.lineStyle(1.5, DUNGEON_UI.EDGE, 1);
+    bg.strokeRoundedRect(tipX, tipY, tipW, tipH, 7);
     tip.add(bg);
     tip.add(scene.add.text(tipX + 25, tipY + 29, '✦', {
       fontFamily: 'sans-serif',
       fontSize: '15px',
-      color: CASUAL_CSS.GOLD,
+      color: DUNGEON_UI_CSS.BRASS,
     }).setOrigin(0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 22, '전술 슬롯 비어 있음', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0, 0.5));
     tip.add(scene.add.text(tipX + 52, tipY + 39, monsterName, {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK_SOFT,
+      color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5));
-    scene.tweens.add({ targets: tip, alpha: 1, y: -4, duration: 120, ease: 'Cubic.easeOut' });
+    const reducedMotion = getReducedMotion();
+    if (reducedMotion) tip.setAlpha(1);
+    else scene.tweens.add({ targets: tip, alpha: 1, y: -4, duration: 120, ease: 'Cubic.easeOut' });
     scene.time.delayedCall(1300, () => {
+      if (reducedMotion) {
+        tip.destroy();
+        return;
+      }
       scene.tweens.add({
         targets: tip,
         alpha: 0,
@@ -173,30 +175,28 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     y: panelY,
     w: panelW,
     h: panelH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
+    radius: 8,
+    fillColor: DUNGEON_UI.STONE,
+    borderColor: DUNGEON_UI.EDGE,
     borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: CASUAL.GOLD,
+    borderWidth: 1.5,
+    accentColor: DUNGEON_UI.BRASS,
     accentAlpha: 1,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0.1,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0.05,
     shadowOpacity: 0.3,
     shadowOffsetY: 5,
   });
   popup.add([panel.shadow, panel.panel, panel.glow]);
 
   const header = scene.add.graphics();
-  header.fillStyle(CASUAL.PANEL_SOFT, 1);
-  header.fillRoundedRect(panelX + 8, panelY + 8, panelW - 16, 28, 8);
-  header.fillStyle(0xffffff, 0.12);
-  header.fillRoundedRect(panelX + 11, panelY + 11, panelW - 22, 3, 2);
-  header.fillStyle(CASUAL.GOLD, 1);
-  header.fillRoundedRect(panelX + 14, panelY + 13, 4, 18, 2);
-  header.fillStyle(CASUAL.PANEL, 1);
+  header.fillStyle(DUNGEON_UI.SOOT, 1);
+  header.fillRoundedRect(panelX + 8, panelY + 8, panelW - 16, 28, 5);
+  header.fillStyle(DUNGEON_UI.BRASS, 1);
+  header.fillRect(panelX + 14, panelY + 13, 3, 18);
+  header.fillStyle(DUNGEON_UI.STONE, 1);
   header.fillRoundedRect(panelX + panelW - 44, panelY + 13, 30, 16, 6);
-  header.lineStyle(2, CASUAL.GOLD_DK, 0.9);
+  header.lineStyle(1, DUNGEON_UI.BRASS, 0.9);
   header.strokeRoundedRect(panelX + panelW - 44, panelY + 13, 30, 16, 6);
   popup.add(header);
 
@@ -204,20 +204,20 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0, 0.5);
   popup.add(title);
   popup.add(scene.add.text(panelX + PANEL_PAD + 14, panelY + 29, `${monsterName} · Lv.${om?.level ?? 1}`, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
   popup.add(scene.add.text(panelX + panelW - 29, panelY + 21, slotIndex === null ? 'B?' : `B${slotIndex + 1}`, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.GOLD,
+    color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5));
 
   skills.forEach((skillId, i) => {
@@ -236,27 +236,18 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     const bg = scene.add.graphics();
     const drawCard = (hover = false): void => {
       bg.clear();
-      // chunky drop shadow
-      bg.fillStyle(CASUAL.SHADOW, ready ? 0.22 : 0.12);
-      bg.fillRoundedRect(bx, by + 4, CARD_W, CARD_H, 8);
-      // cream card body (muted when on cooldown)
-      bg.fillStyle(ready ? (hover ? CASUAL.PANEL : CASUAL.PANEL) : CASUAL.PANEL_SOFT, 1);
-      bg.fillRoundedRect(bx, by, CARD_W, CARD_H, 8);
-      // glossy white top highlight band
-      bg.fillStyle(0xffffff, ready ? (hover ? 0.55 : 0.45) : 0.22);
-      bg.fillRoundedRect(bx + 4, by + 4, CARD_W - 8, 22, 6);
-      // accent icon disc
-      bg.fillStyle(accent, ready ? (hover ? 0.6 : 0.5) : 0.2);
-      bg.fillRoundedRect(bx + 7, by + 7, 25, 25, 7);
-      // accent underline by the name
-      bg.fillStyle(accent, ready ? 1 : 0.35);
-      bg.fillRoundedRect(bx + 38, by + 8, CARD_W - 47, 3, 2);
-      // soft footer band
-      bg.fillStyle(CASUAL.PANEL_SOFT, ready ? 0.85 : 0.5);
-      bg.fillRoundedRect(bx + 8, by + 57, CARD_W - 16, 21, 7);
-      // thick rounded border (accent when ready, muted edge when not)
-      bg.lineStyle(hover ? 3 : 3, ready ? accent : CASUAL.EDGE_SOFT, ready ? 1 : 0.7);
-      bg.strokeRoundedRect(bx, by, CARD_W, CARD_H, 8);
+      bg.fillStyle(DUNGEON_UI.VOID, ready ? 0.58 : 0.3);
+      bg.fillRoundedRect(bx + 2, by + 3, CARD_W, CARD_H, 6);
+      bg.fillStyle(ready ? (hover ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE) : DUNGEON_UI.SOOT, 1);
+      bg.fillRoundedRect(bx, by, CARD_W, CARD_H, 6);
+      bg.fillStyle(accent, ready ? 0.28 : 0.12);
+      bg.fillRoundedRect(bx + 7, by + 7, 25, 25, 5);
+      bg.fillStyle(accent, ready ? 0.92 : 0.3);
+      bg.fillRect(bx + 1, by + 10, 3, CARD_H - 20);
+      bg.fillStyle(DUNGEON_UI.SOOT, ready ? 0.92 : 0.65);
+      bg.fillRoundedRect(bx + 8, by + CARD_H - 28, CARD_W - 16, 20, 5);
+      bg.lineStyle(hover ? 2 : 1.5, ready ? accent : DUNGEON_UI.EDGE, ready ? 0.95 : 0.55);
+      bg.strokeRoundedRect(bx, by, CARD_W, CARD_H, 6);
     };
     drawCard();
     popup.add(bg);
@@ -272,64 +263,48 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: ready ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+      color: ready ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: CARD_W - 48 },
     }).setOrigin(0, 0.5);
     popup.add(nameT);
 
-    popup.add(scene.add.text(bx + 10, by + 41, sk.desc, {
+    popup.add(scene.add.text(bx + 10, by + 40, sk.desc, {
       fontFamily: 'sans-serif',
-      fontSize: '8px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK_SOFT,
+      color: DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: CARD_W - 20 },
-      lineSpacing: -1,
-    }).setOrigin(0, 0.5));
+      lineSpacing: 0,
+    }).setOrigin(0, 0));
 
     const categoryBg = scene.add.graphics();
-    categoryBg.fillStyle(accent, ready ? 0.85 : 0.3);
-    categoryBg.fillRoundedRect(bx + 8, by + CARD_H - 25, 32, 17, 6);
-    categoryBg.lineStyle(2, accent, ready ? 1 : 0.4);
-    categoryBg.strokeRoundedRect(bx + 8, by + CARD_H - 25, 32, 17, 6);
+    categoryBg.fillStyle(accent, ready ? 0.72 : 0.22);
+    categoryBg.fillRoundedRect(bx + 8, by + CARD_H - 27, 34, 19, 4);
+    categoryBg.lineStyle(1, accent, ready ? 1 : 0.4);
+    categoryBg.strokeRoundedRect(bx + 8, by + CARD_H - 27, 34, 19, 4);
     popup.add(categoryBg);
-    popup.add(scene.add.text(bx + 24, by + CARD_H - 16.5, categoryLabel, {
+    popup.add(scene.add.text(bx + 25, by + CARD_H - 17.5, categoryLabel, {
       fontFamily: 'sans-serif',
-      fontSize: '8px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: ready ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5));
-
-    const cooldownBg = scene.add.graphics();
-    cooldownBg.fillStyle(CASUAL.PANEL, 1);
-    cooldownBg.fillRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
-    cooldownBg.lineStyle(2, CASUAL.EDGE_SOFT, ready ? 0.9 : 0.5);
-    cooldownBg.strokeRoundedRect(bx + CARD_W - 43, by + 10, 32, 14, 5);
-    popup.add(cooldownBg);
-    popup.add(scene.add.text(bx + CARD_W - 27, by + 17, `${sk.cooldown}s`, {
-      fontFamily: 'sans-serif',
-      fontSize: '8px',
-      fontStyle: 'bold',
-      color: ready ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+      color: ready ? '#ffffff' : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
 
     const cdLeft = ready
-      ? '준비됨'
-      : `${Math.ceil((readyAt - now) / 1000)}s`;
+      ? `준비 · ${sk.cooldown}s`
+      : `${Math.ceil((readyAt - now) / 1000)}s 남음`;
     const statusBg = scene.add.graphics();
-    // ready → green candy chip; cooling down → muted red chip
-    statusBg.fillStyle(ready ? CASUAL.GREEN : CASUAL.RED, ready ? 1 : 0.22);
-    statusBg.fillRoundedRect(bx + 45, by + CARD_H - 25, CARD_W - 53, 17, 7);
-    statusBg.fillStyle(0xffffff, ready ? 0.32 : 0.18);
-    statusBg.fillRoundedRect(bx + 48, by + CARD_H - 23, CARD_W - 59, 3, 2);
-    statusBg.lineStyle(2, ready ? CASUAL.GREEN_DK : CASUAL.RED_DK, ready ? 1 : 0.6);
-    statusBg.strokeRoundedRect(bx + 45, by + CARD_H - 25, CARD_W - 53, 17, 7);
+    statusBg.fillStyle(ready ? DUNGEON_UI.JADE : DUNGEON_UI.SOOT, ready ? 0.82 : 1);
+    statusBg.fillRoundedRect(bx + 46, by + CARD_H - 27, CARD_W - 54, 19, 4);
+    statusBg.lineStyle(1, ready ? DUNGEON_UI.JADE : DUNGEON_UI.EMBER, ready ? 1 : 0.7);
+    statusBg.strokeRoundedRect(bx + 46, by + CARD_H - 27, CARD_W - 54, 19, 4);
     popup.add(statusBg);
 
-    const cdT = scene.add.text(bx + 45 + (CARD_W - 53) / 2, by + CARD_H - 16.5, cdLeft, {
+    const cdT = scene.add.text(bx + 46 + (CARD_W - 54) / 2, by + CARD_H - 17.5, cdLeft, {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: ready ? CASUAL_CSS.WHITE : CASUAL_CSS.RED,
+      color: ready ? '#ffffff' : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0.5);
     popup.add(cdT);
 
@@ -350,11 +325,14 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     }
   });
 
-  scene.tweens.add({
-    targets: popup,
-    alpha: 1,
-    y: -4,
-    duration: 150,
-    ease: 'Cubic.easeOut',
-  });
+  if (getReducedMotion()) popup.setAlpha(1);
+  else {
+    scene.tweens.add({
+      targets: popup,
+      alpha: 1,
+      y: -4,
+      duration: 150,
+      ease: 'Cubic.easeOut',
+    });
+  }
 }

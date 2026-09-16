@@ -3,7 +3,7 @@ import {
   getMonsterAtk,
   type OwnedMonster,
 } from './barracks';
-import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterDef } from './monsters';
+import { resolveOwnedMonsterProfile, type OwnedMonsterProfile } from './monsters';
 import { TRAP_DEFS, type TrapDef } from './traps';
 import type { GameState, RoomSlotType } from './wisdom';
 
@@ -30,13 +30,13 @@ export interface TrapLoadoutRecommendation {
 
 interface MonsterRecommendationCandidate {
   readonly owned: OwnedMonster;
-  readonly def: MonsterDef;
+  readonly def: OwnedMonsterProfile;
   readonly monsterTypeId: string;
   readonly attack: number;
   readonly score: number;
 }
 
-const MONSTER_ROOM_TYPE_BONUS: Record<RoomSlotType, Partial<Record<MonsterDef['type'], number>>> = {
+const MONSTER_ROOM_TYPE_BONUS: Record<RoomSlotType, Partial<Record<OwnedMonsterProfile['type'], number>>> = {
   combat: {
     melee: 35,
     ranged: 28,
@@ -172,9 +172,9 @@ function buildMonsterCandidate(
   owned: OwnedMonster,
   roomType: RoomSlotType | undefined,
 ): MonsterRecommendationCandidate | null {
-  const monsterTypeId = resolveMonsterTypeId(owned.id);
-  if (!monsterTypeId) return null;
-  const def = MONSTER_DEFS[monsterTypeId as keyof typeof MONSTER_DEFS];
+  const def = resolveOwnedMonsterProfile(owned.id);
+  if (!def) return null;
+  const monsterTypeId = def.registryId ?? def.id;
   const attack = calculateRecommendedAttack(owned, def);
   const roomBonus = roomType ? MONSTER_ROOM_TYPE_BONUS[roomType][def.type] ?? 0 : 0;
   const rarityBonus = (owned.rarity ?? 0) * 12;
@@ -190,7 +190,7 @@ function buildMonsterCandidate(
   };
 }
 
-function calculateRecommendedAttack(owned: OwnedMonster, def: MonsterDef): number {
+function calculateRecommendedAttack(owned: OwnedMonster, def: OwnedMonsterProfile): number {
   const baseAttack = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {});
   if (!owned.equipment) return baseAttack;
   const equipmentStats = getEquipmentStats(owned.equipment);

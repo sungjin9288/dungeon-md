@@ -2,21 +2,21 @@
 // drawGrowthHallPanel + drawMonsterBust panel rendering.
 // Context object carries scene-owned state; no `this` usage here.
 
-import Phaser from 'phaser';
-import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import type Phaser from 'phaser';
+import { COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
-import { MONSTER_DEFS, getSkinForMonster, type MonsterId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { xpToNextLevel, getMonsterAtk, type OwnedMonster } from '../data/barracks';
 import {
   getPrimaryGrowthRecommendation,
   type GrowthRecommendation,
 } from '../data/reinforcementRecommendations';
-import { generatePortrait } from '../art/PortraitGenerator';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { addMonsterPortrait } from './MonsterPortraitView';
+import { drawGrowthSigil } from './BarracksSkin';
 import {
   GROWTH_PANEL_Y,
   GROWTH_PANEL_H,
-  getMonsterCollectionMeta,
   truncateLabel,
 } from './BarracksShared';
 import type { GameState } from '../data/wisdom';
@@ -27,6 +27,7 @@ export interface BarracksGrowthHallContext {
   readonly gs: GameState;
   readonly focusSourceLabel: string | null;
   readonly onCtaPress: (m: OwnedMonster) => void;
+  readonly onSummonPress: () => void;
 }
 
 // ─── Stats / Directive types (local to this module) ──────────────────────────
@@ -61,6 +62,7 @@ export function computeBarracksStats(
   deployedCount: number,
   equipmentInventoryCount: number,
 ): BarracksStats {
+  const validMonsters = gs.ownedMonsters.filter(monster => resolveOwnedMonsterProfile(monster.id));
   let totalPower    = 0;
   let strongest: OwnedMonster | undefined;
   let strongestAtk  = -1;
@@ -68,9 +70,9 @@ export function computeBarracksStats(
   let levelTarget: OwnedMonster | undefined;
   let bestLevelPct  = -1;
 
-  gs.ownedMonsters.forEach(monster => {
-    const def = MONSTER_DEFS[monster.id as keyof typeof MONSTER_DEFS];
-    const atk = getMonsterAtk(def?.baseDamage ?? 10, monster.level, monster.spentSkills);
+  validMonsters.forEach(monster => {
+    const def = resolveOwnedMonsterProfile(monster.id)!;
+    const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills);
     totalPower += atk;
     if (atk > strongestAtk) {
       strongest    = monster;
@@ -88,16 +90,16 @@ export function computeBarracksStats(
     }
   });
 
-  const equippedCount = gs.ownedMonsters.filter(m => Boolean(m.equipment)).length;
+  const equippedCount = validMonsters.filter(m => Boolean(m.equipment)).length;
   const gearTarget    = equipmentInventoryCount > 0
-    ? gs.ownedMonsters.find(m => !m.equipment)
+    ? validMonsters.find(m => !m.equipment)
     : undefined;
 
   return {
     totalPower,
-    ownedCount:        gs.ownedMonsters.length,
-    spReady:           gs.ownedMonsters.filter(m => (m.skillPoints ?? 0) > 0).length,
-    levelReady:        gs.ownedMonsters.filter(m => {
+    ownedCount:        validMonsters.length,
+    spReady:           validMonsters.filter(m => (m.skillPoints ?? 0) > 0).length,
+    levelReady:        validMonsters.filter(m => {
       if (m.level >= 50) return false;
       return m.xp / xpToNextLevel(m.level) >= 0.78;
     }).length,
@@ -116,13 +118,21 @@ export function computeBarracksDirective(
   stats: BarracksStats,
   focusMonsterId: string | null,
 ): BarracksDirective {
+  if (stats.ownedCount === 0) {
+    return {
+      title: '군단이 비어 있음',
+      body: '소환소에서 첫 수호자를 영입하세요.',
+      cta: '소환',
+      accent: DUNGEON_UI.BRASS,
+    };
+  }
   const recommendation = getPrimaryGrowthRecommendation(gs, focusMonsterId);
   const focused = recommendation
     ? gs.ownedMonsters.find(monster => monster.id === recommendation.monsterId)
     : undefined;
 
   if (focused && recommendation) {
-    const def        = MONSTER_DEFS[focused.id as keyof typeof MONSTER_DEFS];
+    const def        = resolveOwnedMonsterProfile(focused.id);
     const name       = truncateLabel(def?.name ?? '수호자', 7);
     return {
       title: `${name} 성장 추천`,
@@ -134,7 +144,7 @@ export function computeBarracksDirective(
     };
   }
   if (stats.skillTarget) {
-    const def  = MONSTER_DEFS[stats.skillTarget.id as keyof typeof MONSTER_DEFS];
+    const def  = resolveOwnedMonsterProfile(stats.skillTarget.id);
     const name = truncateLabel(def?.name ?? '몬스터', 7);
     return {
       title: '스킬 성장 대기',
@@ -145,7 +155,7 @@ export function computeBarracksDirective(
     };
   }
   if (stats.levelTarget) {
-    const def  = MONSTER_DEFS[stats.levelTarget.id as keyof typeof MONSTER_DEFS];
+    const def  = resolveOwnedMonsterProfile(stats.levelTarget.id);
     const name = truncateLabel(def?.name ?? '몬스터', 7);
     return {
       title: '레벨업 임박',
@@ -156,7 +166,7 @@ export function computeBarracksDirective(
     };
   }
   if (stats.gearTarget && stats.equipmentInventory > stats.equippedCount) {
-    const def  = MONSTER_DEFS[stats.gearTarget.id as keyof typeof MONSTER_DEFS];
+    const def  = resolveOwnedMonsterProfile(stats.gearTarget.id);
     const name = truncateLabel(def?.name ?? '몬스터', 7);
     return {
       title: '장비 장착 추천',
@@ -179,13 +189,15 @@ export function computeTrainingOpsScore(stats: BarracksStats): number {
   if (stats.ownedCount <= 0) return 0;
   const deploymentPct  = stats.deployedCount / stats.ownedCount;
   const equipmentPct   = stats.equippedCount / stats.ownedCount;
-  const readyPressure  = Phaser.Math.Clamp(
-    (stats.spReady + stats.levelReady) / stats.ownedCount, 0, 1,
-  );
-  const growthCoverage = 1 - readyPressure * 0.45;
-  return Math.round(Phaser.Math.Clamp(
-    deploymentPct * 42 + equipmentPct * 34 + growthCoverage * 24, 0, 100,
+  const readyPressure = Math.max(0, Math.min(
+    1,
+    (stats.spReady + stats.levelReady) / stats.ownedCount,
   ));
+  const growthCoverage = 1 - readyPressure * 0.45;
+  return Math.round(Math.max(0, Math.min(
+    100,
+    deploymentPct * 42 + equipmentPct * 34 + growthCoverage * 24,
+  )));
 }
 
 // ─── drawGrowthHallPanel ──────────────────────────────────────────────────────
@@ -200,14 +212,14 @@ export function drawGrowthHallPanel(
 
   const frame = addFramedPanel(scene, {
     x, y, w, h,
-    radius:       14,
-    fillColor:    CASUAL.PANEL,
-    borderColor:  CASUAL.EDGE,
+    radius:       9,
+    fillColor:    DUNGEON_UI.STONE,
+    borderColor:  DUNGEON_UI.IRON,
     borderAlpha:  1,
-    borderWidth:  3,
+    borderWidth:  2,
     accentColor:  directive.accent,
     accentAlpha:  1,
-    shadowOpacity: 0.26,
+    shadowOpacity: 0.46,
     shadowOffsetY: 5,
   });
   frame.shadow.setDepth(7);
@@ -216,65 +228,81 @@ export function drawGrowthHallPanel(
 
   const displayMonster = directive.targetMonster ?? stats.strongest;
   const recommendation = directive.recommendation;
+  const canAct = Boolean(directive.targetMonster) || stats.ownedCount === 0;
 
-  drawTrainingFocusStage(scene, ctx, displayMonster, x + 12, y + 12, 78, h - 24, directive.accent);
+  drawTrainingFocusStage(scene, ctx, displayMonster, x + 11, y + 11, 96, h - 22, directive.accent);
 
-  scene.add.text(x + 94, y + 17,
-    ctx.focusSourceLabel ? ctx.focusSourceLabel : '성장 지휘', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+  const infoX = x + 121;
+  const infoW = w - 132;
+  scene.add.text(infoX, y + 18,
+    ctx.focusSourceLabel ? ctx.focusSourceLabel : '방어선 성장 지휘', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
     }).setOrigin(0, 0.5).setDepth(11);
   const currentEquipment = recommendation?.currentEquipment
-    ? `${recommendation.currentEquipment.emoji} ${recommendation.currentEquipment.name}`
-    : '장비 없음';
-  scene.add.text(x + 94, y + 30, displayMonster
-    ? `${recommendation?.monsterName ?? directive.title} Lv.${displayMonster.level} · ${currentEquipment}`
+    ? recommendation.currentEquipment.name
+    : '미장착';
+  scene.add.text(infoX, y + 37, displayMonster
+    ? `${recommendation?.monsterName ?? directive.title} · Lv.${displayMonster.level}`
     : directive.title, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0, 0.5).setDepth(11);
-  scene.add.text(x + 94, y + 45, recommendation?.whyNow ?? directive.body, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+  scene.add.text(infoX, y + 55, recommendation?.whyNow ?? directive.body, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    wordWrap: { width: infoW, useAdvancedWrap: true }, maxLines: 1,
   }).setOrigin(0, 0.5).setDepth(11);
-  scene.add.text(x + 94, y + 60, recommendation?.costOrDeficit ?? '추천 대상 없음', {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#d8b879',
-  }).setOrigin(0, 0.5).setDepth(11);
+  scene.add.text(infoX, y + 73,
+    `${recommendation?.costOrDeficit ?? '추천 대상 없음'} · 장비 ${currentEquipment}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+      wordWrap: { width: infoW, useAdvancedWrap: true }, maxLines: 1,
+    }).setOrigin(0, 0.5).setDepth(11);
   const roomLine = recommendation
     ? `${recommendation.room.roomLabel} · ${recommendation.room.roomContextLabel}`
     : `${stats.deployedCount}/${stats.ownedCount} 배치 중`;
-  scene.add.text(x + 94, y + 75, roomLine, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-    color: recommendation?.room.kind === 'assigned' ? '#8fffe0' : '#a9c9be',
+  scene.add.text(infoX, y + 90, roomLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: recommendation?.room.kind === 'assigned' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    wordWrap: { width: infoW, useAdvancedWrap: true }, maxLines: 1,
   }).setOrigin(0, 0.5).setDepth(11);
   const projectionLine = recommendation?.room.readiness && recommendation.room.power
     ? `준비 ${recommendation.room.readiness.before}→${recommendation.room.readiness.after} · 전력 ${recommendation.room.power.before}→${recommendation.room.power.after} 예상`
     : recommendation
       ? '준비도·방 전력은 실제 배치 후 계산'
       : `전투 ${stats.totalPower} · 장비 ${stats.equippedCount}`;
-  scene.add.text(x + 94, y + 91, projectionLine, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0, 0.5).setDepth(11);
-
-  const ctaX = x + w - 64;
-  const ctaY = y + 48;
+  const ctaX = infoX;
+  const ctaY = y + 99;
   const cta  = scene.add.graphics().setDepth(10);
-  cta.fillStyle(0x070503, 0.34);
-  cta.fillRoundedRect(ctaX, ctaY + 3, 56, 44, 7);
-  cta.fillStyle(directive.accent, directive.targetMonster ? 0.95 : 0.36);
-  cta.fillRoundedRect(ctaX, ctaY, 56, 44, 7);
-  cta.fillStyle(0xffffff, directive.targetMonster ? 0.14 : 0.07);
-  cta.fillRoundedRect(ctaX + 5, ctaY + 5, 46, 6, 3);
-  cta.lineStyle(1, 0xffffff, 0.26);
-  cta.strokeRoundedRect(ctaX, ctaY, 56, 44, 7);
-  scene.add.text(ctaX + 28, ctaY + 22, directive.cta, {
-    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-    color: directive.targetMonster ? '#10110b' : CSS.PARCHMENT_DIM,
+  cta.fillStyle(DUNGEON_UI.SOOT, 1);
+  cta.fillRoundedRect(ctaX, ctaY, infoW, 42, 6);
+  cta.fillStyle(directive.accent, canAct ? 0.18 : 0.06);
+  cta.fillRoundedRect(ctaX + 4, ctaY + 4, 36, 34, 5);
+  cta.lineStyle(1.5, directive.accent, canAct ? 0.82 : 0.34);
+  cta.strokeRoundedRect(ctaX, ctaY, infoW, 42, 6);
+  drawGrowthSigil(cta, ctaX + 22, ctaY + 21, directive.accent, canAct ? 1 : 0.38);
+  scene.add.text(ctaX + 49, ctaY + 14,
+    stats.ownedCount === 0 ? '첫 수호자 소환' : `${directive.cta} 성장 계획`, {
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+    color: canAct ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5).setDepth(11);
+  scene.add.text(ctaX + 49, ctaY + 29, projectionLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    wordWrap: { width: infoW - 78, useAdvancedWrap: true }, maxLines: 1,
+  }).setOrigin(0, 0.5).setDepth(11);
+  scene.add.text(ctaX + infoW - 14, ctaY + 21, '›', {
+    fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold',
+    color: canAct ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5).setDepth(11);
 
   if (directive.targetMonster) {
     const target = directive.targetMonster;
-    const zone   = scene.add.zone(ctaX + 28, ctaY + 22, 56, 44)
+    const zone   = scene.add.zone(ctaX, ctaY - 1, infoW, 44).setOrigin(0)
       .setDepth(12)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => ctx.onCtaPress(target));
+  } else if (stats.ownedCount === 0) {
+    const zone = scene.add.zone(ctaX, ctaY - 1, infoW, 44).setOrigin(0)
+      .setDepth(12)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', ctx.onSummonPress);
   }
 }
 
@@ -297,19 +325,15 @@ export function drawMonsterBust(
   size: number,
   depth: number,
 ): void {
-  const def = MONSTER_DEFS[monster.id as keyof typeof MONSTER_DEFS];
-  const skin = getSkinForMonster(monster.id, gs.equippedSkins ?? {});
-  const portraitKey = generatePortrait(scene, monster.id as MonsterId, skin?.id);
-  if (scene.textures.exists(portraitKey)) {
-    scene.add.image(x, y, portraitKey)
-      .setOrigin(0.5)
-      .setDisplaySize(size, size)
-      .setDepth(depth);
-    return;
-  }
-  scene.add.text(x, y, skin ? skin.emoji : def?.emoji ?? '?', {
-    fontFamily: 'sans-serif', fontSize: `${size}px`,
-  }).setOrigin(0.5).setDepth(depth);
+  const def = resolveOwnedMonsterProfile(monster.id);
+  addMonsterPortrait(scene, null, x, y, monster.id, {
+    size,
+    depth,
+    frameColor: def?.accentColor ?? DUNGEON_UI.BRASS,
+    glowColor: DUNGEON_UI.JADE,
+    bgColor: DUNGEON_UI.SOOT,
+    equippedSkins: gs.equippedSkins ?? {},
+  });
 }
 
 // ─── Private drawing helpers ──────────────────────────────────────────────────
@@ -325,70 +349,38 @@ function drawTrainingFocusStage(
   accent: number,
 ): void {
   const g = scene.add.graphics().setDepth(10);
-  g.fillStyle(0x07110f, 0.96);
-  g.fillRoundedRect(x, y, w, h, 9);
-  g.fillStyle(accent, 0.09);
-  g.fillRoundedRect(x + 6, y + 17, w - 12, h - 29, 8);
-  g.lineStyle(1, accent, 0.36);
-  g.strokeRoundedRect(x, y, w, h, 9);
-  g.lineStyle(1, 0xffffff, 0.12);
-  g.strokeRoundedRect(x + 4, y + 4, w - 8, h - 8, 6);
-  g.fillStyle(0xffffff, 0.07);
-  g.fillRoundedRect(x + 8, y + 7, w - 16, 3, 2);
-  g.fillStyle(accent, 0.18);
-  g.fillEllipse(x + w / 2, y + 55, w - 22, 14);
-  g.fillStyle(0x070503, 0.42);
-  g.fillEllipse(x + w / 2, y + 58, w - 30, 7);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.98);
+  g.fillRoundedRect(x, y, w, h, 7);
+  g.fillStyle(accent, 0.08);
+  g.fillRoundedRect(x + 5, y + 21, w - 10, 71, 6);
+  g.lineStyle(1, accent, 0.42);
+  g.strokeRoundedRect(x, y, w, h, 7);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.4);
+  g.lineBetween(x + 8, y + h - 27, x + w - 8, y + h - 27);
 
-  scene.add.text(x + w / 2, y + 10, monster ? '성장 대상' : '대기 슬롯', {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-    color: monster ? '#b8fff0' : CSS.PARCHMENT_MUTED,
+  scene.add.text(x + w / 2, y + 12, monster ? '성장 대상' : '대기 슬롯', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: monster ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5).setDepth(12);
 
   if (!monster) {
-    scene.add.text(x + w / 2, y + 43, '소환', {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CSS.TORCH_AMBER,
-    }).setOrigin(0.5).setDepth(12);
-    scene.add.text(x + w / 2, y + h - 15, '군단 확장', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CSS.PARCHMENT_MUTED,
+    drawGrowthSigil(g, x + w / 2, y + 55, DUNGEON_UI.BRASS, 0.64);
+    scene.add.text(x + w / 2, y + h - 16, '군단 확장', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5).setDepth(12);
     return;
   }
 
-  const def            = MONSTER_DEFS[monster.id as keyof typeof MONSTER_DEFS];
-  const collectionMeta = def ? getMonsterCollectionMeta(monster, def) : null;
+  const def            = resolveOwnedMonsterProfile(monster.id);
   const atk            = getMonsterAtk(def?.baseDamage ?? 10, monster.level, monster.spentSkills);
 
-  drawMonsterBust(scene, ctx.gs, monster, x + w / 2, y + 43, 52, 12);
-
-  if (collectionMeta) {
-    g.fillStyle(collectionMeta.color, 0.20);
-    g.fillRoundedRect(x + w - 30, y + 18, 23, 14, 5);
-    g.lineStyle(1, collectionMeta.color, 0.68);
-    g.strokeRoundedRect(x + w - 30, y + 18, 23, 14, 5);
-    g.fillStyle(collectionMeta.elementColor, 0.20);
-    g.fillCircle(x + w - 15, y + h - 18, 8);
-    g.lineStyle(1, collectionMeta.elementColor, 0.46);
-    g.strokeCircle(x + w - 15, y + h - 18, 8);
-    g.fillStyle(0xffffff, 0.14);
-    g.fillCircle(x + w - 18, y + h - 21, 2);
-
-    scene.add.text(x + w - 18.5, y + 25, collectionMeta.tier, {
-      fontFamily: 'monospace', fontSize: '8px', fontStyle: 'bold', color: collectionMeta.css,
-    }).setOrigin(0.5).setDepth(12);
-    scene.add.text(x + w - 15, y + h - 18, collectionMeta.elementIcon, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#ffffff',
-    }).setOrigin(0.5).setDepth(12);
-    scene.add.text(x + 10, y + h - 18, collectionMeta.stars, {
-      fontFamily: 'Georgia, serif', fontSize: '7px', color: collectionMeta.css,
-    }).setOrigin(0, 0.5).setDepth(12);
-  }
+  drawMonsterBust(scene, ctx.gs, monster, x + w / 2, y + 58, 68, 12);
 
   const name = truncateLabel(def?.name ?? '수호자', 6);
-  scene.add.text(x + w / 2, y + h - 24, name, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CSS.PARCHMENT,
+  scene.add.text(x + w / 2, y + 99, name, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0.5).setDepth(12);
-  scene.add.text(x + w / 2, y + h - 10, `Lv.${monster.level}  ATK ${atk}`, {
-    fontFamily: 'monospace', fontSize: '11px', color: '#ffcf78',
+  scene.add.text(x + w / 2, y + 114, `Lv.${monster.level} · ATK ${atk}`, {
+    fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5).setDepth(12);
 }

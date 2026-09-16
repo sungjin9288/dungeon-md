@@ -1,22 +1,26 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
-import { COLORS, CSS, CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
   loadGameState,
   getUnlockedSlots,
   type OwnedMonster,
 } from '../data/wisdom';
-import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
+import {
+  MONSTER_DEFS,
+  resolveMonsterTypeId,
+  resolveOwnedMonsterProfile,
+  type MonsterId,
+} from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
 import { showMonsterDetailPanel, showSkillShopPanel } from '../ui/MonsterDetailPanel';
 
 import {
-  CARD_W,
   CARD_H,
   CARD_PAD,
   CARD_START_X,
   CARD_START_Y,
+  SUMMON_ROW_H,
   SORT_CHIP_Y,
   FILTER_CHIP_Y,
   compareGrowth,
@@ -36,6 +40,11 @@ import {
   computeBarracksDirective,
   type BarracksGrowthHallContext,
 } from '../ui/BarracksGrowthHall';
+import {
+  drawLegionActionSigil,
+  drawLegionCrest,
+  type LegionManagementAction,
+} from '../ui/BarracksSkin';
 import { getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
 import {
   buildHomeZoneNavigation,
@@ -77,7 +86,7 @@ export class BarracksScene extends Phaser.Scene {
     this.buildFilterChips();
     this.buildContent();
     this.buildRootNavigation();
-    this.buildLegionManagementDisclosure();
+    if (this.focusRoomSlotIdx === null) this.buildLegionManagementDisclosure();
     this.setupScroll();
 
     if (this.focusMonsterId) {
@@ -89,57 +98,74 @@ export class BarracksScene extends Phaser.Scene {
   // ─── Background ──────────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    applyCasualBackground(this);
-
     const g = this.add.graphics().setDepth(-10);
-    const trayY = CARD_START_Y - 10;
-    const trayH = CANVAS_HEIGHT - CARD_START_Y - 86;
-    g.fillStyle(CASUAL.SHADOW, 0.16);
-    g.fillRoundedRect(8, trayY + 4, CANVAS_WIDTH - 16, trayH, 18);
-    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
-    g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
-    g.lineStyle(3, CASUAL.EDGE, 0.9);
-    g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 18);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(13, trayY + 5, CANVAS_WIDTH - 26, 6, 3);
-    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, 88);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, 0, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRect(0, 88 - 3, CANVAS_WIDTH, 3);
+    g.fillStyle(DUNGEON_UI.STONE, 0.94);
+    g.fillRect(0, 88, CANVAS_WIDTH, ROOT_NAV_Y - 88);
+
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.36);
+    for (let y = 112; y < ROOT_NAV_Y; y += 64) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = Math.floor((y - 112) / 64) % 2 === 0 ? 34 : 76;
+      for (let x = offset; x < CANVAS_WIDTH; x += 92) g.lineBetween(x, y - 64, x, y);
+    }
+
+    const trayY = CARD_START_Y - 8;
+    const trayH = ROOT_NAV_Y - trayY - 7;
+    g.fillStyle(DUNGEON_UI.VOID, 0.48);
+    g.fillRoundedRect(8, trayY + 4, CANVAS_WIDTH - 16, trayH, 10);
+    g.fillStyle(DUNGEON_UI.SOOT, 0.9);
+    g.fillRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 10);
+    g.lineStyle(1.5, DUNGEON_UI.IRON, 0.86);
+    g.strokeRoundedRect(8, trayY, CANVAS_WIDTH - 16, trayH, 10);
+
+    g.fillStyle(DUNGEON_UI.BRASS, 0.72);
+    g.fillRect(0, 85, CANVAS_WIDTH, 3);
+    g.fillStyle(DUNGEON_UI.EDGE, 0.34);
+    g.fillRect(0, 88, CANVAS_WIDTH, 2);
+    [8, CANVAS_WIDTH - 8].forEach(x => {
+      g.fillStyle(DUNGEON_UI.BRASS, 0.34);
+      g.fillCircle(x, 87, 4);
+    });
   }
 
   private drawHeader(): void {
-    this.add.text(CANVAS_WIDTH / 2, 24, '군단 · 몬스터 성장소', {
-      fontFamily: 'sans-serif', fontSize: '19px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
+    this.add.text(CANVAS_WIDTH / 2, 22, '군단 훈련소', {
+      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
+      color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0.5).setDepth(10);
 
     const power = this.gs.ownedMonsters.reduce((s, m) => {
-      const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
-      return s + getMonsterAtk(def?.baseDamage ?? 10, m.level, m.spentSkills);
+      const def = resolveOwnedMonsterProfile(m.id);
+      return def ? s + getMonsterAtk(def.baseDamage, m.level, m.spentSkills) : s;
     }, 0);
 
-    this.add.text(CANVAS_WIDTH / 2, 52, `총 전투력 ${power}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    this.add.text(CANVAS_WIDTH / 2, 45, `총 전투력  ${power}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(10);
 
     if (this.focusSourceLabel) {
       this.drawHeaderStatusChip(
-        CANVAS_WIDTH / 2 - 96, 62, 192, 18,
-        `${this.focusSourceLabel} 성장 관리`, 0x66c08a,
+        CANVAS_WIDTH / 2 - 77, 58, 154, 21,
+        `${this.focusSourceLabel} 성장 관리`, DUNGEON_UI.JADE,
       );
     } else {
-      this.drawCollectionProgressChip(CANVAS_WIDTH / 2 - 96, 62, 192, 18);
+      this.drawCollectionProgressChip(CANVAS_WIDTH / 2 - 77, 58, 154, 21);
     }
 
     buildZoneBackButton(this, {
       label: '← 던전',
+      width: 86,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      textColor: DUNGEON_UI_CSS.TEXT,
       onBack: () => this.scene.start(getContextualBackTarget('BarracksScene')),
     });
     if (this.focusRoomSlotIdx !== null) {
-      this.buildBtn(CANVAS_WIDTH - 76, 24, '방 복귀', 0x0c211b, () => this.returnToFocusedRoom());
+      this.buildBtn(CANVAS_WIDTH - 75, 30, '방 복귀', DUNGEON_UI.JADE, () => this.returnToFocusedRoom());
     }
   }
 
@@ -147,51 +173,32 @@ export class BarracksScene extends Phaser.Scene {
     x: number, y: number, w: number, h: number, label: string, accent: number,
   ): void {
     const g = this.add.graphics().setDepth(10);
-    g.fillStyle(0x071512, 0.94);
-    g.fillRoundedRect(x, y, w, h, 7);
+    g.fillStyle(DUNGEON_UI.VOID, 0.96);
+    g.fillRoundedRect(x, y, w, h, 5);
     g.lineStyle(1, accent, 0.58);
-    g.strokeRoundedRect(x, y, w, h, 7);
+    g.strokeRoundedRect(x, y, w, h, 5);
     g.fillStyle(accent, 0.16);
-    g.fillCircle(x + 14, y + h / 2, 7);
-    g.fillStyle(0xffffff, 0.18);
-    g.fillCircle(x + 10, y + 6, 1.4);
-    g.fillCircle(x + w - 14, y + 6, 1.2);
-
-    this.add.text(x + 14, y + h / 2, '◆', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#d7fff4', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(11);
-    this.add.text(x + 29, y + h / 2, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#b8fff0', fontStyle: 'bold',
+    g.fillCircle(x + 14, y + h / 2, 8);
+    drawLegionCrest(g, x + 14, y + h / 2 - 1, accent, 0.92, 0.48);
+    this.add.text(x + 28, y + h / 2, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
   }
 
   private drawCollectionProgressChip(x: number, y: number, w: number, h: number): void {
     const summary = this.getCollectionSummary();
     const g = this.add.graphics().setDepth(10);
-    g.fillStyle(0x120b25, 0.92);
-    g.fillRoundedRect(x, y, w, h, 7);
-    g.lineStyle(1, 0xff9adf, 0.58);
-    g.strokeRoundedRect(x, y, w, h, 7);
-    g.fillStyle(0xff9adf, 0.17);
-    g.fillCircle(x + 14, y + h / 2, 7);
-    g.fillStyle(0xffffff, 0.22);
-    g.fillCircle(x + 10, y + 6, 1.4);
-    g.fillCircle(x + w - 14, y + 6, 1.2);
-    g.fillStyle(0xe8d098, 0.22);
-    g.fillRoundedRect(x + 31, y + h - 5, Math.max(5, (w - 84) * summary.percent), 3, 2);
+    g.fillStyle(DUNGEON_UI.VOID, 0.96);
+    g.fillRoundedRect(x, y, w, h, 5);
+    g.lineStyle(1, DUNGEON_UI.BRASS, 0.58);
+    g.strokeRoundedRect(x, y, w, h, 5);
+    g.fillStyle(DUNGEON_UI.BRASS, 0.14);
+    g.fillRoundedRect(x + 4, y + h - 5, Math.max(4, (w - 8) * summary.percent), 2, 1);
+    drawLegionCrest(g, x + 14, y + h / 2 - 1, DUNGEON_UI.BRASS_BRIGHT, 0.88, 0.46);
 
-    this.add.text(x + 14, y + h / 2, '★', {
-      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ffe6ff', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(11);
-    this.add.text(x + 30, y + 7, `도감 ${summary.owned}/${summary.total}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#ffd6f6', fontStyle: 'bold',
+    this.add.text(x + 29, y + h / 2, `도감 ${summary.owned}/${summary.total} · R+ ${summary.rareOwned} · L ${summary.legendaryOwned}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(11);
-    this.add.text(x + w - 36, y + 7, `R+ ${summary.rareOwned}`, {
-      fontFamily: 'monospace', fontSize: '10px', color: '#e8d098', fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setDepth(11);
-    this.add.text(x + w - 8, y + 7, `L ${summary.legendaryOwned}`, {
-      fontFamily: 'monospace', fontSize: '10px', color: '#ffd878', fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setDepth(11);
   }
 
   private getCollectionSummary(): {
@@ -230,6 +237,7 @@ export class BarracksScene extends Phaser.Scene {
       gs:               this.gs,
       focusSourceLabel: this.focusSourceLabel,
       onCtaPress:       (m) => this.showMonsterDetail(m),
+      onSummonPress:    () => this.scene.start('SummonScene'),
     };
 
     drawGrowthHallPanel(this, ctx, stats, directive);
@@ -239,10 +247,10 @@ export class BarracksScene extends Phaser.Scene {
 
   private buildSortChips(): void {
     const KEYS: Array<{ key: BarracksSortKey; label: string }> = [
-      { key: 'growth', label: '성장 우선' },
-      { key: 'level',  label: '레벨 ↓' },
-      { key: 'atk',    label: '공격력' },
-      { key: 'rarity', label: '희귀도' },
+      { key: 'growth', label: '성장' },
+      { key: 'level',  label: '레벨' },
+      { key: 'atk',    label: '전력' },
+      { key: 'rarity', label: '등급' },
     ];
     const chipW = 82, chipH = 44, chipGap = 6;
     const totalW = KEYS.length * chipW + (KEYS.length - 1) * chipGap;
@@ -257,14 +265,18 @@ export class BarracksScene extends Phaser.Scene {
       const isActive = this.sortKey === key;
 
       const bg = this.add.graphics().setDepth(11);
-      bg.fillStyle(isActive ? COLORS.TORCH_GOLD : COLORS.STONE_DARK, 1);
+      bg.fillStyle(isActive ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
       bg.fillRoundedRect(cx, chipY, chipW, chipH, 4);
-      bg.lineStyle(1, isActive ? COLORS.TORCH_GOLD : COLORS.STONE_MID, isActive ? 1 : 0.5);
+      if (isActive) {
+        bg.fillStyle(DUNGEON_UI.BRASS, 0.92);
+        bg.fillRect(cx + 9, chipY + 3, chipW - 18, 3);
+      }
+      bg.lineStyle(1, isActive ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON, isActive ? 0.9 : 0.66);
       bg.strokeRoundedRect(cx, chipY, chipW, chipH, 4);
 
       const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
         fontFamily: 'sans-serif', fontSize: '12px', fontStyle: isActive ? 'bold' : 'normal',
-        color: isActive ? '#1a0800' : CSS.PARCHMENT_MUTED,
+        color: isActive ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5).setDepth(12);
 
       const hitArea = this.add.rectangle(cx + chipW / 2, chipY + chipH / 2, chipW, chipH)
@@ -290,10 +302,10 @@ export class BarracksScene extends Phaser.Scene {
 
     const TYPES: Array<{ key: BarracksFilterType; label: string }> = [
       { key: 'all',     label: '전체' },
-      { key: 'melee',   label: '⚔근접' },
-      { key: 'ranged',  label: '🏹원거리' },
-      { key: 'magic',   label: '✨마법' },
-      { key: 'support', label: '💚지원' },
+      { key: 'melee',   label: '근접' },
+      { key: 'ranged',  label: '원거리' },
+      { key: 'magic',   label: '마법' },
+      { key: 'support', label: '지원' },
     ];
     const chipW = 66, chipH = 44, chipGap = 4;
     const totalW = TYPES.length * chipW + (TYPES.length - 1) * chipGap;
@@ -305,14 +317,18 @@ export class BarracksScene extends Phaser.Scene {
       const isActive = this.filterType === key;
 
       const bg = this.add.graphics().setDepth(11);
-      bg.fillStyle(isActive ? 0x334466 : COLORS.STONE_DARK, 1);
+      bg.fillStyle(isActive ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
       bg.fillRoundedRect(cx, chipY, chipW, chipH, 3);
-      bg.lineStyle(1, isActive ? 0x6688cc : COLORS.STONE_MID, isActive ? 0.9 : 0.4);
+      if (isActive) {
+        bg.fillStyle(DUNGEON_UI.JADE, 0.86);
+        bg.fillRect(cx + 8, chipY + chipH - 5, chipW - 16, 3);
+      }
+      bg.lineStyle(1, isActive ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, isActive ? 0.88 : 0.62);
       bg.strokeRoundedRect(cx, chipY, chipW, chipH, 3);
 
       const t = this.add.text(cx + chipW / 2, chipY + chipH / 2, label, {
         fontFamily: 'sans-serif', fontSize: '11px',
-        color: isActive ? '#aaccff' : CSS.PARCHMENT_MUTED,
+        color: isActive ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5).setDepth(12);
 
       const hit = this.add.rectangle(cx + chipW / 2, chipY + chipH / 2, chipW, chipH)
@@ -338,21 +354,20 @@ export class BarracksScene extends Phaser.Scene {
 
     const sorted = [...this.gs.ownedMonsters]
       .filter(m => {
-        if (this.filterType === 'all') return true;
-        const def = MONSTER_DEFS[m.id as keyof typeof MONSTER_DEFS];
-        return def?.type === this.filterType;
+        const def = resolveOwnedMonsterProfile(m.id);
+        if (!def) return false;
+        return this.filterType === 'all' || def.type === this.filterType;
       })
       .sort((a, b) => {
         if (this.sortKey === 'growth') return compareGrowth(a, b);
         if (this.sortKey === 'level')  return b.level - a.level;
         if (this.sortKey === 'rarity') return (b.rarity ?? 0) - (a.rarity ?? 0);
-        const defA = MONSTER_DEFS[a.id as keyof typeof MONSTER_DEFS];
-        const defB = MONSTER_DEFS[b.id as keyof typeof MONSTER_DEFS];
-        return getMonsterAtk(defB?.baseDamage ?? 10, b.level, b.spentSkills)
-             - getMonsterAtk(defA?.baseDamage ?? 10, a.level, a.spentSkills);
+        const defA = resolveOwnedMonsterProfile(a.id);
+        const defB = resolveOwnedMonsterProfile(b.id);
+        return getMonsterAtk(defB?.baseDamage ?? 0, b.level, b.spentSkills)
+             - getMonsterAtk(defA?.baseDamage ?? 0, a.level, a.spentSkills);
       });
 
-    const cols = 2;
     let focusCardY: number | null = null;
 
     const cardCtx: BarracksCardContext = {
@@ -364,26 +379,19 @@ export class BarracksScene extends Phaser.Scene {
     };
 
     sorted.forEach((m, i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x   = CARD_START_X + col * (CARD_W + CARD_PAD);
-      const y   = CARD_START_Y + row * (CARD_H + CARD_PAD);
+      const x = CARD_START_X;
+      const y = CARD_START_Y + i * (CARD_H + CARD_PAD);
       if (this.focusMonsterId === m.id) focusCardY = y;
       buildMonsterCard(this, cardCtx, m, x, y);
     });
 
-    // "소환" empty slot at the end
-    const nextIdx = sorted.length;
-    const col     = nextIdx % cols;
-    const row     = Math.floor(nextIdx / cols);
-    const x       = CARD_START_X + col * (CARD_W + CARD_PAD);
-    const y       = CARD_START_Y + row * (CARD_H + CARD_PAD);
-    buildSummonSlot(this, cardCtx, x, y);
+    const summonY = CARD_START_Y + sorted.length * (CARD_H + CARD_PAD);
+    buildSummonSlot(this, cardCtx, CARD_START_X, summonY);
 
-    const rows     = Math.ceil((sorted.length + 1) / cols);
+    const contentBottom = summonY + SUMMON_ROW_H;
     this.maxScrollY = Math.max(
       0,
-      CARD_START_Y + rows * (CARD_H + CARD_PAD) + 20 - (CANVAS_HEIGHT - 80),
+      contentBottom + 14 - (ROOT_NAV_Y - 8),
     );
 
     if (focusCardY !== null) {
@@ -395,6 +403,7 @@ export class BarracksScene extends Phaser.Scene {
   // ─── Monster Detail Overlay ───────────────────────────────────────────────────
 
   private showMonsterDetail(m: OwnedMonster): void {
+    if (!resolveOwnedMonsterProfile(m.id)) return;
     this.detailOverlay?.destroy();
     this.detailOverlay = showMonsterDetailPanel(
       {
@@ -469,32 +478,34 @@ export class BarracksScene extends Phaser.Scene {
   private buildLegionManagementDisclosure(): void {
     const offset = getSceneFixedShellViewportOffset(this);
     const shell = this.add.container(offset.x, offset.y).setDepth(26).setScrollFactor(0);
-    const x = CANVAS_WIDTH - 86;
-    const y = ROOT_NAV_Y - 48;
-    const w = 76;
+    const x = CANVAS_WIDTH - 82;
+    const y = 8;
+    const w = 72;
     const h = 44;
     const bg = this.add.graphics();
     shell.add(bg);
     const draw = (active = false): void => {
       bg.clear();
-      bg.fillStyle(CASUAL.SHADOW, 0.3);
+      bg.fillStyle(DUNGEON_UI.VOID, 0.5);
       bg.fillRoundedRect(x, y + 3, w, h, 9);
-      bg.fillStyle(active ? CASUAL.RED : CASUAL.PANEL, 1);
+      bg.fillStyle(active ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
       bg.fillRoundedRect(x, y, w, h, 9);
-      bg.lineStyle(1.5, active ? CASUAL.RED_DK : CASUAL.EDGE, 1);
+      bg.lineStyle(1.5, active ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON, 1);
       bg.strokeRoundedRect(x, y, w, h, 9);
+      drawLegionCrest(bg, x + 18, y + h / 2 - 1,
+        active ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE, 0.9, 0.52);
     };
     draw();
-    const label = this.add.text(x + w / 2, y + h / 2, '관리 메뉴', {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    const label = this.add.text(x + 48, y + h / 2, '관리', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0.5).setDepth(27);
     shell.add(label);
     const zone = this.add.zone(x, y, w, h).setOrigin(0).setDepth(28)
       .setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
     shell.add(zone);
-    zone.on('pointerover', () => { draw(true); label.setColor('#ffffff'); });
-    zone.on('pointerout', () => { draw(false); label.setColor(CASUAL_CSS.INK); });
+    zone.on('pointerover', () => { draw(true); label.setColor(DUNGEON_UI_CSS.BRASS); });
+    zone.on('pointerout', () => { draw(false); label.setColor(DUNGEON_UI_CSS.TEXT); });
     zone.on('pointerdown', () => this.toggleLegionManagementMenu());
   }
 
@@ -505,15 +516,19 @@ export class BarracksScene extends Phaser.Scene {
       return;
     }
 
-    const rows: ReadonlyArray<{ label: string; icon: string; onPress: () => void }> = [
-      { label: '도감', icon: '📖', onPress: () => {
+    const rows: ReadonlyArray<{
+      label: string;
+      action: LegionManagementAction;
+      onPress: () => void;
+    }> = [
+      { label: '도감', action: 'codex', onPress: () => {
         this.registry.set('previousScene', 'BarracksScene');
         this.scene.start('CodexScene');
       } },
-      { label: '소환', icon: '✨', onPress: () => this.scene.start('SummonScene') },
-      { label: '융합', icon: '🔗', onPress: () => this.scene.start('FusionScene') },
-      { label: '스킬', icon: '🎯', onPress: () => this.showSkillShop() },
-      { label: '상점', icon: '🏪', onPress: () => this.scene.start('ShopScene') },
+      { label: '소환', action: 'summon', onPress: () => this.scene.start('SummonScene') },
+      { label: '융합', action: 'fusion', onPress: () => this.scene.start('FusionScene') },
+      { label: '스킬', action: 'skill', onPress: () => this.showSkillShop() },
+      { label: '상점', action: 'shop', onPress: () => this.scene.start('ShopScene') },
     ];
     const rowH = 46;
     const panelW = 196;
@@ -533,33 +548,35 @@ export class BarracksScene extends Phaser.Scene {
     overlay.add(dismiss);
 
     const panel = this.add.graphics().setDepth(1);
-    panel.fillStyle(CASUAL.SHADOW, 0.74);
+    panel.fillStyle(DUNGEON_UI.VOID, 0.78);
     panel.fillRoundedRect(panelX + 3, panelY + 4, panelW, panelH, 12);
-    panel.fillStyle(CASUAL.PANEL, 1);
+    panel.fillStyle(DUNGEON_UI.STONE, 1);
     panel.fillRoundedRect(panelX, panelY, panelW, panelH, 12);
-    panel.lineStyle(1.5, CASUAL.RED, 0.82);
+    panel.lineStyle(1.5, DUNGEON_UI.BRASS, 0.82);
     panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 12);
     overlay.add(panel);
     overlay.add(this.add.text(panelX + 14, panelY + 20, '군단 관리', {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5));
     overlay.add(this.add.text(panelX + panelW - 14, panelY + 20, '경로 선택', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5));
 
     rows.forEach((row, index) => {
       const rowY = panelY + 34 + index * rowH;
       const rowBg = this.add.graphics().setDepth(1);
-      rowBg.fillStyle(index % 2 === 0 ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      rowBg.fillStyle(index % 2 === 0 ? DUNGEON_UI.SOOT : DUNGEON_UI.STONE_RAISED, 1);
       rowBg.fillRoundedRect(panelX + 8, rowY, panelW - 16, rowH - 2, 7);
-      rowBg.lineStyle(1, CASUAL.EDGE_SOFT, 0.55);
+      rowBg.lineStyle(1, DUNGEON_UI.IRON, 0.72);
       rowBg.strokeRoundedRect(panelX + 8, rowY, panelW - 16, rowH - 2, 7);
+      drawLegionActionSigil(rowBg, row.action, panelX + 28, rowY + 22,
+        index === 1 ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.JADE, 0.88);
       overlay.add(rowBg);
-      overlay.add(this.add.text(panelX + 22, rowY + (rowH - 2) / 2, `${row.icon}  ${row.label}`, {
-        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+      overlay.add(this.add.text(panelX + 50, rowY + (rowH - 2) / 2, row.label, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
       }).setOrigin(0, 0.5));
       overlay.add(this.add.text(panelX + panelW - 22, rowY + (rowH - 2) / 2, '›', {
-        fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.INK_SOFT,
+        fontFamily: 'sans-serif', fontSize: '20px', color: DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5));
       const rowZone = this.add.zone(panelX + 8, rowY, panelW - 16, rowH - 2).setOrigin(0)
         .setDepth(2).setScrollFactor(0).setInteractive({ useHandCursor: true });
@@ -606,17 +623,19 @@ export class BarracksScene extends Phaser.Scene {
 
   // ─── Utility ─────────────────────────────────────────────────────────────────
 
-  private buildBtn(x: number, y: number, label: string, _bg: number, cb: () => void): void {
+  private buildBtn(x: number, y: number, label: string, bgColor: number, cb: () => void): void {
     const w = label.length * 8 + 18;
     const g = this.add.graphics().setDepth(15);
-    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
     g.fillRoundedRect(x - 4, y - 19, w, 44, 13);
-    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillStyle(DUNGEON_UI.STONE, 1);
     g.fillRoundedRect(x - 4, y - 22, w, 44, 13);
-    g.fillStyle(0xffffff, 0.12);
+    g.fillStyle(bgColor, 0.18);
     g.fillRoundedRect(x, y - 18, w - 8, 7, 3);
+    g.lineStyle(1.5, bgColor, 0.78);
+    g.strokeRoundedRect(x - 4, y - 22, w, 44, 13);
     this.add.text(x - 4 + w / 2, y, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(16);
     const zone = this.add.zone(x - 4, y - 22, w, 44).setOrigin(0).setDepth(16)
       .setInteractive({ useHandCursor: true });

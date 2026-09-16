@@ -1,5 +1,5 @@
 import { getEquipmentStats, getMonsterAtk, type EquipmentStats } from './barracks';
-import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
+import { resolveOwnedMonsterProfile } from './monsters';
 import { TRAP_DEFS } from './traps';
 import { getRoomSlotCapacity, type DungeonSlot, type GameState } from './wisdom';
 
@@ -65,7 +65,7 @@ export function calculateRoomMetrics(
   }
 
   const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-  const assignedMonsters = (slot.monsterIds ?? []).filter(Boolean).length;
+  const assignedMonsters = getValidAssignedMonsterIds(state, slot).length;
   const installedTraps = (slot.trapIds ?? []).filter(Boolean).length;
   const monsterPower = calculateMonsterPower(state, slot);
   const equipmentPower = calculateEquipmentPower(state, slot);
@@ -104,7 +104,7 @@ export function calculateDungeonMetrics(
   const slots = (state.dungeonSlots ?? []).slice(0, visibleSlotCount);
   const builtRooms = slots.filter(slot => !!slot?.roomType).length;
   const assignedMonsters = slots.reduce(
-    (sum, slot) => sum + (slot?.monsterIds ?? []).filter(Boolean).length,
+    (sum, slot) => sum + (slot ? getValidAssignedMonsterIds(state, slot).length : 0),
     0,
   );
   const installedTraps = slots.reduce(
@@ -159,8 +159,7 @@ export function calculateRoomLoadoutStatus(
   }
 
   const capacity = getRoomSlotCapacity(Math.max(1, slot.roomLevel), slot.roomType);
-  const monsterIds = (slot.monsterIds ?? [])
-    .filter((monsterId): monsterId is string => typeof monsterId === 'string' && monsterId.length > 0);
+  const monsterIds = getValidAssignedMonsterIds(state, slot);
   const trapIds = (slot.trapIds ?? [])
     .filter((trapId): trapId is string => typeof trapId === 'string' && trapId.length > 0);
   const equippedMonsters = monsterIds.reduce((sum, monsterId) => {
@@ -177,14 +176,22 @@ export function calculateRoomLoadoutStatus(
   };
 }
 
+function getValidAssignedMonsterIds(state: GameState, slot: DungeonSlot): string[] {
+  return (slot.monsterIds ?? []).filter((monsterId): monsterId is string => (
+    typeof monsterId === 'string'
+    && monsterId.length > 0
+    && resolveOwnedMonsterProfile(monsterId) !== null
+    && state.ownedMonsters.some(monster => monster.id === monsterId)
+  ));
+}
+
 function calculateMonsterPower(state: GameState, slot: DungeonSlot): number {
   return (slot.monsterIds ?? []).reduce((sum, monsterId) => {
     if (!monsterId) return sum;
     const owned = state.ownedMonsters.find(monster => monster.id === monsterId);
     if (!owned) return sum;
-    const typeId = resolveMonsterTypeId(owned.id);
-    if (!typeId) return sum;
-    const def = MONSTER_DEFS[typeId];
+    const def = resolveOwnedMonsterProfile(owned.id);
+    if (!def) return sum;
     return sum + Math.round(getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {}));
   }, 0);
 }
@@ -194,9 +201,8 @@ function calculateEquipmentPower(state: GameState, slot: DungeonSlot): number {
     if (!monsterId) return sum;
     const owned = state.ownedMonsters.find(monster => monster.id === monsterId);
     if (!owned?.equipment) return sum;
-    const typeId = resolveMonsterTypeId(owned.id);
-    if (!typeId) return sum;
-    const def = MONSTER_DEFS[typeId];
+    const def = resolveOwnedMonsterProfile(owned.id);
+    if (!def) return sum;
     const baseAtk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {});
     return sum + calculateEquipmentImpactPower(baseAtk, getEquipmentStats(owned.equipment));
   }, 0);

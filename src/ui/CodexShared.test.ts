@@ -12,9 +12,12 @@ import {
   CODEX_RARITY_META,
   TRIBE_META,
   TRIBE_REWARD_MONSTER,
+  getCodexTribeProgress,
+  getClaimableCodexTribes,
 } from './CodexShared';
 import { MONSTER_DEFS } from '../data/monsters';
 import type { MonsterId } from '../data/monsters';
+import type { OwnedMonster } from '../data/wisdom';
 
 // ─── getDexNo ─────────────────────────────────────────────────────────────────
 
@@ -127,5 +130,54 @@ describe('isTribeClaimable', () => {
 
   it('is NOT claimable when the tribe has only the reward monster (nothing to collect)', () => {
     expect(isTribeClaimable([REWARD], REWARD, () => true, false)).toBe(false);
+  });
+});
+
+describe('getCodexTribeProgress', () => {
+  const owned = (ids: readonly MonsterId[]): {
+    ownedMonsters: OwnedMonster[];
+    codexRewardsClaimed: string[];
+  } => ({
+    ownedMonsters: ids.map(id => ({ id } as OwnedMonster)),
+    codexRewardsClaimed: [],
+  });
+
+  it('excludes the mapped reward and every grant-only codex reward from prerequisites', () => {
+    const empty = getCodexTribeProgress(owned([]), 'dokkaebi');
+    expect(empty.allMonsterIds).toHaveLength(20);
+    expect(empty.requiredMonsterIds).toHaveLength(18);
+    expect(empty.requiredMonsterIds).not.toContain('dokkaebi_god_king');
+    expect(empty.requiredMonsterIds).not.toContain('dokkaebi_general');
+
+    const complete = getCodexTribeProgress(owned(empty.requiredMonsterIds), 'dokkaebi');
+    expect(complete.requiredOwnedCount).toBe(18);
+    expect(complete.missingMonsterIds).toEqual([]);
+    expect(complete.claimable).toBe(true);
+  });
+
+  it('keeps a summon-pool mapped reward out of its own completion requirement', () => {
+    const empty = getCodexTribeProgress(owned([]), 'celestial');
+    expect(empty.allMonsterIds).toHaveLength(9);
+    expect(empty.requiredMonsterIds).toHaveLength(8);
+    expect(empty.requiredMonsterIds).not.toContain('god_realm_general');
+    expect(getCodexTribeProgress(owned(empty.requiredMonsterIds), 'celestial').claimable).toBe(true);
+  });
+
+  it('recognizes canonical ownership through evolved instance ids', () => {
+    const base = getCodexTribeProgress(owned([]), 'dokkaebi');
+    const state = owned(base.requiredMonsterIds);
+    state.ownedMonsters[0] = { id: `${base.requiredMonsterIds[0]}_leg` } as OwnedMonster;
+    expect(getCodexTribeProgress(state, 'dokkaebi').claimable).toBe(true);
+  });
+
+  it('returns only exact mapped pairs that are eligible in the supplied snapshot', () => {
+    const dokkaebi = getCodexTribeProgress(owned([]), 'dokkaebi');
+    const gumiho = getCodexTribeProgress(owned([]), 'gumiho');
+    const state = owned([...dokkaebi.requiredMonsterIds, ...gumiho.requiredMonsterIds]);
+    state.codexRewardsClaimed = ['gumiho'];
+
+    expect(getClaimableCodexTribes(state)).toEqual([
+      { tribeId: 'dokkaebi', rewardMonsterId: 'dokkaebi_god_king' },
+    ]);
   });
 });

@@ -1,266 +1,328 @@
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import {
-  HYBRID_DEFS, COMBINATION_TABLE,
+  COMBINATION_TABLE,
   RARITY_STARS,
   getBaseId,
+  getMonsterDisplayName,
+  resolveFusionMonsterDef,
 } from '../data/fusion';
 import { logger } from '../utils/logger';
-import { addSceneHeader, addTabBar } from '../ui/GameUiPrimitives';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { addMonsterPortrait } from '../ui/MonsterPortraitView';
+import { addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import {
-  type TabId, type FusionTabContext,
-  TAB_ACCENT, TAB_ACCENT_CSS,
+  type TabId,
+  type FusionTabContext,
+  TAB_ACCENT,
+  TAB_ACCENT_CSS,
   buildEvolutionTab,
   buildAbsorptionTab,
   buildCombinationTab,
   buildAwakeningTab,
 } from '../ui/FusionTabs';
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
-const HEADER_H  = 56;
-const TAB_H     = 44;
-const CONTENT_Y = HEADER_H + TAB_H;
-
+const HEADER_H = 58;
+const RESOURCE_H = 38;
+const TAB_H = 46;
+const TAB_Y = HEADER_H + RESOURCE_H;
+const CONTENT_Y = TAB_Y + TAB_H;
 const TABS: readonly TabId[] = ['진화', '흡수', '조합', '각성'];
 
-// ─── Scene ────────────────────────────────────────────────────────────────────
+const CORE_COPY: Record<TabId, { eyebrow: string; title: string }> = {
+  '진화': { eyebrow: 'THREEFOLD SEAL', title: '동종의 혼을 상위 개체로 결속' },
+  '흡수': { eyebrow: 'ESSENCE TRANSFER', title: '희생의 정수를 대상에게 이전' },
+  '조합': { eyebrow: 'HYBRID RITE', title: '두 수호자의 공명으로 혼종 탐색' },
+  '각성': { eyebrow: 'AWAKENING OATH', title: '친밀의 맹세로 잠든 힘을 해방' },
+};
 
 export class FusionScene extends Phaser.Scene {
   private activeTab: TabId = '진화';
   private contentContainer?: Phaser.GameObjects.Container;
   private tabBarContainer?: Phaser.GameObjects.Container;
-  private cauldronEmoji?: Phaser.GameObjects.Text;
+  private ritualCore?: Phaser.GameObjects.Container;
   private headerContainer?: Phaser.GameObjects.Container;
+  private transactionInFlight = false;
+  private codexOpen = false;
 
-  // Evolution
   private evoSlots: (OwnedMonster | null)[] = [null, null, null];
-
-  // Absorption
   private absorbTarget: OwnedMonster | null = null;
-  private absorbSacrifices: OwnedMonster[]  = [];
-
-  // Combination
+  private absorbSacrifices: OwnedMonster[] = [];
   private combineSlots: (OwnedMonster | null)[] = [null, null];
+  private awakenTarget: OwnedMonster | null = null;
 
-  constructor() { super({ key: 'FusionScene' }); }
-
-  // ─── Lifecycle ────────────────────────────────────────────────────────────
+  constructor() {
+    super({ key: 'FusionScene' });
+  }
 
   create(): void {
-    this.activeTab        = '진화';
-    this.evoSlots         = [null, null, null];
-    this.absorbTarget     = null;
+    this.activeTab = '진화';
+    this.evoSlots = [null, null, null];
+    this.absorbTarget = null;
     this.absorbSacrifices = [];
-    this.combineSlots     = [null, null];
+    this.combineSlots = [null, null];
+    this.awakenTarget = this.pickInitialAwakeningTarget();
+    this.transactionInFlight = false;
+    this.codexOpen = false;
 
     this.drawBackground();
     this.drawHeader();
     this.drawTabBar();
-    this.drawCauldron();
+    this.drawRitualCore();
     this.renderTabContent();
-    if (!getReducedMotion()) this.cameras.main.fadeIn(200, 0, 0, 0);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.transactionInFlight = false;
+      this.codexOpen = false;
+      this.contentContainer = undefined;
+      this.tabBarContainer = undefined;
+      this.ritualCore = undefined;
+      this.headerContainer = undefined;
+    });
+    if (!getReducedMotion()) this.cameras.main.fadeIn(160, 0, 0, 0);
   }
 
-  // ─── Background ──────────────────────────────────────────────────────────
+  private pickInitialAwakeningTarget(): OwnedMonster | null {
+    const state = loadGameState();
+    return state.ownedMonsters.find(monster =>
+      (state.monsterAffinity?.[monster.id] ?? 0) >= 100
+      && !(state.monsterAwakened?.[monster.id] ?? false),
+    ) ?? state.ownedMonsters[0] ?? null;
+  }
 
   private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    applyCasualBackground(this);
+    const g = this.add.graphics().setDepth(-20);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    const g = this.add.graphics().setDepth(-10);
-    // Cream content tray behind the fusion slots / tab content.
-    const trayX = 10;
-    const trayY = CONTENT_Y + 8;
-    const trayW = CANVAS_WIDTH - 20;
-    const trayH = CANVAS_HEIGHT - CONTENT_Y - 18;
-    g.fillStyle(CASUAL.SHADOW, 0.16);
-    g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 18);
-    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
-    g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.lineStyle(3, CASUAL.EDGE, 0.9);
-    g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
+    for (let row = 0; row < 11; row++) {
+      const y = row * 78;
+      const offset = row % 2 === 0 ? -32 : 0;
+      for (let x = offset; x < CANVAS_WIDTH; x += 96) {
+        g.fillStyle(row % 3 === 0 ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 0.58);
+        g.fillRect(x + 1, y + 1, 94, 76);
+        g.lineStyle(1, DUNGEON_UI.IRON, 0.32);
+        g.strokeRect(x + 1, y + 1, 94, 76);
+      }
+    }
+
+    g.fillStyle(DUNGEON_UI.SOOT, 0.96);
+    g.fillRoundedRect(8, CONTENT_Y + 6, CANVAS_WIDTH - 16, CANVAS_HEIGHT - CONTENT_Y - 14, 12);
+    g.lineStyle(1.5, DUNGEON_UI.IRON, 0.92);
+    g.strokeRoundedRect(8, CONTENT_Y + 6, CANVAS_WIDTH - 16, CANVAS_HEIGHT - CONTENT_Y - 14, 12);
+    g.fillStyle(DUNGEON_UI.BRASS, 0.34);
+    g.fillRect(18, CONTENT_Y + 8, CANVAS_WIDTH - 36, 2);
+
+    const arch = this.add.graphics().setDepth(-10);
+    arch.lineStyle(8, DUNGEON_UI.STONE_RAISED, 0.96);
+    arch.strokeCircle(CANVAS_WIDTH / 2, CONTENT_Y + 76, 69);
+    arch.lineStyle(2, DUNGEON_UI.EDGE, 0.45);
+    arch.strokeCircle(CANVAS_WIDTH / 2, CONTENT_Y + 76, 65);
+    arch.fillStyle(DUNGEON_UI.VOID, 0.78);
+    arch.fillRect(CANVAS_WIDTH / 2 - 82, CONTENT_Y + 75, 164, 75);
   }
 
-  // ─── Header ──────────────────────────────────────────────────────────────
-
   private drawHeader(): void {
-    this.headerContainer?.destroy();
-    const c = this.add.container(0, 0).setDepth(10);
+    this.headerContainer?.destroy(true);
+    const state = loadGameState();
+    const c = this.add.container(0, 0).setDepth(20);
     this.headerContainer = c;
 
-    // Cream header band with brown bottom edge + white top highlight.
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, 0, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
+    g.fillStyle(DUNGEON_UI.STONE, 1);
+    g.fillRect(0, HEADER_H, CANVAS_WIDTH, RESOURCE_H);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.9);
+    g.lineBetween(0, HEADER_H - 1, CANVAS_WIDTH, HEADER_H - 1);
+    g.lineBetween(0, HEADER_H + RESOURCE_H - 1, CANVAS_WIDTH, HEADER_H + RESOURCE_H - 1);
     c.add(g);
 
-    const header = addSceneHeader(this, {
-      title: '🔬 연구소',
-      y:     HEADER_H / 2,
-      onBack: () => {
+    const back = addPrimaryActionButton(this, {
+      x: 10, y: 7, w: 66, h: 44, label: '← 귀환', fontSize: '12px', once: true,
+      showArrow: false, fillColor: DUNGEON_UI.STONE_RAISED, borderColor: DUNGEON_UI.EDGE,
+      hoverFillColor: DUNGEON_UI.IRON, hoverBorderColor: DUNGEON_UI.BRASS,
+      onPress: () => {
+        if (this.transactionInFlight || this.codexOpen) return;
         if (getReducedMotion()) {
           this.scene.start('DungeonHomeScene');
           return;
         }
-        this.cameras.main.fadeOut(200, 0, 0, 0);
+        this.cameras.main.fadeOut(160, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('DungeonHomeScene'));
       },
     });
-    c.add(header.container);
+    c.add([back.bg, back.text, back.zone]);
 
-    const gs = loadGameState();
-    const discovered = gs.discoveredCombinations?.length ?? 0;
-    const codexBtn = this.add.text(CANVAS_WIDTH - 14, HEADER_H / 2, `조합 도감 [${discovered}/10]`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#ffffff',
-      backgroundColor: CASUAL_CSS.BLUE, padding: { x: 7, y: 4 },
-    }).setOrigin(1, 0.5);
-    const codexZone = this.add.zone(CANVAS_WIDTH - 60, HEADER_H / 2, 92, 44)
-      .setInteractive({ useHandCursor: true });
-    codexZone.on('pointerdown', () => this.openCodex());
-    c.add([codexBtn, codexZone]);
+    c.add(this.add.text(CANVAS_WIDTH / 2, 22, '융합 의식실', {
+      fontFamily: 'sans-serif', fontSize: '20px', color: DUNGEON_UI_CSS.PARCHMENT,
+      fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5));
+    c.add(this.add.text(CANVAS_WIDTH / 2, 43, 'SOUL RITUAL CHAMBER', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      fontStyle: 'bold', letterSpacing: 1,
+    }).setOrigin(0.5));
+
+    const discovered = state.discoveredCombinations?.length ?? 0;
+    const total = Object.keys(COMBINATION_TABLE).length;
+    const codex = addPrimaryActionButton(this, {
+      x: 294, y: 7, w: 86, h: 44, label: `도감 ${discovered}/${total}`, fontSize: '11px',
+      once: true, showArrow: false, fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: DUNGEON_UI.BRASS, hoverFillColor: DUNGEON_UI.IRON,
+      hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT, onPress: () => this.openCodex(),
+    });
+    c.add([codex.bg, codex.text, codex.zone]);
+
+    const resourceY = HEADER_H + RESOURCE_H / 2;
+    const resources = [
+      { label: '영혼 수정', value: String(state.soulCrystals ?? 0), color: DUNGEON_UI_CSS.BRASS },
+      { label: '각성석', value: String(state.awakeningStones ?? 0), color: '#aeb8ed' },
+      { label: '완료 의식', value: String(state.totalFusions ?? 0), color: DUNGEON_UI_CSS.JADE },
+    ];
+    resources.forEach((resource, index) => {
+      const x = 14 + index * 126;
+      if (index > 0) {
+        const divider = this.add.graphics();
+        divider.lineStyle(1, DUNGEON_UI.IRON, 0.7);
+        divider.lineBetween(x - 9, HEADER_H + 8, x - 9, HEADER_H + RESOURCE_H - 8);
+        c.add(divider);
+      }
+      c.add(this.add.text(x, resourceY - 7, resource.label, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0, 0.5));
+      c.add(this.add.text(x, resourceY + 8, resource.value, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: resource.color, fontStyle: 'bold',
+      }).setOrigin(0, 0.5));
+    });
   }
-
-  // ─── Tab availability counts ──────────────────────────────────────────────
 
   private computeTabCounts(): Record<TabId, number> {
-    const gs = loadGameState();
-    const monsters = gs.ownedMonsters;
-
-    // 진화: count base-type groups with >= 3 monsters
+    const state = loadGameState();
     const baseCounts: Record<string, number> = {};
-    for (const m of monsters) {
-      const base = getBaseId(m.id);
+    for (const monster of state.ownedMonsters) {
+      const base = getBaseId(monster.id);
       baseCounts[base] = (baseCounts[base] ?? 0) + 1;
     }
-    const evoCount = Object.values(baseCounts).filter(n => n >= 3).length;
-
-    // 흡수: need at least 2 monsters (1 target + 1 sacrifice)
-    const absorbCount = monsters.length >= 2 ? monsters.length - 1 : 0;
-
-    // 조합: need at least 2 monsters
-    const combineCount = monsters.length >= 2 ? 1 : 0;
-
-    // 각성: monsters with affinity >= 100, not yet awakened, and stones available
-    const stones = gs.awakeningStones ?? 0;
-    const awakenCount = stones >= 1
-      ? monsters.filter(m => {
-          const affinity = gs.monsterAffinity?.[m.id] ?? 0;
-          const awakened = gs.monsterAwakened?.[m.id] ?? false;
-          return affinity >= 100 && !awakened;
-        }).length
+    const evolution = Object.values(baseCounts).filter(count => count >= 3).length;
+    const absorption = state.ownedMonsters.length >= 2 ? state.ownedMonsters.length - 1 : 0;
+    const combination = state.ownedMonsters.length >= 2 ? 1 : 0;
+    const awakening = (state.awakeningStones ?? 0) > 0
+      ? state.ownedMonsters.filter(monster =>
+          (state.monsterAffinity?.[monster.id] ?? 0) >= 100
+          && !(state.monsterAwakened?.[monster.id] ?? false),
+        ).length
       : 0;
-
-    return { '진화': evoCount, '흡수': absorbCount, '조합': combineCount, '각성': awakenCount };
+    return { '진화': evolution, '흡수': absorption, '조합': combination, '각성': awakening };
   }
 
-  // ─── Tab bar ─────────────────────────────────────────────────────────────
-
   private drawTabBar(): void {
-    this.tabBarContainer?.destroy();
+    this.tabBarContainer?.destroy(true);
+    const c = this.add.container(0, TAB_Y).setDepth(18);
+    this.tabBarContainer = c;
     const counts = this.computeTabCounts();
-    this.tabBarContainer = addTabBar<TabId>(this, {
-      tabs: TABS.map(tab => ({
-        id: tab, label: tab, badge: counts[tab],
-        accent: TAB_ACCENT[tab], accentCSS: TAB_ACCENT_CSS[tab],
-      })),
-      active:   this.activeTab,
-      y:        HEADER_H,
-      height:   TAB_H,
-      fontSize: '15px',
-      onSelect: tab => this.switchTab(tab),
-    }).container;
+    const tabW = CANVAS_WIDTH / TABS.length;
+    const bg = this.add.graphics();
+    bg.fillStyle(DUNGEON_UI.SOOT, 1);
+    bg.fillRect(0, 0, CANVAS_WIDTH, TAB_H);
+    bg.fillStyle(DUNGEON_UI.IRON, 0.8);
+    bg.fillRect(0, TAB_H - 1, CANVAS_WIDTH, 1);
+    c.add(bg);
+
+    TABS.forEach((tab, index) => {
+      const active = tab === this.activeTab;
+      const x = index * tabW;
+      if (active) {
+        const activeBg = this.add.graphics();
+        activeBg.fillStyle(TAB_ACCENT[tab], 0.13);
+        activeBg.fillRect(x + 3, 2, tabW - 6, TAB_H - 4);
+        activeBg.fillStyle(TAB_ACCENT[tab], 1);
+        activeBg.fillRect(x + 12, TAB_H - 3, tabW - 24, 3);
+        c.add(activeBg);
+      }
+      const label = counts[tab] > 0 ? `${tab} ${counts[tab]}` : tab;
+      c.add(this.add.text(x + tabW / 2, TAB_H / 2, label, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+        color: active ? TAB_ACCENT_CSS[tab] : DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5));
+      const zone = this.add.zone(x, 0, tabW, TAB_H).setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => this.switchTab(tab));
+      c.add(zone);
+    });
   }
 
   switchTab(tab: TabId): void {
-    if (this.activeTab === tab) return;
+    if (this.transactionInFlight || this.codexOpen || this.activeTab === tab) return;
     this.activeTab = tab;
     this.drawTabBar();
-    this.updateCauldron();
+    this.drawRitualCore();
     this.renderTabContent();
     logger.debug(`[FUSION] Switched to tab: ${tab}`);
   }
 
-  // ─── Cauldron ────────────────────────────────────────────────────────────
-
-  private drawCauldron(): void {
+  private drawRitualCore(): void {
+    this.ritualCore?.destroy(true);
+    const c = this.add.container(0, 0).setDepth(4);
+    this.ritualCore = c;
     const cx = CANVAS_WIDTH / 2;
-    const cy = CONTENT_Y + 118;
+    const cy = CONTENT_Y + 66;
+    const accent = TAB_ACCENT[this.activeTab];
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.VOID, 0.94);
+    g.fillCircle(cx, cy, 48);
+    g.lineStyle(2, accent, 0.88);
+    g.strokeCircle(cx, cy, 46);
+    g.lineStyle(1, DUNGEON_UI.BRASS, 0.52);
+    g.strokeCircle(cx, cy, 34);
+    for (let i = 0; i < 3; i++) {
+      const angle = Phaser.Math.DegToRad(i * 120 - 90);
+      g.fillStyle(accent, 0.86);
+      g.fillCircle(cx + Math.cos(angle) * 33, cy + Math.sin(angle) * 33, 3);
+    }
+    g.lineStyle(1, accent, 0.62);
+    g.lineBetween(cx, cy - 24, cx - 21, cy + 14);
+    g.lineBetween(cx - 21, cy + 14, cx + 21, cy + 14);
+    g.lineBetween(cx + 21, cy + 14, cx, cy - 24);
+    c.add(g);
+    const copy = CORE_COPY[this.activeTab];
+    c.add(this.add.text(cx, CONTENT_Y + 122, copy.eyebrow, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: TAB_ACCENT_CSS[this.activeTab],
+      fontStyle: 'bold', letterSpacing: 1,
+    }).setOrigin(0.5));
+    c.add(this.add.text(cx, CONTENT_Y + 141, copy.title, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5));
 
-    const glow = this.add.graphics().setDepth(4);
-    glow.fillStyle(0x7fd8a8, 0.1);
-    glow.fillCircle(cx, cy + 14, 42);
-
-    this.cauldronEmoji = this.add.text(cx, cy, '🪄', {
-      fontFamily: 'sans-serif', fontSize: '52px',
-    }).setOrigin(0.5).setDepth(5);
-
-    // Cauldron bob, glow pulse and rising bubbles are decorative — under reduced
-    // motion the cauldron + glow stay drawn but perfectly still.
-    if (getReducedMotion()) return;
-
-    this.tweens.add({
-      targets: this.cauldronEmoji, y: cy - 7,
-      duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-    this.tweens.add({
-      targets: glow, alpha: { from: 0.07, to: 0.22 },
-      duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-
-    // Bubble sparkles
-    for (let i = 0; i < 4; i++) {
-      const bx = cx + Phaser.Math.Between(-28, 28);
-      const b = this.add.text(bx, cy - 20, ['✨', '💫', '🫧'][i % 3], {
-        fontFamily: 'sans-serif', fontSize: '14px',
-      }).setOrigin(0.5).setDepth(5).setAlpha(0);
-      this.time.delayedCall(i * 700, () => {
-        this.tweens.add({
-          targets: b, y: b.y - Phaser.Math.Between(40, 70),
-          alpha: { from: 0.8, to: 0 },
-          duration: Phaser.Math.Between(1400, 2400),
-          ease: 'Quad.easeOut', repeat: -1,
-          delay: i * 600, repeatDelay: Phaser.Math.Between(800, 1600),
-        });
-      });
+    if (!getReducedMotion()) {
+      c.setAlpha(0.6);
+      this.tweens.add({ targets: c, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
     }
   }
-
-  private updateCauldron(): void {
-    if (!this.cauldronEmoji) return;
-    this.tweens.add({
-      targets: this.cauldronEmoji,
-      scaleX: 1.25, scaleY: 1.25,
-      duration: 180, yoyo: true, ease: 'Quad.easeOut',
-    });
-  }
-
-  // ─── Tab content dispatch ────────────────────────────────────────────────
 
   private buildTabContext(): FusionTabContext {
     return {
       scene: this,
       contentY: CONTENT_Y,
-      cauldronEmoji: this.cauldronEmoji,
       refreshTab: () => this.renderTabContent(),
       refreshHeader: () => this.drawHeader(),
+      beginTransaction: () => {
+        if (this.transactionInFlight) return false;
+        this.transactionInFlight = true;
+        return true;
+      },
+      finishTransaction: () => {
+        this.transactionInFlight = false;
+        this.drawTabBar();
+      },
     };
   }
 
   private renderTabContent(): void {
-    this.contentContainer?.destroy();
-    const c = this.add.container(0, 0).setDepth(3);
+    this.contentContainer?.destroy(true);
+    const c = this.add.container(0, 0).setDepth(6);
     this.contentContainer = c;
     const ctx = this.buildTabContext();
 
@@ -268,105 +330,152 @@ export class FusionScene extends Phaser.Scene {
       case '진화':
         buildEvolutionTab(ctx, c, {
           evoSlots: this.evoSlots,
-          setEvoSlots: (slots) => { this.evoSlots = slots; },
+          setEvoSlots: slots => { this.evoSlots = slots; },
         });
         break;
       case '흡수':
         buildAbsorptionTab(ctx, c, {
           absorbTarget: this.absorbTarget,
           absorbSacrifices: this.absorbSacrifices,
-          setAbsorbTarget: (m) => { this.absorbTarget = m; },
-          setAbsorbSacrifices: (list) => { this.absorbSacrifices = list; },
+          setAbsorbTarget: monster => { this.absorbTarget = monster; },
+          setAbsorbSacrifices: sacrifices => { this.absorbSacrifices = sacrifices; },
         });
         break;
       case '조합':
         buildCombinationTab(ctx, c, {
           combineSlots: this.combineSlots,
-          setCombineSlots: (slots) => { this.combineSlots = slots; },
+          setCombineSlots: slots => { this.combineSlots = slots; },
         });
         break;
       case '각성':
-        buildAwakeningTab(ctx, c);
+        buildAwakeningTab(ctx, c, {
+          awakenTarget: this.awakenTarget,
+          setAwakenTarget: monster => { this.awakenTarget = monster; },
+        });
         break;
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Combination codex panel
-  // ─────────────────────────────────────────────────────────────────────────
-
   private openCodex(): void {
-    const gs          = loadGameState();
-    const discovered  = gs.discoveredCombinations ?? [];
-    const total       = Object.keys(COMBINATION_TABLE).length;
-
-    const ov = this.add.container(0, 0).setDepth(70);
-    const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.5);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    dim.setInteractive();
-    dim.on('pointerdown', () => ov.destroy(true));
-    ov.add(dim);
-
-    const PW = CANVAS_WIDTH - 32, PH = CANVAS_HEIGHT - 120;
-    const PX = 16, PY = 60;
-    // Cream modal tray: brown drop shadow + cream fill + chunky brown rim + white highlight.
-    const pg = this.add.graphics();
-    pg.fillStyle(CASUAL.SHADOW, 0.3);
-    pg.fillRoundedRect(PX, PY + 5, PW, PH, 14);
-    pg.fillStyle(CASUAL.PANEL, 1);
-    pg.fillRoundedRect(PX, PY, PW, PH, 14);
-    pg.fillStyle(0xffffff, 0.12);
-    pg.fillRoundedRect(PX + 6, PY + 5, PW - 12, 6, 3);
-    pg.lineStyle(3, CASUAL.EDGE, 1);
-    pg.strokeRoundedRect(PX, PY, PW, PH, 14);
-    ov.add(pg);
-
-    ov.add(this.add.text(CANVAS_WIDTH / 2, PY + 22, `조합 도감 [${discovered.length}/${total}]`, {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5));
-
-    const closeX = this.add.text(PX + PW - 10, PY + 10, '✕', {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(1, 0).setInteractive();
-    closeX.on('pointerdown', () => ov.destroy(true));
-    ov.add(closeX);
-
-    // List all entries
+    if (this.transactionInFlight || this.codexOpen) return;
+    this.codexOpen = true;
+    const state = loadGameState();
+    const discovered = state.discoveredCombinations ?? [];
     const entries = Object.entries(COMBINATION_TABLE);
-    const rowH = 46, rowPad = 10;
-    let ry = PY + 46;
-    entries.forEach(([key, hybridId]) => {
-      const hybrid = HYBRID_DEFS[hybridId];
-      const isKnown = discovered.includes(hybridId);
-      const [a, b] = key.split('+');
+    const pageSize = 7;
+    const pageCount = Math.max(1, Math.ceil(entries.length / pageSize));
+    let page = 0;
+    const ov = this.add.container(0, 0).setDepth(90);
 
-      const row = this.add.graphics();
-      row.fillStyle(CASUAL.PANEL_SOFT, isKnown ? 1 : 0.6);
-      row.fillRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 6);
-      row.lineStyle(2, CASUAL.EDGE, isKnown ? 0.9 : 0.4);
-      row.strokeRoundedRect(PX + rowPad, ry, PW - rowPad * 2, rowH - 4, 6);
-      ov.add(row);
+    const dim = this.add.graphics();
+    dim.fillStyle(DUNGEON_UI.VOID, 0.92);
+    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ov.add(dim);
+    ov.add(this.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0).setInteractive());
 
-      if (isKnown) {
-        ov.add(this.add.text(PX + rowPad + 12, ry + (rowH - 4) / 2,
-          `${a} + ${b} → ${hybrid.emoji} ${hybrid.name}`, {
-            fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    const px = 16;
+    const py = 54;
+    const pw = CANVAS_WIDTH - 32;
+    const ph = CANVAS_HEIGHT - 108;
+    const panel = this.add.graphics();
+    panel.fillStyle(DUNGEON_UI.SOOT, 1);
+    panel.fillRoundedRect(px, py, pw, ph, 12);
+    panel.lineStyle(2, DUNGEON_UI.BRASS, 0.78);
+    panel.strokeRoundedRect(px, py, pw, ph, 12);
+    panel.fillStyle(DUNGEON_UI.BRASS, 0.38);
+    panel.fillRect(px + 12, py + 48, pw - 24, 1);
+    ov.add(panel);
+    ov.add(this.add.zone(px, py, pw, ph).setOrigin(0).setInteractive());
+
+    ov.add(this.add.text(px + 18, py + 27, `조합 도감 ${discovered.length}/${entries.length}`, {
+      fontFamily: 'sans-serif', fontSize: '18px', color: DUNGEON_UI_CSS.PARCHMENT,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+
+    const rows = this.add.container(0, 0);
+    ov.add(rows);
+    const drawPage = (): void => {
+      rows.removeAll(true);
+      const visible = entries.slice(page * pageSize, (page + 1) * pageSize);
+      visible.forEach(([key, hybridId], index) => {
+        const y = py + 62 + index * 72;
+        const hybrid = resolveFusionMonsterDef(hybridId);
+        if (!hybrid) return;
+        const known = discovered.includes(hybridId);
+        const row = this.add.graphics();
+        row.fillStyle(known ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
+        row.fillRoundedRect(px + 12, y, pw - 24, 64, 7);
+        row.lineStyle(1, known ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON, known ? 0.72 : 0.55);
+        row.strokeRoundedRect(px + 12, y, pw - 24, 64, 7);
+        rows.add(row);
+
+        if (known) {
+          addMonsterPortrait(this, rows, px + 46, y + 32, hybridId, {
+            size: 48, frameColor: DUNGEON_UI.BRASS, glowColor: DUNGEON_UI.BRASS,
+            bgColor: DUNGEON_UI.VOID, equippedSkins: state.equippedSkins,
+          });
+          const [a, b] = key.split('+');
+          rows.add(this.add.text(px + 80, y + 19,
+            `${getMonsterDisplayName(a)} + ${getMonsterDisplayName(b)}`, {
+              fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+            }).setOrigin(0, 0.5));
+          rows.add(this.add.text(px + 80, y + 40, hybrid.name, {
+            fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
           }).setOrigin(0, 0.5));
-        ov.add(this.add.text(PX + PW - rowPad - 8, ry + (rowH - 4) / 2,
-          RARITY_STARS[hybrid.rarity], {
-            fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.GOLD,
+          rows.add(this.add.text(px + pw - 22, y + 32, RARITY_STARS[hybrid.rarity], {
+            fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,
           }).setOrigin(1, 0.5));
-      } else {
-        ov.add(this.add.text(PX + rowPad + 12, ry + (rowH - 4) / 2, '??? + ??? → ???', {
-          fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-        }).setOrigin(0, 0.5));
-      }
-      ry += rowH;
-    });
+        } else {
+          rows.add(this.add.text(px + 30, y + 23, '봉인된 조합', {
+            fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.MUTED,
+            fontStyle: 'bold',
+          }).setOrigin(0, 0.5));
+          rows.add(this.add.text(px + 30, y + 43, '두 수호자의 공명 기록이 없습니다', {
+            fontFamily: 'sans-serif', fontSize: '10px', color: '#6f796f',
+          }).setOrigin(0, 0.5));
+        }
+      });
 
-    ov.setAlpha(0);
-    this.tweens.add({ targets: ov, alpha: 1, duration: 200 });
+      rows.add(this.add.text(CANVAS_WIDTH / 2, py + ph - 91, `${page + 1} / ${pageCount}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
+        fontStyle: 'bold',
+      }).setOrigin(0.5));
+      const prev = addPrimaryActionButton(this, {
+        x: px + 18, y: py + ph - 113, w: 82, h: 44, label: '이전', fontSize: '12px', once: true,
+        showArrow: false, enabled: page > 0, fillColor: DUNGEON_UI.STONE_RAISED,
+        borderColor: DUNGEON_UI.EDGE, hoverFillColor: DUNGEON_UI.IRON,
+        hoverBorderColor: DUNGEON_UI.BRASS, disabledFillColor: DUNGEON_UI.SOOT,
+        disabledBorderColor: DUNGEON_UI.IRON, disabledTextColor: '#596359',
+        onPress: () => { page--; drawPage(); },
+      });
+      const next = addPrimaryActionButton(this, {
+        x: px + pw - 100, y: py + ph - 113, w: 82, h: 44, label: '다음', fontSize: '12px', once: true,
+        showArrow: false, enabled: page < pageCount - 1, fillColor: DUNGEON_UI.STONE_RAISED,
+        borderColor: DUNGEON_UI.EDGE, hoverFillColor: DUNGEON_UI.IRON,
+        hoverBorderColor: DUNGEON_UI.BRASS, disabledFillColor: DUNGEON_UI.SOOT,
+        disabledBorderColor: DUNGEON_UI.IRON, disabledTextColor: '#596359',
+        onPress: () => { page++; drawPage(); },
+      });
+      rows.add([prev.bg, prev.text, prev.zone, next.bg, next.text, next.zone]);
+    };
+    drawPage();
+
+    const close = addPrimaryActionButton(this, {
+      x: px + 18, y: py + ph - 57, w: pw - 36, h: 44, label: '도감 닫기', fontSize: '13px',
+      once: true, showArrow: false, fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: DUNGEON_UI.BRASS, hoverFillColor: DUNGEON_UI.IRON,
+      hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+      onPress: () => {
+        ov.destroy(true);
+        this.codexOpen = false;
+        this.drawHeader();
+      },
+    });
+    ov.add([close.bg, close.text, close.zone]);
+
+    if (!getReducedMotion()) {
+      ov.setAlpha(0);
+      this.tweens.add({ targets: ov, alpha: 1, duration: 160, ease: 'Quad.easeOut' });
+    }
   }
 }

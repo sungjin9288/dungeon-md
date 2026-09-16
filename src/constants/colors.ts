@@ -59,6 +59,32 @@ export const CSS = {
   BLOOD_GLOW:      '#d9573f',
 } as const;
 
+/**
+ * Dungeon management surfaces. These stay separate from rarity/chapter accents:
+ * soot and iron carry structure, brass marks interaction, and jade marks a live room.
+ */
+export const DUNGEON_UI = {
+  VOID:          0x030504,
+  SOOT:          0x080b09,
+  STONE:         0x101612,
+  STONE_RAISED:  0x18211b,
+  IRON:          0x29342c,
+  EDGE:          0x526050,
+  BRASS:         0xa98245,
+  BRASS_BRIGHT:  0xd8b66b,
+  JADE:          0x4f9b78,
+  EMBER:         0xc95a42,
+} as const;
+
+export const DUNGEON_UI_CSS = {
+  PARCHMENT: '#e7d6b5',
+  TEXT:      '#d9d1bb',
+  MUTED:     '#99a397',
+  BRASS:     '#d8b66b',
+  JADE:      '#76c6a0',
+  EMBER:     '#ef846d',
+} as const;
+
 // ─── CASUAL compatibility keys, backed by the charcoal-indigo semantic palette ──
 // 공개 key는 기존 호출부 호환을 위해 유지한다. 의미 역할은 이 파일에서만 매핑한다.
 export const CASUAL = {

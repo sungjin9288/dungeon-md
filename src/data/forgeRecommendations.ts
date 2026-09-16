@@ -2,7 +2,7 @@
 // ForgeScene에서 분리한 순수 추천 로직 — 설계도별 최적 장착 대상 산정.
 // 씬 상태(focusMonsterId 등)는 인자로 전달받아 엔진 무관·단위 테스트 가능.
 
-import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
+import { resolveOwnedMonsterProfile, type OwnedMonsterProfile } from './monsters';
 import { getMonsterAtk, getEquipmentStats, type EquipmentStats, type OwnedMonster } from './barracks';
 import { BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, type BlueprintDef } from './fusion';
 import { canCraftBlueprint } from './forgeTransactions';
@@ -15,7 +15,7 @@ import {
   type DungeonSlot, type GameState, type RoomSlotType,
 } from './wisdom';
 
-export type ForgeMonsterDef = (typeof MONSTER_DEFS)[keyof typeof MONSTER_DEFS];
+export type ForgeMonsterDef = OwnedMonsterProfile;
 
 export interface ForgeRecommendation {
   readonly monsterId: string;
@@ -71,13 +71,16 @@ export function getBlueprintRecommendation(
   focus: ForgeFocusContext = { monsterId: null, sourceLabel: null },
 ): ForgeRecommendation | null {
   const focusMonster = focus.monsterId
-    ? gs.ownedMonsters.find(monster => monster.id === focus.monsterId)
+    ? gs.ownedMonsters.find(monster => (
+      monster.id === focus.monsterId && resolveOwnedMonsterProfile(monster.id) !== null
+    ))
     : null;
   if (focusMonster) {
     return buildBlueprintRecommendation(gs, bp, focusMonster, focus.sourceLabel, 'focus');
   }
 
   const ranked = gs.ownedMonsters
+    .filter(monster => resolveOwnedMonsterProfile(monster.id) !== null)
     .map((monster, rosterIndex) => {
       const recommendation = buildBlueprintRecommendation(gs, bp, monster, null);
       return {
@@ -250,6 +253,7 @@ export function rankForgeTargets(
   focusMonsterId: string | null,
 ): ForgeTargetProjection[] {
   return gs.ownedMonsters
+    .filter(monster => resolveOwnedMonsterProfile(monster.id) !== null)
     .map((monster, rosterIndex) => {
       const bestBlueprint = rankForgeBlueprints(gs, { monsterId: monster.id, sourceLabel: null })[0] ?? null;
       const recommendation = bestBlueprint?.recommendation ?? null;
@@ -306,8 +310,7 @@ export function calculateEquipmentImpactPower(baseAtk: number, stats: EquipmentS
 }
 
 export function getMonsterDefForOwned(monsterId: string): ForgeMonsterDef | null {
-  const baseId = resolveMonsterTypeId(monsterId);
-  return baseId ? MONSTER_DEFS[baseId] : null;
+  return resolveOwnedMonsterProfile(monsterId);
 }
 
 export function findMonsterRoom(

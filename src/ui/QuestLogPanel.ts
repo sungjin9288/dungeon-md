@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { getReducedMotion } from '../utils/reducedMotion';
 import {
   getQuest, applySubQuestClaim, prepareSubQuestLogViewState,
@@ -20,6 +20,7 @@ import {
   addProgressBar,
   type InfoRowOptions,
 } from './GameUiPrimitives';
+import { addQuestSpeakerVisual } from './QuestSpeakerView';
 
 const QUEST_PANEL_FILL = CASUAL.PANEL;
 const QUEST_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -47,7 +48,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
 
   // Panel
   const PW = 320;
-  const PH = Math.max(240, 154 + rows.length * 27);
+  const PH = Math.max(248, 176 + rows.length * 27);
   const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
   const frame = addFramedPanel(scene, {
     x: PX,
@@ -68,26 +69,27 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '퀘스트 완료', {
-    fontFamily: 'sans-serif', fontSize: '22px',
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 30, '퀘스트 완료', {
+    fontFamily: 'sans-serif', fontSize: '21px',
     color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#11131f', strokeThickness: 2,
   }).setOrigin(0.5));
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 58, quest.title, {
-    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 62, quest.title, {
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    align: 'center', wordWrap: { width: PW - 48, useAdvancedWrap: true },
   }).setOrigin(0.5));
 
   const div = scene.add.graphics();
   div.lineStyle(2, CASUAL.EDGE_SOFT, 0.6);
-  div.lineBetween(PX + 22, PY + 78, PX + PW - 22, PY + 78);
+  div.lineBetween(PX + 22, PY + 82, PX + PW - 22, PY + 82);
   c.add(div);
 
   rows.forEach((row, i) => {
     const refs = addInfoRow(scene, {
       ...row,
       x: PX + 24,
-      y: PY + 92 + i * 26,
+      y: PY + 96 + i * 26,
       w: PW - 48,
       h: 22,
     });
@@ -99,7 +101,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
   dim.on('pointerdown', dismiss);
   const confirmBtn = addPrimaryActionButton(scene, {
     x: CANVAS_WIDTH / 2 - 70,
-    y: PY + PH - 48,
+    y: PY + PH - 58,
     w: 140,
     h: 44,
     label: '확인',
@@ -356,9 +358,13 @@ function buildQuestLogContainer(
   c.add(closeG);
   const closeBtn = scene.add.text(CANVAS_WIDTH - 26, 25, '✕', {
     fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-  }).setOrigin(0.5).setInteractive();
-  closeBtn.on('pointerdown', () => closeQuestLog(state, scene));
+  }).setOrigin(0.5);
   c.add(closeBtn);
+  const closeZone = scene.add.zone(CANVAS_WIDTH - 48, 2, 44, 44)
+    .setOrigin(0, 0)
+    .setInteractive({ useHandCursor: true });
+  closeZone.on('pointerdown', () => closeQuestLog(state, scene));
+  c.add(closeZone);
 
   const subQuestView = prepareSubQuestLogViewState(gs);
   const workGs = subQuestView.state;
@@ -389,9 +395,9 @@ function drawMainQuestCard(
 
   c.add(scene.add.text(PAD, y, '📜  메인 퀘스트', {
     fontFamily: 'sans-serif', fontSize: '12px',
-    color: CASUAL_CSS.INK, fontStyle: 'bold', letterSpacing: 1,
+    color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }));
-  y += 20;
+  y += 22;
 
   const quest = gs.activeMainQuestId
     ? getQuest(gs.activeMainQuestId)
@@ -420,111 +426,133 @@ function drawMainQuestCard(
     return y + 62;
   }
 
-  const prog     = gs.questProgress[quest.id];
-  const objCount = quest.objectives.length;
-  const CARD_H   = 74 + objCount * 28 + 24;
+  const prog = gs.questProgress[quest.id];
+  const cardTop = y;
+  const innerX = PAD + 12;
+  const innerWidth = CARD_W - 24;
+  const cardContent = scene.add.container(0, 0);
+  let contentY = cardTop + 12;
 
-  // Card background
-  const frame = addFramedPanel(scene, {
-    x: PAD,
-    y,
-    w: CARD_W,
-    h: CARD_H,
-    radius: 11,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.GOLD_DK,
-    borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: CASUAL.GOLD,
-    accentAlpha: 1,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0,
-    shadowOpacity: 0.28,
-    shadowOffsetY: 3,
-  });
-  c.add([frame.shadow, frame.panel, frame.glow]);
-
-  const cg = scene.add.graphics();
-  // Status dot (yellow = in progress)
-  cg.fillStyle(CASUAL.GOLD, 1);
-  cg.fillCircle(PAD + CARD_W - 12, y + 16, 5);
-  cg.lineStyle(2, CASUAL.GOLD_DK, 1);
-  cg.strokeCircle(PAD + CARD_W - 12, y + 16, 5);
-  c.add(cg);
-
-  // Chapter badge + quest ID
-  const chBadgeBg = scene.add.graphics();
-  chBadgeBg.fillStyle(CASUAL.GOLD, 1);
-  chBadgeBg.fillRoundedRect(PAD + 10, y + 8, 38, 16, 5);
-  chBadgeBg.lineStyle(1.5, CASUAL.GOLD_DK, 1);
-  chBadgeBg.strokeRoundedRect(PAD + 10, y + 8, 38, 16, 5);
-  c.add(chBadgeBg);
-  c.add(scene.add.text(PAD + 29, y + 16, `CH.${quest.chapter}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
+  // Compact ledger metadata stays above the title.
+  const metadata = scene.add.graphics();
+  metadata.fillStyle(DUNGEON_UI.BRASS, 1);
+  metadata.fillRoundedRect(innerX, contentY, 48, 20, 5);
+  metadata.lineStyle(1.5, DUNGEON_UI.BRASS_BRIGHT, 0.9);
+  metadata.strokeRoundedRect(innerX, contentY, 48, 20, 5);
+  metadata.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 1);
+  metadata.fillCircle(PAD + CARD_W - 12, contentY + 10, 5);
+  cardContent.add(metadata);
+  cardContent.add(scene.add.text(innerX + 24, contentY + 10, `CH.${quest.chapter}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
   }).setOrigin(0.5));
+  cardContent.add(scene.add.text(innerX + 58, contentY + 3, `[${quest.id}]`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
+  }));
+  contentY += 28;
 
-  c.add(scene.add.text(PAD + 54, y + 8, `[${quest.id}]`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
-  }));
-  c.add(scene.add.text(PAD + 96, y + 8, quest.title, {
-    fontFamily: 'sans-serif', fontSize: '13px',
-    color: CASUAL_CSS.INK, fontStyle: 'bold',
-  }));
+  const title = scene.add.text(innerX, contentY, quest.title, {
+    fontFamily: 'sans-serif', fontSize: '14px',
+    color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+    wordWrap: { width: innerWidth, useAdvancedWrap: true },
+    lineSpacing: 2,
+  });
+  cardContent.add(title);
+  contentY = title.y + title.height + 10;
 
-  // NPC emoji + first line of description
-  c.add(scene.add.text(PAD + 10, y + 28, quest.npcEmoji, {
-    fontFamily: 'sans-serif', fontSize: '18px',
-  }));
+  // Exact speaker identity and first description line share one bounded art block.
+  const speakerSize = 48;
+  const speakerY = contentY;
+  addQuestSpeakerVisual(
+    scene, cardContent, innerX, speakerY, speakerSize, quest.npcSpeaker, quest.npcEmoji,
+  );
+  const speakerTextX = innerX + speakerSize + 12;
+  const speakerTextWidth = innerWidth - speakerSize - 12;
+  const speakerName = scene.add.text(speakerTextX, speakerY, quest.npcSpeaker, {
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
+    wordWrap: { width: speakerTextWidth, useAdvancedWrap: true },
+  });
+  cardContent.add(speakerName);
   const descLine = quest.description.split('\n')[0];
-  c.add(scene.add.text(PAD + 36, y + 30, `"${descLine}"`, {
-    fontFamily: 'sans-serif', fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT, fontStyle: 'italic',
-    wordWrap: { width: CARD_W - 50 },
-  }));
+  const description = scene.add.text(
+    speakerTextX,
+    speakerName.y + speakerName.height + 5,
+    `"${descLine}"`,
+    {
+      fontFamily: 'sans-serif', fontSize: '11px',
+      color: DUNGEON_UI_CSS.MUTED, fontStyle: 'italic',
+      wordWrap: { width: speakerTextWidth, useAdvancedWrap: true },
+      lineSpacing: 2,
+    },
+  );
+  cardContent.add(description);
+  contentY = Math.max(speakerY + speakerSize, description.y + description.height) + 12;
 
-  // Objectives
-  let oy = y + 54;
+  // Each objective reserves a description band and a distinct progress band.
   quest.objectives.forEach((obj, oi) => {
-    const cur    = prog?.objectives[obj.id] ?? 0;
-    const pct    = Math.min(cur / obj.target, 1);
-    const BAR_W  = 90;
-    const barBx  = CANVAS_WIDTH - PAD - BAR_W - 10;
-
-    c.add(scene.add.text(PAD + 10, oy, `▸ ${obj.description}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }));
-
+    const cur = prog?.objectives[obj.id] ?? 0;
+    const pct = Math.min(cur / obj.target, 1);
+    const objectiveText = scene.add.text(innerX, contentY, `▸ ${obj.description}`, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: DUNGEON_UI_CSS.TEXT,
+      wordWrap: { width: innerWidth, useAdvancedWrap: true },
+    });
+    cardContent.add(objectiveText);
+    const progressY = objectiveText.y + objectiveText.height + 6;
+    const progressValue = scene.add.text(innerX + innerWidth, progressY + 6, `${cur}/${obj.target}`, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    const barWidth = innerWidth - progressValue.width - 12;
     const progress = addProgressBar(scene, {
-      x: barBx,
-      y: oy,
-      w: BAR_W,
-      h: 11,
+      x: innerX,
+      y: progressY,
+      w: barWidth,
+      h: 12,
       ratio: pct,
-      fillColor: CASUAL.GOLD,
-      trackColor: CASUAL.PANEL_SOFT,
-      borderColor: CASUAL.EDGE_SOFT,
+      fillColor: DUNGEON_UI.BRASS_BRIGHT,
+      trackColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.EDGE,
       delay: 80 + oi * 120,
     });
-    c.add([progress.track, progress.fill]);
-
-    c.add(scene.add.text(CANVAS_WIDTH - PAD - 6, oy + 5, `${cur}/${obj.target}`, {
-      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(1, 0.5));
-
-    oy += 26;
+    cardContent.add([progress.track, progress.fill]);
+    cardContent.add(progressValue);
+    contentY = Math.max(progressY + 12, progressValue.y + progressValue.height / 2) + 12;
   });
 
-  // Reward preview
+  // Reward preview remains the final ledger row.
   const rwds: string[] = [];
   if (quest.reward.gold)         rwds.push(`💰${quest.reward.gold}`);
   if (quest.reward.soulCrystals) rwds.push(`💠${quest.reward.soulCrystals}`);
   if (quest.reward.dmXP)         rwds.push(`✨${quest.reward.dmXP}XP`);
   if (quest.reward.unlocks?.length) rwds.push(`🔓${quest.reward.unlocks[0]}`);
-  c.add(scene.add.text(PAD + 10, oy + 4, `보상: ${rwds.join('  ')}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-  }));
+  const reward = scene.add.text(innerX, contentY, `보상: ${rwds.join('  ')}`, {
+    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+    wordWrap: { width: innerWidth, useAdvancedWrap: true },
+    lineSpacing: 2,
+  });
+  cardContent.add(reward);
+  const cardHeight = reward.y + reward.height + 12 - cardTop;
 
-  return y + CARD_H + 14;
+  const frame = addFramedPanel(scene, {
+    x: PAD,
+    y: cardTop,
+    w: CARD_W,
+    h: cardHeight,
+    radius: 11,
+    fillColor: DUNGEON_UI.STONE_RAISED,
+    borderColor: DUNGEON_UI.BRASS,
+    borderAlpha: 1,
+    borderWidth: 3,
+    accentColor: DUNGEON_UI.BRASS_BRIGHT,
+    accentAlpha: 1,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0,
+    shadowOpacity: 0.28,
+    shadowOffsetY: 3,
+  });
+  c.add([frame.shadow, frame.panel, frame.glow, cardContent]);
+
+  return cardTop + cardHeight + 14;
 }
 
 // ─── Sub quest section ──────────────────────────────────────────────────────

@@ -9,6 +9,8 @@
 import Phaser from 'phaser';
 import type { MonsterId, TribeId, RarityId } from '../data/monsters';
 import { MONSTER_DEFS } from '../data/monsters';
+import { selectCharacterArtSource } from '../data/characterArt';
+import { DUNGEON_UI } from '../constants/colors';
 import { TRIBE_PALETTES, getMonsterSpriteData, type Palette } from './PixelMonsters';
 
 // ─── Cache ─────────────────────────────────────────────────────────────────────
@@ -180,15 +182,12 @@ export function generatePortrait(
   monsterId: MonsterId,
   skinId?: string,
 ): string {
+  const source = selectCharacterArtSource(monsterId, textureKey => scene.textures.exists(textureKey), skinId);
   const key = skinId
     ? `portrait-${monsterId}-${skinId}`
-    : `portrait-${monsterId}`;
+    : source?.version === 'ritual-v2' ? `portrait-ritual-v2-${monsterId}` : `portrait-${monsterId}`;
 
-  if (generated.has(key)) return key;
-  if (scene.textures.exists(key)) {
-    generated.add(key);
-    return key;
-  }
+  if (scene.textures.exists(key)) return key;
 
   const def = MONSTER_DEFS[monsterId];
   if (!def) return key;
@@ -197,9 +196,8 @@ export function generatePortrait(
   // no skin recolor is requested), composite it instead of the pixel art — gives
   // the collection screens a management-game look. Monsters without an
   // illustration fall through to the procedural pixel portrait below.
-  const aiKey = `monster-ai-${monsterId}`;
-  if (!skinId && scene.textures.exists(aiKey)) {
-    const src = scene.textures.get(aiKey).getSourceImage() as CanvasImageSource;
+  if (source) {
+    const src = scene.textures.get(source.textureKey).getSourceImage() as CanvasImageSource;
     const sz = 256;
     const aiCanvas = document.createElement('canvas');
     aiCanvas.width = sz;
@@ -209,7 +207,6 @@ export function generatePortrait(
       aictx.imageSmoothingEnabled = true;
       aictx.drawImage(src, 0, 0, sz, sz);
       scene.textures.addCanvas(key, aiCanvas);
-      generated.add(key);
       return key;
     }
   }
@@ -242,17 +239,32 @@ export function generatePortrait(
   // (global config is antialias/LINEAR for the smooth vector UI).
   scene.textures.addCanvas(key, canvas);
   scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
-  generated.add(key);
 
   return key;
 }
 
 /**
- * Bake a TRANSPARENT pixel sprite (just the 24x24 silhouette, no background /
- * frame) for placing a monster directly into a world scene — e.g. standing
- * inside a pixel dungeon room. NEAREST-filtered so pixels stay crisp.
+ * Bake a transparent 96px ritual world sprite. Ritual cutouts keep their full silhouette;
+ * the existing procedural pixel body remains the fallback for other monsters.
  */
 export function generateMonsterSprite(scene: Phaser.Scene, monsterId: MonsterId): string {
+  const source = selectCharacterArtSource(monsterId, textureKey => scene.textures.exists(textureKey));
+  if (source?.version === 'ritual-v2') {
+    const artKey = `sprite-ritual-v2-${monsterId}`;
+    if (scene.textures.exists(artKey)) return artKey;
+    const density = 96;
+    const artCanvas = document.createElement('canvas');
+    artCanvas.width = density;
+    artCanvas.height = density;
+    const artContext = artCanvas.getContext('2d');
+    if (artContext) {
+      artContext.imageSmoothingEnabled = true;
+      artContext.drawImage(scene.textures.get(source.textureKey).getSourceImage() as CanvasImageSource, 0, 0, density, density);
+      scene.textures.addCanvas(artKey, artCanvas);
+      return artKey;
+    }
+  }
+
   const key = `sprite-${monsterId}`;
   if (generated.has(key)) return key;
   if (scene.textures.exists(key)) { generated.add(key); return key; }
@@ -296,12 +308,11 @@ export function generateMonsterSprite(scene: Phaser.Scene, monsterId: MonsterId)
  * Cached — safe to call repeatedly.
  */
 export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): string | null {
-  const aiKey = `monster-ai-${monsterId}`;
-  if (!scene.textures.exists(aiKey)) return null;
+  const source = selectCharacterArtSource(monsterId, textureKey => scene.textures.exists(textureKey));
+  if (!source) return null;
 
-  const key = `roomtoken-${monsterId}`;
-  if (generated.has(key)) return key;
-  if (scene.textures.exists(key)) { generated.add(key); return key; }
+  const key = source.version === 'ritual-v2' ? `roomtoken-ritual-v2-${monsterId}` : `roomtoken-${monsterId}`;
+  if (scene.textures.exists(key)) return key;
 
   const def = MONSTER_DEFS[monsterId];
   const ring = RARITY_BORDER[def?.rarityTier ?? 'C'] ?? RARITY_BORDER.C;
@@ -313,7 +324,7 @@ export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): st
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
 
-  const src = scene.textures.get(aiKey).getSourceImage() as CanvasImageSource;
+  const src = scene.textures.get(source.textureKey).getSourceImage() as CanvasImageSource;
   const r = D / 2;
 
   // Circular-clipped illustration (square source → centred bust fills the disc).
@@ -322,6 +333,10 @@ export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): st
   ctx.arc(r, r, r - 3, 0, Math.PI * 2);
   ctx.closePath();
   ctx.clip();
+  if (source.version === 'ritual-v2') {
+    ctx.fillStyle = hexToCSS(DUNGEON_UI.STONE);
+    ctx.fillRect(0, 0, D, D);
+  }
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(src, 0, 0, D, D);
   // Bottom vignette so the disc reads as seated, not a flat sticker.
@@ -344,7 +359,6 @@ export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): st
   ctx.beginPath(); ctx.arc(r, r, r - 6.5, 0, Math.PI * 2); ctx.stroke();
 
   scene.textures.addCanvas(key, canvas);
-  generated.add(key);
   return key;
 }
 
@@ -353,8 +367,6 @@ export function generateRoomToken(scene: Phaser.Scene, monsterId: MonsterId): st
  * Returns true if the texture is ready.
  */
 export function ensurePortrait(scene: Phaser.Scene, monsterId: MonsterId): boolean {
-  const key = `portrait-${monsterId}`;
-  if (scene.textures.exists(key)) return true;
-  generatePortrait(scene, monsterId);
+  const key = generatePortrait(scene, monsterId);
   return scene.textures.exists(key);
 }

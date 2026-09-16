@@ -13,9 +13,8 @@ import {
 } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
-import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { EQUIPMENT_DEFS, getEquipmentStats, getMonsterAtk, type EquipmentStats } from '../data/barracks';
-import { MONSTER_EMOJI, MONSTER_NAME } from '../data/monsterDisplay';
 import { TRAP_DEFS } from '../data/traps';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { CASUAL } from '../constants/colors';
@@ -145,18 +144,15 @@ export function getOwnedMonster(gs: GameState, monsterId: string) {
 }
 
 export function getMonsterDef(monsterId: string) {
-  const typeId = resolveMonsterTypeId(monsterId);
-  return typeId ? MONSTER_DEFS[typeId] : undefined;
+  return resolveOwnedMonsterProfile(monsterId) ?? undefined;
 }
 
 export function getMonsterDisplayName(monsterId: string): string {
-  const typeId = resolveMonsterTypeId(monsterId);
-  return (typeId ? MONSTER_NAME[typeId] : undefined) ?? MONSTER_NAME[monsterId] ?? monsterId;
+  return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
 }
 
 export function getMonsterDisplayEmoji(monsterId: string): string {
-  const typeId = resolveMonsterTypeId(monsterId);
-  return (typeId ? MONSTER_EMOJI[typeId] : undefined) ?? MONSTER_EMOJI[monsterId] ?? '👾';
+  return resolveOwnedMonsterProfile(monsterId)?.emoji ?? '👾';
 }
 
 export function getTrapDisplay(trapId: string): { emoji: string; name: string } {

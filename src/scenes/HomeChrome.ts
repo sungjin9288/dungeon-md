@@ -393,13 +393,9 @@ export function addPrimaryRoomActionPin(
   g.fillTriangle(10, 0, 4, -4, 4, 4);
   pinContainer.add(g);
 
-  const text = scene.add.text(-1, 0, pin.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '12px',
-    color: '#f0e6c8',
-    fontStyle: 'bold',
-  }).setOrigin(0.5);
-  pinContainer.add(text);
+  g.fillStyle(pin.accent, 0.9);
+  g.fillCircle(-1, -3, 2.2);
+  g.fillRoundedRect(-2, 1, 2, 6, 1);
   const zone = scene.add.zone(0, 0, 44, 44)
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true });
@@ -475,22 +471,22 @@ function addHomeSpatialDirective(
   accent: number,
   onPress: () => void,
 ): void {
-  const w = Math.max(96, 46 + label.length * 10);
+  void icon;
+  const w = Math.max(72, 26 + label.length * 10);
   const marker = scene.add.container(x, y).setDepth(14);
   const bg = scene.add.graphics();
-  bg.fillStyle(CASUAL.PANEL, 0.96);
-  bg.fillRoundedRect(-w / 2, -18, w, 36, 8);
-  bg.fillStyle(accent, 0.14);
-  bg.fillRect(-w / 2, -18, 4, 36);
-  bg.lineStyle(1, accent, 0.72);
-  bg.strokeRoundedRect(-w / 2, -18, w, 36, 8);
+  bg.fillStyle(0x070806, 0.94);
+  bg.fillRoundedRect(-w / 2, -14, w, 28, 4);
+  bg.fillStyle(0x2e2a20, 0.92);
+  bg.fillRect(-w / 2 + 4, -10, w - 8, 2);
+  bg.fillStyle(accent, 0.82);
+  bg.fillRect(-w / 2, -14, 3, 28);
+  bg.lineStyle(1, 0xa98245, 0.68);
+  bg.strokeRoundedRect(-w / 2, -14, w, 28, 4);
   marker.add(bg);
-  marker.add(scene.add.text(-w / 2 + 18, 0, icon, {
-    fontFamily: 'sans-serif', fontSize: '14px', color: '#fff6d6', fontStyle: 'bold',
-  }).setOrigin(0.5));
-  marker.add(scene.add.text(-w / 2 + 34, 0, label, {
+  marker.add(scene.add.text(0, 1, label, {
     fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
+  }).setOrigin(0.5));
   const zone = scene.add.zone(0, 0, Math.max(44, w), 44)
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true });
@@ -523,7 +519,7 @@ export function addActionQueueRoomSpotlight(
   const top = -ringH / 2;
   const alpha = rank === 1 ? 0.80 : rank === 2 ? 0.56 : 0.42;
 
-  g.fillStyle(action.accent, rank === 1 ? 0.10 : 0.055);
+  g.fillStyle(action.accent, rank === 1 ? 0.035 : 0.02);
   g.fillRoundedRect(left, top, ringW, ringH, 13);
   g.lineStyle(rank === 1 ? 2.2 : 1.4, action.accent, alpha);
   g.strokeRoundedRect(left, top, ringW, ringH, 13);
@@ -578,7 +574,7 @@ export function addRoomMaintenanceBadges(
     const mbCell = scene.boardLayout.cellsByIdx.get(action.slotIdx);
     const x = mbCell?.center.x ?? 0;
     const y = (mbCell?.rect.y ?? 0) + scene.boardLayout.slotH - 15;
-    const label = `${action.icon} ${action.label}`;
+    const label = action.label;
     const badgeW = Math.max(54, 38 + action.label.length * 10);
     const badge = scene.add.container(x, y).setDepth(15);
     const bg = scene.add.graphics();
@@ -599,7 +595,7 @@ export function addRoomMaintenanceBadges(
     }).setOrigin(0.5);
     const statText = scene.add.text(0, 7, action.statValue, {
       fontFamily: 'monospace',
-      fontSize: '7px',
+      fontSize: '10px',
       color: '#b8fff0',
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -652,9 +648,10 @@ export function addDungeonActivityLayer(
 export function drawDungeonRoomAlcoves(
   scene: DungeonHomeScene,
   g: Phaser.GameObjects.Graphics,
-  _unlockedCount: number,
+  unlockedCount: number,
 ): void {
   for (const [idx, alcCell] of scene.boardLayout.cellsByIdx) {
+    if (idx > unlockedCount) continue;
     _drawDungeonRoomAlcove(scene, g, alcCell.rect.x, alcCell.rect.y, idx, alcCell.isUnlocked);
   }
 }

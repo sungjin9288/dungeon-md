@@ -1,5 +1,25 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getGameSafeArea, MIN_SAFE_TOP, MIN_SAFE_BOTTOM } from './safeArea';
+import {
+  getGameSafeArea,
+  getNativeSafeAreaFallback,
+  MIN_SAFE_TOP,
+  MIN_SAFE_BOTTOM,
+} from './safeArea';
+
+describe('getNativeSafeAreaFallback', () => {
+  it('does not add native fallback padding on web', () => {
+    expect(getNativeSafeAreaFallback('web', 852)).toEqual({ top: 0, bottom: 0, left: 0, right: 0 });
+  });
+
+  it('reserves Dynamic Island and home-indicator space on tall iPhones', () => {
+    expect(getNativeSafeAreaFallback('ios', 852)).toEqual({ top: 59, bottom: 34, left: 0, right: 0 });
+  });
+
+  it('supports notched and classic portrait iPhones', () => {
+    expect(getNativeSafeAreaFallback('ios', 812)).toEqual({ top: 47, bottom: 34, left: 0, right: 0 });
+    expect(getNativeSafeAreaFallback('ios', 667)).toEqual({ top: 20, bottom: 0, left: 0, right: 0 });
+  });
+});
 
 // happy-dom provides getComputedStyle; we can inject CSS custom properties
 // via document.documentElement.style.setProperty.

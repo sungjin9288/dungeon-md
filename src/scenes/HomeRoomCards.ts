@@ -9,22 +9,28 @@ import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS, COLORS } from '../constants/colors';
-import { getUnlockedSlots, type DungeonSlot } from '../data/wisdom';
+import {
+  getUnlockedSlots,
+  ROOM_SLOT_TYPE_DEFS,
+  SLOT_UNLOCK_LEVELS,
+  type DungeonSlot,
+} from '../data/wisdom';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
+import { generateMonsterSprite } from '../art/PortraitGenerator';
 import { logger } from '../utils/logger';
 import {
   type RoomSlotContext,
   drawBattleSlot as _drawBattleSlot,
-  SLOT_W, SLOT_H,
+  SLOT_W,
 } from '../ui/RoomSlotRenderer';
 import {
   type SynergyDrawContext,
   drawSynergyConnectors,
   drawSynergySummary,
 } from '../ui/DungeonSynergy';
-import { buildDungeonBoardLayout } from '../ui/DungeonBoardLayout';
+import { buildDungeonBoardLayout, isVisibleHomeSlot } from '../ui/DungeonBoardLayout';
 import { getReducedMotion } from '../utils/reducedMotion';
-import { addMonsterPortrait } from '../ui/MonsterPortraitView';
 
 // ─── Layout constants (must match DungeonHomeScene.ts) ─────────────────────
 
@@ -51,7 +57,7 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
 
   // Phase D: regionBottom expanded to use freed vertical space.
   const statsTopY          = BOT_Y - 26;
-  const SLIM_DECK_H        = 160;
+  const SLIM_DECK_H        = 142;
   const DECK_GAP           = 18;
   const boardRegionBottom  = statsTopY - SLIM_DECK_H - DECK_GAP;
 
@@ -93,25 +99,14 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
   drawSynergyConnectors(synergyCtx, c, unlockedCount);
 
   const { slotW: cellW, slotH: cellH } = scene.boardLayout;
-  const scaleX = cellW / SLOT_W;
-  const scaleY = cellH / SLOT_H;
-  const needsScale = Math.abs(scaleX - 1) > 0.01 || Math.abs(scaleY - 1) > 0.01;
 
   for (const [idx, loopCell] of scene.boardLayout.cellsByIdx) {
+    if (!isVisibleHomeSlot(idx, unlockedCount)) continue;
     const isUnlocked = loopCell.isUnlocked;
     const sx = loopCell.rect.x;
     const sy = loopCell.rect.y;
 
-    if (needsScale) {
-      const slotContainer = scene.add.container(sx, sy);
-      const slotG = scene.add.graphics();
-      slotContainer.add(slotG);
-      _drawBattleSlot(makeRoomSlotCtx(scene), slotContainer, slotG, 0, 0, idx, isUnlocked);
-      slotContainer.setScale(scaleX, scaleY);
-      c.add(slotContainer);
-    } else {
-      drawBattleSlot(scene, c, g, sx, sy, idx, isUnlocked);
-    }
+    drawHomeDungeonHotspot(scene, c, g, sx, sy, cellW, cellH, idx, isUnlocked);
 
     if (idx === changedIdx && isUnlocked) addRoomChangedPulse(scene, c, sx, sy, idx);
     if (idx === scene.selectedRoomIdx && isUnlocked) {
@@ -136,44 +131,200 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     }
   }
 
-  addFeaturedGuardian(scene, c, unlockedCount);
   scene.addActionQueueRankMarkers(c, unlockedCount);
   drawSynergySummary(synergyCtx, c, CANVAS_WIDTH);
 }
 
-function addFeaturedGuardian(
+function drawHomeDungeonHotspot(
   scene: DungeonHomeScene,
   c: Phaser.GameObjects.Container,
-  unlockedCount: number,
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  index: number,
+  unlocked: boolean,
 ): void {
-  for (let idx = 0; idx < unlockedCount; idx++) {
-    const slot = scene.gs.dungeonSlots?.[idx];
-    const monsterId = slot?.roomType && slot.hp > 0
-      ? (slot.monsterIds ?? []).find((id): id is string => Boolean(id))
-      : null;
-    const cell = scene.boardLayout.cellsByIdx.get(idx);
-    if (!monsterId || !cell) continue;
+  const slot = scene.gs.dungeonSlots?.[index];
+  const built = Boolean(unlocked && slot?.roomType);
+  const broken = Boolean(built && slot && slot.hp <= 0);
+  const accent = broken
+    ? CASUAL.RED
+    : built && slot
+      ? scene.getRoomActivityColor(slot)
+      : unlocked
+        ? COLORS.JADE
+        : 0x876b43;
+  const cx = x + w / 2;
+  const floorY = y + h - 15;
+  const innerX = x + 9;
+  const innerY = y + 13;
+  const innerW = w - 18;
+  const innerH = h - 29;
 
-    const anchor = scene.add.container(cell.center.x, cell.center.y - 1).setDepth(8);
-    const accent = scene.getRoomActivityColor(slot);
-    addMonsterPortrait(scene, anchor, 0, -1, monsterId, {
-      size: 68,
-      frameColor: accent,
-      glowColor: accent,
-      bgColor: CASUAL.PANEL,
-      equippedSkins: scene.gs.equippedSkins,
-    });
-    const labelBg = scene.add.graphics();
-    labelBg.fillStyle(CASUAL.PANEL, 0.92);
-    labelBg.fillRoundedRect(-38, 29, 76, 18, 5);
-    labelBg.fillStyle(accent, 0.9);
-    labelBg.fillRect(-38, 29, 3, 18);
-    anchor.add(labelBg);
-    anchor.add(scene.add.text(0, 38, '상주 수호자', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0.5));
-    c.add(anchor);
+  // Cutaway chamber mouth: most of the backdrop stays visible around and through it.
+  g.fillStyle(0x020403, unlocked ? 0.68 : 0.78);
+  g.fillRoundedRect(innerX, innerY, innerW, innerH, 16);
+  g.fillStyle(accent, built ? 0.10 : unlocked ? 0.055 : 0.035);
+  g.fillRoundedRect(innerX + 5, innerY + 6, innerW - 10, innerH - 10, 13);
+  g.lineStyle(2, broken ? CASUAL.RED_DK : 0x38362d, unlocked ? 0.92 : 0.70);
+  g.strokeRoundedRect(innerX, innerY, innerW, innerH, 16);
+  g.lineStyle(1, accent, built ? 0.56 : unlocked ? 0.40 : 0.30);
+  g.strokeRoundedRect(innerX + 4, innerY + 4, innerW - 8, innerH - 8, 13);
+
+  // Physical ledge and side supports seat the room inside the shaft.
+  g.fillStyle(0x111411, 0.98);
+  g.fillRoundedRect(x + 3, floorY, w - 6, 11, 3);
+  g.fillStyle(0x4a412f, 0.58);
+  g.fillRect(x + 8, floorY + 1, w - 16, 2);
+  g.fillStyle(0x080a08, 0.92);
+  g.fillRect(x + 5, innerY + 14, 6, innerH - 20);
+  g.fillRect(x + w - 11, innerY + 14, 6, innerH - 20);
+
+  if (!unlocked) {
+    drawSealedExpansion(scene, c, g, cx, innerY, innerW, innerH, index);
     return;
+  }
+
+  if (!slot?.roomType) {
+    g.lineStyle(2, COLORS.JADE, 0.58);
+    g.lineBetween(cx - 17, innerY + 30, cx + 17, innerY + 30);
+    g.lineBetween(cx, innerY + 18, cx, innerY + 43);
+    g.lineStyle(1, 0xe0b96f, 0.48);
+    g.strokeCircle(cx, innerY + 30, 21);
+    c.add(scene.add.text(cx, y + 8, `방 #${index + 1}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#b9c8b8', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(8));
+    c.add(scene.add.text(cx, floorY - 8, '빈 터', {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#e2c181', fontStyle: 'bold',
+    }).setOrigin(0.5, 1).setDepth(8));
+    return;
+  }
+
+  const typeDef = ROOM_SLOT_TYPE_DEFS.find(def => def.id === slot.roomType);
+  const metrics = calculateRoomMetrics(scene.gs, slot);
+  const monsterIds = (slot.monsterIds ?? []).filter((id): id is string => Boolean(id));
+  const trapCount = (slot.trapIds ?? []).filter(Boolean).length;
+  const title = broken ? '파손된 방' : typeDef?.name ?? '던전 방';
+  c.add(scene.add.text(cx, y + 8, title, {
+    fontFamily: 'Georgia, serif', fontSize: '11px',
+    color: broken ? CASUAL_CSS.RED : '#ead7af', fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(8));
+
+  if (broken) {
+    g.lineStyle(2, CASUAL.RED, 0.78);
+    g.lineBetween(innerX + 22, innerY + 8, cx - 4, innerY + 34);
+    g.lineBetween(cx - 4, innerY + 34, innerX + innerW - 20, floorY - 7);
+    g.lineBetween(cx - 4, innerY + 34, innerX + 18, floorY - 10);
+    c.add(scene.add.text(cx, floorY - 7, '수리 필요', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#ff8b72', fontStyle: 'bold',
+    }).setOrigin(0.5, 1).setDepth(8));
+    return;
+  }
+
+  g.fillStyle(0xe08a45, 0.09);
+  g.fillCircle(cx, innerY + innerH / 2 + 4, 30);
+  const primaryId = monsterIds[0];
+  const profile = primaryId ? resolveOwnedMonsterProfile(primaryId) : null;
+  if (profile?.registryId) {
+    const sprite = scene.add.image(
+      cx,
+      innerY + innerH / 2 + 4,
+      generateMonsterSprite(scene, profile.registryId),
+    ).setOrigin(0.5).setDisplaySize(42, 42).setDepth(7);
+    c.add(sprite);
+    if (!getReducedMotion()) {
+      scene.tweens.add({
+        targets: sprite,
+        y: sprite.y - 3,
+        duration: 1200 + index * 70,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+  } else if (trapCount > 0) {
+    drawTrapSilhouette(g, cx, floorY - 3, accent);
+  } else {
+    drawRoomEmblem(g, cx, innerY + innerH / 2 + 3, slot.roomType, accent);
+  }
+
+  c.add(scene.add.text(cx, floorY - 7, `준비 ${metrics.readiness}% · M${monsterIds.length} T${trapCount}`, {
+    fontFamily: 'sans-serif', fontSize: '10px',
+    color: metrics.readiness >= 70 ? '#d8c187' : '#e89271', fontStyle: 'bold',
+  }).setOrigin(0.5, 1).setDepth(8));
+}
+
+function drawSealedExpansion(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  y: number,
+  w: number,
+  h: number,
+  index: number,
+): void {
+  const doorW = Math.min(60, w - 22);
+  const doorX = cx - doorW / 2;
+  g.fillStyle(0x080706, 0.94);
+  g.fillRoundedRect(doorX, y + 8, doorW, h - 13, 13);
+  g.lineStyle(2, 0x5c4a31, 0.68);
+  g.strokeRoundedRect(doorX, y + 8, doorW, h - 13, 13);
+  g.lineStyle(2, 0x7f6845, 0.58);
+  g.lineBetween(doorX + 5, y + 15, doorX + doorW - 5, y + h - 9);
+  g.lineBetween(doorX + doorW - 5, y + 15, doorX + 5, y + h - 9);
+  g.fillStyle(0x17130e, 1);
+  g.fillRoundedRect(cx - 8, y + h / 2 - 4, 16, 15, 3);
+  g.lineStyle(2, 0xa98245, 0.72);
+  g.beginPath();
+  g.arc(cx, y + h / 2 - 4, 6, Math.PI, Math.PI * 2);
+  g.strokePath();
+  g.strokeRoundedRect(cx - 8, y + h / 2 - 4, 16, 15, 3);
+  const requiredLevel = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
+  c.add(scene.add.text(cx, y + h - 3, `심도 봉인 · Lv.${requiredLevel}`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#a99a80', fontStyle: 'bold',
+  }).setOrigin(0.5, 1).setDepth(8));
+}
+
+function drawTrapSilhouette(
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  floorY: number,
+  accent: number,
+): void {
+  g.fillStyle(0x090807, 0.96);
+  g.fillRect(cx - 25, floorY - 12, 50, 8);
+  g.fillStyle(accent, 0.72);
+  for (let i = 0; i < 5; i++) {
+    const x = cx - 22 + i * 11;
+    g.fillTriangle(x, floorY - 12, x + 9, floorY - 12, x + 4.5, floorY - 29 - (i % 2) * 4);
+  }
+}
+
+function drawRoomEmblem(
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  cy: number,
+  roomType: string,
+  accent: number,
+): void {
+  g.lineStyle(2, accent, 0.72);
+  g.strokeCircle(cx, cy, 18);
+  if (roomType === 'combat') {
+    g.lineBetween(cx - 10, cy + 10, cx + 10, cy - 10);
+    g.lineBetween(cx - 10, cy - 10, cx + 10, cy + 10);
+  } else if (roomType === 'trap') {
+    g.lineBetween(cx - 12, cy + 8, cx, cy - 10);
+    g.lineBetween(cx, cy - 10, cx + 12, cy + 8);
+  } else if (roomType === 'support') {
+    g.lineBetween(cx - 11, cy, cx + 11, cy);
+    g.lineBetween(cx, cy - 11, cx, cy + 11);
+  } else {
+    g.strokeCircle(cx, cy, 7);
+    g.fillStyle(accent, 0.76);
+    g.fillCircle(cx, cy, 3);
   }
 }
 
@@ -201,35 +352,38 @@ export function drawDungeonRoomAlcove(
   const energy = unlocked
     ? Phaser.Math.Clamp((isBuilt ? readiness / 100 : 0.28) + (slot?.roomLevel ?? 0) * 0.05, 0.22, 0.92)
     : 0.12;
-  const left = x - 8;
-  const top = y - 8;
-  const w = SLOT_W + 16;
-  const h = SLOT_H + 18;
-  const midX = x + SLOT_W / 2;
-  const floorY = y + SLOT_H + 8;
+  const cellW = scene.boardLayout.slotW;
+  const cellH = scene.boardLayout.slotH;
+  const left = x - 5;
+  const top = y - 3;
+  const w = cellW + 10;
+  const h = cellH + 7;
+  const midX = x + cellW / 2;
+  const floorY = y + cellH + 2;
   const alpha = unlocked ? 0.48 : 0.22;
 
-  g.fillStyle(0x050302, unlocked ? 0.66 : 0.40);
-  g.fillRoundedRect(left, top, w, h, 14);
-  g.lineStyle(1.1, 0x131b1b, unlocked ? 0.78 : 0.42);
-  g.strokeRoundedRect(left, top, w, h, 14);
+  // Only the masonry shell is drawn here; the shaft remains visible between rooms.
+  g.fillStyle(0x050706, unlocked ? 0.52 : 0.34);
+  g.fillRoundedRect(left, top + 10, w, h - 10, 16);
+  g.lineStyle(1.1, 0x33352e, unlocked ? 0.78 : 0.42);
+  g.strokeRoundedRect(left, top + 10, w, h - 10, 16);
 
-  g.fillStyle(0x101615, unlocked ? 0.60 : 0.32);
-  g.fillRoundedRect(left + 5, top + 4, w - 10, 13, 7);
+  g.fillStyle(0x151915, unlocked ? 0.76 : 0.42);
+  g.fillRoundedRect(left + 5, top + 8, w - 10, 10, 5);
   g.fillStyle(0xffffff, unlocked ? 0.055 : 0.025);
   g.fillRoundedRect(left + 12, top + 7, w - 24, 3, 2);
 
   g.fillStyle(0x070b0a, unlocked ? 0.80 : 0.46);
-  g.fillRoundedRect(left + 3, top + 15, 8, h - 24, 5);
-  g.fillRoundedRect(left + w - 11, top + 15, 8, h - 24, 5);
+  g.fillRoundedRect(left + 3, top + 18, 8, h - 29, 5);
+  g.fillRoundedRect(left + w - 11, top + 18, 8, h - 29, 5);
   g.lineStyle(1, accent, unlocked ? 0.18 + energy * 0.16 : 0.08);
   g.lineBetween(left + 7, top + 22, left + 7, top + h - 16);
   g.lineBetween(left + w - 7, top + 22, left + w - 7, top + h - 16);
 
   g.fillStyle(0x010202, unlocked ? 0.62 : 0.32);
-  g.fillEllipse(midX, floorY, SLOT_W + 18, 16);
+  g.fillEllipse(midX, floorY, cellW + 12, 14);
   g.fillStyle(accent, isBroken ? 0.12 : 0.045 + energy * 0.055);
-  g.fillEllipse(midX, floorY - 1, SLOT_W + 4, 9);
+  g.fillEllipse(midX, floorY - 1, cellW - 2, 8);
 
   const socketAlpha = isBroken ? 0.34 : 0.16 + energy * 0.20;
   const sockets = [
@@ -421,7 +575,7 @@ export function addRoomCrewBadge(
   if (countText) {
     badge.add(scene.add.text(7.5, 7.5, countText, {
       fontFamily: 'monospace',
-      fontSize: '7px',
+      fontSize: '10px',
       color: '#06100d',
       fontStyle: 'bold',
     }).setOrigin(0.5));
@@ -524,7 +678,7 @@ export function addRoomChangedPulse(
       : feedback.body);
     const item = scene.add.text(0, top + 29, itemLabel, {
       fontFamily: 'sans-serif',
-      fontSize: statLabel ? '10px' : '9px',
+      fontSize: '10px',
       color: '#d8fff5',
       fontStyle: 'bold',
       align: 'center',

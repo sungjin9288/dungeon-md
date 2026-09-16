@@ -4,16 +4,20 @@
  * Each function receives a RoomMechanicsContext that provides read/write
  * access to scene state, plus any per-mechanic local state structures.
  */
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
-import { Room } from '../objects/Room';
+import type { Room } from '../objects/Room';
 import type { RoomData } from '../data/rooms';
 import {
   ROOM_DEFS,
   getMedicineHealRate,
   getAltarKillsNeeded,
 } from '../data/rooms';
-import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
+import {
+  resolveMonsterAttackCooldown,
+  resolveMonsterDef,
+  resolveMonsterTypeId,
+} from '../data/monsters';
 import { INVADER_DEFS } from '../data/invaders';
 import type { DungeonSlot } from '../data/wisdom';
 import {
@@ -114,7 +118,7 @@ export function runTigersPounce(ctx: RoomMechanicsContext, now: number): void {
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < ctx.effectiveCols; col++) {
       const data = ctx.roomGrid[row][col];
-      if (!data || data.monsterSlot !== 'white_tiger') continue;
+      if (!data || resolveMonsterTypeId(data.monsterSlot ?? '') !== 'white_tiger') continue;
       const key = `${row},${col}`;
       let state = ctx.pounceReadyMap.get(key);
       if (!state) { state = { ready: true, cooldownUntil: 0 }; ctx.pounceReadyMap.set(key, state); }
@@ -133,7 +137,8 @@ export function runTigersPounce(ctx: RoomMechanicsContext, now: number): void {
       if (!target) continue;
 
       // Trigger pounce
-      const rdef = MONSTER_DEFS['white_tiger'];
+      const rdef = resolveMonsterDef(data.monsterSlot ?? undefined);
+      if (!rdef) continue;
       const dmg  = Math.round(rdef.baseDamage * 3 * Math.pow(1.4, data.level - 1));
       target.takeDamage(dmg);
       state.ready = false;
@@ -219,7 +224,7 @@ export function runSoulHarvest(ctx: RoomMechanicsContext, now: number): void {
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < ctx.effectiveCols; col++) {
       const data = ctx.roomGrid[row][col];
-      if (!data || data.monsterSlot !== 'death_messenger') continue;
+      if (!data || resolveMonsterTypeId(data.monsterSlot ?? '') !== 'death_messenger') continue;
       if (now - data.soulHarvestLastTime < 800) continue;
 
       // Check all invaders in row for <=15% HP
@@ -331,7 +336,7 @@ export function runEntrancingVeil(ctx: RoomMechanicsContext): void {
   let hasDancer = false;
   for (const row of ctx.roomGrid)
     for (const d of row)
-      if (d?.monsterSlot === 'celestial_dancer') { hasDancer = true; break; }
+      if (resolveMonsterTypeId(d?.monsterSlot ?? '') === 'celestial_dancer') { hasDancer = true; break; }
 
   if (hasDancer && !ctx.entrancingVeilApplied) {
     ctx.entrancingVeilApplied = true;
@@ -389,7 +394,7 @@ export function runLunarRhythm(ctx: RoomMechanicsContext, now: number): void {
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < ctx.effectiveCols; col++) {
       const d = ctx.roomGrid[row][col];
-      if (!d || d.monsterSlot !== 'moon_rabbit_sage') continue;
+      if (!d || resolveMonsterTypeId(d.monsterSlot ?? '') !== 'moon_rabbit_sage') continue;
       if (now - d.lunarResetLastTime < 30000) continue;
       d.lunarResetLastTime = now;
       // Reset adjacent rooms (4 cardinal dirs)
@@ -423,12 +428,12 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
       for (let si = 1; si < data.monsterSlots.length; si++) {
         const mId = data.monsterSlots[si];
         if (!mId) continue;
-        const mDef = MONSTER_DEFS[mId as MonsterId];
+        const mDef = resolveMonsterDef(mId);
         if (!mDef) continue;
 
         const cdKey = `${row}_${col}_${si}`;
         const lastAt = ctx.extraMonsterCooldowns.get(cdKey) ?? 0;
-        const cd     = mDef.attackCooldown > 0 ? mDef.attackCooldown : data.attackCooldown;
+        const cd = resolveMonsterAttackCooldown(mId, data.type);
         if (now - lastAt < cd / ctx.speedMult) continue;
 
         // Find nearest target in row range
@@ -455,4 +460,3 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
     }
   }
 }
-

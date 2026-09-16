@@ -3,7 +3,7 @@
  * skill tree section, and hero-collection-badge overlay for
  * MonsterDetailPanel.
  */
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type OwnedMonster } from '../data/wisdom';
 import { ACTIVE_SKILLS, xpToNextLevel, type SkillTree } from '../data/barracks';
 import { spendMonsterSkillNode } from '../data/barracksTransactions';
@@ -15,6 +15,7 @@ import {
   getEquipmentDisplay,
   shortenLabel,
 } from './MonsterDetailShared';
+import { drawGrowthSigil } from './BarracksSkin';
 
 // ─── Hero Collection Badges ───────────────────────────────────────────────────
 
@@ -141,55 +142,54 @@ export function buildGrowthCommandPanel(
   const eq = m.equipment ? getEquipmentDisplay(gs, m.equipment) : null;
 
   const bg = scene.add.graphics();
-  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
-  bg.fillRoundedRect(x, y, w, 48, 8);
-  bg.fillStyle(0xffffff, 0.12);
-  bg.fillRoundedRect(x + 4, y + 3, w - 8, 4, 3);
-  bg.fillStyle(directive.accent, 0.2);
-  bg.fillRoundedRect(x + 4, y + 4, 82, 40, 7);
-  bg.lineStyle(2, directive.accent, 0.9);
-  bg.strokeRoundedRect(x + 4, y + 4, 82, 40, 7);
-  bg.lineStyle(2, accentColor, 0.5);
-  bg.lineBetween(x + 96, y + 10, x + 96, y + 38);
-  bg.lineStyle(3, CASUAL.EDGE, 1);
-  bg.strokeRoundedRect(x, y, w, 48, 8);
+  bg.fillStyle(DUNGEON_UI.SOOT, 1);
+  bg.fillRoundedRect(x, y, w, 48, 7);
+  bg.fillStyle(directive.accent, 0.16);
+  bg.fillRoundedRect(x + 4, y + 4, 78, 40, 5);
+  bg.lineStyle(1.5, directive.accent, 0.82);
+  bg.strokeRoundedRect(x + 4, y + 4, 78, 40, 5);
+  bg.lineStyle(1, accentColor, 0.42);
+  bg.lineBetween(x + 92, y + 9, x + 92, y + 39);
+  bg.lineStyle(1.5, DUNGEON_UI.IRON, 0.92);
+  bg.strokeRoundedRect(x, y, w, 48, 7);
   ov.add(bg);
 
   ov.add(scene.add.text(x + 14, y + 13, '성장 루트', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + 14, y + 31, `${Math.round(xpPct * 100)}% EXP`, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0, 0.5));
 
-  ov.add(scene.add.text(x + 108, y + 14, directive.title, {
+  ov.add(scene.add.text(x + 102, y + 14, directive.title, {
     fontFamily: 'sans-serif',
     fontSize: '13px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0, 0.5));
-  ov.add(scene.add.text(x + 108, y + 32, directive.body, {
+  ov.add(scene.add.text(x + 102, y + 32, directive.body, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: CASUAL_CSS.INK_SOFT,
-    wordWrap: { width: 124, useAdvancedWrap: true },
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
+    wordWrap: { width: 132, useAdvancedWrap: true },
+    maxLines: 1,
   }).setOrigin(0, 0.5));
 
-  addGrowthPill(scene, ov, x + w - 84, y + 7,  72, 'SP',   String(m.skillPoints ?? 0), (m.skillPoints ?? 0) > 0 ? CASUAL.PURPLE : CASUAL.EDGE_SOFT);
-  addGrowthPill(scene, ov, x + w - 84, y + 27, 72, '장비', eq ? eq.icon : '미장착',    eq ? CASUAL.GOLD : CASUAL.EDGE_SOFT);
+  addGrowthPill(scene, ov, x + w - 86, y + 6,  74, 'SP',   String(m.skillPoints ?? 0), (m.skillPoints ?? 0) > 0 ? 0x9b71d1 : DUNGEON_UI.EDGE);
+  addGrowthPill(scene, ov, x + w - 86, y + 27, 74, '장비', eq ? '장착' : '미장착', eq ? DUNGEON_UI.BRASS : DUNGEON_UI.EDGE);
 
   const skillSlotLabel = `${equippedSkills.length}/2 스킬`;
-  ov.add(scene.add.text(x + w - 95, y + 39, skillSlotLabel, {
+  ov.add(scene.add.text(x + w - 96, y + 39, skillSlotLabel, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: equippedSkills.length >= 2 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+    color: equippedSkills.length >= 2 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
   }).setOrigin(1, 0.5));
 }
 
@@ -202,7 +202,7 @@ function addGrowthPill(
   accent: number,
 ): void {
   const bg = scene.add.graphics();
-  bg.fillStyle(CASUAL.PANEL, 1);
+  bg.fillStyle(DUNGEON_UI.STONE, 1);
   bg.fillRoundedRect(x, y, w, 16, 5);
   bg.lineStyle(1.5, accent, 0.9);
   bg.strokeRoundedRect(x, y, w, 16, 5);
@@ -210,15 +210,15 @@ function addGrowthPill(
 
   ov.add(scene.add.text(x + 6, y + 8, label, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(x + w - 6, y + 8, value, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
   }).setOrigin(1, 0.5));
 }
 
@@ -243,40 +243,41 @@ export function buildFeedTrainingAction(
   setMessage: (title: string, sub: string, chip: string, color: string) => void;
   resetMessage: () => void;
 } {
-  const { x, y, w, h, monster, state, onPress } = options;
+  const { x, y, w, h, monster, state, accentColor, onPress } = options;
   const preview = getFeedTrainingPreview(monster, state);
-  // 캔디 CTA: 만렙=초록 비활성톤, 가능=골드, 부족=뮤트 크림
-  const fillColor   = preview.maxLevel ? CASUAL.GREEN  : preview.canAfford ? CASUAL.GOLD : CASUAL.PANEL_SOFT;
-  const borderColor = preview.maxLevel ? CASUAL.GREEN_DK : preview.canAfford ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT;
-  const chipColor   = preview.maxLevel ? CASUAL.GREEN_DK : preview.willLevelUp ? CASUAL.GOLD_DK : preview.canAfford ? CASUAL.GOLD_DK : CASUAL.RED;
-  const onCandy     = preview.canAfford || preview.maxLevel; // 채도 캡 위 글자는 흰색
-  const chipCss     = `#${chipColor.toString(16).padStart(6, '0')}`; // 흰 칩 위 채도 글자
+  const borderColor = preview.maxLevel
+    ? DUNGEON_UI.JADE
+    : preview.canAfford ? DUNGEON_UI.BRASS : DUNGEON_UI.EMBER;
+  const chipColor = preview.willLevelUp ? DUNGEON_UI.BRASS_BRIGHT : borderColor;
+  const chipCss = `#${chipColor.toString(16).padStart(6, '0')}`;
   const defaultTitle      = preview.title;
   const defaultSub        = preview.sub;
   const defaultChip       = preview.chip;
-  const defaultTitleColor = onCandy ? '#ffffff' : CASUAL_CSS.RED;
+  const defaultTitleColor = preview.canAfford || preview.maxLevel
+    ? DUNGEON_UI_CSS.PARCHMENT
+    : DUNGEON_UI_CSS.EMBER;
   const defaultChipColor  = chipCss;
 
   const bg = scene.add.graphics();
-  // 채도 베이스(어두운 테두리색) → 밝은 캡 = 캔디 버튼 입체
-  bg.fillStyle(borderColor, 1);
-  bg.fillRoundedRect(x, y + 4, w, h, 10);
-  bg.fillStyle(fillColor, 1);
-  bg.fillRoundedRect(x, y, w, h - 2, 10);
-  bg.fillStyle(0xffffff, 0.32);
-  bg.fillRoundedRect(x + 5, y + 4, w - 10, Math.max(8, h * 0.36), 6);
-  bg.fillStyle(0xffffff, onCandy ? 0.22 : 0.5);
-  bg.fillRoundedRect(x + 7, y + 6, 36, h - 12, 8);
+  bg.fillStyle(DUNGEON_UI.VOID, 0.66);
+  bg.fillRoundedRect(x, y + 4, w, h, 8);
+  bg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+  bg.fillRoundedRect(x, y, w, h - 2, 8);
+  bg.fillStyle(borderColor, 0.16);
+  bg.fillRoundedRect(x + 5, y + 5, 42, h - 12, 6);
+  bg.lineStyle(1.5, borderColor, 0.88);
+  bg.strokeRoundedRect(x, y, w, h - 2, 8);
+  drawGrowthSigil(bg, x + 26, y + h / 2 - 1, accentColor, 0.96);
 
   const trackX = x + w - 96;
   const trackY = y + h - 8;
   const trackW = 74;
-  bg.fillStyle(CASUAL.PANEL_SOFT, 0.9);
+  bg.fillStyle(DUNGEON_UI.VOID, 0.9);
   bg.fillRoundedRect(trackX, trackY, trackW, 3, 2);
-  bg.fillStyle(0xffffff, 0.7);
+  bg.fillStyle(DUNGEON_UI.JADE, 0.78);
   bg.fillRoundedRect(trackX, trackY, Math.max(3, Math.round(trackW * preview.currentPct)), 3, 2);
   if (preview.nextPct > preview.currentPct) {
-    bg.fillStyle(0xffffff, 1);
+    bg.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 1);
     bg.fillRoundedRect(
       trackX + Math.round(trackW * preview.currentPct),
       trackY,
@@ -286,41 +287,34 @@ export function buildFeedTrainingAction(
     );
   }
 
-  const iconText = scene.add.text(x + 25, y + h / 2, preview.maxLevel ? '👑' : '🥩', {
-    fontFamily: 'sans-serif',
-    fontSize: '20px',
-  }).setOrigin(0.5);
-
-  const titleText = scene.add.text(x + 60, y + 12, defaultTitle, {
+  const titleText = scene.add.text(x + 58, y + 15, defaultTitle, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     fontStyle: 'bold',
     color: defaultTitleColor,
-    stroke: onCandy ? '#00000033' : undefined,
-    strokeThickness: onCandy ? 3 : 0,
   }).setOrigin(0, 0.5);
-  const subText = scene.add.text(x + 60, y + 27, defaultSub, {
+  const subText = scene.add.text(x + 58, y + 34, defaultSub, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: onCandy ? '#ffffff' : CASUAL_CSS.RED,
+    color: preview.canAfford || preview.maxLevel ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.EMBER,
   }).setOrigin(0, 0.5);
 
-  bg.fillStyle(0xffffff, 0.85);
-  bg.fillRoundedRect(x + w - 90, y + 7, 76, 19, 7);
+  bg.fillStyle(DUNGEON_UI.SOOT, 0.96);
+  bg.fillRoundedRect(x + w - 92, y + 8, 76, 21, 6);
   bg.lineStyle(1.5, chipColor, 0.9);
-  bg.strokeRoundedRect(x + w - 90, y + 7, 76, 19, 7);
-  const chipText = scene.add.text(x + w - 52, y + 16.5, defaultChip, {
+  bg.strokeRoundedRect(x + w - 92, y + 8, 76, 21, 6);
+  const chipText = scene.add.text(x + w - 54, y + 18.5, defaultChip, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
     color: chipCss,
   }).setOrigin(0.5);
-  const arrowText = scene.add.text(x + w - 11, y + h / 2, '▶', {
+  const arrowText = scene.add.text(x + w - 10, y + h / 2, '›', {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
+    fontSize: '18px',
     fontStyle: 'bold',
-    color: onCandy ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+    color: preview.canAfford || preview.maxLevel ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5);
 
   const zone = scene.add.zone(x + w / 2, y + h / 2, w, Math.max(44, h)).setInteractive({ useHandCursor: true });
@@ -340,7 +334,7 @@ export function buildFeedTrainingAction(
   };
 
   return {
-    objects: [bg, iconText, titleText, subText, chipText, arrowText, zone],
+    objects: [bg, titleText, subText, chipText, arrowText, zone],
     setMessage,
     resetMessage,
   };
@@ -358,16 +352,16 @@ export function buildSkillTreeSection(
   const { scene, onRefresh } = ctx;
 
   const hdr = scene.add.text(x + w / 2, y, '스킬 트리', {
-    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5);
   ov.add(hdr);
 
   const branches = (['A', 'B', 'C'] as const);
   const colW = w / 3;
   const branchAccents: Record<'A' | 'B' | 'C', number> = {
-    A: CASUAL.RED,
-    B: CASUAL.BLUE,
-    C: CASUAL.GREEN,
+    A: DUNGEON_UI.EMBER,
+    B: 0x5b8bb7,
+    C: DUNGEON_UI.JADE,
   };
 
   branches.forEach((branch, bi) => {
@@ -376,13 +370,13 @@ export function buildSkillTreeSection(
     const branchAccent = branchAccents[branch];
 
     const lane = scene.add.graphics();
-    lane.fillStyle(branchAccent, 1);
+    lane.fillStyle(DUNGEON_UI.SOOT, 1);
     lane.fillRoundedRect(bx + 8, y + 11, colW - 16, 20, 7);
-    lane.fillStyle(0xffffff, 0.3);
-    lane.fillRoundedRect(bx + 11, y + 13, colW - 22, 4, 2);
-    lane.lineStyle(2, CASUAL.EDGE, 0.9);
+    lane.fillStyle(branchAccent, 0.22);
+    lane.fillRoundedRect(bx + 11, y + 14, colW - 22, 3, 2);
+    lane.lineStyle(1.5, branchAccent, 0.72);
     lane.strokeRoundedRect(bx + 8, y + 11, colW - 16, 20, 7);
-    lane.lineStyle(2, branchAccent, 0.35);
+    lane.lineStyle(1.5, branchAccent, 0.28);
     lane.lineBetween(bx + colW / 2, y + 34, bx + colW / 2, y + 198);
     ov.add(lane);
 
@@ -390,9 +384,7 @@ export function buildSkillTreeSection(
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: '#ffffff',
-      stroke: '#00000033',
-      strokeThickness: 3,
+      color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0.5);
     ov.add(bnT);
 
@@ -403,36 +395,30 @@ export function buildSkillTreeSection(
       const prereqMet  = !node.requires || (m.spentSkills[node.requires] ?? 0) >= 1;
       const canAfford  = m.skillPoints >= node.cost;
       const canUnlock  = !spent && prereqMet && canAfford;
-      const stateAccent    = spent ? CASUAL.GREEN : canUnlock ? CASUAL.GOLD : prereqMet ? branchAccent : CASUAL.EDGE_SOFT;
-      const stateAccentCss = spent ? CASUAL_CSS.GREEN : canUnlock ? CASUAL_CSS.GOLD : prereqMet ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT;
-      // 습득=초록 채도면(흰글자), 그 외=크림 타일(잉크글자)
+      const stateAccent    = spent ? DUNGEON_UI.JADE : canUnlock ? DUNGEON_UI.BRASS_BRIGHT : prereqMet ? branchAccent : DUNGEON_UI.EDGE;
+      const stateAccentCss = spent ? DUNGEON_UI_CSS.JADE : canUnlock ? DUNGEON_UI_CSS.BRASS : prereqMet ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED;
       const filledTile = spent;
-      const stateFill  = filledTile ? CASUAL.GREEN : prereqMet ? CASUAL.PANEL : CASUAL.PANEL_SOFT;
+      const stateFill  = filledTile ? DUNGEON_UI.STONE_RAISED : prereqMet ? DUNGEON_UI.STONE : DUNGEON_UI.SOOT;
       const stateLabel = spent ? '습득' : canUnlock ? '해금' : prereqMet ? `${node.cost}SP` : '잠김';
       const nodeW = 82;
       const nodeH = 52;
 
       const nodeBg = scene.add.graphics();
-      nodeBg.fillStyle(CASUAL.SHADOW, 0.18);
+      nodeBg.fillStyle(DUNGEON_UI.VOID, 0.48);
       nodeBg.fillRoundedRect(nx - nodeW / 2 + 2, ny + 3, nodeW, nodeH, 8);
-      nodeBg.fillStyle(stateFill, prereqMet ? 1 : 0.88);
+      nodeBg.fillStyle(stateFill, prereqMet ? 1 : 0.9);
       nodeBg.fillRoundedRect(nx - nodeW / 2, ny, nodeW, nodeH, 8);
-      nodeBg.fillStyle(0xffffff, filledTile ? 0.28 : 0.4);
-      nodeBg.fillRoundedRect(nx - nodeW / 2 + 5, ny + 4, nodeW - 10, 4, 3);
-      nodeBg.fillStyle(stateAccent, filledTile ? 0.3 : 0.18);
+      nodeBg.fillStyle(stateAccent, filledTile ? 0.22 : 0.13);
       nodeBg.fillRoundedRect(nx - nodeW / 2 + 5, ny + 9, 30, 28, 7);
-      nodeBg.lineStyle(spent || canUnlock ? 3 : 2, stateAccent, prereqMet ? 1 : 0.7);
+      nodeBg.lineStyle(spent || canUnlock ? 2 : 1.2, stateAccent, prereqMet ? 0.9 : 0.42);
       nodeBg.strokeRoundedRect(nx - nodeW / 2, ny, nodeW, nodeH, 8);
+      drawGrowthSigil(nodeBg, nx - nodeW / 2 + 20, ny + 23, stateAccent, prereqMet ? 0.9 : 0.38);
       ov.add(nodeBg);
 
-      ov.add(scene.add.text(nx - nodeW / 2 + 20, ny + 23, node.icon, {
-        fontFamily: 'sans-serif',
-        fontSize: '17px',
-      }).setOrigin(0.5));
       ov.add(scene.add.text(nx - nodeW / 2 + 8, ny + 9, `T${node.tier}`, {
         fontFamily: 'monospace',
-        fontSize: '7px',
-        color: filledTile ? '#ffffff' : CASUAL_CSS.INK_SOFT,
+        fontSize: '10px',
+        color: filledTile ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
         fontStyle: 'bold',
       }).setOrigin(0, 0.5));
 
@@ -440,22 +426,22 @@ export function buildSkillTreeSection(
         fontFamily: 'sans-serif',
         fontSize: '10px',
         fontStyle: 'bold',
-        color: filledTile ? '#ffffff' : prereqMet ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+        color: filledTile ? DUNGEON_UI_CSS.PARCHMENT : prereqMet ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0, 0.5));
 
       ov.add(scene.add.text(nx + 2, ny + 36, stateLabel, {
         fontFamily: 'sans-serif',
-        fontSize: '9px',
+        fontSize: '10px',
         fontStyle: spent || canUnlock ? 'bold' : 'normal',
-        color: filledTile ? '#ffffff' : stateAccentCss,
+        color: filledTile ? DUNGEON_UI_CSS.JADE : stateAccentCss,
       }).setOrigin(0, 0.5));
       if (canUnlock) {
         ov.add(scene.add.text(nx + nodeW / 2 - 7, ny + 8, '!', {
           fontFamily: 'sans-serif',
           fontSize: '10px',
-          color: '#ffffff',
+          color: DUNGEON_UI_CSS.PARCHMENT,
           fontStyle: 'bold',
-          backgroundColor: CASUAL_CSS.GOLD,
+          backgroundColor: '#4c351b',
           padding: { x: 3, y: 1 },
         }).setOrigin(1, 0.5));
       }

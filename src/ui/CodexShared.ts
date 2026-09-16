@@ -4,7 +4,13 @@
  */
 
 import { CANVAS_WIDTH } from '../constants/layout';
-import { type TribeId, type MonsterId, MONSTER_DEFS } from '../data/monsters';
+import {
+  type TribeId,
+  type MonsterId,
+  MONSTER_DEFS,
+  resolveMonsterTypeId,
+} from '../data/monsters';
+import type { OwnedMonster } from '../data/wisdom';
 
 // ─── Tribe metadata ───────────────────────────────────────────────────────────
 
@@ -126,4 +132,76 @@ export function isTribeClaimable(
   const required = tribeMonsterIds.filter(id => id !== rewardMonsterId);
   if (required.length === 0) return false;
   return required.every(id => isOwned(id));
+}
+
+export interface CodexOwnershipState {
+  readonly ownedMonsters: readonly OwnedMonster[];
+  readonly codexRewardsClaimed?: readonly string[];
+}
+
+export interface CodexTribeProgress {
+  readonly tribeId: TribeId;
+  readonly allMonsterIds: readonly MonsterId[];
+  readonly requiredMonsterIds: readonly MonsterId[];
+  readonly missingMonsterIds: readonly MonsterId[];
+  readonly rewardMonsterId: MonsterId | undefined;
+  readonly ownedCount: number;
+  readonly requiredOwnedCount: number;
+  readonly rewardOwned: boolean;
+  readonly claimed: boolean;
+  readonly claimable: boolean;
+}
+
+/**
+ * Build the Codex view's current-save eligibility record for one tribe.
+ *
+ * A mapped reward and every `codex_reward` entry are excluded from the
+ * collection prerequisite. They are grant-only records and therefore cannot be
+ * required to unlock another grant. The mutation transaction remains unchanged;
+ * callers must recompute this helper from the same fresh state they submit.
+ */
+export function getCodexTribeProgress(
+  state: CodexOwnershipState,
+  tribeId: TribeId,
+): CodexTribeProgress {
+  const allMonsterIds = (Object.values(MONSTER_DEFS))
+    .filter(monster => monster.tribe === tribeId)
+    .map(monster => monster.id);
+  const rewardMonsterId = TRIBE_REWARD_MONSTER[tribeId];
+  const requiredMonsterIds = allMonsterIds.filter(monsterId => (
+    monsterId !== rewardMonsterId
+    && MONSTER_DEFS[monsterId]?.unlockMethod !== 'codex_reward'
+  ));
+  const ownedTypes = new Set<MonsterId>();
+  state.ownedMonsters.forEach(monster => {
+    const typeId = resolveMonsterTypeId(monster.id);
+    if (typeId) ownedTypes.add(typeId);
+  });
+  const missingMonsterIds = requiredMonsterIds.filter(monsterId => !ownedTypes.has(monsterId));
+  const claimed = state.codexRewardsClaimed?.includes(tribeId) ?? false;
+
+  return {
+    tribeId,
+    allMonsterIds,
+    requiredMonsterIds,
+    missingMonsterIds,
+    rewardMonsterId,
+    ownedCount: allMonsterIds.filter(monsterId => ownedTypes.has(monsterId)).length,
+    requiredOwnedCount: requiredMonsterIds.length - missingMonsterIds.length,
+    rewardOwned: rewardMonsterId ? ownedTypes.has(rewardMonsterId) : false,
+    claimed,
+    claimable: Boolean(rewardMonsterId && requiredMonsterIds.length > 0 && missingMonsterIds.length === 0 && !claimed),
+  };
+}
+
+/** Current-save, canonical tribe/reward pairs safe to pass to claim-all. */
+export function getClaimableCodexTribes(
+  state: CodexOwnershipState,
+): readonly { tribeId: TribeId; rewardMonsterId: MonsterId }[] {
+  return TRIBE_META.flatMap(tribe => {
+    const progress = getCodexTribeProgress(state, tribe.id);
+    return progress.claimable && progress.rewardMonsterId
+      ? [{ tribeId: tribe.id, rewardMonsterId: progress.rewardMonsterId }]
+      : [];
+  });
 }

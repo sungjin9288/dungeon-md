@@ -12,7 +12,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { ROOM_DEFS } from '../data/rooms';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
-import { resolveMonsterTypeId, type MonsterId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { RoomLoadoutVisualOptions } from './Room';
 import { getReducedMotion } from '../utils/reducedMotion';
 
@@ -210,6 +210,9 @@ export function clearSlotLoadoutVisual(room: Room): void {
   room.slotLoadoutGfx = undefined;
   room.slotLoadoutLabels.forEach(label => label.destroy());
   room.slotLoadoutLabels = [];
+  room.baseRoomIcon?.setVisible(true);
+  room.baseRoomNameLabel?.setVisible(true);
+  room.roomTypeBadge?.setVisible(true);
 }
 
 // ─── setDungeonSlotLoadoutVisual ─────────────────────────────────────────────
@@ -217,6 +220,9 @@ export function clearSlotLoadoutVisual(room: Room): void {
 export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptions): void {
   clearSlotLoadoutVisual(room);
   if (room.state !== 'occupied') return;
+  room.baseRoomIcon?.setVisible(false);
+  room.baseRoomNameLabel?.setVisible(false);
+  room.roomTypeBadge?.setVisible(false);
 
   const s = room.cs;
   const accent = options.accentColor;
@@ -272,17 +278,17 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
 
   const title = room.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
     fontFamily: 'Georgia, serif',
-    fontSize: '8px',
+    fontSize: '10px',
     color: CASUAL_CSS.WHITE,
     fontStyle: 'bold',
   }).setOrigin(0.5);
   room.slotLoadoutLabels.push(title);
   room.add(title);
 
-  const monsterTypeId = options.primaryMonsterId
-    ? resolveMonsterTypeId(options.primaryMonsterId)
+  const monsterProfile = options.primaryMonsterId
+    ? resolveOwnedMonsterProfile(options.primaryMonsterId)
     : null;
-  const spriteId = (monsterTypeId ?? options.primaryMonsterId ?? '') as MonsterId;
+  const spriteId = monsterProfile?.registryId ?? null;
   if (hasGuardian && spriteId) {
     // Illustrated guardians (AI portrait loaded) stand as a framed medallion;
     // monsters without art fall back to the procedural pixel body sprite.
@@ -290,7 +296,7 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
     const sprite = tokenKey
       ? room.scene.add.image(0, centerY, tokenKey).setOrigin(0.5).setDisplaySize(46, 46)
       : room.scene.add.image(0, centerY, generateMonsterSprite(room.scene, spriteId))
-          .setOrigin(0.5).setScale(1.25);
+          .setOrigin(0.5).setDisplaySize(60, 60);
     room.slotLoadoutSprite = sprite;
     room.add(sprite);
     // Idle bob is decorative — under reduced motion the guardian stands still.
@@ -303,10 +309,10 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
       });
     }
   } else {
-    const guardianGlyph = options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
+    const guardianGlyph = monsterProfile?.emoji ?? options.primaryMonsterEmoji ?? (hasGuardian ? '👾' : '◇');
     const guardian = room.scene.add.text(0, centerY + (hasGuardian ? -1 : 0), guardianGlyph, {
       fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
-      fontSize: hasGuardian ? '25px' : '15px',
+      fontSize: hasGuardian ? '22px' : '15px',
       color: hasGuardian ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
       stroke: hasGuardian ? '#4a3016' : '#8a6238',
       strokeThickness: hasGuardian ? 3 : 1,
@@ -317,12 +323,12 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
 
   if (options.monsterCount > 1) {
     g.fillStyle(CASUAL.RED, 0.95);
-    g.fillRoundedRect(10, centerY - 17, 18, 11, 4);
+    g.fillRoundedRect(9, centerY - 18, 22, 15, 4);
     g.lineStyle(1, CASUAL.RED_DK, 0.6);
-    g.strokeRoundedRect(10, centerY - 17, 18, 11, 4);
-    const count = room.scene.add.text(19, centerY - 11.5, `x${options.monsterCount}`, {
+    g.strokeRoundedRect(9, centerY - 18, 22, 15, 4);
+    const count = room.scene.add.text(20, centerY - 10.5, `x${options.monsterCount}`, {
       fontFamily: 'Georgia, serif',
-      fontSize: '7px',
+      fontSize: '10px',
       color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -336,27 +342,14 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
   g.lineStyle(1.5, CASUAL.EDGE, 0.85);
   g.strokeRoundedRect(-s / 2 + 11, stripY, s - 22, 14, 5);
 
-  const drawPips = (startX: number, y: number, count: number, cap: number, fill: number): void => {
-    const safeCap = Math.max(1, Math.min(5, cap));
-    for (let i = 0; i < safeCap; i++) {
-      g.fillStyle(i < count ? fill : CASUAL.PANEL, i < count ? 0.95 : 1);
-      g.fillCircle(startX + i * 6, y, 2.2);
-      g.lineStyle(0.8, i < count ? fill : CASUAL.EDGE_SOFT, i < count ? 0.7 : 0.5);
-      g.strokeCircle(startX + i * 6, y, 2.2);
-    }
-  };
-
-  drawPips(-s / 2 + 21, stripY + 7, options.monsterCount, options.monsterCapacity, CASUAL.RED);
-  drawPips(s / 2 - 21 - Math.max(0, Math.min(5, options.trapCapacity) - 1) * 6, stripY + 7, options.trapCount, options.trapCapacity, CASUAL.GREEN_DK);
-
   if (options.equipmentCount > 0) {
     g.fillStyle(CASUAL.GOLD, 0.35);
-    g.fillRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
+    g.fillRoundedRect(-s / 2 + 12, stripY - 18, 32, 15, 4);
     g.lineStyle(1, CASUAL.GOLD_DK, 0.7);
-    g.strokeRoundedRect(-s / 2 + 13, stripY - 17, 28, 12, 4);
-    const equipment = room.scene.add.text(-s / 2 + 27, stripY - 11, `⚙${options.equipmentCount}`, {
+    g.strokeRoundedRect(-s / 2 + 12, stripY - 18, 32, 15, 4);
+    const equipment = room.scene.add.text(-s / 2 + 28, stripY - 10.5, `⚙${options.equipmentCount}`, {
       fontFamily: 'Georgia, serif',
-      fontSize: '7px',
+      fontSize: '10px',
       color: CASUAL_CSS.GOLD,
       fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -366,10 +359,10 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
 
   const loadoutLabel = options.equipmentCount > 0
     ? `M${options.monsterCount}/${options.monsterCapacity} E${options.equipmentCount} T${options.trapCount}/${options.trapCapacity}`
-    : `M${options.monsterCount}/${options.monsterCapacity} T${options.trapCount}/${options.trapCapacity}`;
+    : `M${options.monsterCount}/${options.monsterCapacity} · T${options.trapCount}/${options.trapCapacity}`;
   const loadout = room.scene.add.text(0, stripY + 7, loadoutLabel, {
     fontFamily: 'monospace',
-    fontSize: '7px',
+    fontSize: '10px',
     color: CASUAL_CSS.INK,
     fontStyle: 'bold',
   }).setOrigin(0.5);

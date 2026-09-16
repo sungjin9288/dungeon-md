@@ -7,15 +7,12 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
-  getRoomSlotCapacity, getUnlockedSlots, ROOM_SLOT_TYPE_DEFS,
+  getUnlockedSlots, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot, type GameState } from '../data/wisdom';
-import { MONSTER_DEFS } from '../data/monsters';
-import {
-  calculateRoomLoadoutStatus,
-  calculateRoomMetrics,
-  type RoomOperationalMetrics } from '../data/dungeonMetrics';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
+import { type RoomOperationalMetrics } from '../data/dungeonMetrics';
 import { getRoomDesignRecommendation } from '../data/roomDesignRecommendations';
 import { getDungeonActionQueue } from '../data/roomActionRecommendations';
 import {
@@ -29,7 +26,6 @@ import {
   type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
-import { drawRoomLoadoutRail } from './RoomLoadoutRail';
 import { showTrapPicker, showMonsterPicker } from './RoomPickerModals';
 import type { PickerNavCallbacks } from './RoomPickerModals';
 
@@ -45,7 +41,7 @@ import {
   navigateToFocusedForge, navigateToFocusedMonster } from './RoomDetailInterior';
 
 import {
-  ROOM_DETAIL_CLOSE_MS, ROOM_TYPE_ACCENT, RoomDetailNextActionEntry, RoomDirective, RoomDirectiveTarget, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks, navigateFromRoomDetail } from './RoomDetailShared';
+  ROOM_DETAIL_CLOSE_MS, RoomDetailNextActionEntry, RoomDirective, RoomDirectiveTarget, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks, navigateFromRoomDetail } from './RoomDetailShared';
 import {
   drawSectionTargetPulse, applyRoomRepairAction, applyRecommendedRoomDesign, applyRecommendedMonsterPlacement, applyRecommendedTrapPlacement } from './RoomDetailFeedback';
 
@@ -54,9 +50,9 @@ import {
 export function buildRoomOperationsPanel(
   scene: Phaser.Scene,
   state: RoomDetailState,
-  theme: DungeonTheme,
+  _theme: DungeonTheme,
   cb: RoomDetailCallbacks,
-  nav: PickerNavCallbacks,
+  _nav: PickerNavCallbacks,
   c: Phaser.GameObjects.Container,
   gs: GameState,
   slot: DungeonSlot,
@@ -66,15 +62,13 @@ export function buildRoomOperationsPanel(
   secY: number,
   highlightTarget = false,
 ): number {
-  const canResumePreBattle = Boolean(cb.isPreBattleEditActive?.() && cb.resumePreBattle);
-  const panelH = canResumePreBattle ? 188 : 178;
-  const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
+  const panelH = 98;
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
-  const monsterCount = slot.monsterIds.filter(Boolean).length;
+  const monsterCount = slot.monsterIds.filter(monsterId => (
+    typeof monsterId === 'string'
+    && gs.ownedMonsters.some(monster => monster.id === monsterId)
+  )).length;
   const trapCount = slot.trapIds.filter(Boolean).length;
-  const roomMetrics = calculateRoomMetrics(gs, slot);
-  const loadoutStatus = calculateRoomLoadoutStatus(gs, slot);
-  const directive = getRoomDirective(scene, state, theme, cb, nav, slot, slotIdx, cap, monsterCount, trapCount, roomMetrics);
   const status = slot.roomType && slot.hp <= 0
     ? '수리 필요'
     : !slot.roomType
@@ -88,73 +82,47 @@ export function buildRoomOperationsPanel(
     y: secY,
     w: secW,
     h: panelH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: CASUAL.GREEN,
-    accentAlpha: 1,
-    glowColor: CASUAL.GREEN,
-    glowOpacity: 0.04,
+    radius: 4,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.9,
+    borderWidth: 1,
+    accentColor: DUNGEON_UI.JADE,
+    accentAlpha: 0.7,
+    glowColor: DUNGEON_UI.JADE,
+    glowOpacity: 0.02,
     shadowOpacity: 0.26,
     shadowOffsetY: 3 });
   c.add([frame.shadow, frame.panel, frame.glow]);
   if (highlightTarget) {
-    drawSectionTargetPulse(scene, c, secX, secY, secW, panelH, CASUAL.GREEN, '전력 보강');
+    drawSectionTargetPulse(scene, c, secX, secY, secW, panelH, DUNGEON_UI.JADE, '전력 보강');
   }
 
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.GREEN, 0.1);
-  g.fillRoundedRect(secX + 10, secY + 10, secW - 20, 28, 7);
-  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
-  g.lineBetween(secX + 14, secY + 58, secX + secW - 14, secY + 58);
+  g.fillStyle(DUNGEON_UI.JADE, 0.1);
+  g.fillRect(secX + 8, secY + 8, 4, panelH - 16);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.38);
+  g.lineBetween(secX + 14, secY + 34, secX + secW - 14, secY + 34);
   c.add(g);
 
-  c.add(scene.add.text(secX + 18, secY + 24, '운영 현황', {
+  c.add(scene.add.text(secX + 18, secY + 20, '정비 도구', {
     fontFamily: 'sans-serif',
-    fontSize: '14px',
-    color: CASUAL_CSS.INK,
+    fontSize: '13px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  c.add(scene.add.text(secX + secW - 18, secY + 24, `${typeDef?.name ?? '미설계'} · ${status}`, {
+  c.add(scene.add.text(secX + secW - 18, secY + 20, `${typeDef?.name ?? '미설계'} · ${status} · 수호 ${monsterCount} · 함정 ${trapCount}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: slot.roomType && slot.hp <= 0 ? CASUAL_CSS.RED : slot.roomType ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+    color: slot.roomType && slot.hp <= 0 ? DUNGEON_UI_CSS.EMBER : slot.roomType ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
-  const readinessW = secW - 156;
-  const readinessY = secY + 48;
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(secX + 14, readinessY, readinessW, 8, 4);
-  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.6);
-  g.strokeRoundedRect(secX + 14, readinessY, readinessW, 8, 4);
-  g.fillStyle(roomMetrics.readiness >= 70 ? CASUAL.GREEN : roomMetrics.readiness >= 35 ? CASUAL.GOLD : CASUAL.RED, 1);
-  g.fillRoundedRect(secX + 14, readinessY, Math.max(5, readinessW * roomMetrics.readiness / 100), 8, 4);
-  c.add(scene.add.text(secX + 14, readinessY - 10, `준비도 ${roomMetrics.readiness}%`, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold' }).setOrigin(0, 0.5));
-
-  drawRoomLoadoutRail(scene, c, g, loadoutStatus, {
-    x: secX + secW - 142,
-    y: secY + 39,
-    w: 128,
-    h: 18,
-    accent: slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? CASUAL.GREEN : CASUAL.GREEN,
-    showLabels: true });
-
-  c.add(scene.add.text(secX + 18, secY + 73, '다음 지시', {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold' }).setOrigin(0, 0.5));
-  drawRoomDirective(scene, c, directive, secX + 14, secY + 84, secW - 28);
-
-  const shortcutY = secY + 144;
-  const shortcutW = canResumePreBattle ? (secW - 42) / 3 : (secW - 34) / 2;
-  const shortcutGap = canResumePreBattle ? 7 : 6;
-  const firstMonsterId = slot.monsterIds.find((monsterId): monsterId is string => typeof monsterId === 'string');
+  const shortcutY = secY + 43;
+  const shortcutW = (secW - 42) / 2;
+  const shortcutGap = 8;
+  const firstMonsterId = slot.monsterIds.find((monsterId): monsterId is string => (
+    typeof monsterId === 'string'
+    && gs.ownedMonsters.some(monster => monster.id === monsterId)
+  ));
   const addShortcut = (
     x: number,
     label: string,
@@ -167,7 +135,7 @@ export function buildRoomOperationsPanel(
       x,
       y: shortcutY,
       w: shortcutW,
-      h: 26,
+      h: 44,
       label,
       fontSize: '10px',
       fillColor,
@@ -179,29 +147,20 @@ export function buildRoomOperationsPanel(
     c.add([button.bg, button.text, button.zone]);
   };
 
-  addShortcut(secX + 14, canResumePreBattle ? '👹 성장' : '👹 성장/레벨업', CASUAL.GREEN, CASUAL.GREEN_DK, '#ffffff', () => {
+  addShortcut(secX + 14, '수호자 성장', DUNGEON_UI.JADE, DUNGEON_UI.EDGE, '#07100c', () => {
     if (firstMonsterId) {
       navigateToFocusedMonster(scene, state, cb, firstMonsterId, slotIdx);
       return;
     }
     navigateFromRoomDetail(scene, state, cb, 'BarracksScene');
   });
-  addShortcut(secX + 14 + shortcutW + shortcutGap, canResumePreBattle ? '⚒ 장비' : '⚒ 장비 강화', CASUAL.PURPLE, CASUAL.PURPLE_DK, '#ffffff', () => {
+  addShortcut(secX + 14 + shortcutW + shortcutGap, '장비 강화', DUNGEON_UI.BRASS, DUNGEON_UI.BRASS_BRIGHT, '#120d06', () => {
     if (firstMonsterId) {
       navigateToFocusedForge(scene, state, cb, firstMonsterId, slotIdx);
       return;
     }
     navigateFromRoomDetail(scene, state, cb, 'ForgeScene');
   });
-  if (canResumePreBattle) {
-    addShortcut(secX + 14 + (shortcutW + shortcutGap) * 2, '⚔ 침공 복귀', CASUAL.BLUE, CASUAL.BLUE_DK, '#ffffff', () => {
-      cb.requestClose?.();
-      scene.time.delayedCall(ROOM_DETAIL_CLOSE_MS + 40, () => {
-        cb.resumePreBattle?.();
-      });
-    });
-  }
-
   return panelH;
 }
 
@@ -272,9 +231,16 @@ export function getRoomDirective(
   trapCount: number,
   roomMetrics: RoomOperationalMetrics,
 ): RoomDirective {
-  const firstMonsterSlot = findFirstEmptySlot(slot.monsterIds, cap.monsters);
-  const firstTrapSlot = findFirstEmptySlot(slot.trapIds, cap.traps);
   const gs = cb.getGameState();
+  const isValidOwnedMonster = (monsterId: unknown): monsterId is string => (
+    typeof monsterId === 'string'
+    && monsterId.length > 0
+    && resolveOwnedMonsterProfile(monsterId) !== null
+    && gs.ownedMonsters.some(monster => monster.id === monsterId)
+  );
+  const firstMonsterSlot = Array.from({ length: cap.monsters })
+    .findIndex((_, index) => !isValidOwnedMonster(slot.monsterIds[index]));
+  const firstTrapSlot = findFirstEmptySlot(slot.trapIds, cap.traps);
   const recommendation = !slot.roomType ? getRoomDesignRecommendation(gs, slotIdx) : null;
   const roomLabel = `방 #${slotIdx + 1}`;
 
@@ -364,7 +330,7 @@ export function getRoomDirective(
   }
 
   const assignedMonsterIds = slot.monsterIds.filter((monsterId): monsterId is string =>
-    typeof monsterId === 'string' && monsterId.length > 0,
+    isValidOwnedMonster(monsterId),
   );
 
   // 5. Monster missing equipment — forge-equipment
@@ -372,7 +338,7 @@ export function getRoomDirective(
     !gs.ownedMonsters.find(monster => monster.id === monsterId)?.equipment,
   );
   if (firstUnequippedMonsterId) {
-    const focusMonsterDef = MONSTER_DEFS[firstUnequippedMonsterId as keyof typeof MONSTER_DEFS] ?? null;
+    const focusMonsterDef = resolveOwnedMonsterProfile(firstUnequippedMonsterId);
     return buildRoomDirective(
       'forge-equipment',
       { roomLabel, readiness: roomMetrics.readiness },
@@ -390,7 +356,7 @@ export function getRoomDirective(
     .map(monsterId => gs.ownedMonsters.find(monster => monster.id === monsterId))
     .find(monster => monster && monster.level < targetLevel);
   if (underleveledMonster) {
-    const focusMonsterDef = MONSTER_DEFS[underleveledMonster.id as keyof typeof MONSTER_DEFS] ?? null;
+    const focusMonsterDef = resolveOwnedMonsterProfile(underleveledMonster.id);
     return buildRoomDirective(
       'grow-monster',
       { skillReady: 1 },
@@ -404,8 +370,8 @@ export function getRoomDirective(
 
   // 7. Low readiness — power-risk (or grow-monster if there is a focus monster)
   if (roomMetrics.readiness < 78) {
-    const focusMonsterId = slot.monsterIds.find((monsterId): monsterId is string => typeof monsterId === 'string');
-    const focusMonsterDef = focusMonsterId ? MONSTER_DEFS[focusMonsterId as keyof typeof MONSTER_DEFS] : null;
+    const focusMonsterId = slot.monsterIds.find(isValidOwnedMonster);
+    const focusMonsterDef = resolveOwnedMonsterProfile(focusMonsterId);
     return buildRoomDirective(
       'power-risk',
       { roomLabel, readiness: roomMetrics.readiness },

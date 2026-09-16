@@ -14,6 +14,7 @@ import { CANVAS_WIDTH, GRID_Y } from '../constants/layout';
 import { showGoldFloat } from './VisualEffects';
 import { playDungeonHpHitReaction } from './ImpactVfx';
 import { logger } from '../utils/logger';
+import { resolveMonsterTypeId } from '../data/monsters';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -74,7 +75,7 @@ export function handleMirrorReflect(ctx: BattleEventContext, reflectDmg: number)
 export function handleInvaderKilledRow(ctx: BattleEventContext, invRow: number): void {
   for (let col = 0; col < ctx.effectiveCols; col++) {
     const d = ctx.roomGrid[invRow][col];
-    if (d?.monsterSlot === 'gold_turtle') {
+    if (resolveMonsterTypeId(d?.monsterSlot ?? '') === 'gold_turtle') {
       ctx.gold += 2;
       ctx.setGoldRegistry(ctx.gold);
       showGoldFloat(ctx.scene, '+2', ctx.rooms[invRow][col].x, ctx.rooms[invRow][col].y - 20);

@@ -8,7 +8,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { type GameState, type OwnedMonster, loadGameState } from '../data/wisdom';
 import {
   MONSTER_DEFS,
-  type MonsterDef,
+  type OwnedMonsterProfile,
   type MonsterSkin,
   type RarityId,
 } from '../data/monsters';
@@ -109,7 +109,7 @@ export type GrowthDirective = {
 
 // ─── Pure helpers — collection meta ──────────────────────────────────────────
 
-export function getDetailCollectionMeta(monster: OwnedMonster, def: MonsterDef): {
+export function getDetailCollectionMeta(monster: OwnedMonster, def: OwnedMonsterProfile): {
   indexLabel: string;
   tier: RarityId;
   rank: number;
@@ -123,12 +123,12 @@ export function getDetailCollectionMeta(monster: OwnedMonster, def: MonsterDef):
   elementColor: number;
 } {
   const allIds = Object.keys(MONSTER_DEFS);
-  const index  = Math.max(0, allIds.indexOf(def.id));
+  const index  = def.registryId ? allIds.indexOf(def.registryId) : -1;
   const tier   = def.rarityTier ?? DETAIL_OWNED_RARITY_TO_TIER[monster.rarity ?? 0] ?? 'C';
   const rarity  = DETAIL_RARITY_META[tier];
   const element = def.element ? DETAIL_ELEMENT_META[def.element] : null;
   return {
-    indexLabel:   `No.${String(index + 1).padStart(3, '0')}`,
+    indexLabel:   index >= 0 ? `No.${String(index + 1).padStart(3, '0')}` : 'No.---',
     tier,
     rank:         rarity.rank,
     label:        rarity.label,

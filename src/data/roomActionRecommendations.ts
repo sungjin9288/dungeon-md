@@ -1,4 +1,4 @@
-import { calculateRoomMetrics } from './dungeonMetrics';
+import { calculateRoomLoadoutStatus, calculateRoomMetrics } from './dungeonMetrics';
 import { getRoomDesignRecommendation } from './roomDesignRecommendations';
 import {
   getMonsterLoadoutRecommendation,
@@ -9,7 +9,7 @@ import {
   ROOM_SLOT_TYPE_DEFS,
   type GameState,
 } from './wisdom';
-import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
+import { resolveOwnedMonsterProfile } from './monsters';
 
 export type RoomActionKind =
   | 'design'
@@ -83,7 +83,7 @@ export function getRoomActionRecommendation(
   }
 
   const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
-  const monsterCount = (slot.monsterIds ?? []).filter(Boolean).length;
+  const monsterCount = calculateRoomLoadoutStatus(state, slot).monsterCount;
   const trapCount = (slot.trapIds ?? []).filter(Boolean).length;
 
   if (monsterCount < cap.monsters) {
@@ -149,7 +149,10 @@ export function getRoomActionRecommendation(
   }
 
   const assignedMonsterIds = (slot.monsterIds ?? []).filter((monsterId): monsterId is string =>
-    typeof monsterId === 'string' && monsterId.length > 0,
+    typeof monsterId === 'string'
+    && monsterId.length > 0
+    && resolveOwnedMonsterProfile(monsterId) !== null
+    && state.ownedMonsters.some(monster => monster.id === monsterId),
   );
   const equippedCount = assignedMonsterIds.filter(monsterId =>
     Boolean(state.ownedMonsters.find(monster => monster.id === monsterId)?.equipment),
@@ -222,8 +225,7 @@ export function getRoomActionRecommendation(
 }
 
 function getMonsterDisplayName(monsterId: string): string {
-  const typeId = resolveMonsterTypeId(monsterId);
-  return typeId ? MONSTER_DEFS[typeId].name : monsterId;
+  return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
 }
 
 export function getDungeonActionQueue(

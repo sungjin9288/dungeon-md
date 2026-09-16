@@ -2,26 +2,14 @@ import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type RoomType } from '../data/rooms';
-import { getMonstersForRoom, type MonsterDef, type MonsterId, type ElementId } from '../data/monsters';
-import { HYBRID_DEFS } from '../data/fusion';
+import {
+  type ElementId,
+  type OwnedMonsterProfile,
+} from '../data/monsters';
+import { getMonsterPlacementOptions } from '../data/monsterPlacementOptions';
 import { loadGameState } from '../data/wisdom';
 import { getMonsterAtk } from '../data/barracks';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from './GameUiPrimitives';
-
-// Map roomType → melee/ranged/magic/support for hybrid card type badge
-function inferMonsterType(roomTypes: string[]): MonsterDef['type'] {
-  if (roomTypes.some(r => r.includes('library') || r.includes('altar') || r.includes('shrine'))) return 'magic';
-  if (roomTypes.some(r => r.includes('archer') || r.includes('tower'))) return 'ranged';
-  if (roomTypes.some(r => r.includes('garden') || r.includes('healer'))) return 'support';
-  return 'melee';
-}
-
-// Map rarity → saturated casual accent color
-function rarityColor(rarity: number): number {
-  if (rarity >= 4) return CASUAL.GOLD;     // gold — legendary
-  if (rarity >= 3) return CASUAL.PURPLE;   // purple — epic
-  return CASUAL.BLUE;                       // blue — rare
-}
 
 // Darker companion of a casual accent → candy-button base edge.
 function accentBase(accent: number): number {
@@ -53,16 +41,16 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
   private pendingCol   = 0;
   private isOpen       = false;
   private cardGroup:   Phaser.GameObjects.GameObject[] = [];
-  private currentMonsters: MonsterDef[] = [];
+  private currentMonsters: OwnedMonsterProfile[] = [];
   private scrollIndex   = 0;
   private slotLabel!:    Phaser.GameObjects.Text;
   private countLabel?:   Phaser.GameObjects.Text;
-  private onAssignCb:  (row: number, col: number, id: MonsterId) => void;
+  private onAssignCb:  (row: number, col: number, id: string) => void;
   private onCloseCb:   () => void;
 
   constructor(
     scene: Phaser.Scene,
-    onAssign: (row: number, col: number, id: MonsterId) => void,
+    onAssign: (row: number, col: number, id: string) => void,
     onClose: () => void,
   ) {
     super(scene, 0, CANVAS_HEIGHT);
@@ -78,28 +66,14 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
   open(row: number, col: number, roomType: RoomType, unlockedStage: number, elementFilter?: ElementId): void {
     this.pendingRow = row;
     this.pendingCol = col;
-    const monsters = getMonstersForRoom(roomType, unlockedStage, elementFilter);
-
-    // Append owned hybrid monsters that fit this room type
-    const ownedIds = new Set(loadGameState().ownedMonsters.map(m => m.id));
-    const hybridCards: MonsterDef[] = Object.values(HYBRID_DEFS)
-      .filter(h => ownedIds.has(h.id) && h.roomTypes.includes(roomType as string))
-      .map(h => ({
-        id:              h.id as MonsterId,
-        name:            h.name,
-        emoji:           h.emoji,
-        type:            inferMonsterType(h.roomTypes),
-        roomTypes:       h.roomTypes as RoomType[],
-        baseDamage:      h.baseDamage,
-        attackCooldown:  300,
-        range:           1,
-        passive:         h.passive as MonsterDef['passive'],
-        passiveDesc:     h.passiveDesc,
-        accentColor:     rarityColor(h.rarity),
-        unlockStage:     0,
-      }));
+    const monsters = getMonsterPlacementOptions(
+      loadGameState(),
+      roomType,
+      unlockedStage,
+      elementFilter,
+    );
     this.slotLabel.setText(`R${row + 1} · C${col + 1}`);
-    this.rebuildCards([...monsters, ...hybridCards]);
+    this.rebuildCards(monsters);
 
     if (this.isOpen) return;
     this.isOpen = true;
@@ -196,7 +170,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
 
   // ─── Cards ────────────────────────────────────────────────────────────────
 
-  private rebuildCards(monsters: MonsterDef[]): void {
+  private rebuildCards(monsters: OwnedMonsterProfile[]): void {
     this.currentMonsters = monsters;
     this.scrollIndex = 0;
     this.renderCards();
@@ -237,7 +211,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.buildPager(monsters.length, visibleCount);
   }
 
-  private buildCard(def: MonsterDef, cx: number, cy: number): void {
+  private buildCard(def: OwnedMonsterProfile, cx: number, cy: number): void {
     const accent = def.accentColor;
 
     const frame = addFramedPanel(this.scene, {
@@ -412,7 +386,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     this.cardGroup.push(prev.bg, prev.text, prev.zone, next.bg, next.text, next.zone);
   }
 
-  private getTypeLabel(type: MonsterDef['type']): string {
+  private getTypeLabel(type: OwnedMonsterProfile['type']): string {
     const labels: Record<string, string> = {
       melee: '근접',
       ranged: '원거리',
@@ -422,7 +396,7 @@ export class MonsterSelectPanel extends Phaser.GameObjects.Container {
     return labels[type] ?? String(type).toUpperCase();
   }
 
-  private getTypeColor(type: MonsterDef['type']): string {
+  private getTypeColor(type: OwnedMonsterProfile['type']): string {
     const colors: Record<string, string> = {
       melee:   CASUAL_CSS.RED,
       ranged:  CASUAL_CSS.GREEN,

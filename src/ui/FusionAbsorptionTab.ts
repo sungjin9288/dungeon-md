@@ -1,27 +1,34 @@
-// ─── Absorption Tab ────────────────────────────────────────────────────────────
-// Implements the 흡수 (Absorption) tab for FusionScene.
-// Sacrifices monsters → XP + same-type ATK stacks for a base target monster.
-
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import {
   RARITY_XP_VALUES,
-  getBaseId, getMonsterRarity, getMonsterEmoji,
+  getBaseId,
+  getMonsterDisplayName,
+  getMonsterRarity,
 } from '../data/fusion';
 import { applyFusionAbsorption } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { addMonsterPortrait } from './MonsterPortraitView';
+import { addPrimaryActionButton } from './GameUiPrimitives';
 import {
   type FusionTabContext,
-  drawMonsterSlot, openMonsterPicker, showFusionAnimation, showResultToast, showConfirmDialog,
+  TAB_ACCENT,
+  bindFusionTransactionAction,
+  drawMonsterSlot,
+  getFusionPickerSourceIndex,
+  openMonsterPicker,
+  showConfirmDialog,
+  showFusionAnimation,
+  showFusionResultPanel,
 } from './FusionTabs';
 
 export interface AbsorptionState {
-  absorbTarget: OwnedMonster | null;
-  absorbSacrifices: OwnedMonster[];
-  readonly setAbsorbTarget: (m: OwnedMonster | null) => void;
-  readonly setAbsorbSacrifices: (list: OwnedMonster[]) => void;
+  readonly absorbTarget: OwnedMonster | null;
+  readonly absorbSacrifices: readonly OwnedMonster[];
+  readonly setAbsorbTarget: (monster: OwnedMonster | null) => void;
+  readonly setAbsorbSacrifices: (monsters: OwnedMonster[]) => void;
 }
 
 export function buildAbsorptionTab(
@@ -29,163 +36,210 @@ export function buildAbsorptionTab(
   c: Phaser.GameObjects.Container,
   state: AbsorptionState,
 ): void {
-  const slotW = 80, slotH = 90;
-  const PAD   = 18;
-  let   y     = ctx.contentY + 240;
+  const gameState = loadGameState();
+  const panelX = 18;
+  const panelY = ctx.contentY + 154;
+  const panelW = CANVAS_WIDTH - 36;
+  const panelH = CANVAS_HEIGHT - panelY - 18;
+  const panel = ctx.scene.add.graphics();
+  panel.fillStyle(DUNGEON_UI.STONE, 0.96);
+  panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+  panel.lineStyle(1, DUNGEON_UI.IRON, 0.9);
+  panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+  c.add(panel);
 
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 22, '희생 몬스터 → XP 전환  |  같은 종류: +5% ATK 스택', {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-    align: 'center', wordWrap: { width: CANVAS_WIDTH - 40 },
-  }).setOrigin(0.5));
+  c.add(ctx.scene.add.text(panelX + 16, panelY + 20, '정수 이전진', {
+    fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + panelW - 16, panelY + 20, '희생 최대 5체', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(1, 0.5));
 
-  // Target (베이스) slot
-  c.add(ctx.scene.add.text(PAD + slotW / 2, y - 6, '베이스', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-  }).setOrigin(0.5));
-  drawMonsterSlot(ctx, c, PAD, y, slotW, slotH, state.absorbTarget, '흡수', () => {
-    openMonsterPicker(ctx, undefined, (m) => {
-      state.setAbsorbTarget(m);
-      ctx.refreshTab();
-    });
-  });
+  const targetX = panelX + 16;
+  const targetY = panelY + 44;
+  drawMonsterSlot(ctx, c, targetX, targetY, 108, 138, state.absorbTarget, '흡수', () => {
+    openMonsterPicker(
+      ctx,
+      monster => !state.absorbSacrifices.some(sacrifice => sacrifice.id === monster.id),
+      monster => {
+        state.setAbsorbTarget(monster);
+        ctx.refreshTab();
+      },
+    );
+  }, '정수 수용체');
 
-  // Sacrifice slots
-  const sacrificeX = PAD + slotW + 18;
-  c.add(ctx.scene.add.text(sacrificeX, y - 6, '희생 (최대 5)', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-  }));
+  const sacrificeStartX = targetX + 120;
+  const cellW = 62;
+  const cellH = 66;
+  const gap = 6;
+  for (let index = 0; index < 5; index++) {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    const x = sacrificeStartX + col * (cellW + gap);
+    const y = targetY + row * (cellH + gap);
+    const sacrifice = state.absorbSacrifices[index];
+    const card = ctx.scene.add.graphics();
+    card.fillStyle(DUNGEON_UI.SOOT, 0.98);
+    card.fillRoundedRect(x, y, cellW, cellH, 7);
+    card.lineStyle(1.5, sacrifice ? TAB_ACCENT['흡수'] : DUNGEON_UI.IRON, sacrifice ? 0.86 : 0.7);
+    card.strokeRoundedRect(x, y, cellW, cellH, 7);
+    c.add(card);
 
-  const maxSacs = 5;
-  const sacW = 56, sacH = 70;
-  const sacGap = 8;
-  for (let i = 0; i <= Math.min(state.absorbSacrifices.length, maxSacs - 1); i++) {
-    const sx = sacrificeX + i * (sacW + sacGap);
-    if (sx + sacW > CANVAS_WIDTH - PAD) break;
-    const sac = state.absorbSacrifices[i] ?? null;
-
-    if (sac) {
-      const sg = ctx.scene.add.graphics();
-      sg.fillStyle(CASUAL.SHADOW, 0.18);
-      sg.fillRoundedRect(sx, y + 3, sacW, sacH, 10);
-      sg.fillStyle(CASUAL.PANEL, 1);
-      sg.fillRoundedRect(sx, y, sacW, sacH, 10);
-      sg.fillStyle(0xffffff, 0.12);
-      sg.fillRoundedRect(sx + 4, y + 4, sacW - 8, 5, 3);
-      sg.lineStyle(3, CASUAL.GOLD, 1);
-      sg.strokeRoundedRect(sx, y, sacW, sacH, 10);
-      c.add(sg);
-      c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH / 2 - 10, getMonsterEmoji(sac.id), {
-        fontFamily: 'sans-serif', fontSize: '22px',
+    if (sacrifice) {
+      addMonsterPortrait(ctx.scene, c, x + cellW / 2, y + 25, sacrifice.id, {
+        size: 38,
+        frameColor: TAB_ACCENT['흡수'],
+        glowColor: TAB_ACCENT['흡수'],
+        bgColor: DUNGEON_UI.VOID,
+        equippedSkins: gameState.equippedSkins,
+      });
+      const rarity = sacrifice.rarity ?? getMonsterRarity(sacrifice.id);
+      c.add(ctx.scene.add.text(x + cellW / 2, y + 54, `+${RARITY_XP_VALUES[rarity] ?? 30} XP`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#d69a67', fontStyle: 'bold',
       }).setOrigin(0.5));
-      const rarityVal = sac.rarity ?? getMonsterRarity(sac.id);
-      const xpVal = RARITY_XP_VALUES[rarityVal] ?? 30;
-      c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH - 12, `+${xpVal} XP`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-      }).setOrigin(0.5));
-      const xBtn = ctx.scene.add.text(sx + sacW - 3, y + 3, '×', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.RED, fontStyle: 'bold',
-      }).setOrigin(1, 0).setInteractive();
-      const fi = i;
-      xBtn.on('pointerdown', () => {
+      const removeZone = ctx.scene.add.zone(x, y, cellW, cellH).setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      removeZone.once('pointerdown', () => {
         const next = [...state.absorbSacrifices];
-        next.splice(fi, 1);
+        next.splice(index, 1);
         state.setAbsorbSacrifices(next);
         ctx.refreshTab();
       });
-      c.add(xBtn);
-    } else if (state.absorbSacrifices.length < maxSacs) {
-      const sg = ctx.scene.add.graphics();
-      sg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      sg.fillRoundedRect(sx, y, sacW, sacH, 10);
-      sg.lineStyle(3, CASUAL.EDGE, 0.9);
-      sg.strokeRoundedRect(sx, y, sacW, sacH, 10);
-      c.add(sg);
-      c.add(ctx.scene.add.text(sx + sacW / 2, y + sacH / 2, '+', {
-        fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      c.add(removeZone);
+    } else if (index === state.absorbSacrifices.length) {
+      const plus = ctx.scene.add.graphics();
+      plus.lineStyle(2, TAB_ACCENT['흡수'], 0.8);
+      plus.strokeCircle(x + cellW / 2, y + cellH / 2 - 5, 13);
+      plus.lineBetween(x + cellW / 2 - 6, y + cellH / 2 - 5, x + cellW / 2 + 6, y + cellH / 2 - 5);
+      plus.lineBetween(x + cellW / 2, y + cellH / 2 - 11, x + cellW / 2, y + cellH / 2 + 1);
+      c.add(plus);
+      c.add(ctx.scene.add.text(x + cellW / 2, y + cellH - 10, '추가', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5));
-      const addZone = ctx.scene.add.zone(sx, y, sacW, sacH).setOrigin(0).setInteractive();
-      addZone.on('pointerdown', () => {
-        const currentTarget = state.absorbTarget;
+      const addZone = ctx.scene.add.zone(x, y, cellW, cellH).setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      addZone.once('pointerdown', () => {
+        const ownedCounts = new Map<string, number>();
+        for (const monster of gameState.ownedMonsters) {
+          ownedCounts.set(monster.id, (ownedCounts.get(monster.id) ?? 0) + 1);
+        }
         openMonsterPicker(
           ctx,
-          currentTarget ? (m: OwnedMonster) => m.id !== currentTarget.id : undefined,
-          (m) => {
-            state.setAbsorbSacrifices([...state.absorbSacrifices, m]);
+          monster => {
+            if (state.absorbTarget?.id === monster.id) return false;
+            const candidateIndex = getFusionPickerSourceIndex(monster);
+            const alreadySelected = state.absorbSacrifices.some(
+              sacrifice => getFusionPickerSourceIndex(sacrifice) === candidateIndex,
+            );
+            if (alreadySelected) return false;
+            const selected = state.absorbSacrifices.filter(item => item.id === monster.id).length;
+            return selected < (ownedCounts.get(monster.id) ?? 0);
+          },
+          monster => {
+            state.setAbsorbSacrifices([...state.absorbSacrifices, monster]);
             ctx.refreshTab();
           },
         );
       });
       c.add(addZone);
+    } else {
+      c.add(ctx.scene.add.text(x + cellW / 2, y + cellH / 2, `${index + 1}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: '#505950',
+      }).setOrigin(0.5));
     }
   }
 
-  y += slotH + 14;
+  c.add(ctx.scene.add.text(sacrificeStartX, targetY + 151, '선택된 희생체를 누르면 해제', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
 
-  // XP preview
-  if (state.absorbSacrifices.length > 0 && state.absorbTarget) {
-    let totalXP = 0;
-    let sameTypeCount = 0;
-    for (const sac of state.absorbSacrifices) {
-      const r = sac.rarity ?? getMonsterRarity(sac.id);
-      totalXP += RARITY_XP_VALUES[r] ?? 30;
-      if (getBaseId(sac.id) === getBaseId(state.absorbTarget.id)) sameTypeCount++;
+  let totalXp = 0;
+  let sameLineage = 0;
+  if (state.absorbTarget) {
+    for (const sacrifice of state.absorbSacrifices) {
+      const rarity = sacrifice.rarity ?? getMonsterRarity(sacrifice.id);
+      totalXp += RARITY_XP_VALUES[rarity] ?? 30;
+      if (getBaseId(sacrifice.id) === getBaseId(state.absorbTarget.id)) sameLineage++;
     }
-    const currentStacks = state.absorbTarget.absorptionStacks ?? 0;
-    const newStacks     = Math.min(currentStacks + sameTypeCount, 10);
-    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y,
-      `XP 획득: +${totalXP}  /  같은 종류 보너스: ${currentStacks}스택 → ${newStacks}스택`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold', align: 'center',
-        wordWrap: { width: CANVAS_WIDTH - 40 },
-      }).setOrigin(0.5));
-    if (sameTypeCount > 0) {
-      c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y + 18, `ATK +${newStacks * 5}% (스택 ×${newStacks})`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-      }).setOrigin(0.5));
-    }
-    y += 40;
   }
+  const oldStacks = state.absorbTarget?.absorptionStacks ?? 0;
+  const newStacks = Math.min(10, oldStacks + sameLineage);
+  const previewY = targetY + 180;
+  const preview = ctx.scene.add.graphics();
+  preview.fillStyle(DUNGEON_UI.SOOT, 0.96);
+  preview.fillRoundedRect(panelX + 16, previewY, panelW - 32, 94, 8);
+  preview.lineStyle(1, DUNGEON_UI.IRON, 0.78);
+  preview.strokeRoundedRect(panelX + 16, previewY, panelW - 32, 94, 8);
+  c.add(preview);
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 20, '예상 이전 결과', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 46, `경험치 +${totalXp}`, {
+    fontFamily: 'sans-serif', fontSize: '16px', color: '#d69a67', fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 72,
+    `동일 계보 ${sameLineage}체 · ATK stack ${oldStacks} → ${newStacks}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5));
 
-  // Execute button
-  const canExec = state.absorbTarget !== null && state.absorbSacrifices.length > 0;
-  const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, y + 10, canExec ? '🍴 흡수 실행' : '슬롯을 채우세요', {
-    fontFamily: 'sans-serif', fontSize: '15px',
-    color: canExec ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    backgroundColor: canExec ? CASUAL_CSS.GOLD : CASUAL_CSS.CREAM,
-    padding: { x: 28, y: 10 },
-  }).setOrigin(0.5);
-  if (canExec) btn.setInteractive().on('pointerdown', () => {
-    ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
-    showConfirmDialog(
-      ctx,
-      '🍴 흡수를 실행하시겠습니까?',
-      `희생 ${state.absorbSacrifices.length}마리 소멸\n되돌릴 수 없습니다.`,
-      '#cc8844',
-      () => executeAbsorption(ctx, state),
-    );
-  });
-  c.add(btn);
-
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 50,
-    '같은 속성 희생 시 ATK 스택 +5% (최대 ×10)', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+  const canExecute = Boolean(state.absorbTarget) && state.absorbSacrifices.length > 0;
+  const warningY = previewY + 112;
+  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, warningY,
+    canExecute ? `주의: 희생 ${state.absorbSacrifices.length}체는 영구 소멸합니다` : '수용체와 희생체를 지정하세요', {
+      fontFamily: 'sans-serif', fontSize: '11px',
+      color: canExecute ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
+      fontStyle: 'bold',
     }).setOrigin(0.5));
+
+  const action = addPrimaryActionButton(ctx.scene, {
+    x: panelX + 16, y: warningY + 18, w: panelW - 32, h: 48,
+    label: canExecute ? '흡수 의식 준비' : '대상을 먼저 선택하세요',
+    fontSize: '15px', enabled: canExecute, once: true, showArrow: false,
+    fillColor: TAB_ACCENT['흡수'], borderColor: DUNGEON_UI.BRASS_BRIGHT,
+    hoverFillColor: TAB_ACCENT['흡수'], hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+    disabledFillColor: DUNGEON_UI.SOOT, disabledBorderColor: DUNGEON_UI.IRON,
+    disabledTextColor: DUNGEON_UI_CSS.MUTED,
+    onPress: () => {},
+  });
+  bindFusionTransactionAction(ctx, action, () => {
+      if (!state.absorbTarget) return;
+      showConfirmDialog(
+        ctx,
+        `${getMonsterDisplayName(state.absorbTarget.id)}에게 정수를 이전합니다`,
+        `희생 ${state.absorbSacrifices.length}체 영구 소멸\n경험치 +${totalXp} · ATK stack ${oldStacks} → ${newStacks}`,
+        '흡수',
+        () => executeAbsorption(ctx, state),
+      );
+    });
+  c.add([action.bg, action.text, action.zone]);
 }
 
 function executeAbsorption(ctx: FusionTabContext, state: AbsorptionState): void {
   const target = state.absorbTarget;
-  if (!target || state.absorbSacrifices.length === 0) return;
-
+  if (!target) {
+    ctx.finishTransaction();
+    return;
+  }
   const result = applyFusionAbsorption(loadGameState(), target, state.absorbSacrifices);
-  if (!result.ok) return;
+  if (!result.ok) {
+    logger.warn(`[ABSORB] rejected: ${result.reason}`);
+    showFusionResultPanel(ctx, {
+      tabId: '흡수', status: 'failure', title: '흡수 조건이 바뀌었습니다',
+      detail: '현재 보유 상태를 다시 확인한 뒤 수용체와 희생체를 선택하세요.',
+    });
+    return;
+  }
 
   saveGameState(result.state);
-  logger.debug(`[ABSORB] ${target.id}: +${result.totalXp} XP, stacks: ${result.newStacks}/10 (+5% ATK per stack)`);
-
   state.setAbsorbSacrifices([]);
   state.setAbsorbTarget(null);
+  logger.debug(`[ABSORB] ${target.id}: +${result.totalXp} XP, stacks ${result.newStacks}/10`);
   showFusionAnimation(ctx, '흡수', () => {
-    ctx.refreshTab();
-    const stackMsg = result.sameTypeCount > 0 ? ` · ATK 스택 +${result.sameTypeCount}` : '';
-    showResultToast(ctx, `흡수 완료! +${result.totalXp} XP${stackMsg}`, '#cc8844');
+    const stackDetail = result.sameTypeCount > 0
+      ? `동일 계보 ${result.sameTypeCount}체 · ATK stack ${result.newStacks}/10`
+      : '동일 계보 bonus는 적용되지 않았습니다.';
+    showFusionResultPanel(ctx, {
+      tabId: '흡수', title: `정수 이전 완료 · +${result.totalXp} XP`, detail: stackDetail,
+    });
   });
 }

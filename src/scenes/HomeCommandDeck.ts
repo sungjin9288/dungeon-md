@@ -16,10 +16,10 @@ import {
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
 import { getHomeReadinessDirective } from '../data/homeReadinessDirective';
-import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { goToPreBattle } from '../ui/InvasionUI';
+import { showDailyContentHub } from '../ui/DailyContentPanel';
 
 
 // ─── Layout constants (must match DungeonHomeScene.ts) ──────────────────────
@@ -53,22 +53,20 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
     scene.commandDeckContainer.destroy();
     scene.commandDeckContainer = null;
   }
-  const deckX = 12;
+  const deckX = 8;
   const minDeckY = scene.boardLayout.contentBottomY + 8;
   const deckW = CANVAS_WIDTH - deckX * 2;
   const statsTopY = BOT_Y - 26;
   const availableDeckH = statsTopY - minDeckY - 10;
-  const deckH = Math.min(160, availableDeckH);
+  const deckH = Math.min(142, availableDeckH);
   const deckY = Math.max(minDeckY, statsTopY - deckH - 10);
-  if (deckH < 140) return;
+  if (deckH < 132) return;
   const deck = scene.add.container(0, 0).setDepth(4);
   scene.commandDeckContainer = deck;
 
   const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
   const visibleSlots = (scene.gs.dungeonSlots ?? []).slice(0, unlockedSlots);
   const builtRooms = visibleSlots.filter(slot => !!slot?.roomType).length;
-  const ownedMonsters = scene.gs.ownedMonsters ?? [];
-  const collectionSummary = getMonsterCollectionSummary(ownedMonsters);
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
   const directive = getHomeDirective(scene, unlockedSlots, dungeonMetrics.readiness);
   const frame = addFramedPanel(scene, {
@@ -76,13 +74,13 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
     y: deckY,
     w: deckW,
     h: deckH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE_SOFT,
-    borderAlpha: 0.48,
+    radius: 5,
+    fillColor: 0x0a0c0b,
+    borderColor: 0x6e5736,
+    borderAlpha: 0.82,
     borderWidth: 1,
     accentColor: directive.accent,
-    accentAlpha: 0.9,
+    accentAlpha: 0.74,
     glowOpacity: 0,
     shadowOpacity: 0.16,
     shadowOffsetY: 2,
@@ -93,112 +91,92 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   deck.add(g);
 
   // One operating directive. Header is a ledger line, not another card.
-  deck.add(scene.add.text(deckX + 16, deckY + 17, '다음 수비 지시', {
+  deck.add(scene.add.text(deckX + 13, deckY + 15, '다음 수비 지시', {
     fontFamily: 'sans-serif',
     fontSize: '12px',
-    color: CASUAL_CSS.INK,
+    color: '#e7d6b5',
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   const readinessCss = dungeonMetrics.readiness >= 80
     ? CASUAL_CSS.GREEN : dungeonMetrics.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
-  deck.add(scene.add.text(deckX + deckW - 112, deckY + 17, '준비도', {
+  deck.add(scene.add.text(deckX + deckW - 98, deckY + 15, '준비도', {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: '#a89c86',
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
-  deck.add(scene.add.text(deckX + deckW - 70, deckY + 17, `${dungeonMetrics.readiness}%`, {
+  deck.add(scene.add.text(deckX + deckW - 56, deckY + 15, `${dungeonMetrics.readiness}%`, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     color: readinessCss,
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
-  deck.add(scene.add.text(deckX + deckW - 14, deckY + 17, `방 ${builtRooms}/${unlockedSlots}`, {
+  deck.add(scene.add.text(deckX + deckW - 12, deckY + 15, `방 ${builtRooms}/${unlockedSlots}`, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: '#a89c86',
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
 
-  const directiveY = deckY + 30;
-  drawHomeDirectiveCard(scene, deck, deckX + 14, directiveY, deckW - 28, 34, directive);
+  const directiveY = deckY + 25;
+  drawHomeDirectiveCard(scene, deck, deckX + 12, directiveY, deckW - 24, 30, directive);
 
   // The only dominant action: 48px high and tied to the canonical directive.
-  const ctaY = deckY + 67;
-  const ctaH = 48;
+  const ctaY = deckY + 55;
+  const ctaH = 44;
   const { bg: ctaBg, text: ctaText, zone: ctaZone } = addPrimaryActionButton(scene, {
-    x: deckX + 14,
+    x: deckX + 12,
     y: ctaY,
-    w: deckW - 28,
+    w: deckW - 24,
     h: ctaH,
     label: directive.ctaLabel,
     fontSize: '14px',
-    fillColor: directive.accent,
-    hoverFillColor: directive.accent,
+    fillColor: 0x242219,
+    hoverFillColor: 0x302d21,
     borderColor: directive.accent,
     hoverBorderColor: directive.accent,
+    textColor: '#f4dfb5',
     onPress: () => directive.onPress(),
   });
   deck.add([ctaBg, ctaText, ctaZone]);
 
   // Plain utility links preserve existing destinations without CTA soup.
-  const chipRowY = deckY + 116;
+  const chipRowY = deckY + 99;
   const chipRowH = 44;
-  const chipW = (deckW - 28) / 4;
+  const chipW = (deckW - 24) / 5;
   const directiveSlotIdx = directive.slotIdx ?? 0;
-  const secondaryChips: Array<{ label: string; icon: string; onPress: () => void }> = [
-    { label: `도감 ${collectionSummary.owned}/${collectionSummary.total}`, icon: '✦', onPress: () => scene.navigateFromHome('CodexScene') },
-    { label: '방 관리', icon: '▣', onPress: () => openFirstDungeonSlot(scene, directiveSlotIdx) },
-    { label: '몬스터', icon: '👹', onPress: () => openFocusedMonsterGrowth(scene, directiveSlotIdx) },
-    { label: '제작', icon: '⚒', onPress: () => openFocusedForge(scene, directiveSlotIdx) },
+  const secondaryChips: Array<{ label: string; onPress: () => void }> = [
+    { label: '도감', onPress: () => scene.navigateFromHome('CodexScene') },
+    { label: '방 관리', onPress: () => openFirstDungeonSlot(scene, directiveSlotIdx) },
+    { label: '육성', onPress: () => openFocusedMonsterGrowth(scene, directiveSlotIdx) },
+    { label: '제작', onPress: () => openFocusedForge(scene, directiveSlotIdx) },
+    { label: '일일', onPress: () => showDailyContentHub(scene) },
   ];
   secondaryChips.forEach((chip, i) => {
-    const chipX = deckX + 14 + i * chipW;
+    const chipX = deckX + 12 + i * chipW;
     if (i > 0) {
-      g.lineStyle(1, CASUAL.EDGE_SOFT, 0.24);
+      g.lineStyle(1, 0x6e5736, 0.32);
       g.lineBetween(chipX, chipRowY + 11, chipX, chipRowY + chipRowH - 11);
     }
-    const labelT = scene.add.text(chipX + chipW / 2, chipRowY + chipRowH / 2, `${chip.icon} ${chip.label}`, {
+    g.fillStyle(0xa98245, 0.62);
+    g.fillCircle(chipX + chipW / 2, chipRowY + 9, 1.8);
+    const labelT = scene.add.text(chipX + chipW / 2, chipRowY + 27, chip.label, {
       fontFamily: 'sans-serif',
-      fontSize: '11px',
-      color: CASUAL_CSS.INK_SOFT,
+      fontSize: '10px',
+      color: '#b8aa91',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     const zone = scene.add.zone(chipX, chipRowY, chipW, chipRowH)
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true });
     deck.add([labelT, zone]);
-    zone.on('pointerover', () => labelT.setColor(CASUAL_CSS.INK));
-    zone.on('pointerout', () => labelT.setColor(CASUAL_CSS.INK_SOFT));
+    zone.on('pointerover', () => labelT.setColor('#ead9b8'));
+    zone.on('pointerout', () => labelT.setColor('#b8aa91'));
     zone.on('pointerdown', () => {
       audioManager.playSfx('button_click');
       chip.onPress();
     });
   });
-}
-
-// ─── getMonsterCollectionSummary ─────────────────────────────────────────────
-
-function getMonsterCollectionSummary(
-  ownedMonsters: readonly OwnedMonster[],
-): { owned: number; total: number; rareOwned: number; percent: number } {
-  const ownedTypes = new Set<MonsterId>();
-  for (const monster of ownedMonsters) {
-    const typeId = resolveMonsterTypeId(monster.id);
-    if (typeId) ownedTypes.add(typeId);
-  }
-  const defs = Object.values(MONSTER_DEFS);
-  const rareOwned = Array.from(ownedTypes).filter(id => {
-    const rarity = MONSTER_DEFS[id]?.rarityTier;
-    return rarity === 'E' || rarity === 'L';
-  }).length;
-  const total = defs.length;
-  return {
-    owned: ownedTypes.size,
-    total,
-    rareOwned,
-    percent: total > 0 ? ownedTypes.size / total : 0,
-  };
 }
 
 // ─── getHomeDirective ────────────────────────────────────────────────────────
@@ -257,31 +235,26 @@ function drawHomeDirectiveCard(
   bg.lineStyle(1, CASUAL.EDGE_SOFT, 0.24);
   bg.lineBetween(x + 8, y + h, x + w, y + h);
 
-  deck.add(scene.add.text(x + 19, y + h / 2, directive.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '14px',
-    color: accentCss,
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-
-  deck.add(scene.add.text(x + 38, y + 10, directive.title, {
+  bg.fillStyle(directive.accent, 0.72);
+  bg.fillCircle(x + 7, y + 9, 2.2);
+  deck.add(scene.add.text(x + 14, y + 9, directive.title, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     color: accentCss,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
-  deck.add(scene.add.text(x + 38, y + 24, directive.body, {
+  deck.add(scene.add.text(x + 14, y + 22, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT,
-    wordWrap: { width: Math.max(120, w - 126), useAdvancedWrap: true },
+    color: '#aaa08d',
+    wordWrap: { width: Math.max(120, w - 128), useAdvancedWrap: true },
   }).setOrigin(0, 0.5));
-  deck.add(scene.add.text(x + w - 18, y + 9, directive.statLabel, {
+  deck.add(scene.add.text(x + w - 62, y + 9, directive.statLabel, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
     color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(1, 0.5));
-  deck.add(scene.add.text(x + w - 18, y + 24, directive.statValue, {
+  deck.add(scene.add.text(x + w - 18, y + 9, directive.statValue, {
     fontFamily: 'sans-serif',
     fontSize: '12px',
     color: accentCss,

@@ -9,11 +9,13 @@ import { loadGameState } from '../data/wisdom';
 import {
   isGrowthReady,
   compareGrowth,
+  getMonsterCollectionMeta,
   getMonsterRoomPlan,
   getMonsterCardActionCue,
 } from './BarracksShared';
 import type { GameState, DungeonSlot } from '../data/wisdom';
 import type { OwnedMonster } from '../data/barracks';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -115,6 +117,31 @@ describe('getMonsterRoomPlan', () => {
     const gs   = makeGs([m], [makeCombatSlot([])]);
     const plan = getMonsterRoomPlan(gs, m);
     expect(plan.kind).toBe('recommended');
+  });
+
+  it('routes a fusion-only magic hybrid to an open magic room', () => {
+    const m = makeMonster({ id: 'storm_spirit', rarity: 2 });
+    const gs = makeGs([m], [
+      makeCombatSlot([]),
+      { ...makeCombatSlot([]), roomType: 'magic' },
+    ]);
+    gs.dmLevel = 2;
+
+    const plan = getMonsterRoomPlan(gs, m);
+    expect(plan.kind).toBe('recommended');
+    expect(plan.label).toContain('방 #2');
+  });
+});
+
+describe('getMonsterCollectionMeta', () => {
+  it('marks fusion-only monsters without assigning a false registry number', () => {
+    const monster = makeMonster({ id: 'storm_spirit', rarity: 2 });
+    const profile = resolveOwnedMonsterProfile(monster.id)!;
+    expect(getMonsterCollectionMeta(monster, profile)).toMatchObject({
+      indexLabel: 'No.---',
+      tier: 'R',
+      rank: 2,
+    });
   });
 });
 

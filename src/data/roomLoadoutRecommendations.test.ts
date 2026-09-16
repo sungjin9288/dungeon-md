@@ -78,6 +78,33 @@ describe('roomLoadoutRecommendations — monster', () => {
 
     expect(getMonsterLoadoutRecommendation(state, 0)).toBeNull();
   });
+
+  it('recommends a fusion-only hybrid instead of dropping it from the roster', () => {
+    const state = makeState({
+      ownedMonsters: [makeMonster({ id: 'storm_spirit', rarity: 2 })],
+      dungeonSlots: [makeSlot('magic')],
+    });
+
+    expect(getMonsterLoadoutRecommendation(state, 0)).toMatchObject({
+      monsterId: 'storm_spirit',
+      name: '폭풍 정령',
+      icon: '⚡',
+      attack: 24,
+    });
+  });
+
+  it('uses evolved attack in loadout ranking and copy', () => {
+    const state = makeState({
+      ownedMonsters: [makeMonster({ id: 'dokkaebi_warrior_leg', rarity: 4 })],
+      dungeonSlots: [makeSlot('combat')],
+    });
+
+    expect(getMonsterLoadoutRecommendation(state, 0)).toMatchObject({
+      monsterId: 'dokkaebi_warrior_leg',
+      name: '전설 도깨비 전사',
+      attack: 57,
+    });
+  });
 });
 
 describe('roomLoadoutRecommendations — trap', () => {

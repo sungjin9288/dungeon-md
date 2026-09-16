@@ -11,6 +11,7 @@ import {
   getMonsterBaseDamage,
   getNextEvolution,
   HYBRID_DEFS,
+  resolveFusionMonsterDef,
   COMBINATION_TABLE,
   combinationKey,
   MATERIAL_DEFS,
@@ -72,6 +73,13 @@ describe('getBaseId', () => {
     expect(getBaseId('dokkaebi_warrior')).toBe('dokkaebi_warrior');
   });
 
+  it('resolves legacy suffixed instance IDs through the canonical registry', () => {
+    expect(getBaseId('dokkaebi_warrior_3')).toBe('dokkaebi_warrior');
+    expect(getMonsterDisplayName('dokkaebi_warrior_3')).toBe('도깨비 전사');
+    expect(getMonsterEmoji('dokkaebi_warrior_3')).toBe('👹');
+    expect(getMonsterBaseDamage('dokkaebi_warrior_3')).toBe(20);
+  });
+
   it('does not strip other suffixes (e.g., _guardian)', () => {
     expect(getBaseId('gumiho_guardian')).toBe('gumiho_guardian');
   });
@@ -117,7 +125,7 @@ describe('getMonsterEmoji', () => {
   });
 
   it('returns the emoji for a hybrid id', () => {
-    expect(getMonsterEmoji('fox_warrior')).toBe('🦊⚔️');
+    expect(getMonsterEmoji('fox_warrior')).toBe('🦊');
   });
 
   it('returns "❓" for an unknown id', () => {
@@ -141,11 +149,11 @@ describe('getMonsterDisplayName', () => {
   });
 
   it('prepends "영웅 " for rarity 3 (_epic)', () => {
-    expect(getMonsterDisplayName('white_tiger_epic')).toBe('영웅 백호');
+    expect(getMonsterDisplayName('white_tiger_epic')).toBe('영웅 백호 검사');
   });
 
   it('prepends "전설 " for rarity 4 (_leg)', () => {
-    expect(getMonsterDisplayName('sea_god_spear_leg')).toBe('전설 해신의 창');
+    expect(getMonsterDisplayName('sea_god_spear_leg')).toBe('전설 해신 창병');
   });
 
   it('returns hybrid name for hybrid id', () => {
@@ -189,7 +197,7 @@ describe('getMonsterBaseDamage', () => {
   });
 
   it('returns hybrid baseDamage for a hybrid id', () => {
-    expect(getMonsterBaseDamage('fox_warrior')).toBe(26);
+    expect(getMonsterBaseDamage('fox_warrior')).toBe(28);
   });
 });
 
@@ -289,6 +297,22 @@ describe('HYBRID_DEFS', () => {
     for (const def of Object.values(HYBRID_DEFS)) {
       expect(def.roomTypes.length, `${def.id} roomTypes`).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('resolveFusionMonsterDef', () => {
+  it('uses the canonical registry definition for colliding fusion result ids', () => {
+    expect(resolveFusionMonsterDef('soul_guardian')).toMatchObject({
+      id: 'soul_guardian',
+      emoji: '💀',
+      baseDamage: 0,
+      passive: 'PHOENIX_REVIVAL',
+      roomTypes: ['spirit_altar', 'guardian'],
+    });
+  });
+
+  it('keeps fusion-only definitions available', () => {
+    expect(resolveFusionMonsterDef('storm_spirit')).toEqual(HYBRID_DEFS.storm_spirit);
   });
 });
 

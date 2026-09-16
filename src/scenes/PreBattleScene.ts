@@ -5,12 +5,17 @@ import type { InvasionConfig } from '../data/quests';
 import { ACTIVE_SKILLS, type ActiveSkill } from '../data/barracks';
 import { TRIBE_SYNERGIES } from '../data/synergy';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  CASUAL,
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+  ZONE_ACCENTS,
+} from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { buildStoryInvasionTarget, type StoryInvasionTarget } from '../data/battleForecast';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
-  ENEMY_EMOJI,
   ENEMY_NAME,
   ACCENT,
   TRIBE_KO,
@@ -31,95 +36,110 @@ export class PreBattleScene extends Phaser.Scene {
     const gs      = loadGameState();
     const invasionTarget = cfg ? buildStoryInvasionTarget(cfg) : null;
 
-    // ─ Dark dungeon ambient (torchlit gradient + drifting ember motes) ───────
+    // ─ Dungeon ambient ──────────────────────────────────────────────────────
     applyCasualBackground(this);
 
-    // ─ Back button — cream candy pill ────────────────────────────────────────
+    // ─ Cancel command ───────────────────────────────────────────────────────
     const backX = 10;
     const backY = 8;
     const backW = 76;
     const backH = 44;
     const backBg = this.add.graphics();
-    const drawBack = (fill: number = CASUAL.PANEL, border: number = CASUAL.EDGE): void => {
+    const drawBack = (
+      fill: number = DUNGEON_UI.STONE,
+      border: number = DUNGEON_UI.IRON,
+    ): void => {
       backBg.clear();
-      backBg.fillStyle(CASUAL.EDGE, 1);
-      backBg.fillRoundedRect(backX, backY + 3, backW, backH, 13);
+      backBg.fillStyle(DUNGEON_UI.SOOT, 0.72);
+      backBg.fillRoundedRect(backX + 2, backY + 3, backW, backH, 7);
       backBg.fillStyle(fill, 1);
-      backBg.fillRoundedRect(backX, backY, backW, backH, 13);
-      backBg.fillStyle(0xffffff, 0.12);
-      backBg.fillRoundedRect(backX + 4, backY + 4, backW - 8, 7, 3);
-      backBg.lineStyle(2, border, 1);
-      backBg.strokeRoundedRect(backX, backY, backW, backH, 13);
+      backBg.fillRoundedRect(backX, backY, backW, backH, 7);
+      backBg.fillStyle(DUNGEON_UI.BRASS, 0.72);
+      backBg.fillRect(backX, backY + 8, 3, backH - 16);
+      backBg.lineStyle(1.5, border, 0.96);
+      backBg.strokeRoundedRect(backX, backY, backW, backH, 7);
     };
     drawBack();
     const backBtn = this.add.text(backX + backW / 2, backY + backH / 2, '← 취소', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
     }).setOrigin(0.5);
     const backZone = this.add.zone(backX, backY, backW, backH).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     backZone.on('pointerover', () => {
-      backBtn.setColor(CASUAL_CSS.INK_SOFT);
-      drawBack(CASUAL.PANEL_SOFT, CASUAL.GOLD_DK);
+      backBtn.setColor(DUNGEON_UI_CSS.PARCHMENT);
+      drawBack(DUNGEON_UI.STONE_RAISED, DUNGEON_UI.BRASS);
     });
     backZone.on('pointerout', () => {
-      backBtn.setColor(CASUAL_CSS.INK);
+      backBtn.setColor(DUNGEON_UI_CSS.TEXT);
       drawBack();
     });
     backZone.on('pointerdown', () => this.scene.start('DungeonHomeScene'));
 
-    // ─ TOP: Invasion Info ─────────────────────────────────────────────────────
-    const iY = 44, iH = cfg ? 60 + (cfg.waves[0]?.invaders.length ?? 0) * 22 + (cfg.waves.length > 1 ? 22 : 0) + 38 : 120;
+    // ─ TOP: Invasion intelligence ───────────────────────────────────────────
+    const wave1 = cfg?.waves?.[0]?.invaders ?? [];
+    const visibleInvaders = wave1.slice(0, 2);
+    const hiddenInvaderTypes = Math.max(0, wave1.length - visibleInvaders.length);
+    const additionalWaves = Math.max(0, (cfg?.waves?.length ?? 0) - 1);
+    const iY = 60;
+    const iH = cfg
+      ? 82 + visibleInvaders.length * 21 + (hiddenInvaderTypes > 0 ? 17 : 0) + (additionalWaves > 0 ? 17 : 0)
+      : 120;
     const { panel: ig } = addFramedPanel(this, {
       x: 12,
       y: iY,
       w: CANVAS_WIDTH - 24,
       h: iH,
-      radius: 12,
-      fillColor: CASUAL.PANEL,
-      borderColor: CASUAL.EDGE,
-      borderAlpha: 1,
-      borderWidth: 3,
-      accentColor: ACCENT.coral,
+      radius: 8,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      borderAlpha: 0.96,
+      borderWidth: 1.5,
+      accentColor: ZONE_ACCENTS.invasion,
       accentAlpha: 1,
-      glowColor: ACCENT.coral,
-      glowOpacity: 0.12,
-      shadowOpacity: 0.28,
-      shadowOffsetY: 4,
+      glowColor: ZONE_ACCENTS.invasion,
+      glowOpacity: 0.06,
+      shadowOpacity: 0.3,
+      shadowOffsetY: 3,
     });
-    // soft inner cream tray under the enemy roster
-    ig.fillStyle(CASUAL.PANEL_SOFT, 0.92);
-    ig.fillRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 8);
-    ig.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
-    ig.strokeRoundedRect(22, iY + 54, CANVAS_WIDTH - 44, Math.max(36, iH - 68), 8);
+    ig.fillStyle(DUNGEON_UI.SOOT, 0.72);
+    ig.fillRoundedRect(22, iY + 55, CANVAS_WIDTH - 44, Math.max(42, iH - 67), 5);
+    ig.lineStyle(1, DUNGEON_UI.IRON, 0.78);
+    ig.strokeRoundedRect(22, iY + 55, CANVAS_WIDTH - 44, Math.max(42, iH - 67), 5);
+    this.drawInvasionSeal(36, iY + 27);
 
-    this.add.text(CANVAS_WIDTH / 2, iY + 18, `🚨  ${cfg?.name ?? '침략 알림'}`, {
-      fontFamily: 'sans-serif', fontSize: '17px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-      stroke: '#ffffff', strokeThickness: 4,
-    }).setOrigin(0.5);
-    this.add.text(CANVAS_WIDTH / 2, iY + 42, `스토리 침략 — 메인 퀘스트 ${questId ?? ''}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED, fontStyle: 'bold',
-    }).setOrigin(0.5);
+    this.add.text(56, iY + 18, cfg?.name ?? '침공 정보 없음', {
+      fontFamily: 'sans-serif', fontSize: '17px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+      stroke: '#030504', strokeThickness: 2,
+    }).setOrigin(0, 0.5);
+    this.add.text(56, iY + 40, `침공 작전 · ${questId || '연결된 퀘스트 없음'}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    this.add.text(CANVAS_WIDTH - 24, iY + 29, '철수 불가', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
+    }).setOrigin(1, 0.5);
 
-    this.add.text(22, iY + 76, '예상 적군:', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED, fontStyle: 'bold',
+    this.add.text(30, iY + 67, '선봉 전력', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+
+    let ey = iY + 88;
+    visibleInvaders.forEach(({ type, count }, index) => {
+      this.drawEnemyMarker(36, ey + 1, index);
+      this.add.text(51, ey, `${ENEMY_NAME[type] ?? type}  ×${count}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      ey += 21;
     });
-
-    let ey = iY + 96;
-    const wave1 = cfg?.waves?.[0]?.invaders ?? [];
-    wave1.forEach(({ type, count }) => {
-      this.add.text(30, ey, `${ENEMY_EMOJI[type] ?? '👥'}  ${ENEMY_NAME[type] ?? type}  ×${count}`, {
-        fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-      });
-      ey += 22;
-    });
-    if ((cfg?.waves?.length ?? 0) > 1) {
-      this.add.text(30, ey, `+ ${cfg!.waves.length - 1}개 추가 웨이브`, {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-      });
-      ey += 20;
+    if (hiddenInvaderTypes > 0) {
+      this.add.text(51, ey, `그 외 ${hiddenInvaderTypes}개 병종`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+      }).setOrigin(0, 0.5);
+      ey += 17;
     }
-    this.add.text(CANVAS_WIDTH / 2, ey + 10, '⚠️  이 침략은 건너뛸 수 없습니다', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.RED, fontStyle: 'bold',
-    }).setOrigin(0.5);
+    if (additionalWaves > 0) {
+      this.add.text(CANVAS_WIDTH - 30, ey, `후속 웨이브 +${additionalWaves}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+    }
 
     // ─ MIDDLE: Dungeon defense loadout ───────────────────────────────────────
     const { defenseRooms, defenseTotals, directive, dY, dH } = buildDefenseLoadout(this, {
@@ -141,9 +161,9 @@ export class PreBattleScene extends Phaser.Scene {
     if (activeSynergies.length > 0) {
       let chipX = 14;
       activeSynergies.forEach(([tribe, count]) => {
-        const label = `✨ ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
-      const chip = this.add.text(chipX, synY, label, {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
+        const label = `공명 · ${TRIBE_KO[tribe] ?? tribe} ×${count}`;
+        const chip = this.add.text(chipX, synY, label, {
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
           backgroundColor: CASUAL_CSS.PANEL_SOFT, padding: { x: 8, y: 17 },
         });
         chip.setInteractive({ useHandCursor: true });
@@ -193,8 +213,8 @@ export class PreBattleScene extends Phaser.Scene {
         chipX += chip.width + 8;
       });
     } else {
-      this.add.text(14, synY + 2, '시너지 없음', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      this.add.text(14, synY + 2, '활성 공명 없음', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
       }).setOrigin(0, 0);
     }
 
@@ -203,8 +223,8 @@ export class PreBattleScene extends Phaser.Scene {
       .map(id => ACTIVE_SKILLS.find(s => s.id === id))
       .filter((s): s is ActiveSkill => s != null);
     if (ownedSkills.length > 0) {
-      const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `🎯 스킬 ×${ownedSkills.length}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
+      const skillChip = this.add.text(CANVAS_WIDTH - 14, synY, `ACTIVE · 스킬 ${ownedSkills.length}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
         backgroundColor: CASUAL_CSS.PANEL_SOFT, padding: { x: 8, y: 17 },
       }).setOrigin(1, 0);
       skillChip.setInteractive({ useHandCursor: true });
@@ -253,7 +273,9 @@ export class PreBattleScene extends Phaser.Scene {
     const commandY = dY + dH + 70;
     const commandH = 160;
     const forecastY = commandY + 27;
+    const hasBattleTarget = Boolean(invasionTarget?.stage);
     const commandStatus =
+      !hasBattleTarget ? '대상 오류' :
       directive.severity === 'ready' ? '출격 가능' :
       directive.severity === 'warning' ? '보강 권장' : '위험';
     const pressureText = directive.pressure > 0
@@ -262,74 +284,71 @@ export class PreBattleScene extends Phaser.Scene {
     const readinessText = formatDefenseReadinessPercent(directive.readiness);
     const prestigeBattleBonus = formatPrestigeBattleBonus(gs);
 
+    const readinessAccent = !hasBattleTarget
+      ? DUNGEON_UI.EMBER
+      : directive.severity === 'ready'
+      ? DUNGEON_UI.JADE
+      : directive.severity === 'warning'
+        ? DUNGEON_UI.BRASS_BRIGHT
+        : DUNGEON_UI.EMBER;
     const commandBg = this.add.graphics();
-    // chunky cream command tray
-    commandBg.fillStyle(CASUAL.SHADOW, 0.22);
-    commandBg.fillRoundedRect(10, commandY + 4, CANVAS_WIDTH - 20, commandH, 14);
-    commandBg.fillStyle(CASUAL.PANEL, 1);
-    commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);
-    commandBg.fillStyle(0xffffff, 0.14);
-    commandBg.fillRoundedRect(16, commandY + 5, CANVAS_WIDTH - 32, 5, 3);
-    commandBg.lineStyle(3, CASUAL.EDGE, 1);
-    commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 14);
-    // status strip (soft cream sub-band)
-    commandBg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    commandBg.fillRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 15, 7);
-    commandBg.lineStyle(1.5, directive.accent, 0.85);
-    commandBg.strokeRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 15, 7);
+    commandBg.fillStyle(DUNGEON_UI.SOOT, 0.82);
+    commandBg.fillRoundedRect(12, commandY + 3, CANVAS_WIDTH - 24, commandH, 8);
+    commandBg.fillStyle(DUNGEON_UI.STONE, 1);
+    commandBg.fillRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 8);
+    commandBg.fillStyle(readinessAccent, 0.94);
+    commandBg.fillRect(10, commandY + 1, 3, commandH - 2);
+    commandBg.lineStyle(1.5, DUNGEON_UI.IRON, 0.96);
+    commandBg.strokeRoundedRect(10, commandY, CANVAS_WIDTH - 20, commandH, 8);
+    commandBg.fillStyle(DUNGEON_UI.SOOT, 0.74);
+    commandBg.fillRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 18, 4);
+    commandBg.lineStyle(1, readinessAccent, 0.72);
+    commandBg.strokeRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 18, 4);
 
     this.add.text(24, commandY + 10, '출격 명령', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0, 0.5);
 
     this.add.text(92, commandY + 10, commandStatus, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
-      color: directive.severity === 'ready' ? CASUAL_CSS.GREEN :
-        directive.severity === 'warning' ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
+      color: !hasBattleTarget ? DUNGEON_UI_CSS.EMBER :
+        directive.severity === 'ready' ? DUNGEON_UI_CSS.JADE :
+        directive.severity === 'warning' ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0, 0.5);
 
-    this.add.text(CANVAS_WIDTH - 24, commandY + 10, `DEF ${pressureText} · 준비 ${readinessText}`, {
+    this.add.text(CANVAS_WIDTH - 24, commandY + 10, hasBattleTarget
+      ? `DEF ${pressureText} · 준비 ${readinessText}`
+      : '침공 데이터 확인 필요', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(1, 0.5);
 
-    addPrimaryActionButton(this, {
+    this.addSecondaryCommand({
       x: 14,
       y: forecastY,
       w: CANVAS_WIDTH - 28,
       h: 44,
-      label: '⚗  전투 예측',
-      fontSize: '12px',
-      fillColor: CASUAL.PANEL_SOFT,
-      hoverFillColor: CASUAL.PANEL,
-      borderColor: CASUAL.EDGE,
-      hoverBorderColor: CASUAL.GOLD_DK,
-      textColor: CASUAL_CSS.INK,
+      label: '전투 예측',
+      detail: '결정론적 전력 분석  ›',
       onPress: () => openSimulationModal(this, gs, invasionTarget),
     });
 
     const actionY = forecastY + 52;
     if (directive.actionLabel) {
       // Secondary edit/forecast actions stay quiet; launch remains the only dominant CTA.
-      addPrimaryActionButton(this, {
+      this.addSecondaryCommand({
         x: 14,
         y: actionY,
         w: 124,
         h: 48,
         label: getDefenseActionButtonLabel(directive),
-        fontSize: '13px',
-        fillColor: CASUAL.PANEL,
-        hoverFillColor: CASUAL.PANEL_SOFT,
-        borderColor: CASUAL.EDGE,
-        hoverBorderColor: CASUAL.GOLD_DK,
-        textColor: CASUAL_CSS.INK,
         onPress: () => {
           if (directive.actionSlotIdx === undefined) {
             this.scene.start('DungeonHomeScene');
@@ -338,37 +357,35 @@ export class PreBattleScene extends Phaser.Scene {
           this.returnToDungeonRoom(directive.actionSlotIdx);
         },
       });
-      // primary "방어 시작" → bright candy button (GREEN normal, RED if risky)
       addPrimaryActionButton(this, {
         x: 148,
         y: actionY,
         w: 228,
         h: 48,
-        label: '🛡️  방어 시작',
+        label: invasionTarget?.stage ? '침입 방어 시작' : '전투 대상 확인 필요',
         fontSize: '15px',
-        fillColor: directive.severity === 'danger' ? CASUAL.RED : CASUAL.GREEN,
-        hoverFillColor: directive.severity === 'danger' ? CASUAL.RED : CASUAL.GREEN,
-        borderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
-        hoverBorderColor: directive.severity === 'danger' ? CASUAL.RED_DK : CASUAL.GREEN_DK,
+        fillColor: readinessAccent,
+        hoverFillColor: readinessAccent,
+        borderColor: directive.severity === 'danger' ? ZONE_ACCENTS.invasion : DUNGEON_UI.BRASS,
+        hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
         textColor: CASUAL_CSS.WHITE,
-        enabled: Boolean(invasionTarget?.stage),
+        enabled: hasBattleTarget,
         once: true,
         onPress: () => this.launchBattle(invasionTarget, questId),
       });
     } else {
-      // primary "방어 시작!" → bright GREEN candy button
       addPrimaryActionButton(this, {
         x: CANVAS_WIDTH / 2 - 146,
         y: actionY,
         w: 292,
         h: 48,
-        label: '🛡️   방어 시작!',
-        fillColor: CASUAL.GREEN,
-        hoverFillColor: CASUAL.GREEN,
-        borderColor: CASUAL.GREEN_DK,
-        hoverBorderColor: CASUAL.GREEN_DK,
+        label: invasionTarget?.stage ? '침입 방어 시작' : '전투 대상 확인 필요',
+        fillColor: readinessAccent,
+        hoverFillColor: readinessAccent,
+        borderColor: DUNGEON_UI.BRASS,
+        hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
         textColor: CASUAL_CSS.WHITE,
-        enabled: Boolean(invasionTarget?.stage),
+        enabled: hasBattleTarget,
         once: true,
         onPress: () => this.launchBattle(invasionTarget, questId),
       });
@@ -379,12 +396,80 @@ export class PreBattleScene extends Phaser.Scene {
         fontFamily: 'sans-serif',
         fontSize: '10px',
         fontStyle: 'bold',
-        color: CASUAL_CSS.GOLD,
+        color: DUNGEON_UI_CSS.BRASS,
       }).setName('prestigeBattleBonus').setOrigin(0.5);
     }
 
     // Fade in
     if (!getReducedMotion()) this.cameras.main.fadeIn(300, 0, 0, 0);
+  }
+
+  private drawInvasionSeal(cx: number, cy: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.SOOT, 0.92);
+    g.fillCircle(cx, cy, 15);
+    g.lineStyle(1.5, ZONE_ACCENTS.invasion, 0.92);
+    g.strokeCircle(cx, cy, 15);
+    g.lineStyle(2, DUNGEON_UI.EMBER, 0.95);
+    g.lineBetween(cx - 7, cy - 8, cx + 7, cy + 8);
+    g.lineBetween(cx + 7, cy - 8, cx - 7, cy + 8);
+    g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.94);
+    g.fillCircle(cx, cy, 2.5);
+  }
+
+  private drawEnemyMarker(cx: number, cy: number, variant: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.EMBER, 0.13);
+    g.fillCircle(cx, cy, 8);
+    g.lineStyle(1.5, DUNGEON_UI.EMBER, 0.9);
+    g.strokeCircle(cx, cy, 8);
+    if (variant % 3 === 0) {
+      g.fillStyle(DUNGEON_UI.EMBER, 0.86);
+      g.fillTriangle(cx, cy - 5, cx - 5, cy + 5, cx + 5, cy + 5);
+    } else if (variant % 3 === 1) {
+      g.lineBetween(cx - 4, cy - 5, cx + 4, cy + 5);
+      g.lineBetween(cx + 4, cy - 5, cx - 4, cy + 5);
+    } else {
+      g.fillStyle(DUNGEON_UI.EMBER, 0.82);
+      g.fillRect(cx - 4, cy - 4, 8, 8);
+    }
+  }
+
+  private addSecondaryCommand(options: {
+    readonly x: number;
+    readonly y: number;
+    readonly w: number;
+    readonly h: number;
+    readonly label: string;
+    readonly detail?: string;
+    readonly onPress: () => void;
+  }): void {
+    const { x, y, w, h, label, detail, onPress } = options;
+    const bg = this.add.graphics();
+    const draw = (active: boolean): void => {
+      bg.clear();
+      bg.fillStyle(active ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 0.9);
+      bg.fillRoundedRect(x, y, w, h, 6);
+      bg.lineStyle(1, active ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON, active ? 0.88 : 0.76);
+      bg.strokeRoundedRect(x, y, w, h, 6);
+    };
+    draw(false);
+    this.add.text(x + 14, y + h / 2, label, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    if (detail) {
+      this.add.text(x + w - 12, y + h / 2, detail, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+      }).setOrigin(1, 0.5);
+    } else {
+      this.add.text(x + w - 12, y + h / 2, '›', {
+        fontFamily: 'sans-serif', fontSize: '17px', color: DUNGEON_UI_CSS.BRASS,
+      }).setOrigin(1, 0.5);
+    }
+    const zone = this.add.zone(x, y, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
+    zone.on('pointerover', () => draw(true));
+    zone.on('pointerout', () => draw(false));
+    zone.on('pointerdown', onPress);
   }
 
   private returnToDungeonRoom(slotIdx: number): void {

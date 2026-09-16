@@ -9,7 +9,7 @@
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import type { RoomData } from '../data/rooms';
-import { MONSTER_DEFS } from '../data/monsters';
+import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile } from '../data/monsters';
 import { ACTIVE_SKILLS } from '../data/barracks';
 import { COLORS, CSS } from '../constants/colors';
 import { loadGameState } from '../data/wisdom';
@@ -203,17 +203,19 @@ export function initSwapManager(ctx: GameplayInitContext): void {
       const temp      = data1.monsterSlot;
       data1.monsterSlot = data2.monsterSlot;
       data2.monsterSlot = temp;
+      data1.attackCooldown = resolveMonsterAttackCooldown(data1.monsterSlot, data1.type);
+      data2.attackCooldown = resolveMonsterAttackCooldown(data2.monsterSlot, data2.type);
 
       // Redraw sprite for cell 1
       if (data1.monsterSlot) {
-        const def1 = MONSTER_DEFS[data1.monsterSlot as keyof typeof MONSTER_DEFS];
+        const def1 = resolveOwnedMonsterProfile(data1.monsterSlot);
         ctx.rooms[r1]?.[c1]?.setMonsterSprite(data1.monsterSlot, def1?.emoji);
       } else {
         ctx.rooms[r1]?.[c1]?.setMonsterSprite(null);
       }
       // Redraw sprite for cell 2
       if (data2.monsterSlot) {
-        const def2 = MONSTER_DEFS[data2.monsterSlot as keyof typeof MONSTER_DEFS];
+        const def2 = resolveOwnedMonsterProfile(data2.monsterSlot);
         ctx.rooms[r2]?.[c2]?.setMonsterSprite(data2.monsterSlot, def2?.emoji);
       } else {
         ctx.rooms[r2]?.[c2]?.setMonsterSprite(null);

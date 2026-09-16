@@ -19,12 +19,6 @@ import { canClaimAttendance } from '../data/attendance';
 import { showAttendancePanel } from './AttendancePanel';
 import { getReducedMotion } from '../utils/reducedMotion';
 
-interface ShowChallengePanelFn {
-  (): void;
-}
-
-const EVENT_TILE_SIZE = 44;
-const EVENT_TILE_GAP = 8;
 // Casual-toy challenge modal palette (used only by showChallengePanel).
 const CHALLENGE_PANEL_FILL = CASUAL.PANEL;       // cream modal body
 const CHALLENGE_ACCENT = CASUAL.BLUE;            // challenge identity = blue
@@ -33,58 +27,84 @@ const CHALLENGE_DONE_FILL = CASUAL.PANEL_SOFT;   // done rows keep cream + green
 const CHALLENGE_ROW_BORDER = CASUAL.EDGE_SOFT;   // incomplete row edge
 const CHALLENGE_DONE_GREEN = CASUAL.GREEN;       // done accent
 
-function drawEventTileShell(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  opts: {
-    readonly accentColor: number;
-    readonly done?: boolean;
-  },
-): void {
-  // Cream casual tile; the per-tile semantic accent drives the border + cap.
-  const accent = opts.done ? CASUAL.GREEN : opts.accentColor;
-  const { shadow, panel, glow } = addFramedPanel(scene, {
-    x,
-    y,
-    w: EVENT_TILE_SIZE,
-    h: EVENT_TILE_SIZE,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: accent,
-    borderAlpha: 1,
-    borderWidth: 2.5,
-    accentColor: accent,
-    accentAlpha: 1,
-    glowColor: accent,
-    glowOpacity: 0.06,
-    shadowOpacity: 0.26,
-    shadowOffsetY: 3,
-  });
-  shadow.setDepth(9);
-  panel.setDepth(10);
-  glow.setDepth(11);
+interface DailyHubRow {
+  readonly icon: string;
+  readonly title: string;
+  readonly status: string;
+  readonly accent: number;
+  readonly actionLabel: string;
+  readonly enabled?: boolean;
+  readonly onPress: () => void;
 }
 
-export function buildDailyContentPanel(
+function addDailyHubRow(
   scene: Phaser.Scene,
-  onShowChallengePanel: ShowChallengePanelFn,
+  container: Phaser.GameObjects.Container,
+  row: DailyHubRow,
+  x: number,
+  y: number,
+  w: number,
 ): void {
+  const h = 60;
+  const frame = addFramedPanel(scene, {
+    x,
+    y,
+    w,
+    h,
+    radius: GAME_UI.radius.row,
+    fillColor: CASUAL.PANEL_SOFT,
+    borderColor: row.accent,
+    borderAlpha: 0.48,
+    borderWidth: 1.5,
+    accentColor: row.accent,
+    accentAlpha: 0.9,
+    glowOpacity: 0,
+    shadowOpacity: 0.12,
+    shadowOffsetY: 2,
+  });
+  container.add([frame.shadow, frame.panel, frame.glow]);
+
+  container.add(scene.add.text(x + 24, y + h / 2, row.icon, {
+    fontFamily: 'sans-serif', fontSize: '18px',
+  }).setOrigin(0.5));
+  container.add(scene.add.text(x + 48, y + 20, row.title, {
+    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  container.add(scene.add.text(x + 48, y + 40, row.status, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+  }).setOrigin(0, 0.5));
+
+  const enabled = row.enabled !== false;
+  const action = addPrimaryActionButton(scene, {
+    x: x + w - 88,
+    y: y + 8,
+    w: 76,
+    h: 44,
+    label: row.actionLabel,
+    fontSize: '12px',
+    enabled,
+    once: true,
+    fillColor: row.accent,
+    hoverFillColor: row.accent,
+    borderColor: row.accent,
+    hoverBorderColor: row.accent,
+    onPress: () => {
+      audioManager.playSfx('button_click');
+      row.onPress();
+    },
+  });
+  container.add([action.bg, action.text, action.zone]);
+}
+
+export function showDailyContentHub(scene: Phaser.Scene): void {
+  if (scene.children.getByName('daily-content-hub')) return;
+
   const gs = loadGameState();
   const today = getTodayString();
   const daily = getDailyDungeon();
   const weeklyBoss = getWeeklyBoss();
   const dailyView = prepareDailyChallengeViewState(gs, today);
-  const { challenges } = dailyView;
-
   const dailyDone = gs.dailyDungeonCompleted === today;
-
-  // Compact event rail. Keep it on the screen edge so the dungeon rooms remain the focus.
-  const btnX = CANVAS_WIDTH - EVENT_TILE_SIZE - 7;
-  const btnY = 468;
-  const tileCenter = EVENT_TILE_SIZE / 2;
-
-  // Rule label mapping
   const ELEMENT_KR: Record<string, string> = {
     fire: '화염', frost: '빙결', lightning: '뇌전', dark: '암흑', holy: '신성',
   };
@@ -95,105 +115,76 @@ export function buildDailyContentPanel(
     boss_rush:        { text: '보스전',     color: CASUAL_CSS.RED },
   };
   const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: CASUAL_CSS.INK_SOFT };
-
-  // Daily dungeon button
-  drawEventTileShell(scene, btnX, btnY, {
-    accentColor: CASUAL.GOLD,
-    done: dailyDone,
-  });
-
-  scene.add.text(btnX + tileCenter, btnY + 13, dailyDone ? '✅' : '⚔️', {
-    fontFamily: 'sans-serif', fontSize: '15px',
-  }).setOrigin(0.5).setDepth(11);
-
-  // Rule sub-label / done countdown (small, inside button)
-  if (!dailyDone) {
-    scene.add.text(btnX + tileCenter, btnY + 30, ruleLabel.text, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: ruleLabel.color,
-    }).setOrigin(0.5).setDepth(11);
-  } else {
-    const midnight = new Date(); midnight.setHours(24, 0, 0, 0);
-    let secs = Math.max(0, Math.floor((midnight.getTime() - Date.now()) / 1000));
-    const cdT = scene.add.text(btnX + tileCenter, btnY + 30, '', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.GREEN,
-    }).setOrigin(0.5).setDepth(11);
-    const fmtHms = (s: number) =>
-      `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-    cdT.setText(fmtHms(secs));
-    scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
-      secs = Math.max(0, secs - 1); cdT.setText(fmtHms(secs));
-    }});
-  }
-
-  if (!dailyDone) {
-    const zone = scene.add.zone(btnX + tileCenter, btnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
-      .setInteractive().setDepth(12);
-    zone.on('pointerdown', () => {
-      audioManager.playSfx('button_click');
-      // Launch dungeon scene with daily mode
-      scene.registry.set('stageConfig', {
-        stageNumber: 1,
-        slots: 12,
-        endless: false,
-      });
-      scene.registry.set('dailyMode', daily);
-      if (getReducedMotion()) {
-        scene.scene.start('DungeonScene');
-        return;
-      }
-      scene.cameras.main.fadeOut(220, 0, 0, 0);
-      scene.cameras.main.once('camerafadeoutcomplete', () => {
-        scene.scene.start('DungeonScene');
-      });
-    });
-  }
-
-  // Weekly boss button
-  const weekBtnY = btnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
   const weeklyDone = gs.weeklyBossResetDate === getThisWeekMonday();
-  drawEventTileShell(scene, btnX, weekBtnY, {
-    accentColor: CASUAL.PURPLE,
-    done: weeklyDone,
+  const completedCount = dailyView.completedCount;
+  const attendClaimable = canClaimAttendance(gs, today);
+
+  const container = scene.add.container(0, 0).setDepth(95).setName('daily-content-hub');
+  const close = (): void => container.destroy(true);
+  const dim = scene.add.graphics();
+  dim.fillStyle(0x000000, 0.58);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  dim.setInteractive(
+    new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT),
+    Phaser.Geom.Rectangle.Contains,
+  );
+  container.add(dim);
+
+  const panelX = 20;
+  const panelY = 200;
+  const panelW = CANVAS_WIDTH - panelX * 2;
+  const panelH = 356;
+  const panel = addFramedPanel(scene, {
+    x: panelX,
+    y: panelY,
+    w: panelW,
+    h: panelH,
+    radius: 16,
+    fillColor: CASUAL.PANEL,
+    borderColor: CASUAL.EDGE,
+    borderAlpha: 0.9,
+    borderWidth: 2,
+    accentColor: CASUAL.BLUE,
+    accentAlpha: 0.9,
+    glowColor: CASUAL.BLUE,
+    glowOpacity: 0.08,
+    shadowOpacity: 0.5,
+    shadowOffsetY: 5,
   });
+  container.add([panel.shadow, panel.panel, panel.glow]);
+  container.add(scene.add.text(panelX + 20, panelY + 24, '◆ 일일 작전실', {
+    fontFamily: 'Georgia, serif', fontSize: '18px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  container.add(scene.add.text(panelX + 20, panelY + 45, '오늘의 전투와 보상을 한곳에서 관리합니다.', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+  }).setOrigin(0, 0.5));
+  const closeText = scene.add.text(panelX + panelW - 24, panelY + 26, '×', {
+    fontFamily: 'sans-serif', fontSize: '22px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+  }).setOrigin(0.5);
+  const closeZone = scene.add.zone(panelX + panelW - 24, panelY + 26, 44, 44)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerdown', () => {
+      audioManager.playSfx('button_click');
+      close();
+    });
+  container.add([closeText, closeZone]);
 
-  scene.add.text(btnX + tileCenter, weekBtnY + 13, weeklyDone ? '✅' : '👑', {
-    fontFamily: 'sans-serif', fontSize: '15px',
-  }).setOrigin(0.5).setDepth(11);
-
-  // Boss name sub-label / done countdown
-  if (!weeklyDone) {
-    const bossShort = weeklyBoss.name.length > 5 ? weeklyBoss.name.slice(0, 4) + '…' : weeklyBoss.name;
-    scene.add.text(btnX + tileCenter, weekBtnY + 30, bossShort, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(11);
-  } else {
-    const now2 = new Date();
-    const nextMon = new Date(now2);
-    const daysUntil = ((1 - now2.getDay() + 7) % 7) || 7;
-    nextMon.setDate(now2.getDate() + daysUntil); nextMon.setHours(0, 0, 0, 0);
-    let wSecs = Math.max(0, Math.floor((nextMon.getTime() - now2.getTime()) / 1000));
-    const wCdT = scene.add.text(btnX + tileCenter, weekBtnY + 30, '', {
-      fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.GREEN,
-    }).setOrigin(0.5).setDepth(11);
-    const fmtDhm = (s: number) => {
-      const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-      return d > 0 ? `${d}일 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-                   : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-    };
-    wCdT.setText(fmtDhm(wSecs));
-    scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
-      wSecs = Math.max(0, wSecs - 1); wCdT.setText(fmtDhm(wSecs));
-    }});
-  }
-
-  // Weekly boss click - launch as invasion-style battle
-  const weekZone = scene.add.zone(btnX + tileCenter, weekBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
-    .setInteractive().setDepth(12);
-  weekZone.on('pointerdown', () => {
-    audioManager.playSfx('button_click');
-    // Build single boss wave
+  const launchDaily = (): void => {
+    close();
+    scene.registry.set('stageConfig', { stageNumber: 1, slots: 12, endless: false });
+    scene.registry.set('dailyMode', daily);
+    if (getReducedMotion()) {
+      scene.scene.start('DungeonScene');
+      return;
+    }
+    scene.cameras.main.fadeOut(220, 0, 0, 0);
+    scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start('DungeonScene'));
+  };
+  const launchWeeklyBoss = (): void => {
+    close();
     const bossWave = [{
-      wave: 1, clearReward: weeklyBoss.rewards.skinShards * 100,
+      wave: 1,
+      clearReward: weeklyBoss.rewards.skinShards * 100,
       invaders: [{ type: weeklyBoss.bossType, count: 1, spawnDelay: 0, isBoss: true }],
     }];
     scene.registry.set('stageConfig', {
@@ -214,73 +205,64 @@ export function buildDailyContentPanel(
       scene.scene.stop('DungeonHomeScene');
       scene.scene.start('DungeonScene');
     });
-  });
+  };
 
-  // Challenge button
-  const chalBtnY = weekBtnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
-  const completedCount = dailyView.completedCount;
+  const rowX = panelX + 12;
+  const rowW = panelW - 24;
+  const rows: DailyHubRow[] = [
+    {
+      icon: dailyDone ? '✅' : '⚔️',
+      title: '일일 던전',
+      status: dailyDone ? '오늘 보상 수령 완료' : `오늘 규칙 · ${ruleLabel.text}`,
+      accent: dailyDone ? CASUAL.GREEN : CASUAL.GOLD,
+      actionLabel: dailyDone ? '완료' : '입장',
+      enabled: !dailyDone,
+      onPress: launchDaily,
+    },
+    {
+      icon: weeklyDone ? '✅' : '👑',
+      title: '주간 보스',
+      status: `${weeklyBoss.name}${weeklyDone ? ' · 이번 주 완료' : ''}`,
+      accent: weeklyDone ? CASUAL.GREEN : CASUAL.PURPLE,
+      actionLabel: weeklyDone ? '재도전' : '도전',
+      onPress: launchWeeklyBoss,
+    },
+    {
+      icon: '🎯',
+      title: '도전 과제',
+      status: `${completedCount}/${dailyView.challenges.length} 완료 · 총 보상 💎${dailyView.totalRewardGems}`,
+      accent: CASUAL.BLUE,
+      actionLabel: '보기',
+      onPress: () => {
+        close();
+        showChallengePanel(scene);
+      },
+    },
+    {
+      icon: attendClaimable ? '📅' : '✅',
+      title: '출석 보상',
+      status: attendClaimable ? '오늘 보상을 받을 수 있습니다.' : '오늘 보상 수령 완료',
+      accent: attendClaimable ? CASUAL.GOLD : CASUAL.GREEN,
+      actionLabel: attendClaimable ? '수령' : '확인',
+      onPress: () => {
+        close();
+        showAttendancePanel(scene);
+      },
+    },
+  ];
+  rows.forEach((row, index) => addDailyHubRow(
+    scene,
+    container,
+    row,
+    rowX,
+    panelY + 66 + index * 68,
+    rowW,
+  ));
 
-  drawEventTileShell(scene, btnX, chalBtnY, {
-    accentColor: CASUAL.BLUE,
-  });
-
-  scene.add.text(btnX + tileCenter, chalBtnY + 14, '🎯', {
-    fontFamily: 'sans-serif', fontSize: '16px',
-  }).setOrigin(0.5).setDepth(11);
-
-  scene.add.text(btnX + tileCenter, chalBtnY + 30, `${completedCount}/3`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
-  }).setOrigin(0.5).setDepth(11);
-
-  // Mini dot indicators — one per challenge
-  const dotStates = challenges.map(c => dailyView.state.dailyChallenges[c.id]);
-  dotStates.forEach((st, di) => {
-    const completed  = st?.completed ?? false;
-    const inProgress = !completed && (st?.progress ?? 0) > 0;
-    const dotColor   = completed
-      ? CASUAL_CSS.GREEN
-      : inProgress ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT;
-    const dotX = btnX + 10 + di * 11;
-    scene.add.text(dotX, chalBtnY + 37, '●', {
-      fontFamily: 'sans-serif', fontSize: '7px', color: dotColor,
-    }).setDepth(11);
-  });
-
-  const chalZone = scene.add.zone(btnX + tileCenter, chalBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
-    .setInteractive().setDepth(12);
-  chalZone.on('pointerdown', () => {
-    audioManager.playSfx('button_click');
-    onShowChallengePanel();
-  });
-
-  // ── Attendance (login reward) tile ──
-  const attendBtnY = chalBtnY + EVENT_TILE_SIZE + EVENT_TILE_GAP;
-  const attendClaimable = canClaimAttendance(gs, today);
-  drawEventTileShell(scene, btnX, attendBtnY, {
-    accentColor: CASUAL.GOLD,
-    done: !attendClaimable,
-  });
-  scene.add.text(btnX + tileCenter, attendBtnY + 14, attendClaimable ? '📅' : '✅', {
-    fontFamily: 'sans-serif', fontSize: '15px',
-  }).setOrigin(0.5).setDepth(11);
-  scene.add.text(btnX + tileCenter, attendBtnY + 30, '출석', {
-    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-    color: attendClaimable ? CASUAL_CSS.GOLD : CASUAL_CSS.GREEN,
-  }).setOrigin(0.5).setDepth(11);
-  if (attendClaimable) {
-    const badge = scene.add.graphics().setDepth(13);
-    badge.fillStyle(CASUAL.RED, 1);
-    badge.fillCircle(btnX + EVENT_TILE_SIZE - 5, attendBtnY + 5, 5);
-    scene.add.text(btnX + EVENT_TILE_SIZE - 5, attendBtnY + 5, '!', {
-      fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: '#ffffff',
-    }).setOrigin(0.5).setDepth(14);
+  if (!getReducedMotion()) {
+    container.setAlpha(0);
+    scene.tweens.add({ targets: container, alpha: 1, duration: 140, ease: 'Quad.easeOut' });
   }
-  const attendZone = scene.add.zone(btnX + tileCenter, attendBtnY + tileCenter, EVENT_TILE_SIZE, EVENT_TILE_SIZE)
-    .setInteractive().setDepth(12);
-  attendZone.on('pointerdown', () => {
-    audioManager.playSfx('button_click');
-    showAttendancePanel(scene);
-  });
 }
 
 export function showChallengePanel(scene: Phaser.Scene): void {

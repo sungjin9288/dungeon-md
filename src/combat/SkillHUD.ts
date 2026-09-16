@@ -7,7 +7,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { ACTIVE_SKILLS, type ActiveSkill } from '../data/barracks';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 
@@ -16,7 +16,7 @@ import { addFramedPanel } from '../ui/GameUiPrimitives';
 const SLOT_SIZE  = 46;
 const SLOT_GAP   = 12;
 const SLOT_TOUCH = 52;
-const HUD_H      = 68;
+const HUD_H      = 72;
 const HUD_Y      = CANVAS_HEIGHT - HUD_H - 8;
 const MAX_SLOTS  = 3;
 
@@ -51,23 +51,23 @@ export class SkillHUD {
       y: HUD_Y,
       w: barW,
       h: HUD_H,
-      radius: 12,
-      fillColor: CASUAL.PANEL,
-      borderColor: CASUAL.EDGE,
+      radius: 8,
+      fillColor: DUNGEON_UI.SOOT,
+      borderColor: DUNGEON_UI.IRON,
       borderAlpha: 1,
-      borderWidth: 3,
-      shadowOpacity: 0.32,
-      shadowOffsetY: 4,
+      borderWidth: 1.5,
+      shadowOpacity: 0.38,
+      shadowOffsetY: 3,
     });
     this.container.add(dock.shadow);
     this.container.add(dock.panel);
     this.container.add(dock.glow);
     this.container.add(drawSkillDockOrnaments(scene, barX, HUD_Y, barW, HUD_H));
-    this.container.add(scene.add.text(CANVAS_WIDTH / 2, HUD_Y + 9, '전술 스킬', {
+    this.container.add(scene.add.text(CANVAS_WIDTH / 2, HUD_Y + 9, '전술 명령', {
       fontFamily: 'sans-serif',
-      fontSize: '8px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
 
     // Create skill slots
@@ -146,23 +146,19 @@ function drawSkillDockOrnaments(
   h: number,
 ): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics();
-  // soft header rail behind the label
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
+  g.fillStyle(DUNGEON_UI.STONE, 0.92);
   g.fillRoundedRect(x + 10, y + 6, w - 20, 8, 4);
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.5);
+  g.fillStyle(DUNGEON_UI.BRASS, 0.55);
   g.fillRoundedRect(x + 24, y + 8, w - 48, 2, 1);
-  // warm bottom shading hint
-  g.fillStyle(CASUAL.SHADOW, 0.1);
+  g.fillStyle(DUNGEON_UI.VOID, 0.4);
   g.fillRoundedRect(x + 12, y + h - 10, w - 24, 3, 2);
-  // side rails
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.5);
   g.lineBetween(x + 8, y + 18, x + 8, y + h - 16);
   g.lineBetween(x + w - 8, y + 18, x + w - 8, y + h - 16);
-  // corner studs
-  g.fillStyle(CASUAL.EDGE, 0.9);
+  g.fillStyle(DUNGEON_UI.IRON, 0.9);
   g.fillCircle(x + 11, y + 12, 3);
   g.fillCircle(x + w - 11, y + 12, 3);
-  g.fillStyle(CASUAL.GOLD, 0.95);
+  g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.95);
   g.fillCircle(x + 11, y + 12, 1.4);
   g.fillCircle(x + w - 11, y + 12, 1.4);
   return g;
@@ -212,9 +208,9 @@ class SkillSlot {
 
     this.badgeText = scene.add.text(x + 8, y + 7, `${slotNumber}`, {
       fontFamily: 'sans-serif',
-      fontSize: '9px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+      color: skill ? '#ffffff' : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
     this.container.add(this.badgeText);
 
@@ -229,9 +225,9 @@ class SkillSlot {
 
     this.categoryText = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE - 7, getCategoryLabel(skill?.category), {
       fontFamily: 'sans-serif',
-      fontSize: '8px',
+      fontSize: '10px',
       fontStyle: 'bold',
-      color: skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+      color: skill ? '#ffffff' : DUNGEON_UI_CSS.MUTED,
       stroke: skill ? '#00000033' : undefined,
       strokeThickness: skill ? 2 : 0,
     }).setOrigin(0.5).setAlpha(skill ? 1 : 0.6);
@@ -241,8 +237,8 @@ class SkillSlot {
 
     // Cooldown seconds label
     this.cdLabel = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE / 2, '', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-      stroke: '#ffffff', strokeThickness: 2,
+      fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
+      stroke: '#030504', strokeThickness: 2,
     }).setOrigin(0.5).setVisible(false);
     this.container.add(this.cdLabel);
 
@@ -256,71 +252,62 @@ class SkillSlot {
 
   private drawBg(): void {
     this.bg.clear();
-    const r = 11;
-    const accent = this.skill ? getCategoryAccent(this.skill.category) : CASUAL.PANEL_SOFT;
-    const accentDk = this.skill ? getCategoryAccentDark(this.skill.category) : CASUAL.EDGE_SOFT;
+    const r = 7;
+    const accent = this.skill ? getCategoryAccent(this.skill.category) : DUNGEON_UI.IRON;
 
     // selection halo (active targeting glow)
     if (this.highlight) {
-      this.bg.fillStyle(CASUAL.GOLD, 0.22);
-      this.bg.fillRoundedRect(-4, -4, SLOT_SIZE + 8, SLOT_SIZE + 8, 13);
-      this.bg.lineStyle(2, CASUAL.GOLD_DK, 0.9);
-      this.bg.strokeRoundedRect(-3, -3, SLOT_SIZE + 6, SLOT_SIZE + 6, 12);
+      this.bg.fillStyle(DUNGEON_UI.BRASS, 0.18);
+      this.bg.fillRoundedRect(-4, -4, SLOT_SIZE + 8, SLOT_SIZE + 8, 9);
+      this.bg.lineStyle(2, DUNGEON_UI.BRASS_BRIGHT, 0.95);
+      this.bg.strokeRoundedRect(-3, -3, SLOT_SIZE + 6, SLOT_SIZE + 6, 8);
     }
 
     if (this.skill && !this.cooldownActive) {
-      // ─── ready: category-colored action button (de-glossed for dark tone) ───
-      // colored bottom edge (depth base)
-      this.bg.fillStyle(accentDk, 1);
-      this.bg.fillRoundedRect(0, 4, SLOT_SIZE, SLOT_SIZE - 2, r);
-      // category-accent cap
-      this.bg.fillStyle(accent, 1);
+      this.bg.fillStyle(DUNGEON_UI.VOID, 0.7);
+      this.bg.fillRoundedRect(1, 3, SLOT_SIZE, SLOT_SIZE - 1, r);
+      this.bg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
       this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
-      // soft top highlight (de-glossed to match the dark dungeon tone)
-      this.bg.fillStyle(0xffffff, 0.14);
-      this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 16, 7);
-      // thick rounded brown border
-      this.bg.lineStyle(this.highlight ? 2.5 : 2, CASUAL.EDGE, 1);
+      this.bg.fillStyle(accent, 0.88);
+      this.bg.fillRect(5, 1, SLOT_SIZE - 10, 3);
+      this.bg.lineStyle(this.highlight ? 2 : 1.5, this.highlight ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE, 1);
       this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
     } else {
-      // ─── cooldown / disabled / empty: muted cream pill ───
       const fillAlpha = this.skill ? 1 : 0.7;
-      this.bg.fillStyle(CASUAL.SHADOW, 0.18);
-      this.bg.fillRoundedRect(0, 4, SLOT_SIZE, SLOT_SIZE - 2, r);
-      this.bg.fillStyle(CASUAL.PANEL_SOFT, fillAlpha);
+      this.bg.fillStyle(DUNGEON_UI.VOID, 0.6);
+      this.bg.fillRoundedRect(1, 3, SLOT_SIZE, SLOT_SIZE - 1, r);
+      this.bg.fillStyle(DUNGEON_UI.STONE, fillAlpha);
       this.bg.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
-      this.bg.fillStyle(0xffffff, this.skill ? 0.4 : 0.25);
-      this.bg.fillRoundedRect(4, 4, SLOT_SIZE - 8, 4, 3);
-      this.bg.lineStyle(2, CASUAL.EDGE_SOFT, this.skill ? 1 : 0.7);
+      this.bg.lineStyle(1.5, DUNGEON_UI.IRON, this.skill ? 1 : 0.7);
       this.bg.strokeRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, r);
     }
 
     if (this.skill) {
       // slot-number disc (top-left)
-      this.bg.fillStyle(CASUAL.EDGE, 0.92);
+      this.bg.fillStyle(DUNGEON_UI.SOOT, 0.96);
       this.bg.fillCircle(8, 7, 5.4);
-      this.bg.lineStyle(1, 0xffffff, 0.5);
+      this.bg.lineStyle(1, DUNGEON_UI.EDGE, 0.9);
       this.bg.strokeCircle(8, 7, 5.4);
 
       // accent rail under the top edge
-      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : accentDk, this.cooldownActive ? 0.6 : 0.85);
+      this.bg.fillStyle(this.cooldownActive ? DUNGEON_UI.EDGE : accent, this.cooldownActive ? 0.55 : 0.9);
       this.bg.fillRoundedRect(8, 4, SLOT_SIZE - 16, 3, 2);
 
-      // ready-indicator dot (top-right): GREEN = ready, EDGE_SOFT = charging
-      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : CASUAL.GREEN, 1);
+      // Ready dot remains semantic even when the category accent changes.
+      this.bg.fillStyle(this.cooldownActive ? DUNGEON_UI.EDGE : DUNGEON_UI.JADE, 1);
       this.bg.fillCircle(SLOT_SIZE - 8, 8, 3);
-      this.bg.lineStyle(1, this.cooldownActive ? CASUAL.EDGE : CASUAL.GREEN_DK, 0.9);
+      this.bg.lineStyle(1, this.cooldownActive ? DUNGEON_UI.IRON : DUNGEON_UI.JADE, 0.9);
       this.bg.strokeCircle(SLOT_SIZE - 8, 8, 3);
 
       // bottom charge pip rail
-      this.bg.fillStyle(this.cooldownActive ? CASUAL.EDGE_SOFT : CASUAL.GREEN, this.cooldownActive ? 0.45 : 0.7);
+      this.bg.fillStyle(this.cooldownActive ? DUNGEON_UI.EDGE : DUNGEON_UI.JADE, this.cooldownActive ? 0.45 : 0.7);
       this.bg.fillRoundedRect(8, SLOT_SIZE - 8, SLOT_SIZE - 16, 3, 2);
       if (!this.cooldownActive) {
-        this.bg.fillStyle(0xffffff, 0.42);
+        this.bg.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.8);
         this.bg.fillTriangle(SLOT_SIZE - 12, 14, SLOT_SIZE - 6, 14, SLOT_SIZE - 6, 20);
       }
     } else {
-      this.bg.fillStyle(CASUAL.EDGE_SOFT, 0.4);
+      this.bg.fillStyle(DUNGEON_UI.EDGE, 0.4);
       this.bg.fillRoundedRect(14, 21, SLOT_SIZE - 28, 2, 1);
     }
   }
@@ -329,7 +316,7 @@ class SkillSlot {
     if (this.highlight === on) return;
     this.highlight = on;
     this.iconText.setScale(on ? 1.08 : 1);
-    this.badgeText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
+    this.badgeText.setColor(this.skill ? '#ffffff' : DUNGEON_UI_CSS.MUTED);
     this.drawBg();
 
     if (on && !this.cancelHint) {
@@ -339,8 +326,8 @@ class SkillSlot {
         '탭하면 취소',
         {
           fontFamily: 'sans-serif',
-          fontSize: '8px',
-          color: CASUAL_CSS.INK_SOFT,
+          fontSize: '10px',
+          color: DUNGEON_UI_CSS.MUTED,
         },
       ).setOrigin(0.5, 0).setDepth(91);
       this.container.add(this.cancelHint);
@@ -357,9 +344,9 @@ class SkillSlot {
         this.cooldownActive = false;
         this.iconText.setAlpha(this.skill ? 1 : 0.3);
         this.categoryText.setAlpha(this.skill ? 1 : 0.6);
-        // ready again → label rides the saturated cap as white
-        this.categoryText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
-        this.badgeText.setColor(this.skill ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT);
+        // Ready again: restore full-contrast labels.
+        this.categoryText.setColor(this.skill ? '#ffffff' : DUNGEON_UI_CSS.MUTED);
+        this.badgeText.setColor(this.skill ? '#ffffff' : DUNGEON_UI_CSS.MUTED);
         this.drawBg();
       }
       this.cdLabel.setVisible(false);
@@ -370,9 +357,9 @@ class SkillSlot {
       this.cooldownActive = true;
       this.iconText.setAlpha(0.5);
       this.categoryText.setAlpha(0.85);
-      // charging → cream pill, so label reads as INK
-      this.categoryText.setColor(CASUAL_CSS.INK_SOFT);
-      this.badgeText.setColor(CASUAL_CSS.INK_SOFT);
+      // Charging: mute labels while the numeric cooldown remains visible.
+      this.categoryText.setColor(DUNGEON_UI_CSS.MUTED);
+      this.badgeText.setColor(DUNGEON_UI_CSS.MUTED);
       this.drawBg();
     }
 
@@ -382,28 +369,28 @@ class SkillSlot {
     const r  = SLOT_SIZE / 2 - 2;
 
     // Soft "charging" darkening sweep proportional to remaining cooldown
-    this.cooldownArc.fillStyle(CASUAL.SHADOW, 0.42 * pct);
-    this.cooldownArc.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, 11);
+    this.cooldownArc.fillStyle(DUNGEON_UI.VOID, 0.55 * pct);
+    this.cooldownArc.fillRoundedRect(0, 0, SLOT_SIZE, SLOT_SIZE - 2, 7);
 
     // Charging arc
     const startAngle = -Math.PI / 2;
     const endAngle   = startAngle + Math.PI * 2 * pct;
-    this.cooldownArc.lineStyle(2.5, CASUAL.GOLD, 0.95);
+    this.cooldownArc.lineStyle(2.5, DUNGEON_UI.BRASS_BRIGHT, 0.95);
     this.cooldownArc.beginPath();
     this.cooldownArc.arc(cx, cy, r, startAngle, endAngle, false);
     this.cooldownArc.strokePath();
 
-    // Remaining seconds — cream chip
+    // Remaining seconds — compact command readout.
     const secs = Math.ceil(remainingMs / 1000);
-    this.cooldownArc.fillStyle(CASUAL.PANEL, 0.96);
+    this.cooldownArc.fillStyle(DUNGEON_UI.SOOT, 0.96);
     this.cooldownArc.fillRoundedRect(cx - 13, cy - 9, 26, 18, 7);
-    this.cooldownArc.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.9);
+    this.cooldownArc.lineStyle(1.5, DUNGEON_UI.EDGE, 0.9);
     this.cooldownArc.strokeRoundedRect(cx - 13, cy - 9, 26, 18, 7);
     this.cdLabel.setText(`${secs}`).setVisible(true);
   }
 }
 
-/** Bright candy-cap accent per skill category. */
+/** Category accent used only as an identity rail inside the dark command slot. */
 function getCategoryAccent(category: ActiveSkill['category'] | undefined): number {
   switch (category) {
     case 'combat':
@@ -414,20 +401,6 @@ function getCategoryAccent(category: ActiveSkill['category'] | undefined): numbe
       return CASUAL.PURPLE;
     default:
       return CASUAL.GOLD;
-  }
-}
-
-/** Darker base of the same hue (candy-button bottom edge). */
-function getCategoryAccentDark(category: ActiveSkill['category'] | undefined): number {
-  switch (category) {
-    case 'combat':
-      return CASUAL.RED_DK;
-    case 'defense':
-      return CASUAL.BLUE_DK;
-    case 'support':
-      return CASUAL.PURPLE_DK;
-    default:
-      return CASUAL.GOLD_DK;
   }
 }
 

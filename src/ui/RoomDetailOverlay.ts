@@ -4,7 +4,7 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   getRoomSlotCapacity, getMaxRoomLevel, ROOM_SLOT_TYPE_DEFS,
@@ -43,6 +43,7 @@ import {
   openQueuedRoomFromDetail } from './RoomDetailOperations';
 import {
   buildRoomTypeStrip, buildMonsterSection, buildTrapSection, showRoomUpgradeConfirm } from './RoomDetailSections';
+import { drawRoomTypeSigil } from './RoomDetailSkin';
 
 // ─── Context / State ──────────────────────────────────────────────────────────
 
@@ -99,64 +100,68 @@ export function openRoomDetail(
   state.roomDetailContainer = c;
 
 
-  // ── Bright casual backdrop sheet ────────────────────────────────────────────
+  // ── Dungeon workbench shell ────────────────────────────────────────────────
   const bg = scene.add.graphics();
-  // dim scrim behind the sheet
-  bg.fillStyle(0x000000, 0.5);
+  bg.fillStyle(0x000000, 0.78);
   bg.fillRect(-CW / 2, -CH / 2, CW, CH);
-  // cream full-screen sheet
-  bg.fillStyle(CASUAL.PANEL, 1);
-  bg.fillRoundedRect(-CW / 2, -CH / 2, CW, CH, 14);
-  // soft warm shading toward the bottom
-  bg.fillStyle(CASUAL.PANEL_SOFT, 0.5);
-  bg.fillRoundedRect(-CW / 2, CH * 0.18, CW, CH * 0.82, 14);
-  // glossy white top highlight band
-  bg.fillStyle(0xffffff, 0.12);
-  bg.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 22, 10);
-  // thick rounded brown border
-  bg.lineStyle(3, CASUAL.EDGE, 1);
-  bg.strokeRoundedRect(-CW / 2, -CH / 2, CW, CH, 14);
+  bg.fillStyle(DUNGEON_UI.SOOT, 1);
+  bg.fillRect(-CW / 2, -CH / 2, CW, CH);
+  bg.fillStyle(DUNGEON_UI.STONE, 0.72);
+  bg.fillRect(-CW / 2, -CH / 2 + 64, 10, CH - 64);
+  bg.fillRect(CW / 2 - 10, -CH / 2 + 64, 10, CH - 64);
+  bg.lineStyle(1, DUNGEON_UI.IRON, 0.5);
+  for (let y = -CH / 2 + 92; y < CH / 2; y += 36) {
+    bg.lineBetween(-CW / 2 + 4, y, -CW / 2 + 10, y);
+    bg.lineBetween(CW / 2 - 10, y + 18, CW / 2 - 4, y + 18);
+  }
+  bg.lineStyle(2, DUNGEON_UI.EDGE, 0.74);
+  bg.lineBetween(-CW / 2, -CH / 2, -CW / 2, CH / 2);
+  bg.lineBetween(CW / 2, -CH / 2, CW / 2, CH / 2);
   c.add(bg);
 
   // ── Header ────────────────────────────────────────────────────────────────
-  const headerH = 56;
+  const headerH = 64;
   const hdrG = scene.add.graphics();
-  hdrG.fillStyle(CASUAL.PANEL_SOFT, 1);
-  hdrG.fillRoundedRect(-CW / 2, -CH / 2, CW, headerH + 8, 14);
-  hdrG.fillStyle(0xffffff, 0.12);
-  hdrG.fillRoundedRect(-CW / 2 + 5, -CH / 2 + 4, CW - 10, 6, 3);
-  hdrG.lineStyle(3, CASUAL.EDGE, 1);
-  hdrG.lineBetween(-CW / 2 + 3, -CH / 2 + headerH, CW / 2 - 3, -CH / 2 + headerH);
+  hdrG.fillStyle(DUNGEON_UI.VOID, 1);
+  hdrG.fillRect(-CW / 2, -CH / 2, CW, headerH);
+  hdrG.fillStyle(DUNGEON_UI.STONE_RAISED, 0.82);
+  hdrG.fillRect(-CW / 2 + 5, -CH / 2 + 5, CW - 10, headerH - 10);
+  hdrG.lineStyle(1, DUNGEON_UI.BRASS, 0.66);
+  hdrG.lineBetween(-CW / 2 + 8, -CH / 2 + headerH - 4, CW / 2 - 8, -CH / 2 + headerH - 4);
+  hdrG.lineStyle(3, DUNGEON_UI.IRON, 1);
+  hdrG.lineBetween(-CW / 2, -CH / 2 + headerH, CW / 2, -CH / 2 + headerH);
   c.add(hdrG);
 
-  // chunky cream back pill
-  const backW = 70;
+  const backW = 82;
   const backX = -CW / 2 + 14;
   const backCY = -CH / 2 + headerH / 2;
+  const backH = 44;
+  const backY = backCY - backH / 2;
   const backG = scene.add.graphics();
-  backG.fillStyle(CASUAL.SHADOW, 0.2);
-  backG.fillRoundedRect(backX, backCY - 13 + 3, backW, 26, 13);
-  backG.fillStyle(CASUAL.PANEL, 1);
-  backG.fillRoundedRect(backX, backCY - 13, backW, 26, 13);
-  backG.fillStyle(0xffffff, 0.12);
-  backG.fillRoundedRect(backX + 4, backCY - 11, backW - 8, 5, 3);
-  backG.lineStyle(2.5, CASUAL.EDGE, 1);
-  backG.strokeRoundedRect(backX, backCY - 13, backW, 26, 13);
+  backG.fillStyle(DUNGEON_UI.VOID, 0.96);
+  backG.fillRoundedRect(backX, backY, backW, backH, 4);
+  backG.lineStyle(1.5, DUNGEON_UI.BRASS, 0.78);
+  backG.strokeRoundedRect(backX, backY, backW, backH, 4);
+  backG.lineStyle(2, DUNGEON_UI.BRASS_BRIGHT, 0.86);
+  backG.lineBetween(backX + 20, backCY - 7, backX + 13, backCY);
+  backG.lineBetween(backX + 13, backCY, backX + 20, backCY + 7);
   c.add(backG);
-  const backBtn = scene.add.text(backX + backW / 2, backCY, '← 나가기', {
-    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold' }).setOrigin(0.5);
+  const backBtn = scene.add.text(backX + 49, backCY, '나가기', {
+    fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold' }).setOrigin(0.5);
   c.add(backBtn);
-  const backZone = scene.add.zone(backX, backCY - 13, backW, 26).setOrigin(0)
+  const backZone = scene.add.zone(backX, backY, backW, backH).setOrigin(0)
     .setInteractive({ useHandCursor: true });
   backZone.on('pointerdown', () => closeRoomDetail(state, cb));
   c.add(backZone);
 
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
-  const typeLabel = typeDef ? `${typeDef.icon} ${typeDef.name}` : '🏚 일반실';
-  c.add(scene.add.text(0, -CH / 2 + headerH / 2,
-    `방 #${slotIdx + 1}  ${typeLabel}  ${'★'.repeat(slot.roomLevel)}`, {
-    fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4 }).setOrigin(0.5));
+  const typeLabel = typeDef?.name ?? '미설계 방';
+  const titleIconX = -CW / 2 + 112;
+  drawRoomTypeSigil(hdrG, slot.roomType, titleIconX, backCY, 22, slot.roomType ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE);
+  c.add(scene.add.text(titleIconX + 18, backCY - 7, `방 #${slotIdx + 1} · ${typeLabel}`, {
+    fontFamily: 'Georgia, serif', fontSize: '15px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold' }).setOrigin(0, 0.5));
+  c.add(scene.add.text(titleIconX + 18, backCY + 10, `ROOM LEVEL ${String(slot.roomLevel).padStart(2, '0')}`, {
+    fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold' }).setOrigin(0, 0.5));
 
   const content = scene.add.container(0, 0);
   c.add(content);
@@ -244,48 +249,48 @@ export function openRoomDetail(
   // ── Room growth panel ─────────────────────────────────────────────────────
   const growthY = trapSecY + trapSecH + 14;
   const hpPct = Math.max(0, slot.hp / slot.maxHp);
-  const barColor = hpPct > 0.66 ? CASUAL.GREEN : hpPct > 0.33 ? CASUAL.GOLD : CASUAL.RED;
+  const barColor = hpPct > 0.66 ? DUNGEON_UI.JADE : hpPct > 0.33 ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EMBER;
   const maxRoomLv = getMaxRoomLevel(gs.dmLevel);
   const isDamaged = slot.hp < slot.maxHp;
   const canShowUpgradeButton = slot.roomLevel < 5 && slot.roomLevel < maxRoomLv;
-  const growthPanelH = isDamaged ? 252 : 216;
+  const growthPanelH = isDamaged ? 268 : 216;
   const growthAccent = slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0xc8921a : 0xc8921a;
   const growthFrame = addFramedPanel(scene, {
     x: secX,
     y: growthY,
     w: secW,
     h: growthPanelH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
+    radius: 4,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.9,
+    borderWidth: 1,
     accentColor: growthAccent,
     accentAlpha: 1,
     glowColor: growthAccent,
-    glowOpacity: 0.05,
+    glowOpacity: 0.02,
     shadowOpacity: 0.28,
     shadowOffsetY: 3 });
   content.add([growthFrame.shadow, growthFrame.panel, growthFrame.glow]);
 
   const growthG = scene.add.graphics();
   growthG.fillStyle(growthAccent, 0.1);
-  growthG.fillRoundedRect(secX + 10, growthY + 10, secW - 20, 30, 8);
-  growthG.fillStyle(0xffffff, 0.85);
-  growthG.fillRoundedRect(secX + secW - 72, growthY + 14, 56, 18, 7);
-  growthG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.8);
-  growthG.strokeRoundedRect(secX + secW - 72, growthY + 14, 56, 18, 7);
+  growthG.fillRect(secX + 8, growthY + 8, 4, growthPanelH - 16);
+  growthG.fillStyle(DUNGEON_UI.STONE_RAISED, 0.94);
+  growthG.fillRoundedRect(secX + secW - 72, growthY + 12, 56, 22, 3);
+  growthG.lineStyle(1, DUNGEON_UI.EDGE, 0.8);
+  growthG.strokeRoundedRect(secX + secW - 72, growthY + 12, 56, 22, 3);
   content.add(growthG);
 
   content.add(scene.add.text(secX + 18, growthY + 25, '방 성장', {
     fontFamily: 'sans-serif',
     fontSize: '14px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   content.add(scene.add.text(secX + secW - 44, growthY + 23, `Lv.${slot.roomLevel}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.GOLD,
+    color: DUNGEON_UI_CSS.BRASS,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   const durabilityY = growthY + 56;
@@ -296,20 +301,20 @@ export function openRoomDetail(
     h: 14,
     ratio: hpPct,
     fillColor: barColor,
-    trackColor: CASUAL.PANEL_SOFT,
-    borderColor: CASUAL.EDGE_SOFT,
+    trackColor: DUNGEON_UI.VOID,
+    borderColor: DUNGEON_UI.EDGE,
     borderAlpha: 0.9,
     duration: 320 });
   content.add([durabilityBar.track, durabilityBar.fill]);
   content.add(scene.add.text(secX + 18, durabilityY + 7, '내구도', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   content.add(scene.add.text(secX + secW - 18, durabilityY + 7, `${slot.hp}/${slot.maxHp}`, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: hpPct > 0.33 ? CASUAL_CSS.INK : CASUAL_CSS.RED,
+    color: hpPct > 0.33 ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.EMBER,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   let nextGrowthY = growthY + 86;
@@ -321,15 +326,15 @@ export function openRoomDetail(
       x: secX + 18,
       y: nextGrowthY,
       w: secW - 36,
-      h: 32,
+      h: 44,
       label: `내구 수리  ${repairCost}g  ·  HP +${missingHp}`,
       fontSize: '12px',
       enabled: canRepair,
-      fillColor: CASUAL.GREEN,
+      fillColor: DUNGEON_UI.JADE,
       hoverFillColor: 0x6fdc70,
-      borderColor: CASUAL.GREEN_DK,
-      hoverBorderColor: CASUAL.GREEN_DK,
-      textColor: '#ffffff',
+      borderColor: DUNGEON_UI.EDGE,
+      hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+      textColor: '#07100c',
       onPress: () => {
         applyRoomRepairAction(scene, state, theme, cb, slotIdx, slot);
       } });
@@ -337,7 +342,7 @@ export function openRoomDetail(
     if (shouldHighlightDirectiveTarget(actionDirective, 'repair')) {
       drawSectionTargetPulse(scene, content, secX + 12, nextGrowthY - 4, secW - 24, 40, actionDirective.accent, '수리', 'none');
     }
-    nextGrowthY += 42;
+    nextGrowthY += 54;
   }
 
   let upgradeSummary = '';
@@ -351,16 +356,16 @@ export function openRoomDetail(
       x: secX + 18,
       y: nextGrowthY,
       w: secW - 36,
-      h: 42,
+      h: 44,
       label: `Lv.${slot.roomLevel} → ${slot.roomLevel + 1} 방 확장  (${upgCost}g)\n${upgradeSummary}`,
       fontSize: '12px',
       align: 'center',
       enabled: canUpgrade,
-      fillColor: CASUAL.GOLD,
+      fillColor: DUNGEON_UI.BRASS,
       hoverFillColor: 0xffd564,
-      borderColor: CASUAL.GOLD_DK,
-      hoverBorderColor: CASUAL.GOLD_DK,
-      textColor: '#ffffff',
+      borderColor: DUNGEON_UI.BRASS_BRIGHT,
+      hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+      textColor: '#100b05',
       onPress: () => {
         showRoomUpgradeConfirm(scene, upgCost, slot.roomLevel, newCap, () => {
           const freshGs = cb.getGameState();
@@ -403,12 +408,12 @@ export function openRoomDetail(
   } else if (slot.roomLevel < 5 && slot.roomLevel >= maxRoomLv) {
     const neededDm = [5, 10, 15, 20][slot.roomLevel - 1] ?? 20;
     upgradeSummary = `DM Lv.${neededDm} 달성 후 다음 확장`;
-    content.add(scene.add.text(secX + 18, nextGrowthY + 12, `🔒 ${upgradeSummary}`, {
+    content.add(scene.add.text(secX + 18, nextGrowthY + 12, `잠금 · ${upgradeSummary}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT,
+      color: DUNGEON_UI_CSS.MUTED,
       fontStyle: 'bold',
-      backgroundColor: CASUAL_CSS.CREAM,
+      backgroundColor: '#101612',
       padding: { x: 10, y: 5 } }).setOrigin(0, 0.5));
     nextGrowthY += 36;
   } else {
@@ -416,7 +421,7 @@ export function openRoomDetail(
     content.add(scene.add.text(secX + 18, nextGrowthY + 12, '최고 레벨 (Lv.5)', {
       fontFamily: 'sans-serif',
       fontSize: '13px',
-      color: CASUAL_CSS.GOLD,
+      color: DUNGEON_UI_CSS.BRASS,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
     nextGrowthY += 34;
   }
@@ -426,26 +431,27 @@ export function openRoomDetail(
   if (bonusDef) {
     const bonusY = nextGrowthY + 2;
     const bonusH = 64;
-    growthG.fillStyle(CASUAL.PANEL_SOFT, 1);
-    growthG.fillRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 8);
-    growthG.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
-    growthG.strokeRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 8);
+    growthG.fillStyle(DUNGEON_UI.VOID, 0.94);
+    growthG.fillRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 3);
+    growthG.lineStyle(1, DUNGEON_UI.EDGE, 0.7);
+    growthG.strokeRoundedRect(secX + 14, bonusY, secW - 28, bonusH, 3);
     growthG.fillStyle(growthAccent, 1);
     growthG.fillRoundedRect(secX + 22, bonusY + 10, 5, bonusH - 20, 3);
-    content.add(scene.add.text(secX + 36, bonusY + 14, `${bonusDef.icon} ${bonusDef.name} 특성`, {
+    drawRoomTypeSigil(growthG, bonusDef.id, secX + 31, bonusY + 16, 14, growthAccent);
+    content.add(scene.add.text(secX + 45, bonusY + 14, `${bonusDef.name} 특성`, {
       fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.PARCHMENT,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
-    content.add(scene.add.text(secX + 36, bonusY + 34, bonusDef.bonus, {
+    content.add(scene.add.text(secX + 45, bonusY + 34, bonusDef.bonus, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT,
+      color: DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: secW - 88, useAdvancedWrap: true } }).setOrigin(0, 0.5));
-    content.add(scene.add.text(secX + 36, bonusY + 52, upgradeSummary || `현재 Lv.${slot.roomLevel}`, {
+    content.add(scene.add.text(secX + 45, bonusY + 52, upgradeSummary || `현재 Lv.${slot.roomLevel}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
+      color: DUNGEON_UI_CSS.MUTED }).setOrigin(0, 0.5));
   }
 
   attachRoomDetailScroll(scene, state, c, content, contentBottom, headerH);
@@ -504,21 +510,21 @@ function attachRoomDetailScroll(
   scene.input.on('wheel', onWheel);
 
   if (maxScroll > 0) {
-    const buttonW = 34;
-    const buttonH = 28;
-    const buttonY = -CANVAS_HEIGHT / 2 + 14;
+    const buttonW = 44;
+    const buttonH = 44;
+    const buttonY = -CANVAS_HEIGHT / 2 + 6;
     const upButton = addPrimaryActionButton(scene, {
-      x: CANVAS_WIDTH / 2 - 86,
+      x: CANVAS_WIDTH / 2 - 98,
       y: buttonY,
       w: buttonW,
       h: buttonH,
       label: '▲',
       fontSize: '12px',
-      fillColor: CASUAL.PANEL,
-      hoverFillColor: CASUAL.PANEL_SOFT,
-      borderColor: CASUAL.EDGE,
-      hoverBorderColor: CASUAL.GOLD_DK,
-      textColor: CASUAL_CSS.INK,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      hoverBorderColor: DUNGEON_UI.BRASS,
+      textColor: DUNGEON_UI_CSS.PARCHMENT,
       onPress: () => {
         applyScroll(content.y + 150);
         updateButtons();
@@ -530,11 +536,11 @@ function attachRoomDetailScroll(
       h: buttonH,
       label: '▼',
       fontSize: '12px',
-      fillColor: CASUAL.PANEL,
-      hoverFillColor: CASUAL.PANEL_SOFT,
-      borderColor: CASUAL.EDGE,
-      hoverBorderColor: CASUAL.GOLD_DK,
-      textColor: CASUAL_CSS.INK,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      hoverBorderColor: DUNGEON_UI.BRASS,
+      textColor: DUNGEON_UI_CSS.PARCHMENT,
       onPress: () => {
         applyScroll(content.y - 150);
         updateButtons();

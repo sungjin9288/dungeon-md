@@ -11,7 +11,13 @@ import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/ro
 import { getReducedMotion } from '../utils/reducedMotion';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 import { addMonsterPortrait } from '../ui/MonsterPortraitView';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  CASUAL,
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+  ZONE_ACCENTS,
+} from '../constants/colors';
 import {
   ACCENT,
   type DefenseDirective,
@@ -63,7 +69,7 @@ export function drawDefenseActionTargetBadge(
   ring.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 6);
 
   const badge = scene.add.graphics();
-  badge.fillStyle(CASUAL.PANEL_SOFT, 0.94);
+  badge.fillStyle(DUNGEON_UI.SOOT, 0.96);
   badge.fillRoundedRect(x + w - badgeW - 8, y + 3, badgeW, 18, 4);
   badge.lineStyle(1, directive.accent, 0.82);
   badge.strokeRoundedRect(x + w - badgeW - 8, y + 5, badgeW, 14, 4);
@@ -71,18 +77,16 @@ export function drawDefenseActionTargetBadge(
   const text = scene.add.text(x + w - badgeW / 2 - 8, y + 12, label, {
     fontFamily: 'Georgia, serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0.5);
 
   if (!getReducedMotion()) {
     scene.tweens.add({
       targets: [ring, badge, text],
-      alpha: { from: 0.68, to: 1 },
-      duration: 720,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+      alpha: { from: 0.62, to: 1 },
+      duration: 260,
+      ease: 'Power2.Out',
     });
   }
 }
@@ -97,14 +101,14 @@ export function drawDefenseQueueBadge(
   const label = `${rank} ${getDefenseQueueBadgeLabel(action)}`;
   const w = label.length > 3 ? 48 : 40;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.88);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.94);
   g.fillRoundedRect(x - w, y, w, 18, 4);
   g.lineStyle(1, action.accent, 0.62);
   g.strokeRoundedRect(x - w, y, w, 14, 4);
   scene.add.text(x - w / 2, y + 7, label, {
     fontFamily: 'Georgia, serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0.5);
 }
@@ -124,7 +128,7 @@ export function drawDefenseQueuePip(
   scene.add.text(x + 7, y + 6, String(rank), {
     fontFamily: 'monospace',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0.5);
 }
@@ -158,11 +162,9 @@ export function drawDefenseRouteActionRing(
   if (!getReducedMotion()) {
     scene.tweens.add({
       targets: [ring, pulse],
-      alpha: { from: isPrimary ? 0.7 : 0.52, to: 1 },
-      duration: isPrimary ? 680 : 920,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+      alpha: { from: isPrimary ? 0.66 : 0.54, to: 1 },
+      duration: 260,
+      ease: 'Power2.Out',
     });
   }
 }
@@ -178,7 +180,7 @@ export function drawDefenseRoomCardShell(
   highlighted: boolean,
 ): void {
   const ratio = Phaser.Math.Clamp(readinessRatio, 0, 1);
-  g.fillStyle(CASUAL.SHADOW, highlighted ? 0.28 : 0.16);
+  g.fillStyle(DUNGEON_UI.SOOT, highlighted ? 0.7 : 0.5);
   g.fillRoundedRect(x + 4, y + 4, w - 8, h - 8, 6);
   g.lineStyle(highlighted ? 1.6 : 1, accent, highlighted ? 0.84 : 0.38);
   g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 6);
@@ -187,10 +189,10 @@ export function drawDefenseRoomCardShell(
   g.fillRoundedRect(x + 8, y + 10, 25, h - 20, 5);
   g.fillStyle(0xffffff, 0.07);
   g.fillRoundedRect(x + 12, y + 15, 17, 7, 3);
-  g.fillStyle(CASUAL.SHADOW, 0.5);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.82);
   g.fillRoundedRect(x + 13, y + h - 23, 15, 10, 4);
 
-  g.fillStyle(CASUAL.SHADOW, 0.76);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.92);
   g.fillRoundedRect(x + 42, y + h - 12, w - 98, 4, 2);
   g.fillStyle(accent, highlighted ? 0.96 : 0.78);
   g.fillRoundedRect(x + 42, y + h - 12, Math.max(4, (w - 98) * ratio), 4, 2);
@@ -199,7 +201,7 @@ export function drawDefenseRoomCardShell(
   [[x + w - 14, y + 8], [x + w - 14, y + h - 18], [x + 8, y + 8], [x + 8, y + h - 18]].forEach(([sx, sy]) => {
     g.fillStyle(accent, socketAlpha);
     g.fillRoundedRect(sx, sy, 6, 6, 2);
-    g.fillStyle(CASUAL.SHADOW, 0.52);
+    g.fillStyle(DUNGEON_UI.SOOT, 0.72);
     g.fillRoundedRect(sx + 1, sy + 1, 4, 4, 1);
   });
 }
@@ -232,6 +234,11 @@ export function buildDefenseLoadout(
   const actionBySlot = new Map(
     actionQueue.map((action, index) => [action.slotIdx, { action, rank: index + 1 }]),
   );
+  const readinessAccent = directive.severity === 'ready'
+    ? DUNGEON_UI.JADE
+    : directive.severity === 'warning'
+      ? DUNGEON_UI.BRASS_BRIGHT
+      : DUNGEON_UI.EMBER;
   const directiveExtraH = 18;
   const dY = invasionPanelBottom, dH = 348 + directiveExtraH;
   const { panel: dg } = addFramedPanel(scene, {
@@ -239,99 +246,100 @@ export function buildDefenseLoadout(
     y: dY,
     w: CANVAS_WIDTH - 24,
     h: dH,
-    radius: 12,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: ACCENT.sky,
+    radius: 8,
+    fillColor: DUNGEON_UI.STONE,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.96,
+    borderWidth: 1.5,
+    accentColor: ZONE_ACCENTS.invasion,
     accentAlpha: 1,
-    glowColor: ACCENT.sky,
-    glowOpacity: 0.1,
-    shadowOpacity: 0.28,
-    shadowOffsetY: 4,
+    glowColor: ZONE_ACCENTS.invasion,
+    glowOpacity: 0.04,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 3,
   });
-  // inner cream tray housing the loadout board + cards
-  dg.fillStyle(CASUAL.PANEL_SOFT, 0.9);
-  dg.fillRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 9);
-  dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.6);
-  dg.strokeRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 9);
+  dg.fillStyle(DUNGEON_UI.SOOT, 0.62);
+  dg.fillRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 6);
+  dg.lineStyle(1, DUNGEON_UI.IRON, 0.64);
+  dg.strokeRoundedRect(22, dY + 38, CANVAS_WIDTH - 44, dH - 50, 6);
 
-  scene.add.text(CANVAS_WIDTH / 2, dY + 16, '던전 방어 편성', {
-    fontFamily: 'sans-serif', fontSize: '14px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
-  }).setOrigin(0.5);
+  scene.add.text(28, dY + 17, '던전 방어 작전판', {
+    fontFamily: 'sans-serif', fontSize: '14px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+    stroke: '#030504', strokeThickness: 2,
+  }).setOrigin(0, 0.5);
 
   scene.add.text(CANVAS_WIDTH - 28, dY + 16, `DM Lv.${gs.dmLevel}`, {
-    fontFamily: 'monospace', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    fontFamily: 'monospace', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(1, 0.5);
 
   const directiveY = dY + 42;
   const directiveIcon = directive.severity === 'ready' ? '✓' : '!';
-  dg.fillStyle(CASUAL.PANEL, 1);
+  dg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
   dg.fillRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 64, 8);
-  dg.fillStyle(0xffffff, 0.12);
-  dg.fillRoundedRect(28, directiveY + 4, CANVAS_WIDTH - 56, 4, 2);
-  dg.lineStyle(2.5, directive.accent, 1);
+  dg.fillStyle(readinessAccent, 0.9);
+  dg.fillRect(24, directiveY + 5, 3, 54);
+  dg.lineStyle(1.5, readinessAccent, 0.9);
   dg.strokeRoundedRect(24, directiveY, CANVAS_WIDTH - 48, 64, 8);
-  dg.fillStyle(directive.accent, 1);
-  dg.fillRoundedRect(32, directiveY + 8, 30, 30, 7);
+  dg.fillStyle(DUNGEON_UI.SOOT, 0.92);
+  dg.fillCircle(47, directiveY + 23, 15);
+  dg.lineStyle(1.5, readinessAccent, 0.9);
+  dg.strokeCircle(47, directiveY + 23, 15);
   scene.add.text(47, directiveY + 23, directiveIcon, {
     fontFamily: 'sans-serif',
     fontSize: '17px',
-    color: '#ffffff',
+    color: directive.severity === 'ready' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
     fontStyle: 'bold',
   }).setOrigin(0.5);
   scene.add.text(72, directiveY + 12, '전투 지휘', {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   scene.add.text(72, directiveY + 25, directive.title, {
     fontFamily: 'sans-serif',
-    fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    fontSize: '12px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   scene.add.text(72, directiveY + 35, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: 218 },
   }).setOrigin(0, 0);
 
   const readyRatio = Math.max(0, Math.min(1, directive.readiness / 100));
   const readinessText = formatDefenseReadinessPercent(directive.readiness);
   const directiveChip = getDefenseDirectiveDisplayChip(directive);
-  dg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  dg.fillStyle(DUNGEON_UI.SOOT, 1);
   dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
-  dg.lineStyle(1.5, directive.accent, 0.9);
+  dg.lineStyle(1.5, readinessAccent, 0.9);
   dg.strokeRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
   scene.add.text(CANVAS_WIDTH - 63, directiveY + 20, `${directiveChip} ${readinessText}`, {
     fontFamily: 'monospace',
     fontSize: '10px',
-    color: `#${directive.accent.toString(16).padStart(6, '0')}`,
+    color: `#${readinessAccent.toString(16).padStart(6, '0')}`,
     fontStyle: 'bold',
   }).setOrigin(0.5);
-  dg.fillStyle(CASUAL.EDGE_SOFT, 0.45);
+  dg.fillStyle(DUNGEON_UI.IRON, 0.9);
   dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 34, 50, 4, 2);
   if (readyRatio > 0) {
-    dg.fillStyle(directive.accent, 1);
+    dg.fillStyle(readinessAccent, 1);
     dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 34, Math.max(3, 50 * readyRatio), 4, 2);
   }
 
   const statY = dY + 98 + directiveExtraH;
   const drawStatPill = (x: number, label: string, value: string, color: number): void => {
     const w = 66, h = 24;
-    dg.fillStyle(CASUAL.PANEL, 1);
+    dg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
     dg.fillRoundedRect(x, statY, w, h, 7);
-    dg.fillStyle(0xffffff, 0.12);
-    dg.fillRoundedRect(x + 3, statY + 3, w - 6, 3, 2);
-    dg.lineStyle(2, color, 0.9);
+    dg.fillStyle(color, 0.82);
+    dg.fillRect(x, statY + 5, 2, h - 10);
+    dg.lineStyle(1, DUNGEON_UI.IRON, 0.9);
     dg.strokeRoundedRect(x, statY, w, h, 7);
     scene.add.text(x + 8, statY + 7, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
     }).setOrigin(0, 0.5);
     scene.add.text(x + w - 8, statY + 15, value, {
       fontFamily: 'monospace', fontSize: '10px', color: `#${color.toString(16).padStart(6, '0')}`,
@@ -339,35 +347,35 @@ export function buildDefenseLoadout(
     }).setOrigin(1, 0.5);
   };
 
-  drawStatPill(24,  '방',   `${defenseTotals.builtRooms}/${defenseTotals.unlockedSlots}`, CASUAL.RED_DK);
-  drawStatPill(94,  '수호', `${defenseTotals.monsterCount}`, CASUAL.GOLD_DK);
-  drawStatPill(164, '장비', `${defenseTotals.equipmentCount}`, CASUAL.GOLD_DK);
-  drawStatPill(234, '함정', `${defenseTotals.trapCount}`, CASUAL.GREEN_DK);
-  drawStatPill(304, 'DEF',  `${defenseTotals.totalPower}`, CASUAL.PURPLE_DK);
+  drawStatPill(24,  '방',   `${defenseTotals.builtRooms}/${defenseTotals.unlockedSlots}`, DUNGEON_UI.EMBER);
+  drawStatPill(94,  '수호', `${defenseTotals.monsterCount}`, DUNGEON_UI.BRASS);
+  drawStatPill(164, '장비', `${defenseTotals.equipmentCount}`, DUNGEON_UI.BRASS_BRIGHT);
+  drawStatPill(234, '함정', `${defenseTotals.trapCount}`, DUNGEON_UI.JADE);
+  drawStatPill(304, 'DEF',  `${defenseTotals.totalPower}`, readinessAccent);
 
   const roomByIndex = new Map(defenseRooms.map(room => [room.index, room]));
   const railY = dY + 134 + directiveExtraH;
   const cellW = 29, cellH = 28, cellGap = 5;
   const railX = Math.floor((CANVAS_WIDTH - (9 * cellW + 8 * cellGap)) / 2);
-  dg.fillStyle(CASUAL.PANEL, 1);
+  dg.fillStyle(DUNGEON_UI.STONE, 1);
   dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
-  dg.fillStyle(0xffffff, 0.12);
-  dg.fillRoundedRect(28, railY + 4, CANVAS_WIDTH - 56, 4, 2);
-  dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
+  dg.fillStyle(ZONE_ACCENTS.invasion, 0.64);
+  dg.fillRect(24, railY + 7, 2, 44);
+  dg.lineStyle(1, DUNGEON_UI.IRON, 0.88);
   dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
   scene.add.text(32, railY + 13, '침략 루트 작전판', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   scene.add.text(CANVAS_WIDTH - 32, railY + 13, `권장 DEF ${directive.pressure || '-'}`, {
-    fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
+    fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }).setOrigin(1, 0.5);
   scene.add.text(railX, railY + 52, '입구', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   scene.add.text(railX + 9 * cellW + 8 * cellGap, railY + 52, '던전 심장', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(1, 0.5);
-  dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.5);
+  dg.lineStyle(3, DUNGEON_UI.IRON, 0.72);
   dg.lineBetween(railX + cellW / 2, railY + 34, railX + 8 * (cellW + cellGap) + cellW / 2, railY + 34);
   for (let i = 0; i < 9; i++) {
     const slot = gs.dungeonSlots?.[i];
@@ -380,8 +388,7 @@ export function buildDefenseLoadout(
     const isActionTarget = directive.actionSlotIdx === i && Boolean(directive.actionLabel);
     const cx = railX + i * (cellW + cellGap);
     const cy = railY + 21;
-    // built → dark content tile w/ bright border; empty unlocked → cream-rimmed; locked → dim
-    dg.fillStyle(built ? style.bg : unlocked ? CASUAL.PANEL_SOFT : 0x121f2c, 1);
+    dg.fillStyle(built ? style.bg : unlocked ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
     dg.fillRoundedRect(cx, cy, cellW, cellH, 6);
     if (built) {
       dg.fillStyle(0xffffff, 0.05);
@@ -389,21 +396,21 @@ export function buildDefenseLoadout(
       dg.fillStyle(style.accent, 0.16);
       dg.fillRoundedRect(cx + 4, cy + cellH - 7, cellW - 8, 3, 2);
     } else if (unlocked) {
-      dg.fillStyle(0xffffff, 0.12);
-      dg.fillRoundedRect(cx + 3, cy + 3, cellW - 6, 4, 2);
+      dg.fillStyle(DUNGEON_UI.EDGE, 0.42);
+      dg.fillRect(cx + 4, cy + 4, 2, cellH - 8);
     }
-    dg.lineStyle(built ? 1.5 : 2, built ? style.accent : unlocked ? CASUAL.EDGE : 0x223344, built ? 0.85 : unlocked ? 0.9 : 0.48);
+    dg.lineStyle(built ? 1.5 : 1, built ? style.accent : DUNGEON_UI.IRON, built ? 0.85 : unlocked ? 0.9 : 0.52);
     dg.strokeRoundedRect(cx, cy, cellW, cellH, 6);
     scene.add.text(cx + cellW / 2, cy + 12, built ? meta.icon : String(i + 1), {
       fontFamily: 'sans-serif',
       fontSize: built ? '12px' : '11px',
-      color: built ? style.text : unlocked ? CASUAL_CSS.INK : '#526677',
+      color: built ? style.text : unlocked ? DUNGEON_UI_CSS.TEXT : '#526158',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     if (built && room) {
       const roomTarget = Math.max(35, Math.round((directive.pressure || defenseTotals.totalPower || 1) / Math.max(1, defenseTotals.builtRooms)));
       const roomRatio = Math.max(0, Math.min(1, room.power / roomTarget));
-      dg.fillStyle(CASUAL.SHADOW, 0.85);
+      dg.fillStyle(DUNGEON_UI.SOOT, 0.92);
       dg.fillRoundedRect(cx + 4, cy + cellH - 5, cellW - 8, 3, 2);
       dg.fillStyle(roomRatio >= 1 ? ACCENT.mint : roomRatio >= 0.7 ? ACCENT.gold : ACCENT.coral, 0.9);
       dg.fillRoundedRect(cx + 4, cy + cellH - 5, Math.max(3, (cellW - 8) * roomRatio), 3, 2);
@@ -458,23 +465,23 @@ export function buildDefenseLoadout(
     ): void => {
       const h = 44;
       const btnBg = scene.add.graphics();
-      const draw = (fillAlpha = 0.90, borderAlpha = 0.76): void => {
+      const draw = (fillAlpha = 0.94, borderAlpha = 0.76): void => {
         btnBg.clear();
-        btnBg.fillStyle(CASUAL.SHADOW, 0.34);
-        btnBg.fillRoundedRect(x, y + 3, w, h, 7);
-        btnBg.fillStyle(accent, fillAlpha);
+        btnBg.fillStyle(DUNGEON_UI.SOOT, 0.82);
+        btnBg.fillRoundedRect(x + 2, y + 3, w, h, 6);
+        btnBg.fillStyle(DUNGEON_UI.STONE_RAISED, fillAlpha);
         btnBg.fillRoundedRect(x, y, w, h, 7);
-        btnBg.lineStyle(1, 0xffffff, borderAlpha);
+        btnBg.fillStyle(accent, 0.82);
+        btnBg.fillRect(x, y + 7, 3, h - 14);
+        btnBg.lineStyle(1, accent, borderAlpha);
         btnBg.strokeRoundedRect(x, y, w, h, 7);
-        btnBg.lineStyle(1, 0xffffff, 0.22);
-        btnBg.lineBetween(x + 10, y + 6, x + w - 10, y + 6);
       };
       draw();
       ov.add(btnBg);
       const btnText = scene.add.text(x + w / 2, y + h / 2, label, {
         fontFamily: 'Georgia, serif',
         fontSize: '11px',
-        color: '#fff8d8',
+        color: DUNGEON_UI_CSS.TEXT,
         fontStyle: 'bold',
       }).setOrigin(0.5);
       ov.add(btnText);
@@ -493,16 +500,16 @@ export function buildDefenseLoadout(
       ov.add(btnZone);
     };
     const ovBg = scene.add.graphics();
-    ovBg.fillStyle(CASUAL.PANEL, 0.97);
+    ovBg.fillStyle(DUNGEON_UI.STONE, 0.98);
     ovBg.fillRoundedRect(-142, -popH / 2, 284, popH, 8);
     ovBg.lineStyle(1.5, room.style.accent, 0.86);
     ovBg.strokeRoundedRect(-142, -popH / 2, 284, popH, 8);
-    ovBg.fillStyle(room.style.accent, 0.14);
+    ovBg.fillStyle(DUNGEON_UI.SOOT, 0.72);
     ovBg.fillRoundedRect(-128, -popH / 2 + 12, 256, 34, 6);
     ov.add(ovBg);
 
     ov.add(scene.add.text(0, -popH / 2 + 29, `#${room.index + 1} ${room.typeIcon} ${room.typeName}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '14px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
     }).setOrigin(0.5));
     ov.add(scene.add.text(0, -popH / 2 + 58, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}  DEF ${room.power}`, {
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
@@ -596,37 +603,35 @@ export function buildDefenseLoadout(
     const isActionTarget = directive.actionSlotIdx === index && Boolean(directive.actionLabel);
 
     if (!room) {
-      const slotAccent = isActionTarget ? directive.accent : CASUAL.EDGE;
-      // cream-rimmed empty slot
-      dg.fillStyle(CASUAL.PANEL_SOFT, 1);
+      const slotAccent = isActionTarget ? directive.accent : DUNGEON_UI.EDGE;
+      dg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
       dg.fillRoundedRect(cx, cy, cardW, cardH, 8);
-      dg.fillStyle(0xffffff, 0.12);
-      dg.fillRoundedRect(cx + 5, cy + 4, cardW - 10, 5, 3);
-      // inner glyph well (cream sub-tile)
-      dg.fillStyle(CASUAL.PANEL, 1);
+      dg.fillStyle(slotAccent, 0.66);
+      dg.fillRect(cx, cy + 7, 3, cardH - 14);
+      dg.fillStyle(DUNGEON_UI.SOOT, 1);
       dg.fillRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 6);
-      dg.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
+      dg.lineStyle(1, DUNGEON_UI.IRON, 0.86);
       dg.strokeRoundedRect(cx + 6, cy + 8, 30, cardH - 16, 6);
-      dg.lineStyle(isActionTarget ? 3 : 2.5, slotAccent, 1);
+      dg.lineStyle(isActionTarget ? 2 : 1, slotAccent, isActionTarget ? 1 : 0.74);
       dg.strokeRoundedRect(cx, cy, cardW, cardH, 8);
       scene.add.text(cx + 21, cy + 32, '+', {
-        fontFamily: 'sans-serif', fontSize: '22px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '22px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
       }).setOrigin(0.5);
       scene.add.text(cx + 42, cy + 15, `#${index + 1} 미설계`, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
       }).setOrigin(0, 0.5);
-      scene.add.text(cx + 42, cy + 30, '방 타입 선택 필요', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      scene.add.text(cx + 42, cy + 30, '타입 미정', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       scene.add.text(cx + 42, cy + 45, 'M -/- · T -/-', {
-        fontFamily: 'monospace', fontSize: '8px', color: CASUAL_CSS.INK_SOFT,
+        fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0, 0.5);
-      dg.fillStyle(CASUAL.GOLD, 1);
+      dg.fillStyle(DUNGEON_UI.BRASS, 1);
       dg.fillRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 6);
-      dg.lineStyle(1.5, CASUAL.GOLD_DK, 1);
+      dg.lineStyle(1, DUNGEON_UI.BRASS_BRIGHT, 0.9);
       dg.strokeRoundedRect(cx + cardW - 54, cy + 22, 44, 17, 6);
       scene.add.text(cx + cardW - 32, cy + 30.5, '바로 설계', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize: '11px', color: '#120e08', fontStyle: 'bold',
       }).setOrigin(0.5);
       const emptyHitZone = scene.add.zone(cx, cy, cardW, cardH)
         .setOrigin(0).setInteractive({ useHandCursor: true });
@@ -656,7 +661,7 @@ export function buildDefenseLoadout(
       cardRatio,
       isActionTarget || Boolean(queueItem),
     );
-    dg.fillStyle(CASUAL.SHADOW, 0.58);
+    dg.fillStyle(DUNGEON_UI.SOOT, 0.82);
     dg.fillRoundedRect(cx + 6, cy + 9, 31, cardH - 18, 6);
     dg.fillStyle(0xffffff, 0.06);
     dg.fillRoundedRect(cx + 42, cy + 10, cardW - 94, 12, 4);
@@ -673,7 +678,7 @@ export function buildDefenseLoadout(
         size: 30,
         frameColor: room.style.accent,
         glowColor: room.style.accent,
-        bgColor: CASUAL.PANEL_SOFT,
+      bgColor: DUNGEON_UI.SOOT,
         equippedSkins: gs.equippedSkins,
       });
     } else {
@@ -706,9 +711,9 @@ export function buildDefenseLoadout(
     }
 
     const trap = room.trapIds[0] ? getTrapDisplay(room.trapIds[0]) : null;
-    dg.fillStyle(CASUAL.PANEL_SOFT, 0.78);
+    dg.fillStyle(DUNGEON_UI.SOOT, 0.88);
     dg.fillRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
-    dg.lineStyle(1, trap ? CASUAL.GREEN : CASUAL.EDGE_SOFT, trap ? 0.7 : 0.42);
+    dg.lineStyle(1, trap ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, trap ? 0.7 : 0.62);
     dg.strokeRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
     scene.add.text(cx + cardW - 28.5, cy + 21, trap ? trap.emoji : 'T -', {
       fontFamily: 'sans-serif', fontSize: '10px', color: trap ? CASUAL_CSS.GREEN : CASUAL_CSS.BLUE,
@@ -720,7 +725,7 @@ export function buildDefenseLoadout(
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text, fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    dg.fillStyle(CASUAL.SHADOW, 0.82);
+    dg.fillStyle(DUNGEON_UI.SOOT, 0.92);
     dg.fillRoundedRect(cx + 42, cy + cardH - 8, cardW - 98, 4, 2);
     dg.fillStyle(cardRatio >= 1 ? ACCENT.mint : cardRatio >= 0.7 ? ACCENT.gold : ACCENT.coral, 0.95);
     dg.fillRoundedRect(cx + 42, cy + cardH - 8, Math.max(4, (cardW - 98) * cardRatio), 4, 2);

@@ -13,7 +13,7 @@ import type { WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyEndlessRunReward, applyWaveClearDailyChallengeProgress } from '../data/waveTransactions';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_ROWS, GRID_Y } from '../constants/layout';
-import { COLORS, CASUAL } from '../constants/colors';
+import { COLORS, CASUAL, DUNGEON_UI_CSS } from '../constants/colors';
 import { logger } from '../utils/logger';
 import { WAVE_BUTTON_H, WAVE_BUTTON_W } from './DungeonLayout';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -214,7 +214,7 @@ export function enableWaveButton(ctx: WavePrepContext): void {
   ctx.drawBtn(ctx.waveBtnBg, bx, by, bw, bh, false);
   ctx.waveBtnBg.setAlpha(1);
   ctx.waveBtnZone.setInteractive();
-  ctx.waveLabel.setText('🛡  방어 시작').setColor('#fff8d8');
+  ctx.waveLabel.setText('침입 방어 개시').setColor(DUNGEON_UI_CSS.PARCHMENT);
 
   // Wave-ready glow pulse — attract attention after result panel closes
   const scene = ctx.scene;

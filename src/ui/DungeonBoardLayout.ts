@@ -95,6 +95,11 @@ export function buildDungeonBoardLayout(input: BoardLayoutInput): DungeonBoardLa
   return buildFlatGrid(input);
 }
 
+/** Home shows operational rooms plus one reclaimable seal, never a wall of future locks. */
+export function isVisibleHomeSlot(slotIdx: number, unlockedCount: number): boolean {
+  return slotIdx < unlockedCount || slotIdx === unlockedCount;
+}
+
 // ─── Vertical-cutaway implementation ─────────────────────────────────────────
 
 /**
@@ -145,13 +150,17 @@ function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
 
   // ── Build all cells ────────────────────────────────────────────────────────
   const allCells: BoardCell[] = [];
+  // Reveal each floor from the outer walls inward: left chamber, right chamber,
+  // then centre chamber. Early progression therefore preserves the open shaft.
+  const visualColumnOrder = [0, 2, 1] as const;
   for (let row = 0; row < numBands; row++) {
     const bandTop = regionTop + ENTRANCE_H + row * (bandH + BAND_GAP);
     for (let col = 0; col < numCols; col++) {
       const slotIdx = row * numCols + col;
       if (slotIdx >= totalSlots) continue;
 
-      const rx = SIDE_GUT + col * (cellW + CELL_GAP_X);
+      const visualCol = visualColumnOrder[col] ?? col;
+      const rx = SIDE_GUT + visualCol * (cellW + CELL_GAP_X);
       const ry = bandTop + CELL_PAD_Y;
       const rect: Rect   = { x: rx, y: ry, w: cellW, h: cellH };
       const center: Point = { x: rx + cellW / 2, y: ry + cellH / 2 };
@@ -162,7 +171,7 @@ function buildVerticalCutaway(input: BoardLayoutInput): DungeonBoardLayout {
         center,
         isUnlocked: slotIdx < unlockedSlots,
         floor:      row,
-        colInFloor: col,
+        colInFloor: visualCol,
       });
     }
   }

@@ -7,8 +7,11 @@
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { ROOM_DEFS, getUpgradeCost, MAX_ROOM_LEVEL, type RoomData, type RoomType } from '../data/rooms';
-import { MONSTER_DEFS, getMonstersForRoom, type MonsterId } from '../data/monsters';
-import { HYBRID_DEFS } from '../data/fusion';
+import {
+  getMonstersForRoom,
+  resolveMonsterAttackCooldown,
+  resolveOwnedMonsterProfile,
+} from '../data/monsters';
 import { loadGameState, saveGameState, ROOM_SLOT_TYPE_DEFS, type DungeonSlot } from '../data/wisdom';
 import type { EquipmentStats } from '../data/barracks';
 import {
@@ -112,13 +115,11 @@ export function placeRoom(ctx: RoomActionsContext, row: number, col: number, typ
     const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === homeSlot.roomType);
     if (typeDef) ctx.rooms[row][col].setRoomTypeBadge(typeDef.icon);
 
-    const validIds = (homeSlot.monsterIds ?? []).filter(Boolean) as MonsterId[];
+    const validIds = (homeSlot.monsterIds ?? []).filter((id): id is string => (
+      Boolean(id) && resolveOwnedMonsterProfile(id) !== null
+    ));
     if (validIds.length > 0) {
       assignMonster(ctx, row, col, validIds[0]);
-      if (homeSlot.roomType === 'magic') {
-        data.attackCooldown = Math.round(data.attackCooldown * 0.8);
-        logger.debug(`[MAGIC ROOM] slot ${flatIdx}: cd → ${data.attackCooldown}ms`);
-      }
       data.monsterSlots = validIds;
       logger.debug(`[AUTO-ASSIGN] slot ${flatIdx}: ${validIds.join(', ')}`);
       ctx.recalcRoomTypeBonuses();
@@ -129,28 +130,29 @@ export function placeRoom(ctx: RoomActionsContext, row: number, col: number, typ
 
   // Open monster panel if this room type supports monsters (including owned hybrids)
   const available   = getMonstersForRoom(type, ctx.unlockedStage);
-  const ownedHybrid = Object.values(HYBRID_DEFS)
-    .some(h => h.roomTypes.includes(type as string) && loadGameState().ownedMonsters.some(m => m.id === h.id));
-  if (available.length > 0 || ownedHybrid) {
+  const ownedVariant = loadGameState().ownedMonsters.some(monster => {
+    const profile = resolveOwnedMonsterProfile(monster.id);
+    return Boolean(profile && (profile.roomTypes.includes(type) || profile.roomTypes.includes('any')));
+  });
+  if (available.length > 0 || ownedVariant) {
     ctx.scene.time.delayedCall(200, () => ctx.openMonsterPanel(row, col, type, ctx.unlockedStage));
   }
 }
 
 // ─── assignMonster ────────────────────────────────────────────────────────────
 
-export function assignMonster(ctx: RoomActionsContext, row: number, col: number, id: MonsterId): void {
+export function assignMonster(ctx: RoomActionsContext, row: number, col: number, id: string): void {
   const data = ctx.roomGrid[row][col];
   if (!data) return;
 
-  data.monsterSlot          = id;
-  data.hasFirstStrikeUsed   = false;
+  const def = resolveOwnedMonsterProfile(id);
+  if (!def) return;
 
-  const mDef  = MONSTER_DEFS[id];
-  const hbDef = mDef ? null : HYBRID_DEFS[id];
-  if (!mDef && !hbDef) return;
+  data.monsterSlot = id;
+  data.hasFirstStrikeUsed = false;
 
-  const emoji = mDef?.emoji ?? hbDef!.emoji;
-  if (mDef?.attackCooldown && mDef.attackCooldown > 0) data.attackCooldown = mDef.attackCooldown;
+  const emoji = def.emoji;
+  data.attackCooldown = resolveMonsterAttackCooldown(id, data.type);
 
   const eqS = ctx.equipmentMap.get(id);
   if (eqS?.roomHpBonus) ctx.rooms[row][col].addBonusHp(eqS.roomHpBonus);

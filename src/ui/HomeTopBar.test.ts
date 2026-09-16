@@ -30,8 +30,8 @@ function makeDisplayObject(): Record<string, ReturnType<typeof vi.fn>> & { width
   const object = { width: 20, x: 0 } as Record<string, ReturnType<typeof vi.fn>> & { width: number; x: number };
   for (const method of [
     'clear', 'destroy', 'fillCircle', 'fillRect', 'fillRoundedRect', 'fillStyle',
-    'lineStyle', 'on', 'setDepth', 'setInteractive', 'setOrigin', 'setPosition',
-    'strokeCircle', 'strokeRoundedRect',
+    'fillTriangle', 'lineBetween', 'lineStyle', 'on', 'setDepth', 'setInteractive',
+    'setOrigin', 'setPosition', 'strokeCircle', 'strokeRoundedRect', 'strokeTriangle',
   ]) {
     object[method] = vi.fn(() => object);
   }

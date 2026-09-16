@@ -5,19 +5,19 @@
  */
 
 import { CANVAS_WIDTH } from '../constants/layout';
-import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
+import { MONSTER_DEFS, resolveMonsterTypeId, type MonsterId } from '../data/monsters';
 import { type loadGameState } from '../data/wisdom';
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
 
 export const CX        = CANVAS_WIDTH / 2;
 export const CARD_W    = 178;
-export const CARD_H    = 190;
+export const CARD_H    = 210;
 export const CARD_GAP  = 8;
 export const CARD_ML   = 11;   // left margin
-export const CARDS_Y   = 228;  // top of first row
-export const PORTAL_CY = 130;  // portal center Y
-export const TAB_Y     = 186;  // tab bar top
+export const CARDS_Y   = 264;  // top of first row
+export const PORTAL_CY = 142;  // altar core center Y
+export const TAB_Y     = 212;  // tab bar top
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -68,8 +68,8 @@ export function getCollectionSummary(gs: ReturnType<typeof loadGameState>): {
   const validIds = new Set(Object.keys(MONSTER_DEFS));
   const ownedIds = new Set(
     (gs.ownedMonsters ?? [])
-      .map(monster => monster.id)
-      .filter(id => validIds.has(id)),
+      .map(monster => resolveMonsterTypeId(monster.id))
+      .filter((id): id is MonsterId => id !== null && validIds.has(id)),
   );
   const history = gs.summonHistory ?? [];
   return {

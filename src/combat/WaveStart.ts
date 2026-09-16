@@ -83,7 +83,7 @@ export function startWave(ctx: WaveStartContext): void {
   ctx.setWaveRegistry(ctx.wave);
 
   const isBoss = ctx.wave === ctx.maxWave && !ctx.isEndless;
-  ctx.setWaveLabelText(`⚔  ${ctx.wave}번 침략 진행 중...`, CSS.PARCHMENT_MUTED);
+  ctx.setWaveLabelText(`침입 ${ctx.wave} 진행 중`, CSS.PARCHMENT_MUTED);
 
   // Wave start banner (drops in, settles, retracts)
   playWaveStartBanner(ctx.scene, {

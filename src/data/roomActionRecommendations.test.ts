@@ -143,6 +143,20 @@ describe('roomActionRecommendations', () => {
     expect(action.body).toContain('목표 Lv.7');
   });
 
+  it('treats invalid imported monster IDs as empty instead of targeting them for growth', () => {
+    const action = getRoomActionRecommendation(makeState({
+      dmLevel: 6,
+      ownedMonsters: [makeMonster({ id: 'no_such_monster', level: 1 })],
+      dungeonSlots: [makeSlot('combat', {
+        monsterIds: ['no_such_monster', 'also_invalid'],
+        trapIds: ['slow_trap'],
+      })],
+    }), 0);
+
+    expect(action.kind).toBe('assign-monster');
+    expect(action.statValue).toBe('0/2');
+  });
+
   it('orders dungeon action queue by urgent operation priority before room index', () => {
     const queue = getDungeonActionQueue(makeState({
       dmLevel: 10,

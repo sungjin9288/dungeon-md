@@ -169,21 +169,21 @@ export function getRoomReadinessColor(readiness: number): number {
   return 0xff6b5f;
 }
 
-export function getDirectiveVisualMeta(directive: RoomDirective): { icon: string; label: string } {
+export function getDirectiveVisualMeta(directive: RoomDirective): { label: string } {
   switch (directive.target) {
     case 'repair':
-      return { icon: '🛠', label: '내구' };
+      return { label: '내구' };
     case 'type':
-      return { icon: '▣', label: '설계' };
+      return { label: '설계' };
     case 'monster':
-      return { icon: '👹', label: '수호' };
+      return { label: '수호' };
     case 'trap':
-      return { icon: '🕸', label: '함정' };
+      return { label: '함정' };
     case 'growth':
-      return { icon: '✦', label: '성장' };
+      return { label: '성장' };
     case 'none':
     default:
-      return { icon: '✓', label: '완비' };
+      return { label: '완비' };
   }
 }
 

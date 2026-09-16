@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MONSTER_DEFS } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { RoomData } from '../data/rooms';
 import {
   calcTribeSynergies, calcElementCombos, getSynergyAtkMult, getSynergySpdMult,
@@ -79,7 +79,7 @@ export class SynergyManager {
         const data = roomGrid[r]?.[c];
         const mid  = data?.monsterSlot;
         if (mid) {
-          const def = MONSTER_DEFS[mid as keyof typeof MONSTER_DEFS];
+          const def = resolveOwnedMonsterProfile(mid);
           if (def?.tribe) {
             tribeCounts.set(def.tribe, (tribeCounts.get(def.tribe) ?? 0) + 1);
           }

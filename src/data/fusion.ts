@@ -1,3 +1,6 @@
+import { MONSTER_DEFS } from './monsterRegistry';
+import type { MonsterId, RarityId } from './monstersTypes';
+
 // ─── Rarity constants ─────────────────────────────────────────────────────────
 
 export const RARITY_NAMES     = ['일반', '언커먼', '레어', '에픽', '전설'] as const;
@@ -7,36 +10,18 @@ export const RARITY_XP_VALUES = [30, 80, 200, 500, 1200] as const;
 
 // ─── Monster display data ─────────────────────────────────────────────────────
 
-interface MonsterBaseInfo { name: string; emoji: string; baseDamage: number }
-
-const MONSTER_BASE_INFO: Record<string, MonsterBaseInfo> = {
-  dokkaebi_warrior: { name: '도깨비 전사',   emoji: '👹', baseDamage: 20 },
-  dokkaebi_junior:  { name: '꼬마 도깨비',   emoji: '👺', baseDamage: 12 },
-  village_archer:   { name: '촌 궁수',       emoji: '🏹', baseDamage: 15 },
-  gold_turtle:      { name: '황금 거북이',   emoji: '🐢', baseDamage: 0  },
-  fire_dokkaebi:    { name: '화염 도깨비',   emoji: '🔥', baseDamage: 18 },
-  sage:             { name: '신선 도인',     emoji: '🧙', baseDamage: 0  },
-  gumiho_guardian:  { name: '구미호 수호자', emoji: '🦊', baseDamage: 22 },
-  frost_spirit:     { name: '빙결 정령',     emoji: '❄️', baseDamage: 18 },
-  white_tiger:      { name: '백호',          emoji: '🐯', baseDamage: 30 },
-  sea_god_spear:    { name: '해신의 창',     emoji: '🔱', baseDamage: 25 },
-  fox_shaman:       { name: '여우 무당',     emoji: '🎴', baseDamage: 20 },
-  iron_mask:        { name: '철가면',        emoji: '🎭', baseDamage: 28 },
-  death_messenger:  { name: '저승사자',      emoji: '💀', baseDamage: 22 },
-  thunder_hero:     { name: '뇌신 영웅',     emoji: '⚡', baseDamage: 26 },
-  ghost_hunter:     { name: '귀신 사냥꾼',   emoji: '👻', baseDamage: 20 },
-  mask_dancer:      { name: '탈춤꾼',        emoji: '💃', baseDamage: 18 },
-  venom_warrior:    { name: '독 전사',       emoji: '☠️', baseDamage: 24 },
-  // Ch7 — Celestial
-  celestial_guardian: { name: '천상 수호자', emoji: '✨', baseDamage: 28 },
-  sky_archer:         { name: '하늘 궁수',   emoji: '🏹', baseDamage: 24 },
-  heaven_mage:        { name: '천계 법사',   emoji: '🔮', baseDamage: 22 },
-};
-
 const RARITY_PREFIXES = ['', '강화 ', '정예 ', '영웅 ', '전설 '];
 
 export function getBaseId(id: string): string {
-  return id.replace(/_(unc|rare|epic|leg)$/, '');
+  if (Object.prototype.hasOwnProperty.call(MONSTER_DEFS, id)) return id;
+
+  let longestMatch: MonsterId | null = null;
+  for (const candidate of Object.keys(MONSTER_DEFS) as MonsterId[]) {
+    if (id.startsWith(`${candidate}_`) && (!longestMatch || candidate.length > longestMatch.length)) {
+      longestMatch = candidate;
+    }
+  }
+  return longestMatch ?? id;
 }
 export function getMonsterRarity(id: string): number {
   if (id.endsWith('_leg'))  return 4;
@@ -46,21 +31,28 @@ export function getMonsterRarity(id: string): number {
   return 0;
 }
 export function getMonsterEmoji(id: string): string {
-  const base = MONSTER_BASE_INFO[getBaseId(id)];
-  return base?.emoji ?? HYBRID_DEFS[id]?.emoji ?? '❓';
+  const baseId = getBaseId(id);
+  const base = Object.prototype.hasOwnProperty.call(MONSTER_DEFS, baseId)
+    ? MONSTER_DEFS[baseId as MonsterId]
+    : undefined;
+  return base?.emoji ?? resolveFusionMonsterDef(id)?.emoji ?? '❓';
 }
 export function getMonsterDisplayName(id: string): string {
   const baseId = getBaseId(id);
   const rarity = getMonsterRarity(id);
-  const base = MONSTER_BASE_INFO[baseId];
+  const base = Object.prototype.hasOwnProperty.call(MONSTER_DEFS, baseId)
+    ? MONSTER_DEFS[baseId as MonsterId]
+    : undefined;
   if (base) return (RARITY_PREFIXES[rarity] ?? '') + base.name;
-  return HYBRID_DEFS[id]?.name ?? id;
+  return resolveFusionMonsterDef(id)?.name ?? id;
 }
 export function getMonsterBaseDamage(id: string): number {
   const baseId = getBaseId(id);
   const rarity = getMonsterRarity(id);
-  const base = MONSTER_BASE_INFO[baseId];
-  if (!base) return HYBRID_DEFS[id]?.baseDamage ?? 20;
+  const base = Object.prototype.hasOwnProperty.call(MONSTER_DEFS, baseId)
+    ? MONSTER_DEFS[baseId as MonsterId]
+    : undefined;
+  if (!base) return resolveFusionMonsterDef(id)?.baseDamage ?? 20;
   return Math.round(base.baseDamage * Math.pow(1.30, rarity));
 }
 
@@ -111,7 +103,7 @@ export interface HybridDef {
 }
 
 // Forward-declare so getMonsterEmoji/getMonsterDisplayName can reference it
-export const HYBRID_DEFS: Record<string, HybridDef> = {
+const DECLARED_HYBRID_DEFS: Record<string, HybridDef> = {
   fox_warrior: {
     id: 'fox_warrior', name: '여우 전사', emoji: '🦊⚔️', rarity: 2, baseDamage: 26,
     passive: 'HYBRID_CHARM', passiveDesc: '일반 공격 + 20% 매혹 확률',
@@ -231,6 +223,43 @@ export const HYBRID_DEFS: Record<string, HybridDef> = {
     roomTypes: ['guardian', 'celestial_shrine', 'void_forge'],
   },
 };
+
+const FUSION_RARITY_BY_TIER: Record<RarityId, number> = {
+  C: 0,
+  U: 1,
+  R: 2,
+  E: 3,
+  L: 4,
+};
+
+function projectCanonicalFusionDef(id: string, declared: HybridDef): HybridDef {
+  if (Object.prototype.hasOwnProperty.call(MONSTER_DEFS, id)) {
+    const registry = MONSTER_DEFS[id as MonsterId];
+    return {
+      id,
+      name: registry.name,
+      emoji: registry.emoji,
+      rarity: FUSION_RARITY_BY_TIER[registry.rarityTier ?? 'C'],
+      baseDamage: registry.baseDamage,
+      passive: registry.passive,
+      passiveDesc: registry.passiveDesc,
+      roomTypes: [...registry.roomTypes],
+    };
+  }
+  return declared;
+}
+
+/** Fusion-only entries plus canonical projections for exact registry collisions. */
+export const HYBRID_DEFS: Record<string, HybridDef> = Object.fromEntries(
+  Object.entries(DECLARED_HYBRID_DEFS).map(([id, declared]) => [
+    id,
+    projectCanonicalFusionDef(id, declared),
+  ]),
+) as Record<string, HybridDef>;
+
+export function resolveFusionMonsterDef(id: string): HybridDef | undefined {
+  return Object.prototype.hasOwnProperty.call(HYBRID_DEFS, id) ? HYBRID_DEFS[id] : undefined;
+}
 
 // Canonical 10-entry lookup: sort both IDs alphabetically → join with '+'
 export const COMBINATION_TABLE: Record<string, string> = {

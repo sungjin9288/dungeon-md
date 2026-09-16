@@ -7,7 +7,6 @@
  */
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
-import { CASUAL } from '../constants/colors';
 import { type DungeonSlot } from '../data/wisdom';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
 import { cellCenter } from '../ui/DungeonBoardLayout';
@@ -41,13 +40,13 @@ export function drawDungeonRouteNetwork(
   const t = scene.theme;
 
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 22, CASUAL.EDGE, 0.34, i);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 14, 0x020403, 0.62, i);
   }
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 14, CASUAL.EDGE_SOFT, 0.56, i + 1);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 8, 0x443a29, 0.46, i + 1);
   }
   for (let i = 0; i < polyline.length - 1; i++) {
-    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 6, CASUAL.PANEL_SOFT, 0.48, i + 2);
+    fillDungeonRouteTunnel(scene, g, polyline[i], polyline[i + 1], 2, 0xa98245, 0.28, i + 2);
   }
 
   for (let i = 0; i < route.length - 1; i++) {
@@ -135,7 +134,7 @@ export function drawDungeonRouteWallStones(
     const sy = cy + py * offset;
     const stoneW = Math.abs(dx) >= Math.abs(dy) ? 11 : 7;
     const stoneH = Math.abs(dx) >= Math.abs(dy) ? 6 : 11;
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.22 + (index % 2) * 0.04);
+    g.fillStyle(0x66563c, 0.22 + (index % 2) * 0.04);
     g.fillRoundedRect(sx - stoneW / 2, sy - stoneH / 2, stoneW, stoneH, 3);
     g.lineStyle(1, 0xffffff, 0.18);
     g.lineBetween(sx - px * 3 - ux * 2, sy - py * 3 - uy * 2, sx + px * 3 + ux * 2, sy + py * 3 + uy * 2);
@@ -349,7 +348,7 @@ export function drawRouteSignal(
 }
 
 export function drawRouteChevron(
-  scene: DungeonHomeScene,
+  _scene: DungeonHomeScene,
   g: Phaser.GameObjects.Graphics,
   x: number,
   y: number,
@@ -357,7 +356,7 @@ export function drawRouteChevron(
   dy: number,
   alpha: number,
 ): void {
-  const accent = scene.theme.panelBorder;
+  const accent = 0xa98245;
   g.fillStyle(accent, alpha);
   if (Math.abs(dx) >= Math.abs(dy)) {
     const dir = dx >= 0 ? 1 : -1;

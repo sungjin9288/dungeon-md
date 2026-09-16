@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS, ZONE_ACCENTS, ZONE_ACCENT_DARK } from '../constants/colors';
+import { CASUAL, CASUAL_CSS, ZONE_ACCENTS } from '../constants/colors';
 import {
   CANVAS_HEIGHT,
   CANVAS_WIDTH,
@@ -13,13 +13,6 @@ import {
   type GameZone,
 } from '../data/navigationContract';
 import { audioManager } from '../audio/AudioManager';
-
-const ZONE_ICON: Readonly<Record<GameZone, string>> = {
-  dungeon: '🏰',
-  legion: '👹',
-  forge: '⚒',
-  invasion: '⚔️',
-};
 
 export interface GameZoneHitArea {
   readonly zone: GameZone;
@@ -94,67 +87,60 @@ export function buildHomeZoneNavigation(
   const navY = ROOT_NAV_Y;
   const graphics = scene.add.graphics().setScrollFactor(0);
   shell.add(graphics);
-  graphics.fillStyle(CASUAL.SHADOW, 1);
+  graphics.fillStyle(0x020302, 1);
   graphics.fillRect(0, navY - 4, CANVAS_WIDTH, ROOT_NAV_HEIGHT + 4);
-  graphics.fillStyle(CASUAL.PANEL, 1);
+  graphics.fillStyle(0x0a0c0b, 1);
   graphics.fillRect(0, navY, CANVAS_WIDTH, ROOT_NAV_HEIGHT);
-  graphics.fillStyle(0xffffff, 0.14);
-  graphics.fillRect(0, navY, CANVAS_WIDTH, 3);
-  graphics.lineStyle(3, CASUAL.EDGE, 1);
+  graphics.fillStyle(0xa98245, 0.38);
+  graphics.fillRect(0, navY, CANVAS_WIDTH, 2);
+  graphics.lineStyle(1, 0x5f4d32, 0.82);
   graphics.lineBetween(0, navY, CANVAS_WIDTH, navY);
 
   getHomeZoneHitAreas().forEach(({ zone, x, y, width, height }) => {
     const definition = GAME_ZONE_DEFINITIONS[zone];
     const accent = ZONE_ACCENTS[zone];
-    const darkAccent = ZONE_ACCENT_DARK[zone];
     const active = zone === activeZone;
-    const panelX = x + 4;
-    const panelY = y + (active ? 2 : 7);
-    const panelW = width - 8;
-    const panelH = active ? height - 7 : height - 13;
+    const panelX = x + 3;
+    const panelY = y + 3;
+    const panelW = width - 6;
+    const panelH = height - 6;
 
     if (active) {
-      graphics.fillStyle(darkAccent, 1);
-      graphics.fillRoundedRect(panelX, panelY + 3, panelW, panelH, 11);
-      graphics.fillStyle(accent, 1);
-      graphics.fillRoundedRect(panelX, panelY, panelW, panelH - 1, 11);
-      graphics.fillStyle(0xffffff, 0.32);
-      graphics.fillRoundedRect(panelX + 5, panelY + 4, panelW - 10, 7, 4);
-      // Shape + vertical lift + literal status make the selected Dungeon clear without color alone.
-      graphics.fillStyle(0xffffff, 0.9);
-      graphics.fillTriangle(x + width / 2 - 5, y + 1, x + width / 2 + 5, y + 1, x + width / 2, y - 5);
+      graphics.fillStyle(0x171713, 1);
+      graphics.fillRoundedRect(panelX, panelY, panelW, panelH, 4);
+      graphics.fillStyle(accent, 0.86);
+      graphics.fillRect(panelX + 7, panelY, panelW - 14, 3);
+      graphics.lineStyle(1.5, 0xa98245, 0.82);
+      graphics.strokeRoundedRect(panelX, panelY, panelW, panelH, 4);
+      graphics.fillStyle(accent, 0.94);
+      graphics.fillTriangle(x + width / 2 - 5, y + 4, x + width / 2 + 5, y + 4, x + width / 2, y - 2);
     } else {
-      graphics.fillStyle(CASUAL.PANEL_SOFT, 1);
-      graphics.fillRoundedRect(panelX, panelY, panelW, panelH, 11);
-      graphics.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.7);
-      graphics.strokeRoundedRect(panelX, panelY, panelW, panelH, 11);
+      graphics.fillStyle(0x0d0f0e, 1);
+      graphics.fillRoundedRect(panelX, panelY, panelW, panelH, 4);
+      graphics.lineStyle(1, 0x34342d, 0.88);
+      graphics.strokeRoundedRect(panelX, panelY, panelW, panelH, 4);
+    }
+    if (x > 0) {
+      graphics.lineStyle(1, 0x6b5738, 0.28);
+      graphics.lineBetween(x, y + 12, x, y + height - 12);
     }
 
-    const icon = scene.add.text(x + width / 2, active ? y + 9 : y + 14, ZONE_ICON[zone], {
-      fontFamily: 'sans-serif', fontSize: active ? '20px' : '18px',
-    }).setOrigin(0.5, 0).setDepth(81).setScrollFactor(0);
-    shell.add(icon);
-    const label = scene.add.text(x + width / 2, active ? y + 38 : y + 43, definition.label, {
+    drawZoneSigil(graphics, zone, x + width / 2, y + 23, active ? accent : 0x8c806d, active ? 0.96 : 0.74);
+    const label = scene.add.text(x + width / 2, y + 48, definition.label, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-      color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT,
-      stroke: active ? `#${darkAccent.toString(16).padStart(6, '0')}` : undefined,
-      strokeThickness: active ? 3 : 0,
+      color: active ? '#ead6ad' : '#918776',
     }).setOrigin(0.5).setDepth(81).setScrollFactor(0);
     shell.add(label);
     if (active) {
-      const status = scene.add.text(x + width / 2, y + 55, '현재', {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#ffffff',
-      }).setOrigin(0.5).setDepth(81).setScrollFactor(0);
-      shell.add(status);
       return;
     }
 
     const hover = scene.add.graphics().setDepth(80.5).setVisible(false).setScrollFactor(0);
     shell.add(hover);
-    hover.fillStyle(accent, 0.22);
-    hover.fillRoundedRect(panelX, panelY, panelW, panelH, 11);
-    hover.lineStyle(2, accent, 0.9);
-    hover.strokeRoundedRect(panelX, panelY, panelW, panelH, 11);
+    hover.fillStyle(accent, 0.09);
+    hover.fillRoundedRect(panelX, panelY, panelW, panelH, 4);
+    hover.lineStyle(1.5, accent, 0.72);
+    hover.strokeRoundedRect(panelX, panelY, panelW, panelH, 4);
     const target = scene.add.zone(x, y, width, height)
       .setOrigin(0)
       .setDepth(82)
@@ -170,9 +156,64 @@ export function buildHomeZoneNavigation(
   });
 }
 
+function drawZoneSigil(
+  g: Phaser.GameObjects.Graphics,
+  zone: GameZone,
+  x: number,
+  y: number,
+  color: number,
+  alpha: number,
+): void {
+  g.lineStyle(2, color, alpha);
+  g.fillStyle(color, alpha);
+  if (zone === 'dungeon') {
+    g.beginPath();
+    g.arc(x, y + 3, 10, Math.PI, Math.PI * 2);
+    g.strokePath();
+    g.lineBetween(x - 10, y + 3, x - 10, y + 11);
+    g.lineBetween(x + 10, y + 3, x + 10, y + 11);
+    g.lineBetween(x - 10, y + 11, x + 10, y + 11);
+    g.fillRect(x - 2, y + 3, 4, 8);
+    return;
+  }
+  if (zone === 'legion') {
+    g.beginPath();
+    g.arc(x - 7, y - 2, 7, 0.2, 1.65);
+    g.strokePath();
+    g.beginPath();
+    g.arc(x + 7, y - 2, 7, 1.49, 2.94);
+    g.strokePath();
+    g.fillTriangle(x - 8, y + 2, x + 8, y + 2, x, y + 12);
+    g.fillStyle(0x070806, 1);
+    g.fillCircle(x - 3, y + 5, 1.3);
+    g.fillCircle(x + 3, y + 5, 1.3);
+    return;
+  }
+  if (zone === 'forge') {
+    g.fillRect(x - 11, y + 5, 22, 5);
+    g.fillTriangle(x - 7, y + 10, x + 7, y + 10, x, y + 14);
+    g.lineStyle(3, color, alpha);
+    g.lineBetween(x - 8, y - 8, x + 8, y + 6);
+    g.fillRoundedRect(x - 13, y - 11, 8, 5, 1);
+    return;
+  }
+  g.lineStyle(2.5, color, alpha);
+  g.lineBetween(x - 9, y - 8, x + 9, y + 11);
+  g.lineBetween(x + 9, y - 8, x - 9, y + 11);
+  g.fillTriangle(x - 12, y - 11, x - 5, y - 8, x - 9, y - 4);
+  g.fillTriangle(x + 12, y - 11, x + 5, y - 8, x + 9, y - 4);
+}
+
 export function buildZoneBackButton(
   scene: Phaser.Scene,
-  options: { readonly label: string; readonly onBack: () => void; readonly width?: number },
+  options: {
+    readonly label: string;
+    readonly onBack: () => void;
+    readonly width?: number;
+    readonly fillColor?: number;
+    readonly borderColor?: number;
+    readonly textColor?: string;
+  },
 ): void {
   const offset = getSceneFixedShellViewportOffset(scene);
   const shell = scene.add.container(offset.x, offset.y)
@@ -182,19 +223,22 @@ export function buildZoneBackButton(
   const y = 8;
   const width = options.width ?? 86;
   const height = SCENE_HEADER_TOUCH_HEIGHT;
+  const fillColor = options.fillColor ?? CASUAL.PANEL;
+  const borderColor = options.borderColor ?? CASUAL.EDGE;
+  const textColor = options.textColor ?? CASUAL_CSS.INK;
   const depth = 30;
   const graphics = scene.add.graphics().setDepth(depth).setScrollFactor(0);
   shell.add(graphics);
   graphics.fillStyle(CASUAL.SHADOW, 0.22);
   graphics.fillRoundedRect(x, y + 3, width, height, 14);
-  graphics.fillStyle(CASUAL.PANEL, 1);
+  graphics.fillStyle(fillColor, 1);
   graphics.fillRoundedRect(x, y, width, height, 14);
   graphics.fillStyle(0xffffff, 0.12);
   graphics.fillRoundedRect(x + 5, y + 4, width - 10, 7, 4);
-  graphics.lineStyle(2.5, CASUAL.EDGE, 1);
+  graphics.lineStyle(2.5, borderColor, 1);
   graphics.strokeRoundedRect(x, y, width, height, 14);
   const label = scene.add.text(x + width / 2, y + height / 2, options.label, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '12px', color: textColor, fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(depth + 1).setScrollFactor(0);
   shell.add(label);
   const zone = scene.add.zone(x, y, width, height)

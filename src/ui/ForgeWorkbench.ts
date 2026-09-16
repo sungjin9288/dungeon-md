@@ -1,12 +1,7 @@
-// ─── Forge Workbench ─────────────────────────────────────────────────────────
-// buildWorkbenchPanel, drawWorkbenchStat, drawProgressTrack,
-// drawForgeRecommendationPreview, drawEffectChips, buildForgeTargetRail.
-// All functions take (scene, ctx, ...) — no `this` usage.
-
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { DUNGEON_UI, DUNGEON_UI_CSS, ZONE_ACCENTS } from '../constants/colors';
+import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import {
   cycleForgeTargetsByRoster,
   rankForgeBlueprints,
@@ -14,16 +9,15 @@ import {
 } from '../data/forgeRecommendations';
 import { addMonsterPortrait } from './MonsterPortraitView';
 import {
-  WORKBENCH_H, LIST_PAD,
+  WORKBENCH_H,
+  LIST_PAD,
   getFocusMonsterDisplay,
   getFocusEquipmentDisplay,
   getMonsterEquipmentDisplay,
-  formatForgeMaterialStatus,
   truncateLabel,
   type ForgeContext,
 } from './ForgeShared';
-
-// ─── buildWorkbenchPanel ──────────────────────────────────────────────────────
+import { drawDismantleSigil, drawForgeCrest } from './ForgeSkin';
 
 export function buildWorkbenchPanel(
   scene: Phaser.Scene,
@@ -32,157 +26,196 @@ export function buildWorkbenchPanel(
   mode: 'craft' | 'dismantle',
 ): number {
   const { gs, focusMonsterId, focusSourceLabel } = ctx;
-  const ownedBlueprints = gs.blueprints ?? [];
   const rankedBlueprints = mode === 'craft'
     ? rankForgeBlueprints(gs, { monsterId: focusMonsterId, sourceLabel: focusSourceLabel })
     : [];
   const selectedProjection = ctx.selectedBpId
-    ? rankedBlueprints.find(projection => projection.blueprint.id === ctx.selectedBpId) ?? null
+    ? rankedBlueprints.find(item => item.blueprint.id === ctx.selectedBpId) ?? null
     : null;
   const primaryProjection = selectedProjection ?? rankedBlueprints[0] ?? null;
-  const previewBlueprint = primaryProjection?.blueprint;
   const recommendation = primaryProjection?.recommendation ?? null;
-  const craftable = rankedBlueprints.filter(projection => projection.craftable);
-  const materialTypes = Object.values(gs.materials ?? {}).filter(qty => qty > 0).length;
-  const craftedCount  = (gs.craftedEquipment ?? []).length;
-  const equippedCount = gs.ownedMonsters.filter(monster => Boolean(monster.equipment)).length;
-  const target        = getFocusMonsterDisplay(gs, focusMonsterId);
-  const workbenchMonsterId = target ? focusMonsterId : recommendation?.monsterId ?? null;
-  const workbenchTarget = target ?? (recommendation
+  const explicitTarget = getFocusMonsterDisplay(gs, focusMonsterId);
+  const targetMonsterId = explicitTarget ? focusMonsterId : recommendation?.monsterId ?? null;
+  const target = explicitTarget ?? (recommendation
     ? {
-        name:  recommendation.monsterName,
+        name: recommendation.monsterName,
         emoji: recommendation.monsterEmoji,
         level: recommendation.monsterLevel,
       }
     : null);
-  const targetName    = workbenchTarget?.name ?? null;
-  const currentEquipment = target
+  const currentEquipment = explicitTarget
     ? getFocusEquipmentDisplay(gs, focusMonsterId)
     : recommendation
       ? getMonsterEquipmentDisplay(gs, recommendation.monsterId)
       : null;
+  const craftedCount = (gs.craftedEquipment ?? []).length;
+  const equippedCount = gs.ownedMonsters.filter(monster => Boolean(monster.equipment)).length;
 
-  const x = 12, y = 10, w = CANVAS_WIDTH - 24, h = 116;
-  const accent = mode === 'craft' ? CASUAL.GOLD : CASUAL.RED;
+  const x = 14;
+  const y = 8;
+  const w = CANVAS_WIDTH - 28;
+  const h = 176;
+  const accent = mode === 'craft' ? ZONE_ACCENTS.forge : DUNGEON_UI.EMBER;
   const frame = addFramedPanel(scene, {
-    x, y, w, h,
-    radius:       12,
-    fillColor:    CASUAL.PANEL,
-    borderColor:  CASUAL.EDGE,
-    borderAlpha:  1,
-    borderWidth:  3,
-    accentColor:  accent,
-    accentAlpha:  1,
-    shadowOpacity: 0.26,
+    x,
+    y,
+    w,
+    h,
+    radius: 9,
+    fillColor: DUNGEON_UI.STONE,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 1,
+    borderWidth: 2,
+    accentColor: accent,
+    accentAlpha: 1,
+    shadowOpacity: 0.46,
     shadowOffsetY: 5,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
-  const panel = scene.add.graphics();
-  panel.fillStyle(CASUAL.SHADOW, 0.94);
-  panel.fillRoundedRect(x + 8, y + 10, 86, h - 20, 10);
-  panel.fillStyle(CASUAL.PANEL_SOFT, 0.7);
-  panel.fillRoundedRect(x + 100, y + 8, w - 108, h - 16, 10);
-  panel.lineStyle(1.5, target ? CASUAL.GREEN : CASUAL.EDGE_SOFT, target ? 0.7 : 0.4);
-  panel.strokeRoundedRect(x + 12, y + 14, 78, h - 28, 9);
-  c.add(panel);
+  const stage = scene.add.graphics();
+  stage.fillStyle(DUNGEON_UI.VOID, 0.96);
+  stage.fillRoundedRect(x + 10, y + 10, 92, h - 20, 8);
+  stage.fillStyle(accent, 0.08);
+  stage.fillRoundedRect(x + 16, y + 16, 80, 94, 7);
+  stage.lineStyle(1.2, target ? DUNGEON_UI.JADE : accent, 0.62);
+  stage.strokeRoundedRect(x + 10, y + 10, 92, h - 20, 8);
+  c.add(stage);
 
-  if (workbenchMonsterId) {
-    addMonsterPortrait(scene, c, x + 51, y + 48, workbenchMonsterId, {
-      size: 62,
-      frameColor: recommendation?.accent ?? accent,
-      glowColor: recommendation?.accent ?? accent,
+  if (targetMonsterId) {
+    addMonsterPortrait(scene, c, x + 56, y + 54, targetMonsterId, {
+      size: 72,
+      frameColor: recommendation?.accent ?? DUNGEON_UI.JADE,
+      glowColor: recommendation?.accent ?? DUNGEON_UI.JADE,
       equippedSkins: gs.equippedSkins,
     });
   } else {
-    c.add(scene.add.text(x + 51, y + 40, mode === 'craft' ? '⚒' : '🔨', {
-      fontFamily: 'sans-serif', fontSize: '31px',
-    }).setOrigin(0.5));
+    const crest = scene.add.graphics();
+    crest.fillStyle(accent, 0.12);
+    crest.fillCircle(x + 56, y + 54, 31);
+    crest.lineStyle(1.5, accent, 0.55);
+    crest.strokeCircle(x + 56, y + 54, 31);
+    if (mode === 'craft') drawForgeCrest(crest, x + 56, y + 52, accent, 0.94, 1.15);
+    else drawDismantleSigil(crest, x + 56, y + 52, accent, 0.94, 1);
+    c.add(crest);
   }
-  c.add(scene.add.text(x + 51, y + 83, workbenchTarget ? `Lv.${workbenchTarget.level}` : mode === 'craft' ? '제작대' : '분해대', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK,
-    fontStyle: workbenchTarget ? 'bold' : 'normal',
+  c.add(scene.add.text(x + 56, y + 102, target ? `Lv.${target.level}` : mode === 'craft' ? '단조 지휘' : '회수 지휘', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5));
-  if (workbenchTarget) {
-    c.add(scene.add.text(x + 51, y + 99, workbenchTarget.name, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0.5));
-  }
+  c.add(scene.add.text(x + 56, y + 121, target ? truncateLabel(target.name, 7) : mode === 'craft' ? '대상 대기' : '분해대', {
+    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+  }).setOrigin(0.5));
+  c.add(scene.add.text(x + 56, y + 143, focusSourceLabel ?? (target ? '추천 수호자' : '공방 명령'), {
+    fontFamily: 'sans-serif', fontSize: '10px', color: target ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0.5));
 
+  const infoX = x + 114;
+  const infoW = w - 126;
+  const blueprint = primaryProjection?.blueprint;
   const title = mode === 'craft'
-    ? (previewBlueprint
-        ? `${previewBlueprint.name} ${primaryProjection?.craftable ? '추천 제작' : '재료 수급'}`
-        : '재료 수급 필요')
-    : (craftedCount > 0 ? '장비 회수 가능' : '제작 장비 없음');
+    ? blueprint
+      ? blueprint.name
+      : '설계도 수급 필요'
+    : craftedCount > 0
+      ? '장비 회수 명령'
+      : '회수할 장비 없음';
   const body = mode === 'craft'
-    ? (primaryProjection
-        ? primaryProjection.whyNow
-        : targetName
-          ? `${targetName}에게 장착할 장비를 제작해 전투실 효율을 올리세요.`
-        : '방어선에 부족한 무기, 방어구, 장신구를 제작하세요.')
-    : '사용하지 않는 제작 장비를 분해해 다음 장비 재료로 회수하세요.';
-
-  c.add(scene.add.text(x + 110, y + 18, title, {
-    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+    ? primaryProjection?.whyNow ?? '전투 또는 심연에서 장비 설계도를 확보하세요.'
+    : craftedCount > 0
+      ? '미사용 장비를 선택하고 반환 재료를 확인하세요.'
+      : '장비를 제작하면 분해 회수 경로가 열립니다.';
+  c.add(scene.add.text(infoX, y + 17, mode === 'craft' ? '추천 제작 지휘' : '분해·재료 회수', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: mode === 'craft' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
   }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 110, y + 34, body, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+  c.add(scene.add.text(infoX, y + 37, title, {
+    fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(infoX, y + 56, body, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    wordWrap: { width: infoW, useAdvancedWrap: true }, maxLines: 1,
   }).setOrigin(0, 0.5));
 
-  const equipLine = currentEquipment
-    ? `${currentEquipment.emoji} ${currentEquipment.name} 장착 중`
-    : workbenchTarget
-      ? '장비 슬롯 비어 있음'
+  const equipmentLine = currentEquipment
+    ? `현재 장비 · ${currentEquipment.name}`
+    : target
+      ? '현재 장비 · 미장착'
       : mode === 'craft'
-        ? '설계도 선택 후 단조'
-        : '불필요 장비 회수';
-  const hasPowerRecommendation = mode === 'craft' && recommendation !== null;
-  const equipChipW = w - 122;
-  const equipChip = scene.add.graphics();
-  equipChip.fillStyle(currentEquipment ? CASUAL.GOLD : CASUAL.PANEL, currentEquipment ? 0.32 : 0.9);
-  equipChip.fillRoundedRect(x + 110, y + 50, equipChipW, 18, 7);
-  equipChip.lineStyle(1.5, currentEquipment ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, currentEquipment ? 0.9 : 0.6);
-  equipChip.strokeRoundedRect(x + 110, y + 50, equipChipW, 18, 7);
-  c.add(equipChip);
-  c.add(scene.add.text(x + 116, y + 59, equipLine, {
-    fontFamily: 'sans-serif', fontSize: '11px',
-    color: currentEquipment ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
-    fontStyle: currentEquipment ? 'bold' : 'normal',
+        ? '현재 장비 · 대상 없음'
+        : `보관 ${craftedCount} · 장착 ${equippedCount}`;
+  c.add(scene.add.text(infoX, y + 74, equipmentLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: currentEquipment ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
 
-  if (hasPowerRecommendation) {
-    const roomLine = `${recommendation.room.roomLabel} · ${recommendation.room.roomContextLabel}`;
-    const metricLine = recommendation.room.power && recommendation.room.readiness
-      ? `준비 ${recommendation.room.readiness.before}→${recommendation.room.readiness.after} · 전력 ${recommendation.room.power.before}→${recommendation.room.power.after} 예상`
-      : '준비도·방 전력은 실제 배치 후 계산';
-    c.add(scene.add.text(x + 110, y + 76, roomLine, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-    c.add(scene.add.text(x + 110, y + 90, metricLine, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#8fffe0',
-    }).setOrigin(0, 0.5));
-  }
+  const roomLine = recommendation
+    ? `${recommendation.room.roomLabel} · ${recommendation.room.roomContextLabel}`
+    : mode === 'craft'
+      ? '추천 방 · 대상 계산 대기'
+      : '반환 재료는 제작 비용의 일부';
+  const metricLine = recommendation?.room.power && recommendation.room.readiness
+    ? `준비 ${recommendation.room.readiness.before}→${recommendation.room.readiness.after} · 전력 ${recommendation.room.power.before}→${recommendation.room.power.after} 예상`
+    : recommendation
+      ? `${recommendation.improvementLabel} · 실제 배치 후 방 전력 계산`
+      : mode === 'craft'
+        ? '장착 대상과 방 전력은 설계도 기준으로 계산'
+        : '장착 중 장비는 분해 시 자동 해제';
+  c.add(scene.add.text(infoX, y + 91, roomLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: recommendation ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(infoX, y + 107, metricLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: recommendation ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
 
   const materialLine = primaryProjection
     ? primaryProjection.materials
-      .map(formatForgeMaterialStatus)
-      .reduce<string[]>((lines, material, index) => {
-        const lineIndex = Math.floor(index / 2);
-        lines[lineIndex] = lines[lineIndex] ? `${lines[lineIndex]} · ${material}` : material;
-        return lines;
-      }, [])
-      .join('\n')
+        .slice(0, 2)
+        .map(material => `${material.name} ${material.have}/${material.need}${material.missing > 0 ? ` 부족 ${material.missing}` : ''}`)
+        .join(' · ')
+        + (primaryProjection.materials.length > 2 ? ` · +${primaryProjection.materials.length - 2}종` : '')
     : mode === 'craft'
-      ? `가능 ${craftable.length} · 설계도 ${ownedBlueprints.length} · 재료 ${materialTypes}`
+      ? `설계도 ${(gs.blueprints ?? []).length} · 보유 재료 ${Object.values(gs.materials ?? {}).filter(qty => qty > 0).length}종`
       : `보관 ${craftedCount} · 장착 ${equippedCount}`;
-  c.add(scene.add.text(x + 110, y + 102, materialLine, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: primaryProjection?.craftable ? CASUAL_CSS.GREEN : CASUAL_CSS.RED,
-  }).setOrigin(0));
+  c.add(scene.add.text(infoX, y + 122, materialLine, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: primaryProjection?.craftable ? DUNGEON_UI_CSS.JADE : mode === 'craft' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.BRASS,
+  }).setOrigin(0, 0.5));
+
+  const actionLabel = mode === 'craft'
+    ? primaryProjection?.craftable
+      ? `제작 · ${truncateLabel(blueprint?.name ?? '장비', 9)}`
+      : primaryProjection
+        ? `재료 부족 ${primaryProjection.materialMissing}`
+        : '설계도 필요'
+    : craftedCount > 0
+      ? '아래 장비를 선택해 분해'
+      : '제작 장비 없음';
+  const enabled = mode === 'craft' && Boolean(primaryProjection?.craftable && blueprint);
+  const action = addPrimaryActionButton(scene, {
+    x: infoX,
+    y: y + 132,
+    w: infoW,
+    h: 44,
+    label: actionLabel,
+    fontSize: '11px',
+    enabled,
+    fillColor: DUNGEON_UI.JADE,
+    hoverFillColor: 0x61ad87,
+    borderColor: DUNGEON_UI.JADE,
+    hoverBorderColor: 0x76c6a0,
+    disabledFillColor: DUNGEON_UI.SOOT,
+    disabledBorderColor: mode === 'craft' ? DUNGEON_UI.EMBER : DUNGEON_UI.IRON,
+    textColor: '#07100b',
+    disabledTextColor: mode === 'craft' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
+    onPress: () => {
+      if (blueprint) ctx.onConfirmCraft(blueprint.id);
+    },
+  });
+  c.add([action.bg, action.text, action.zone]);
 
   return WORKBENCH_H;
 }
-
-// ─── drawWorkbenchStat ────────────────────────────────────────────────────────
 
 export function drawWorkbenchStat(
   scene: Phaser.Scene,
@@ -195,21 +228,19 @@ export function drawWorkbenchStat(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 0.95);
-  g.fillRoundedRect(x, y, w, 22, 5);
-  g.lineStyle(1.5, accent, 0.7);
-  g.strokeRoundedRect(x, y, w, 22, 5);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.96);
+  g.fillRoundedRect(x, y, w, 24, 5);
+  g.lineStyle(1, accent, 0.58);
+  g.strokeRoundedRect(x, y, w, 24, 5);
   c.add(g);
-  c.add(scene.add.text(x + 6, y + 7, label, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+  c.add(scene.add.text(x + 7, y + 12, label, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + w - 6, y + 14, value, {
+  c.add(scene.add.text(x + w - 7, y + 12, value, {
     fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
     color: `#${accent.toString(16).padStart(6, '0')}`,
   }).setOrigin(1, 0.5));
 }
-
-// ─── drawProgressTrack ────────────────────────────────────────────────────────
 
 export function drawProgressTrack(
   scene: Phaser.Scene,
@@ -223,7 +254,7 @@ export function drawProgressTrack(
 ): void {
   const g = scene.add.graphics();
   const fillW = Math.round(w * Phaser.Math.Clamp(ratio, 0, 1));
-  g.fillStyle(CASUAL.SHADOW, 1);
+  g.fillStyle(DUNGEON_UI.VOID, 1);
   g.fillRoundedRect(x, y, w, h, Math.max(2, h / 2));
   g.fillStyle(color, 0.92);
   g.fillRoundedRect(x, y, Math.max(2, fillW), h, Math.max(2, h / 2));
@@ -231,8 +262,6 @@ export function drawProgressTrack(
   g.strokeRoundedRect(x, y, w, h, Math.max(2, h / 2));
   c.add(g);
 }
-
-// ─── drawForgeRecommendationPreview ──────────────────────────────────────────
 
 export function drawForgeRecommendationPreview(
   scene: Phaser.Scene,
@@ -245,39 +274,37 @@ export function drawForgeRecommendationPreview(
   title: string,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.SHADOW, 0.96);
-  g.fillRoundedRect(x, y, w, h, 9);
-  g.fillStyle(recommendation.accent, 0.15);
-  g.fillRoundedRect(x + 6, y + 7, 42, h - 14, 8);
-  g.fillStyle(CASUAL.SHADOW, 0.36);
-  g.fillRoundedRect(x + w - 72, y + 8, 62, h - 16, 8);
-  g.lineStyle(1.2, recommendation.accent, 0.66);
-  g.strokeRoundedRect(x, y, w, h, 9);
-  g.lineStyle(1, 0xffffff, 0.11);
-  g.lineBetween(x + 55, y + 9, x + 55, y + h - 9);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.98);
+  g.fillRoundedRect(x, y, w, h, 7);
+  g.fillStyle(recommendation.accent, 0.12);
+  g.fillRoundedRect(x + 5, y + 5, 42, h - 10, 6);
+  g.fillStyle(DUNGEON_UI.VOID, 0.66);
+  g.fillRoundedRect(x + w - 68, y + 6, 60, h - 12, 6);
+  g.lineStyle(1.2, recommendation.accent, 0.7);
+  g.strokeRoundedRect(x, y, w, h, 7);
   c.add(g);
 
-  c.add(scene.add.text(x + 27, y + h / 2, recommendation.monsterEmoji, {
-    fontFamily: 'sans-serif', fontSize: '20px',
+  addMonsterPortrait(scene, c, x + 26, y + h / 2, recommendation.monsterId, {
+    size: Math.min(36, h - 12),
+    frameColor: recommendation.accent,
+    glowColor: recommendation.accent,
+  });
+  c.add(scene.add.text(x + 54, y + 11, title, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + 54, y + 27, `${truncateLabel(recommendation.monsterName, 7)} · Lv.${recommendation.monsterLevel}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + 54, y + 42, recommendation.roomLabel, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + w - 38, y + h / 2 - 6, recommendation.powerDelta === null ? '—' : `${recommendation.powerDelta >= 0 ? '+' : ''}${recommendation.powerDelta}`, {
+    fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
   }).setOrigin(0.5));
-  c.add(scene.add.text(x + 62, y + 12, title, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 62, y + 27, truncateLabel(recommendation.monsterName, 8), {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#f4ffe9', fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 62, y + 42, `${recommendation.roomLabel} · Lv.${recommendation.monsterLevel}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + w - 41, y + h / 2 - 5, recommendation.powerDelta === null ? '—' : `${recommendation.powerDelta >= 0 ? '+' : ''}${recommendation.powerDelta}`, {
-    fontFamily: 'sans-serif', fontSize: '15px', color: '#b8fff0', fontStyle: 'bold',
-  }).setOrigin(0.5));
-  c.add(scene.add.text(x + w - 41, y + h / 2 + 11, recommendation.powerDelta === null ? '배치 전' : '전력', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
+  c.add(scene.add.text(x + w - 38, y + h / 2 + 10, recommendation.powerDelta === null ? '배치 전' : '전력', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(0.5));
 }
-
-// ─── drawEffectChips ──────────────────────────────────────────────────────────
 
 export function drawEffectChips(
   scene: Phaser.Scene,
@@ -290,23 +317,21 @@ export function drawEffectChips(
 ): void {
   let cursorX = x;
   labels.forEach((label, index) => {
-    const chipW = Math.min(78, Math.max(50, label.length * 7 + 14));
+    const chipW = Math.min(84, Math.max(52, label.length * 7 + 14));
     if (cursorX + chipW > x + maxWidth) return;
     const g = scene.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.9);
-    g.fillRoundedRect(cursorX, y, chipW, 18, 6);
-    g.lineStyle(1, accent, index === 0 ? 0.5 : 0.28);
-    g.strokeRoundedRect(cursorX, y, chipW, 18, 6);
+    g.fillStyle(DUNGEON_UI.VOID, 0.92);
+    g.fillRoundedRect(cursorX, y, chipW, 20, 5);
+    g.lineStyle(1, accent, index === 0 ? 0.58 : 0.3);
+    g.strokeRoundedRect(cursorX, y, chipW, 20, 5);
     c.add(g);
-    c.add(scene.add.text(cursorX + chipW / 2, y + 9, label, {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: index === 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+    c.add(scene.add.text(cursorX + chipW / 2, y + 10, label, {
+      fontFamily: 'sans-serif', fontSize: '10px',
+      color: index === 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0.5));
     cursorX += chipW + 5;
   });
 }
-
-// ─── buildForgeTargetRail ─────────────────────────────────────────────────────
 
 export function buildForgeTargetRail(
   scene: Phaser.Scene,
@@ -317,86 +342,74 @@ export function buildForgeTargetRail(
   const targets = cycleForgeTargetsByRoster(ctx.gs, ctx.focusMonsterId);
   if (targets.length === 0) return y;
 
+  const active = targets[0];
+  const next = targets[targets.length > 1 ? 1 : 0];
+  const recommendation = active.recommendation;
+  const targetName = getFocusMonsterDisplay(ctx.gs, active.monster.id)?.name ?? active.monster.id;
+  const roomCue = recommendation?.room.kind === 'assigned'
+    ? `실제 ${recommendation.room.roomLabel}`
+    : recommendation?.room.kind === 'recommended'
+      ? `추천 ${recommendation.room.roomLabel}`
+      : '배치 대기';
   const x = LIST_PAD;
   const w = CANVAS_WIDTH - LIST_PAD * 2;
-  const h = 98;
+  const h = 76;
   const bg = scene.add.graphics();
-  bg.fillStyle(CASUAL.SHADOW, 0.14);
-  bg.fillRoundedRect(x, y + 3, w, h, 10);
-  bg.fillStyle(CASUAL.PANEL, 1);
-  bg.fillRoundedRect(x, y, w, h, 10);
-  bg.fillStyle(0xffffff, 0.12);
-  bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
-  bg.lineStyle(3, CASUAL.EDGE, 1);
-  bg.strokeRoundedRect(x, y, w, h, 10);
+  bg.fillStyle(DUNGEON_UI.VOID, 0.46);
+  bg.fillRoundedRect(x, y + 3, w, h, 8);
+  bg.fillStyle(DUNGEON_UI.STONE, 1);
+  bg.fillRoundedRect(x, y, w, h, 8);
+  bg.fillStyle(DUNGEON_UI.JADE, 0.08);
+  bg.fillRoundedRect(x + 6, y + 6, w - 96, h - 12, 6);
+  bg.lineStyle(1.5, DUNGEON_UI.IRON, 0.92);
+  bg.strokeRoundedRect(x, y, w, h, 8);
+  bg.fillStyle(DUNGEON_UI.JADE, 1);
+  bg.fillRect(x + 1, y + 1, 3, h - 2);
   c.add(bg);
 
-  c.add(scene.add.text(x + 12, y + 16, `추천 장착 대상 ${targets.length}명`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  const activeMonsterId = ctx.focusMonsterId ?? targets[0].monster.id;
-  const visible = Array.from({ length: Math.min(3, targets.length) }, (_, index) =>
-    targets[index],
-  );
-  const next = targets[targets.length > 1 ? 1 : 0];
-  const nextX = x + w - 56;
-  const nextButton = scene.add.graphics();
-  nextButton.fillStyle(CASUAL.PANEL_SOFT, 1);
-  nextButton.fillRoundedRect(nextX, y + 6, 48, 44, 7);
-  nextButton.lineStyle(1.5, CASUAL.EDGE, 1);
-  nextButton.strokeRoundedRect(nextX, y + 6, 48, 44, 7);
-  c.add(nextButton);
-  c.add(scene.add.text(nextX + 24, y + 20, '다음', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-  }).setOrigin(0.5));
-  c.add(scene.add.text(nextX + 24, y + 34, `${targets[0].rosterIndex + 1}/${targets.length}`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0.5));
-  const nextZone = scene.add.zone(nextX + 24, y + 28, 48, 44).setInteractive({ useHandCursor: true });
-  nextZone.on('pointerdown', () => ctx.onFocusChange(next.monster.id, next.recommendation?.room.roomLabel ?? '배치 대기'));
-  c.add(nextZone);
-
-  const chipW = Math.floor((w - 28) / 3);
-  visible.forEach((target, index) => {
-    const chipX = x + 8 + index * (chipW + 6);
-    const chipY = y + 50;
-    const active = activeMonsterId === target.monster.id;
-    const chip = scene.add.graphics();
-    chip.fillStyle(active ? CASUAL.GREEN : CASUAL.PANEL_SOFT, 1);
-    chip.fillRoundedRect(chipX, chipY, chipW, 44, 7);
-    chip.fillStyle(0xffffff, active ? 0.28 : 0.18);
-    chip.fillRoundedRect(chipX + 4, chipY + 5, 24, 34, 5);
-    chip.lineStyle(2, active ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
-    chip.strokeRoundedRect(chipX, chipY, chipW, 44, 7);
-    c.add(chip);
-
-    c.add(scene.add.text(chipX + 16, chipY + 22, target.recommendation?.monsterEmoji ?? '👹', {
-      fontFamily: 'sans-serif', fontSize: '14px',
-    }).setOrigin(0.5));
-    c.add(scene.add.text(chipX + 34, chipY + 10, truncateLabel(target.monster.id, 7), {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: active ? '#ffffff' : CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-    const roomCue = target.recommendation?.room.kind === 'assigned'
-      ? `실제 ${target.recommendation.room.roomLabel}`
-      : target.recommendation?.room.kind === 'recommended'
-        ? `추천 ${target.recommendation.room.roomLabel}`
-        : '배치 대기';
-    c.add(scene.add.text(chipX + 34, chipY + 24, roomCue, {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: active ? '#eafff0' : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0.5));
-    c.add(scene.add.text(chipX + 34, chipY + 36, target.recommendation?.improvementLabel ?? '장비 수급', {
-      fontFamily: 'sans-serif', fontSize: '11px',
-      color: active ? '#ffffff' : CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-
-    const zone = scene.add.zone(chipX, chipY, chipW, 44)
-      .setOrigin(0, 0)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => ctx.onFocusChange(target.monster.id, target.recommendation?.room.roomLabel ?? '배치 대기'));
-    c.add(zone);
+  addMonsterPortrait(scene, c, x + 35, y + 38, active.monster.id, {
+    size: 52,
+    frameColor: recommendation?.accent ?? DUNGEON_UI.JADE,
+    glowColor: recommendation?.accent ?? DUNGEON_UI.JADE,
+    equippedSkins: ctx.gs.equippedSkins,
   });
+  c.add(scene.add.text(x + 70, y + 15, '현재 장착 대상', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + 70, y + 34, `${truncateLabel(targetName, 8)} · Lv.${active.monster.level}`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + 70, y + 52, `${roomCue} · ${recommendation?.improvementLabel ?? '장비 수급'}`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+  }).setOrigin(0, 0.5));
+  c.add(scene.add.text(x + 70, y + 67, `대상 ${active.rosterIndex + 1}/${targets.length}`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+
+  const buttonX = x + w - 82;
+  const buttonY = y + 16;
+  const buttonW = 70;
+  const buttonH = 44;
+  const button = scene.add.graphics();
+  button.fillStyle(DUNGEON_UI.SOOT, 1);
+  button.fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 7);
+  button.fillStyle(DUNGEON_UI.BRASS, targets.length > 1 ? 0.16 : 0.05);
+  button.fillRoundedRect(buttonX + 4, buttonY + 4, buttonW - 8, buttonH - 8, 5);
+  button.lineStyle(1.4, DUNGEON_UI.BRASS, targets.length > 1 ? 0.75 : 0.28);
+  button.strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 7);
+  c.add(button);
+  c.add(scene.add.text(buttonX + buttonW / 2, buttonY + 15, targets.length > 1 ? '다음 대상' : '대상 고정', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: targets.length > 1 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+  }).setOrigin(0.5));
+  c.add(scene.add.text(buttonX + buttonW / 2, buttonY + 31, targets.length > 1 ? '전환 ›' : '1/1', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+  }).setOrigin(0.5));
+  if (targets.length > 1) {
+    const zone = scene.add.zone(buttonX, buttonY, buttonW, buttonH).setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => ctx.onFocusChange(next.monster.id, next.recommendation?.room.roomLabel ?? '배치 대기'));
+    c.add(zone);
+  }
 
   return y + h + 8;
 }

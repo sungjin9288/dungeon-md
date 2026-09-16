@@ -1,11 +1,18 @@
-import Phaser from 'phaser';
-import { CANVAS_WIDTH } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { purchaseDailyEquipment, purchaseDailySkill } from '../data/shopTransactions';
+import {
+  purchaseDailyEquipment,
+  purchaseDailySkill,
+  type ShopTransactionResult,
+} from '../data/shopTransactions';
 import { ACTIVE_SKILLS, EQUIPMENT_DEFS, type ActiveSkill, type Equipment } from '../data/barracks';
-
-// ─── Daily rotation seeded by UTC day ─────────────────────────────────────────
+import {
+  addShopButton,
+  addShopPanel,
+  addShopSectionHeading,
+  type ShopPurchaseOutcome,
+  type ShopViewContext,
+} from './ShopShared';
 
 export function getDayIndex(): number {
   return Math.floor(Date.now() / 86_400_000);
@@ -23,197 +30,153 @@ export function seededShuffle<T>(arr: T[], seed: number): T[] {
 
 export function getDailyItems(): { skills: ActiveSkill[]; equipment: Equipment[] } {
   const day = getDayIndex();
-  const skills    = seededShuffle(ACTIVE_SKILLS,  day).slice(0, 3);
-  const equipment = seededShuffle(EQUIPMENT_DEFS, day + 7).slice(0, 3);
-  return { skills, equipment };
+  return {
+    skills: seededShuffle(ACTIVE_SKILLS, day).slice(0, 3),
+    equipment: seededShuffle(EQUIPMENT_DEFS, day + 7).slice(0, 3),
+  };
 }
 
-// ─── Shared context interface ─────────────────────────────────────────────────
-
-export interface ShopDailyTabContext {
-  readonly scene: Phaser.Scene;
-  readonly contentCtr: Phaser.GameObjects.Container;
-  readonly showToast: (msg: string) => void;
-  readonly refreshContent: () => void;
+export function isCurrentDailyOffer(kind: 'equipment' | 'skill', itemId: string): boolean {
+  const daily = getDailyItems();
+  const catalog = kind === 'equipment' ? daily.equipment : daily.skills;
+  return catalog.some(item => item.id === itemId);
 }
 
-// ─── Equipment tab ────────────────────────────────────────────────────────────
+export interface ShopDailyTabContext extends ShopViewContext {}
 
 export function buildEquipmentTab(ctx: ShopDailyTabContext): void {
-  const { scene, contentCtr } = ctx;
-  const gs = loadGameState();
+  const state = loadGameState();
   const { equipment } = getDailyItems();
-
-  const titleT = scene.add.text(CANVAS_WIDTH / 2, 104, '⚒️ 일일 장비', {
-    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-  }).setOrigin(0.5).setDepth(6);
-  contentCtr.add(titleT);
-
-  contentCtr.add(scene.add.text(CANVAS_WIDTH - 16, 104, `💠 ${gs.soulCrystals}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-  }).setOrigin(1, 0.5).setDepth(6));
-
-  let eqSecs = Math.floor((86_400_000 - (Date.now() % 86_400_000)) / 1000);
-  const fmtEq = (s: number) => {
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
-    return `🕐 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')} 후 재입고`;
-  };
-  const eqCd = scene.add.text(CANVAS_WIDTH / 2, 124, fmtEq(eqSecs), {
-    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0.5).setDepth(6);
-  contentCtr.add(eqCd);
-  const eqTick = scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
-    eqSecs = Math.max(0, eqSecs - 1);
-    if (eqCd.active) eqCd.setText(fmtEq(eqSecs));
-  }});
-  eqCd.on('destroy', () => eqTick.remove());
-
-  equipment.forEach((eq, i) => {
-    const owned = gs.ownedEquipment.includes(eq.id);
-    drawItemCard(
-      ctx,
-      CANVAS_WIDTH / 2, 180 + i * 104, eq.icon, eq.name, eq.desc,
-      eq.goldCost, eq.gemCost, owned, 'equip',
-      () => {
-        const state = loadGameState();
-        const result = purchaseDailyEquipment(state, eq.id, eq.gemCost);
-        if (!result.ok) { ctx.showToast('영혼 결정체 부족'); return; }
-        if (result.changed) saveGameState(result.state);
-        ctx.showToast(result.changed ? `${eq.name} 구입 완료!` : '이미 보유 중');
-        ctx.refreshContent();
-      },
-    );
+  const ownedCount = equipment.filter(item => state.ownedEquipment.includes(item.id)).length;
+  addShopSectionHeading(
+    ctx.scene,
+    ctx.contentCtr,
+    '일일 장비 보급',
+    `오늘의 보급품 3종 · 보유 ${ownedCount} · 영혼 수정 결제`,
+  );
+  equipment.forEach((item, index) => {
+    drawDailyCard(ctx, item, index, state.ownedEquipment.includes(item.id), 'equipment');
   });
+  drawRestockNote(ctx);
 }
-
-// ─── Skill tab ────────────────────────────────────────────────────────────────
 
 export function buildSkillTab(ctx: ShopDailyTabContext): void {
-  const { scene, contentCtr } = ctx;
-  const gs = loadGameState();
+  const state = loadGameState();
   const { skills } = getDailyItems();
+  const ownedCount = skills.filter(item => state.ownedActiveSkills.includes(item.id)).length;
+  addShopSectionHeading(
+    ctx.scene,
+    ctx.contentCtr,
+    '일일 전술 교본',
+    `오늘의 교본 3종 · 보유 ${ownedCount} · 영혼 수정 결제`,
+  );
+  skills.forEach((item, index) => {
+    drawDailyCard(ctx, item, index, state.ownedActiveSkills.includes(item.id), 'skill');
+  });
+  drawRestockNote(ctx);
+}
 
-  const titleT = scene.add.text(CANVAS_WIDTH / 2, 104, '✨ 일일 스킬', {
-    fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-  }).setOrigin(0.5).setDepth(6);
-  contentCtr.add(titleT);
+function drawRestockNote(ctx: ShopDailyTabContext): void {
+  ctx.contentCtr.add(ctx.scene.add.text(195, 735, '상단 재입고 시각에 UTC 기준 목록이 교체됩니다.', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0.5));
+}
 
-  contentCtr.add(scene.add.text(CANVAS_WIDTH - 16, 104, `💠 ${gs.soulCrystals}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-  }).setOrigin(1, 0.5).setDepth(6));
+function drawDailyCard(
+  ctx: ShopDailyTabContext,
+  item: ActiveSkill | Equipment,
+  index: number,
+  owned: boolean,
+  kind: 'equipment' | 'skill',
+): void {
+  const x = 12;
+  const y = 204 + index * 168;
+  const w = 366;
+  const h = 160;
+  const accent = owned ? DUNGEON_UI.JADE : kind === 'equipment' ? DUNGEON_UI.BRASS : 0x718dc5;
+  addShopPanel(ctx.scene, ctx.contentCtr, { x, y, w, h, accent });
 
-  let skSecs = Math.floor((86_400_000 - (Date.now() % 86_400_000)) / 1000);
-  const fmtSk = (s: number) => {
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
-    return `🕐 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')} 후 재입고`;
-  };
-  const skCd = scene.add.text(CANVAS_WIDTH / 2, 124, fmtSk(skSecs), {
-    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0.5).setDepth(6);
-  contentCtr.add(skCd);
-  const skTick = scene.time.addEvent({ delay: 1000, loop: true, callback: () => {
-    skSecs = Math.max(0, skSecs - 1);
-    if (skCd.active) skCd.setText(fmtSk(skSecs));
-  }});
-  skCd.on('destroy', () => skTick.remove());
+  const iconPlate = ctx.scene.add.graphics();
+  iconPlate.fillStyle(DUNGEON_UI.VOID, 0.92);
+  iconPlate.fillRoundedRect(x + 16, y + 20, 66, 66, 10);
+  iconPlate.lineStyle(1.5, accent, 0.82);
+  iconPlate.strokeRoundedRect(x + 16, y + 20, 66, 66, 10);
+  ctx.contentCtr.add(iconPlate);
+  ctx.contentCtr.add(ctx.scene.add.text(x + 49, y + 53, item.icon, {
+    fontFamily: 'sans-serif', fontSize: '31px',
+  }).setOrigin(0.5));
 
-  skills.forEach((sk, i) => {
-    const owned = gs.ownedActiveSkills.includes(sk.id);
-    drawItemCard(
-      ctx,
-      CANVAS_WIDTH / 2, 168 + i * 104, sk.icon, sk.name, sk.desc,
-      sk.goldCost, sk.gemCost, owned, 'skill',
-      () => {
-        const state = loadGameState();
-        const result = purchaseDailySkill(state, sk.id, sk.gemCost);
-        if (!result.ok) { ctx.showToast('영혼 결정체 부족'); return; }
-        if (result.changed) saveGameState(result.state);
-        ctx.showToast(result.changed ? `${sk.name} 습득!` : '이미 보유 중');
-        ctx.refreshContent();
-      },
-    );
+  ctx.contentCtr.add(ctx.scene.add.text(x + 96, y + 20, item.name, {
+    fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+  }));
+  const classification = kind === 'equipment'
+    ? { weapon: '무기', armor: '방어구', accessory: '장신구' }[(item as Equipment).type]
+    : `${{ combat: '공격', defense: '방어', support: '지원' }[(item as ActiveSkill).category]} · 재사용 ${(item as ActiveSkill).cooldown}s`;
+  ctx.contentCtr.add(ctx.scene.add.text(x + 96, y + 48, classification, {
+    fontFamily: 'monospace', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+  }));
+  ctx.contentCtr.add(ctx.scene.add.text(x + 96, y + 72, item.desc, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+    wordWrap: { width: w - 116 },
+  }));
+
+  ctx.contentCtr.add(ctx.scene.add.text(x + 18, y + 118, owned ? '보급 완료' : `영혼 수정 ${item.gemCost}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+    color: owned ? DUNGEON_UI_CSS.JADE : '#aab9ff',
+  }));
+  addShopButton(ctx.scene, ctx.contentCtr, {
+    x: x + w - 126,
+    y: y + h - 52,
+    w: 114,
+    h: 44,
+    label: owned ? '보유 중' : '구매 확인',
+    enabled: !owned,
+    accent,
+    onPress: () => {
+      if (ctx.isBusy()) return;
+      ctx.requestPurchase({
+        itemName: item.name,
+        description: kind === 'equipment'
+          ? `${item.desc} 효과의 장비를 보유 목록에 추가합니다.`
+          : `${item.desc} 효과의 전술 교본을 보유 목록에 추가합니다.`,
+        costLabel: `영혼 수정 ${item.gemCost}`,
+        execute: () => {
+          if (!isCurrentDailyOffer(kind, item.id)) {
+            return {
+              ok: false,
+              title: '재입고 완료',
+              detail: '확인 중 오늘의 목록이 교체되었습니다. 새 선반에서 다시 선택해 주세요.',
+            };
+          }
+          const state = loadGameState();
+          const result = kind === 'equipment'
+            ? purchaseDailyEquipment(state, item.id, item.gemCost)
+            : purchaseDailySkill(state, item.id, item.gemCost);
+          return dailyOutcome(result, item.name, kind);
+        },
+      });
+    },
   });
 }
 
-// ─── Item card (equipment / skill) ───────────────────────────────────────────
-
-function drawItemCard(
-  ctx: ShopDailyTabContext,
-  cx: number, cy: number,
-  icon: string, name: string, desc: string,
-  _goldCost: number, gemCost: number,
-  owned: boolean, _type: 'equip' | 'skill',
-  onBuy: () => void,
-): void {
-  const { scene, contentCtr } = ctx;
-  const w = 330, h = 88;
-  // Owned cards switch to a positive green accent; available use purple (soul-crystal hue).
-  const accent = owned ? CASUAL.GREEN : CASUAL.PURPLE;
-  const cardX = cx - w / 2, cardY = cy - h / 2;
-  const bg = scene.add.graphics().setDepth(6);
-  bg.fillStyle(CASUAL.SHADOW, 0.22);
-  bg.fillRoundedRect(cardX, cardY + 4, w, h, 10);
-  bg.fillStyle(CASUAL.PANEL, 1);
-  bg.fillRoundedRect(cardX, cardY, w, h, 10);
-  bg.fillStyle(0xffffff, 0.12);
-  bg.fillRoundedRect(cardX + 5, cardY + 4, w - 10, 6, 3);
-  bg.lineStyle(3, accent, 1);
-  bg.strokeRoundedRect(cardX, cardY, w, h, 10);
-  contentCtr.add(bg);
-
-  contentCtr.add(scene.add.text(cardX + 20, cy, icon, {
-    fontFamily: 'sans-serif', fontSize: '28px',
-  }).setOrigin(0.5).setDepth(7));
-
-  contentCtr.add(scene.add.text(cardX + 46, cy - 22, name, {
-    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
-  }).setDepth(7));
-
-  contentCtr.add(scene.add.text(cardX + 46, cy - 4, desc, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-    wordWrap: { width: 180 },
-  }).setDepth(7));
-
-  if (owned) {
-    // Owned → muted cream pill + INK_SOFT "보유중".
-    const owW = 64, owH = 24;
-    const owX = cx + w / 2 - owW - 8;
-    const owBg = scene.add.graphics().setDepth(7);
-    owBg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    owBg.fillRoundedRect(owX, cy - owH / 2, owW, owH, 8);
-    owBg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
-    owBg.strokeRoundedRect(owX, cy - owH / 2, owW, owH, 8);
-    contentCtr.add(owBg);
-    contentCtr.add(scene.add.text(owX + owW / 2, cy, '보유중', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5).setDepth(8));
-  } else {
-    contentCtr.add(scene.add.text(cardX + 46, cy + 18, `💠 ${gemCost}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-    }).setDepth(7));
-
-    // 구매 → bright green candy button.
-    const btnW = 72, btnH = 26;
-    const btnX = cx + w / 2 - btnW - 8;
-    const btnY = cy - btnH / 2;
-    const btnBg = scene.add.graphics().setDepth(7);
-    btnBg.fillStyle(CASUAL.GREEN_DK, 1);
-    btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 8);
-    btnBg.fillStyle(CASUAL.GREEN, 1);
-    btnBg.fillRoundedRect(btnX, btnY, btnW, btnH - 1, 8);
-    btnBg.fillStyle(0xffffff, 0.32);
-    btnBg.fillRoundedRect(btnX + 5, btnY + 3, btnW - 10, 9, 4);
-    contentCtr.add(btnBg);
-
-    contentCtr.add(scene.add.text(btnX + btnW / 2, cy - 1, `💠 ${gemCost}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(8));
-
-    const zone = scene.add.zone(btnX + btnW / 2, cy, btnW, 44)
-      .setInteractive().setDepth(9);
-    contentCtr.add(zone);
-    zone.on('pointerdown', onBuy);
+function dailyOutcome(
+  result: ShopTransactionResult,
+  itemName: string,
+  kind: 'equipment' | 'skill',
+): ShopPurchaseOutcome {
+  if (!result.ok) {
+    return {
+      ok: false,
+      title: '보급 조건 미충족',
+      detail: '영혼 수정 잔액이 부족합니다. 자원과 보유 목록은 변경되지 않았습니다.',
+    };
   }
+  if (result.changed) saveGameState(result.state);
+  return {
+    ok: true,
+    title: result.changed ? `${itemName} 지급 완료` : '이미 보유한 보급품',
+    detail: result.changed
+      ? kind === 'equipment' ? '장비 보유 목록에 추가했습니다.' : '액티브 스킬 보유 목록에 추가했습니다.'
+      : '추가 영혼 수정은 사용되지 않았습니다.',
+  };
 }

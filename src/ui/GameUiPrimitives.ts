@@ -189,6 +189,7 @@ export interface PrimaryActionButtonOptions {
   readonly disabledBorderColor?: number;
   readonly textColor?: string;
   readonly disabledTextColor?: string;
+  readonly showArrow?: boolean;
   readonly onPress: () => void;
 }
 
@@ -220,6 +221,7 @@ export function addPrimaryActionButton(
     disabledBorderColor = CASUAL.EDGE_SOFT,
     textColor = '#ffffff',
     disabledTextColor = GAME_UI.colors.mutedText,
+    showArrow = true,
     onPress,
   } = options;
 
@@ -231,7 +233,7 @@ export function addPrimaryActionButton(
     bg.fillRoundedRect(x, y, w, h, r);
     bg.lineStyle(1.5, border, 0.95);
     bg.strokeRoundedRect(x, y, w, h, r);
-    if (w >= 92 && enabled) {
+    if (showArrow && w >= 92 && enabled) {
       bg.fillStyle(0xffffff, 0.76);
       bg.fillTriangle(x + w - 16, y + h / 2 - 1, x + w - 24, y + h / 2 - 6, x + w - 24, y + h / 2 + 4);
     }

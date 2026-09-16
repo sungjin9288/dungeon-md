@@ -10,7 +10,7 @@ import {
   ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel,
   type GameState, type DungeonSlot, type RoomSlotType,
 } from '../data/wisdom';
-import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
@@ -303,8 +303,7 @@ function renderTypeStrip(c: Phaser.GameObjects.Container, slot: DungeonSlot | un
 function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: DungeonSlot | undefined, y: number, h: number): void {
   const owned = gs.ownedMonsters ?? [];
   const items = owned.map(om => {
-    const typeId = resolveMonsterTypeId(om.id) ?? om.id;
-    return MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS] ? { om } : null;
+    return resolveOwnedMonsterProfile(om.id) ? { om } : null;
   }).filter((v): v is { om: typeof owned[number] } => v !== null);
   if (items.length === 0) { emptyHint(c, '보유 몬스터 없음 · 소환에서 획득하세요', y + h / 2); return; }
 

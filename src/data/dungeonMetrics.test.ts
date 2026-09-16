@@ -71,6 +71,41 @@ describe('dungeonMetrics', () => {
     expect(dungeonMetrics.equipmentPower).toBe(equippedMetrics.equipmentPower);
   });
 
+  it('includes evolved and fusion-only monsters in room power', () => {
+    const state = makeState({
+      ownedMonsters: [
+        {
+          id: 'dokkaebi_warrior_leg', level: 1, xp: 0, skillPoints: 0,
+          spentSkills: {}, equippedSkills: [], equipment: null,
+        },
+        {
+          id: 'storm_spirit', level: 1, xp: 0, skillPoints: 0,
+          spentSkills: {}, equippedSkills: [], equipment: null,
+        },
+      ],
+    });
+    const metrics = calculateRoomMetrics(state, makeSlot({
+      monsterIds: ['dokkaebi_warrior_leg', 'storm_spirit'],
+      trapIds: [],
+      roomLevel: 1,
+    }));
+
+    expect(metrics.monsterPower).toBe(81);
+  });
+
+  it('excludes invalid imported monster IDs from loadout counts and readiness', () => {
+    const invalid = {
+      id: 'no_such_monster', level: 99, xp: 0, skillPoints: 0,
+      spentSkills: {}, equippedSkills: [], equipment: null,
+    };
+    const state = makeState({ ownedMonsters: [invalid] });
+    const slot = makeSlot({ monsterIds: [invalid.id], trapIds: [] });
+
+    expect(calculateRoomLoadoutStatus(state, slot).monsterCount).toBe(0);
+    expect(calculateRoomMetrics(state, slot).readiness).toBe(30);
+    expect(calculateDungeonMetrics({ ...state, dungeonSlots: [slot] }, 1).assignedMonsters).toBe(0);
+  });
+
   it('reduces room threat when durability is damaged', () => {
     const state = makeState();
     const healthy = calculateRoomMetrics(state, makeSlot());
@@ -131,7 +166,7 @@ describe('dungeonMetrics', () => {
           equipment: 'eq_dokkaebi_club',
         },
         {
-          id: 'skeleton_archer_1',
+          id: 'dokkaebi_junior_1',
           level: 1,
           xp: 0,
           skillPoints: 0,
@@ -147,7 +182,7 @@ describe('dungeonMetrics', () => {
       makeSlot({
         roomType: 'combat',
         roomLevel: 2,
-        monsterIds: ['dokkaebi_warrior', 'skeleton_archer_1', undefined],
+        monsterIds: ['dokkaebi_warrior', 'dokkaebi_junior_1', undefined],
         trapIds: ['spike_trap', undefined],
       }),
     );

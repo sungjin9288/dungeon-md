@@ -13,7 +13,8 @@ import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
 import type { RoomData } from '../data/rooms';
 import type { EquipmentStats } from '../data/barracks';
-import { rollMaterialDrop, MATERIAL_DEFS, HYBRID_DEFS } from '../data/fusion';
+import { rollMaterialDrop, MATERIAL_DEFS } from '../data/fusion';
+import { resolveMonsterDef } from '../data/monsters';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyInvaderKillProgress } from '../data/progressionTransactions';
 import { CANVAS_WIDTH, GRID_Y, GRID_ROWS } from '../constants/layout';
@@ -149,7 +150,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   // ── DIVINE_PROPHECY: 5% chance on kill → heal 5% dungeonHp ─────────────────
   if (Math.random() < 0.05) {
     const hasProphecy = ctx.roomGrid.flat().some(
-      d => d?.monsterSlot && HYBRID_DEFS[d.monsterSlot]?.passive === 'DIVINE_PROPHECY',
+      d => resolveMonsterDef(d?.monsterSlot ?? undefined)?.passive === 'DIVINE_PROPHECY',
     );
     if (hasProphecy) {
       const heal = Math.ceil(ctx.maxHp * 0.05);

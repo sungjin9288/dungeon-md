@@ -19,6 +19,9 @@ import {
   getDefenseDirectiveDisplayChip,
   buildDefenseDirective,
   buildDefenseDirectiveFromRoomAction,
+  getMonsterDef,
+  getMonsterDisplayEmoji,
+  getMonsterDisplayName,
 } from './PreBattleShared';
 import { getReadinessDirectiveCopy } from '../data/readinessDirectives';
 
@@ -72,6 +75,17 @@ describe('shortenLabel', () => {
   it('uses default max of 8', () => {
     expect(shortenLabel('short')).toBe('short');
     expect(shortenLabel('123456789')).toHaveLength(8);
+  });
+});
+
+describe('owned monster display resolution', () => {
+  it('shows evolved and fusion-only identities in defense summaries', () => {
+    expect(getMonsterDef('dokkaebi_warrior_leg')).toMatchObject({
+      name: '전설 도깨비 전사',
+      baseDamage: 57,
+    });
+    expect(getMonsterDisplayName('storm_spirit')).toBe('폭풍 정령');
+    expect(getMonsterDisplayEmoji('storm_spirit')).toBe('⚡');
   });
 });
 

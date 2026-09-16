@@ -17,6 +17,26 @@ export interface SafeArea {
   right:  number;
 }
 
+/**
+ * WKWebView can report zero CSS env() insets while still drawing below the
+ * iOS system bars. These portrait-only fallbacks match the two modern iPhone
+ * safe-area families and retain a conservative classic-device status inset.
+ */
+export function getNativeSafeAreaFallback(platform: string, screenHeight: number): SafeArea {
+  if (platform !== 'ios') return { top: 0, bottom: 0, left: 0, right: 0 };
+  if (screenHeight >= 852) return { top: 59, bottom: 34, left: 0, right: 0 };
+  if (screenHeight >= 812) return { top: 47, bottom: 34, left: 0, right: 0 };
+  return { top: 20, bottom: 0, left: 0, right: 0 };
+}
+
+export function installNativeSafeAreaFallback(platform: string, screenHeight: number): SafeArea {
+  const fallback = getNativeSafeAreaFallback(platform, screenHeight);
+  const root = document.documentElement;
+  root.style.setProperty('--native-safe-top', `${fallback.top}px`);
+  root.style.setProperty('--native-safe-bottom', `${fallback.bottom}px`);
+  return fallback;
+}
+
 /** Read CSS env() safe-area values (in CSS pixels) via the custom properties
  *  set on :root in index.html. */
 function readCssSafeArea(): SafeArea {

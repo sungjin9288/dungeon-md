@@ -1,22 +1,29 @@
-// ─── Combination Tab ───────────────────────────────────────────────────────────
-// Implements the 조합 (Combination) tab for FusionScene.
-// Two different monsters + 100 soul crystals → hybrid monster discovery.
-
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import {
-  RARITY_STARS, RARITY_COLORS,
-  HYBRID_DEFS, COMBINATION_TABLE,
-  getBaseId, combinationKey,
+  COMBINATION_TABLE,
+  RARITY_STARS,
+  combinationKey,
+  getBaseId,
+  getMonsterDisplayName,
+  resolveFusionMonsterDef,
 } from '../data/fusion';
 import { FUSION_COMBINATION_COST, applyFusionCombination } from '../data/fusionTransactions';
 import { logger } from '../utils/logger';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { addMonsterPortrait } from './MonsterPortraitView';
+import { addPrimaryActionButton } from './GameUiPrimitives';
+import { reconcileCombinationSlots } from './FusionSelectionState';
 import {
-  type FusionTabContext, TAB_ACCENT,
-  drawMonsterSlot, openMonsterPicker,
-  showFusionAnimation, showResultToast, showConfirmDialog,
+  type FusionTabContext,
+  TAB_ACCENT,
+  bindFusionTransactionAction,
+  drawMonsterSlot,
+  openMonsterPicker,
+  showConfirmDialog,
+  showFusionAnimation,
+  showFusionResultPanel,
 } from './FusionTabs';
 
 export interface CombinationState {
@@ -29,209 +36,209 @@ export function buildCombinationTab(
   c: Phaser.GameObjects.Container,
   state: CombinationState,
 ): void {
-  const LY    = ctx.contentY + 250;
-  const slotW = 80, slotH = 90;
-  const gap   = 60;
-  const totalW = 2 * slotW + gap;
-  const sx0   = (CANVAS_WIDTH - totalW) / 2;
+  const gameState = loadGameState();
+  const combineSlots = reconcileCombinationSlots(state.combineSlots, gameState.ownedMonsters ?? []);
+  if (combineSlots.some((slot, index) => slot !== (state.combineSlots[index] ?? null))) {
+    state.setCombineSlots(combineSlots);
+  }
+  const panelX = 18;
+  const panelY = ctx.contentY + 154;
+  const panelW = CANVAS_WIDTH - 36;
+  const panelH = CANVAS_HEIGHT - panelY - 18;
+  const panel = ctx.scene.add.graphics();
+  panel.fillStyle(DUNGEON_UI.STONE, 0.96);
+  panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+  panel.lineStyle(1, DUNGEON_UI.IRON, 0.9);
+  panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+  c.add(panel);
 
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY - 26,
-    `서로 다른 몬스터 2마리 + 💠 ${FUSION_COMBINATION_COST} → 혼종 탄생`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-      wordWrap: { width: CANVAS_WIDTH - 40 }, align: 'center',
-    }).setOrigin(0.5));
+  c.add(ctx.scene.add.text(panelX + 16, panelY + 20, '이중 공명진', {
+    fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + panelW - 16, panelY + 20, '원본 수호자는 유지', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
+  }).setOrigin(1, 0.5));
 
-  // Slot A
-  drawMonsterSlot(ctx, c, sx0, LY, slotW, slotH, state.combineSlots[0] ?? null, '조합', () => {
-    openMonsterPicker(ctx, undefined, (m) => {
-      state.setCombineSlots([m, state.combineSlots[1] ?? null]);
-      ctx.refreshTab();
-    });
-  });
-  c.add(ctx.scene.add.text(sx0 + slotW + gap / 2, LY + slotH / 2, '+', {
-    fontFamily: 'sans-serif', fontSize: '22px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
-  }).setOrigin(0.5));
-  // Slot B
-  drawMonsterSlot(ctx, c, sx0 + slotW + gap, LY, slotW, slotH, state.combineSlots[1] ?? null, '조합', () => {
-    const a = state.combineSlots[0];
+  const slotY = panelY + 42;
+  const slotW = 126;
+  const slotH = 126;
+  const leftX = panelX + 18;
+  const rightX = panelX + panelW - 18 - slotW;
+  drawMonsterSlot(ctx, c, leftX, slotY, slotW, slotH, combineSlots[0], '조합', () => {
+    const second = combineSlots[1];
     openMonsterPicker(
       ctx,
-      a ? (m: OwnedMonster) => getBaseId(m.id) !== getBaseId(a.id) : undefined,
-      (m) => {
-        state.setCombineSlots([state.combineSlots[0] ?? null, m]);
+      second ? monster => getBaseId(monster.id) !== getBaseId(second.id) : undefined,
+      monster => {
+        state.setCombineSlots([monster, combineSlots[1]]);
         ctx.refreshTab();
       },
     );
-  });
+  }, '공명원 A');
+  drawMonsterSlot(ctx, c, rightX, slotY, slotW, slotH, combineSlots[1], '조합', () => {
+    const first = combineSlots[0];
+    openMonsterPicker(
+      ctx,
+      first ? monster => getBaseId(monster.id) !== getBaseId(first.id) : undefined,
+      monster => {
+        state.setCombineSlots([combineSlots[0], monster]);
+        ctx.refreshTab();
+      },
+    );
+  }, '공명원 B');
 
-  // Crystal cost
-  const gs = loadGameState();
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, LY + slotH + 14,
-    `💠 보유 수정: ${gs.soulCrystals} / 필요: ${FUSION_COMBINATION_COST}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: gs.soulCrystals >= FUSION_COMBINATION_COST ? CASUAL_CSS.BLUE : CASUAL_CSS.RED,
+  const bridge = ctx.scene.add.graphics();
+  bridge.lineStyle(2, TAB_ACCENT['조합'], 0.7);
+  bridge.lineBetween(leftX + slotW + 7, slotY + slotH / 2, rightX - 7, slotY + slotH / 2);
+  bridge.strokeCircle(CANVAS_WIDTH / 2, slotY + slotH / 2, 12);
+  c.add(bridge);
+
+  const balanceOk = (gameState.soulCrystals ?? 0) >= FUSION_COMBINATION_COST;
+  const resourceY = slotY + slotH + 18;
+  c.add(ctx.scene.add.text(panelX + 18, resourceY, '영혼 수정', {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + panelW - 18, resourceY,
+    `${gameState.soulCrystals ?? 0} 보유 · ${FUSION_COMBINATION_COST} 소모`, {
+      fontFamily: 'sans-serif', fontSize: '12px',
+      color: balanceOk ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
+      fontStyle: 'bold',
+    }).setOrigin(1, 0.5));
+
+  const bothFilled = Boolean(combineSlots[0] && combineSlots[1]);
+  const key = bothFilled
+    ? combinationKey(combineSlots[0]!.id, combineSlots[1]!.id)
+    : '';
+  const hybridId = key ? COMBINATION_TABLE[key] : undefined;
+  const hybrid = hybridId ? resolveFusionMonsterDef(hybridId) : undefined;
+  const resultX = panelX + 16;
+  const resultY = resourceY + 20;
+  const resultW = panelW - 32;
+  const resultH = 112;
+  const resultBg = ctx.scene.add.graphics();
+  resultBg.fillStyle(DUNGEON_UI.SOOT, 0.96);
+  resultBg.fillRoundedRect(resultX, resultY, resultW, resultH, 8);
+  resultBg.lineStyle(1.5, hybrid ? TAB_ACCENT['조합'] : DUNGEON_UI.IRON, hybrid ? 0.82 : 0.72);
+  resultBg.strokeRoundedRect(resultX, resultY, resultW, resultH, 8);
+  c.add(resultBg);
+
+  if (hybrid) {
+    addMonsterPortrait(ctx.scene, c, resultX + 58, resultY + 56, hybridId!, {
+      size: 76, frameColor: TAB_ACCENT['조합'], glowColor: TAB_ACCENT['조합'],
+      bgColor: DUNGEON_UI.VOID, equippedSkins: gameState.equippedSkins,
+    });
+    c.add(ctx.scene.add.text(resultX + 112, resultY + 23, '공명 결과 확인됨', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    c.add(ctx.scene.add.text(resultX + 112, resultY + 49, hybrid.name, {
+      fontFamily: 'sans-serif', fontSize: '17px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    c.add(ctx.scene.add.text(resultX + 112, resultY + 76, RARITY_STARS[hybrid.rarity], {
+      fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(0, 0.5));
+    c.add(ctx.scene.add.text(resultX + 112, resultY + 96, '새 혼종 1체가 군단에 합류', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5));
+  } else if (bothFilled) {
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 37, '미지의 공명', {
+      fontFamily: 'sans-serif', fontSize: '17px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
     }).setOrigin(0.5));
-
-  const arrowY  = LY + slotH + 42;
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, arrowY, '▼', {
-    fontFamily: 'sans-serif', fontSize: '16px', color: CASUAL_CSS.BLUE, fontStyle: 'bold',
-  }).setOrigin(0.5));
-
-  const resultX   = (CANVAS_WIDTH - slotW) / 2;
-  const resultY   = arrowY + 22;
-  const bothFilled = state.combineSlots[0] !== null && state.combineSlots[1] !== null;
-
-  if (bothFilled) {
-    const key      = combinationKey(state.combineSlots[0]!.id, state.combineSlots[1]!.id);
-    const hybridId = COMBINATION_TABLE[key];
-    const hybrid   = hybridId ? HYBRID_DEFS[hybridId] : undefined;
-
-    const rg = ctx.scene.add.graphics();
-    if (hybrid) {
-      rg.fillStyle(CASUAL.SHADOW, 0.18);
-      rg.fillRoundedRect(resultX, resultY + 3, slotW, slotH, 12);
-      rg.fillStyle(CASUAL.PANEL, 1);
-      rg.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
-      rg.fillStyle(0xffffff, 0.12);
-      rg.fillRoundedRect(resultX + 4, resultY + 4, slotW - 8, 6, 3);
-      rg.lineStyle(3, TAB_ACCENT['조합'], 1);
-      rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
-    } else {
-      rg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      rg.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
-      rg.lineStyle(3, CASUAL.EDGE, 0.9);
-      rg.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
-    }
-    c.add(rg);
-
-    if (hybrid) {
-      c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 22, hybrid.emoji, {
-        fontFamily: 'sans-serif', fontSize: '22px',
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 69,
+      `결과 없음 가능 · 실패해도 영혼 수정 ${FUSION_COMBINATION_COST} 소모`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
       }).setOrigin(0.5));
-      c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 46, RARITY_STARS[hybrid.rarity], {
-        fontFamily: 'sans-serif', fontSize: '10px',
-      }).setOrigin(0.5));
-      c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + 62, hybrid.name, {
-        fontFamily: 'sans-serif', fontSize: '11px', color: RARITY_COLORS[hybrid.rarity], fontStyle: 'bold',
-        wordWrap: { width: slotW - 4 },
-      }).setOrigin(0.5));
-    } else {
-      c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + slotH / 2, '?', {
-        fontFamily: 'sans-serif', fontSize: '26px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-      }).setOrigin(0.5));
-    }
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 91, '원본 수호자는 소모되지 않습니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE,
+    }).setOrigin(0.5));
   } else {
-    const g = ctx.scene.add.graphics();
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(resultX, resultY, slotW, slotH, 12);
-    g.lineStyle(3, CASUAL.EDGE, 0.9);
-    g.strokeRoundedRect(resultX, resultY, slotW, slotH, 12);
-    c.add(g);
-    c.add(ctx.scene.add.text(resultX + slotW / 2, resultY + slotH / 2, '?', {
-      fontFamily: 'sans-serif', fontSize: '26px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 45, '두 공명원을 지정하세요', {
+      fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+    }).setOrigin(0.5));
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 75, '서로 다른 계보만 결속할 수 있습니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#727c72',
     }).setOrigin(0.5));
   }
 
-  const allReady = bothFilled && gs.soulCrystals >= FUSION_COMBINATION_COST;
-  const btn = ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + slotH + 28,
-    allReady ? `🧪 조합 시도 (-💠 ${FUSION_COMBINATION_COST})` : bothFilled ? `💠 부족 (${FUSION_COMBINATION_COST} 필요)` : '조건 미충족', {
-      fontFamily: 'sans-serif', fontSize: '14px',
-      color: allReady ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-      backgroundColor: allReady ? CASUAL_CSS.BLUE : CASUAL_CSS.CREAM,
-      padding: { x: 20, y: 10 },
-    }).setOrigin(0.5);
-  if (allReady) btn.setInteractive().on('pointerdown', () => {
-    ctx.scene.tweens.add({ targets: btn, scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true });
-    const [slotA, slotB] = state.combineSlots;
-    if (!slotA || !slotB) return;
-    const knownId = COMBINATION_TABLE[combinationKey(slotA.id, slotB.id)];
-    const known   = knownId ? HYBRID_DEFS[knownId] : undefined;
-    showConfirmDialog(
-      ctx,
-      known ? '🧪 조합을 실행하시겠습니까?' : '⚠️ 미지의 조합',
-      known
-        ? `${known.emoji} ${known.name} 생성\n💠 ${FUSION_COMBINATION_COST} 소모됩니다.`
-        : `결과를 알 수 없습니다\n💠 ${FUSION_COMBINATION_COST} 소모 (실패 가능)`,
-      known ? '#4488cc' : '#885533',
-      () => executeCombination(ctx, state),
-    );
+  const canExecute = bothFilled && balanceOk;
+  const warningY = resultY + resultH + 16;
+  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, warningY,
+    bothFilled
+      ? `실행 시 영혼 수정 ${FUSION_COMBINATION_COST}이 즉시 소모됩니다`
+      : '공명원을 선택하면 결과와 risk를 표시합니다', {
+      fontFamily: 'sans-serif', fontSize: '11px',
+      color: bothFilled ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
+      fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+  const action = addPrimaryActionButton(ctx.scene, {
+    x: panelX + 16, y: warningY + 18, w: panelW - 32, h: 48,
+    label: canExecute
+      ? hybrid ? '확인된 조합 의식 준비' : '미지의 조합 시도'
+      : bothFilled ? `영혼 수정 ${FUSION_COMBINATION_COST} 부족` : '공명원을 먼저 선택하세요',
+    fontSize: '15px', enabled: canExecute, once: true, showArrow: false,
+    fillColor: hybrid ? TAB_ACCENT['조합'] : DUNGEON_UI.EMBER,
+    borderColor: DUNGEON_UI.BRASS_BRIGHT,
+    hoverFillColor: hybrid ? TAB_ACCENT['조합'] : DUNGEON_UI.EMBER,
+    hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+    disabledFillColor: DUNGEON_UI.SOOT, disabledBorderColor: DUNGEON_UI.IRON,
+    disabledTextColor: DUNGEON_UI_CSS.MUTED,
+    onPress: () => {},
   });
-  c.add(btn);
+  bindFusionTransactionAction(ctx, action, () => {
+      const [first, second] = combineSlots;
+      if (!first || !second) return;
+      const names = `${getMonsterDisplayName(first.id)} + ${getMonsterDisplayName(second.id)}`;
+      showConfirmDialog(
+        ctx,
+        hybrid ? `${hybrid.name} 공명을 실행합니다` : '결과가 없는 미지의 공명입니다',
+        `${names}\n영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지`,
+        '조합',
+        () => executeCombination(ctx, state, combineSlots),
+      );
+    });
+  c.add([action.bg, action.text, action.zone]);
 }
 
-function executeCombination(ctx: FusionTabContext, state: CombinationState): void {
-  const [slotA, slotB] = state.combineSlots;
-  if (!slotA || !slotB) return;
-
-  const gs = loadGameState();
-  const result = applyFusionCombination(gs, slotA, slotB);
-  if (!result.ok) return;
+function executeCombination(
+  ctx: FusionTabContext,
+  state: CombinationState,
+  slots: readonly (OwnedMonster | null)[],
+): void {
+  const [slotA, slotB] = slots;
+  if (!slotA || !slotB) {
+    ctx.finishTransaction();
+    return;
+  }
+  const result = applyFusionCombination(loadGameState(), slotA, slotB);
+  if (!result.ok) {
+    logger.warn(`[COMBINATION] rejected: ${result.reason}`);
+    showFusionResultPanel(ctx, {
+      tabId: '조합', status: 'failure', title: '조합 조건이 바뀌었습니다',
+      detail: '영혼 수정 잔액과 선택한 공명원을 다시 확인하세요.',
+    });
+    return;
+  }
 
   saveGameState(result.state);
   state.setCombineSlots([null, null]);
-
   if (result.recipeMatched) {
-    const { hybrid, hybridId, isNewDiscovery } = result;
-
-    if (isNewDiscovery) logger.debug(`[COMBINATION] NEW DISCOVERY: ${hybridId} — ${hybrid.name}`);
+    logger.debug(`[COMBINATION] ${result.isNewDiscovery ? 'NEW ' : ''}${result.hybridId}`);
     showFusionAnimation(ctx, '조합', () => {
-      ctx.refreshHeader();
-      ctx.refreshTab();
-      if (isNewDiscovery) {
-        showDiscoveryFanfare(ctx, hybrid.emoji, hybrid.name, hybrid.rarity);
-      } else {
-        showResultToast(ctx, `${hybrid.name} 조합 성공!`, '#4488cc');
-      }
-    });
-  } else {
-    logger.debug(`[COMBINATION] FAILED: ${result.recipeKey} — no known recipe`);
-
-    // Fail animation (smoke)
-    const smoke = ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '💨', {
-      fontFamily: 'sans-serif', fontSize: '64px',
-    }).setOrigin(0.5).setDepth(61).setAlpha(0);
-    ctx.scene.tweens.add({ targets: smoke, alpha: 1, scaleX: 1.5, scaleY: 1.5, duration: 300 });
-    ctx.scene.time.delayedCall(900, () => {
-      ctx.scene.tweens.add({
-        targets: smoke, alpha: 0, duration: 300,
-        onComplete: () => {
-          smoke.destroy();
-          ctx.refreshTab();
-          showResultToast(ctx, '이 조합은 효과가 없습니다', '#885533');
-        },
+      showFusionResultPanel(ctx, {
+        tabId: '조합',
+        status: result.isNewDiscovery ? 'discovery' : 'success',
+        title: `${result.hybrid.name} 조합 성공`,
+        detail: `영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지${result.isNewDiscovery ? '\n신규 조합이 도감에 기록되었습니다.' : ''}`,
       });
     });
+    return;
   }
-}
 
-function showDiscoveryFanfare(
-  ctx: FusionTabContext, emoji: string, name: string, rarity: number,
-): void {
-  const c = ctx.scene.add.container(0, 0).setDepth(80);
-  const dim = ctx.scene.add.graphics();
-  dim.fillStyle(0x000000, 0.85);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  c.add(dim);
-
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 80, '✨ 새로운 조합 발견! ✨', {
-    fontFamily: 'Georgia, serif', fontSize: '20px', color: RARITY_COLORS[rarity], fontStyle: 'bold',
-  }).setOrigin(0.5));
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 24, emoji, {
-    fontFamily: 'sans-serif', fontSize: '64px',
-  }).setOrigin(0.5));
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 48, name, {
-    fontFamily: 'Georgia, serif', fontSize: '22px', color: RARITY_COLORS[rarity], fontStyle: 'bold',
-  }).setOrigin(0.5));
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 80, RARITY_STARS[rarity], {
-    fontFamily: 'sans-serif', fontSize: '18px',
-  }).setOrigin(0.5));
-
-  c.setAlpha(0);
-  ctx.scene.tweens.add({ targets: c, alpha: 1, duration: 300, ease: 'Quad.easeOut' });
-  ctx.scene.time.delayedCall(2800, () => {
-    ctx.scene.tweens.add({
-      targets: c, alpha: 0, duration: 400,
-      onComplete: () => c.destroy(true),
+  logger.debug(`[COMBINATION] FAILED: ${result.recipeKey} — no known recipe`);
+  showFusionAnimation(ctx, '조합', () => {
+    showFusionResultPanel(ctx, {
+      tabId: '조합', status: 'failure', title: '공명 결과 없음',
+      detail: `영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지\n융합 진척은 증가하지 않았습니다.`,
     });
   });
 }

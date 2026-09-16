@@ -1,461 +1,717 @@
+/**
+ * Achievement hall — fixed-view archive and reward claiming surface.
+ *
+ * Category, page, and record selection are presentation-only. Achievement
+ * progress, unlocks, and reward claims remain owned by pure data transactions.
+ */
+
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { loadGameState, saveGameState } from '../data/wisdom';
-import { SKIN_DATA } from '../data/monsters';
-import { getReducedMotion } from '../utils/reducedMotion';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
 import {
   ACHIEVEMENT_DEFS,
+  EPILOGUE_ACHIEVEMENT_DEFS,
   type AchievementCategory,
   type AchievementContext,
   type AchievementDef,
 } from '../data/achievements';
+import { buildAchievementContext, unlockAvailableAchievements } from '../data/progressionTransactions';
 import { claimAchievementReward, claimAllAchievementRewards } from '../data/rewardTransactions';
-import { unlockAvailableAchievements } from '../data/progressionTransactions';
-import { addSceneHeader, addTabBar, type TabBarTab } from '../ui/GameUiPrimitives';
+import {
+  addFramedPanel,
+  addPrimaryActionButton,
+  addProgressBar,
+  addSceneHeader,
+} from '../ui/GameUiPrimitives';
+import { formatHudResourceValue } from '../ui/HudResourceFormatting';
 
-// ─── AchievementScene ─────────────────────────────────────────────────────────
+type AchievementFilter = AchievementCategory | 'all';
+type ReceiptTone = 'success' | 'warning';
+type RecordState = 'claimable' | 'claimed' | 'progress';
 
-type Tab = { category: AchievementCategory | 'all'; label: string; icon: string };
+interface CategorySeal {
+  readonly id: AchievementFilter;
+  readonly label: string;
+}
 
-const TABS: Tab[] = [
-  { category: 'all',     label: '전체',   icon: '📋' },
-  { category: 'combat',  label: '전투',   icon: '⚔️' },
-  { category: 'economy', label: '경제',   icon: '💰' },
-  { category: 'build',   label: '건설',   icon: '🏗️' },
-  { category: 'endless', label: '무한',   icon: '♾️' },
-  { category: 'mastery', label: '숙련',   icon: '🌟' },
+interface AchievementReceipt {
+  readonly title: string;
+  readonly detail: string;
+  readonly tone: ReceiptTone;
+}
+
+const ALL_ACHIEVEMENT_DEFS: readonly AchievementDef[] = [
+  ...ACHIEVEMENT_DEFS,
+  ...EPILOGUE_ACHIEVEMENT_DEFS,
 ];
 
-const CARD_W   = 340;
-const CARD_H   = 68;
-const CARD_X   = (CANVAS_WIDTH - CARD_W) / 2;
-const HDR_H    = 56;   // addSceneHeader center y=28 → band height ~56
-const TAB_H    = 38;   // addTabBar height
-const LIST_TOP = HDR_H + TAB_H;
-const LIST_BOT = CANVAS_HEIGHT - 60;
-const VISIBLE_H = LIST_BOT - LIST_TOP;
+const CATEGORY_SEALS: readonly CategorySeal[] = [
+  { id: 'all', label: '전체' },
+  { id: 'combat', label: '전투' },
+  { id: 'economy', label: '경제' },
+  { id: 'build', label: '건설' },
+  { id: 'endless', label: '무한' },
+  { id: 'mastery', label: '숙련' },
+  { id: 'collection', label: '수집' },
+  { id: 'growth', label: '성장' },
+];
+
+const FILTER_LABELS: Record<AchievementFilter, string> = {
+  all: '전체 기록',
+  combat: '전투 기록',
+  economy: '경제 기록',
+  build: '건설 기록',
+  endless: '무한 기록',
+  mastery: '숙련 기록',
+  collection: '수집 기록',
+  growth: '성장 기록',
+};
+
+const PANEL_X = 14;
+const PANEL_W = CANVAS_WIDTH - PANEL_X * 2;
+const STATUS_Y = 76;
+const CATEGORY_Y = 144;
+const ARCHIVE_Y = 246;
+const RECORDS_Y = 306;
+const RECORD_H = 64;
+const RECORD_GAP = 8;
+const DETAIL_Y = 524;
+const COMMAND_Y = 728;
+const RECORDS_PER_PAGE = 3;
+const TRANSACTION_COOLDOWN_MS = 250;
+
+function now(): number {
+  return Date.now();
+}
 
 export class AchievementScene extends Phaser.Scene {
-  private activeTab: AchievementCategory | 'all' = 'all';
-  private scrollY   = 0;
-  private maxScroll = 0;
+  private gameState!: GameState;
+  private context!: AchievementContext;
+  private activeFilter: AchievementFilter = 'all';
+  private selectedId = '';
+  private pageIndex = 0;
+  private receipt: AchievementReceipt | null = null;
+  private transactionPending = false;
+  private lastTransactionAt = 0;
 
-  private gameState = loadGameState();
-  private ctx!: AchievementContext;
-
-  // Containers
-  private tabContainer?:      Phaser.GameObjects.Container;
-  private listContainer!:     Phaser.GameObjects.Container;
-  private maskGraphics!:      Phaser.GameObjects.Graphics;
-  private claimAllButton?:    Phaser.GameObjects.Container;
-
-  constructor() { super({ key: 'AchievementScene' }); }
+  constructor() {
+    super({ key: 'AchievementScene' });
+  }
 
   create(): void {
-    this.scrollY   = 0;
-    // Sweep unlocks earned outside battle (gold, summons, DM level, fusion …) —
-    // the in-battle kill sweep is the only other unlock path.
+    this.receipt = null;
+    this.transactionPending = false;
+    this.lastTransactionAt = 0;
+    this.activeFilter = 'all';
+    this.pageIndex = 0;
+
     const sweep = unlockAvailableAchievements(loadGameState());
     if (sweep.changed) saveGameState(sweep.state);
     this.gameState = sweep.state;
-    this.ctx       = this.buildContext();
+    this.context = buildAchievementContext(this.gameState);
 
-    this.drawBackground();
-    this.buildHeader();
-    this.buildTabs();
-    this.buildList();
-    this.buildClaimAllButton();
-    this.setupScrollInput();
-
-    // Fade in
-    this.cameras.main.setAlpha(0);
-    this.tweens.add({ targets: this.cameras.main, alpha: 1, duration: 300 });
+    const initial = this.getFilteredRecords()[0];
+    this.selectedId = initial?.id ?? '';
+    this.resetCamera();
+    this.render();
   }
 
-  // ─── Context ────────────────────────────────────────────────────────────────
+  private render(): void {
+    this.clearRenderedObjects();
+    this.resetCamera();
+    this.context = buildAchievementContext(this.gameState);
+    const records = this.getFilteredRecords();
+    this.reconcileSelection(records);
 
-  private buildContext(): AchievementContext {
-    const gs = this.gameState;
-    return {
-      totalKills:        gs.totalKills       ?? 0,
-      totalGoldEarned:   gs.totalGoldEarned  ?? 0,
-      roomsBuilt:        gs.roomsBuilt       ?? [],
-      bossesKilled:      gs.bossesKilled     ?? [],
-      endlessHighScore:  gs.endlessHighScore ?? 0,
-      consecutiveDays:   gs.consecutiveDays  ?? 0,
-      soulCrystals:      gs.soulCrystals     ?? 0,
-      wisdomTree:        gs.wisdomTree       ?? {},
-      stageProgress:     gs.stageProgress    ?? [],
-      dmLevel:           gs.dmLevel          ?? 1,
-      ownedMonsterCount: (gs.ownedMonsters ?? []).length,
-      ownedSkinCount:    Object.values(gs.ownedSkins ?? {}).flat().length,
-      totalFusions:      gs.totalFusions     ?? 0,
-      completedTribes:   gs.completedTribes  ?? 0,
-      totalSummons:      (gs.summonHistory ?? []).length,
-      questSkinsOwned:   SKIN_DATA
-        .filter(s => s.unlockVia === 'quest')
-        .filter(s => (gs.ownedSkins?.[s.monsterId] ?? []).includes(s.id))
-        .length,
-    };
+    this.drawBackdrop();
+    this.drawHeader();
+    this.drawStatusRail();
+    this.drawCategorySeals();
+    this.drawArchivePage(records);
+    this.drawSelectedRecord(records);
+    this.drawCommands();
   }
 
-  // ─── Background ────────────────────────────────────────────────────────────
-
-  private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    applyCasualBackground(this);
+  private clearRenderedObjects(): void {
+    this.tweens.killAll();
+    for (const child of [...this.children.list]) child.destroy();
   }
 
-  // ─── Header ─────────────────────────────────────────────────────────────────
-
-  private buildHeader(): void {
-    const totalCount    = ACHIEVEMENT_DEFS.length;
-    const unlockedCount = ACHIEVEMENT_DEFS.filter(
-      d => this.gameState.achievements?.[d.id]?.unlocked,
-    ).length;
-
-    addSceneHeader(this, {
-      title:    '🏆 업적',
-      subtitle: `${unlockedCount} / ${totalCount} 달성`,
-      y:        28,
-      onBack:   () => this.scene.start(
-        (this.registry.get('previousScene') as string) ?? 'StageSelectScene',
-      ),
-    });
+  private resetCamera(): void {
+    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.cameras.main.centerOn(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
   }
 
-  // ─── Tabs ────────────────────────────────────────────────────────────────────
+  private drawBackdrop(): void {
+    const g = this.add.graphics().setDepth(-900);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(0, 68, CANVAS_WIDTH, CANVAS_HEIGHT - 68);
 
-  private buildTabs(): void {
-    if (this.tabContainer) this.tabContainer.destroy();
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.32);
+    for (let y = 86; y < CANVAS_HEIGHT; y += 42) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = ((y - 86) / 42) % 2 === 0 ? 24 : 0;
+      for (let x = offset; x < CANVAS_WIDTH; x += 58) g.lineBetween(x, y, x, y + 42);
+    }
 
-    const tabDefs: Array<TabBarTab<AchievementCategory | 'all'>> = TABS.map(t => ({
-      id:    t.category,
-      label: `${t.icon} ${t.label}`,
-    }));
+    g.fillStyle(DUNGEON_UI.STONE, 0.78);
+    g.fillRect(0, 68, 18, CANVAS_HEIGHT - 68);
+    g.fillRect(CANVAS_WIDTH - 18, 68, 18, CANVAS_HEIGHT - 68);
+    g.lineStyle(2, DUNGEON_UI.BRASS, 0.12);
+    g.lineBetween(27, 72, 27, CANVAS_HEIGHT);
+    g.lineBetween(CANVAS_WIDTH - 27, 72, CANVAS_WIDTH - 27, CANVAS_HEIGHT);
 
-    const { container } = addTabBar(this, {
-      tabs:     tabDefs,
-      active:   this.activeTab,
-      y:        HDR_H,
-      accent:   CASUAL.GOLD,
-      fontSize: '11px',
-      depth:    10,
-      onSelect: (id) => {
-        this.activeTab = id;
-        this.scrollY   = 0;
-        this.buildTabs();
-        this.buildList();
+    g.fillStyle(COLORS.TORCH_AMBER, 0.028);
+    g.fillCircle(CANVAS_WIDTH / 2, 365, 164);
+  }
+
+  private drawHeader(): void {
+    const header = addSceneHeader(this, {
+      title: '명예 기록실',
+      subtitle: '전과를 확인하고 봉인된 보상을 회수',
+      onBack: () => {
+        if (this.transactionPending) return;
+        this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene');
       },
     });
-    this.tabContainer = container;
+    const backZone = header.container.list.find(child => child.type === 'Zone') as Phaser.GameObjects.Zone | undefined;
+    backZone?.setName('achievement-back');
   }
 
-  // ─── List ────────────────────────────────────────────────────────────────────
-
-  private buildList(): void {
-    if (this.listContainer) this.listContainer.destroy();
-    if (this.maskGraphics)  this.maskGraphics.destroy();
-
-    this.listContainer = this.add.container(0, LIST_TOP);
-
-    const filtered = this.activeTab === 'all'
-      ? ACHIEVEMENT_DEFS
-      : ACHIEVEMENT_DEFS.filter(d => d.category === this.activeTab);
-
-    // Sort: unlocked first, then by progress descending
-    const gs = this.gameState;
-    const sorted = [...filtered].sort((a, b) => {
-      const ua = gs.achievements?.[a.id]?.unlocked ? 1 : 0;
-      const ub = gs.achievements?.[b.id]?.unlocked ? 1 : 0;
-      if (ub !== ua) return ub - ua;
-      const pa = a.getProgress(this.ctx) / a.target;
-      const pb = b.getProgress(this.ctx) / b.target;
-      return pb - pa;
+  private drawStatusRail(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: STATUS_Y,
+      w: PANEL_W,
+      h: 58,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.28,
     });
 
-    const GAP = 8;
-    let offsetY = 0;
+    const achieved = ALL_ACHIEVEMENT_DEFS.filter(def => this.isUnlocked(def)).length;
+    const claimable = ALL_ACHIEVEMENT_DEFS.filter(def => this.isClaimable(def)).length;
+    const items = [
+      { label: '달성 기록', value: `${achieved} / ${ALL_ACHIEVEMENT_DEFS.length}`, color: achieved > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT },
+      { label: '미수령', value: `${claimable}건`, color: claimable > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED },
+      { label: '보유 재화', value: `젬 ${formatHudResourceValue(this.gameState.gems ?? 0)} · 수정 ${formatHudResourceValue(this.gameState.soulCrystals ?? 0)}`, color: DUNGEON_UI_CSS.TEXT },
+    ];
 
-    sorted.forEach(def => {
-      const entry  = gs.achievements?.[def.id];
-      const unlocked = entry?.unlocked ?? false;
-      const current  = def.getProgress(this.ctx);
-      const pct      = Math.min(1, current / def.target);
-
-      this.drawCard(def, current, pct, unlocked, entry?.rewardClaimed ?? false, offsetY);
-      offsetY += CARD_H + GAP;
-    });
-
-    const totalHeight = offsetY;
-    this.maxScroll    = Math.max(0, totalHeight - VISIBLE_H);
-
-    // Apply mask so cards clip at list boundaries
-    this.maskGraphics = this.add.graphics();
-    this.maskGraphics.fillStyle(0xffffff, 1);
-    this.maskGraphics.fillRect(0, LIST_TOP, CANVAS_WIDTH, VISIBLE_H);
-    const mask = this.maskGraphics.createGeometryMask();
-    this.listContainer.setMask(mask);
-
-    this.applyScroll();
-  }
-
-  private drawCard(
-    def: AchievementDef,
-    current: number, pct: number,
-    unlocked: boolean, rewardClaimed: boolean,
-    offsetY: number,
-  ): void {
-    const { icon, name, description: desc, target, reward } = def;
-    const x = CARD_X;
-    const y = offsetY;
-
-    const canClaim = unlocked && !rewardClaimed;
-
-    // Card bg — cream pill with chunky brown border, white top highlight + drop shadow.
-    const bg = this.add.graphics();
-    // drop shadow
-    bg.fillStyle(CASUAL.SHADOW, canClaim ? 0.22 : unlocked ? 0.2 : 0.14);
-    bg.fillRoundedRect(x, y + 3, CARD_W, CARD_H, 8);
-    if (canClaim) {
-      // completed/claimable → bright green accent border on cream
-      bg.fillStyle(CASUAL.PANEL, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
-      bg.lineStyle(3, CASUAL.GREEN_DK, 1);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
-    } else if (unlocked) {
-      bg.fillStyle(CASUAL.PANEL, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
-      bg.lineStyle(3, CASUAL.EDGE, 1);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
-    } else {
-      // locked → muted soft cream
-      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      bg.fillRoundedRect(x, y, CARD_W, CARD_H, 8);
-      bg.fillStyle(0xffffff, 0.28);
-      bg.fillRoundedRect(x + 5, y + 4, CARD_W - 10, 5, 3);
-      bg.lineStyle(3, CASUAL.EDGE_SOFT, 1);
-      bg.strokeRoundedRect(x, y, CARD_W, CARD_H, 8);
-    }
-
-    // Pulsing glow ring + "NEW" badge for claimable cards
-    if (canClaim) {
-      const glowRing = this.add.graphics();
-      glowRing.lineStyle(3, CASUAL.GREEN, 0.7);
-      glowRing.strokeRoundedRect(x - 2, y - 2, CARD_W + 4, CARD_H + 4, 11);
-      // Decorative pulse — static green ring + NEW badge already mark claimable.
-      if (!getReducedMotion()) {
-        this.tweens.add({
-          targets: glowRing,
-          alpha: { from: 0.25, to: 0.85 },
-          duration: 750,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
+    items.forEach((item, index) => {
+      const cellW = PANEL_W / items.length;
+      const x = PANEL_X + cellW * index;
+      if (index > 0) {
+        const divider = this.add.graphics();
+        divider.lineStyle(1, DUNGEON_UI.IRON, 0.85);
+        divider.lineBetween(x, STATUS_Y + 10, x, STATUS_Y + 48);
       }
-
-      const badgeBg = this.add.graphics();
-      badgeBg.fillStyle(CASUAL.GREEN, 1);
-      badgeBg.fillRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 4);
-      badgeBg.lineStyle(2, 0xffffff, 1);
-      badgeBg.strokeRoundedRect(x + CARD_W - 32, y - 7, 30, 14, 4);
-
-      const badgeLabel = this.add.text(x + CARD_W - 17, y, 'NEW', {
-        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold',
-        color: '#ffffff',
+      this.add.text(x + cellW / 2, STATUS_Y + 18, item.label, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5);
+      this.add.text(x + cellW / 2, STATUS_Y + 40, item.value, {
+        fontFamily: 'sans-serif', fontSize: index === 2 ? '10px' : '14px', fontStyle: 'bold', color: item.color,
+      }).setOrigin(0.5);
+    });
+  }
 
-      this.listContainer.add([glowRing, badgeBg, badgeLabel]);
-    }
+  private drawCategorySeals(): void {
+    const gap = 4;
+    const rowGap = 6;
+    const buttonW = (PANEL_W - gap * 3) / 4;
+    CATEGORY_SEALS.forEach((seal, index) => {
+      const column = index % 4;
+      const row = Math.floor(index / 4);
+      const active = seal.id === this.activeFilter;
+      const button = addPrimaryActionButton(this, {
+        x: PANEL_X + column * (buttonW + gap),
+        y: CATEGORY_Y + row * (44 + rowGap),
+        w: buttonW,
+        h: 44,
+        label: seal.label,
+        fontSize: '11px',
+        once: true,
+        showArrow: false,
+        fillColor: active ? DUNGEON_UI.BRASS : DUNGEON_UI.STONE,
+        hoverFillColor: active ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.IRON,
+        borderColor: active ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE,
+        textColor: active ? '#171006' : DUNGEON_UI_CSS.TEXT,
+        onPress: () => this.selectFilter(seal.id),
+      });
+      button.zone.setName(`achievement-category-${seal.id}`);
+      this.bindViewAction(button.zone);
+    });
+  }
 
-    // Icon
-    const iconTxt = this.add.text(x + 20, y + CARD_H / 2, icon, {
-      fontFamily: 'sans-serif', fontSize: '22px',
-    }).setOrigin(0.5).setAlpha(unlocked ? 1 : 0.35);
+  private drawArchivePage(records: readonly AchievementDef[]): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: ARCHIVE_Y,
+      w: PANEL_W,
+      h: 52,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: DUNGEON_UI.IRON,
+      accentColor: DUNGEON_UI.BRASS,
+      shadowOpacity: 0.22,
+    });
 
-    // Name
-    const nameT = this.add.text(x + 42, y + 13, name, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-      color: canClaim ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
+    const pageCount = Math.max(1, Math.ceil(records.length / RECORDS_PER_PAGE));
+    const start = this.pageIndex * RECORDS_PER_PAGE;
+    const end = Math.min(records.length, start + RECORDS_PER_PAGE);
+    this.add.text(PANEL_X + 16, ARCHIVE_Y + 17, FILTER_LABELS[this.activeFilter], {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
-
-    // Description
-    const descT = this.add.text(x + 42, y + 29, desc, {
-      fontFamily: 'sans-serif', fontSize: '9px',
-      color: CASUAL_CSS.INK_SOFT,
-      wordWrap: { width: CARD_W - 130 },
+    this.add.text(PANEL_X + 16, ARCHIVE_Y + 36, records.length > 0 ? `${start + 1}–${end} / ${records.length}` : '기록 없음', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
-
-    // Reward badge (top-right area)
-    const rewardParts: string[] = [];
-    if (reward.gems)         rewardParts.push(`💎${reward.gems}`);
-    if (reward.soulCrystals) rewardParts.push(`💠${reward.soulCrystals}`);
-    const rewardStr = rewardParts.join(' ');
-    const rewardT = this.add.text(x + CARD_W - 8, y + 13, rewardStr, {
-      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
-      color: canClaim ? CASUAL_CSS.BLUE : rewardClaimed ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.BLUE,
+    this.add.text(PANEL_X + PANEL_W - 112, ARCHIVE_Y + 26, `${this.pageIndex + 1} / ${pageCount}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5);
 
-    // Progress bar
-    const pbx = x + 42;
-    const pby = y + CARD_H - 16;
-    const pbw = CARD_W - 130;
+    const previous = addPrimaryActionButton(this, {
+      x: PANEL_X + PANEL_W - 98,
+      y: ARCHIVE_Y + 4,
+      w: 44,
+      h: 44,
+      label: '‹',
+      fontSize: '19px',
+      enabled: this.pageIndex > 0,
+      once: true,
+      showArrow: false,
+      fillColor: DUNGEON_UI.STONE,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      onPress: () => this.changePage(-1),
+    });
+    previous.zone.setName('achievement-page-previous');
+    this.bindViewAction(previous.zone);
 
-    const pbg2 = this.add.graphics();
-    pbg2.fillStyle(CASUAL.PANEL_SOFT, 1);
-    pbg2.fillRoundedRect(pbx, pby, pbw, 6, 3);
-    pbg2.lineStyle(1, CASUAL.EDGE_SOFT, 0.9);
-    pbg2.strokeRoundedRect(pbx, pby, pbw, 6, 3);
+    const next = addPrimaryActionButton(this, {
+      x: PANEL_X + PANEL_W - 48,
+      y: ARCHIVE_Y + 4,
+      w: 44,
+      h: 44,
+      label: '›',
+      fontSize: '19px',
+      enabled: this.pageIndex < pageCount - 1,
+      once: true,
+      showArrow: false,
+      fillColor: DUNGEON_UI.STONE,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      onPress: () => this.changePage(1),
+    });
+    next.zone.setName('achievement-page-next');
+    this.bindViewAction(next.zone);
 
-    const pfill = this.add.graphics();
-    pfill.fillStyle(unlocked ? CASUAL.GREEN : CASUAL.GOLD, 1);
-    pfill.fillRoundedRect(pbx, pby, pbw * pct, 6, 3);
+    records.slice(start, end).forEach((def, index) => {
+      this.drawRecord(def, RECORDS_Y + index * (RECORD_H + RECORD_GAP));
+    });
+  }
 
-    const progressTxt = unlocked ? '완료!' : `${current} / ${target}`;
-    const progressT = this.add.text(x + 42 + pbw + 4, y + CARD_H - 13, progressTxt, {
-      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
-      color: unlocked ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0.5);
+  private drawRecord(def: AchievementDef, y: number): void {
+    const selected = def.id === this.selectedId;
+    const state = this.getRecordState(def);
+    const tone = state === 'claimable'
+      ? DUNGEON_UI.BRASS
+      : state === 'claimed'
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.IRON;
+    const progress = this.getProgress(def);
 
-    // Claim button OR claimed badge
-    const btnW = 52, btnH = 22;
-    const bx = x + CARD_W - btnW - 6;
-    const by = y + CARD_H - btnH - 8;
-
-    if (canClaim) {
-      // bright green candy claim button
-      const btnBg = this.add.graphics();
-      btnBg.fillStyle(CASUAL.GREEN_DK, 1);
-      btnBg.fillRoundedRect(bx, by + 2, btnW, btnH, 7);
-      btnBg.fillStyle(CASUAL.GREEN, 1);
-      btnBg.fillRoundedRect(bx, by, btnW, btnH, 7);
-      btnBg.fillStyle(0xffffff, 0.32);
-      btnBg.fillRoundedRect(bx + 5, by + 3, btnW - 10, 5, 3);
-      const claimT = this.add.text(bx + btnW / 2, by + btnH / 2, '수령', {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-        color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
-      }).setOrigin(0.5);
-      const zone = this.add.zone(bx + btnW / 2, by + btnH / 2, btnW, btnH).setInteractive();
-      zone.on('pointerdown', () => this.claimReward(def.id, reward));
-      this.listContainer.add([btnBg, claimT, zone]);
-    } else if (rewardClaimed) {
-      const claimedT = this.add.text(x + CARD_W - 10, y + CARD_H - 13, '✓ 수령', {
-        fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(1, 0.5);
-      this.listContainer.add([claimedT]);
+    const g = this.add.graphics();
+    g.fillStyle(selected ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
+    g.fillRoundedRect(PANEL_X, y, PANEL_W, RECORD_H, 8);
+    g.lineStyle(selected ? 2 : 1, selected ? DUNGEON_UI.BRASS_BRIGHT : tone, selected ? 1 : 0.78);
+    g.strokeRoundedRect(PANEL_X, y, PANEL_W, RECORD_H, 8);
+    if (selected) {
+      g.fillStyle(DUNGEON_UI.BRASS, 1);
+      g.fillRect(PANEL_X + 6, y + 8, 3, RECORD_H - 16);
     }
 
-    this.listContainer.add([bg, iconTxt, nameT, descT, rewardT, pbg2, pfill, progressT]);
+    this.add.text(PANEL_X + 30, y + RECORD_H / 2, def.icon, {
+      fontFamily: 'sans-serif', fontSize: '21px',
+    }).setOrigin(0.5).setAlpha(state === 'progress' ? 0.72 : 1);
+    this.add.text(PANEL_X + 54, y + 18, def.name, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 12, y + 18, this.getStateLabel(state), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: state === 'claimable' ? DUNGEON_UI_CSS.BRASS : state === 'claimed' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+
+    addProgressBar(this, {
+      x: PANEL_X + 54,
+      y: y + 39,
+      w: 168,
+      h: 7,
+      ratio: progress.ratio,
+      fillColor: state === 'claimable' || state === 'claimed' ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
+      trackColor: DUNGEON_UI.SOOT,
+      borderColor: DUNGEON_UI.EDGE,
+      animate: false,
+    });
+    this.add.text(PANEL_X + PANEL_W - 12, y + 43, `${this.formatNumber(progress.current)} / ${this.formatNumber(def.target)}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 12, y + 55, this.formatReward(def), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: state === 'claimed' ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
+
+    const zone = this.add.zone(PANEL_X, y, PANEL_W, RECORD_H).setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    zone.setName(`achievement-record-${def.id}`);
+    zone.on('pointerdown', () => {
+      if (this.transactionPending || this.selectedId === def.id) return;
+      this.selectedId = def.id;
+      this.render();
+    });
   }
 
-  private claimReward(achievementId: string, reward: AchievementDef['reward']): void {
-    const gs = loadGameState();
-    const result = claimAchievementReward(gs, achievementId, reward);
-    if (!result.ok) return;
+  private drawSelectedRecord(records: readonly AchievementDef[]): void {
+    const selected = records.find(def => def.id === this.selectedId) ?? records[0];
+    const state = selected ? this.getRecordState(selected) : 'progress';
+    const tone = state === 'claimable'
+      ? DUNGEON_UI.BRASS
+      : state === 'claimed'
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.IRON;
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: DETAIL_Y,
+      w: PANEL_W,
+      h: 194,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: tone,
+      accentColor: tone,
+      glowColor: tone,
+      glowOpacity: state === 'claimable' ? 0.06 : 0.02,
+    });
+
+    if (!selected) {
+      this.add.text(CANVAS_WIDTH / 2, DETAIL_Y + 78, '선택 가능한 기록이 없습니다', {
+        fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5);
+      return;
+    }
+
+    const progress = this.getProgress(selected);
+    this.add.text(PANEL_X + 18, DETAIL_Y + 22, `${selected.icon} ${selected.name}`, {
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, DETAIL_Y + 22, this.getStateLabel(state), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: state === 'claimable' ? DUNGEON_UI_CSS.BRASS : state === 'claimed' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    this.add.text(PANEL_X + 18, DETAIL_Y + 49, selected.description, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+      wordWrap: { width: PANEL_W - 36 }, lineSpacing: 2,
+    }).setOrigin(0, 0.5);
+
+    addProgressBar(this, {
+      x: PANEL_X + 18,
+      y: DETAIL_Y + 72,
+      w: PANEL_W - 36,
+      h: 9,
+      ratio: progress.ratio,
+      fillColor: state === 'claimable' || state === 'claimed' ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
+      trackColor: DUNGEON_UI.SOOT,
+      borderColor: DUNGEON_UI.EDGE,
+      animate: false,
+    });
+    this.add.text(PANEL_X + 18, DETAIL_Y + 95, `진행 ${this.formatNumber(progress.current)} / ${this.formatNumber(selected.target)}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 95, `보상 ${this.formatReward(selected)}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: state === 'claimed' ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
+
+    const receiptTone = this.receipt?.tone === 'warning'
+      ? DUNGEON_UI.EMBER
+      : this.receipt
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.IRON;
+    const receiptG = this.add.graphics();
+    receiptG.fillStyle(DUNGEON_UI.SOOT, 0.8);
+    receiptG.fillRoundedRect(PANEL_X + 14, DETAIL_Y + 112, PANEL_W - 28, 66, 7);
+    receiptG.lineStyle(1, receiptTone, this.receipt ? 0.9 : 0.65);
+    receiptG.strokeRoundedRect(PANEL_X + 14, DETAIL_Y + 112, PANEL_W - 28, 66, 7);
+    this.add.text(PANEL_X + 26, DETAIL_Y + 130, this.receipt?.title ?? '보상 기록 대기', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + 26, DETAIL_Y + 157, this.receipt?.detail ?? '수령 결과와 재화 변동이 이곳에 유지됩니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+      wordWrap: { width: PANEL_W - 52 }, lineSpacing: 2,
+    }).setOrigin(0, 0.5);
+  }
+
+  private drawCommands(): void {
+    const records = this.getFilteredRecords();
+    const selected = records.find(def => def.id === this.selectedId);
+    const selectedClaimable = selected ? this.isClaimable(selected) : false;
+    const claimableCount = ALL_ACHIEVEMENT_DEFS.filter(def => this.isClaimable(def)).length;
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: COMMAND_Y,
+      w: PANEL_W,
+      h: 102,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: selectedClaimable ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON,
+      shadowOpacity: 0.24,
+    });
+    this.add.text(PANEL_X + 16, COMMAND_Y + 19, selectedClaimable ? '선택 기록의 보상을 회수할 수 있습니다' : this.commandStatus(selected), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: selectedClaimable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+
+    const gap = 8;
+    const hasClaimAll = claimableCount > 0;
+    const secondaryW = 116;
+    const primaryW = hasClaimAll ? PANEL_W - 28 - gap - secondaryW : PANEL_W - 28;
+    const primary = addPrimaryActionButton(this, {
+      x: PANEL_X + 14,
+      y: COMMAND_Y + 40,
+      w: primaryW,
+      h: 48,
+      label: selectedClaimable && selected ? `${selected.name} 보상 수령` : this.commandLabel(selected),
+      fontSize: selectedClaimable ? '12px' : '11px',
+      enabled: selectedClaimable,
+      once: true,
+      fillColor: DUNGEON_UI.BRASS,
+      hoverFillColor: DUNGEON_UI.BRASS_BRIGHT,
+      borderColor: 0x705126,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      textColor: '#171006',
+      showArrow: false,
+      onPress: () => {
+        if (selected) this.claimSelected(selected);
+      },
+    });
+    primary.zone.setName('achievement-claim-selected');
+    this.bindTransactionAction(primary.zone);
+
+    if (!hasClaimAll) return;
+    const claimAll = addPrimaryActionButton(this, {
+      x: PANEL_X + 14 + primaryW + gap,
+      y: COMMAND_Y + 40,
+      w: secondaryW,
+      h: 48,
+      label: `전체 수령 ${claimableCount}`,
+      fontSize: '11px',
+      once: true,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.JADE,
+      textColor: DUNGEON_UI_CSS.JADE,
+      showArrow: false,
+      onPress: () => this.claimAll(),
+    });
+    claimAll.zone.setName('achievement-claim-all');
+    this.bindTransactionAction(claimAll.zone);
+  }
+
+  private getFilteredRecords(): AchievementDef[] {
+    const records = this.activeFilter === 'all'
+      ? [...ALL_ACHIEVEMENT_DEFS]
+      : ALL_ACHIEVEMENT_DEFS.filter(def => def.category === this.activeFilter);
+
+    return records.sort((a, b) => {
+      const stateDelta = this.stateRank(a) - this.stateRank(b);
+      if (stateDelta !== 0) return stateDelta;
+      const progressDelta = this.getProgress(b).ratio - this.getProgress(a).ratio;
+      if (progressDelta !== 0) return progressDelta;
+      return ALL_ACHIEVEMENT_DEFS.indexOf(a) - ALL_ACHIEVEMENT_DEFS.indexOf(b);
+    });
+  }
+
+  private reconcileSelection(records: readonly AchievementDef[]): void {
+    if (records.length === 0) {
+      this.selectedId = '';
+      this.pageIndex = 0;
+      return;
+    }
+
+    let selectedIndex = records.findIndex(def => def.id === this.selectedId);
+    if (selectedIndex < 0) {
+      this.selectedId = records[0].id;
+      selectedIndex = 0;
+    }
+    const pageCount = Math.max(1, Math.ceil(records.length / RECORDS_PER_PAGE));
+    this.pageIndex = Phaser.Math.Clamp(Math.floor(selectedIndex / RECORDS_PER_PAGE), 0, pageCount - 1);
+  }
+
+  private selectFilter(filter: AchievementFilter): void {
+    if (this.transactionPending || this.activeFilter === filter) return;
+    this.activeFilter = filter;
+    this.pageIndex = 0;
+    this.selectedId = '';
+    this.render();
+  }
+
+  private changePage(direction: -1 | 1): void {
+    if (this.transactionPending) return;
+    const records = this.getFilteredRecords();
+    const pageCount = Math.max(1, Math.ceil(records.length / RECORDS_PER_PAGE));
+    const nextPage = Phaser.Math.Clamp(this.pageIndex + direction, 0, pageCount - 1);
+    if (nextPage === this.pageIndex) return;
+    this.pageIndex = nextPage;
+    this.selectedId = records[nextPage * RECORDS_PER_PAGE]?.id ?? this.selectedId;
+    this.render();
+  }
+
+  private getProgress(def: AchievementDef): { current: number; ratio: number } {
+    const raw = def.getProgress(this.context);
+    const current = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+    return { current, ratio: Phaser.Math.Clamp(current / def.target, 0, 1) };
+  }
+
+  private isUnlocked(def: AchievementDef): boolean {
+    return this.gameState.achievements?.[def.id]?.unlocked ?? false;
+  }
+
+  private isClaimable(def: AchievementDef): boolean {
+    const entry = this.gameState.achievements?.[def.id];
+    return Boolean(entry?.unlocked && !entry.rewardClaimed);
+  }
+
+  private getRecordState(def: AchievementDef): RecordState {
+    if (this.isClaimable(def)) return 'claimable';
+    if (this.gameState.achievements?.[def.id]?.rewardClaimed) return 'claimed';
+    return 'progress';
+  }
+
+  private stateRank(def: AchievementDef): number {
+    const state = this.getRecordState(def);
+    if (state === 'claimable') return 0;
+    if (state === 'progress') return 1;
+    return 2;
+  }
+
+  private getStateLabel(state: RecordState): string {
+    if (state === 'claimable') return '수령 가능';
+    if (state === 'claimed') return '수령 완료';
+    return '진행 중';
+  }
+
+  private formatReward(def: AchievementDef): string {
+    const parts: string[] = [];
+    if (def.reward.gems) parts.push(`젬 ${this.formatNumber(def.reward.gems)}`);
+    if (def.reward.soulCrystals) parts.push(`수정 ${this.formatNumber(def.reward.soulCrystals)}`);
+    return parts.join(' · ');
+  }
+
+  private formatNumber(value: number): string {
+    return value.toLocaleString('ko-KR');
+  }
+
+  private commandStatus(def: AchievementDef | undefined): string {
+    if (!def) return '선택 가능한 기록이 없습니다';
+    if (this.gameState.achievements?.[def.id]?.rewardClaimed) return '이미 보상을 회수한 기록입니다';
+    const progress = this.getProgress(def);
+    return `목표까지 ${this.formatNumber(Math.max(0, def.target - progress.current))} 남음`;
+  }
+
+  private commandLabel(def: AchievementDef | undefined): string {
+    if (!def) return '보상 수령 불가';
+    return this.gameState.achievements?.[def.id]?.rewardClaimed ? '보상 수령 완료' : '목표 달성 전';
+  }
+
+  private bindTransactionAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.transactionPending) return;
+      this.transactionPending = true;
+      press(...args);
+    });
+  }
+
+  private bindViewAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.transactionPending) return;
+      press(...args);
+    });
+  }
+
+  private beginTransaction(): boolean {
+    const timestamp = now();
+    if (timestamp - this.lastTransactionAt < TRANSACTION_COOLDOWN_MS) {
+      this.transactionPending = false;
+      return false;
+    }
+    this.lastTransactionAt = timestamp;
+    return true;
+  }
+
+  private queueRender(): void {
+    this.events.once(Phaser.Scenes.Events.POST_UPDATE, () => {
+      this.transactionPending = false;
+      if (this.sys.isActive()) this.render();
+    });
+  }
+
+  private claimSelected(def: AchievementDef): void {
+    if (!this.beginTransaction()) return;
+    const before = loadGameState();
+    const result = claimAchievementReward(before, def.id, def.reward);
+    if (!result.ok) {
+      this.gameState = result.state;
+      this.receipt = {
+        title: result.reason === 'achievement_reward_already_claimed' ? `${def.name} · 이미 수령 완료` : `${def.name} · 수령 불가`,
+        detail: '재화와 업적 진행은 변경되지 않았습니다',
+        tone: 'warning',
+      };
+      this.queueRender();
+      return;
+    }
 
     saveGameState(result.state);
-
-    // Rebuild list to reflect claimed state
     this.gameState = result.state;
-    this.buildList();
-
-    // Toast feedback
-    const parts: string[] = [];
-    if (reward.gems)         parts.push(`💎 +${reward.gems} 젬`);
-    if (reward.soulCrystals) parts.push(`💠 +${reward.soulCrystals} SC`);
-    this.showRewardToast(parts.join('  '));
-  }
-
-  // ─── Claim-all (QoL: 일괄 수령) ────────────────────────────────────────────
-  private buildClaimAllButton(): void {
-    if (this.claimAllButton) { this.claimAllButton.destroy(); this.claimAllButton = undefined; }
-
-    const ach = this.gameState.achievements ?? {};
-    const claimable = ACHIEVEMENT_DEFS.filter(
-      d => ach[d.id]?.unlocked && !ach[d.id]?.rewardClaimed,
-    ).length;
-    if (claimable === 0) return;   // nothing to claim → no button
-
-    const w = 104, h = 30;
-    const c = this.add.container(CANVAS_WIDTH - 12 - w / 2, 28).setDepth(20);
-    const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.45);   g.fillRoundedRect(-w / 2, -h / 2 + 2, w, h, 9);
-    g.fillStyle(CASUAL.GREEN, 1);       g.fillRoundedRect(-w / 2, -h / 2, w, h, 9);
-    g.fillStyle(0xffffff, 0.14);        g.fillRoundedRect(-w / 2 + 4, -h / 2 + 3, w - 8, 4, 3);
-    g.lineStyle(2, CASUAL.GREEN_DK, 1); g.strokeRoundedRect(-w / 2, -h / 2, w, h, 9);
-    c.add(g);
-    c.add(this.add.text(0, 0, `전체 수령 ${claimable}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: CASUAL_CSS.WHITE, stroke: '#06351f', strokeThickness: 2,
-    }).setOrigin(0.5));
-    const zone = this.add.zone(0, 0, w, h).setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => this.claimAll());
-    c.add(zone);
-    this.claimAllButton = c;
+    this.receipt = {
+      title: `${def.name} · 보상 수령 완료`,
+      detail: `${this.formatReward(def)} · 젬 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} · 수정 ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
+      tone: 'success',
+    };
+    this.queueRender();
   }
 
   private claimAll(): void {
-    const r = claimAllAchievementRewards(loadGameState(), ACHIEVEMENT_DEFS);
-    if (r.claimedCount === 0) return;
+    if (!this.beginTransaction()) return;
+    const before = loadGameState();
+    const result = claimAllAchievementRewards(before, ALL_ACHIEVEMENT_DEFS);
+    this.gameState = result.state;
+    if (result.claimedCount === 0) {
+      this.receipt = {
+        title: '전체 수령 · 회수 가능한 보상 없음',
+        detail: '재화와 업적 진행은 변경되지 않았습니다',
+        tone: 'warning',
+      };
+      this.queueRender();
+      return;
+    }
 
-    saveGameState(r.state);
-    this.gameState = r.state;
-    this.buildList();
-    this.buildClaimAllButton();   // re-evaluates → hides itself when none remain
-
-    const parts: string[] = [`✅ ${r.claimedCount}개 수령`];
-    if (r.gems)         parts.push(`💎 +${r.gems}`);
-    if (r.soulCrystals) parts.push(`💠 +${r.soulCrystals}`);
-    this.showRewardToast(parts.join('  '));
+    saveGameState(result.state);
+    this.receipt = {
+      title: `전체 수령 완료 · ${result.claimedCount}건`,
+      detail: `젬 +${this.formatNumber(result.gems)} · 수정 +${this.formatNumber(result.soulCrystals)} · 보유 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} / ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
+      tone: 'success',
+    };
+    this.queueRender();
   }
-
-  private showRewardToast(msg: string): void {
-    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60, msg, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
-      color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
-      backgroundColor: '#2f8f3a',
-      padding: { x: 14, y: 8 },
-    }).setOrigin(0.5).setDepth(500);
-    this.tweens.add({
-      targets: t, y: t.y - 30, alpha: 0,
-      duration: 600, delay: 1200,
-      onComplete: () => t.destroy(),
-    });
-  }
-
-  // ─── Scroll ──────────────────────────────────────────────────────────────────
-
-  private applyScroll(): void {
-    this.scrollY = Math.max(0, Math.min(this.scrollY, this.maxScroll));
-    this.listContainer.setY(LIST_TOP - this.scrollY);
-  }
-
-  private setupScrollInput(): void {
-    this.input.on('wheel', (_ptr: unknown, _go: unknown, _dx: number, dy: number) => {
-      this.scrollY += dy * 0.8;
-      this.applyScroll();
-    });
-
-    // Touch drag
-    let lastY = 0;
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => { lastY = p.y; });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!p.isDown) return;
-      const dy = lastY - p.y;
-      lastY     = p.y;
-      if (Math.abs(dy) > 2) {
-        this.scrollY += dy;
-        this.applyScroll();
-      }
-    });
-  }
-
 }
-

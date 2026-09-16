@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  CASUAL,
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+  ZONE_ACCENTS,
+} from '../constants/colors';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
@@ -35,9 +41,9 @@ const CHAPTER_1_THEME: PlaqueTheme = {
   lockedBorder:         CASUAL.EDGE_SOFT,
   lockedLabelColor:     CASUAL_CSS.INK_SOFT,
   unclearedBg:          CASUAL.PANEL,
-  unclearedBorder:      CASUAL.EDGE,
+  unclearedBorder:      ZONE_ACCENTS.invasion,
   unclearedHoverBg:     CASUAL.PANEL,
-  unclearedHoverBorder: CASUAL.GREEN_DK,
+  unclearedHoverBorder: DUNGEON_UI.EMBER,
   unclearedLabelColor:  CASUAL_CSS.INK,
   unclearedStarColor:   CASUAL_CSS.INK_SOFT,
   clearedBg:            CASUAL.PANEL,
@@ -45,7 +51,7 @@ const CHAPTER_1_THEME: PlaqueTheme = {
   clearedLabelColor:    CASUAL_CSS.INK,
   starColor:            CASUAL_CSS.GOLD,
   bossEmoji:            '👹',
-  accent:               CASUAL.GREEN,
+  accent:               ZONE_ACCENTS.invasion,
   showHpBar:            true,
 };
 
@@ -133,70 +139,69 @@ export class StageSelectScene extends Phaser.Scene {
   // ─── Background ─────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    // Fixed to the viewport (scrollFactor 0) so it stays put as the camera scrolls.
+    // Shared charcoal-indigo dungeon atmosphere.
     applyCasualBackground(this);
 
-    // Top header band (cream with white top highlight + brown bottom edge).
+    // Fixed invasion lintel. It reads as dungeon hardware, not a dashboard card.
     const offset = getSceneFixedShellViewportOffset(this);
     const header = this.add.container(offset.x, offset.y).setScrollFactor(0).setDepth(-10);
     this.fixedHeaderContainer = header;
     const g = this.add.graphics();
     header.add(g);
-    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillStyle(DUNGEON_UI.SOOT, 0.98);
     g.fillRect(0, 0, CANVAS_WIDTH, 124);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, 0, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.SHADOW, 0.18);
-    g.fillRect(0, 124, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRect(0, 124 - 3, CANVAS_WIDTH, 3);
+    g.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, 5);
+    g.fillStyle(DUNGEON_UI.IRON, 0.9);
+    g.fillRect(0, 5, 8, 116);
+    g.fillRect(CANVAS_WIDTH - 8, 5, 8, 116);
+    g.fillStyle(ZONE_ACCENTS.invasion, 0.92);
+    g.fillRect(0, 121, CANVAS_WIDTH, 3);
+    g.fillStyle(DUNGEON_UI.BRASS, 0.72);
+    g.fillRect(24, 118, CANVAS_WIDTH - 48, 1);
   }
 
   // ─── Header ─────────────────────────────────────────────────────────────
 
   private drawHeader(): void {
     this.fixedHeaderContainer?.setDepth(10);
-    // Phase B2: ornate header flourish — diamond ornaments flanking the title
-    this.drawTitleFlourish(CANVAS_WIDTH / 2, 48, '침공 · 도깨비 숲', 20);
+    this.drawTitleFlourish(CANVAS_WIDTH / 2, 43, '침공 전선', 21);
     buildZoneBackButton(this, {
       label: '← 던전',
       onBack: () => this.scene.start(getContextualBackTarget('StageSelectScene')),
     });
 
-    const subtitle = this.add.text(CANVAS_WIDTH / 2, 84, 'Chapter 1  —  10 스테이지', {
+    const subtitle = this.add.text(CANVAS_WIDTH / 2, 76, '도깨비 숲 · 제1장 · 관문 1–10', {
       fontFamily: 'sans-serif',
       fontSize: '12px',
-      color: CASUAL_CSS.INK_SOFT,
-      letterSpacing: 2,
+      color: DUNGEON_UI_CSS.MUTED,
+      letterSpacing: 1,
     }).setOrigin(0.5).setScrollFactor(0);
     this.fixedHeaderContainer?.add(subtitle);
 
-    // Decorative double divider line
+    // Route rule: brass trail ending in an ember invasion seal.
     const div = this.add.graphics().setScrollFactor(0);
-    div.lineStyle(1, CASUAL.EDGE, 0.55);
-    div.lineBetween(30, 102, CANVAS_WIDTH - 30, 102);
-    div.lineStyle(0.5, CASUAL.EDGE_SOFT, 0.4);
-    div.lineBetween(30, 105, CANVAS_WIDTH - 30, 105);
-    // Center diamond ornament on divider
-    div.fillStyle(CASUAL.GOLD, 1);
-    div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 98);
-    div.fillTriangle(CANVAS_WIDTH / 2 - 5, 103, CANVAS_WIDTH / 2 + 5, 103, CANVAS_WIDTH / 2, 108);
+    div.lineStyle(2, DUNGEON_UI.IRON, 0.9);
+    div.lineBetween(30, 99, CANVAS_WIDTH - 30, 99);
+    div.lineStyle(1, DUNGEON_UI.BRASS, 0.8);
+    div.lineBetween(62, 99, CANVAS_WIDTH - 62, 99);
+    div.fillStyle(ZONE_ACCENTS.invasion, 1);
+    div.fillTriangle(CANVAS_WIDTH / 2 - 5, 99, CANVAS_WIDTH / 2 + 5, 99, CANVAS_WIDTH / 2, 93);
+    div.fillTriangle(CANVAS_WIDTH / 2 - 5, 99, CANVAS_WIDTH / 2 + 5, 99, CANVAS_WIDTH / 2, 105);
     this.fixedHeaderContainer?.add(div);
 
-    drawChapterProgressBar(this, 0, 10, 116, this.progress, this.fixedHeaderContainer);
+    drawChapterProgressBar(this, 0, 10, 113, this.progress, this.fixedHeaderContainer);
   }
 
   /**
-   * Phase B2: draws a chapter title with decorative flanking ornaments.
-   * Used by drawHeader + inline chapter section headers.
+   * Draws the invasion lintel title with restrained Korean craft geometry.
    */
   private drawTitleFlourish(cx: number, cy: number, text: string, fontSize: number): void {
     const title = this.add.text(cx, cy, text, {
       fontFamily: 'sans-serif',
       fontSize: `${fontSize}px`, fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
-      stroke: '#ffffff', strokeThickness: 4,
+      color: DUNGEON_UI_CSS.PARCHMENT,
+      stroke: '#030504', strokeThickness: 3,
     }).setOrigin(0.5).setScrollFactor(0);
     this.fixedHeaderContainer?.add(title);
 
@@ -206,19 +211,19 @@ export class StageSelectScene extends Phaser.Scene {
 
     // Left ornament — small diamond + short line
     const ornL = this.add.graphics().setScrollFactor(0);
-    ornL.fillStyle(CASUAL.GOLD, 1);
+    ornL.fillStyle(ZONE_ACCENTS.invasion, 1);
     const lx = bounds.left - padX;
     ornL.fillTriangle(lx - 5, cy, lx, cy - 4, lx, cy + 4);
-    ornL.lineStyle(1.5, CASUAL.EDGE, 0.7);
+    ornL.lineStyle(1.5, DUNGEON_UI.BRASS, 0.75);
     ornL.lineBetween(lx - 22, cy, lx - 7, cy);
     this.fixedHeaderContainer?.add(ornL);
 
     // Right ornament — mirror
     const ornR = this.add.graphics().setScrollFactor(0);
-    ornR.fillStyle(CASUAL.GOLD, 1);
+    ornR.fillStyle(ZONE_ACCENTS.invasion, 1);
     const rx = bounds.right + padX;
     ornR.fillTriangle(rx + 5, cy, rx, cy - 4, rx, cy + 4);
-    ornR.lineStyle(1.5, CASUAL.EDGE, 0.7);
+    ornR.lineStyle(1.5, DUNGEON_UI.BRASS, 0.75);
     ornR.lineBetween(rx + 7, cy, rx + 22, cy);
     this.fixedHeaderContainer?.add(ornR);
   }
@@ -263,7 +268,7 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
     const btnY = 4488;
 
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
       `⛩ 선조의 지혜  💠${crystals}`,
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
@@ -282,7 +287,7 @@ export class StageSelectScene extends Phaser.Scene {
     const btnY = 4546;
 
     if (stage10Cleared) {
-      this.buildCasualButton(
+      this.buildDungeonCommand(
         btnX, btnY, btnW, btnH,
         '⚔ 무한 던전',
         CASUAL.RED, CASUAL_CSS.RED,
@@ -293,19 +298,16 @@ export class StageSelectScene extends Phaser.Scene {
         '12px',
       );
     } else {
-      // Locked — muted cream pill with lock
+      // Locked — sealed iron command.
       const bg = this.add.graphics();
-      bg.fillStyle(CASUAL.SHADOW, 0.18);
-      bg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 12);
-      bg.fillStyle(CASUAL.PANEL_SOFT, 1);
-      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
-      bg.lineStyle(3, CASUAL.EDGE_SOFT, 0.85);
-      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 12);
-      this.add.text(btnX + btnW / 2, btnY + btnH / 2 - 4, '⛓', {
-        fontFamily: 'sans-serif', fontSize: '16px',
-      }).setOrigin(0.5);
-      this.add.text(btnX + btnW / 2, btnY + btnH - 12, '무한 던전', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+      bg.fillStyle(DUNGEON_UI.SOOT, 0.84);
+      bg.fillRoundedRect(btnX, btnY, btnW, btnH, 6);
+      bg.lineStyle(1, DUNGEON_UI.IRON, 0.78);
+      bg.strokeRoundedRect(btnX, btnY, btnW, btnH, 6);
+      bg.lineStyle(2, DUNGEON_UI.EDGE, 0.65);
+      bg.lineBetween(btnX + 18, btnY + 13, btnX + btnW - 18, btnY + 13);
+      this.add.text(btnX + btnW / 2, btnY + 28, '무한 던전 · 봉인', {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
       }).setOrigin(0.5);
       this.add.text(btnX + btnW / 2, btnY + btnH + 6, 'Ch.1 보스 클리어 후 해금', {
         fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
@@ -320,7 +322,7 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 + 4;
     const btnY = 4546;
 
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
       '🏆 업적',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
@@ -336,7 +338,7 @@ export class StageSelectScene extends Phaser.Scene {
     const btnX = CANVAS_WIDTH / 2 - btnW / 2;
     const btnY = 4600;
 
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
       '⚔️ 몬스터 막사',
       CASUAL.BLUE, CASUAL_CSS.BLUE,
@@ -352,28 +354,26 @@ export class StageSelectScene extends Phaser.Scene {
     const startX = CANVAS_WIDTH / 2 - totalW / 2;
     const btnY = 4658;
 
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       startX, btnY, btnW, btnH, '🕳 심연',
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
       () => this.scene.start('AbyssScene'), '13px',
     );
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       startX + btnW + gap, btnY, btnW, btnH, '🏭 생산',
       CASUAL.GOLD, CASUAL_CSS.GOLD,
       () => this.scene.start('ProductionScene'), '13px',
     );
-    this.buildCasualButton(
+    this.buildDungeonCommand(
       startX + (btnW + gap) * 2, btnY, btnW, btnH, '🎏 장식',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
       () => this.scene.start('DecorationScene'), '13px',
     );
   }
 
-  // ─── Casual button helper ─────────────────────────────────────────────────
-  // Cream pill + 3px brown border + saturated semantic accent ring + white
-  // top highlight + soft drop shadow. Mirrors BarracksScene's casual chrome.
+  // ─── Dungeon command helper ────────────────────────────────────────────────
 
-  private buildCasualButton(
+  private buildDungeonCommand(
     x: number,
     y: number,
     w: number,
@@ -384,19 +384,17 @@ export class StageSelectScene extends Phaser.Scene {
     cb: () => void,
     fontSize = '14px',
   ): void {
-    const radius = 12;
+    const radius = 6;
     const draw = (pressed: boolean): void => {
       bg.clear();
-      bg.fillStyle(CASUAL.SHADOW, 0.22);
-      bg.fillRoundedRect(x, y + 4, w, h, radius);
-      bg.fillStyle(pressed ? CASUAL.PANEL_SOFT : CASUAL.PANEL, 1);
+      bg.fillStyle(DUNGEON_UI.SOOT, 0.72);
+      bg.fillRoundedRect(x + 2, y + 3, w, h, radius);
+      bg.fillStyle(pressed ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
       bg.fillRoundedRect(x, y, w, h, radius);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-      bg.lineStyle(3, CASUAL.EDGE, 1);
+      bg.fillStyle(accent, pressed ? 0.92 : 0.72);
+      bg.fillRect(x, y + 5, 3, h - 10);
+      bg.lineStyle(1.5, pressed ? accent : DUNGEON_UI.IRON, 0.95);
       bg.strokeRoundedRect(x, y, w, h, radius);
-      bg.lineStyle(1.5, accent, 0.9);
-      bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, radius - 3);
     };
     const bg = this.add.graphics();
     draw(false);

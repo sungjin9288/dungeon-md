@@ -2,7 +2,7 @@
 // 병영 씬 공유 상수·타입·순수 헬퍼. 최하층 — 씬을 import하지 않는다 (순환 방지).
 
 import { COLORS } from '../constants/colors';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, resolveOwnedMonsterProfile } from '../data/monsters';
 import {
   xpToNextLevel,
   EQUIPMENT_DEFS,
@@ -16,19 +16,20 @@ import {
   type DungeonSlot,
   type RoomSlotType,
 } from '../data/wisdom';
-import type { MonsterDef, RarityId } from '../data/monsters';
+import type { OwnedMonsterProfile, RarityId } from '../data/monsters';
 
 // ─── Card Geometry Constants ──────────────────────────────────────────────────
 
-export const CARD_W          = 162;
-export const CARD_H          = 220;
+export const CARD_W          = 362;
+export const CARD_H          = 180;
 export const CARD_PAD        = 10;
 export const CARD_START_X    = 14;
 export const GROWTH_PANEL_Y  = 88;
-export const GROWTH_PANEL_H  = 112;
+export const GROWTH_PANEL_H  = 150;
 export const SORT_CHIP_Y     = GROWTH_PANEL_Y + GROWTH_PANEL_H + 8;
 export const FILTER_CHIP_Y   = SORT_CHIP_Y + 48;
 export const CARD_START_Y    = FILTER_CHIP_Y + 48;
+export const SUMMON_ROW_H    = 72;
 
 // ─── Type aliases ─────────────────────────────────────────────────────────────
 
@@ -135,15 +136,15 @@ export function compareGrowth(a: OwnedMonster, b: OwnedMonster): number {
 
 export function getMonsterCollectionMeta(
   monster: OwnedMonster,
-  def: MonsterDef,
+  def: OwnedMonsterProfile,
 ): MonsterCollectionMeta {
   const allIds = Object.keys(MONSTER_DEFS);
-  const index = Math.max(0, allIds.indexOf(def.id));
+  const index = def.registryId ? allIds.indexOf(def.registryId) : -1;
   const tier = def.rarityTier ?? OWNED_RARITY_TO_TIER[monster.rarity ?? 0] ?? 'C';
   const rarity = COLLECTION_RARITY_META[tier];
   const element = def.element ? ELEMENT_META[def.element] : null;
   return {
-    indexLabel:   `No.${String(index + 1).padStart(3, '0')}`,
+    indexLabel:   index >= 0 ? `No.${String(index + 1).padStart(3, '0')}` : 'No.---',
     tier,
     rank:         rarity.rank,
     label:        rarity.label,
@@ -241,7 +242,7 @@ export function getMonsterRoomPlan(gs: GameState, monster: OwnedMonster): Monste
     };
   }
 
-  const def = MONSTER_DEFS[monster.id as keyof typeof MONSTER_DEFS];
+  const def = resolveOwnedMonsterProfile(monster.id);
   const preferredType = getPreferredRoomType(def?.type);
   const unlockedSlots = getUnlockedSlots(gs.dmLevel);
   const slots = gs.dungeonSlots ?? [];

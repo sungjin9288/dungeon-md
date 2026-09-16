@@ -12,7 +12,12 @@
 //   drawJourneyTrail           — draw lit/dim connecting trail between nodes
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  CASUAL,
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+} from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import type { StageProgress } from '../data/stageProgress';
@@ -20,28 +25,25 @@ import { addPanelShadow } from './PanelDepth';
 import { getReducedMotion } from '../utils/reducedMotion';
 
 // ── PlaqueTheme ───────────────────────────────────────────────────────────────
-// Casual-toy reskin: stage cards are now cream cells on the bright board. Each
-// chapter keeps its identity through a single saturated CASUAL *accent* colour
-// used for the chunky border + tint; the cell fill is always cream
-// (CASUAL.PANEL / PANEL_SOFT). The hex/CSS fields below carry CASUAL values —
-// the field *names* are retained because StageSelectScene + drawing helpers
-// reference them, but their semantics shifted from "dark fill" → "accent".
+// Chapter data keeps the legacy field shape for compatibility. The renderer
+// supplies the shared soot/iron gate material; chapter accents identify routes,
+// bosses, and the current frontier without turning every node into a new card.
 
 export interface PlaqueTheme {
-  // Locked state — muted cream cell + soft edge.
-  lockedBg:             number;   // cream fill (CASUAL.PANEL_SOFT)
-  lockedBorder:         number;   // soft brown edge (CASUAL.EDGE_SOFT)
+  // Locked state compatibility values.
+  lockedBg:             number;
+  lockedBorder:         number;
   lockedLabelColor:     string;   // INK_SOFT
-  // Uncleared state — cream cell + chapter accent edge (playable).
-  unclearedBg:          number;   // cream fill (CASUAL.PANEL)
-  unclearedBorder:      number;   // chapter accent (used as edge tint)
-  unclearedHoverBg:     number;   // brighter cream (CASUAL.PANEL)
-  unclearedHoverBorder: number;   // chapter accent (brighter on hover)
+  // Uncleared state — chapter accent identifies a playable gate.
+  unclearedBg:          number;
+  unclearedBorder:      number;
+  unclearedHoverBg:     number;
+  unclearedHoverBorder: number;
   unclearedLabelColor:  string;   // INK
   unclearedStarColor:   string;   // empty-star colour (EDGE_SOFT-ish)
-  // Cleared state — cream cell + GOLD edge.
-  clearedBg:            number;   // cream fill (CASUAL.PANEL)
-  clearedBorder:        number;   // CASUAL.GOLD
+  // Cleared state compatibility values.
+  clearedBg:            number;
+  clearedBorder:        number;
   clearedLabelColor:    string;   // INK
   starColor:            string;   // earned-star gold (CASUAL_CSS.GOLD-ish)
   // Decoration
@@ -52,9 +54,9 @@ export interface PlaqueTheme {
   showHpBar:            boolean;
 }
 
-// Empty-star colour on cream — soft brown so blanks read as "not yet earned".
+// Empty-star colour remains muted against the dark gate face.
 const EMPTY_STAR_CSS = CASUAL_CSS.INK_SOFT;
-// Earned-star gold (slightly deeper than fill GOLD so it pops on cream).
+// Earned-star gold.
 const STAR_GOLD_CSS = '#e0a312';
 
 // ── CHAPTER_PLAQUE_THEMES  (index 0 = Ch2, … index 6 = Ch8) ──────────────────
@@ -157,14 +159,12 @@ export interface ChapterSectionData {
   bh:               number;
   gapX:             number;
   gapY:             number;
-  // Colours — casual reskin: divider/banner accents are CASUAL hex; banner fill
-  // is always cream. The chapter title keeps a small accent tint, everything
-  // else is INK / INK_SOFT on cream.
+  // Chapter route accents. Legacy banner fields remain for compatibility.
   activeDivColor:   number;   // chapter accent (divider + title accent pill)
   activeTextColor:  string;   // chapter title text (INK with accent pill)
   lockedDivColor:   number;   // soft brown divider when locked (EDGE_SOFT)
   lockedLabelColor: string;   // locked chapter title (INK_SOFT)
-  bannerBg:         number;   // cream banner fill (CASUAL.PANEL_SOFT)
+  bannerBg:         number;
   bannerBorder:     number;   // chapter accent banner edge
   lockedMsgColor:   string;   // lock message (INK_SOFT)
   lockedNameColor:  string;   // chapter name + count line (INK_SOFT / INK)
@@ -249,14 +249,18 @@ export function drawJourneyTrail(
     const isLit = i < frontierLocalIdx;
 
     if (isLit) {
-      // Lit segment: gold shadow + bright line
-      trail.lineStyle(10, CASUAL.SHADOW, 0.35);
+      // Cleared corridor: iron channel with a chapter-colored signal line.
+      trail.lineStyle(10, DUNGEON_UI.SOOT, 0.92);
       trail.lineBetween(x1, y1, x2, y2);
-      trail.lineStyle(6, accentColor, 0.85);
+      trail.lineStyle(6, DUNGEON_UI.IRON, 0.88);
+      trail.lineBetween(x1, y1, x2, y2);
+      trail.lineStyle(2, accentColor, 0.92);
       trail.lineBetween(x1, y1, x2, y2);
     } else {
-      // Dim segment: muted stone path
-      trail.lineStyle(6, CASUAL.EDGE_SOFT, 0.3);
+      // Sealed corridor beyond the frontier.
+      trail.lineStyle(8, DUNGEON_UI.SOOT, 0.8);
+      trail.lineBetween(x1, y1, x2, y2);
+      trail.lineStyle(2, DUNGEON_UI.IRON, 0.62);
       trail.lineBetween(x1, y1, x2, y2);
     }
   }
@@ -264,8 +268,8 @@ export function drawJourneyTrail(
   // Stone-step dots at each cleared node center
   for (let i = 0; i < Math.min(frontierLocalIdx, centers.length); i++) {
     const { cx, cy } = centers[i];
-    trail.fillStyle(accentColor, 0.55);
-    trail.fillCircle(cx, cy, 4);
+    trail.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.82);
+    trail.fillCircle(cx, cy, 3);
   }
 }
 
@@ -410,7 +414,7 @@ export function drawGenericPlaque(
   const isFrontier = idx === highlightIdx && !!prog?.unlocked && prog.bestStars === 0;
   const isBoss = !!cfg?.bossWave;
   // Boss/special stages → RED accent edge regardless of chapter accent.
-  const bossEdge = CASUAL.RED;
+  const bossEdge = DUNGEON_UI.EMBER;
 
   if (prog?.unlocked) {
     addPanelShadow(scene, x, y, w, h, 6, {
@@ -419,44 +423,41 @@ export function drawGenericPlaque(
   }
 
   if (!prog?.unlocked) {
-    // Locked — muted cream cell + soft brown edge + lock glyph.
-    bg.fillStyle(CASUAL.SHADOW, 0.16);
-    bg.fillRoundedRect(x, y + 2, w, h, 6);
-    bg.fillStyle(theme.lockedBg, 1);
+    // Locked — an iron-sealed gate, visible without an emoji lock.
+    bg.fillStyle(DUNGEON_UI.SOOT, 0.88);
+    bg.fillRoundedRect(x + 2, y + 3, w, h, 6);
+    bg.fillStyle(DUNGEON_UI.STONE, 0.96);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(x + 5, y + 4, w - 10, 5, 3);
-    bg.lineStyle(2.5, theme.lockedBorder, 0.9);
+    bg.lineStyle(1.5, DUNGEON_UI.IRON, 0.88);
     bg.strokeRoundedRect(x, y, w, h, 6);
-    scene.add.text(x + w / 2, y + h / 2 - 4, '🔒',
-      { fontFamily: 'sans-serif', fontSize: '16px' }).setOrigin(0.5).setAlpha(0.7);
+    _drawGateSeal(bg, x + w / 2, y + 27, DUNGEON_UI.EDGE, 0.66);
     scene.add.text(x + w / 2, y + h - 12, label,
-      { fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-        color: theme.lockedLabelColor }).setOrigin(0.5);
+      { fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: DUNGEON_UI_CSS.MUTED }).setOrigin(0.5);
 
   } else if (prog.bestStars === 0) {
-    // Unlocked, not cleared — cream cell + chapter (or boss) accent edge.
+    // Unlocked, not cleared — raised gate + chapter (or boss) signal edge.
     const edgeBase  = isBoss ? bossEdge : theme.unclearedBorder;
-    const edgeHover = isBoss ? CASUAL.RED_DK : theme.unclearedHoverBorder;
-    const drawBase = (fillCol: number, accentCol: number) => {
+    const edgeHover = isBoss ? DUNGEON_UI.EMBER : theme.unclearedHoverBorder;
+    const drawBase = (_fillCol: number, accentCol: number) => {
       bg.clear();
-      bg.fillStyle(fillCol, 1);
+      bg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
       bg.fillRoundedRect(x, y, w, h, 6);
-      bg.fillStyle(0xffffff, 0.12);
-      bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-      bg.lineStyle(2.5, CASUAL.EDGE, 1);
+      bg.fillStyle(DUNGEON_UI.SOOT, 0.5);
+      bg.fillRoundedRect(x + 7, y + 26, w - 14, h - 34, 4);
+      bg.lineStyle(1.5, DUNGEON_UI.IRON, 1);
       bg.strokeRoundedRect(x, y, w, h, 6);
-      bg.lineStyle(1.5, accentCol, 0.95);
-      bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
-      _drawPlaqueAccent(bg, x, y, w, accentCol, isFrontier ? 0.95 : 0.7);
+      bg.fillStyle(accentCol, isFrontier ? 0.96 : 0.72);
+      bg.fillRect(x + 1, y + 7, 3, h - 14);
+      _drawPlaqueAccent(bg, x, y, w, accentCol, isFrontier ? 1 : 0.72);
     };
     drawBase(theme.unclearedBg, edgeBase);
     scene.add.text(x + w / 2, y + 14, label, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
-      color: theme.unclearedLabelColor,
+      fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
+      color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0.5);
     scene.add.text(x + w / 2, y + h - 16, '☆☆☆', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: theme.unclearedStarColor,
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
     const zone = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
@@ -464,19 +465,19 @@ export function drawGenericPlaque(
     zone.on('pointerout',  () => drawBase(theme.unclearedBg,      edgeBase));
 
   } else {
-    // Cleared — cream cell + GOLD edge (boss keeps a RED inner ring accent).
-    bg.fillStyle(theme.clearedBg, 1);
+    // Cleared — quiet stone seal with a brass record edge.
+    bg.fillStyle(DUNGEON_UI.STONE, 1);
     bg.fillRoundedRect(x, y, w, h, 6);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(x + 5, y + 4, w - 10, 6, 3);
-    bg.lineStyle(2.5, CASUAL.EDGE, 1);
+    bg.fillStyle(DUNGEON_UI.SOOT, 0.48);
+    bg.fillRoundedRect(x + 7, y + 26, w - 14, h - 34, 4);
+    bg.lineStyle(1.5, DUNGEON_UI.IRON, 1);
     bg.strokeRoundedRect(x, y, w, h, 6);
-    bg.lineStyle(1.5, isBoss ? bossEdge : theme.clearedBorder, 0.95);
+    bg.lineStyle(1, isBoss ? bossEdge : DUNGEON_UI.BRASS, 0.92);
     bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
-    _drawPlaqueAccent(bg, x, y, w, theme.clearedBorder, 0.9);
+    _drawPlaqueAccent(bg, x, y, w, DUNGEON_UI.BRASS, 0.9);
     scene.add.text(x + w / 2, y + 14, label, {
-      fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold',
-      color: theme.clearedLabelColor,
+      fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
+      color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0.5);
     addStarPop(scene, x + w / 2, y + h - 16, prog.bestStars, theme.starColor);
     if (prog.bestHpPercent !== undefined) {
@@ -487,8 +488,9 @@ export function drawGenericPlaque(
   }
 
   if (isBoss) {
-    scene.add.text(x + w - 4, y + 4, theme.bossEmoji,
-      { fontSize: '11px' }).setOrigin(1, 0);
+    scene.add.text(x + w - 5, y + 7, 'BOSS', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.EMBER,
+    }).setOrigin(1, 0);
     if (prog?.unlocked) {
       _drawBossRing(scene, x, y, w, h);
     }
@@ -511,6 +513,24 @@ function _drawPlaqueAccent(
 ): void {
   g.fillStyle(color, alpha);
   g.fillRoundedRect(x + 8, y + 4, Math.max(8, w - 16), 3, 2);
+}
+
+function _drawGateSeal(
+  g: Phaser.GameObjects.Graphics,
+  cx: number,
+  cy: number,
+  color: number,
+  alpha: number,
+): void {
+  g.lineStyle(2, color, alpha);
+  g.beginPath();
+  g.arc(cx, cy + 3, 12, Math.PI, Math.PI * 2);
+  g.strokePath();
+  g.lineBetween(cx - 12, cy + 3, cx - 12, cy + 15);
+  g.lineBetween(cx + 12, cy + 3, cx + 12, cy + 15);
+  g.lineBetween(cx - 12, cy + 15, cx + 12, cy + 15);
+  g.lineBetween(cx - 5, cy - 6, cx - 5, cy + 15);
+  g.lineBetween(cx + 5, cy - 6, cx + 5, cy + 15);
 }
 
 function _pressPlaque(
@@ -541,15 +561,13 @@ function _drawFrontierCue(
   const ring = scene.add.graphics();
   ring.lineStyle(2.5, color, 1);
   ring.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 8);
-  // Pulse is decorative — the static ring + ▶ cue already mark the frontier.
+  // One focus reveal; the static ring and wedge retain the state afterward.
   if (!getReducedMotion()) {
     scene.tweens.add({
       targets: ring,
-      alpha: { from: 0.35, to: 1 },
-      duration: 850,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+      alpha: { from: 0.38, to: 1 },
+      duration: 260,
+      ease: 'Power2.Out',
     });
   }
 
@@ -571,17 +589,6 @@ function _drawBossRing(
   const ring = scene.add.graphics();
   ring.lineStyle(2, CASUAL.RED, 0.85);
   ring.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 7);
-  // Pulse is decorative — the static red ring already marks the boss cell.
-  if (!getReducedMotion()) {
-    scene.tweens.add({
-      targets: ring,
-      alpha: { from: 0.4, to: 1 },
-      duration: 900,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
-  }
 }
 
 // ── _drawHpDisplay ────────────────────────────────────────────────────────────
@@ -595,18 +602,18 @@ function _drawHpDisplay(
   hpPercent:  number,
   showBar:    boolean,
 ): void {
-  // Casual HP tint on cream — soft green/gold/red INK-friendly hexes.
+  // HP uses semantic jade/brass/ember text and fill.
   const hpColor = hpPercent >= 80 ? CASUAL_CSS.GREEN : hpPercent >= 40 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
   if (showBar) {
     const fillRgb = hpPercent >= 80 ? CASUAL.GREEN : hpPercent >= 40 ? CASUAL.GOLD : CASUAL.RED;
     const barW = w - 14, barX = x + 7, barY = y + h - 26;
     const hpBar = scene.add.graphics();
-    hpBar.fillStyle(CASUAL.PANEL_SOFT, 1);
+    hpBar.fillStyle(DUNGEON_UI.SOOT, 1);
     hpBar.fillRoundedRect(barX, barY, barW, 4, 2);
     hpBar.fillStyle(fillRgb, 1);
     hpBar.fillRoundedRect(barX, barY, Math.max(2, barW * (hpPercent / 100)), 4, 2);
     scene.add.text(x + w / 2, barY - 9, `❤ ${hpPercent}%`,
-      { fontFamily: 'sans-serif', fontSize: '9px', color: hpColor }).setOrigin(0.5);
+      { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
   } else {
     scene.add.text(x + w / 2, y + h - 28, `HP ${hpPercent}%`,
       { fontFamily: 'sans-serif', fontSize: '10px', color: hpColor }).setOrigin(0.5);
@@ -627,7 +634,7 @@ export function drawChapterSection(
 ): void {
   const unlocked = (progress[data.unlockIdx]?.bestStars ?? 0) > 0;
 
-  // Soft brown divider with a centred accent diamond (matches Ch1 header).
+  // Iron chapter threshold with one semantic accent seal.
   const div = scene.add.graphics();
   div.lineStyle(1, unlocked ? CASUAL.EDGE : CASUAL.EDGE_SOFT, 0.55);
   div.lineBetween(30, data.divY, CANVAS_WIDTH - 30, data.divY);
@@ -636,20 +643,20 @@ export function drawChapterSection(
   div.fillTriangle(CANVAS_WIDTH / 2 - 4, data.divY, CANVAS_WIDTH / 2 + 4, data.divY, CANVAS_WIDTH / 2, data.divY + 5);
 
   if (unlocked) {
-    _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}`, data.activeDivColor);
+    _drawChapterTitle(scene, data.labelY, `제${data.num}장 · ${data.name}`, data.activeDivColor);
     drawChapterProgressBar(scene, data.startIdx, data.stageCount, data.progressBarY, progress);
   } else {
-    _drawChapterTitle(scene, data.labelY, `Chapter ${data.num}  —  ${data.name}  🔒`, CASUAL.EDGE_SOFT, data.lockedLabelColor);
+    _drawChapterTitle(scene, data.labelY, `제${data.num}장 · ${data.name} · 봉인`, DUNGEON_UI.EDGE, data.lockedLabelColor);
     // Slim single-line unlock hint — no big banner (avoids dead-space voids).
-    // The dimmed 🔒 node path drawn below shows the journey still ahead, so the
+    // The dimmed sealed path drawn below shows the journey still ahead, so the
     // map reads as one continuous road (AFK-Journey style) instead of gaps.
-    scene.add.text(CANVAS_WIDTH / 2, data.progressBarY - 1, data.unlockMsg, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: data.lockedMsgColor,
+    scene.add.text(CANVAS_WIDTH / 2, data.progressBarY - 1, data.unlockMsg.replace(/^⛓\s*/, ''), {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: data.lockedMsgColor,
     }).setOrigin(0.5, 0);
   }
 
   // Always render the chapter path. Unlocked chapters show playable / cleared
-  // nodes; locked chapters render dimmed 🔒 nodes (non-interactive) so the
+  // nodes; locked chapters render dimmed sealed nodes (non-interactive) so the
   // journey continues unbroken and the reserved height is never empty.
   _drawChapterPath(scene, data, theme, progress, onSelect, highlightIdx);
 }
@@ -667,7 +674,7 @@ function _drawChapterTitle(
 ): void {
   const title = scene.add.text(CANVAS_WIDTH / 2, labelY, text, {
     fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-    color: textColor, stroke: '#ffffff', strokeThickness: 3, letterSpacing: 1,
+    color: textColor, stroke: '#030504', strokeThickness: 2, letterSpacing: 1,
   }).setOrigin(0.5, 1);
 
   const bounds = title.getBounds();
@@ -730,21 +737,27 @@ export function drawChapterProgressBar(
   const maxStars  = count * 3;
   const pct       = count > 0 ? cleared / count : 0;
   const bx = 30, bw = CANVAS_WIDTH - 60, bh = 4;
-  // Cream PANEL_SOFT track + GOLD fill (GREEN/BLUE accents while in progress).
+  // Recessed iron track + readable completion signal.
   const bg = scene.add.graphics();
-  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  bg.fillStyle(DUNGEON_UI.SOOT, 1);
   bg.fillRoundedRect(bx, y, bw, bh, 2);
-  const fillColor = pct >= 1 ? CASUAL.GOLD : pct >= 0.5 ? CASUAL.GREEN : CASUAL.BLUE;
+  bg.lineStyle(1, DUNGEON_UI.IRON, 0.72);
+  bg.strokeRoundedRect(bx, y, bw, bh, 2);
+  const fillColor = pct >= 1
+    ? DUNGEON_UI.BRASS_BRIGHT
+    : pct >= 0.5
+      ? DUNGEON_UI.JADE
+      : DUNGEON_UI.BRASS;
   bg.fillStyle(fillColor, 1);
   bg.fillRoundedRect(bx, y, Math.max(4, bw * pct), bh, 2);
   if (target) target.add(bg.setScrollFactor(0));
   const countLabel = scene.add.text(bx + bw - 2, y - 2, `${cleared}/${count}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(1, 1);
   if (target) target.add(countLabel.setScrollFactor(0));
   const starColor = totalStars === maxStars ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT;
   const starLabel = scene.add.text(bx + 2, y - 2, `★ ${totalStars}/${maxStars}`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: starColor,
+    fontFamily: 'sans-serif', fontSize: '10px', color: starColor,
   }).setOrigin(0, 1);
   if (target) target.add(starLabel.setScrollFactor(0));
 }
@@ -768,7 +781,7 @@ export function addStarPop(
     }).setOrigin(0.5).setScale(0).setAlpha(0);
     scene.tweens.add({
       targets: t, scaleX: 1, scaleY: 1, alpha: 1,
-      duration: 220, ease: 'Back.easeOut', delay: 60 + i * 80,
+      duration: 180, ease: 'Back.easeOut', delay: i * 40,
     });
   });
 }

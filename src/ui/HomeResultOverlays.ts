@@ -350,7 +350,7 @@ export function showChapterCompleteOverlay(
     fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'italic',
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 204, 'Chapter 2 티저', {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 
   addOverlayButton(scene, c, {

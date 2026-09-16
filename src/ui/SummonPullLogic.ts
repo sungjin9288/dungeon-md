@@ -53,12 +53,12 @@ function logSummonResult(type: SummonType, result: SummonPullResult, soulCrystal
  * Executes a summon pull (1 or 10 times), deducts currency, updates state,
  * plays SFX, and triggers the pull animation.
  */
-export function executePull(ctx: PullContext, type: SummonType, count: number): void {
+export function executePull(ctx: PullContext, type: SummonType, count: number): boolean {
   const gs = loadGameState();
   const result = applySummonPull(gs, type, count, { activeBanner: ctx.activeBanner });
   if (!result.ok) {
     showSummonFailureToast(ctx, result);
-    return;
+    return false;
   }
 
   saveGameState(result.state);
@@ -80,4 +80,5 @@ export function executePull(ctx: PullContext, type: SummonType, count: number): 
   } else {
     playMultiPullAnimation(ctx.scene, result.results, onAnimComplete);
   }
+  return true;
 }

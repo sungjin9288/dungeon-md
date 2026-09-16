@@ -13,7 +13,11 @@ import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { Room } from '../objects/Room';
 import { ROOM_DEFS, getScrollAuraBonus, type RoomData } from '../data/rooms';
-import { type CombatMonsterDef, type TribeId } from '../data/monsters';
+import {
+  resolveMonsterAttackCooldown,
+  type CombatMonsterDef,
+  type TribeId,
+} from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
 import { GRID_ROWS, GRID_Y, CANVAS_WIDTH } from '../constants/layout';
 import {
@@ -195,10 +199,11 @@ export function resolveAttack(
   if (now < (data.rageUntil ?? 0)) dmg *= 2;
 
   // ── Active skill: speed_up (attack 50% faster for 8s) ─────────────────────────
+  const baseAttackCooldown = resolveMonsterAttackCooldown(data.monsterSlot, data.type);
   if (now < (data.speedBoostUntil ?? 0)) {
-    data.attackCooldown = ROOM_DEFS[data.type].attackCooldown * 0.5;
+    data.attackCooldown = baseAttackCooldown * 0.5;
   } else if (data.speedBoostUntil > 0 && now >= data.speedBoostUntil) {
-    data.attackCooldown = ROOM_DEFS[data.type].attackCooldown;
+    data.attackCooldown = baseAttackCooldown;
     data.speedBoostUntil = 0;
   }
 

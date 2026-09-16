@@ -8,6 +8,7 @@ import {
   getBlueprintRecommendation,
   getForgeBlueprintProjection,
   getMonsterDefForOwned,
+  getOwnedMonsterAttack,
   getPreferredRoomSlotType,
   getRoomTypeName,
   hasOpenMonsterSlot,
@@ -61,6 +62,24 @@ describe('forgeRecommendations — pure helpers', () => {
     expect(getMonsterDefForOwned('dokkaebi_warrior_3')?.name)
       .toBe(getMonsterDefForOwned('dokkaebi_warrior')?.name);
     expect(getMonsterDefForOwned('no_such_monster_xyz')).toBeNull();
+  });
+
+  it('resolves evolved and fusion-only monsters for forge and growth guidance', () => {
+    expect(getMonsterDefForOwned('dokkaebi_warrior_leg')).toMatchObject({
+      name: '전설 도깨비 전사',
+      baseDamage: 57,
+    });
+    expect(getMonsterDefForOwned('storm_spirit')).toMatchObject({
+      name: '폭풍 정령',
+      type: 'magic',
+      baseDamage: 24,
+    });
+    expect(getOwnedMonsterAttack(monster({ id: 'storm_spirit', level: 1 }))).toBe(24);
+
+    const hybrid = monster({ id: 'storm_spirit', level: 1, rarity: 2 });
+    const recommendation = buildGrowthRecommendation(state({ ownedMonsters: [hybrid] }), hybrid);
+    expect(recommendation.monsterName).toBe('폭풍 정령');
+    expect(recommendation.monsterEmoji).toBe('⚡');
   });
 
   it('findMonsterRoom locates the slot containing the monster', () => {
@@ -120,6 +139,18 @@ describe('forgeRecommendations — pure helpers', () => {
 
   it('getBlueprintRecommendation returns null when no monsters owned', () => {
     expect(getBlueprintRecommendation(state({ ownedMonsters: [] }), BP)).toBeNull();
+  });
+
+  it('excludes invalid imported monster IDs from forge recommendations and targets', () => {
+    const valid = monster({ id: 'storm_spirit', level: 2 });
+    const invalid = monster({ id: 'no_such_monster', level: 99 });
+    const gs = state({ ownedMonsters: [invalid, valid], blueprints: [BP.id] });
+
+    expect(getBlueprintRecommendation(gs, BP, {
+      monsterId: invalid.id,
+      sourceLabel: 'invalid import',
+    })?.monsterId).toBe(valid.id);
+    expect(rankForgeTargets(gs, invalid.id).map(target => target.monster.id)).toEqual([valid.id]);
   });
 
   it('keeps exact per-material values and labels a non-improvement honestly', () => {

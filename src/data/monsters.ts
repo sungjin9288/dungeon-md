@@ -11,26 +11,16 @@ export type {
 } from './monstersTypes';
 
 // ─── Import data parts ────────────────────────────────────────────────────────
-import type { MonsterId, MonsterDef } from './monstersTypes';
-import { MONSTERS_CH1_5 } from './monstersDataCh1to5';
-import { MONSTERS_CH6 } from './monstersDataCh6';
+import type { MonsterId, MonsterDef, RarityId } from './monstersTypes';
 import {
-  MONSTERS_CH7,
   SKIN_DATA as _SKIN_DATA,
   TRIBE_TOTALS as _TRIBE_TOTALS,
 } from './monstersDataCh7andExtras';
-import { MONSTERS_CH8 } from './monstersDataCh8';
-import { MONSTERS_CH9 } from './monstersDataCh9';
+import { MONSTER_DEFS } from './monsterRegistry';
 
 // ─── Assembled lookup ─────────────────────────────────────────────────────────
 
-export const MONSTER_DEFS: Record<MonsterId, MonsterDef> = {
-  ...MONSTERS_CH1_5,
-  ...MONSTERS_CH6,
-  ...MONSTERS_CH7,
-  ...MONSTERS_CH8,
-  ...MONSTERS_CH9,
-} as Record<MonsterId, MonsterDef>;
+export { MONSTER_DEFS };
 
 // ─── Re-export data constants ────────────────────────────────────────────────
 
@@ -40,11 +30,11 @@ export const TRIBE_TOTALS = _TRIBE_TOTALS;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 import type { ElementId } from './monstersTypes';
-import type { RoomType } from './rooms';
+import { ROOM_DEFS, type RoomType } from './rooms';
 
-/** Resolves an owned monster ID to its exact or longest delimited base type. */
-export function resolveMonsterTypeId(monsterId: string): MonsterId | null {
-  if (!monsterId) return null;
+/** Resolves an exact registry ID or a delimited owned-instance ID to its longest base type. */
+export function resolveMonsterTypeId(monsterId: unknown): MonsterId | null {
+  if (typeof monsterId !== 'string' || !monsterId) return null;
   if (Object.prototype.hasOwnProperty.call(MONSTER_DEFS, monsterId)) {
     return monsterId as MonsterId;
   }
@@ -98,9 +88,94 @@ export function getSkinsForMonster(monsterId: string): MonsterSkin[] {
   return SKIN_DATA.filter(s => s.monsterId === monsterId);
 }
 
-// ─── Monster def resolver (MONSTER_DEFS → HYBRID_DEFS fallback) ──────────────
+// ─── Owned monster profile resolver ──────────────────────────────────────────
 
-import { HYBRID_DEFS } from './fusion';
+import { HYBRID_DEFS, getMonsterRarity } from './fusion';
+
+export interface OwnedMonsterProfile {
+  readonly id: string;
+  readonly registryId: MonsterId | null;
+  readonly source: 'registry' | 'variant' | 'hybrid';
+  readonly name: string;
+  readonly emoji: string;
+  readonly type: MonsterDef['type'];
+  readonly roomTypes: readonly string[];
+  readonly baseDamage: number;
+  readonly attackCooldown: number;
+  readonly range: number;
+  readonly passive: string;
+  readonly passiveDesc: string;
+  readonly accentColor: number;
+  readonly tribe?: MonsterDef['tribe'];
+  readonly element?: MonsterDef['element'];
+  readonly rarityTier: RarityId;
+}
+
+const OWNED_RARITY_TIERS: readonly RarityId[] = ['C', 'U', 'R', 'E', 'L'];
+const OWNED_RARITY_PREFIXES = ['', '강화 ', '정예 ', '영웅 ', '전설 '] as const;
+const OWNED_RARITY_ACCENTS = [0x8f98a5, 0x58c681, 0x62a8ff, 0xc978ff, 0xffc857] as const;
+
+/**
+ * Resolves every valid OwnedMonster.id into one read-only presentation/combat
+ * profile. Exact registry IDs stay canonical; evolved IDs inherit their base
+ * definition; fusion-only hybrids use the existing hybrid registry.
+ */
+export function resolveOwnedMonsterProfile(id: unknown): OwnedMonsterProfile | null {
+  if (typeof id !== 'string' || !id) return null;
+
+  if (Object.prototype.hasOwnProperty.call(MONSTER_DEFS, id)) {
+    const def = MONSTER_DEFS[id as MonsterId];
+    return {
+      ...def,
+      id,
+      registryId: def.id,
+      source: 'registry',
+      rarityTier: def.rarityTier ?? 'C',
+    };
+  }
+
+  const registryId = resolveMonsterTypeId(id);
+  if (registryId) {
+    const def = MONSTER_DEFS[registryId];
+    const rarity = getMonsterRarity(id);
+    return {
+      ...def,
+      id,
+      registryId,
+      source: 'variant',
+      name: `${OWNED_RARITY_PREFIXES[rarity] ?? ''}${def.name}`,
+      baseDamage: rarity > 0
+        ? Math.round(def.baseDamage * Math.pow(1.30, rarity))
+        : def.baseDamage,
+      rarityTier: rarity > 0
+        ? OWNED_RARITY_TIERS[rarity] ?? def.rarityTier ?? 'C'
+        : def.rarityTier ?? 'C',
+    };
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(HYBRID_DEFS, id)) return null;
+  const hybrid = HYBRID_DEFS[id];
+  const isMagic = hybrid.roomTypes.includes('scroll_library')
+    || hybrid.roomTypes.includes('celestial_shrine');
+  return {
+    id,
+    registryId: null,
+    source: 'hybrid',
+    name: hybrid.name,
+    emoji: hybrid.emoji,
+    type: isMagic ? 'magic' : 'melee',
+    roomTypes: hybrid.roomTypes,
+    baseDamage: hybrid.baseDamage,
+    attackCooldown: isMagic ? 2000 : 1500,
+    range: isMagic ? 2 : 1,
+    passive: hybrid.passive,
+    passiveDesc: hybrid.passiveDesc,
+    accentColor: OWNED_RARITY_ACCENTS[hybrid.rarity] ?? OWNED_RARITY_ACCENTS[0],
+    rarityTier: OWNED_RARITY_TIERS[hybrid.rarity] ?? 'C',
+  };
+}
+
+// ─── Combat def resolver ─────────────────────────────────────────────────────
 
 export type CombatMonsterDef = {
   baseDamage: number;
@@ -111,19 +186,29 @@ export type CombatMonsterDef = {
   attackCooldown: number;
 };
 
-export function resolveMonsterDef(id: string | undefined): CombatMonsterDef | null {
-  if (!id) return null;
-  const md = MONSTER_DEFS[id as MonsterId];
-  if (md) return md as CombatMonsterDef;
-  const hd = HYBRID_DEFS[id];
-  if (!hd) return null;
-  const isMagic = hd.roomTypes.includes('scroll_library') || hd.roomTypes.includes('celestial_shrine');
+export function resolveMonsterDef(id: unknown): CombatMonsterDef | null {
+  const profile = resolveOwnedMonsterProfile(id);
+  if (!profile) return null;
   return {
-    baseDamage: hd.baseDamage,
-    passive:    hd.passive,
-    type:       isMagic ? 'magic' : 'melee',
-    tribe:      undefined,
-    range:      isMagic ? 2 : 1,
-    attackCooldown: 0,
+    baseDamage: profile.baseDamage,
+    passive: profile.passive,
+    type: profile.type,
+    tribe: profile.tribe,
+    range: profile.range,
+    attackCooldown: profile.attackCooldown,
   };
+}
+
+/** Resolves the baseline cadence used by a monster in a concrete combat room. */
+export function resolveMonsterAttackCooldown(
+  id: unknown,
+  roomType: RoomType,
+): number {
+  const profile = resolveOwnedMonsterProfile(id);
+  const baseCooldown = profile?.attackCooldown && profile.attackCooldown > 0
+    ? profile.attackCooldown
+    : ROOM_DEFS[roomType].attackCooldown;
+  return roomType === 'scroll_library' && baseCooldown > 0
+    ? Math.round(baseCooldown * 0.8)
+    : baseCooldown;
 }

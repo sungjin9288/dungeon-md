@@ -5,7 +5,7 @@ import {
   BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS,
   type BlueprintDef,
 } from '../data/fusion';
-import { MONSTER_DEFS } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { EQUIPMENT_DEFS, type OwnedMonster } from '../data/barracks';
 import {
   getMonsterDefForOwned, findMonsterRoom, findOpenMonsterRoom,
@@ -16,18 +16,18 @@ import type { CraftedEquipment } from '../data/forgeTransactions';
 
 // ─── Layout Constants ─────────────────────────────────────────────────────────
 
-export const HEADER_H    = 64;
-export const TAB_H       = 44;
+export const HEADER_H    = 88;
+export const TAB_H       = 48;
 export const CONTENT_Y   = HEADER_H + TAB_H;
-export const WORKBENCH_H = 136;
-export const LIST_PAD    = 12;
+export const WORKBENCH_H = 192;
+export const LIST_PAD    = 14;
 
 export const FORGE_RARITY_STARS = ['★', '★★', '★★★', '★★★★', '★★★★★', '★★★★★★'];
 
 export const FORGE_TYPE_META: Record<BlueprintDef['type'], { label: string; icon: string; color: string; hex: number }> = {
-  weapon:    { label: '무기',   icon: '⚔',  color: '#ffb45f', hex: 0xffb45f },
-  armor:     { label: '방어구', icon: '◆',  color: '#8ac7ff', hex: 0x8ac7ff },
-  accessory: { label: '장신구', icon: '✦',  color: '#d7a4ff', hex: 0xd7a4ff },
+  weapon:    { label: '무기',   icon: 'W', color: '#ffb45f', hex: 0xffb45f },
+  armor:     { label: '방어구', icon: 'A', color: '#8ac7ff', hex: 0x8ac7ff },
+  accessory: { label: '장신구', icon: 'R', color: '#d7a4ff', hex: 0xd7a4ff },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -67,6 +67,7 @@ export interface ForgeTargetCue {
 export interface ForgeContext {
   readonly gs: GameState;
   readonly activeTab: 'craft' | 'dismantle';
+  readonly page: number;
   readonly focusMonsterId: string | null;
   readonly focusSourceLabel: string | null;
   readonly selectedBpId: string | null;
@@ -77,6 +78,10 @@ export interface ForgeContext {
   readonly onSelectBlueprint: (bpId: string) => void;
   /** Called when the user taps an equipment row (toggles selection). */
   readonly onSelectEquipment: (idx: number) => void;
+  /** Opens the existing Abyss material-supply route. */
+  readonly onOpenAbyss: () => void;
+  /** Moves between bounded blueprint/equipment pages. */
+  readonly onPageChange: (page: number) => void;
   /** Called when the user confirms crafting a blueprint. */
   readonly onConfirmCraft: (bpId: string) => void;
   /** Called when the user confirms dismantling a crafted equipment. */
@@ -97,7 +102,7 @@ export function getBlueprintMaterialProgress(
 
 export function formatForgeMaterialStatus(material: ForgeMaterialProjection): string {
   const status = material.missing > 0 ? `부족 ${material.missing}` : '충족';
-  return `${material.emoji}${material.have}/${material.need} ${status}`;
+  return `${material.name} ${material.have}/${material.need} · ${status}`;
 }
 
 export function rarityHex(rarity: number): number {
@@ -114,7 +119,7 @@ export function getForgeTypeMeta(
   type: BlueprintDef['type'] | string,
 ): { label: string; icon: string; color: string; hex: number } {
   if (type === 'weapon' || type === 'armor' || type === 'accessory') return FORGE_TYPE_META[type];
-  return { label: '장비', icon: '◇', color: '#d2b07b', hex: 0xd2b07b };
+  return { label: '장비', icon: 'E', color: '#d2b07b', hex: 0xd2b07b };
 }
 
 export function getMaterialDisplay(id: string): { emoji: string; name: string } {
@@ -198,7 +203,7 @@ export function getFocusMonsterDisplay(
 ): { name: string; emoji: string; level: number } | null {
   if (!focusMonsterId) return null;
   const owned = gs.ownedMonsters.find(monster => monster.id === focusMonsterId);
-  const def = owned ? MONSTER_DEFS[owned.id as keyof typeof MONSTER_DEFS] : null;
+  const def = owned ? resolveOwnedMonsterProfile(owned.id) : null;
   if (!owned) return null;
   return {
     name:  def?.name ?? owned.id,

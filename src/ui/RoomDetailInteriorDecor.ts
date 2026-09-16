@@ -8,7 +8,7 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
   type DungeonSlot } from '../data/wisdom';
 import type { PickerNavCallbacks } from './RoomPickerModals';
@@ -21,6 +21,7 @@ import {
   
   prefersReducedMotion, 
   EquipmentBadge } from './RoomDetailShared';
+import { drawRoomTypeSigil } from './RoomDetailSkin';
 
 // RoomDetailInteriorDecor — 방 내부 프리뷰 장식 드로잉 (구조물·소켓·앵커)
 
@@ -40,31 +41,31 @@ export function drawInteriorChamber(
   const backH = Math.round(h * 0.42);
   const floorY = backY + backH - 4;
 
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.3);
-  g.fillRoundedRect(x, y, w, h, 14);
-  g.fillStyle(isBroken ? CASUAL.RED : CASUAL.PANEL_SOFT, isBroken ? 0.22 : 0.96);
-  g.fillRoundedRect(x + 8, y + 8, w - 16, h - 16, 12);
-  g.lineStyle(1.5, isBroken ? CASUAL.RED : CASUAL.EDGE, isBroken ? 0.7 : 0.6);
-  g.strokeRoundedRect(x, y, w, h, 14);
-  g.lineStyle(1, CASUAL.PANEL, 0.5);
-  g.strokeRoundedRect(x + 8, y + 8, w - 16, h - 16, 11);
+  g.fillStyle(DUNGEON_UI.IRON, 0.9);
+  g.fillRoundedRect(x, y, w, h, 5);
+  g.fillStyle(isBroken ? DUNGEON_UI.EMBER : DUNGEON_UI.STONE, isBroken ? 0.2 : 1);
+  g.fillRoundedRect(x + 7, y + 7, w - 14, h - 14, 3);
+  g.lineStyle(1.5, isBroken ? DUNGEON_UI.EMBER : DUNGEON_UI.EDGE, isBroken ? 0.9 : 0.74);
+  g.strokeRoundedRect(x, y, w, h, 5);
+  g.lineStyle(1, DUNGEON_UI.BRASS, 0.2);
+  g.strokeRoundedRect(x + 7, y + 7, w - 14, h - 14, 3);
 
-  // back wall — warm cream slab with soft brown brick seams
-  g.fillStyle(CASUAL.PANEL, 0.95);
-  g.fillRoundedRect(x + 24, backY, w - 48, backH, 11);
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
-  g.fillRoundedRect(x + 34, backY + 13, w - 68, backH - 18, 9);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.22);
+  // Deep stone back wall. Sparse seams make it architecture, not a nested card.
+  g.fillStyle(DUNGEON_UI.VOID, 0.98);
+  g.fillRoundedRect(x + 24, backY, w - 48, backH, 4);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.76);
+  g.fillRoundedRect(x + 34, backY + 13, w - 68, backH - 18, 3);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.18);
   for (let gy = backY + 24; gy < backY + backH - 7; gy += 13) {
     g.lineBetween(x + 42, gy, x + w - 42, gy);
   }
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.14);
+  g.lineStyle(1, DUNGEON_UI.BRASS, 0.1);
   for (let gx = x + 56; gx < x + w - 45; gx += 34) {
     g.lineBetween(gx, backY + 18, gx - 7, backY + backH - 8);
   }
 
-  // floor — warm sand slab with soft seams
-  g.fillStyle(CASUAL.BG_BOTTOM, 0.95);
+  // Receding floor keeps trap and guardian sockets spatially distinct.
+  g.fillStyle(DUNGEON_UI.VOID, 0.98);
   g.beginPath();
   g.moveTo(x + 34, floorY);
   g.lineTo(x + w - 34, floorY);
@@ -80,17 +81,17 @@ export function drawInteriorChamber(
   g.lineTo(x + 34, y + h - 28);
   g.closePath();
   g.fillPath();
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.28);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.3);
   g.lineBetween(x + 42, floorY + 2, x + 25, y + h - 22);
   g.lineBetween(x + w - 42, floorY + 2, x + w - 25, y + h - 22);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.16);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.16);
   for (let i = 0; i < 4; i++) {
     const yy = floorY + 18 + i * 20;
     g.lineBetween(x + 36 + i * 4, yy, x + w - 36 - i * 4, yy);
   }
 
   const laneY = backY + 38;
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.6);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.62);
   g.fillRoundedRect(x + 18, laneY - 10, w - 36, 20, 9);
   g.lineStyle(1.2, accent, 0.34);
   g.lineBetween(x + 36, laneY, x + w - 36, laneY);
@@ -100,8 +101,8 @@ export function drawInteriorChamber(
     g.fillTriangle(px + 6, laneY, px - 3, laneY - 5, px - 3, laneY + 5);
   }
 
-  // entry/exit door posts — warm brown frames
-  g.fillStyle(CASUAL.EDGE, 0.9);
+  // Entry/exit posts anchor the room in the dungeon route.
+  g.fillStyle(DUNGEON_UI.IRON, 0.96);
   g.fillRoundedRect(x - 6, y + 38, 19, 48, 6);
   g.fillRoundedRect(x + w - 13, y + 38, 19, 48, 6);
   g.fillStyle(accent, 0.4);
@@ -109,21 +110,21 @@ export function drawInteriorChamber(
   g.fillRoundedRect(x + w - 6, y + 50, 6, 22, 3);
   c.add(scene.add.text(x + 7, y + 94, 'IN', {
     fontFamily: 'monospace',
-    fontSize: '7px',
-    color: CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5).setAlpha(0.85));
   c.add(scene.add.text(x + w - 7, y + 94, 'OUT', {
     fontFamily: 'monospace',
-    fontSize: '7px',
-    color: CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5).setAlpha(0.85));
 
   if (isBroken) {
-    g.lineStyle(1.6, CASUAL.RED, 0.55);
+    g.lineStyle(1.6, DUNGEON_UI.EMBER, 0.72);
     g.lineBetween(x + 36, y + 19, x + 76, y + 70);
     g.lineBetween(x + 76, y + 70, x + 57, y + h - 16);
     g.lineBetween(x + w - 55, y + 22, x + w - 92, y + 58);
-    g.fillStyle(CASUAL.RED, 0.1);
+    g.fillStyle(DUNGEON_UI.EMBER, 0.12);
     g.fillRoundedRect(x + 9, y + 9, w - 18, h - 18, 10);
   }
 }
@@ -142,11 +143,11 @@ export function drawInteriorDungeonEditorDetails(
   const ceilingY = y + 18;
   const floorY = y + h - 38;
 
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.32);
+  g.fillStyle(DUNGEON_UI.EDGE, 0.32);
   g.fillRoundedRect(x + 30, y + 13, w - 60, 11, 5);
   g.fillStyle(accent, 0.12 + glow * 0.06);
   g.fillRoundedRect(x + 44, y + 16, w - 88, 4, 2);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.28 + glow * 0.1);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.28 + glow * 0.1);
   for (let i = 0; i < 4; i++) {
     const xx = x + 58 + i * ((w - 116) / 3);
     g.lineBetween(xx, ceilingY, xx - 10, ceilingY + 38);
@@ -163,7 +164,7 @@ export function drawInteriorDungeonEditorDetails(
   g.lineBetween(x + 25, y + 58, x + 25, y + 82);
   g.lineBetween(x + w - 25, y + 58, x + w - 25, y + 82);
 
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.22 + glow * 0.08);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.22 + glow * 0.08);
   for (let i = 0; i < 3; i++) {
     const yy = floorY + i * 12;
     g.lineBetween(x + 46 + i * 7, yy, x + w - 46 - i * 7, yy);
@@ -209,8 +210,8 @@ export function drawInteriorEquipmentAura(
   g.strokeRoundedRect(x + w - 104, y + 12, 82, 16, 6);
   c.add(scene.add.text(x + w - 63, y + 20, `장비 강화 +${equipmentPower}`, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: CASUAL_CSS.INK,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -222,45 +223,43 @@ export function drawInteriorRoomPlaque(
   y: number,
   w: number,
   accent: number,
-  icon: string,
+  roomType: string | undefined,
   roomName: string,
   roomLevel: number,
   readiness: number,
   danger: boolean,
 ): void {
-  const plaqueW = 132;
-  const plaqueH = 28;
+  const plaqueW = 146;
+  const plaqueH = 30;
   const plaqueX = x + w / 2 - plaqueW / 2;
   const plaqueY = y + 16;
   const readinessColor = readiness >= 70 ? CASUAL.GREEN : readiness >= 35 ? CASUAL.GOLD : CASUAL.RED;
 
-  g.fillStyle(CASUAL.SHADOW, 0.28);
-  g.fillRoundedRect(plaqueX, plaqueY + 3, plaqueW, plaqueH, 8);
-  g.fillStyle(danger ? CASUAL.RED : CASUAL.PANEL, danger ? 0.22 : 0.96);
-  g.fillRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 8);
-  g.lineStyle(1.2, danger ? CASUAL.RED : CASUAL.EDGE, danger ? 0.7 : 0.6);
-  g.strokeRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 8);
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
+  g.fillRoundedRect(plaqueX, plaqueY + 3, plaqueW, plaqueH, 4);
+  g.fillStyle(danger ? DUNGEON_UI.EMBER : DUNGEON_UI.STONE_RAISED, danger ? 0.2 : 0.98);
+  g.fillRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 4);
+  g.lineStyle(1.2, danger ? DUNGEON_UI.EMBER : DUNGEON_UI.BRASS, danger ? 0.9 : 0.68);
+  g.strokeRoundedRect(plaqueX, plaqueY, plaqueW, plaqueH, 4);
   g.fillStyle(accent, danger ? 0.2 : 0.16);
   g.fillRoundedRect(plaqueX + 8, plaqueY + 6, 22, plaqueH - 12, 6);
   g.fillStyle(readinessColor, 0.24);
-  g.fillRoundedRect(plaqueX + 84, plaqueY + 7, 38, 14, 5);
+  g.fillRoundedRect(plaqueX + 96, plaqueY + 7, 42, 16, 3);
   g.lineStyle(1, readinessColor, 0.5);
-  g.strokeRoundedRect(plaqueX + 84, plaqueY + 7, 38, 14, 5);
-  g.fillStyle(CASUAL.PANEL, 0.6);
-  g.fillRoundedRect(plaqueX + 36, plaqueY + 6, 40, 2, 1);
+  g.strokeRoundedRect(plaqueX + 96, plaqueY + 7, 42, 16, 3);
+  g.fillStyle(DUNGEON_UI.BRASS, 0.3);
+  g.fillRoundedRect(plaqueX + 38, plaqueY + 6, 48, 2, 1);
 
-  c.add(scene.add.text(plaqueX + 19, plaqueY + plaqueH / 2, icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '12px' }).setOrigin(0.5));
-  c.add(scene.add.text(plaqueX + 36, plaqueY + 12, `${roomName} Lv.${roomLevel}`, {
+  drawRoomTypeSigil(g, roomType, plaqueX + 19, plaqueY + plaqueH / 2, 17, accent);
+  c.add(scene.add.text(plaqueX + 36, plaqueY + 13, `${roomName} Lv.${roomLevel}`, {
     fontFamily: 'Georgia, serif',
     fontSize: '10px',
-    color: danger ? CASUAL_CSS.RED : CASUAL_CSS.INK,
+    color: danger ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  c.add(scene.add.text(plaqueX + 103, plaqueY + 14, `${readiness}%`, {
+  c.add(scene.add.text(plaqueX + 117, plaqueY + 15, `${readiness}%`, {
     fontFamily: 'monospace',
-    fontSize: '8px',
-    color: readiness >= 35 ? CASUAL_CSS.INK : CASUAL_CSS.RED,
+    fontSize: '10px',
+    color: readiness >= 35 ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.EMBER,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -284,7 +283,7 @@ export function drawInteriorRoomFixture(
   g.lineStyle(1.2, accent, glow + 0.12);
 
   if (roomType === 'combat') {
-    g.fillStyle(CASUAL.EDGE, 0.7);
+    g.fillStyle(DUNGEON_UI.IRON, 0.8);
     g.fillRoundedRect(cx - 62, y + 42, 22, 54, 5);
     g.fillRoundedRect(cx + 40, y + 42, 22, 54, 5);
     g.fillStyle(accent, 0.35 + glow * 0.18);
@@ -305,7 +304,7 @@ export function drawInteriorRoomFixture(
   }
 
   if (roomType === 'trap') {
-    g.fillStyle(CASUAL.EDGE, 0.7);
+    g.fillStyle(DUNGEON_UI.IRON, 0.8);
     g.fillRoundedRect(cx - 72, y + 34, 144, 30, 8);
     g.lineStyle(1, accent, 0.34 + glow * 0.16);
     for (let i = 0; i < 5; i++) {
@@ -321,7 +320,7 @@ export function drawInteriorRoomFixture(
     g.lineBetween(x + 44, y + 49, x + w - 44, y + 49);
     g.fillStyle(accent, 0.26 + glow * 0.12);
     g.fillRoundedRect(cx - 39, cy - 11, 78, 20, 8);
-    g.lineStyle(1, CASUAL.PANEL, 0.4);
+    g.lineStyle(1, DUNGEON_UI.VOID, 0.6);
     g.lineBetween(cx - 26, cy - 2, cx + 26, cy - 2);
     g.strokeCircle(cx, cy, 16);
     return;
@@ -341,18 +340,18 @@ export function drawInteriorRoomFixture(
     g.fillStyle(accent, 0.5);
     g.fillRoundedRect(cx - 5, cy - 20, 10, 36, 5);
     g.fillRoundedRect(cx - 18, cy - 7, 36, 10, 5);
-    g.lineStyle(1, CASUAL.PANEL, 0.5);
+    g.lineStyle(1, DUNGEON_UI.VOID, 0.6);
     g.strokeRoundedRect(cx - 40, cy - 15, 80, 25, 9);
     return;
   }
 
   if (roomType === 'magic') {
-    g.fillStyle(CASUAL.PURPLE, 0.2);
+    g.fillStyle(accent, 0.18);
     g.fillCircle(cx, cy, 46);
     g.strokeCircle(cx, cy, 27);
     g.strokeCircle(cx, cy, 16);
     g.strokeCircle(cx, cy, 6);
-    g.lineStyle(1, CASUAL.PURPLE, 0.3 + glow * 0.1);
+    g.lineStyle(1, accent, 0.3 + glow * 0.1);
     g.lineBetween(cx, cy - 34, cx + 30, cy + 18);
     g.lineBetween(cx + 30, cy + 18, cx - 30, cy + 18);
     g.lineBetween(cx - 30, cy + 18, cx, cy - 34);
@@ -384,17 +383,17 @@ export function drawMonsterPreviewPedestal(
   const isTarget = state === 'target';
   const isDisabled = state === 'disabled';
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.SHADOW, 0.22);
+  g.fillStyle(DUNGEON_UI.VOID, 0.42);
   g.fillEllipse(x, y + 24, 66, 18);
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.5);
+  g.fillStyle(DUNGEON_UI.IRON, 0.7);
   g.fillRoundedRect(x - 27, y + 5, 54, 22, 9);
-  g.fillStyle(filled ? accent : CASUAL.PANEL_SOFT, filled ? 0.28 : 0.9);
+  g.fillStyle(filled ? accent : DUNGEON_UI.STONE, filled ? 0.28 : 0.9);
   g.fillEllipse(x, y + 16, 56, 18);
   g.lineStyle(1.2, accent, filled ? 0.7 : 0.5);
   g.strokeEllipse(x, y + 16, 56, 18);
   g.lineStyle(1, accent, filled ? 0.4 : 0.24);
   g.strokeEllipse(x, y + 11, 38, 9);
-  g.lineStyle(1, CASUAL.PANEL, filled ? 0.5 : 0.3);
+  g.lineStyle(1, DUNGEON_UI.VOID, filled ? 0.5 : 0.3);
   g.lineBetween(x - 18, y + 16, x + 18, y + 16);
   g.lineBetween(x, y + 9, x, y + 24);
   if (!filled) {
@@ -402,7 +401,7 @@ export function drawMonsterPreviewPedestal(
     g.fillCircle(x, y, 25);
     g.lineStyle(1.1, accent, 0.5);
     g.strokeCircle(x, y, 22);
-    g.lineStyle(1, CASUAL.PANEL, 0.4);
+    g.lineStyle(1, DUNGEON_UI.VOID, 0.5);
     g.strokeCircle(x, y, 13);
     for (let i = 0; i < 4; i += 1) {
       const angle = Math.PI / 2 * i + Math.PI / 4;
@@ -414,7 +413,7 @@ export function drawMonsterPreviewPedestal(
       g.fillTriangle(x, y - 24, x - 5, y - 16, x + 5, y - 16);
     }
     if (isDisabled) {
-      g.lineStyle(2, CASUAL.EDGE_SOFT, 0.8);
+      g.lineStyle(2, DUNGEON_UI.EDGE, 0.8);
       g.lineBetween(x - 12, y - 12, x + 12, y + 12);
       g.lineBetween(x + 12, y - 12, x - 12, y + 12);
     }
@@ -423,7 +422,7 @@ export function drawMonsterPreviewPedestal(
   g.fillRoundedRect(x - 22, y + 20, 44, 6, 3);
   g.fillCircle(x - 22, y + 15, 2.2);
   g.fillCircle(x + 22, y + 15, 2.2);
-  g.fillStyle(CASUAL.PANEL, 0.95);
+  g.fillStyle(DUNGEON_UI.VOID, 0.95);
   g.fillRoundedRect(x - 33, y + 2, 22, 13, 5);
   g.lineStyle(1, accent, filled ? 0.7 : 0.5);
   g.strokeRoundedRect(x - 33, y + 2, 22, 13, 5);
@@ -432,8 +431,8 @@ export function drawMonsterPreviewPedestal(
   c.add(g);
   c.add(scene.add.text(x - 22, y + 8.5, slotLabel, {
     fontFamily: 'monospace',
-    fontSize: '7px',
-    color: filled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: filled ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -442,20 +441,20 @@ export function drawInteriorEquipmentBadge(
   c: Phaser.GameObjects.Container,
   x: number,
   y: number,
-  equipment: EquipmentBadge,
+  _equipment: EquipmentBadge,
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 0.96);
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
   g.fillRoundedRect(x - 10, y - 8, 20, 16, 5);
   g.lineStyle(1, CASUAL.GOLD_DK, 0.8);
   g.strokeRoundedRect(x - 10, y - 8, 20, 16, 5);
   g.fillStyle(accent, 0.2);
   g.fillCircle(x, y, 7);
+  g.lineStyle(1.4, DUNGEON_UI.BRASS_BRIGHT, 0.9);
+  g.strokeTriangle(x, y - 5, x + 5, y + 3, x - 5, y + 3);
+  g.lineBetween(x, y - 3, x, y + 4);
   c.add(g);
-  c.add(scene.add.text(x, y, equipment.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '11px' }).setOrigin(0.5));
 }
 
 export function drawInteriorEquipmentSocket(
@@ -469,23 +468,23 @@ export function drawInteriorEquipmentSocket(
   const isDisabled = state === 'disabled';
   const isTarget = state === 'target';
   const isAssigned = state === 'assigned';
-  const edge = isDisabled ? CASUAL.EDGE_SOFT : isAssigned ? CASUAL.GOLD_DK : CASUAL.PURPLE;
+  const edge = isDisabled ? DUNGEON_UI.EDGE : isAssigned ? DUNGEON_UI.BRASS : accent;
   const g = scene.add.graphics();
-  g.fillStyle(isDisabled ? CASUAL.PANEL : CASUAL.PANEL_SOFT, isDisabled ? 0.58 : 0.9);
+  g.fillStyle(isDisabled ? DUNGEON_UI.VOID : DUNGEON_UI.STONE, isDisabled ? 0.58 : 0.9);
   g.fillRoundedRect(x - 10, y - 8, 20, 16, 5);
   g.lineStyle(1, edge, isDisabled ? 0.45 : 0.7);
   g.strokeRoundedRect(x - 10, y - 8, 20, 16, 5);
   g.fillStyle(accent, isDisabled ? 0.06 : 0.16);
   g.fillCircle(x, y, 7);
   if (isDisabled) {
-    g.lineStyle(1.4, CASUAL.EDGE_SOFT, 0.85);
+    g.lineStyle(1.4, DUNGEON_UI.EDGE, 0.85);
     g.lineBetween(x - 7, y - 6, x + 7, y + 6);
   }
   c.add(g);
   c.add(scene.add.text(x, y - 0.5, isDisabled ? '×' : isAssigned ? '✓' : isTarget ? '↗' : '+', {
     fontFamily: 'Georgia, serif',
     fontSize: '13px',
-    color: isDisabled ? CASUAL_CSS.INK_SOFT : isAssigned ? CASUAL_CSS.GOLD : CASUAL_CSS.PURPLE,
+    color: isDisabled ? DUNGEON_UI_CSS.MUTED : isAssigned ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.JADE,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -499,9 +498,9 @@ export function drawInteriorSlotActionChip(
   filled: boolean,
 ): void {
   const w = Math.max(filled ? 34 : 42, label.length * 10 + (filled ? 13 : 22));
-  const h = filled ? 15 : 16;
+  const h = filled ? 18 : 20;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, filled ? 0.96 : 0.98);
+  g.fillStyle(DUNGEON_UI.VOID, filled ? 0.96 : 0.98);
   g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 6);
   g.lineStyle(1, accent, filled ? 0.7 : 0.74);
   g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 6);
@@ -511,7 +510,7 @@ export function drawInteriorSlotActionChip(
   g.fillRoundedRect(x - w / 2 + 4, y - h / 2 + 4, 4, h - 8, 3);
   if (!filled) {
     const arrowX = x + w / 2 - 7;
-    g.fillStyle(CASUAL.EDGE, 0.4);
+    g.fillStyle(DUNGEON_UI.IRON, 0.6);
     g.beginPath();
     g.moveTo(arrowX - 2, y - 3);
     g.lineTo(arrowX + 3, y);
@@ -525,8 +524,8 @@ export function drawInteriorSlotActionChip(
   c.add(g);
   c.add(scene.add.text(filled ? x - 2 : x - 3, y + 0.5, label, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: CASUAL_CSS.INK,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -549,7 +548,7 @@ export function drawPreviewTargetRing(
   g.fillRoundedRect(x - w / 2 + 7, y - h / 2 + 7, w - 14, h - 14, 8);
   const chipW = Math.min(w - 14, Math.max(48, label.length * 10 + 18));
   const chipY = y - h / 2 + 7;
-  g.fillStyle(CASUAL.PANEL, 0.96);
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
   g.fillRoundedRect(x - chipW / 2, chipY, chipW, 18, 6);
   g.lineStyle(1, accent, 0.85);
   g.strokeRoundedRect(x - chipW / 2, chipY, chipW, 18, 6);
@@ -558,7 +557,7 @@ export function drawPreviewTargetRing(
   const text = scene.add.text(x, chipY + 9, label, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5);
   c.add(text);
 
@@ -591,7 +590,6 @@ export function drawTrapPreviewSlot(
   c: Phaser.GameObjects.Container,
   x: number,
   y: number,
-  icon: string,
   accent: number,
   state: Extract<RoomEditorSocketState, 'assigned' | 'available' | 'target'>,
   slotLabel: string,
@@ -600,9 +598,9 @@ export function drawTrapPreviewSlot(
   const isTarget = state === 'target';
   const g = scene.add.graphics();
   const edge = filled ? CASUAL.GOLD : accent;
-  g.fillStyle(CASUAL.SHADOW, 0.2);
+  g.fillStyle(DUNGEON_UI.VOID, 0.4);
   g.fillEllipse(x, y + 13, 50, 13);
-  g.fillStyle(filled ? CASUAL.PANEL : CASUAL.PANEL_SOFT, filled ? 0.98 : 0.9);
+  g.fillStyle(filled ? DUNGEON_UI.STONE : DUNGEON_UI.SOOT, filled ? 0.98 : 0.9);
   g.beginPath();
   g.moveTo(x - 20, y - 7);
   g.lineTo(x - 13, y - 14);
@@ -630,10 +628,10 @@ export function drawTrapPreviewSlot(
       g.fillTriangle(x, y - 21, x - 4, y - 14, x + 4, y - 14);
     }
   }
-  g.fillStyle(CASUAL.PANEL, filled ? 0.5 : 0.3);
+  g.fillStyle(DUNGEON_UI.VOID, filled ? 0.5 : 0.3);
   g.fillCircle(x - 14, y - 8, 1.5);
   g.fillCircle(x + 14, y - 8, 1.5);
-  g.fillStyle(CASUAL.PANEL, 0.95);
+  g.fillStyle(DUNGEON_UI.VOID, 0.95);
   g.fillRoundedRect(x - 28, y - 19, 22, 13, 5);
   g.lineStyle(1, edge, filled ? 0.7 : 0.5);
   g.strokeRoundedRect(x - 28, y - 19, 22, 13, 5);
@@ -642,14 +640,18 @@ export function drawTrapPreviewSlot(
   c.add(g);
   c.add(scene.add.text(x - 17, y - 12.5, slotLabel, {
     fontFamily: 'monospace',
-    fontSize: '7px',
-    color: filled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: filled ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5));
-  c.add(scene.add.text(x, filled ? y : y - 0.5, filled ? icon : isTarget ? '↗' : '+', {
-    fontFamily: 'sans-serif',
-    fontSize: filled ? '16px' : '18px',
-    color: filled ? CASUAL_CSS.GOLD : CASUAL_CSS.INK,
-    fontStyle: 'bold' }).setOrigin(0.5));
+  if (filled) {
+    drawRoomTypeSigil(g, 'trap', x, y, 20, DUNGEON_UI.BRASS_BRIGHT);
+  } else {
+    c.add(scene.add.text(x, y - 0.5, isTarget ? '↗' : '+', {
+      fontFamily: 'Georgia, serif',
+      fontSize: '18px',
+      color: DUNGEON_UI_CSS.PARCHMENT,
+      fontStyle: 'bold' }).setOrigin(0.5));
+  }
 }
 
 export function drawMonsterAnchor(
@@ -662,7 +664,7 @@ export function drawMonsterAnchor(
 ): void {
   const isTarget = state === 'target';
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.9);
+  g.fillStyle(DUNGEON_UI.STONE, 0.9);
   g.fillCircle(x, y, 15);
   g.fillStyle(accent, 0.12);
   g.fillCircle(x, y, 22);
@@ -685,6 +687,6 @@ export function drawMonsterAnchor(
   c.add(scene.add.text(x, y - 1, isTarget ? '↗' : '+', {
     fontFamily: 'Georgia, serif',
     fontSize: '16px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
 }

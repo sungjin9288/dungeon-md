@@ -7,7 +7,7 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
@@ -40,6 +40,7 @@ export type { PickerNavCallbacks };
 
 import {
   ROOM_DETAIL_CLOSE_MS, ROOM_DETAIL_REOPEN_DELAY_MS, ROOM_TYPE_ACCENT, RoomDetailNextActionEntry, RoomActionHeaderStatus, RoomDirective, RoomDetailReturnFeedback, formatSignedPower, getRoomReadinessColor, getDirectiveVisualMeta, prefersReducedMotion, RoomDetailState, RoomDetailCallbacks } from './RoomDetailShared';
+import { drawDirectiveSigil } from './RoomDetailSkin';
 
 export function consumeRoomDetailFeedback(
   scene: Phaser.Scene,
@@ -84,13 +85,15 @@ export function drawRoomDetailReturnFeedback(
 ): number {
   const h = 48;
   const accent = feedback.accent;
-  const icon = feedback.kind === 'equipment'
-    ? feedback.equipmentEmoji ?? '⚒'
-    : feedback.kind === 'design' || feedback.kind === 'monster' || feedback.kind === 'trap'
-      ? feedback.roomIcon ?? '▣'
-      : feedback.kind === 'repair'
-        ? '🛠'
-      : '★';
+  const target = feedback.kind === 'repair'
+    ? 'repair'
+    : feedback.kind === 'monster'
+      ? 'monster'
+      : feedback.kind === 'trap'
+        ? 'trap'
+        : feedback.kind === 'design'
+          ? 'type'
+          : 'growth';
   const status = feedback.kind === 'equipment'
     ? '적용됨'
     : feedback.kind === 'design'
@@ -106,45 +109,37 @@ export function drawRoomDetailReturnFeedback(
     ? `${feedback.statLabel} ${feedback.statBefore}→${feedback.statAfter}`
     : null;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.SHADOW, 0.22);
-  g.fillRoundedRect(x, y + 4, w, h, 10);
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
-  g.lineStyle(3, accent, 1);
-  g.strokeRoundedRect(x, y, w, h, 10);
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
+  g.fillRoundedRect(x, y + 3, w, h, 4);
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x, y, w, h, 4);
+  g.lineStyle(1, accent, 0.9);
+  g.strokeRoundedRect(x, y, w, h, 4);
   g.fillStyle(accent, 1);
   g.fillRoundedRect(x + 7, y + 7, 5, h - 14, 4);
-  g.fillStyle(accent, 0.18);
-  g.fillCircle(x + 31, y + h / 2, 18);
-  g.lineStyle(2, accent, 0.7);
-  g.strokeCircle(x + 31, y + h / 2, 18);
+  drawDirectiveSigil(g, target, x + 31, y + h / 2, accent);
   c.add(g);
 
-  c.add(scene.add.text(x + 31, y + h / 2, icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '20px' }).setOrigin(0.5));
   c.add(scene.add.text(x + 58, y + 16, feedback.title, {
     fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 58, y + 33, feedback.body, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: statText ? w - 156 : w - 136, useAdvancedWrap: true } }).setOrigin(0, 0.5));
   if (statText) {
-    g.fillStyle(0xffffff, 0.9);
-    g.fillRoundedRect(x + w - 92, y + 13, 78, 22, 6);
+    g.fillStyle(DUNGEON_UI.SOOT, 0.94);
+    g.fillRoundedRect(x + w - 92, y + 13, 78, 22, 3);
     g.lineStyle(1.5, accent, 0.7);
-    g.strokeRoundedRect(x + w - 92, y + 13, 78, 22, 6);
+    g.strokeRoundedRect(x + w - 92, y + 13, 78, 22, 3);
   }
   c.add(scene.add.text(x + w - 14, y + h / 2, statText ?? status, {
     fontFamily: 'sans-serif',
     fontSize: statText ? '9px' : '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   g.setAlpha(0.78);
@@ -170,29 +165,22 @@ export function drawPreBattleReturnStrip(
 ): number {
   const h = 54;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x, y, w, h, 9);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 5, y + 3, w - 10, 4, 2);
-  g.lineStyle(3, CASUAL.BLUE, 1);
-  g.strokeRoundedRect(x, y, w, h, 9);
-  g.fillStyle(CASUAL.BLUE, 0.18);
-  g.fillRoundedRect(x + 8, y + 9, 30, 36, 7);
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x, y, w, h, 4);
+  g.lineStyle(1, CASUAL.BLUE, 0.9);
+  g.strokeRoundedRect(x, y, w, h, 4);
+  drawDirectiveSigil(g, 'none', x + 25, y + 27, CASUAL.BLUE);
   c.add(g);
 
-  c.add(scene.add.text(x + 23, y + 27, '⚔', {
-    fontFamily: 'sans-serif',
-    fontSize: '13px',
-    color: CASUAL_CSS.BLUE }).setOrigin(0.5));
   c.add(scene.add.text(x + 48, y + 17, '침공 편집 중', {
     fontFamily: 'sans-serif',
     fontSize: '12px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + 48, y + 31, '정비 후 작전판으로 복귀합니다.', {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
+    color: DUNGEON_UI_CSS.MUTED }).setOrigin(0, 0.5));
 
   const button = addPrimaryActionButton(scene, {
     x: x + w - 110,
@@ -229,131 +217,87 @@ export function drawRoomActionHeader(
   onNextActionPress?: () => void,
 ): number {
   const hasNextAction = Boolean(nextActionEntry && onNextActionPress);
-  const h = hasNextAction ? 110 : 82;
-  const ctaW = 88;
+  const h = hasNextAction ? 140 : 98;
+  const ctaW = 104;
+  const ctaH = 44;
   const meta = getDirectiveVisualMeta(directive);
   const readinessColor = getRoomReadinessColor(status.readiness);
-  const readinessCss = status.readiness >= 78 ? CASUAL_CSS.GREEN : status.readiness >= 45 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
+  const readinessCss = status.readiness >= 78 ? DUNGEON_UI_CSS.JADE : status.readiness >= 45 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.SHADOW, 0.22);
-  g.fillRoundedRect(x, y + 4, w, h, 10);
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x, y, w, h, 10);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 5, y + 4, w - 10, 4, 2);
-  g.lineStyle(3, directive.accent, 1);
-  g.strokeRoundedRect(x, y, w, h, 10);
-  g.fillStyle(directive.accent, 0.12);
-  g.fillRoundedRect(x + 7, y + 12, w - 14, h - 18, 8);
-  g.fillStyle(0xffffff, 0.85);
-  g.fillRoundedRect(x + 12, y + 12, 40, 44, 10);
-  g.lineStyle(2, directive.accent, 0.8);
-  g.strokeRoundedRect(x + 12, y + 12, 40, 44, 10);
-  g.fillStyle(directive.accent, 0.22);
-  g.fillCircle(x + 32, y + 34, 15);
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
+  g.fillRoundedRect(x, y + 3, w, h, 5);
+  g.fillStyle(directive.fillColor, 0.98);
+  g.fillRoundedRect(x, y, w, h, 5);
+  g.lineStyle(1.2, directive.accent, 0.86);
+  g.strokeRoundedRect(x, y, w, h, 5);
+  g.fillStyle(directive.accent, 0.9);
+  g.fillRoundedRect(x + 5, y + 5, 4, h - 10, 2);
+  drawDirectiveSigil(g, directive.target, x + 31, y + 40, directive.accent);
   c.add(g);
 
-  c.add(scene.add.text(x + 32, y + 34, meta.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '18px' }).setOrigin(0.5));
-
-  c.add(scene.add.text(x + 60, y + 14, '던전마스터 지휘', {
+  c.add(scene.add.text(x + 58, y + 14, `다음 지시 · ${meta.label}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  g.fillStyle(directive.accent, 1);
-  g.fillRoundedRect(x + 155, y + 6, 44, 17, 6);
-  g.lineStyle(1.5, CASUAL.EDGE, 0.4);
-  g.strokeRoundedRect(x + 155, y + 6, 44, 17, 6);
-  c.add(scene.add.text(x + 177, y + 14.5, meta.label, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: '#ffffff',
-    fontStyle: 'bold' }).setOrigin(0.5));
-  g.fillStyle(0xffffff, 0.9);
-  g.fillRoundedRect(x + 203, y + 6, 58, 17, 6);
-  g.lineStyle(1.5, readinessColor, 0.8);
-  g.strokeRoundedRect(x + 203, y + 6, 58, 17, 6);
-  g.fillStyle(readinessColor, 0.9);
-  g.fillRoundedRect(
-    x + 207,
-    y + 18,
-    Math.max(5, 24 * Phaser.Math.Clamp(status.readiness / 100, 0, 1)),
-    2,
-    1,
-  );
-  c.add(scene.add.text(x + 232, y + 14.5, `준비 ${status.readiness}%`, {
+  c.add(scene.add.text(x + w - 14, y + 14, `준비도 ${status.readiness}%`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: readinessCss,
-    fontStyle: 'bold' }).setOrigin(0.5));
+    fontStyle: 'bold' }).setOrigin(1, 0.5));
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x + w - 96, y + 23, 82, 5, 2);
+  g.fillStyle(readinessColor, 0.94);
+  g.fillRoundedRect(x + w - 96, y + 23, Math.max(6, 82 * Phaser.Math.Clamp(status.readiness / 100, 0, 1)), 5, 2);
 
-  const miniStats = [
-    { label: '수호', value: `${status.monsterCount}/${status.monsterCapacity}`, color: status.monsterCount > 0 ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT },
-    { label: '함정', value: status.trapCapacity > 0 ? `${status.trapCount}/${status.trapCapacity}` : '-', color: status.trapCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
-    { label: '장비', value: status.equipmentPower > 0 ? formatSignedPower(status.equipmentPower) : '-', color: status.equipmentPower > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT },
-  ];
-  const miniY = y + 60;
-  miniStats.forEach((stat, i) => {
-    const chipX = x + 60 + i * 62;
-    g.fillStyle(CASUAL.PANEL_SOFT, 1);
-    g.fillRoundedRect(chipX, miniY, 56, 16, 5);
-    g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
-    g.strokeRoundedRect(chipX, miniY, 56, 16, 5);
-    c.add(scene.add.text(chipX + 7, miniY + 8, stat.label, {
-      fontFamily: 'sans-serif',
-      fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT,
-      fontStyle: 'bold' }).setOrigin(0, 0.5));
-    c.add(scene.add.text(chipX + 50, miniY + 8, stat.value, {
-      fontFamily: 'sans-serif',
-      fontSize: '10px',
-      color: stat.color,
-      fontStyle: 'bold' }).setOrigin(1, 0.5));
-  });
-  c.add(scene.add.text(x + 60, y + 32, directive.title, {
+  c.add(scene.add.text(x + 58, y + 35, directive.title, {
     fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  c.add(scene.add.text(x + 60, y + 49, directive.body, {
+  c.add(scene.add.text(x + 58, y + 54, directive.body, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    wordWrap: { width: w - ctaW - 82, useAdvancedWrap: true } }).setOrigin(0, 0.5));
+    color: DUNGEON_UI_CSS.TEXT,
+    wordWrap: { width: w - ctaW - 78, useAdvancedWrap: true } }).setOrigin(0, 0.5));
+  const loadoutText = `수호 ${status.monsterCount}/${status.monsterCapacity} · 함정 ${status.trapCapacity > 0 ? `${status.trapCount}/${status.trapCapacity}` : '-'} · 장비 ${status.equipmentPower > 0 ? formatSignedPower(status.equipmentPower) : '-'}`;
+  c.add(scene.add.text(x + 58, y + 79, loadoutText, {
+    fontFamily: 'monospace',
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
+    fontStyle: 'bold' }).setOrigin(0, 0.5));
 
   if (nextActionEntry && onNextActionPress) {
-    drawNextQueuePreviewChip(scene, c, nextActionEntry, x + 12, y + 82, w - 24, onNextActionPress);
+    drawNextQueuePreviewChip(scene, c, nextActionEntry, x + 12, y + 98, w - 24, onNextActionPress);
   }
 
   if (directive.onPress) {
     const button = addPrimaryActionButton(scene, {
-      x: x + w - ctaW - 8,
-      y: y + 29,
+      x: x + w - ctaW - 10,
+      y: y + 42,
       w: ctaW,
-      h: 34,
+      h: ctaH,
       label: directive.ctaLabel,
-      fontSize: '10px',
+      fontSize: '11px',
       enabled: directive.enabled ?? true,
       fillColor: directive.accent,
       hoverFillColor: directive.accent,
-      borderColor: directive.accent,
-      hoverBorderColor: directive.accent,
-      textColor: '#ffffff',
+      borderColor: DUNGEON_UI.BRASS_BRIGHT,
+      hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+      textColor: '#090705',
       onPress: directive.onPress });
     c.add([button.bg, button.text, button.zone]);
     return h;
   }
 
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(x + w - ctaW - 8, y + 29, ctaW, 34, 7);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+  g.fillRoundedRect(x + w - ctaW - 10, y + 42, ctaW, ctaH, 4);
   g.lineStyle(2, directive.accent, 0.7);
-  g.strokeRoundedRect(x + w - ctaW - 8, y + 29, ctaW, 34, 7);
-  c.add(scene.add.text(x + w - ctaW / 2 - 8, y + 46, directive.ctaLabel, {
+  g.strokeRoundedRect(x + w - ctaW - 10, y + 42, ctaW, ctaH, 4);
+  c.add(scene.add.text(x + w - ctaW / 2 - 10, y + 42 + ctaH / 2, directive.ctaLabel, {
     fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    fontSize: '11px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   return h;
@@ -368,36 +312,34 @@ export function drawNextQueuePreviewChip(
   w: number,
   onPress: () => void,
 ): void {
-  const h = 24;
-  const buttonW = 48;
+  const h = 34;
+  const buttonW = 56;
   const { action, rank } = nextActionEntry;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(x, y, w, h, 7);
-  g.lineStyle(2, action.accent, 0.7);
-  g.strokeRoundedRect(x, y, w, h, 7);
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x, y, w, h, 3);
+  g.lineStyle(1, action.accent, 0.7);
+  g.strokeRoundedRect(x, y, w, h, 3);
   g.fillStyle(action.accent, 0.9);
-  g.fillRoundedRect(x + 5, y + 5, 5, h - 10, 3);
-  g.fillStyle(action.accent, 1);
-  g.fillRoundedRect(x + w - buttonW - 5, y + 2, buttonW, 20, 6);
-  g.fillStyle(0xffffff, 0.3);
-  g.fillRoundedRect(x + w - buttonW - 3, y + 4, buttonW - 4, 3, 2);
+  g.fillRoundedRect(x + 5, y + 6, 4, h - 12, 2);
+  g.fillStyle(action.accent, 0.92);
+  g.fillRoundedRect(x + w - buttonW - 5, y + 3, buttonW, h - 6, 3);
   c.add(g);
 
   c.add(scene.add.text(x + 16, y + h / 2, `다음 ${rank}순 · 방 #${action.slotIdx + 1} ${action.label}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
     wordWrap: { width: w - buttonW - 30 } }).setOrigin(0, 0.5));
 
   c.add(scene.add.text(x + w - buttonW / 2 - 5, y + h / 2, '이동', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: '#ffffff',
+    color: '#090705',
     fontStyle: 'bold' }).setOrigin(0.5));
 
-  const zone = scene.add.zone(x, y - 6, w, h + 12)
+  const zone = scene.add.zone(x, y - 5, w, 44)
     .setOrigin(0, 0)
     .setInteractive({ useHandCursor: true });
   zone.on('pointerover', () => g.setAlpha(1));

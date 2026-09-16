@@ -52,6 +52,7 @@ describe('fusionTransactions — combination', () => {
     if (!result.ok || !result.recipeMatched) return;
     expect(result.recipeKey).toBe('dokkaebi_warrior+gumiho_guardian');
     expect(result.hybridId).toBe('fox_warrior');
+    expect(result.hybrid).toMatchObject({ baseDamage: 28, passive: 'DUAL_STRIKE' });
     expect(result.isNewDiscovery).toBe(true);
     expect(result.monster).toMatchObject({
       id: 'fox_warrior',
@@ -135,6 +136,39 @@ describe('fusionTransactions — combination', () => {
       expect(poorResult.reason).toBe('insufficient_soul_crystals');
       expect(poorResult.state).toBe(poor);
     }
+  });
+
+  it('rejects a stale source that is no longer in the owned roster', () => {
+    const slotA = monster('dokkaebi_warrior', 5);
+    const slotB = monster('gumiho_guardian', 8);
+    const state = makeState({
+      soulCrystals: FUSION_COMBINATION_COST,
+      ownedMonsters: [slotB],
+    });
+
+    const result = applyFusionCombination(state, slotA, slotB);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('combination_source_not_owned');
+      expect(result.state).toBe(state);
+    }
+    expect(state.soulCrystals).toBe(FUSION_COMBINATION_COST);
+    expect(state.ownedMonsters).toEqual([slotB]);
+  });
+
+  it('requires two owned copies when the same source is supplied twice', () => {
+    const slot = monster('dokkaebi_warrior', 5);
+    const state = makeState({
+      soulCrystals: FUSION_COMBINATION_COST,
+      ownedMonsters: [slot],
+    });
+
+    const result = applyFusionCombination(state, slot, slot);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('combination_source_not_owned');
+    expect(result.state).toBe(state);
   });
 });
 

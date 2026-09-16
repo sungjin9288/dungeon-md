@@ -7,6 +7,7 @@ import {
   getBaseId,
   getNextEvolution,
   getMonsterRarity,
+  resolveFusionMonsterDef,
   type HybridDef,
 } from './fusion';
 import { applyQuestObjectiveUpdate, tickSubQuestProgress } from './quests';
@@ -17,6 +18,7 @@ export const FUSION_COMBINATION_COST = 100;
 export type FusionTransactionFailureReason =
   | 'missing_combination_slots'
   | 'insufficient_soul_crystals'
+  | 'combination_source_not_owned'
   | 'missing_evolution_slots'
   | 'mismatched_evolution_slots'
   | 'evolution_not_available'
@@ -105,7 +107,22 @@ export function applyFusionCombination(
     return { ok: false, state, reason: 'insufficient_soul_crystals' };
   }
 
-  const recipeKey = combinationKey(slotA.id, slotB.id);
+  const remainingSources = [...(state.ownedMonsters ?? [])];
+  const takeOwnedSource = (selection: OwnedMonster): OwnedMonster | null => {
+    let index = remainingSources.findIndex(monster =>
+      monster.id === selection.id && monster.level === selection.level,
+    );
+    if (index < 0) index = remainingSources.findIndex(monster => monster.id === selection.id);
+    if (index < 0) return null;
+    return remainingSources.splice(index, 1)[0];
+  };
+  const sourceA = takeOwnedSource(slotA);
+  const sourceB = takeOwnedSource(slotB);
+  if (!sourceA || !sourceB) {
+    return { ok: false, state, reason: 'combination_source_not_owned' };
+  }
+
+  const recipeKey = combinationKey(sourceA.id, sourceB.id);
   const hybridId = COMBINATION_TABLE[recipeKey];
   if (!hybridId) {
     return {
@@ -119,12 +136,12 @@ export function applyFusionCombination(
     };
   }
 
-  const hybrid = HYBRID_DEFS[hybridId];
+  const hybrid = resolveFusionMonsterDef(hybridId) ?? HYBRID_DEFS[hybridId];
   const discoveredCombinations = state.discoveredCombinations ?? [];
   const isNewDiscovery = !discoveredCombinations.includes(hybridId);
   const monster: OwnedMonster = {
     id: hybridId,
-    level: Math.round((slotA.level + slotB.level) / 2),
+    level: Math.round((sourceA.level + sourceB.level) / 2),
     xp: 0,
     skillPoints: 0,
     spentSkills: {},

@@ -9,7 +9,7 @@
 //   isScrollBurstActive()  — a nearby scroll_library has an active burst
 //   getInvaderRow()        — which grid row an invader's Y-position maps to
 
-import { MONSTER_DEFS, type TribeId } from '../data/monsters';
+import { resolveMonsterDef, type TribeId } from '../data/monsters';
 import type { RoomData } from '../data/rooms';
 import { GRID_ROWS, GRID_Y } from '../constants/layout';
 
@@ -20,7 +20,7 @@ import { GRID_ROWS, GRID_Y } from '../constants/layout';
 export function hasDivineTerritory(roomGrid: (RoomData | null)[][]): boolean {
   for (const row of roomGrid)
     for (const d of row)
-      if (d?.monsterSlot && MONSTER_DEFS[d.monsterSlot]?.passive === 'DIVINE_TERRITORY')
+      if (resolveMonsterDef(d?.monsterSlot ?? undefined)?.passive === 'DIVINE_TERRITORY')
         return true;
   return false;
 }
@@ -36,7 +36,7 @@ export function hasTribeMasteryFor(
   for (const row of roomGrid)
     for (const d of row)
       if (d?.monsterSlot) {
-        const def = MONSTER_DEFS[d.monsterSlot];
+        const def = resolveMonsterDef(d.monsterSlot);
         if (def?.passive === 'TRIBE_MASTERY' && def.tribe === tribe) return true;
       }
   return false;
@@ -49,7 +49,7 @@ export function hasTribeMasteryFor(
 export function hasSeasonalBoon(roomGrid: (RoomData | null)[][]): boolean {
   for (const row of roomGrid)
     for (const d of row)
-      if (d?.monsterSlot && MONSTER_DEFS[d.monsterSlot]?.passive === 'SEASONAL_BOON')
+      if (resolveMonsterDef(d?.monsterSlot ?? undefined)?.passive === 'SEASONAL_BOON')
         return true;
   return false;
 }

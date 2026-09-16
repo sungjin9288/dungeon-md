@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import * as Tone from 'tone';
+import { Capacitor } from '@capacitor/core';
 import { BootScene }             from './scenes/BootScene';
 import { DungeonScene }          from './scenes/DungeonScene';
 import { UIScene }               from './scenes/UIScene';
@@ -26,6 +27,7 @@ import { getReducedMotion } from './utils/reducedMotion';
 import { getUnlockedSlots, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
 import { calculateRoomMetrics } from './data/dungeonMetrics';
 import { getDungeonActionQueue, getRoomActionRecommendation } from './data/roomActionRecommendations';
+import { installNativeSafeAreaFallback } from './constants/safeArea';
 
 declare global {
   interface Window {
@@ -46,8 +48,16 @@ document.addEventListener('touchstart', unlockAudio, { once: true, capture: true
 document.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
 
 // ── Safe-area offset for notch / home indicator ──────────────────────────────
-const safeTop    = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0');
-const safeBottom = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0');
+const nativeSafeArea = installNativeSafeAreaFallback(Capacitor.getPlatform(), window.screen.height);
+const rootStyle = getComputedStyle(document.documentElement);
+const safeTop = Math.max(
+  parseInt(rootStyle.getPropertyValue('--sat') || '0'),
+  nativeSafeArea.top,
+);
+const safeBottom = Math.max(
+  parseInt(rootStyle.getPropertyValue('--sab') || '0'),
+  nativeSafeArea.bottom,
+);
 (window as unknown as Record<string, unknown>).__safeArea = { top: safeTop, bottom: safeBottom };
 
 // ── Device Pixel Ratio — render at native resolution for crisp display ────────
@@ -88,19 +98,17 @@ const config = {
 
 // ── Global text resolution patch ─────────────────────────────────────────────
 // Phaser.GameObjects.Text renders to a canvas-backed texture at resolution=1
-// by default. When the camera later zooms by DPR, the 1× texture is stretched
-// up and looks blurry / pixelated. We patch the factory so every add.text()
-// call automatically applies setResolution(dpr), yielding crisp text across
-// all 442+ text objects in the codebase without per-callsite changes.
+// by default. Pass the DPR through the constructor so both TextStyle and its
+// TextureSource agree on the backing resolution. Calling setResolution() only
+// after construction updates TextStyle but leaves TextureSource at 1 in Phaser
+// 3.90, which makes CanvasRenderer draw every label at DPR× logical size.
 const origTextFactory = Phaser.GameObjects.GameObjectFactory.prototype.text;
 Phaser.GameObjects.GameObjectFactory.prototype.text = function patchedText(
   this: Phaser.GameObjects.GameObjectFactory,
   x: number, y: number, text: string | string[],
   style?: Phaser.Types.GameObjects.Text.TextStyle,
 ): Phaser.GameObjects.Text {
-  const t = origTextFactory.call(this, x, y, text, style);
-  t.setResolution(dpr);
-  return t;
+  return origTextFactory.call(this, x, y, text, { ...style, resolution: dpr });
 };
 
 const game = new Phaser.Game(config);

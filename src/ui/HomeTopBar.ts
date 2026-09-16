@@ -4,7 +4,6 @@
 
 import type Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
 import { getQuest } from '../data/quests';
@@ -25,6 +24,99 @@ const DM_TITLE_MAP: Record<string, { label: string; color: string }> = {
 
 /** Priority order — first match wins (highest prestige first). */
 const DM_TITLE_PRIORITY = ['abyss_title', 'heaven_title', 'volcano_title'] as const;
+
+const HOME_HUD = {
+  stone: 0x090b0a,
+  stoneRaised: 0x121411,
+  edge: 0x5f4d32,
+  brass: 0xa98245,
+  jade: 0x4f9b78,
+  parchment: '#e7d6b5',
+  muted: '#a89c86',
+} as const;
+
+function drawDmSeal(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+  g.fillStyle(0x050605, 0.96);
+  g.fillCircle(x, y, 19);
+  g.lineStyle(2, HOME_HUD.brass, 0.78);
+  g.strokeCircle(x, y, 19);
+  g.strokeCircle(x, y, 14);
+  g.fillStyle(HOME_HUD.brass, 0.86);
+  g.fillTriangle(x - 10, y - 5, x - 3, y - 13, x - 1, y - 3);
+  g.fillTriangle(x + 10, y - 5, x + 3, y - 13, x + 1, y - 3);
+  g.fillTriangle(x - 10, y - 3, x + 10, y - 3, x, y + 13);
+  g.fillStyle(HOME_HUD.stone, 1);
+  g.fillCircle(x - 4, y + 1, 1.5);
+  g.fillCircle(x + 4, y + 1, 1.5);
+}
+
+function drawTopControlSigil(
+  g: Phaser.GameObjects.Graphics,
+  kind: 'quest' | 'settings' | 'prestige',
+  x: number,
+  y: number,
+): void {
+  g.fillStyle(HOME_HUD.stoneRaised, 0.98);
+  g.fillCircle(x, y, 14);
+  g.lineStyle(1, HOME_HUD.edge, 0.9);
+  g.strokeCircle(x, y, 14);
+  g.lineStyle(2, HOME_HUD.brass, 0.82);
+  if (kind === 'quest') {
+    g.strokeRoundedRect(x - 7, y - 9, 14, 18, 2);
+    g.lineBetween(x - 4, y - 4, x + 4, y - 4);
+    g.lineBetween(x - 4, y + 1, x + 4, y + 1);
+    g.lineBetween(x - 4, y + 6, x + 2, y + 6);
+    return;
+  }
+  if (kind === 'prestige') {
+    g.fillStyle(HOME_HUD.brass, 0.86);
+    g.fillTriangle(x, y - 10, x - 3, y - 2, x + 3, y - 2);
+    g.fillTriangle(x, y + 10, x - 3, y + 2, x + 3, y + 2);
+    g.fillTriangle(x - 10, y, x - 2, y - 3, x - 2, y + 3);
+    g.fillTriangle(x + 10, y, x + 2, y - 3, x + 2, y + 3);
+    return;
+  }
+  g.strokeCircle(x, y, 6);
+  g.strokeCircle(x, y, 2);
+  for (let i = 0; i < 8; i++) {
+    const angle = i * Math.PI / 4;
+    g.lineBetween(
+      x + Math.cos(angle) * 8,
+      y + Math.sin(angle) * 8,
+      x + Math.cos(angle) * 11,
+      y + Math.sin(angle) * 11,
+    );
+  }
+}
+
+function drawCurrencySigil(
+  g: Phaser.GameObjects.Graphics,
+  kind: 'gold' | 'soul' | 'gem',
+  x: number,
+  y: number,
+): void {
+  const color = kind === 'gold' ? 0xd0a64c : kind === 'soul' ? 0x69b49a : 0x72a8c4;
+  g.lineStyle(1.5, color, 0.9);
+  g.fillStyle(color, 0.16);
+  if (kind === 'gold') {
+    g.fillCircle(x, y, 6);
+    g.strokeCircle(x, y, 6);
+    g.lineBetween(x - 3, y, x + 3, y);
+    return;
+  }
+  if (kind === 'soul') {
+    g.fillCircle(x, y, 6);
+    g.strokeCircle(x, y, 6);
+    g.strokeCircle(x, y, 2.5);
+    g.lineBetween(x, y - 9, x, y - 6);
+    g.lineBetween(x, y + 6, x, y + 9);
+    return;
+  }
+  g.fillTriangle(x, y - 7, x - 7, y - 1, x, y + 7);
+  g.fillTriangle(x, y - 7, x + 7, y - 1, x, y + 7);
+  g.strokeTriangle(x, y - 7, x - 7, y - 1, x, y + 7);
+  g.strokeTriangle(x, y - 7, x + 7, y - 1, x, y + 7);
+}
 
 // ─── Top-bar ─────────────────────────────────────────────────────────────────
 
@@ -53,22 +145,20 @@ export function buildTopBar(
   const t = theme;
   const g = scene.add.graphics().setDepth(5);
   const reducedMotion = getReducedMotion();
-  // Quiet stone ledge: status remains readable without competing with the lair.
-  g.fillStyle(CASUAL.PANEL, 1);
+  // Soot-black lintel: the HUD is dungeon hardware, not a generic app bar.
+  g.fillStyle(HOME_HUD.stone, 1);
   g.fillRect(0, 0, CANVAS_WIDTH, topH);
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.5);
+  g.fillStyle(HOME_HUD.brass, 0.42);
   g.fillRect(0, topH - 1, CANVAS_WIDTH, 1);
+  g.fillStyle(0xffffff, 0.035);
+  g.fillRect(8, 3, CANVAS_WIDTH - 16, 2);
 
-  // DM seal: brass identifies earned status without a glossy medallion.
-  g.fillStyle(CASUAL.GOLD, 0.16);
-  g.fillCircle(28, 30, 19);
-  g.lineStyle(1.5, CASUAL.GOLD, 0.74);
-  g.strokeCircle(28, 30, 19);
+  drawDmSeal(g, 28, 30);
 
   // Decorative aura is static in reduced motion.
   const glowRing = scene.add.graphics().setDepth(4);
   glowRing.setPosition(28, 30);
-  glowRing.fillStyle(CASUAL.GOLD, 0.10);
+  glowRing.fillStyle(HOME_HUD.brass, 0.10);
   glowRing.fillCircle(0, 0, 23);
   if (!reducedMotion) {
     scene.tweens.add({
@@ -77,16 +167,6 @@ export function buildTopBar(
       scaleY: { from: 0.94, to: 1.06 },
       alpha:  { from: 0.18, to: 0.08 },
       duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-    });
-  }
-
-  const dmEmoji = scene.add.text(28, 30, '🏰', {
-    fontFamily: 'sans-serif', fontSize: '19px',
-  }).setOrigin(0.5).setDepth(6);
-  if (!reducedMotion) {
-    scene.tweens.add({
-      targets: dmEmoji, scaleX: 1.03, scaleY: 1.03,
-      duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
   }
 
@@ -106,7 +186,7 @@ export function buildTopBar(
 
   const dmLevelText = scene.add.text(54, nameLineY, `던전 마스터  Lv.${gs.dmLevel}`, {
     fontFamily: 'sans-serif', fontSize: '12px',
-    color: CASUAL_CSS.INK, fontStyle: 'bold',
+    color: HOME_HUD.parchment, fontStyle: 'bold',
   }).setDepth(6);
 
   if (earnedTitleKey) {
@@ -116,24 +196,22 @@ export function buildTopBar(
     }).setDepth(6);
   }
   const xpPct  = Math.min(gs.dmXP / xpForLevel(gs.dmLevel), 1);
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillStyle(0x020302, 1);
   g.fillRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 4);
   const xpFill = scene.add.graphics().setDepth(5.5);
   if (xpPct > 0) {
-    xpFill.fillStyle(CASUAL.GREEN, 1);
+    xpFill.fillStyle(HOME_HUD.jade, 1);
     xpFill.fillRoundedRect(xpBarX + 1, xpBarY + 1, Math.floor((xpBarW - 2) * xpPct), xpBarH - 2, 3);
   }
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.65);
+  g.lineStyle(1, HOME_HUD.edge, 0.78);
   g.strokeRoundedRect(xpBarX, xpBarY, xpBarW, xpBarH, 4);
   const xpText = scene.add.text(xpBarX + xpBarW / 2, xpBarY + 4, `${gs.dmXP} / ${xpForLevel(gs.dmLevel)} XP`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '10px', color: HOME_HUD.muted, fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(6);
 
-  // 📜 Quest log button
+  // Quest log button
   const questX = gs.gameCompleted ? 178 : 202;
-  scene.add.text(questX, topH / 2, '📜', {
-    fontFamily: 'sans-serif', fontSize: '20px',
-  }).setOrigin(0.5).setDepth(6);
+  drawTopControlSigil(g, 'quest', questX, topH / 2);
   scene.add.zone(questX, topH / 2, 44, 44).setDepth(7)
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => openQuestLog(scene, questLogState, gs));
@@ -163,21 +241,17 @@ export function buildTopBar(
     }
   }
 
-  // ⚙️ Audio settings button
+  // Audio settings button
   const settingsX = gs.gameCompleted ? 222 : 246;
-  scene.add.text(settingsX, topH / 2, '⚙️', {
-    fontFamily: 'sans-serif', fontSize: '18px',
-  }).setOrigin(0.5).setDepth(6);
+  drawTopControlSigil(g, 'settings', settingsX, topH / 2);
   scene.add.zone(settingsX, topH / 2, 44, 44).setDepth(7)
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => showAudioSettings(scene));
 
-  // ✨ New Game+ button
+  // New Game+ button
   if (gs.gameCompleted) {
     const ngX = 266;
-    scene.add.text(ngX, topH / 2, '✨', {
-      fontFamily: 'sans-serif', fontSize: '18px',
-    }).setOrigin(0.5).setDepth(6);
+    drawTopControlSigil(g, 'prestige', ngX, topH / 2);
     scene.add.zone(ngX, topH / 2, 44, 44).setDepth(7)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => openPrestigeModal(scene, () => scene.scene.restart()));
@@ -188,16 +262,15 @@ export function buildTopBar(
 
   // Currencies (right side)
   const currencies = [
-    { icon: '💰', val: gs.homeGold,     x: CANVAS_WIDTH - 94 },
-    { icon: '💠', val: gs.soulCrystals, x: CANVAS_WIDTH - 54 },
-    { icon: '💎', val: gs.gems,          x: CANVAS_WIDTH - 16 },
+    { kind: 'gold' as const, val: gs.homeGold,     x: CANVAS_WIDTH - 94 },
+    { kind: 'soul' as const, val: gs.soulCrystals, x: CANVAS_WIDTH - 54 },
+    { kind: 'gem' as const,  val: gs.gems,          x: CANVAS_WIDTH - 16 },
   ];
   const currencyTexts: Phaser.GameObjects.Text[] = [];
-  for (const { icon, val, x } of currencies) {
-    scene.add.text(x, 8, icon, { fontFamily: 'sans-serif', fontSize: '13px' })
-      .setOrigin(0.5, 0).setDepth(6);
+  for (const { kind, val, x } of currencies) {
+    drawCurrencySigil(g, kind, x, 14);
     const valT = scene.add.text(x, 27, val.toLocaleString('ko-KR'), {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '12px', color: HOME_HUD.parchment, fontStyle: 'bold',
     }).setOrigin(0.5, 0).setDepth(6);
     currencyTexts.push(valT);
   }
@@ -213,7 +286,7 @@ export function buildTopBar(
       w: xpBarW - 2,
       h: xpBarH - 2,
       radius: 3,
-      color: CASUAL.GREEN,
+      color: HOME_HUD.jade,
     },
   };
 }
@@ -275,9 +348,9 @@ export function buildQuestBanner(
   const bH = 22;
   const bg = scene.add.graphics().setDepth(4);
   // Secondary quest line: no card treatment.
-  bg.fillStyle(CASUAL.PANEL, 1);
+  bg.fillStyle(HOME_HUD.stoneRaised, 0.98);
   bg.fillRect(0, bY, CANVAS_WIDTH, bH);
-  bg.fillStyle(CASUAL.EDGE_SOFT, 0.4);
+  bg.fillStyle(HOME_HUD.edge, 0.56);
   bg.fillRect(0, bY + bH - 1, CANVAS_WIDTH, 1);
 
   const obj  = quest.objectives[0];
@@ -288,29 +361,29 @@ export function buildQuestBanner(
 
   const barX = 8, barW = 80;
   // progress track — soft cream + brown edge
-  bg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  bg.fillStyle(0x020302, 1);
   bg.fillRoundedRect(barX, bY + 7, barW, 7, 3);
   if (pct > 0) {
-    bg.fillStyle(CASUAL.GREEN, 1);
+    bg.fillStyle(HOME_HUD.jade, 1);
     bg.fillRoundedRect(barX, bY + 7, Math.round(barW * pct), 7, 3);
   }
-  bg.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+  bg.lineStyle(1, HOME_HUD.edge, 0.7);
   bg.strokeRoundedRect(barX, bY + 7, barW, 7, 3);
 
   // Show objective action text (more actionable than quest title) — INK label
   // with the progress "N/M" as a GOLD accent appended right after it.
   const objDesc = obj?.description ?? quest.title;
-  const label = scene.add.text(barX + barW + 6, bY + 11, `📜 ${objDesc}  `, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  const label = scene.add.text(barX + barW + 6, bY + 11, `임무 · ${objDesc}  `, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: HOME_HUD.parchment, fontStyle: 'bold',
   }).setOrigin(0, 0.5).setDepth(5);
   scene.add.text(label.x + label.width, bY + 11, `${cur}/${tgt}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#d8b869', fontStyle: 'bold',
   }).setOrigin(0, 0.5).setDepth(5);
 
   // Tap hint arrow (right edge)
   if (onTap) {
     scene.add.text(CANVAS_WIDTH - 8, bY + 11, '›', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '12px', color: HOME_HUD.muted, fontStyle: 'bold',
     }).setOrigin(1, 0.5).setDepth(5);
     scene.add.zone(0, bY + bH / 2, CANVAS_WIDTH, 44)
       .setOrigin(0, 0.5).setInteractive({ useHandCursor: true }).setDepth(6)
@@ -330,24 +403,24 @@ export function buildStatsBar(
   const bY = botY - bH;
   const g  = scene.add.graphics().setDepth(3);
   // Quiet ledger above navigation.
-  g.fillStyle(CASUAL.PANEL, 1);
+  g.fillStyle(HOME_HUD.stone, 1);
   g.fillRect(0, bY, CANVAS_WIDTH, bH);
-  g.fillStyle(CASUAL.EDGE_SOFT, 0.4);
+  g.fillStyle(HOME_HUD.edge, 0.54);
   g.fillRect(0, bY, CANVAS_WIDTH, 1);
 
   const clearedStages = gs.stageProgress.filter(p => p.bestStars > 0).length;
   const stats = [
-    { icon: '💀', val: (gs.totalKills        ?? 0).toLocaleString('ko-KR'), label: '처치'    },
-    { icon: '💰', val: (gs.totalGoldEarned   ?? 0).toLocaleString('ko-KR'), label: '황금'    },
-    { icon: '🗺', val: `${clearedStages}/${gs.stageProgress.length}`,         label: '스테이지' },
+    { val: (gs.totalKills        ?? 0).toLocaleString('ko-KR'), label: '처치' },
+    { val: (gs.totalGoldEarned   ?? 0).toLocaleString('ko-KR'), label: '황금' },
+    { val: `${clearedStages}/${gs.stageProgress.length}`, label: '정복' },
   ];
 
   const colW = CANVAS_WIDTH / stats.length;
-  stats.forEach(({ icon, val, label }, i) => {
+  stats.forEach(({ val, label }, i) => {
     const cx = i * colW + colW / 2;
     // value (INK) + label (INK_SOFT) — two-tone but kept centered as a block.
     // Measure both parts hidden, then place left→right so the block stays on cx.
-    const valStr = `${icon} ${val} `;
+    const valStr = `${val} `;
     const valMeasure = scene.add.text(0, 0, valStr, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
     }).setVisible(false);
@@ -359,13 +432,13 @@ export function buildStatsBar(
     valMeasure.destroy();
     labelMeasure.destroy();
     const valText = scene.add.text(startX, bY + 13, valStr, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '10px', color: HOME_HUD.parchment, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(4);
     scene.add.text(startX + valText.width, bY + 13, label, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '10px', color: HOME_HUD.muted, fontStyle: 'bold',
     }).setOrigin(0, 0.5).setDepth(4);
     if (i > 0) {
-      g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+      g.lineStyle(1, HOME_HUD.edge, 0.5);
       g.lineBetween(i * colW, bY + 5, i * colW, bY + bH - 5);
     }
   });

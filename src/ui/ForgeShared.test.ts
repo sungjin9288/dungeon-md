@@ -15,6 +15,7 @@ import {
   getForgeNeedLabel,
   buildForgeTargetCue,
   formatForgeMaterialStatus,
+  getFocusMonsterDisplay,
 } from './ForgeShared';
 import type { GameState } from '../data/wisdom';
 import type { OwnedMonster } from '../data/barracks';
@@ -59,12 +60,12 @@ describe('formatForgeMaterialStatus', () => {
   };
 
   it('labels a missing material with the exact deficit', () => {
-    expect(formatForgeMaterialStatus(material)).toBe('⚙️2/3 부족 1');
+    expect(formatForgeMaterialStatus(material)).toBe('철 조각 2/3 · 부족 1');
   });
 
   it('labels a fulfilled material without a false zero deficit', () => {
     expect(formatForgeMaterialStatus({ ...material, have: 3, missing: 0 }))
-      .toBe('⚙️3/3 충족');
+      .toBe('철 조각 3/3 · 충족');
   });
 });
 
@@ -100,6 +101,17 @@ describe('getForgeNeedLabel', () => {
     expect(getForgeNeedLabel({ type: 'support' } as never)).toBe('방어구 추천');
     // A real melee-ish def resolves to the weapon recommendation.
     expect(getForgeNeedLabel(getMonsterDefForOwned('dokkaebi_warrior'))).toBe('무기 추천');
+  });
+});
+
+describe('getFocusMonsterDisplay', () => {
+  it('shows the resolved name and emoji for a fusion-only hybrid', () => {
+    const monster = makeMonster({ id: 'storm_spirit', level: 9 });
+    expect(getFocusMonsterDisplay(makeGs([monster]), monster.id)).toEqual({
+      name: '폭풍 정령',
+      emoji: '⚡',
+      level: 9,
+    });
   });
 });
 

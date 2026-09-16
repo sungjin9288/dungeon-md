@@ -84,6 +84,12 @@ describe('hasDivineTerritory', () => {
     expect(hasDivineTerritory(grid)).toBe(true);
   });
 
+  it('inherits the base passive for an evolved monster id', () => {
+    const grid = emptyGrid();
+    grid[1][1] = makeRoom({ monsterSlot: 'mountain_god_leg' });
+    expect(hasDivineTerritory(grid)).toBe(true);
+  });
+
   it('returns false when monsterSlot is null in every cell', () => {
     const grid = emptyGrid();
     for (const row of grid) row.fill(makeRoom({ monsterSlot: null }));
@@ -115,6 +121,12 @@ describe('hasTribeMasteryFor', () => {
   it('returns true when a TRIBE_MASTERY monster with matching tribe is present', () => {
     const grid = emptyGrid();
     grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general' }); // TRIBE_MASTERY, dokkaebi
+    expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
+  });
+
+  it('inherits tribe mastery and tribe for an evolved monster id', () => {
+    const grid = emptyGrid();
+    grid[0][0] = makeRoom({ monsterSlot: 'dokkaebi_general_epic' });
     expect(hasTribeMasteryFor(grid, 'dokkaebi')).toBe(true);
   });
 

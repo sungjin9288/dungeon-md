@@ -10,13 +10,20 @@ import { INVADER_DEFS, type InvaderDef, type InvaderType } from '../data/invader
 import type { WaveSpec } from '../data/stages';
 import type { DungeonTheme } from '../themes/themes';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  COLORS,
+  CASUAL,
+  CASUAL_CSS,
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+} from '../constants/colors';
 import { logger } from '../utils/logger';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
-const OVERLAY_PANEL_FILL = CASUAL.PANEL;
-const PREVIEW_PANEL_FILL = CASUAL.PANEL;
-const PREVIEW_ROW_FILL = CASUAL.PANEL_SOFT;
+const OVERLAY_PANEL_FILL = DUNGEON_UI.STONE;
+const PREVIEW_PANEL_FILL = DUNGEON_UI.STONE;
+const PREVIEW_ROW_FILL = DUNGEON_UI.SOOT;
 
 // ─── WaveEventContext ──────────────────────────────────────────────────────
 
@@ -74,7 +81,8 @@ export function showWaveEvent(
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   dim.setAlpha(0);
   ov.add(dim);
-  scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
+  if (getReducedMotion()) dim.setAlpha(1);
+  else scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
   // Card
   const cw = 280, ch = 132;
@@ -85,15 +93,15 @@ export function showWaveEvent(
     y: cy,
     w: cw,
     h: ch,
-    radius: 12,
+    radius: 8,
     fillColor: OVERLAY_PANEL_FILL,
     borderColor: accent,
     borderAlpha: 1,
-    borderWidth: 3,
+    borderWidth: 1.5,
     accentColor: accent,
     accentAlpha: 1,
     glowColor: accent,
-    glowOpacity: 0.12,
+    glowOpacity: 0.05,
     shadowOpacity: 0.3,
     shadowOffsetY: 5,
   });
@@ -105,10 +113,10 @@ export function showWaveEvent(
   }).setOrigin(0.5);
   ov.add(icon);
 
-  // Name — keep the saturated semantic accent on cream
+  // Event identity keeps its semantic accent against the stone surface.
   const name = scene.add.text(cx + cw / 2, cy + 66, evt.name, {
     fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: evt.color,
-    stroke: '#ffffff', strokeThickness: 3,
+    stroke: '#030504', strokeThickness: 2,
   }).setOrigin(0.5);
   ov.add(name);
 
@@ -117,30 +125,38 @@ export function showWaveEvent(
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: cw - 34 },
     align: 'center',
   }).setOrigin(0.5);
   ov.add(desc);
 
   const cardObjects = [frame.shadow, frame.panel, frame.glow, icon, name, desc];
-  cardObjects.forEach(obj => {
-    obj.setAlpha(0);
-    obj.y -= 28;
-  });
-  scene.tweens.add({
-    targets: cardObjects,
-    y: '+=28',
-    alpha: 1,
-    duration: 300,
-    ease: 'Power2.easeOut',
-  });
+  if (getReducedMotion()) cardObjects.forEach(obj => obj.setAlpha(1));
+  else {
+    cardObjects.forEach(obj => {
+      obj.setAlpha(0);
+      obj.y -= 28;
+    });
+    scene.tweens.add({
+      targets: cardObjects,
+      y: '+=28',
+      alpha: 1,
+      duration: 300,
+      ease: 'Power2.easeOut',
+    });
+  }
 
   // Apply event effect
   applyWaveEvent(ctx, evt);
 
   // Auto-dismiss after 1.8s
   scene.time.delayedCall(1800, () => {
+    if (getReducedMotion()) {
+      ov.destroy();
+      onDone();
+      return;
+    }
     scene.tweens.add({
       targets: ov, alpha: 0, duration: 300,
       onComplete: () => { ov.destroy(); onDone(); },
@@ -242,25 +258,23 @@ function addPreviewMetricChip(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRoundedRect(x, y, w, 28, 7);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 3, y + 3, w - 6, 3, 2);
-  g.fillStyle(accent, 0.5);
-  g.fillRoundedRect(x + 5, y + 5, 20, 18, 5);
-  g.lineStyle(2, accent, 0.9);
-  g.strokeRoundedRect(x, y, w, 28, 7);
+  g.fillStyle(DUNGEON_UI.SOOT, 1);
+  g.fillRoundedRect(x, y, w, 30, 5);
+  g.fillStyle(accent, 0.85);
+  g.fillRect(x + 1, y + 6, 3, 18);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.9);
+  g.strokeRoundedRect(x, y, w, 30, 5);
   ov.add(g);
-  ov.add(scene.add.text(x + 11, y + 9, label, {
-    fontFamily: 'sans-serif',
-    fontSize: '7px',
-    color: GAME_UI.colors.mutedText,
-    fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
-  ov.add(scene.add.text(x + w - 8, y + 18, value, {
+  ov.add(scene.add.text(x + 10, y + 9, label, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.MUTED,
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  ov.add(scene.add.text(x + w - 8, y + 21, value, {
+    fontFamily: 'sans-serif',
+    fontSize: '11px',
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(1, 0.5));
 }
@@ -275,15 +289,13 @@ function addEnemyBriefingRow(
   rowY: number,
 ): void {
   const rowG = scene.add.graphics();
-  rowG.fillStyle(CASUAL.SHADOW, 0.18);
+  rowG.fillStyle(DUNGEON_UI.VOID, 0.5);
   rowG.fillRoundedRect(cx + 13, rowY - 12, cw - 26, 33, GAME_UI.radius.row);
   rowG.fillStyle(PREVIEW_ROW_FILL, 1);
   rowG.fillRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
-  rowG.fillStyle(0xffffff, 0.12);
-  rowG.fillRoundedRect(cx + 15, rowY - 11, cw - 30, 3, 2);
   rowG.fillStyle(def.color, 0.22);
-  rowG.fillRoundedRect(cx + 18, rowY - 8, 35, 21, 6);
-  rowG.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
+  rowG.fillRoundedRect(cx + 18, rowY - 8, 35, 21, 4);
+  rowG.lineStyle(1, DUNGEON_UI.EDGE, 0.9);
   rowG.strokeRoundedRect(cx + 12, rowY - 14, cw - 24, 33, GAME_UI.radius.row);
   // invader icon — keep the saturated species color
   rowG.fillStyle(def.color, 1);
@@ -295,29 +307,27 @@ function addEnemyBriefingRow(
   ov.add(scene.add.text(cx + 62, rowY - 4, `${def.koreanName}`, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   ov.add(scene.add.text(cx + 62, rowY + 10, `HP ${def.hp} · 피해 ${def.damage}`, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '10px',
     fontStyle: 'bold',
-    color: GAME_UI.colors.mutedText,
+    color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
 
   const countLabel = `×${count}`;
   const countBg = scene.add.graphics();
-  countBg.fillStyle(CASUAL.GOLD, 1);
-  countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
-  countBg.fillStyle(0xffffff, 0.12);
-  countBg.fillRoundedRect(cx + cw - 52, rowY - 7, 30, 3, 2);
-  countBg.lineStyle(2, CASUAL.GOLD_DK, 0.9);
-  countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 6);
+  countBg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+  countBg.fillRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 4);
+  countBg.lineStyle(1, DUNGEON_UI.BRASS, 0.9);
+  countBg.strokeRoundedRect(cx + cw - 55, rowY - 9, 36, 19, 4);
   ov.add(countBg);
   ov.add(scene.add.text(cx + cw - 37, rowY, countLabel, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.BRASS,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -351,8 +361,8 @@ function addEnemyBriefingRow(
     };
     ov.add(scene.add.text(cx + cw - 102, rowY + 10, behaviorLabel[def.behavior] ?? '특수', {
       fontFamily: 'sans-serif',
-      fontSize: '7px',
-      color: CASUAL_CSS.RED,
+      fontSize: '10px',
+      color: DUNGEON_UI_CSS.EMBER,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5));
   }
@@ -391,7 +401,8 @@ export function showWavePreview(ctx: WaveEventContext): void {
   dim.fillStyle(0x000000, 0.68);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   ov.add(dim);
-  scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
+  if (getReducedMotion()) dim.setAlpha(1);
+  else scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
   // Card
   const cw = 318;
@@ -403,15 +414,15 @@ export function showWavePreview(ctx: WaveEventContext): void {
     y: cy,
     w: cw,
     h: ch,
-    radius: 12,
+    radius: 8,
     fillColor: PREVIEW_PANEL_FILL,
     borderColor: threat.color,
     borderAlpha: 1,
-    borderWidth: 3,
+    borderWidth: 1.5,
     accentColor: threat.color,
     accentAlpha: 1,
     glowColor: threat.color,
-    glowOpacity: 0.12,
+    glowOpacity: 0.05,
     shadowOpacity: 0.3,
     shadowOffsetY: 5,
   });
@@ -419,15 +430,15 @@ export function showWavePreview(ctx: WaveEventContext): void {
 
   // Title
   ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 18,
-    `⚠️  ${nextWave}번째 침략 예고`, {
+    `침입 ${nextWave} · 정찰 보고`, {
     fontFamily: 'sans-serif', fontSize: '15px',
     fontStyle: 'bold', color: threat.css,
-    stroke: '#ffffff', strokeThickness: 3,
+    stroke: '#030504', strokeThickness: 2,
   }).setOrigin(0.5));
 
   if (cfg) {
     const rail = scene.add.graphics();
-    rail.fillStyle(CASUAL.PANEL_SOFT, 1);
+    rail.fillStyle(DUNGEON_UI.SOOT, 1);
     rail.fillRoundedRect(cx + 14, cy + 35, cw - 28, 5, 3);
     rail.fillStyle(threat.color, 1);
     rail.fillRoundedRect(cx + 14, cy + 35, Math.max(18, (cw - 28) * Phaser.Math.Clamp(getWaveThreatScore(enemyRows) / 600, 0.12, 1)), 5, 3);
@@ -450,28 +461,28 @@ export function showWavePreview(ctx: WaveEventContext): void {
     // Total / damage warning
     ov.add(scene.add.text(CANVAS_WIDTH / 2, rowY + 2,
       `침입문 → 던전 심장부 · 방어선 돌파 시 HP 피해`, {
-      fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: GAME_UI.colors.mutedText,
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: GAME_UI.colors.mutedText,
     }).setOrigin(0.5));
   } else {
     ov.add(scene.add.text(CANVAS_WIDTH / 2, cy + 60,
-      '무한 모드 - 침략자가 계속 강해집니다', {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+      '무한 모드 · 침략 전력이 계속 강해집니다', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
   }
 
   // Confirm button
   const btn = addPrimaryActionButton(scene, {
     x: cx + 40,
-    y: cy + ch - 48,
+    y: cy + ch - 58,
     w: cw - 80,
-    h: 34,
-    label: '🛡  방어 시작',
+    h: 44,
+    label: '침입 방어 개시',
     fontSize: '13px',
-    fillColor: CASUAL.GREEN,
-    hoverFillColor: 0x6fdc70,
-    borderColor: CASUAL.GREEN_DK,
-    hoverBorderColor: CASUAL.GREEN_DK,
-    textColor: CASUAL_CSS.WHITE,
+    fillColor: DUNGEON_UI.JADE,
+    hoverFillColor: 0x5aad86,
+    borderColor: DUNGEON_UI.JADE,
+    hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+    textColor: '#ffffff',
     onPress: () => {
       ov.destroy();
       ctx.startWave();

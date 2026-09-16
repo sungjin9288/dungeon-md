@@ -7,10 +7,17 @@ import {
   getMonstersForTribe,
   getSkinForMonster,
   getSkinsForMonster,
+  resolveOwnedMonsterProfile,
+  resolveMonsterAttackCooldown,
   resolveMonsterDef,
   resolveMonsterTypeId,
 } from './monsters';
 import type { MonsterDef } from './monsters';
+import {
+  getMonsterBaseDamage,
+  getMonsterDisplayName,
+  getNextEvolution,
+} from './fusion';
 
 const ALL_DEFS = Object.values(MONSTER_DEFS) as MonsterDef[];
 
@@ -320,6 +327,107 @@ describe('resolveMonsterDef', () => {
     expect(result!.baseDamage).toBe(20);
     expect(result!.attackCooldown).toBe(1500);
   });
+
+  it('uses evolution damage while preserving the base combat cadence', () => {
+    const result = resolveMonsterDef('dokkaebi_warrior_leg');
+    expect(result!.baseDamage).toBe(57);
+    expect(result!.attackCooldown).toBe(1500);
+  });
+
+  it('gives fusion-only hybrids an actionable combat cadence', () => {
+    const result = resolveMonsterDef('storm_spirit');
+    expect(result).toMatchObject({
+      baseDamage: 24,
+      type: 'magic',
+      range: 2,
+      attackCooldown: 2000,
+    });
+  });
+});
+
+// ─── resolveOwnedMonsterProfile ──────────────────────────────────────────────
+
+describe('resolveOwnedMonsterProfile', () => {
+  it('keeps exact registry monsters canonical', () => {
+    expect(resolveOwnedMonsterProfile('fox_warrior')).toMatchObject({
+      id: 'fox_warrior',
+      registryId: 'fox_warrior',
+      source: 'registry',
+      name: '여우 전사',
+      baseDamage: 28,
+    });
+  });
+
+  it('projects an evolved monster from its base registry entry', () => {
+    expect(resolveOwnedMonsterProfile('dokkaebi_warrior_leg')).toMatchObject({
+      id: 'dokkaebi_warrior_leg',
+      registryId: 'dokkaebi_warrior',
+      source: 'variant',
+      name: '전설 도깨비 전사',
+      rarityTier: 'L',
+      baseDamage: 57,
+      attackCooldown: 1500,
+    });
+  });
+
+  it('projects a legacy suffixed instance without adding evolution stats', () => {
+    expect(resolveOwnedMonsterProfile('dokkaebi_warrior_3')).toMatchObject({
+      id: 'dokkaebi_warrior_3',
+      registryId: 'dokkaebi_warrior',
+      source: 'variant',
+      name: '도깨비 전사',
+      baseDamage: 20,
+    });
+  });
+
+  it('projects a fusion-only hybrid without pretending it is in the registry', () => {
+    expect(resolveOwnedMonsterProfile('storm_spirit')).toMatchObject({
+      id: 'storm_spirit',
+      registryId: null,
+      source: 'hybrid',
+      name: '폭풍 정령',
+      emoji: '⚡',
+      rarityTier: 'R',
+      type: 'magic',
+      baseDamage: 24,
+    });
+  });
+
+  it('rejects unknown owned-monster IDs', () => {
+    expect(resolveOwnedMonsterProfile('not_a_monster')).toBeNull();
+    expect(resolveOwnedMonsterProfile(42)).toBeNull();
+    expect(resolveOwnedMonsterProfile({ id: 'dokkaebi_warrior' })).toBeNull();
+  });
+
+  it('matches fusion preview values for every supported evolution tier', () => {
+    const suffixes = ['unc', 'rare', 'epic', 'leg'] as const;
+    const evolvable = ALL_DEFS.filter(def => getNextEvolution(def.id));
+    expect(evolvable).toHaveLength(15);
+
+    for (const def of evolvable) {
+      for (const suffix of suffixes) {
+        const id = `${def.id}_${suffix}`;
+        expect(resolveOwnedMonsterProfile(id)).toMatchObject({
+          name: getMonsterDisplayName(id),
+          baseDamage: getMonsterBaseDamage(id),
+        });
+      }
+    }
+  });
+});
+
+describe('resolveMonsterAttackCooldown', () => {
+  it('applies the magic-room cadence bonus to a fusion-only magic monster', () => {
+    expect(resolveMonsterAttackCooldown('storm_spirit', 'scroll_library')).toBe(1600);
+  });
+
+  it('restores the base cadence when an evolved monster changes rooms', () => {
+    expect(resolveMonsterAttackCooldown('dokkaebi_warrior_leg', 'guardian')).toBe(1500);
+  });
+
+  it('fails closed for an unknown monster in a non-attacking room', () => {
+    expect(resolveMonsterAttackCooldown('not_a_monster', 'scroll_library')).toBe(0);
+  });
 });
 
 // ─── resolveMonsterTypeId ────────────────────────────────────────────────────
@@ -343,6 +451,7 @@ describe('resolveMonsterTypeId', () => {
     expect(resolveMonsterTypeId('unknown')).toBeNull();
     expect(resolveMonsterTypeId('')).toBeNull();
     expect(resolveMonsterTypeId('toString')).toBeNull();
+    expect(resolveMonsterTypeId(42)).toBeNull();
   });
 });
 

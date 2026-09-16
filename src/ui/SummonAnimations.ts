@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+} from '../constants/colors';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { loadGameState } from '../data/wisdom';
 import { generatePortrait } from '../art/PortraitGenerator';
@@ -46,7 +49,17 @@ const SUMMON_ELEMENT_LABELS: Record<string, string> = {
 };
 
 function wait(scene: Phaser.Scene, ms: number, cb: () => void): void {
-  scene.time.delayedCall(ms, cb);
+  scene.time.delayedCall(getReducedMotion() ? Math.min(ms, 60) : ms, cb);
+}
+
+type AlphaTarget = { setAlpha(value: number): unknown };
+
+function reveal(scene: Phaser.Scene, targets: AlphaTarget | AlphaTarget[], duration = 220): void {
+  if (getReducedMotion()) {
+    (Array.isArray(targets) ? targets : [targets]).forEach(target => target.setAlpha(1));
+    return;
+  }
+  scene.tweens.add({ targets, alpha: 1, duration });
 }
 
 function getDexNo(monsterId: MonsterId): string {
@@ -87,19 +100,16 @@ function drawStatusPill(
   color: number,
   _textColor: string,
 ): void {
-  // Casual candy chip: white body, glossy top, rarity-accent border, INK text.
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x, y, w, 18, 7);
-  g.fillStyle(0xffffff, 0.55);
-  g.fillRoundedRect(x + 4, y + 3, w - 8, 4, 3);
-  g.lineStyle(2, color, 1);
-  g.strokeRoundedRect(x, y, w, 18, 7);
+  g.fillStyle(DUNGEON_UI.SOOT, 1);
+  g.fillRoundedRect(x, y, w, 20, 5);
+  g.lineStyle(1, color, 0.85);
+  g.strokeRoundedRect(x, y, w, 20, 5);
   c.add(g);
-  c.add(scene.add.text(x + w / 2, y + 9, label, {
+  c.add(scene.add.text(x + w / 2, y + 10, label, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: CASUAL_CSS.INK,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0.5).setDepth(99));
 }
@@ -116,19 +126,23 @@ export function playSinglePullAnimation(
   const rCss   = RARITY_CSS[result.rarityIdx];
   const ov     = scene.add.container(0, 0).setDepth(100);
 
-  scene.input.enabled = false;
   let canSkip = false;
+  let settled = false;
+  let chargeTimer: Phaser.Time.TimerEvent | undefined;
   wait(scene, 1500, () => { canSkip = true; });
 
   // Tap to skip after 1.5s
   const skipZone = scene.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0).setInteractive().setDepth(200);
-  skipZone.on('pointerdown', () => {
-    if (!canSkip) return;
+  const finish = (): void => {
+    if (settled) return;
+    settled = true;
+    chargeTimer?.destroy();
     skipZone.destroy();
     ov.destroy();
-    scene.input.enabled = true;
+    darkOverlay.destroy();
     onComplete();
-  });
+  };
+  skipZone.on('pointerdown', () => { if (canSkip) finish(); });
 
   // ── Phase 1: Charging (0-0.8s) ──
   const darkOverlay = scene.add.graphics().setDepth(90);
@@ -142,7 +156,6 @@ export function playSinglePullAnimation(
   let chargeT = 0;
   // The spinning, accelerating rune-ring charge is a vestibular trigger — skip it
   // under reduced motion (the reveal flash + result still play).
-  let chargeTimer: Phaser.Time.TimerEvent | undefined;
   if (!getReducedMotion()) {
     chargeTimer = scene.time.addEvent({
       delay: 33, repeat: -1,
@@ -166,63 +179,55 @@ export function playSinglePullAnimation(
 
   // ── Phase 2: Portal opens (0.8-1.8s) ──
   wait(scene,800, () => {
+    if (settled || !scene.scene.isActive()) return;
     chargeTimer?.destroy();
     chargeG.clear();
 
-    // Flash
-    const flash = scene.add.graphics().setDepth(95);
-    flash.fillStyle(rColor, 1);
-    flash.fillCircle(CX, PORTAL_CY, 10);
-    ov.add(flash);
-    scene.tweens.add({ targets: flash, scaleX: 25, scaleY: 25, alpha: 0, duration: 400, ease: 'Power2.easeOut',
-      onComplete: () => flash.destroy() });
+    if (!getReducedMotion()) {
+      const flash = scene.add.graphics().setDepth(95);
+      flash.fillStyle(rColor, 1);
+      flash.fillCircle(CX, PORTAL_CY, 10);
+      ov.add(flash);
+      scene.tweens.add({ targets: flash, scaleX: 25, scaleY: 25, alpha: 0, duration: 400, ease: 'Power2.easeOut',
+        onComplete: () => flash.destroy() });
 
-    // Screen wash
-    const wash = scene.add.graphics().setDepth(93);
-    wash.fillStyle(rColor, 0.5);
-    wash.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    scene.tweens.add({ targets: wash, alpha: 0, duration: 500, onComplete: () => wash.destroy() });
+      const wash = scene.add.graphics().setDepth(93);
+      wash.fillStyle(rColor, 0.5);
+      wash.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      scene.tweens.add({ targets: wash, alpha: 0, duration: 500, onComplete: () => wash.destroy() });
 
-    // Legendary: screen shake
-    if (result.rarityIdx === 4) {
-      scene.cameras.main.shake(400, 0.012);
+      if (result.rarityIdx === 4) scene.cameras.main.shake(400, 0.012);
     }
 
     // ── Phase 3: Result reveal (1.8s) ──
     wait(scene, 1000, () => {
+      if (settled || !scene.scene.isActive()) return;
       darkOverlay.clear();
       darkOverlay.fillStyle(0x000000, 0.88);
       darkOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       // Card panel
-      const panW = 268, panH = 336;
+      const panW = 268, panH = 352;
       const panX = (CANVAS_WIDTH - panW) / 2;
       const panY = (CANVAS_HEIGHT - panH) / 2 - 30;
       const panG = scene.add.graphics().setDepth(96);
-      // chunky drop shadow (casual toy depth)
-      panG.fillStyle(CASUAL.SHADOW, 0.35);
-      panG.fillRoundedRect(panX + 4, panY + 7, panW, panH, 14);
-      // cream card body
-      panG.fillStyle(CASUAL.PANEL, 1);
-      panG.fillRoundedRect(panX, panY, panW, panH, 14);
-      // glossy white top highlight band
-      panG.fillStyle(0xffffff, 0.14);
-      panG.fillRoundedRect(panX + 6, panY + 5, panW - 12, 18, 8);
-      // portrait stage — soft cream tile carrying a rarity tint (kept as gacha drama)
-      panG.fillStyle(CASUAL.PANEL_SOFT, 1);
-      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
+      panG.fillStyle(DUNGEON_UI.VOID, 0.72);
+      panG.fillRoundedRect(panX + 4, panY + 7, panW, panH, 10);
+      panG.fillStyle(DUNGEON_UI.STONE, 1);
+      panG.fillRoundedRect(panX, panY, panW, panH, 10);
+      panG.fillStyle(rColor, 0.78);
+      panG.fillRect(panX + 1, panY + 6, 3, panH - 12);
+      panG.fillStyle(DUNGEON_UI.SOOT, 1);
+      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 8);
       panG.fillStyle(rColor, 0.16);
-      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
-      // info plate
-      panG.fillStyle(CASUAL.PANEL_SOFT, 1);
-      panG.fillRoundedRect(panX + 20, panY + 170, panW - 40, 88, 12);
-      // rarity foil streaks across the portrait stage (vivid FX, kept)
+      panG.fillRoundedRect(panX + 13, panY + 38, panW - 26, 126, 8);
+      panG.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+      panG.fillRoundedRect(panX + 20, panY + 170, panW - 40, 88, 7);
       drawFoilLines(panG, panX + 13, panY + 38, panW - 26, 126, rColor, result.rarityIdx >= 2 ? 0.2 : 0.1);
-      // rarity-accent inner trim + chunky brown outer border
       panG.lineStyle(2, rColor, 1);
-      panG.strokeRoundedRect(panX + 13, panY + 38, panW - 26, 126, 12);
-      panG.lineStyle(3, CASUAL.EDGE, 1);
-      panG.strokeRoundedRect(panX, panY, panW, panH, 14);
+      panG.strokeRoundedRect(panX + 13, panY + 38, panW - 26, 126, 8);
+      panG.lineStyle(1.5, DUNGEON_UI.EDGE, 1);
+      panG.strokeRoundedRect(panX, panY, panW, panH, 10);
       ov.add(panG);
 
       drawStatusPill(scene, ov, panX + 18, panY + 16, 70, `도감 ${getDexNo(result.monsterId)}`, rColor, rCss);
@@ -233,8 +238,8 @@ export function playSinglePullAnimation(
         panY + 16,
         64,
         result.isNew ? 'NEW' : 'DUP',
-        result.isNew ? CASUAL.GOLD : CASUAL.BLUE,
-        result.isNew ? CASUAL_CSS.GOLD : CASUAL_CSS.BLUE,
+        result.isNew ? DUNGEON_UI.BRASS : DUNGEON_UI.JADE,
+        result.isNew ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.JADE,
       );
 
       // Rarity glow behind emoji
@@ -248,42 +253,56 @@ export function playSinglePullAnimation(
       // Monster portrait (with emoji fallback)
       const summonPortraitKey = generatePortrait(scene, result.monsterId as MonsterId);
       let revealObj: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
+      let revealScaleX = 1;
+      let revealScaleY = 1;
       if (scene.textures.exists(summonPortraitKey)) {
         revealObj = scene.add.image(CX, panY + 96, summonPortraitKey)
-          .setOrigin(0.5).setDisplaySize(56, 56).setDepth(98).setScale(0);
+          .setOrigin(0.5).setDisplaySize(112, 112).setDepth(98);
+        revealScaleX = revealObj.scaleX;
+        revealScaleY = revealObj.scaleY;
+        revealObj.setScale(0);
       } else {
         revealObj = scene.add.text(CX, panY + 96, def.emoji, {
           fontFamily: 'sans-serif', fontSize: '64px',
         }).setOrigin(0.5).setDepth(98).setScale(0);
       }
       ov.add(revealObj);
-      scene.tweens.add({ targets: revealObj, scaleX: 1, scaleY: 1, duration: 350, ease: 'Back.easeOut' });
+      if (getReducedMotion()) revealObj.setScale(revealScaleX, revealScaleY);
+      else scene.tweens.add({
+        targets: revealObj,
+        scaleX: revealScaleX,
+        scaleY: revealScaleY,
+        duration: 280,
+        ease: 'Back.easeOut',
+      });
 
       // Rarity particle burst — intensity scales with rarity tier
-      const burstCount = 6 + result.rarityIdx * 2;
-      const burstDist  = 60 + result.rarityIdx * 12;
-      for (let i = 0; i < burstCount; i++) {
-        const angle = (i / burstCount) * Math.PI * 2;
-        const pg = scene.add.graphics().setDepth(97);
-        pg.fillStyle(rColor, 0.9);
-        pg.fillCircle(CX, panY + 96, 3 + result.rarityIdx);
-        ov.add(pg);
-        scene.tweens.add({
-          targets: pg,
-          x: Math.cos(angle) * burstDist,
-          y: Math.sin(angle) * burstDist,
-          alpha: 0, scaleX: 0.3, scaleY: 0.3,
-          duration: 480 + result.rarityIdx * 40,
-          ease: 'Cubic.easeOut',
-          onComplete: () => pg.destroy(),
-        });
+      if (!getReducedMotion()) {
+        const burstCount = 6 + result.rarityIdx * 2;
+        const burstDist  = 60 + result.rarityIdx * 12;
+        for (let i = 0; i < burstCount; i++) {
+          const angle = (i / burstCount) * Math.PI * 2;
+          const pg = scene.add.graphics().setDepth(97);
+          pg.fillStyle(rColor, 0.9);
+          pg.fillCircle(CX, panY + 96, 3 + result.rarityIdx);
+          ov.add(pg);
+          scene.tweens.add({
+            targets: pg,
+            x: Math.cos(angle) * burstDist,
+            y: Math.sin(angle) * burstDist,
+            alpha: 0, scaleX: 0.3, scaleY: 0.3,
+            duration: 480 + result.rarityIdx * 40,
+            ease: 'Cubic.easeOut',
+            onComplete: () => pg.destroy(),
+          });
+        }
       }
 
-      // Ceiling badge — casual gold candy chip
+      // Guaranteed-pull contract marker.
       if (result.ceilingHit) {
-        const cb = scene.add.text(CX, panY + 22, '🎯 천장 달성!', {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          backgroundColor: CASUAL_CSS.GOLD, padding: { x: 8, y: 3 },
+        const cb = scene.add.text(CX, panY + 22, '천장 계약 발동', {
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+          backgroundColor: '#080b09', padding: { x: 8, y: 3 },
         }).setOrigin(0.5).setDepth(99);
         ov.add(cb);
       }
@@ -308,24 +327,24 @@ export function playSinglePullAnimation(
       // Name
       wait(scene,200, () => {
         const nameT = scene.add.text(CX, panY + 184, def.name, {
-          fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          stroke: '#ffffff', strokeThickness: 4,
+          fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+          stroke: '#030504', strokeThickness: 3,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(nameT);
-        scene.tweens.add({ targets: nameT, alpha: 1, duration: 300 });
+        reveal(scene, nameT);
 
         const tagT = scene.add.text(CX, panY + 210, getMonsterTagLine(def), {
-          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
+          fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(tagT);
-        scene.tweens.add({ targets: tagT, alpha: 1, duration: 300 });
+        reveal(scene, tagT);
 
         const rarityT = scene.add.text(CX, panY + 232, `${RARITY_KO[result.rarityIdx]} · ${RARITY_STARS[result.rarityIdx]}`, {
           fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: rCss,
-          stroke: '#ffffff', strokeThickness: 2,
+          stroke: '#030504', strokeThickness: 2,
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(rarityT);
-        scene.tweens.add({ targets: rarityT, alpha: 1, duration: 300 });
+        reveal(scene, rarityT);
       });
 
       // New / dupe badge
@@ -334,54 +353,41 @@ export function playSinglePullAnimation(
           ? '새 몬스터 도감 등록'
           : `중복 보상 +${result.scComp}💠`;
         const badgeT = scene.add.text(CX, panY + 270, badgeText, {
-          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          backgroundColor: result.isNew ? CASUAL_CSS.GOLD : CASUAL_CSS.CREAM,
+          fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+          color: result.isNew ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.JADE,
+          backgroundColor: '#080b09',
           padding: { x: 12, y: 5 },
         }).setOrigin(0.5).setDepth(98).setAlpha(0);
         ov.add(badgeT);
-        scene.tweens.add({ targets: badgeT, alpha: 1, duration: 300 });
+        reveal(scene, badgeT);
       });
 
-      // Action buttons: [ 다시 소환 ] [ 확인 ✓ ] — casual candy buttons
       wait(scene,800, () => {
-        scene.input.enabled = true;
-
-        const dismiss = (): void => {
-          skipZone.destroy();
-          ov.destroy();
-          darkOverlay.destroy();
-          onComplete();
-        };
-
-        const btnW = 100, btnH = 34, btnY = panY + 296;
-        const again = addPrimaryActionButton(scene, {
-          x: CX - btnW - 6,
+        if (settled || !scene.scene.isActive()) return;
+        // Keep an inert input shield above the underlying altar while placing
+        // the result CTA above it. Background taps must never trigger another pull.
+        skipZone.removeAllListeners('pointerdown');
+        skipZone.setDepth(95);
+        const btnW = panW - 40, btnH = 44, btnY = panY + 296;
+        const done = addPrimaryActionButton(scene, {
+          x: panX + 20,
           y: btnY,
           w: btnW,
           h: btnH,
-          label: '다시 소환',
+          label: '소환 제단으로',
           fontSize: '13px',
-          fillColor: CASUAL.PURPLE,
-          hoverFillColor: 0xc488f0,
-          borderColor: CASUAL.PURPLE_DK,
-          hoverBorderColor: CASUAL.PURPLE_DK,
-          onPress: dismiss,
+          fillColor: DUNGEON_UI.JADE,
+          hoverFillColor: 0x5aad86,
+          borderColor: DUNGEON_UI.JADE,
+          hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+          once: true,
+          onPress: finish,
         });
-        const confirm = addPrimaryActionButton(scene, {
-          x: CX + 6,
-          y: btnY,
-          w: btnW,
-          h: btnH,
-          label: '확인  ✓',
-          fontSize: '13px',
-          onPress: dismiss,
-        });
-        const btnArts = [again.bg, again.text, confirm.bg, confirm.text];
+        const btnArts = [done.bg, done.text];
         btnArts.forEach(o => o.setDepth(99).setAlpha(0));
-        again.zone.setDepth(99);
-        confirm.zone.setDepth(99);
-        ov.add([again.bg, again.text, again.zone, confirm.bg, confirm.text, confirm.zone]);
-        scene.tweens.add({ targets: btnArts, alpha: 1, duration: 300 });
+        done.zone.setDepth(99);
+        ov.add([done.bg, done.text, done.zone]);
+        reveal(scene, btnArts);
       });
     });
   });
@@ -395,7 +401,7 @@ export function playMultiPullAnimation(
   onComplete: () => void,
 ): void {
   const ov = scene.add.container(0, 0).setDepth(100);
-  scene.input.enabled = false;
+  let settled = false;
 
   // Skip after 3s
   let canSkip = false;
@@ -403,9 +409,11 @@ export function playMultiPullAnimation(
   const skipZone = scene.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0).setInteractive().setDepth(200);
 
   const finalize = () => {
+    if (settled) return;
+    settled = true;
+    chargeTimer?.destroy();
     skipZone.destroy();
     ov.destroy();
-    scene.input.enabled = true;
     onComplete();
   };
 
@@ -443,6 +451,7 @@ export function playMultiPullAnimation(
 
   // ── Phase 2: Sequential reveals (1-4s) ──
   wait(scene, 1000, () => {
+    if (settled || !scene.scene.isActive()) return;
     chargeTimer?.destroy();
     darkG.clear();
     darkG.fillStyle(0x000000, 0.92);
@@ -474,48 +483,46 @@ export function playMultiPullAnimation(
         idx++;
 
         wait(scene, delay, () => {
-          if (!scene.scene.isActive()) return;
+          if (settled || !scene.scene.isActive()) return;
 
           const cc = scene.add.container(cx, cy).setDepth(96);
           ov.add(cc);
           cardContainers[i] = cc;
 
-          // Card bg — cream tile, glossy top, rarity-accent border
+          // Compact iron contract plate with a rarity-marked portrait recess.
           const cg = scene.add.graphics();
-          cg.fillStyle(CASUAL.SHADOW, 0.3);
+          cg.fillStyle(DUNGEON_UI.VOID, 0.72);
           cg.fillRoundedRect(-cardW / 2 + 2, -cardH / 2 + 4, cardW, cardH, 8);
-          cg.fillStyle(CASUAL.PANEL, 1);
+          cg.fillStyle(DUNGEON_UI.STONE, 1);
           cg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
-          cg.fillStyle(0xffffff, 0.14);
-          cg.fillRoundedRect(-cardW / 2 + 4, -cardH / 2 + 3, cardW - 8, 4, 2);
-          // portrait stage tile w/ rarity tint (kept gacha drama)
-          cg.fillStyle(CASUAL.PANEL_SOFT, 1);
+          cg.fillStyle(rColor, 0.78);
+          cg.fillRect(-cardW / 2 + 1, -cardH / 2 + 6, 3, cardH - 12);
+          cg.fillStyle(DUNGEON_UI.SOOT, 1);
           cg.fillRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
           cg.fillStyle(rColor, result.rarityIdx >= 2 ? 0.18 : 0.1);
           cg.fillRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
           drawFoilLines(cg, -cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, rColor, result.rarityIdx >= 2 ? 0.2 : 0.1);
-          // rarity-accent inner trim + chunky brown border
           cg.lineStyle(1.5, rColor, 1);
           cg.strokeRoundedRect(-cardW / 2 + 7, -cardH / 2 + 20, cardW - 14, 50, 7);
-          cg.lineStyle(2.5, CASUAL.EDGE, 1);
+          cg.lineStyle(1.5, DUNGEON_UI.EDGE, 1);
           cg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
           cc.add(cg);
 
           const dexBg = scene.add.graphics();
-          dexBg.fillStyle(CASUAL.PANEL, 1);
-          dexBg.fillRoundedRect(-34, -49, 68, 13, 5);
-          dexBg.lineStyle(1.5, rColor, 1);
-          dexBg.strokeRoundedRect(-34, -49, 68, 13, 5);
+          dexBg.fillStyle(DUNGEON_UI.SOOT, 1);
+          dexBg.fillRoundedRect(-35, -50, 70, 16, 5);
+          dexBg.lineStyle(1, rColor, 0.85);
+          dexBg.strokeRoundedRect(-35, -50, 70, 16, 5);
           cc.add(dexBg);
-          cc.add(scene.add.text(0, -42.5, `도감 ${getDexNo(result.monsterId)}`, {
+          cc.add(scene.add.text(0, -42, `도감 ${getDexNo(result.monsterId)}`, {
             fontFamily: 'sans-serif',
-            fontSize: '7px',
-            color: CASUAL_CSS.INK,
+            fontSize: '10px',
+            color: DUNGEON_UI_CSS.MUTED,
             fontStyle: 'bold',
           }).setOrigin(0.5));
 
           // Flash before flip for Rare+
-          if (result.rarityIdx >= 2) {
+          if (result.rarityIdx >= 2 && !getReducedMotion()) {
             const fG = scene.add.graphics().setDepth(102).setAlpha(0.7);
             fG.fillStyle(rColor, 1);
             fG.fillCircle(cx, cy, 18);
@@ -533,10 +540,10 @@ export function playMultiPullAnimation(
           }).setOrigin(0.5);
           cc.add(et);
 
-          // Name — INK on cream tile
+          // Name and rarity remain readable at the 390px canvas width.
           cc.add(scene.add.text(0, 14, mDef.name.slice(0, 5), {
             fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-            color: result.isNew ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+            color: result.isNew ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
           }).setOrigin(0.5));
 
           // Stars
@@ -546,82 +553,85 @@ export function playMultiPullAnimation(
           }).setOrigin(0.5));
           cc.add(scene.add.text(0, 40, RARITY_KO[result.rarityIdx] ?? '획득', {
             fontFamily: 'sans-serif',
-            fontSize: '7px',
+            fontSize: '10px',
             color: RARITY_CSS[result.rarityIdx] ?? '#ffffff',
             fontStyle: 'bold',
           }).setOrigin(0.5));
 
-          // New/dupe tag — casual candy chips
+          // Contract result tag.
           if (!result.isNew) {
             const dg2 = scene.add.graphics();
-            dg2.fillStyle(CASUAL.BLUE, 1);
-            dg2.fillRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
-            dg2.fillStyle(0xffffff, 0.3);
-            dg2.fillRoundedRect(-29, cardH / 2 - 17, 58, 3, 2);
-            dg2.lineStyle(1.5, CASUAL.BLUE_DK, 1);
-            dg2.strokeRoundedRect(-31, cardH / 2 - 18, 62, 14, 4);
+            dg2.fillStyle(DUNGEON_UI.SOOT, 1);
+            dg2.fillRoundedRect(-33, cardH / 2 - 20, 66, 17, 4);
+            dg2.lineStyle(1, DUNGEON_UI.JADE, 0.9);
+            dg2.strokeRoundedRect(-33, cardH / 2 - 20, 66, 17, 4);
             cc.add(dg2);
-            cc.add(scene.add.text(0, cardH / 2 - 11, `DUP +${result.scComp}`, {
-              fontFamily: 'sans-serif', fontSize: '8px', color: CASUAL_CSS.WHITE,
+            cc.add(scene.add.text(0, cardH / 2 - 11.5, `중복 +${result.scComp}`, {
+              fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.JADE,
               fontStyle: 'bold',
             }).setOrigin(0.5));
           } else {
             const ng = scene.add.graphics();
-            ng.fillStyle(CASUAL.GOLD, 1);
-            ng.fillRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
-            ng.fillStyle(0xffffff, 0.32);
-            ng.fillRoundedRect(-18, cardH / 2 - 17, 36, 3, 2);
-            ng.lineStyle(1.5, CASUAL.GOLD_DK, 1);
-            ng.strokeRoundedRect(-20, cardH / 2 - 18, 40, 14, 4);
+            ng.fillStyle(DUNGEON_UI.SOOT, 1);
+            ng.fillRoundedRect(-24, cardH / 2 - 20, 48, 17, 4);
+            ng.lineStyle(1, DUNGEON_UI.BRASS, 0.9);
+            ng.strokeRoundedRect(-24, cardH / 2 - 20, 48, 17, 4);
             cc.add(ng);
             cc.add(scene.add.text(0, cardH / 2 - 11, 'NEW', {
-              fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK,
+              fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,
               fontStyle: 'bold',
             }).setOrigin(0.5));
           }
 
           // Flip in animation
-          cc.setScale(0, 1);
-          scene.tweens.add({
-            targets: cc, scaleX: 1,
-            duration: 210, ease: 'Back.easeOut',
-          });
+          if (!getReducedMotion()) {
+            cc.setScale(0, 1);
+            scene.tweens.add({
+              targets: cc, scaleX: 1,
+              duration: 210, ease: 'Back.easeOut',
+            });
+          }
         });
       }
     }
 
     // ── Phase 3: Highlight best (4s) ──
     wait(scene,3000, () => {
-      if (!scene.scene.isActive()) return;
+      if (settled || !scene.scene.isActive()) return;
       const bestIdx = results.reduce((best, r, i) =>
         r.rarityIdx > results[best].rarityIdx ? i : best, 0);
 
       cardContainers.forEach((cc, i) => {
         if (!cc?.active) return;
         if (i !== bestIdx) {
-          scene.tweens.add({ targets: cc, alpha: 0.3, duration: 320, ease: 'Linear' });
+          if (getReducedMotion()) cc.setAlpha(0.45);
+          else scene.tweens.add({ targets: cc, alpha: 0.3, duration: 320, ease: 'Linear' });
         } else {
-          scene.tweens.add({ targets: cc, scaleX: 1.35, scaleY: 1.35, duration: 220, ease: 'Quad.easeOut' });
+          if (!getReducedMotion()) {
+            scene.tweens.add({ targets: cc, scaleX: 1.25, scaleY: 1.25, duration: 220, ease: 'Quad.easeOut' });
+          }
         }
       });
 
       const bestResult = results[bestIdx];
       if (bestResult.rarityIdx >= 2) {
         const bestDef = MONSTER_DEFS[bestResult.monsterId]!;
-        const highT = scene.add.text(CX, CANVAS_HEIGHT - 80, `최고 획득: ${RARITY_STARS[bestResult.rarityIdx]} ${bestDef.name}`, {
-          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          backgroundColor: CASUAL_CSS.CREAM, padding: { x: 10, y: 6 },
+        const highT = scene.add.text(CX, CANVAS_HEIGHT - 185, `최고 획득: ${RARITY_STARS[bestResult.rarityIdx]} ${bestDef.name}`, {
+          fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+          backgroundColor: '#080b09', padding: { x: 10, y: 6 },
         }).setOrigin(0.5).setDepth(97).setAlpha(0);
         ov.add(highT);
-        scene.tweens.add({ targets: highT, alpha: 1, duration: 400 });
+        reveal(scene, highT);
       }
 
       // ── Phase 4: Summary buttons (6s) ──
       wait(scene,2000, () => {
-        if (!scene.scene.isActive()) return;
+        if (settled || !scene.scene.isActive()) return;
         // Restore all cards
         cardContainers.forEach(cc => {
-          if (cc?.active) scene.tweens.add({ targets: cc, alpha: 1, scaleX: 1, scaleY: 1, duration: 200 });
+          if (!cc?.active) return;
+          if (getReducedMotion()) cc.setAlpha(1).setScale(1);
+          else scene.tweens.add({ targets: cc, alpha: 1, scaleX: 1, scaleY: 1, duration: 200 });
         });
 
         // Total SC compensation
@@ -631,41 +641,34 @@ export function playMultiPullAnimation(
           ? `중복 보상: +${totalSC}💠   현재: ${gs2.soulCrystals}💠`
           : `새 몬스터 ${results.filter(r => r.isNew).length}마리 획득!`;
 
-        const sumT = scene.add.text(CX, CANVAS_HEIGHT - 116, summaryText, {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-          backgroundColor: CASUAL_CSS.CREAM, padding: { x: 10, y: 5 },
+        const sumT = scene.add.text(CX, CANVAS_HEIGHT - 137, summaryText, {
+          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+          backgroundColor: '#080b09', padding: { x: 10, y: 5 },
         }).setOrigin(0.5).setDepth(97);
         ov.add(sumT);
 
-        scene.input.enabled = true;
-
-        // Buttons — casual candy buttons
-        const btnW = 104, btnH = 38, btnY2 = CANVAS_HEIGHT - 86;
-        const again = addPrimaryActionButton(scene, {
-          x: CX - btnW - 6,
-          y: btnY2,
-          w: btnW,
-          h: btnH,
-          label: '다시 소환',
-          fontSize: '13px',
-          fillColor: CASUAL.PURPLE,
-          hoverFillColor: 0xc488f0,
-          borderColor: CASUAL.PURPLE_DK,
-          hoverBorderColor: CASUAL.PURPLE_DK,
-          onPress: () => { skipZone.destroy(); ov.destroy(); darkG.destroy(); onComplete(); },
-        });
+        // Convert tap-to-skip into an inert shield once the result is complete.
+        // The CTA in the depth-100 result container remains the only live action.
+        skipZone.removeAllListeners('pointerdown');
+        skipZone.setDepth(95);
+        const btnW = 240, btnH = 44, btnY2 = CANVAS_HEIGHT - 89;
         const done = addPrimaryActionButton(scene, {
-          x: CX + 6,
+          x: CX - btnW / 2,
           y: btnY2,
           w: btnW,
           h: btnH,
-          label: '확인  ✓',
+          label: '소환 제단으로',
           fontSize: '13px',
+          fillColor: DUNGEON_UI.JADE,
+          hoverFillColor: 0x5aad86,
+          borderColor: DUNGEON_UI.JADE,
+          hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+          once: true,
           onPress: finalize,
         });
-        [again.bg, again.text, again.zone, done.bg, done.text, done.zone]
+        [done.bg, done.text, done.zone]
           .forEach(o => o.setDepth(97));
-        ov.add([again.bg, again.text, again.zone, done.bg, done.text, done.zone]);
+        ov.add([done.bg, done.text, done.zone]);
       });
     });
   });

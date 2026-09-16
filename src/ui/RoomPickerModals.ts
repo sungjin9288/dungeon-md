@@ -8,7 +8,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getMonsterAtk } from '../data/barracks';
 import { assignMonsterToRoomSlot, installTrapInRoomSlot } from '../data/roomSlotTransactions';
-import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import { logger } from '../utils/logger';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -230,8 +230,7 @@ export function showMonsterPicker(
   const targetSlot = gs.dungeonSlots?.[slotIdx];
   const monsterRows = gs.ownedMonsters
     .map(om => {
-      const omTypeId = resolveMonsterTypeId(om.id) ?? om.id;
-      const mDef = MONSTER_DEFS[omTypeId as keyof typeof MONSTER_DEFS];
+      const mDef = resolveOwnedMonsterProfile(om.id);
       return mDef ? { om, mDef } : null;
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);

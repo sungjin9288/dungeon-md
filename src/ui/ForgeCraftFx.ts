@@ -4,7 +4,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { RARITY_COLORS, RARITY_NAMES, type BlueprintDef } from '../data/fusion';
 import { loadGameState } from '../data/wisdom';
 import { getBlueprintRecommendation } from '../data/forgeRecommendations';
@@ -16,6 +16,7 @@ import {
   summarizeBlueprintEffects,
 } from './ForgeShared';
 import { drawEffectChips, drawForgeRecommendationPreview } from './ForgeWorkbench';
+import { drawEquipmentSigil, drawForgeCrest } from './ForgeSkin';
 
 // ─── Callbacks ──────────────────────────────────────────────────────────────
 // Scene-coupled actions the craft FX needs. onEquip performs the actual
@@ -30,7 +31,7 @@ export interface ForgeCraftCallbacks {
   readonly onEquip: (targetMonsterId: string) => boolean;
 }
 
-// ─── Modal button (shared candy button) ───────────────────────────────────────
+// ─── Modal button ─────────────────────────────────────────────────────────────
 
 export function addModalButton(
   scene: Phaser.Scene,
@@ -44,23 +45,24 @@ export function addModalButton(
   variant: 'primary' | 'secondary',
   onClick: () => void,
 ): void {
-  // Candy button: primary = bright accent + white label, secondary = cream pill + ink.
-  const fillColor = variant === 'primary' ? accent : CASUAL.PANEL;
+  const fillColor = variant === 'primary' ? accent : DUNGEON_UI.SOOT;
   const g = scene.add.graphics();
-  g.fillStyle(variant === 'primary' ? CASUAL.EDGE : CASUAL.EDGE, variant === 'primary' ? 0.6 : 0.45);
-  g.fillRoundedRect(x, y + 3, w, h, 13);
+  g.fillStyle(DUNGEON_UI.VOID, 0.52);
+  g.fillRoundedRect(x, y + 3, w, h, 8);
   g.fillStyle(fillColor, 1);
-  g.fillRoundedRect(x, y, w, h, 13);
-  g.fillStyle(0xffffff, variant === 'primary' ? 0.3 : 0.45);
-  g.fillRoundedRect(x + 6, y + 5, w - 12, 6, 3);
-  g.lineStyle(2, variant === 'primary' ? accent : CASUAL.EDGE, 1);
-  g.strokeRoundedRect(x, y, w, h, 13);
+  g.fillRoundedRect(x, y, w, h, 8);
+  if (variant === 'primary') {
+    g.fillStyle(0xffffff, 0.12);
+    g.fillRect(x + 6, y + 5, w - 12, 2);
+  }
+  g.lineStyle(1.5, variant === 'primary' ? accent : DUNGEON_UI.IRON, 1);
+  g.strokeRoundedRect(x, y, w, h, 8);
   c.add(g);
 
   c.add(scene.add.text(x + w / 2, y + h / 2, label, {
     fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: variant === 'primary' ? '#ffffff' : CASUAL_CSS.INK,
+    color: variant === 'primary' ? '#07100b' : DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
@@ -93,16 +95,16 @@ export function showCraftAnimation(
   const panelH = 254;
 
   const box = scene.add.graphics();
-  box.fillStyle(0x1c0802, 1);
-  box.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 14);
+  box.fillStyle(DUNGEON_UI.STONE, 1);
+  box.fillRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 10);
   box.fillStyle(accent, 0.12);
-  box.fillRoundedRect(cx - panelW / 2 + 12, cy - panelH / 2 + 12, panelW - 24, 88, 12);
-  box.fillStyle(0x090402, 0.6);
-  box.fillRoundedRect(cx - 104, cy + 52, 208, 44, 12);
-  box.lineStyle(2, accent, 0.96);
-  box.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 14);
-  box.lineStyle(1, 0xffffff, 0.12);
-  box.strokeRoundedRect(cx - panelW / 2 + 6, cy - panelH / 2 + 6, panelW - 12, panelH - 12, 10);
+  box.fillRoundedRect(cx - panelW / 2 + 12, cy - panelH / 2 + 12, panelW - 24, 88, 8);
+  box.fillStyle(DUNGEON_UI.VOID, 0.68);
+  box.fillRoundedRect(cx - 104, cy + 52, 208, 44, 8);
+  box.lineStyle(2, DUNGEON_UI.IRON, 0.96);
+  box.strokeRoundedRect(cx - panelW / 2, cy - panelH / 2, panelW, panelH, 10);
+  box.fillStyle(accent, 1);
+  box.fillRect(cx - panelW / 2 + 1, cy - panelH / 2 + 1, 3, panelH - 2);
   c.add(box);
 
   const furnace = scene.add.graphics();
@@ -131,21 +133,18 @@ export function showCraftAnimation(
   card.setScale(0.68).setAlpha(0.32);
   c.add(card);
 
-  const hammerT = scene.add.text(cx - 66, cy - 78, '⚒', {
-    fontFamily: 'sans-serif', fontSize: '34px',
-  }).setOrigin(0.5);
-  c.add(hammerT);
+  const hammerG = scene.add.graphics().setPosition(cx - 66, cy - 78);
+  drawForgeCrest(hammerG, 0, 0, accent, 0.94, 1.2);
+  c.add(hammerG);
 
-  const itemT = scene.add.text(cx, cy - 36, bp.resultEmoji, {
-    fontFamily: 'sans-serif',
-    fontSize: '34px',
-  }).setOrigin(0.5).setScale(0.72).setAlpha(0);
-  c.add(itemT);
+  const itemG = scene.add.graphics().setPosition(cx, cy - 36).setScale(0.72).setAlpha(0);
+  drawEquipmentSigil(itemG, 0, 0, bp.type, accent, 1, 1.35);
+  c.add(itemG);
 
   const titleT = scene.add.text(cx, cy - panelH / 2 + 24, '장비 단조', {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '18px',
-    color: '#ffaa44',
+    color: DUNGEON_UI_CSS.BRASS,
     fontStyle: 'bold',
   }).setOrigin(0.5);
 
@@ -158,7 +157,7 @@ export function showCraftAnimation(
   c.add([titleT, metaT]);
 
   const nameT = scene.add.text(cx, cy + 74, bp.name, {
-    fontFamily: 'Georgia, serif',
+    fontFamily: 'sans-serif',
     fontSize: '18px',
     color: rarityColor,
     fontStyle: 'bold',
@@ -166,7 +165,7 @@ export function showCraftAnimation(
   c.add(nameT);
 
   const statusT = scene.add.text(cx, cy + 96, '용광로 가열 중...', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#d9a66d',
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5);
   c.add(statusT);
 
@@ -178,7 +177,7 @@ export function showCraftAnimation(
     callback: () => {
       strikes++;
       const hit = strikes % 2 === 0;
-      hammerT
+      hammerG
         .setY(hit ? baseHammerY - 8 : baseHammerY - 24)
         .setRotation(hit ? -0.22 : -0.74);
       card.setScale(0.68 + strikes * 0.045).setAlpha(0.32 + strikes * 0.08);
@@ -186,14 +185,14 @@ export function showCraftAnimation(
       if (strikes === 3) statusT.setText('마력 각인 중...');
       if (strikes >= 6) {
         statusT.setText('단조 완료');
-        statusT.setStyle({ color: '#b8fff0', fontStyle: 'bold' });
+        statusT.setStyle({ color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold' });
         card.setScale(1).setAlpha(1);
-        itemT.setAlpha(1).setScale(1);
+        itemG.setAlpha(1).setScale(1);
         nameT.setAlpha(1);
-        hammerT.setAlpha(0.56);
+        hammerG.setAlpha(0.56);
         emitForgeRarityBurst(scene, c, cx, cy - 30, accent);
         scene.tweens.add({
-          targets: [card, itemT],
+          targets: [card, itemG],
           y: '-=10',
           duration: 280,
           yoyo: true,
@@ -308,59 +307,55 @@ function showCraftCompleteCard(
 
   const cx = CANVAS_WIDTH / 2;
   const cy = CANVAS_HEIGHT / 2;
-  const pw = 278, ph = targetMonsterId ? 398 : 226;
+  const pw = 310, ph = targetMonsterId ? 414 : 286;
   const accent = rarityHex(bp.rarity);
+  const top = cy - ph / 2;
 
   const box = scene.add.graphics();
-  box.fillStyle(0x1a0800, 1);
-  box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 12);
+  box.fillStyle(DUNGEON_UI.STONE, 1);
+  box.fillRoundedRect(cx - pw / 2, top, pw, ph, 10);
   box.fillStyle(accent, 0.12);
-  box.fillRoundedRect(cx - pw / 2 + 10, cy - ph / 2 + 10, pw - 20, 90, 10);
-  box.fillStyle(0x060402, 0.34);
-  box.fillRoundedRect(cx - pw / 2 + 14, cy + 24, pw - 28, 58, 9);
-  box.lineStyle(2, accent, 1);
-  box.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 12);
-  box.lineStyle(1, 0xffffff, 0.12);
-  box.strokeRoundedRect(cx - pw / 2 + 5, cy - ph / 2 + 5, pw - 10, ph - 10, 9);
+  box.fillRoundedRect(cx - pw / 2 + 12, top + 42, pw - 24, 76, 8);
+  box.fillStyle(DUNGEON_UI.VOID, 0.72);
+  box.fillRoundedRect(cx - pw / 2 + 18, top + 150, pw - 36, 68, 7);
+  box.lineStyle(2, DUNGEON_UI.IRON, 1);
+  box.strokeRoundedRect(cx - pw / 2, top, pw, ph, 10);
+  box.fillStyle(accent, 1);
+  box.fillRect(cx - pw / 2 + 1, top + 1, 3, ph - 2);
   c.add(box);
 
   const medal = scene.add.graphics();
   medal.fillStyle(accent, 0.18);
-  medal.fillCircle(cx, cy - ph / 2 + 72, 38);
+  medal.fillCircle(cx, top + 79, 31);
   medal.lineStyle(2, accent, 0.72);
-  medal.strokeCircle(cx, cy - ph / 2 + 72, 38);
-  medal.fillStyle(0x0a0503, 0.82);
-  medal.fillCircle(cx, cy - ph / 2 + 72, 27);
+  medal.strokeCircle(cx, top + 79, 31);
+  medal.fillStyle(DUNGEON_UI.VOID, 0.82);
+  medal.fillCircle(cx, top + 79, 23);
+  drawEquipmentSigil(medal, cx, top + 79, bp.type, accent, 0.98, 1.05);
   c.add(medal);
 
-  c.add(scene.add.text(cx, cy - ph / 2 + 24, '제작 완료', {
-    fontFamily: 'Georgia, serif', fontSize: '18px', color: '#ffaa44', fontStyle: 'bold',
+  c.add(scene.add.text(cx, top + 23, '단조 완료', {
+    fontFamily: 'sans-serif', fontSize: '18px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }).setOrigin(0.5));
-
-  c.add(scene.add.text(cx, cy - ph / 2 + 70, bp.resultEmoji, {
-    fontFamily: 'sans-serif', fontSize: '34px',
-  }).setOrigin(0.5));
-
-  c.add(scene.add.text(cx, cy - 18, bp.name, {
-    fontFamily: 'Georgia, serif', fontSize: '19px', color: RARITY_COLORS[bp.rarity] ?? '#ffaa44',
+  c.add(scene.add.text(cx, top + 133, bp.name, {
+    fontFamily: 'sans-serif', fontSize: '18px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
     fontStyle: 'bold',
   }).setOrigin(0.5));
-
-  c.add(scene.add.text(cx, cy - 40, `${typeMeta.icon} ${typeMeta.label} · ${getForgeRarityStars(bp.rarity)} · 장비 도감 등록`, {
+  c.add(scene.add.text(cx, top + 111, `${typeMeta.label} · ${getForgeRarityStars(bp.rarity)} · 장비 도감 등록`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: typeMeta.color,
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
-  c.add(scene.add.text(cx, cy + 8, bp.statDesc, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: '#aa8844',
+  c.add(scene.add.text(cx, top + 164, bp.statDesc, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
   }).setOrigin(0.5));
 
-  drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 92, cy + 34, accent, 184);
+  drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 112, top + 183, accent, 224);
 
-  c.add(scene.add.text(cx, cy + 58, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#ccb083',
+  c.add(scene.add.text(cx, top + 210, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5));
 
   if (recommendation) {
@@ -368,22 +363,22 @@ function showCraftCompleteCard(
       scene,
       c,
       recommendation,
-      cx - 112,
-      cy + 70,
-      224,
-      48,
+      cx - 137,
+      top + 228,
+      274,
+      58,
       '추천 장착 대상',
     );
   }
 
-  const confirmY = cy + ph / 2 - 26;
+  const confirmY = top + ph - 54;
   if (targetMonsterId && targetLabel) {
-    addModalButton(scene, c, cx - 104, confirmY - 52, 208, 34, targetLabel, accent, 'primary', () => {
+    addModalButton(scene, c, cx - 137, confirmY - 52, 274, 44, targetLabel, DUNGEON_UI.JADE, 'primary', () => {
       if (callbacks.onEquip(targetMonsterId)) c.destroy();
     });
   }
 
-  addModalButton(scene, c, cx - 54, confirmY - 10, 108, 30, '확인', 0x7c5633, 'secondary', () => c.destroy());
+  addModalButton(scene, c, cx - 137, confirmY, 274, 44, '공방으로 돌아가기', DUNGEON_UI.IRON, 'secondary', () => c.destroy());
 
   c.setScale(0.85).setAlpha(0);
   scene.tweens.add({

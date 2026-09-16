@@ -381,6 +381,12 @@ describe('defaultOwnedMonster', () => {
   });
 });
 
+describe('getSkillTree — owned monster variants', () => {
+  it('builds a fallback tree for fusion-only hybrid ids', () => {
+    expect(getSkillTree('storm_spirit').monsterId).toBe('storm_spirit');
+  });
+});
+
 // ─── STARTER_ROSTER ───────────────────────────────────────────────────────────
 
 describe('STARTER_ROSTER', () => {

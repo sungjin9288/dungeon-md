@@ -7,12 +7,12 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
-import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   calculateRoomMetricDelta,
@@ -49,7 +49,6 @@ import {
   drawCompactEmptyTrapPlanTag,
   drawCompactGrowthMeter,
   drawCompactLoadoutSlotFrame,
-  drawCompactRoomTypeStateTag,
   drawCompactTrapEffectTag,
   fitSlotLabel,
   formatCompactTrapCost,
@@ -57,9 +56,10 @@ import {
 import { navigateToFocusedMonster } from './RoomDetailInterior';
 
 import {
-  ROOM_DETAIL_REOPEN_DELAY_MS, MONSTER_ROW_ACCENT, TRAP_ROW_ACCENT, ROOM_TYPE_ACCENT, ROOM_TYPE_SHORT_BONUS, ROOM_TYPE_ROLE_CHIP, MONSTER_TYPE_LABEL, MONSTER_TYPE_COLOR, getEquippedItem, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks } from './RoomDetailShared';
+  ROOM_DETAIL_REOPEN_DELAY_MS, MONSTER_ROW_ACCENT, TRAP_ROW_ACCENT, ROOM_TYPE_ACCENT, ROOM_TYPE_SHORT_BONUS, MONSTER_TYPE_LABEL, MONSTER_TYPE_COLOR, getEquippedItem, findFirstEmptySlot, RoomDetailState, RoomDetailCallbacks } from './RoomDetailShared';
 import {
   drawSectionTargetPulse, registerRoomDesignFeedback, applyRecommendedMonsterPlacement, applyRecommendedTrapPlacement } from './RoomDetailFeedback';
+import { drawRoomTypeSigil } from './RoomDetailSkin';
 
 // ─── Room Type Strip ──────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export function buildRoomTypeStrip(
   reopen: () => void,
   highlightTarget = false,
 ): number {
-  const stripH = 126;
+  const stripH = 104;
   const activeType = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
   const designGs = _cb.getGameState();
   const recommendation = activeType ? null : getRoomDesignRecommendation(designGs, _slotIdx);
@@ -84,13 +84,13 @@ export function buildRoomTypeStrip(
     y: secY,
     w: secW,
     h: stripH,
-    radius: 8,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0.04,
+    radius: 4,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.9,
+    borderWidth: 1,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0.02,
     shadowOpacity: 0.24,
     shadowOffsetY: 2 });
   c.add([frame.shadow, frame.panel, frame.glow]);
@@ -101,24 +101,15 @@ export function buildRoomTypeStrip(
   c.add(scene.add.text(secX + 14, secY + 15, '방 설계 타입', {
     fontFamily: 'sans-serif',
     fontSize: '13px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(secX + secW - 14, secY + 15, activeType ? `${activeType.name} 적용 중` : recommendation ? `추천 ${recommendation.shortLabel}` : '역할 미설정', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: activeType ? CASUAL_CSS.GOLD : recommendation ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+    color: activeType ? DUNGEON_UI_CSS.BRASS : recommendation ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
-  if (recommendation) {
-    c.add(scene.add.text(secX + 14, secY + 32, `추천: ${recommendation.title} · ${recommendation.reason}`, {
-      fontFamily: 'sans-serif',
-      fontSize: '10px',
-      color: CASUAL_CSS.GREEN,
-      fontStyle: 'bold',
-      wordWrap: { width: secW - 28, useAdvancedWrap: true } }).setOrigin(0, 0.5));
-  }
-
-  const cardY = secY + 44;
-  const cardH = 74;
+  const cardY = secY + 33;
+  const cardH = 63;
   const btnW = (secW - 10) / 4;
   ROOM_SLOT_TYPE_DEFS.forEach((td, i) => {
     const bx   = secX + 5 + i * btnW;
@@ -127,24 +118,21 @@ export function buildRoomTypeStrip(
     const accent = ROOM_TYPE_ACCENT[td.id] ?? 0xc8921a;
     const delta = calculateRoomMetricDelta(designGs, slot, { ...slot, roomType: td.id });
     const btnBg = scene.add.graphics();
-    btnBg.fillStyle(isActive ? accent : isRecommended ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
-    btnBg.fillRoundedRect(bx + 1, cardY, btnW - 4, cardH, 7);
-    btnBg.lineStyle(isRecommended ? 2.5 : 2, isActive || isRecommended ? accent : CASUAL.EDGE_SOFT, isActive || isRecommended ? 1 : 0.7);
-    btnBg.strokeRoundedRect(bx + 1, cardY, btnW - 4, cardH, 7);
-    btnBg.fillStyle(0xffffff, isActive ? 0.32 : 0.4);
-    btnBg.fillRoundedRect(bx + 8, cardY + 5, btnW - 18, 3, 2);
+    btnBg.fillStyle(isActive ? accent : DUNGEON_UI.VOID, isActive ? 0.22 : 0.92);
+    btnBg.fillRoundedRect(bx + 1, cardY, btnW - 4, cardH, 3);
+    btnBg.lineStyle(isRecommended ? 2 : 1, isActive || isRecommended ? accent : DUNGEON_UI.EDGE, isActive || isRecommended ? 0.95 : 0.45);
+    btnBg.strokeRoundedRect(bx + 1, cardY, btnW - 4, cardH, 3);
+    btnBg.fillStyle(accent, isActive ? 0.96 : isRecommended ? 0.7 : 0.16);
+    btnBg.fillRect(bx + 7, cardY + cardH - 4, btnW - 16, 2);
     c.add(btnBg);
-    const tagLabel = isActive ? '적용' : isRecommended ? '추천' : ROOM_TYPE_ROLE_CHIP[td.id] ?? '설계';
-    drawCompactRoomTypeStateTag(scene, c, bx + 8, cardY + 10, tagLabel, accent, isActive, isRecommended);
-    c.add(scene.add.text(bx + btnW / 2 - 1, cardY + 31, td.icon, {
-      fontFamily: 'sans-serif', fontSize: '17px' }).setOrigin(0.5));
-    c.add(scene.add.text(bx + btnW / 2 - 1, cardY + 49, td.name, {
+    drawRoomTypeSigil(btnBg, td.id, bx + btnW / 2 - 1, cardY + 16, 17, accent);
+    c.add(scene.add.text(bx + btnW / 2 - 1, cardY + 35, td.name, {
       fontFamily: 'sans-serif', fontSize: '10px',
-      color: isActive ? '#ffffff' : isRecommended ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+      color: isActive ? DUNGEON_UI_CSS.PARCHMENT : isRecommended ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
       fontStyle: 'bold' }).setOrigin(0.5));
-    c.add(scene.add.text(bx + btnW / 2 - 1, cardY + 64, isActive ? '적용중' : isRecommended ? recommendation.shortLabel : formatRoomTypeDelta(delta.threatDelta, delta.readinessDelta, td.id), {
+    c.add(scene.add.text(bx + btnW / 2 - 1, cardY + 51, isActive ? '적용 중' : isRecommended ? '추천' : formatRoomTypeDelta(delta.threatDelta, delta.readinessDelta, td.id), {
       fontFamily: 'sans-serif', fontSize: '10px',
-      color: isActive ? '#ffffff' : isRecommended ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+      color: isActive ? DUNGEON_UI_CSS.BRASS : isRecommended ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
       fontStyle: isRecommended ? 'bold' : 'normal' }).setOrigin(0.5));
 
     const zone = scene.add.zone(bx + btnW / 2, cardY + cardH / 2, btnW - 4, cardH)
@@ -202,7 +190,7 @@ export function buildMonsterSection(
   const cap    = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
   const perRow = Math.min(3, Math.max(1, cap.monsters));
   const gap    = 8;
-  const cardH  = 94;
+  const cardH  = 112;
   const rows   = Math.ceil(cap.monsters / perRow);
   const cardW  = (secW - 24 - gap * (perRow - 1)) / perRow;
   const secH   = 38 + rows * cardH + Math.max(0, rows - 1) * gap + 10;
@@ -216,15 +204,15 @@ export function buildMonsterSection(
     y: secY,
     w: secW,
     h: secH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
+    radius: 4,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.9,
+    borderWidth: 1,
     accentColor: MONSTER_ROW_ACCENT,
     accentAlpha: 1,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0.04,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0.02,
     shadowOpacity: 0.24,
     shadowOffsetY: 3 });
   c.add([frame.shadow, frame.panel, frame.glow]);
@@ -233,12 +221,15 @@ export function buildMonsterSection(
   }
 
   const assignedCount = slot.monsterIds.filter(Boolean).length;
-  c.add(scene.add.text(secX + 14, secY + 10, '👊 수호 라인 슬롯', {
-    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK,
+  const sectionG = scene.add.graphics();
+  drawRoomTypeSigil(sectionG, 'combat', secX + 22, secY + 18, 15, MONSTER_ROW_ACCENT);
+  c.add(sectionG);
+  c.add(scene.add.text(secX + 36, secY + 10, '수호 라인 슬롯', {
+    fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }));
   c.add(scene.add.text(secX + secW - 14, secY + 10, `${assignedCount}/${cap.monsters}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-    color: assignedCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT }).setOrigin(1, 0));
+    color: assignedCount > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED }).setOrigin(1, 0));
 
   for (let mi = 0; mi < cap.monsters; mi++) {
     const col    = mi % perRow;
@@ -247,8 +238,7 @@ export function buildMonsterSection(
     const cardY  = secY + 34 + row * (cardH + gap);
     const mId    = slot.monsterIds[mi];
     const om     = mId ? gs.ownedMonsters.find(m => m.id === mId) : null;
-    const typeId = om ? (resolveMonsterTypeId(om.id) ?? om.id) : null;
-    const mDef   = typeId ? MONSTER_DEFS[typeId as keyof typeof MONSTER_DEFS] : null;
+    const mDef   = om ? resolveOwnedMonsterProfile(om.id) : null;
 
     drawCompactLoadoutSlotFrame(scene, c, cardX, cardY, cardW, cardH, MONSTER_ROW_ACCENT, !!mDef && !!om, `M${mi + 1}`);
 
@@ -289,10 +279,10 @@ export function buildMonsterSection(
       );
       const swapW = Math.max(33, Math.min(39, cardW * 0.36));
       const growW = Math.max(40, cardW - 23 - swapW);
-      addCompactLoadoutButton(scene, c, cardX + 7, cardY + cardH - 27, swapW, '교체', MONSTER_ROW_ACCENT, () => {
+      addCompactLoadoutButton(scene, c, cardX + 7, cardY + cardH - 47, swapW, '교체', MONSTER_ROW_ACCENT, () => {
         showMonsterPicker(scene, state, theme, cb, nav, slotIdx, mi);
       });
-      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 27, growW, cardW < 114 ? '성장' : '성장 관리', 0x66c08a, () => {
+      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 47, growW, cardW < 114 ? '성장' : '성장 관리', 0x66c08a, () => {
         navigateToFocusedMonster(scene, state, cb, om.id, slotIdx);
       }, true);
     } else {
@@ -315,7 +305,7 @@ export function buildMonsterSection(
         c.add(scene.add.text(cardX + 52, cardY + 61, '새 수호자', {
           fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
           fontStyle: 'bold' }).setOrigin(0, 0.5));
-        addCompactLoadoutButton(scene, c, cardX + 10, cardY + cardH - 27, cardW - 20, '배치', MONSTER_ROW_ACCENT, () => {
+        addCompactLoadoutButton(scene, c, cardX + 10, cardY + cardH - 47, cardW - 20, '배치', MONSTER_ROW_ACCENT, () => {
           showMonsterPicker(scene, state, theme, cb, nav, slotIdx, mi);
         }, true);
       }
@@ -343,7 +333,7 @@ export function buildTrapSection(
   const cap  = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
   const perRow = Math.min(3, Math.max(1, cap.traps));
   const gap    = 8;
-  const cardH  = 90;
+  const cardH  = 108;
   const rows   = Math.ceil(cap.traps / perRow);
   const cardW  = (secW - 24 - gap * (perRow - 1)) / perRow;
   const secH   = 38 + rows * cardH + Math.max(0, rows - 1) * gap + 10;
@@ -357,15 +347,15 @@ export function buildTrapSection(
     y: secY,
     w: secW,
     h: secH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 1,
-    borderWidth: 3,
+    radius: 4,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 0.9,
+    borderWidth: 1,
     accentColor: TRAP_ROW_ACCENT,
     accentAlpha: 1,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0.03,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0.02,
     shadowOpacity: 0.24,
     shadowOffsetY: 3 });
   c.add([frame.shadow, frame.panel, frame.glow]);
@@ -374,12 +364,15 @@ export function buildTrapSection(
   }
 
   const installedCount = slot.trapIds.filter(Boolean).length;
-  c.add(scene.add.text(secX + 14, secY + 10, '🕸 함정 라인 슬롯', {
-    fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK,
+  const sectionG = scene.add.graphics();
+  drawRoomTypeSigil(sectionG, 'trap', secX + 22, secY + 18, 15, TRAP_ROW_ACCENT);
+  c.add(sectionG);
+  c.add(scene.add.text(secX + 36, secY + 10, '함정 라인 슬롯', {
+    fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }));
   c.add(scene.add.text(secX + secW - 14, secY + 10, `${installedCount}/${cap.traps}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-    color: installedCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT }).setOrigin(1, 0));
+    color: installedCount > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED }).setOrigin(1, 0));
 
   for (let ti = 0; ti < cap.traps; ti++) {
     const col = ti % perRow;
@@ -393,15 +386,14 @@ export function buildTrapSection(
     if (trap) {
       const iconX = cardX + 27;
       const trapIconG = scene.add.graphics();
-      trapIconG.fillStyle(0xffffff, 0.85);
+      trapIconG.fillStyle(DUNGEON_UI.STONE_RAISED, 0.96);
       trapIconG.fillCircle(iconX, cardY + 33, 18);
       trapIconG.lineStyle(2, TRAP_ROW_ACCENT, 0.85);
       trapIconG.strokeCircle(iconX, cardY + 33, 18);
       trapIconG.fillStyle(TRAP_ROW_ACCENT, 0.16);
       trapIconG.fillCircle(iconX, cardY + 33, 12);
+      drawRoomTypeSigil(trapIconG, 'trap', iconX, cardY + 33, 20, DUNGEON_UI.BRASS_BRIGHT);
       c.add(trapIconG);
-      c.add(scene.add.text(iconX, cardY + 33, trap.emoji, {
-        fontFamily: 'sans-serif', fontSize: '19px' }).setOrigin(0.5));
       addCompactAttributeChip(scene, c, cardX + 52, cardY + 12, '설비', TRAP_ROW_ACCENT);
       c.add(scene.add.text(cardX + 52, cardY + 30, fitSlotLabel(trap.name, 6), {
         fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK,
@@ -420,10 +412,10 @@ export function buildTrapSection(
         fontStyle: 'bold' }).setOrigin(0, 0.5));
       const swapW = Math.max(33, Math.min(39, cardW * 0.36));
       const manageW = Math.max(40, cardW - 23 - swapW);
-      addCompactLoadoutButton(scene, c, cardX + 7, cardY + cardH - 27, swapW, '교체', TRAP_ROW_ACCENT, () => {
+      addCompactLoadoutButton(scene, c, cardX + 7, cardY + cardH - 47, swapW, '교체', TRAP_ROW_ACCENT, () => {
         showTrapPicker(scene, state, theme, cb, nav, slotIdx, ti);
       });
-      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 27, manageW, '회수', 0xffc44d, () => {
+      addCompactLoadoutButton(scene, c, cardX + 15 + swapW, cardY + cardH - 47, manageW, '회수', 0xffc44d, () => {
         const result = removeTrapFromRoomSlot(cb.getGameState(), slotIdx, ti);
         if (!result.ok) return;
         cb.saveAndRefresh(result.state);
@@ -452,7 +444,7 @@ export function buildTrapSection(
         c.add(scene.add.text(cardX + 52, cardY + 58, '새 설비', {
           fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
           fontStyle: 'bold' }).setOrigin(0, 0.5));
-        addCompactLoadoutButton(scene, c, cardX + 10, cardY + cardH - 27, cardW - 20, '설치', TRAP_ROW_ACCENT, () => {
+        addCompactLoadoutButton(scene, c, cardX + 10, cardY + cardH - 47, cardW - 20, '설치', TRAP_ROW_ACCENT, () => {
           showTrapPicker(scene, state, theme, cb, nav, slotIdx, ti);
         }, true);
       }
@@ -472,7 +464,7 @@ export function showRoomUpgradeConfirm(
   newCap: { monsters: number; traps: number },
   onConfirm: () => void,
 ): void {
-  const OW = 280, OH = 170;
+  const OW = 300, OH = 188;
   const OX = (CANVAS_WIDTH  - OW) / 2;
   const OY = (CANVAS_HEIGHT - OH) / 2;
 
@@ -488,41 +480,43 @@ export function showRoomUpgradeConfirm(
     y: OY,
     w: OW,
     h: OH,
-    radius: 14,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
+    radius: 5,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.BRASS,
     borderAlpha: 1,
-    borderWidth: 3,
-    accentColor: CASUAL.GOLD,
+    borderWidth: 1,
+    accentColor: DUNGEON_UI.BRASS,
     accentAlpha: 1,
-    glowColor: CASUAL.GOLD,
-    glowOpacity: 0.09,
+    glowColor: DUNGEON_UI.BRASS,
+    glowOpacity: 0.04,
     shadowOpacity: 0.4,
     shadowOffsetY: 5 });
   ov.add([frame.shadow, frame.panel, frame.glow]);
 
-  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 30, '⬆️ 방 업그레이드', {
-    fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    stroke: '#ffffff', strokeThickness: 4 }).setOrigin(0.5));
+  const titleG = scene.add.graphics();
+  drawRoomTypeSigil(titleG, undefined, CANVAS_WIDTH / 2 - 66, OY + 31, 18, DUNGEON_UI.BRASS_BRIGHT);
+  ov.add(titleG);
+  ov.add(scene.add.text(CANVAS_WIDTH / 2 + 8, OY + 31, '방 구조 확장', {
+    fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT }).setOrigin(0.5));
   ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 54, `Lv.${currentLevel} → Lv.${currentLevel + 1}`, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold' }).setOrigin(0.5));
-  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 72, `비용: 💰 ${cost} 골드`, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.GOLD, fontStyle: 'bold' }).setOrigin(0.5));
+    fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold' }).setOrigin(0.5));
+  ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 74, `확장 비용 · ${cost} 골드`, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold' }).setOrigin(0.5));
   ov.add(scene.add.text(CANVAS_WIDTH / 2, OY + 90, `몬스터 ${newCap.monsters}슬롯 / 함정 ${newCap.traps}슬롯`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold' }).setOrigin(0.5));
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold' }).setOrigin(0.5));
 
   const confirmBtn = addPrimaryActionButton(scene, {
     x: CANVAS_WIDTH / 2 - 124,
     y: OY + OH - 46,
     w: 104,
-    h: 34,
+    h: 44,
     label: '업그레이드',
     fontSize: '12px',
-    fillColor: CASUAL.GOLD,
+    fillColor: DUNGEON_UI.BRASS,
     hoverFillColor: 0xffd564,
-    borderColor: CASUAL.GOLD_DK,
-    hoverBorderColor: CASUAL.GOLD_DK,
-    textColor: '#ffffff',
+    borderColor: DUNGEON_UI.BRASS_BRIGHT,
+    hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+    textColor: '#100b05',
     once: true,
     onPress: () => { ov.destroy(true); onConfirm(); } });
   ov.add([confirmBtn.bg, confirmBtn.text, confirmBtn.zone]);
@@ -531,14 +525,14 @@ export function showRoomUpgradeConfirm(
     x: CANVAS_WIDTH / 2 + 20,
     y: OY + OH - 46,
     w: 104,
-    h: 34,
+    h: 44,
     label: '취소',
     fontSize: '12px',
-    fillColor: CASUAL.PANEL,
-    hoverFillColor: CASUAL.PANEL_SOFT,
-    borderColor: CASUAL.EDGE,
-    hoverBorderColor: CASUAL.EDGE_SOFT,
-    textColor: CASUAL_CSS.INK,
+    fillColor: DUNGEON_UI.STONE,
+    hoverFillColor: DUNGEON_UI.STONE_RAISED,
+    borderColor: DUNGEON_UI.EDGE,
+    hoverBorderColor: DUNGEON_UI.BRASS,
+    textColor: DUNGEON_UI_CSS.TEXT,
     once: true,
     onPress: () => ov.destroy(true) });
   ov.add([cancelBtn.bg, cancelBtn.text, cancelBtn.zone]);

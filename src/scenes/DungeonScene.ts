@@ -11,7 +11,6 @@ import {
   GRID_COLS, GRID_ROWS, CELL_SIZE,
 } from '../constants/layout';
 import { type RoomData, type RoomType } from '../data/rooms';
-import { type MonsterId } from '../data/monsters';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
@@ -547,7 +546,7 @@ export class DungeonScene extends Phaser.Scene {
     _placeRoom(buildRoomActionsCtx(this), row, col, type);
   }
 
-  private assignMonster(row: number, col: number, id: MonsterId): void {
+  private assignMonster(row: number, col: number, id: string): void {
     _assignMonster(buildRoomActionsCtx(this), row, col, id);
   }
 

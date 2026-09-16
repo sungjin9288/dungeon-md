@@ -10,10 +10,9 @@ import { addPreviewHitZone, drawInteriorChamber, drawInteriorDungeonEditorDetail
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type GameState } from '../data/wisdom';
 import { calculateRoomMetrics } from '../data/dungeonMetrics';
-import { TRAP_DEFS } from '../data/traps';
 import { getRoomDesignRecommendation, type RoomDesignRecommendation } from '../data/roomDesignRecommendations';
 import type { DungeonTheme } from '../themes/themes';
 import { addFramedPanel } from './GameUiPrimitives';
@@ -35,6 +34,7 @@ import {
   formatSignedPower, getEquippedItem,
   navigateFromRoomDetail, shouldHighlightDirectiveTarget,
   EquipmentBadge, ROOM_TYPE_ACCENT, RoomDetailCallbacks, RoomDetailState, RoomDirective } from './RoomDetailShared';
+import { drawRoomTypeSigil } from './RoomDetailSkin';
 
 export function buildRoomInteriorPreview(
   scene: Phaser.Scene,
@@ -51,7 +51,7 @@ export function buildRoomInteriorPreview(
   secY: number,
   directive: RoomDirective,
 ): number {
-  const panelH = 314;
+  const panelH = 322;
   const accent = slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0x66c08a : 0x55b88a;
   const roomMetrics = calculateRoomMetrics(gs, slot);
 
@@ -60,23 +60,23 @@ export function buildRoomInteriorPreview(
     y: secY,
     w: secW,
     h: panelH,
-    radius: 10,
-    fillColor: CASUAL.PANEL,
-    borderColor: CASUAL.EDGE,
-    borderAlpha: 0.9,
-    borderWidth: 2,
+    radius: 5,
+    fillColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON,
+    borderAlpha: 1,
+    borderWidth: 1,
     accentColor: accent,
     accentAlpha: 0.9,
     glowColor: accent,
-    glowOpacity: 0.05,
-    shadowOpacity: 0.26,
-    shadowOffsetY: 4 });
+    glowOpacity: 0.025,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 3 });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
   const g = scene.add.graphics();
   c.add(g);
   const chamberX = secX + 10;
-  const chamberY = secY + 32;
+  const chamberY = secY + 36;
   const chamberW = secW - 20;
   const chamberH = 226;
 
@@ -95,15 +95,16 @@ export function buildRoomInteriorPreview(
       recommendation,
       directive,
     );
-    c.add(scene.add.text(secX + 16, secY + 17, '🏗 방 설계 도면', {
+    drawRoomTypeSigil(g, undefined, secX + 22, secY + 18, 17, DUNGEON_UI.BRASS_BRIGHT);
+    c.add(scene.add.text(secX + 36, secY + 18, '방 설계 도면', {
       fontFamily: 'Georgia, serif',
       fontSize: '13px',
-      color: CASUAL_CSS.INK,
+      color: DUNGEON_UI_CSS.PARCHMENT,
       fontStyle: 'bold' }).setOrigin(0, 0.5));
     c.add(scene.add.text(secX + secW - 16, secY + 17, `추천 ${recommendedType?.name ?? recommendation.title} · ${recommendation.shortLabel}`, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: CASUAL_CSS.INK_SOFT,
+      color: DUNGEON_UI_CSS.MUTED,
       fontStyle: 'bold' }).setOrigin(1, 0.5));
     return panelH;
   }
@@ -146,7 +147,6 @@ export function buildRoomInteriorPreview(
     drawPreviewTargetRing(scene, c, chamberX + chamberW / 2, chamberY + chamberH / 2, chamberW - 26, chamberH - 18, directive.accent, '수리 필요');
   }
 
-  const roomIcon = typeDef?.icon ?? '🏚';
   const roomLabel = typeDef?.name ?? '일반실';
   drawInteriorRoomPlaque(
     scene,
@@ -156,16 +156,17 @@ export function buildRoomInteriorPreview(
     chamberY,
     chamberW,
     accent,
-    roomIcon,
+    slot.roomType,
     roomLabel,
     slot.roomLevel,
     roomMetrics.readiness,
     Boolean(slot.roomType && slot.hp <= 0),
   );
-  c.add(scene.add.text(secX + 16, secY + 17, `${roomIcon} 방 내부 편집`, {
+  drawRoomTypeSigil(g, slot.roomType, secX + 22, secY + 18, 17, accent);
+  c.add(scene.add.text(secX + 36, secY + 18, '방 내부 배치', {
     fontFamily: 'Georgia, serif',
     fontSize: '13px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   const equipmentHeader = roomMetrics.equipmentPower !== 0
     ? ` · 장비 ${formatSignedPower(roomMetrics.equipmentPower)}`
@@ -176,17 +177,15 @@ export function buildRoomInteriorPreview(
   c.add(scene.add.text(secX + secW - 16, secY + 17, headerMetric, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
   for (const { socket: trapSocket, x, y } of previewLayout.traps) {
-    const trap = trapSocket.trapId ? TRAP_DEFS.find(t => t.id === trapSocket.trapId) : undefined;
     const isAssigned = trapSocket.state === 'assigned';
     drawTrapPreviewSlot(
       scene,
       c,
       x,
       y,
-      trap?.emoji ?? (isAssigned ? '?' : 'T'),
       accent,
       trapSocket.state,
       `T${trapSocket.slotIndex + 1}`,
@@ -215,12 +214,12 @@ export function buildRoomInteriorPreview(
         size: 38,
         frameColor: accent,
         glowColor: accent,
-        bgColor: CASUAL.PANEL_SOFT,
+        bgColor: DUNGEON_UI.STONE,
         equippedSkins: gs.equippedSkins ?? {} });
       c.add(scene.add.text(x, y + 28, monsterSocket.hasOwnedMetadata ? `Lv.${monsterSocket.level}` : '?', {
         fontFamily: 'sans-serif',
-        fontSize: monsterSocket.hasOwnedMetadata ? '8px' : '12px',
-        color: CASUAL_CSS.GOLD,
+        fontSize: monsterSocket.hasOwnedMetadata ? '10px' : '12px',
+        color: DUNGEON_UI_CSS.BRASS,
         fontStyle: 'bold' }).setOrigin(0.5));
       drawInteriorSlotActionChip(scene, c, x - 22, y - 26, monsterSocket.hasOwnedMetadata ? '성장' : '교체', CASUAL.GREEN, true);
       if (equipment) {
@@ -261,7 +260,7 @@ export function buildRoomInteriorPreview(
 
   drawInteriorEquipmentSummary(
     scene, state, cb, c, g, gs, preview, slotIdx,
-    secX + 16, secY + panelH - 36, secW - 32, accent,
+    secX + 16, secY + panelH - 50, secW - 32, accent,
     roomMetrics.equipmentPower,
   );
 
@@ -288,16 +287,16 @@ function drawUnbuiltRoomBlueprintPreview(
   const centerX = x + w / 2;
   const centerY = y + h / 2 - 8;
 
-  g.fillStyle(CASUAL.PANEL, 0.99);
-  g.fillRoundedRect(x, y, w, h, 14);
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.96);
-  g.fillRoundedRect(blueprintX, blueprintY, blueprintW, blueprintH, 12);
-  g.lineStyle(1.5, CASUAL.EDGE, 0.7);
-  g.strokeRoundedRect(x, y, w, h, 14);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.3);
-  g.strokeRoundedRect(blueprintX, blueprintY, blueprintW, blueprintH, 12);
+  g.fillStyle(DUNGEON_UI.VOID, 0.99);
+  g.fillRoundedRect(x, y, w, h, 5);
+  g.fillStyle(DUNGEON_UI.STONE, 0.96);
+  g.fillRoundedRect(blueprintX, blueprintY, blueprintW, blueprintH, 3);
+  g.lineStyle(1.5, DUNGEON_UI.IRON, 0.9);
+  g.strokeRoundedRect(x, y, w, h, 5);
+  g.lineStyle(1, DUNGEON_UI.BRASS, 0.24);
+  g.strokeRoundedRect(blueprintX, blueprintY, blueprintW, blueprintH, 3);
 
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.22);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.16);
   for (let gx = blueprintX + 22; gx < blueprintX + blueprintW - 12; gx += 22) {
     g.lineBetween(gx, blueprintY + 10, gx, blueprintY + blueprintH - 10);
   }
@@ -305,17 +304,17 @@ function drawUnbuiltRoomBlueprintPreview(
     g.lineBetween(blueprintX + 10, gy, blueprintX + blueprintW - 10, gy);
   }
 
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.7);
-  g.fillRoundedRect(x + 44, y + 52, w - 88, 94, 14);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.82);
+  g.fillRoundedRect(x + 44, y + 52, w - 88, 82, 5);
   g.lineStyle(2, accent, 0.7);
   g.strokeRoundedRect(x + 56, y + 64, w - 112, 68, 12);
   g.lineStyle(1.2, accent, 0.44);
   g.strokeRoundedRect(x + 72, y + 78, w - 144, 40, 8);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.3);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.3);
   g.lineBetween(x + 64, y + 132, x + w - 64, y + 64);
   g.lineBetween(x + 64, y + 64, x + w - 64, y + 132);
 
-  g.lineStyle(2, CASUAL.EDGE, 0.8);
+  g.lineStyle(2, DUNGEON_UI.IRON, 0.8);
   g.lineBetween(x + 38, y + 44, x + 38, y + 151);
   g.lineBetween(x + w - 38, y + 44, x + w - 38, y + 151);
   g.lineBetween(x + 30, y + 58, x + w - 30, y + 58);
@@ -331,63 +330,43 @@ function drawUnbuiltRoomBlueprintPreview(
   g.lineStyle(1.4, accent, 0.6);
   g.strokeCircle(centerX, centerY, 38);
   g.strokeCircle(centerX, centerY, 24);
-  g.fillStyle(CASUAL.PANEL, 0.94);
-  g.fillRoundedRect(centerX - 72, centerY - 17, 144, 34, 10);
+  g.fillStyle(DUNGEON_UI.VOID, 0.94);
+  g.fillRoundedRect(centerX - 72, centerY - 20, 144, 40, 4);
   g.lineStyle(1, accent, 0.5);
   g.strokeRoundedRect(centerX - 72, centerY - 17, 144, 34, 10);
 
-  c.add(scene.add.text(centerX, centerY - 5, `${recommendedType?.icon ?? '▣'} ${recommendedType?.name ?? recommendation.title}`, {
+  drawRoomTypeSigil(g, recommendation.roomType, centerX - 47, centerY - 7, 20, accent);
+  c.add(scene.add.text(centerX + 4, centerY - 7, recommendedType?.name ?? recommendation.title, {
     fontFamily: 'Georgia, serif',
     fontSize: '15px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
   c.add(scene.add.text(centerX, centerY + 12, recommendation.shortLabel, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   ROOM_SLOT_TYPE_DEFS.forEach((type, i) => {
     const optionX = x + 54 + i * ((w - 108) / Math.max(1, ROOM_SLOT_TYPE_DEFS.length - 1));
-    const optionY = y + h - 54;
+    const optionY = y + h - 75;
     const isRecommended = type.id === recommendation.roomType;
     const optionAccent = ROOM_TYPE_ACCENT[type.id] ?? accent;
-    g.fillStyle(isRecommended ? optionAccent : CASUAL.PANEL, isRecommended ? 0.3 : 0.96);
-    g.fillRoundedRect(optionX - 31, optionY - 16, 62, 36, 9);
+    g.fillStyle(isRecommended ? optionAccent : DUNGEON_UI.VOID, isRecommended ? 0.22 : 0.94);
+    g.fillRoundedRect(optionX - 31, optionY - 15, 62, 32, 4);
     g.lineStyle(isRecommended ? 1.6 : 1, optionAccent, isRecommended ? 0.85 : 0.4);
-    g.strokeRoundedRect(optionX - 31, optionY - 16, 62, 36, 9);
+    g.strokeRoundedRect(optionX - 31, optionY - 15, 62, 32, 4);
     if (isRecommended) {
       g.fillStyle(optionAccent, 0.95);
       g.fillCircle(optionX + 23, optionY - 11, 4);
     }
-    c.add(scene.add.text(optionX, optionY - 3, type.icon, {
+    drawRoomTypeSigil(g, type.id, optionX, optionY - 4, 14, optionAccent);
+    c.add(scene.add.text(optionX, optionY + 11, fitSlotLabel(type.name, 5), {
       fontFamily: 'sans-serif',
-      fontSize: '15px' }).setOrigin(0.5));
-    c.add(scene.add.text(optionX, optionY + 12, fitSlotLabel(type.name, 5), {
-      fontFamily: 'sans-serif',
-      fontSize: '8px',
-      color: isRecommended ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+      fontSize: '10px',
+      color: isRecommended ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
       fontStyle: isRecommended ? 'bold' : 'normal' }).setOrigin(0.5));
   });
-
-  const ctaW = 118;
-  const ctaX = centerX - ctaW / 2;
-  const ctaY = y + h - 28;
-  g.fillStyle(directive.accent, 0.88);
-  g.fillRoundedRect(ctaX, ctaY, ctaW, 24, 8);
-  g.lineStyle(1, 0xffffff, 0.24);
-  g.strokeRoundedRect(ctaX, ctaY, ctaW, 24, 8);
-  c.add(scene.add.text(centerX, ctaY + 12, directive.ctaLabel, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: '#051016',
-    fontStyle: 'bold' }).setOrigin(0.5));
-  if (directive.onPress) {
-    const zone = scene.add.zone(centerX, ctaY + 12, ctaW, 26)
-      .setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', () => directive.onPress?.());
-    c.add(zone);
-  }
 
   if (shouldHighlightDirectiveTarget(directive, 'type')) {
     drawPreviewTargetRing(scene, c, centerX, centerY + 1, 164, 58, directive.accent, '역할 선택');
@@ -427,110 +406,56 @@ function drawInteriorEquipmentSummary(
   );
   const fullyEquipped = actionableEquipment.length > 0 && preview.equippedCount >= actionableEquipment.length;
   const actionLabel = firstMonsterId ? (primaryEquipment ? '교체' : '제작') : hasDisabledEquipment ? '잠김' : '대기';
-  const statusLabel = assignedMonsterIds.length === 0
-    ? 'EMPTY'
-    : hasDisabledEquipment
-      ? 'LOCK'
-      : fullyEquipped
-        ? 'READY'
-        : 'NEED';
-  const statusColor = assignedMonsterIds.length === 0 || hasDisabledEquipment
-    ? CASUAL.EDGE_SOFT
-    : fullyEquipped
-      ? CASUAL.GREEN
-      : CASUAL.GOLD;
   const text = primaryEquipment
-    ? `${primaryEquipment.icon} ${primaryEquipment.name} · ${primaryEquipment.effect}${equipmentEntries.length > 1 ? ` · +${equipmentEntries.length - 1}` : ''}`
+    ? `${primaryEquipment.name} · ${primaryEquipment.effect}${equipmentEntries.length > 1 ? ` · +${equipmentEntries.length - 1}` : ''}`
     : hasDisabledEquipment
-      ? '⚙ 소유 정보 없음 · 장비 편집 잠김'
+      ? '소유 정보 없음 · 장비 편집 잠김'
       : firstMonsterId
-      ? '⚙ 장비 미장착 · 제작으로 방 전력 보강'
-      : '⚙ 수호자 배치 후 장비 강화 가능';
+      ? '장비 미장착 · 제작으로 방 전력 보강'
+      : '수호자 배치 후 장비 강화 가능';
 
-  const railH = 30;
-  const buttonW = 44;
-  const buttonH = 18;
-  const buttonX = x + w - buttonW - 7;
-  const buttonY = y + 6;
-  const pipAreaX = buttonX - 58;
-  const titleX = x + 42;
-  const textMaxChars = w < 310 ? 18 : 24;
+  const railH = 44;
+  const buttonW = 54;
+  const buttonH = 34;
+  const buttonX = x + w - buttonW - 5;
+  const buttonY = y + 5;
+  const titleX = x + 38;
+  const textMaxChars = w < 310 ? 20 : 27;
   const powerLabel = equipmentPower !== 0 ? `전력 ${formatSignedPower(equipmentPower)}` : '전력 -';
+  const statusColor = fullyEquipped ? DUNGEON_UI.BRASS_BRIGHT : firstMonsterId ? accent : DUNGEON_UI.EDGE;
 
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.95);
-  g.fillRoundedRect(x, y, w, railH, 8);
-  g.lineStyle(1.2, primaryEquipment ? CASUAL.GOLD_DK : CASUAL.EDGE, primaryEquipment ? 0.8 : 0.5);
-  g.strokeRoundedRect(x, y, w, railH, 8);
-  g.fillStyle(primaryEquipment ? CASUAL.GOLD : accent, primaryEquipment ? 0.3 : 0.16);
-  g.fillRoundedRect(x + 5, y + 5, 28, railH - 10, 7);
-  g.lineStyle(1, primaryEquipment ? CASUAL.GOLD_DK : accent, primaryEquipment ? 0.6 : 0.4);
-  g.strokeRoundedRect(x + 5, y + 5, 28, railH - 10, 7);
-  c.add(scene.add.text(x + 19, y + railH / 2, primaryEquipment?.icon ?? '⚙', {
-    fontFamily: 'sans-serif',
-    fontSize: '13px' }).setOrigin(0.5));
+  g.fillStyle(DUNGEON_UI.VOID, 0.96);
+  g.fillRoundedRect(x, y, w, railH, 4);
+  g.lineStyle(1.2, statusColor, firstMonsterId ? 0.7 : 0.38);
+  g.strokeRoundedRect(x, y, w, railH, 4);
+  g.fillStyle(statusColor, 0.18);
+  g.fillRoundedRect(x + 5, y + 5, 26, railH - 10, 3);
+  g.lineStyle(1.4, statusColor, 0.9);
+  g.strokeTriangle(x + 18, y + 10, x + 26, y + 27, x + 10, y + 27);
+  g.lineBetween(x + 18, y + 14, x + 18, y + 30);
 
-  g.fillStyle(statusColor, firstMonsterId ? 0.3 : 0.18);
-  g.fillRoundedRect(titleX, y + 4, 38, 11, 4);
-  g.lineStyle(1, statusColor, firstMonsterId ? 0.7 : 0.4);
-  g.strokeRoundedRect(titleX, y + 4, 38, 11, 4);
-  c.add(scene.add.text(titleX + 19, y + 9.5, statusLabel, {
-    fontFamily: 'sans-serif',
-    fontSize: '7px',
-    color: firstMonsterId ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold' }).setOrigin(0.5));
-  c.add(scene.add.text(titleX + 44, y + 9.5, `장비 ${preview.equippedCount}/${assignedCount}`, {
+  c.add(scene.add.text(titleX, y + 12, `장비 ${preview.equippedCount}/${assignedCount} · ${powerLabel}`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: primaryEquipment ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+    color: primaryEquipment ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  c.add(scene.add.text(titleX, y + 22, fitSlotLabel(text, textMaxChars), {
+  c.add(scene.add.text(titleX, y + 29, fitSlotLabel(text, textMaxChars), {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: primaryEquipment ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT }).setOrigin(0, 0.5));
+    fontSize: '10px',
+    color: primaryEquipment ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED }).setOrigin(0, 0.5));
 
-  g.fillStyle(equipmentPower > 0 ? CASUAL.GOLD : CASUAL.PANEL_SOFT, equipmentPower > 0 ? 0.3 : 0.7);
-  g.fillRoundedRect(pipAreaX - 2, y + 4, 48, 10, 4);
-  g.lineStyle(1, equipmentPower > 0 ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, equipmentPower > 0 ? 0.6 : 0.4);
-  g.strokeRoundedRect(pipAreaX - 2, y + 4, 48, 10, 4);
-  c.add(scene.add.text(pipAreaX + 22, y + 9, powerLabel, {
-    fontFamily: 'sans-serif',
-    fontSize: '7px',
-    color: equipmentPower > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold' }).setOrigin(0.5));
-
-  const pipCount = Math.min(4, preview.equipment.length);
-  const pipGap = 11;
-  const pipStartX = pipAreaX + 5;
-  for (let i = 0; i < pipCount; i++) {
-    const pipX = pipStartX + i * pipGap;
-    const equipmentSocket = preview.equipment[i];
-    const equipped = equipmentSocket?.state === 'assigned';
-    const disabled = equipmentSocket?.state === 'disabled';
-    g.fillStyle(equipped ? CASUAL.GOLD : CASUAL.PANEL, equipped ? 0.95 : 0.85);
-    g.fillRoundedRect(pipX, y + 18, 8, 8, 3);
-    g.lineStyle(1, equipped ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, equipped ? 0.7 : 0.5);
-    g.strokeRoundedRect(pipX, y + 18, 8, 8, 3);
-    if (!equipped) {
-      c.add(scene.add.text(pipX + 4, y + 22, disabled ? '×' : '+', {
-        fontFamily: 'sans-serif',
-        fontSize: '7px',
-        color: CASUAL_CSS.INK_SOFT,
-        fontStyle: 'bold' }).setOrigin(0.5));
-    }
-  }
-
-  g.fillStyle(firstMonsterId ? CASUAL.PURPLE : CASUAL.PANEL_SOFT, firstMonsterId ? 0.9 : 0.8);
-  g.fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 6);
-  g.lineStyle(1, firstMonsterId ? CASUAL.PURPLE_DK : CASUAL.EDGE_SOFT, firstMonsterId ? 0.8 : 0.5);
-  g.strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 6);
+  g.fillStyle(firstMonsterId ? DUNGEON_UI.BRASS : DUNGEON_UI.STONE_RAISED, firstMonsterId ? 0.94 : 0.82);
+  g.fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 3);
+  g.lineStyle(1, firstMonsterId ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE, 0.74);
+  g.strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 3);
   c.add(scene.add.text(buttonX + buttonW / 2, buttonY + buttonH / 2, actionLabel, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: firstMonsterId ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
+    color: firstMonsterId ? '#120d06' : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5));
 
   if (firstMonsterId) {
-    addPreviewHitZone(scene, c, x + w / 2, y + railH / 2, w, railH, () => {
+    addPreviewHitZone(scene, c, x + w / 2, y + railH / 2, w, 44, () => {
       navigateToFocusedForge(scene, state, cb, firstMonsterId, slotIdx);
     });
   }
@@ -565,9 +490,9 @@ function drawInteriorLoadoutBands(
   const readinessColor = readiness >= 78 ? CASUAL.GREEN : readiness >= 45 ? CASUAL.GOLD : CASUAL.RED;
   const floorTop = y + Math.round(h * 0.43);
 
-  g.fillStyle(CASUAL.SHADOW, 0.12);
+  g.fillStyle(DUNGEON_UI.VOID, 0.42);
   g.fillRoundedRect(x + 24, trapY - 16, w - 48, 36, 10);
-  g.fillStyle(CASUAL.BG_BOTTOM, 0.5);
+  g.fillStyle(DUNGEON_UI.VOID, 0.76);
   g.beginPath();
   g.moveTo(x + 34, floorTop);
   g.lineTo(x + w - 34, floorTop);
@@ -576,7 +501,7 @@ function drawInteriorLoadoutBands(
   g.closePath();
   g.fillPath();
 
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.7);
+  g.fillStyle(DUNGEON_UI.STONE, 0.78);
   g.fillRoundedRect(x + 28, trapY - 13, w - 56, 31, 9);
   g.fillRoundedRect(x + 24, guardY - 30, w - 48, 64, 13);
   g.lineStyle(1.1, accent, 0.34);
@@ -592,10 +517,10 @@ function drawInteriorLoadoutBands(
   g.lineBetween(x + 42, trapY + 18, x + 52, guardY - 30);
   g.lineBetween(x + w - 42, trapY + 18, x + w - 52, guardY - 30);
 
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.3);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.3);
   g.lineBetween(x + 40, trapY + 2, x + w - 40, trapY + 2);
   g.lineBetween(x + 43, guardY + 19, x + w - 43, guardY + 19);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.2);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.2);
   g.lineBetween(x + 56, floorTop + 14, x + 43, y + h - 25);
   g.lineBetween(x + w - 56, floorTop + 14, x + w - 43, y + h - 25);
 
@@ -606,28 +531,28 @@ function drawInteriorLoadoutBands(
 
   c.add(scene.add.text(x + 42, trapY - 2, '함정 라인', {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + w - 42, trapY - 2, `T ${trapCount}/${trapCap}`, {
     fontFamily: 'monospace',
-    fontSize: '8px',
-    color: trapCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: trapCount > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
   c.add(scene.add.text(x + 42, guardY - 20, '수호 라인', {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
-    color: CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   c.add(scene.add.text(x + w - 42, guardY - 20, `M ${monsterCount}/${monsterCap} · E ${equippedCount}/${monsterCap}`, {
     fontFamily: 'monospace',
-    fontSize: '8px',
-    color: monsterCount > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: monsterCount > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 
   const chipX = x + w - 76;
   const chipY = y + h - 18;
-  g.fillStyle(CASUAL.PANEL, 0.94);
+  g.fillStyle(DUNGEON_UI.VOID, 0.94);
   g.fillRoundedRect(chipX, chipY, 58, 13, 5);
   g.lineStyle(1, readinessColor, 0.7);
   g.strokeRoundedRect(chipX, chipY, 58, 13, 5);
@@ -635,8 +560,8 @@ function drawInteriorLoadoutBands(
   g.fillRoundedRect(chipX + 2, chipY + 2, Math.max(5, 54 * Phaser.Math.Clamp(readiness / 100, 0, 1)), 9, 4);
   c.add(scene.add.text(chipX + 29, chipY + 6.5, `운영 ${readiness}%`, {
     fontFamily: 'sans-serif',
-    fontSize: '7px',
-    color: CASUAL_CSS.INK,
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -659,7 +584,7 @@ function drawInteriorPlacementScaffold(
   g.lineStyle(1, accent, 0.16 + glow * 0.1);
   g.lineBetween(x + 46, trapBusY, x + w - 46, trapBusY);
   g.lineBetween(x + 50, guardBusY, x + w - 50, guardBusY);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.08 + glow * 0.05);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.08 + glow * 0.05);
   g.lineBetween(coreX, y + Math.round(h * 0.44), coreX, y + h - 22);
 
   for (const { socket, x: posX, y: posY } of layout.traps) {
@@ -700,7 +625,7 @@ function drawInteriorPlacementScaffold(
     g.lineStyle(1, color, filled ? 0.38 : 0.2);
     g.strokeEllipse(posX, posY + 15, 62, 20);
     g.strokeCircle(posX, posY + 1, filled ? 27 : 23);
-    g.lineStyle(1, CASUAL.EDGE_SOFT, filled ? 0.12 : 0.06);
+    g.lineStyle(1, DUNGEON_UI.EDGE, filled ? 0.12 : 0.06);
     g.lineBetween(posX - 21, posY + 15, posX + 21, posY + 15);
     g.lineBetween(posX, posY - 8, posX, posY + 29);
     g.fillStyle(color, filled ? 0.24 : 0.12);
@@ -723,7 +648,7 @@ function drawInteriorEquipmentTrack(
   accent: number,
 ): void {
   const visibleCapacity = Math.min(Math.max(1, monsterCap), 4);
-  g.fillStyle(CASUAL.PANEL, 0.85);
+  g.fillStyle(DUNGEON_UI.VOID, 0.88);
   g.fillRoundedRect(startX - 8, y - 7, visibleCapacity * 8 + 14, 14, 5);
   g.lineStyle(1, CASUAL.GOLD_DK, equippedCount > 0 ? 0.5 : 0.3);
   g.strokeRoundedRect(startX - 8, y - 7, visibleCapacity * 8 + 14, 14, 5);
@@ -733,7 +658,7 @@ function drawInteriorEquipmentTrack(
   for (let i = 0; i < visibleCapacity; i += 1) {
     const px = startX + i * 8;
     const filled = i < equippedCount;
-    g.fillStyle(filled ? CASUAL.GOLD : CASUAL.PANEL_SOFT, filled ? 0.95 : 0.8);
+    g.fillStyle(filled ? CASUAL.GOLD : DUNGEON_UI.STONE, filled ? 0.95 : 0.8);
     g.beginPath();
     g.moveTo(px, y - 4);
     g.lineTo(px + 4, y);
@@ -741,7 +666,7 @@ function drawInteriorEquipmentTrack(
     g.lineTo(px - 4, y);
     g.closePath();
     g.fillPath();
-    g.lineStyle(1, filled ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT, filled ? 0.7 : 0.4);
+    g.lineStyle(1, filled ? CASUAL.GOLD_DK : DUNGEON_UI.EDGE, filled ? 0.7 : 0.4);
     g.strokeTriangle(px, y - 4, px + 4, y, px, y + 4);
     g.lineBetween(px, y + 4, px - 4, y);
     g.lineBetween(px - 4, y, px, y - 4);

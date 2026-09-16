@@ -7,7 +7,7 @@
  */
 import type { DungeonScene } from './DungeonScene';
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, GRID_Y, GRID_ROWS } from '../constants/layout';
 import { type DungeonSlotDeploymentSummary, deployDungeonSlotsToGrid } from '../combat/DungeonLayout';
 import { buildRoomMechanicsCtx, buildCombatResolverCtx } from '../combat/DungeonSceneCtx';
@@ -52,8 +52,8 @@ export function showDungeonDeploymentToast(
     {
       fontFamily: 'Georgia, serif',
       fontSize: '11px',
-      color: summary.brokenRooms > 0 ? CASUAL_CSS.RED : CASUAL_CSS.INK,
-      backgroundColor: CASUAL_CSS.CREAM,
+      color: summary.brokenRooms > 0 ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.TEXT,
+      backgroundColor: '#080b09',
       padding: { x: 10, y: 5 },
     },
   ).setOrigin(0.5).setDepth(120).setAlpha(0);
@@ -89,45 +89,54 @@ export function buildDungeonCommandStrip(
       ? '수호 없음'
       : durability < 50
         ? '수리'
-        : '준비';
+        : '정상';
   const isWarning = summary.brokenRooms > 0 || durability < 50 || summary.assignedMonsters <= 0;
-  const warningColor = isWarning ? CASUAL.RED : CASUAL.GREEN;
+  const warningColor = isWarning ? DUNGEON_UI.EMBER : DUNGEON_UI.JADE;
 
   const y = GRID_Y - 8;
   const strip = scene.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
   const g = scene.add.graphics();
   const w = CANVAS_WIDTH - 24;
-  const h = 22;
-  // Cream strip with chunky brown edge + white top highlight (casual toy look).
-  g.fillStyle(CASUAL.SHADOW, 0.18);
-  g.fillRoundedRect(-w / 2, -h / 2 + 3, w, h, 8);
-  g.fillStyle(CASUAL.PANEL, 0.98);
-  g.fillRoundedRect(-w / 2, -h / 2, w, h, 8);
-  g.lineStyle(2, CASUAL.EDGE, 0.92);
-  g.strokeRoundedRect(-w / 2, -h / 2, w, h, 8);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(-w / 2 + 6, -h / 2 + 3, w - 12, 3, 2);
+  const h = 24;
+  g.fillStyle(DUNGEON_UI.VOID, 0.55);
+  g.fillRoundedRect(-w / 2 + 1, -h / 2 + 2, w, h, 5);
+  g.fillStyle(DUNGEON_UI.STONE, 0.98);
+  g.fillRoundedRect(-w / 2, -h / 2, w, h, 5);
+  g.lineStyle(1, DUNGEON_UI.IRON, 0.94);
+  g.strokeRoundedRect(-w / 2, -h / 2, w, h, 5);
+  g.fillStyle(warningColor, 0.88);
+  g.fillRect(-w / 2 + 1, -h / 2 + 5, 3, h - 10);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.5);
+  g.lineBetween(-116, -7, -116, 7);
   strip.add(g);
 
   const title = scene.add.text(-w / 2 + 12, 0, '방어 진형', {
     fontFamily: 'Georgia, serif',
     fontSize: '10px',
     fontStyle: 'bold',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0, 0.5);
   strip.add(title);
 
-  addCommandStripChip(scene, strip, -98, `방${summary.builtRooms}`, CASUAL.BLUE, CASUAL_CSS.BLUE);
-  addCommandStripChip(scene, strip, -50, `수호${summary.assignedMonsters}`, CASUAL.RED, CASUAL_CSS.RED);
-  addCommandStripChip(scene, strip, 2, `함정${summary.activeTraps}`, CASUAL.GREEN, CASUAL_CSS.GREEN);
-  addCommandStripChip(scene, strip, 57, `장비${summary.equippedMonsters}`,
-    summary.equippedMonsters > 0 ? CASUAL.GOLD : CASUAL.EDGE_SOFT,
-    summary.equippedMonsters > 0 ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT);
-  addCommandStripChip(scene, strip, 115, `내구${durability}%`,
-    durability < 50 ? CASUAL.RED : CASUAL.GOLD,
-    durability < 50 ? CASUAL_CSS.RED : CASUAL_CSS.GOLD);
-  addCommandStripChip(scene, strip, 172, warning, warningColor,
-    isWarning ? CASUAL_CSS.RED : CASUAL_CSS.WHITE, true, !isWarning);
+  strip.add(scene.add.text(-107, 0,
+    `방 ${summary.builtRooms} · 수호 ${summary.assignedMonsters} · 함정 ${summary.activeTraps}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5));
+  strip.add(scene.add.text(22, 0, `장비 ${summary.equippedMonsters} · 내구 ${durability}%`, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: durability < 50 ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+
+  const statusBg = scene.add.graphics();
+  statusBg.fillStyle(warningColor, isWarning ? 0.18 : 0.86);
+  statusBg.fillRoundedRect(131, -8, 44, 16, 4);
+  statusBg.lineStyle(1, warningColor, 0.95);
+  statusBg.strokeRoundedRect(131, -8, 44, 16, 4);
+  strip.add(statusBg);
+  strip.add(scene.add.text(153, 0, warning, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: isWarning ? DUNGEON_UI_CSS.EMBER : '#ffffff',
+  }).setOrigin(0.5));
 
   scene.commandStrip = strip;
   scene.tweens.add({
@@ -137,52 +146,6 @@ export function buildDungeonCommandStrip(
     duration: 220,
     ease: 'Cubic.easeOut',
   });
-}
-
-export function addCommandStripChip(
-  scene: DungeonScene,
-  strip: Phaser.GameObjects.Container,
-  x: number,
-  label: string,
-  accent: number,
-  textColor: string,
-  alignRight = false,
-  candy = false,
-): void {
-  const text = scene.add.text(x, 0, label, {
-    fontFamily: 'Georgia, serif',
-    fontSize: '9px',
-    fontStyle: 'bold',
-    // Candy "ready" pill gets white-on-saturated text; stat pills get their
-    // saturated accent value as the label color over a cream body.
-    color: candy ? CASUAL_CSS.WHITE : textColor,
-  }).setOrigin(alignRight ? 1 : 0.5, 0.5);
-  const b = text.getBounds();
-  const padX = 8;
-  const chipW = b.width + padX * 2;
-  const chipX = alignRight ? x - b.width - padX * 2 : x - b.width / 2 - padX;
-  const bg = scene.add.graphics();
-  if (candy) {
-    // Bright saturated candy pill (GREEN/GOLD when ready) with white highlight.
-    bg.fillStyle(CASUAL.SHADOW, 0.22);
-    bg.fillRoundedRect(chipX, -7, chipW, 16, 6);
-    bg.fillStyle(accent, 1);
-    bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
-    bg.lineStyle(2, CASUAL.EDGE, 0.85);
-    bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
-  } else {
-    // Cream stat pill: PANEL_SOFT body + 2px EDGE border + white top highlight.
-    bg.fillStyle(CASUAL.PANEL_SOFT, 0.98);
-    bg.fillRoundedRect(chipX, -8, chipW, 16, 6);
-    bg.lineStyle(2, CASUAL.EDGE, 0.55);
-    bg.strokeRoundedRect(chipX, -8, chipW, 16, 6);
-    bg.fillStyle(0xffffff, 0.14);
-    bg.fillRoundedRect(chipX + 4, -6, chipW - 8, 3, 2);
-  }
-  strip.add(bg);
-  strip.add(text);
 }
 
 // ─── Combat loop ───────────────────────────────────────────────────────────

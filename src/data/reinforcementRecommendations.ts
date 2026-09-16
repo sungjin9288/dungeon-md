@@ -9,7 +9,7 @@ import {
   type OwnedMonster,
 } from './barracks';
 import { calculateRoomMetrics } from './dungeonMetrics';
-import { MONSTER_DEFS, resolveMonsterTypeId } from './monsters';
+import { resolveOwnedMonsterProfile } from './monsters';
 import {
   getRoomSlotCapacity,
   ROOM_SLOT_TYPE_DEFS,
@@ -170,6 +170,7 @@ export function rankGrowthRecommendations(
   focusMonsterId: string | null = null,
 ): GrowthRecommendation[] {
   return state.ownedMonsters
+    .filter(monster => getMonsterDef(monster.id) !== null)
     .map((monster, rosterIndex) => buildGrowthRecommendation(state, monster, rosterIndex))
     .sort((a, b) => {
       const focusDiff = Number(b.monsterId === focusMonsterId) - Number(a.monsterId === focusMonsterId);
@@ -341,6 +342,5 @@ function getGrowthScore(
 }
 
 function getMonsterDef(monsterId: string) {
-  const typeId = resolveMonsterTypeId(monsterId);
-  return typeId ? MONSTER_DEFS[typeId] : null;
+  return resolveOwnedMonsterProfile(monsterId);
 }

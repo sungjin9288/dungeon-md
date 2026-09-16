@@ -1,673 +1,664 @@
-import Phaser from 'phaser';
-import { COLORS, CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import {
-  BRANCH_DEFS, MAX_WISDOM_TIER,
-  loadGameState, saveGameState, upgradeWisdomBranch,
-  type BranchDef, type GameState,
-} from '../data/wisdom';
-import { addSceneHeader } from '../ui/GameUiPrimitives';
-import { getReducedMotion } from '../utils/reducedMotion';
+/**
+ * Permanent-growth ritual chamber.
+ *
+ * Lineage and branch selection are presentation-only. Branch definitions,
+ * costs, effects, and the immutable upgrade transaction remain data-owned.
+ */
 
-const ALTAR_X  = 195;
-const ALTAR_Y  = 422;
-const NODE_R   = 28;
+import Phaser from 'phaser';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import {
+  loadGameState,
+  MAX_WISDOM_TIER,
+  saveGameState,
+  upgradeWisdomBranch,
+  type BranchDef,
+  type GameState,
+  type WisdomUpgradeFailureReason,
+} from '../data/wisdom';
+import {
+  addFramedPanel,
+  addPrimaryActionButton,
+  addProgressBar,
+  addSceneHeader,
+} from '../ui/GameUiPrimitives';
+import { formatHudResourceValue } from '../ui/HudResourceFormatting';
+import {
+  WISDOM_LINEAGES,
+  getWisdomBranchView,
+  getWisdomLineageBranches,
+  getWisdomSummary,
+  isWisdomUpgradeSnapshotCurrent,
+  type WisdomBranchView,
+  type WisdomLineageId,
+  type WisdomUpgradeSnapshot,
+} from '../ui/AncestralWisdomShared';
+
+type ReceiptTone = 'success' | 'warning';
+
+interface WisdomReceipt {
+  readonly title: string;
+  readonly detail: string;
+  readonly tone: ReceiptTone;
+}
+
+const PANEL_X = 14;
+const PANEL_W = CANVAS_WIDTH - PANEL_X * 2;
+const STATUS_Y = 76;
+const LINEAGE_Y = 142;
+const BRANCH_Y = 202;
+const BRANCH_H = 66;
+const BRANCH_GAP = 7;
+const DETAIL_Y = 421;
+const DETAIL_H = 242;
+const COMMAND_Y = 675;
+const TRANSACTION_COOLDOWN_MS = 250;
+
+function now(): number {
+  return Date.now();
+}
 
 export class AncestralWisdomScene extends Phaser.Scene {
-  private state!: GameState;
-  private crystalText!:  Phaser.GameObjects.Text;
-  private nodeContainers: Map<string, Phaser.GameObjects.Container> = new Map();
-  private linePulses:     Map<string, Phaser.Tweens.Tween>         = new Map();
+  private gameState!: GameState;
+  private activeLineage: WisdomLineageId = 'foundation';
+  private selectedBranchId = '';
+  private receipt: WisdomReceipt | null = null;
+  private actionLocked = false;
+  private renderQueued = false;
+  private lastTransactionAt = 0;
+  private confirmOverlay?: Phaser.GameObjects.Container;
 
-  // detail panel
-  private panel?:        Phaser.GameObjects.Container;
-  private panelBg?:      Phaser.GameObjects.Graphics;
-  private panelClose?:   Phaser.GameObjects.Text;
-  private panelContent:  Phaser.GameObjects.GameObject[] = [];
-  private panelOpen    = false;
-  private activeBranch?: BranchDef;
-
-  constructor() { super({ key: 'AncestralWisdomScene' }); }
+  constructor() {
+    super({ key: 'AncestralWisdomScene' });
+  }
 
   create(): void {
-    this.state = loadGameState();
-    this.nodeContainers.clear();
-    this.linePulses.clear();
+    this.gameState = loadGameState();
+    this.activeLineage = 'foundation';
+    this.selectedBranchId = getWisdomLineageBranches(this.activeLineage)[0]?.id ?? '';
+    this.receipt = null;
+    this.actionLocked = false;
+    this.renderQueued = false;
+    this.lastTransactionAt = 0;
+    this.confirmOverlay = undefined;
+    this.resetCamera();
+    this.render();
+  }
 
-    this.drawBackground();
-    this.spawnMist();
-    this.drawConnectingLines();
-    this.drawAltar();
-    this.drawBranches();
+  private render(): void {
+    this.clearRenderedObjects();
+    this.resetCamera();
+    this.reconcileSelection();
+    this.drawBackdrop();
     this.drawHeader();
-
-    this.buildDetailPanel();
+    this.drawStatusRail();
+    this.drawLineages();
+    this.drawBranchTablets();
+    this.drawSelectedLedger();
+    this.drawCommand();
   }
 
-  // ─── Background ─────────────────────────────────────────────────────────────
-
-  private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    applyCasualBackground(this);
+  private clearRenderedObjects(): void {
+    this.tweens.killAll();
+    this.confirmOverlay = undefined;
+    for (const child of [...this.children.list]) child.destroy();
   }
 
-  // ─── Mist ────────────────────────────────────────────────────────────────────
+  private resetCamera(): void {
+    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.cameras.main.centerOn(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+  }
 
-  private spawnMist(): void {
-    for (let i = 0; i < 18; i++) {
-      const x = Phaser.Math.Between(20, CANVAS_WIDTH - 20);
-      const y = Phaser.Math.Between(CANVAS_HEIGHT / 2, CANVAS_HEIGHT + 60);
-      const r = Phaser.Math.Between(30, 80);
-      const a = Phaser.Math.FloatBetween(0.04, 0.15);
+  private drawBackdrop(): void {
+    const g = this.add.graphics().setDepth(-900);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(0, 68, CANVAS_WIDTH, CANVAS_HEIGHT - 68);
 
-      const g = this.add.graphics();
-      g.fillStyle(CASUAL.PURPLE, a);
-      g.fillCircle(0, 0, r);
-      g.x = x;
-      g.y = y;
-
-      const dur   = Phaser.Math.Between(6000, 12000);
-      const moveY = Phaser.Math.Between(80, 160);
-
-      // Floating background motes are decorative — skip under reduced motion.
-      if (!getReducedMotion()) {
-        this.tweens.add({
-          targets: g,
-          y: y - moveY,
-          alpha: 0,
-          duration: dur,
-          repeat: -1,
-          repeatDelay: Phaser.Math.Between(0, 4000),
-          onRepeat: () => {
-            g.y     = Phaser.Math.Between(CANVAS_HEIGHT / 2, CANVAS_HEIGHT + 60);
-            g.alpha = Phaser.Math.FloatBetween(0.04, 0.15);
-          },
-        });
-      }
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.32);
+    for (let y = 88; y < CANVAS_HEIGHT; y += 42) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = ((y - 88) / 42) % 2 === 0 ? 25 : 0;
+      for (let x = offset; x < CANVAS_WIDTH; x += 58) g.lineBetween(x, y, x, y + 42);
     }
-  }
 
-  // ─── Header ──────────────────────────────────────────────────────────────────
+    g.fillStyle(DUNGEON_UI.STONE, 0.82);
+    g.fillRect(0, 68, 18, CANVAS_HEIGHT - 68);
+    g.fillRect(CANVAS_WIDTH - 18, 68, 18, CANVAS_HEIGHT - 68);
+    g.lineStyle(2, DUNGEON_UI.BRASS, 0.16);
+    g.lineBetween(27, 72, 27, CANVAS_HEIGHT);
+    g.lineBetween(CANVAS_WIDTH - 27, 72, CANVAS_WIDTH - 27, CANVAS_HEIGHT);
+
+    g.fillStyle(COLORS.TORCH_AMBER, 0.035);
+    g.fillCircle(CANVAS_WIDTH / 2, 488, 172);
+    g.lineStyle(2, DUNGEON_UI.BRASS, 0.16);
+    g.strokeCircle(CANVAS_WIDTH / 2, 488, 126);
+    g.strokeCircle(CANVAS_WIDTH / 2, 488, 158);
+  }
 
   private drawHeader(): void {
-    const { title: headerTitle } = addSceneHeader(this, {
-      title:  '🌳 선조의 지혜',
-      y:      28,
-      depth:  11,
-      onBack: () => this.scene.start(
-        (this.registry.get('previousScene') as string) ?? 'StageSelectScene',
-      ),
+    const header = addSceneHeader(this, {
+      title: '선조의 의식실',
+      subtitle: '영혼 수정을 바쳐 영구 가호를 해방',
+      onBack: () => this.returnToPreviousScene(),
+    });
+    const backZone = header.container.list.find(child => child.type === 'Zone') as Phaser.GameObjects.Zone | undefined;
+    if (!backZone) return;
+    backZone.setName('wisdom-back');
+    this.bindViewAction(backZone);
+  }
+
+  private drawStatusRail(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: STATUS_Y,
+      w: PANEL_W,
+      h: 54,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.28,
     });
 
-    // Crystal counter pill — sits right of header title, acts as live subtitle.
-    const crystalBg = this.add.graphics().setDepth(11);
-    crystalBg.fillStyle(CASUAL.SHADOW, 0.18);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 58, 44 + 2, 116, 22, 8);
-    crystalBg.fillStyle(CASUAL.PANEL_SOFT, 1);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 58, 44, 116, 22, 8);
-    crystalBg.lineStyle(2.5, CASUAL.PURPLE, 1);
-    crystalBg.strokeRoundedRect(CANVAS_WIDTH / 2 - 58, 44, 116, 22, 8);
-    crystalBg.fillStyle(0xffffff, 0.10);
-    crystalBg.fillRoundedRect(CANVAS_WIDTH / 2 - 53, 47, 106, 4, 2);
+    const summary = getWisdomSummary(this.gameState);
+    const items = [
+      { label: '영혼 수정', value: formatHudResourceValue(this.gameState.soulCrystals), color: DUNGEON_UI_CSS.BRASS },
+      { label: '해방 단계', value: `${summary.totalTiers} / ${summary.totalTierCapacity}`, color: DUNGEON_UI_CSS.TEXT },
+      { label: '완성 가호', value: `${summary.maxedBranches} / ${summary.branchCount}`, color: summary.maxedBranches > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED },
+    ];
 
-    this.crystalText = this.add.text(CANVAS_WIDTH / 2, 55, `💠 ${this.state.soulCrystals} 영혼 수정`, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-    }).setOrigin(0.5).setDepth(12);
-
-    // Suppress TS "unused" warning — headerTitle is used by addSceneHeader internally.
-    void headerTitle;
-  }
-
-  // ─── Altar ───────────────────────────────────────────────────────────────────
-
-  private drawAltar(): void {
-    // Outer glow ring — soft golden halo readable on cream.
-    const glow = this.add.graphics();
-    glow.fillStyle(CASUAL.GOLD, 0.12);
-    glow.fillCircle(ALTAR_X, ALTAR_Y, 56);
-    glow.fillStyle(CASUAL.GOLD, 0.2);
-    glow.fillCircle(ALTAR_X, ALTAR_Y, 40);
-
-    // Stone circle — keep dark interior, saturated gold rim + soft shadow.
-    const stone = this.add.graphics();
-    stone.fillStyle(CASUAL.SHADOW, 0.28);
-    stone.fillCircle(ALTAR_X + 2, ALTAR_Y + 3, 30);
-    stone.fillStyle(COLORS.STONE_MID, 1);
-    stone.fillCircle(ALTAR_X, ALTAR_Y, 30);
-    stone.lineStyle(3, CASUAL.GOLD, 1);
-    stone.strokeCircle(ALTAR_X, ALTAR_Y, 30);
-
-    // Altar icon
-    this.add.text(ALTAR_X, ALTAR_Y, '⛩', { fontSize: '24px' }).setOrigin(0.5);
-
-    // Rotating outer ring tween — decorative halo pulse.
-    if (!getReducedMotion()) {
-      this.tweens.add({
-        targets: glow,
-        alpha: { from: 0.5, to: 1 },
-        duration: 2200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-    }
-  }
-
-  // ─── Connecting lines ────────────────────────────────────────────────────────
-
-  private drawConnectingLines(): void {
-    BRANCH_DEFS.forEach(branch => {
-      const { x, y } = branch.position;
-
-      // Static connector line — readable brown on cream.
-      const staticLine = this.add.graphics();
-      staticLine.lineStyle(2.5, CASUAL.EDGE_SOFT, 0.85);
-      staticLine.lineBetween(ALTAR_X, ALTAR_Y, x, y);
-
-      // The travelling gold pulse is decorative — under reduced motion keep only
-      // the static connector line.
-      if (getReducedMotion()) return;
-
-      // Animated gold pulse line (travels from altar to node)
-      const pulseGfx = this.add.graphics();
-      let progress = Math.random(); // stagger starts
-
-      const tween = this.tweens.add({
-        targets: { t: progress },
-        t: progress + 1,
-        duration: 1800,
-        repeat: -1,
-        ease: 'Linear',
-        onUpdate: (_tw, target) => {
-          const t = (target.t as number) % 1;
-          pulseGfx.clear();
-          // Draw a short glowing segment at position t along the line
-          const segLen = 0.22;
-          const t0 = t;
-          const t1 = Math.min(t + segLen, 1);
-          const px0 = ALTAR_X + (x - ALTAR_X) * t0;
-          const py0 = ALTAR_Y + (y - ALTAR_Y) * t0;
-          const px1 = ALTAR_X + (x - ALTAR_X) * t1;
-          const py1 = ALTAR_Y + (y - ALTAR_Y) * t1;
-          pulseGfx.lineStyle(3, CASUAL.GOLD, 0.95);
-          pulseGfx.lineBetween(px0, py0, px1, py1);
-        },
-      });
-
-      this.linePulses.set(branch.id, tween);
-    });
-  }
-
-  // ─── Branch nodes ────────────────────────────────────────────────────────────
-
-  private drawBranches(): void {
-    BRANCH_DEFS.forEach(branch => {
-      const { x, y } = branch.position;
-      const tier = this.state.wisdomTree[branch.id] ?? 0;
-
-      const container = this.add.container(x, y);
-      this.nodeContainers.set(branch.id, container);
-      this.renderNode(branch, tier, container);
-
-      // Interactive hit area
-      const zone = this.add.zone(0, 0, NODE_R * 2 + 10, NODE_R * 2 + 10).setInteractive({ useHandCursor: true });
-      container.add(zone);
-
-      zone.on('pointerdown', () => this.openDetailPanel(branch));
-      zone.on('pointerover',  () => this.setNodeHighlight(container, true));
-      zone.on('pointerout',   () => this.setNodeHighlight(container, false));
-    });
-  }
-
-  private renderNode(branch: BranchDef, tier: number, container: Phaser.GameObjects.Container): void {
-    container.removeAll(true);
-
-    const isMaxed = tier >= MAX_WISDOM_TIER;
-    const hasAny  = tier > 0;
-    // Keep dark node interiors; differentiate state via the saturated rim.
-    const fillCol = isMaxed ? 0x3a2a08
-                  : hasAny  ? 0x231038
-                  :           COLORS.STONE_DARK;
-    // Unlocked nodes glow with a saturated CASUAL accent; locked nodes muted brown.
-    const borderCol = isMaxed ? CASUAL.GOLD
-                    : hasAny  ? CASUAL.PURPLE
-                    :           CASUAL.EDGE_SOFT;
-
-    // Soft drop shadow on cream.
-    const shadow = this.add.graphics();
-    shadow.fillStyle(CASUAL.SHADOW, 0.35);
-    shadow.fillCircle(2, 4, NODE_R);
-    container.add(shadow);
-
-    // Glow halo behind unlocked nodes so they pop on cream.
-    if (hasAny) {
-      const glowRing = this.add.graphics();
-      glowRing.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 0.22);
-      glowRing.fillCircle(0, 0, NODE_R + 8);
-      container.add(glowRing);
-    }
-
-    // Node circle — dark interior, chunky saturated rim.
-    const circle = this.add.graphics();
-    circle.fillStyle(fillCol, 1);
-    circle.fillCircle(0, 0, NODE_R);
-    circle.lineStyle(isMaxed ? 3.5 : 3, borderCol, hasAny ? 1 : 0.85);
-    circle.strokeCircle(0, 0, NODE_R);
-    // Top highlight sliver.
-    circle.fillStyle(0xffffff, 0.1);
-    circle.fillEllipse(0, -NODE_R * 0.5, NODE_R * 1.1, NODE_R * 0.4);
-    container.add(circle);
-
-    // Icon
-    const icon = this.add.text(0, -6, branch.icon, { fontSize: '18px' }).setOrigin(0.5);
-    container.add(icon);
-
-    // Tier dots
-    const dotY = NODE_R - 7;
-    const dotSpacing = 8;
-    const totalWidth = (MAX_WISDOM_TIER - 1) * dotSpacing;
-    for (let i = 0; i < MAX_WISDOM_TIER; i++) {
-      const dotX = -totalWidth / 2 + i * dotSpacing;
-      const dotG = this.add.graphics();
-      if (i < tier) {
-        dotG.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 1);
-      } else {
-        dotG.fillStyle(0x000000, 0.45);
-        dotG.lineStyle(1, 0xffffff, 0.4);
+    items.forEach((item, index) => {
+      const cellW = PANEL_W / items.length;
+      const x = PANEL_X + cellW * index;
+      if (index > 0) {
+        const divider = this.add.graphics();
+        divider.lineStyle(1, DUNGEON_UI.IRON, 0.9);
+        divider.lineBetween(x, STATUS_Y + 9, x, STATUS_Y + 45);
       }
-      dotG.fillCircle(dotX, dotY, 3);
-      if (i >= tier) dotG.strokeCircle(dotX, dotY, 3);
-      container.add(dotG);
-    }
-
-    // Cost badge — shown below the node for non-maxed branches.
-    // Sits on cream, so wrap in a small cream chip with ink text.
-    if (!isMaxed) {
-      const nextCost = branch.costPerTier[tier];
-      if (nextCost > 0) {
-        const badgeText = `💠${nextCost}`;
-        const badgeW = badgeText.length * 7 + 12;
-        const badgeY = NODE_R + 6;
-        const badgeBg = this.add.graphics();
-        badgeBg.fillStyle(CASUAL.PANEL, 1);
-        badgeBg.fillRoundedRect(-badgeW / 2, badgeY, badgeW, 16, 6);
-        badgeBg.lineStyle(2, CASUAL.EDGE, 1);
-        badgeBg.strokeRoundedRect(-badgeW / 2, badgeY, badgeW, 16, 6);
-        container.add(badgeBg);
-        const costBadge = this.add.text(0, badgeY + 8, badgeText, {
-          fontFamily: 'sans-serif',
-          fontSize: '10px',
-          fontStyle: 'bold',
-          color: CASUAL_CSS.PURPLE,
-        }).setOrigin(0.5);
-        container.add(costBadge);
-      }
-    }
-
-    // Re-add zone on top
-    const zone = this.add.zone(0, 0, NODE_R * 2 + 10, NODE_R * 2 + 10).setInteractive({ useHandCursor: true });
-    container.add(zone);
-    zone.on('pointerdown', () => this.openDetailPanel(branch));
-    zone.on('pointerover',  () => this.setNodeHighlight(container, true));
-    zone.on('pointerout',   () => this.setNodeHighlight(container, false));
-  }
-
-  private setNodeHighlight(container: Phaser.GameObjects.Container, on: boolean): void {
-    this.tweens.add({
-      targets: container,
-      scaleX: on ? 1.08 : 1,
-      scaleY: on ? 1.08 : 1,
-      duration: 100,
-      ease: 'Linear',
-    });
-  }
-
-  // ─── Detail panel ────────────────────────────────────────────────────────────
-
-  private buildDetailPanel(): void {
-    const PANEL_H = 280;
-    this.panel = this.add.container(0, CANVAS_HEIGHT);
-    this.panel.setDepth(300);
-
-    this.panelBg = this.add.graphics();
-    this.panelBg.fillStyle(CASUAL.SHADOW, 0.3);
-    this.panelBg.fillRoundedRect(0, -4, CANVAS_WIDTH, PANEL_H + 4, { tl: 16, tr: 16, bl: 0, br: 0 });
-    this.panelBg.fillStyle(CASUAL.PANEL, 1);
-    this.panelBg.fillRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
-    this.panelBg.lineStyle(3, CASUAL.EDGE, 1);
-    this.panelBg.strokeRoundedRect(0, 0, CANVAS_WIDTH, PANEL_H, { tl: 16, tr: 16, bl: 0, br: 0 });
-    this.panelBg.fillStyle(0xffffff, 0.12);
-    this.panelBg.fillRoundedRect(8, 5, CANVAS_WIDTH - 16, 6, 3);
-    this.panel.add(this.panelBg);
-
-    // Close button (always visible after open)
-    this.panelClose = this.add.text(CANVAS_WIDTH - 18, 18, '✕', {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-    this.panelClose.on('pointerdown', () => this.closeDetailPanel());
-    this.panel.add(this.panelClose);
-
-    this.add.existing(this.panel);
-  }
-
-  private openDetailPanel(branch: BranchDef): void {
-    if (!this.panel) return;
-    this.activeBranch = branch;
-
-    // Destroy only previously added content items (not bg/closeBtn)
-    this.panelContent.forEach(go => {
-      (go as Phaser.GameObjects.GameObject & { destroy(): void }).destroy();
-    });
-    this.panelContent = [];
-
-    this.rebuildPanelContent(branch);
-
-    if (!this.panelOpen) {
-      this.panelOpen = true;
-      this.tweens.add({
-        targets: this.panel,
-        y: CANVAS_HEIGHT - 280,
-        duration: 250,
-        ease: 'Power2.easeOut',
-      });
-    }
-  }
-
-  /** Add a game object to the panel AND track it for cleanup */
-  private addToPanel(go: Phaser.GameObjects.GameObject): void {
-    this.panel!.add(go);
-    this.panelContent.push(go);
-  }
-
-  private rebuildPanelContent(branch: BranchDef): void {
-    if (!this.panel) return;
-    const tier    = this.state.wisdomTree[branch.id] ?? 0;
-    const isMaxed = tier >= MAX_WISDOM_TIER;
-    const cx      = CANVAS_WIDTH / 2;
-
-    // Icon + Name
-    const iconT = this.add.text(cx, 22, `${branch.icon} ${branch.name}`, {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK,
-    }).setOrigin(0.5, 0);
-    this.addToPanel(iconT);
-
-    // Tier indicator (Roman)
-    const roman = ['0', 'Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ'];
-    const tierT = this.add.text(cx, 50, isMaxed ? '✨ 최고 등급' : `등급 ${roman[tier]}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-      color: isMaxed ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5, 0);
-    this.addToPanel(tierT);
-
-    // Tier dots (large)
-    for (let i = 0; i < MAX_WISDOM_TIER; i++) {
-      const dx = cx - (MAX_WISDOM_TIER - 1) * 10 + i * 20;
-      const dy = 76;
-      const dg = this.add.graphics();
-      if (i < tier) {
-        dg.fillStyle(isMaxed ? CASUAL.GOLD : CASUAL.PURPLE, 1);
-        dg.fillCircle(dx, dy, 5);
-        dg.lineStyle(1.5, CASUAL.EDGE, 0.6);
-        dg.strokeCircle(dx, dy, 5);
-      } else {
-        dg.fillStyle(CASUAL.PANEL_SOFT, 1);
-        dg.lineStyle(2, CASUAL.EDGE_SOFT, 0.9);
-        dg.fillCircle(dx, dy, 5);
-        dg.strokeCircle(dx, dy, 5);
-      }
-      this.addToPanel(dg);
-    }
-
-    // Effect line
-    const curVal  = branch.getValue(tier);
-    const nextVal = branch.getValue(Math.min(tier + 1, MAX_WISDOM_TIER));
-    const effectStr = branch.effect.replace('{value}', String(curVal));
-    const effectT = this.add.text(cx, 100, effectStr, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setOrigin(0.5, 0);
-    this.addToPanel(effectT);
-
-    if (!isMaxed) {
-      const nextStr = `→ 다음: ${branch.effect.replace('{value}', String(nextVal))}`;
-      const nextT = this.add.text(cx, 122, nextStr, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.GREEN,
-      }).setOrigin(0.5, 0);
-      this.addToPanel(nextT);
-
-      // Cost line
-      const cost      = branch.costPerTier[tier];
-      const canAfford = this.state.soulCrystals >= cost;
-      const costT = this.add.text(cx, 154, `업그레이드 비용: 💠 ${cost}`, {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-        color: canAfford ? CASUAL_CSS.PURPLE : CASUAL_CSS.RED,
-      }).setOrigin(0.5, 0);
-      this.addToPanel(costT);
-
-      // Upgrade button — casual chunky pill.
-      const btnW = 210, btnH = 40, btnX = cx - btnW / 2, btnY = 188;
-      const btnBg = this.add.graphics();
-      btnBg.fillStyle(canAfford ? CASUAL.PURPLE_DK : CASUAL.EDGE, 0.45);
-      btnBg.fillRoundedRect(btnX, btnY + 3, btnW, btnH, 12);
-      btnBg.fillStyle(canAfford ? CASUAL.PURPLE : CASUAL.PANEL_SOFT, 1);
-      btnBg.fillRoundedRect(btnX, btnY, btnW, btnH, 12);
-      btnBg.fillStyle(0xffffff, canAfford ? 0.3 : 0.4);
-      btnBg.fillRoundedRect(btnX + 8, btnY + 5, btnW - 16, 6, 3);
-      btnBg.lineStyle(3, canAfford ? CASUAL.PURPLE_DK : CASUAL.EDGE, 1);
-      btnBg.strokeRoundedRect(btnX, btnY, btnW, btnH, 12);
-      this.addToPanel(btnBg);
-
-      const btnT = this.add.text(cx, btnY + btnH / 2, canAfford ? '업그레이드' : '수정 부족', {
-        fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
-        color: canAfford ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
-        stroke: canAfford ? '#00000033' : undefined,
-        strokeThickness: canAfford ? 3 : 0,
+      this.add.text(x + cellW / 2, STATUS_Y + 17, item.label, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
       }).setOrigin(0.5);
-      this.addToPanel(btnT);
-
-      if (canAfford) {
-        const zone = this.add.zone(cx, btnY + btnH / 2, btnW, btnH)
-          .setInteractive({ useHandCursor: true });
-        zone.on('pointerdown', () => this.showUpgradeConfirm(branch, cost));
-        this.addToPanel(zone);
-      }
-    } else {
-      // Max level celebration text
-      const maxT = this.add.text(cx, 160, '모든 잠재력이 해방되었습니다!', {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-        color: CASUAL_CSS.GOLD,
-      }).setOrigin(0.5, 0);
-      this.addToPanel(maxT);
-    }
-  }
-
-  private closeDetailPanel(): void {
-    if (!this.panelOpen || !this.panel) return;
-    this.panelOpen = false;
-    this.tweens.add({
-      targets: this.panel,
-      y: CANVAS_HEIGHT,
-      duration: 220,
-      ease: 'Power2.easeIn',
+      this.add.text(x + cellW / 2, STATUS_Y + 37, item.value, {
+        fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: item.color,
+      }).setOrigin(0.5);
     });
   }
 
-  // ─── Upgrade confirm dialog ───────────────────────────────────────────────────
-
-  private showUpgradeConfirm(branch: BranchDef, cost: number): void {
-    const OW = 290, OH = 170;
-    const OX = (CANVAS_WIDTH  - OW) / 2;
-    const OY = (CANVAS_HEIGHT - OH) / 2;
-
-    const ov = this.add.container(0, 0).setDepth(120).setAlpha(0);
-
-    const dim = this.add.graphics();
-    dim.fillStyle(0x000000, 0.5);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ov.add(dim);
-
-    const bg = this.add.graphics();
-    bg.fillStyle(CASUAL.SHADOW, 0.35);
-    bg.fillRoundedRect(OX, OY + 4, OW, OH, 16);
-    bg.fillStyle(CASUAL.PANEL, 1);
-    bg.fillRoundedRect(OX, OY, OW, OH, 16);
-    bg.lineStyle(3, CASUAL.EDGE, 1);
-    bg.strokeRoundedRect(OX, OY, OW, OH, 16);
-    bg.fillStyle(0xffffff, 0.12);
-    bg.fillRoundedRect(OX + 10, OY + 6, OW - 20, 6, 3);
-    ov.add(bg);
-
-    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 28, `${branch.icon} ${branch.name} 업그레이드`, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setOrigin(0.5));
-    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 56, `💠 ${cost} 영혼 수정이 소모됩니다.`, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5));
-    ov.add(this.add.text(CANVAS_WIDTH / 2, OY + 76, `보유: 💠 ${this.state.soulCrystals}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5));
-
-    this.buildDialogButton(
-      CANVAS_WIDTH / 2 - 56, OY + OH - 30, '확인', CASUAL.PURPLE, CASUAL.PURPLE_DK, CASUAL_CSS.WHITE,
-      () => { ov.destroy(true); this.performUpgrade(branch); },
-      ov,
-    );
-    this.buildDialogButton(
-      CANVAS_WIDTH / 2 + 56, OY + OH - 30, '취소', CASUAL.PANEL_SOFT, CASUAL.EDGE, CASUAL_CSS.INK,
-      () => ov.destroy(true),
-      ov,
-    );
-
-    this.tweens.add({ targets: ov, alpha: 1, duration: 180, ease: 'Quad.easeOut' });
+  private drawLineages(): void {
+    const gap = 5;
+    const buttonW = (PANEL_W - gap * 3) / 4;
+    WISDOM_LINEAGES.forEach((lineage, index) => {
+      const active = lineage.id === this.activeLineage;
+      const button = addPrimaryActionButton(this, {
+        x: PANEL_X + index * (buttonW + gap),
+        y: LINEAGE_Y,
+        w: buttonW,
+        h: 44,
+        label: lineage.label,
+        fontSize: '11px',
+        once: true,
+        showArrow: false,
+        fillColor: active ? DUNGEON_UI.BRASS : DUNGEON_UI.STONE,
+        hoverFillColor: active ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.IRON,
+        borderColor: active ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE,
+        textColor: active ? '#171006' : DUNGEON_UI_CSS.TEXT,
+        onPress: () => this.selectLineage(lineage.id),
+      });
+      button.zone.setName(`wisdom-lineage-${lineage.id}`);
+      this.bindViewAction(button.zone);
+    });
   }
 
-  private buildDialogButton(
-    cx: number,
-    cy: number,
-    label: string,
-    fill: number,
-    edge: number,
-    textColor: string,
-    cb: () => void,
-    container: Phaser.GameObjects.Container,
-  ): void {
-    const w = 86, h = 34;
-    const bx = cx - w / 2, by = cy - h / 2;
+  private drawBranchTablets(): void {
+    const branches = getWisdomLineageBranches(this.activeLineage);
+    branches.forEach((branch, index) => {
+      this.drawBranchTablet(branch, BRANCH_Y + index * (BRANCH_H + BRANCH_GAP));
+    });
+  }
+
+  private drawBranchTablet(branch: BranchDef, y: number): void {
+    const view = getWisdomBranchView(this.gameState, branch);
+    const selected = branch.id === this.selectedBranchId;
+    const tone = !view.validTier
+      ? DUNGEON_UI.EMBER
+      : view.isMaxed
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.IRON;
+
     const g = this.add.graphics();
-    g.fillStyle(edge, 1);
-    g.fillRoundedRect(bx, by + 3, w, h, 11);
-    g.fillStyle(fill, 1);
-    g.fillRoundedRect(bx, by, w, h, 11);
-    g.fillStyle(0xffffff, 0.35);
-    g.fillRoundedRect(bx + 6, by + 4, w - 12, 5, 3);
-    g.lineStyle(2.5, edge, 1);
-    g.strokeRoundedRect(bx, by, w, h, 11);
-    container.add(g);
-    container.add(this.add.text(cx, cy, label, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: textColor,
-    }).setOrigin(0.5));
-    const zone = this.add.zone(cx, cy, w, h).setInteractive({ useHandCursor: true });
-    zone.on('pointerdown', cb);
-    container.add(zone);
-  }
-
-  // ─── Upgrade logic ────────────────────────────────────────────────────────────
-
-  private performUpgrade(branch: BranchDef): void {
-    const result = upgradeWisdomBranch(this.state, branch.id);
-    if (!result.ok) return;
-
-    this.state = result.state;
-    saveGameState(this.state);
-
-    // Update crystal display + cost deduction float + pop
-    this.crystalText.setText(`💠 ${this.state.soulCrystals} 영혼 수정`);
-    const costFloat = this.add.text(CANVAS_WIDTH / 2, 82, `-${result.cost}💠`, {
-      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-      color: CASUAL_CSS.PURPLE, stroke: '#ffffff', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(250).setAlpha(0);
-    this.tweens.add({
-      targets: costFloat, y: 106, alpha: { from: 1, to: 0 },
-      duration: 900, ease: 'Cubic.easeOut',
-      onComplete: () => costFloat.destroy(),
-    });
-    this.tweens.killTweensOf(this.crystalText);
-    this.crystalText.setScale(1.3);
-    this.tweens.add({
-      targets: this.crystalText, scaleX: 1, scaleY: 1,
-      duration: 260, ease: 'Back.easeIn',
-    });
-
-    // Animate node
-    const container = this.nodeContainers.get(branch.id);
-    if (container) {
-      this.renderNode(branch, result.nextTier, container);
-      // Expanding ring
-      const ring = this.add.graphics();
-      ring.lineStyle(3, CASUAL.GOLD, 0.95);
-      ring.strokeCircle(branch.position.x, branch.position.y, NODE_R);
-      this.tweens.add({
-        targets: ring,
-        scaleX: 2.8, scaleY: 2.8,
-        alpha: 0,
-        duration: 500,
-        ease: 'Power2.easeOut',
-        onComplete: () => ring.destroy(),
-      });
-      // Node bounce
-      this.tweens.add({
-        targets: container,
-        scaleX: 1.25, scaleY: 1.25,
-        duration: 120, ease: 'Back.easeOut',
-        yoyo: true,
-      });
+    g.fillStyle(selected ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
+    g.fillRoundedRect(PANEL_X, y, PANEL_W, BRANCH_H, 8);
+    g.lineStyle(selected ? 2 : 1, selected ? DUNGEON_UI.BRASS_BRIGHT : tone, selected ? 1 : 0.82);
+    g.strokeRoundedRect(PANEL_X, y, PANEL_W, BRANCH_H, 8);
+    if (selected) {
+      g.fillStyle(DUNGEON_UI.BRASS, 1);
+      g.fillRect(PANEL_X + 6, y + 8, 3, BRANCH_H - 16);
     }
 
-    // Rebuild panel for updated state
-    this.closeDetailPanel();
-    this.time.delayedCall(240, () => {
-      if (this.activeBranch?.id === branch.id) {
-        this.openDetailPanel(branch);
-      }
-    });
+    this.add.text(PANEL_X + 34, y + BRANCH_H / 2, branch.icon, {
+      fontFamily: 'sans-serif', fontSize: '21px',
+    }).setOrigin(0.5);
+    this.add.text(PANEL_X + 60, y + 19, branch.name, {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 14, y + 19, view.validTier ? `등급 ${view.tier} / ${MAX_WISDOM_TIER}` : '저장 확인', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: !view.validTier ? DUNGEON_UI_CSS.EMBER : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    this.add.text(PANEL_X + 60, y + 46, view.currentEffect, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 14, y + 46, this.branchCostLabel(view), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: view.isMaxed ? DUNGEON_UI_CSS.JADE : view.canUpgrade ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
+    }).setOrigin(1, 0.5);
 
-    // Check all-maxed
-    this.checkAllMaxed();
+    const zone = this.add.zone(PANEL_X, y, PANEL_W, BRANCH_H).setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    zone.setName(`wisdom-branch-${branch.id}`);
+    zone.on('pointerdown', () => this.selectBranch(branch.id));
   }
 
-  private checkAllMaxed(): void {
-    const allMaxed = BRANCH_DEFS.every(b => (this.state.wisdomTree[b.id] ?? 0) >= MAX_WISDOM_TIER);
-    if (!allMaxed) return;
+  private drawSelectedLedger(): void {
+    const selected = this.selectedBranch();
+    if (!selected) return;
+    const view = getWisdomBranchView(this.gameState, selected);
+    const tone = !view.validTier
+      ? DUNGEON_UI.EMBER
+      : view.isMaxed
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.BRASS;
 
-    // Celebration beam overlay
-    const overlay = this.add.graphics().setDepth(400);
-    overlay.fillStyle(CASUAL.GOLD, 0);
-    overlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    this.tweens.add({
-      targets: overlay,
-      alpha: { from: 0, to: 0.35 },
-      duration: 400, yoyo: true,
-      onComplete: () => overlay.destroy(),
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: DETAIL_Y,
+      w: PANEL_W,
+      h: DETAIL_H,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: tone,
+      accentColor: tone,
+      glowColor: tone,
+      glowOpacity: view.canUpgrade ? 0.05 : 0.02,
     });
 
-    const toast = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 선조의 지혜 완전 해방! ✨', {
-      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
-      color: CASUAL_CSS.GOLD, stroke: '#2a1606', strokeThickness: 4,
-      backgroundColor: '#1c1408',
-      padding: { x: 16, y: 10 },
-    }).setOrigin(0.5).setDepth(401).setAlpha(0);
+    this.add.text(PANEL_X + 18, DETAIL_Y + 22, `${selected.icon} ${selected.name}`, {
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, DETAIL_Y + 22, this.branchStateLabel(view), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: !view.validTier ? DUNGEON_UI_CSS.EMBER : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
 
-    this.tweens.add({
-      targets: toast,
-      alpha: 1, duration: 300,
-      onComplete: () => {
-        this.tweens.add({
-          targets: toast, alpha: 0, duration: 400, delay: 2000,
-          onComplete: () => toast.destroy(),
-        });
-      },
+    addProgressBar(this, {
+      x: PANEL_X + 18,
+      y: DETAIL_Y + 46,
+      w: PANEL_W - 36,
+      h: 9,
+      ratio: view.tier / MAX_WISDOM_TIER,
+      fillColor: view.isMaxed ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
+      trackColor: DUNGEON_UI.SOOT,
+      borderColor: DUNGEON_UI.EDGE,
+      animate: false,
     });
+    this.add.text(PANEL_X + 18, DETAIL_Y + 70, `현재 · ${view.currentEffect}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + 18, DETAIL_Y + 96, this.nextEffectLabel(view), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: view.nextEffect ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 96, this.costConsequenceLabel(view), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: view.canUpgrade ? DUNGEON_UI_CSS.BRASS : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
+    }).setOrigin(1, 0.5);
+
+    const receiptTone = this.receipt?.tone === 'warning'
+      ? DUNGEON_UI.EMBER
+      : this.receipt
+        ? DUNGEON_UI.JADE
+        : DUNGEON_UI.IRON;
+    const receiptG = this.add.graphics();
+    receiptG.fillStyle(DUNGEON_UI.SOOT, 0.84);
+    receiptG.fillRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
+    receiptG.lineStyle(1, receiptTone, this.receipt ? 0.92 : 0.62);
+    receiptG.strokeRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
+    this.add.text(PANEL_X + 26, DETAIL_Y + 139, this.receipt?.title ?? '의식 기록 대기', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: this.receipt?.tone === 'warning'
+        ? DUNGEON_UI_CSS.EMBER
+        : this.receipt
+          ? DUNGEON_UI_CSS.JADE
+          : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + 26, DETAIL_Y + 178, this.receipt?.detail ?? '승인 결과와 수정·등급 변동이 이곳에 유지됩니다', {
+      fontFamily: 'sans-serif', fontSize: '10px',
+      color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+      wordWrap: { width: PANEL_W - 52 }, lineSpacing: 3,
+    }).setOrigin(0, 0.5);
+  }
+
+  private drawCommand(): void {
+    const selected = this.selectedBranch();
+    if (!selected) return;
+    const view = getWisdomBranchView(this.gameState, selected);
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: COMMAND_Y,
+      w: PANEL_W,
+      h: 155,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: view.canUpgrade ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON,
+      shadowOpacity: 0.24,
+    });
+    this.add.text(PANEL_X + 16, COMMAND_Y + 22, this.commandStatus(view), {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: view.canUpgrade ? DUNGEON_UI_CSS.BRASS : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, COMMAND_Y + 22, `보유 수정 ${formatHudResourceValue(this.gameState.soulCrystals)}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+
+    const command = addPrimaryActionButton(this, {
+      x: PANEL_X + 14,
+      y: COMMAND_Y + 42,
+      w: PANEL_W - 28,
+      h: 48,
+      label: this.commandLabel(view),
+      fontSize: '13px',
+      enabled: view.canUpgrade,
+      once: true,
+      showArrow: false,
+      fillColor: DUNGEON_UI.BRASS,
+      hoverFillColor: DUNGEON_UI.BRASS_BRIGHT,
+      borderColor: 0x705126,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      textColor: '#171006',
+      onPress: () => this.showUpgradeConfirm(selected),
+    });
+    command.zone.setName('wisdom-upgrade');
+    this.bindOrderAction(command.zone);
+
+    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 116, '선택과 계보 전환은 저장되지 않습니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 137, '확인 후에만 영혼 수정과 영구 가호가 변경됩니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+  }
+
+  private showUpgradeConfirm(branch: BranchDef): void {
+    const view = getWisdomBranchView(this.gameState, branch);
+    if (!view.canUpgrade || view.cost === null || !view.nextEffect) {
+      this.actionLocked = false;
+      return;
+    }
+    const snapshot: WisdomUpgradeSnapshot = {
+      branchId: branch.id,
+      tier: view.tier,
+      cost: view.cost,
+      soulCrystals: this.gameState.soulCrystals,
+    };
+
+    const overlay = this.add.container(0, 0).setDepth(1000);
+    this.confirmOverlay = overlay;
+
+    const shieldG = this.add.graphics();
+    shieldG.fillStyle(0x000000, 0.76);
+    shieldG.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const shield = this.add.zone(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT).setOrigin(0)
+      .setInteractive();
+    shield.setName('wisdom-confirm-shield');
+    overlay.add([shieldG, shield]);
+
+    const boxX = 22;
+    const boxY = 236;
+    const boxW = CANVAS_WIDTH - boxX * 2;
+    const boxH = 368;
+    const frame = addFramedPanel(this, {
+      x: boxX,
+      y: boxY,
+      w: boxW,
+      h: boxH,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: DUNGEON_UI.BRASS,
+      accentColor: DUNGEON_UI.BRASS,
+      glowColor: DUNGEON_UI.BRASS,
+      glowOpacity: 0.06,
+      shadowOpacity: 0.42,
+    });
+    overlay.add([frame.shadow, frame.panel, frame.glow]);
+
+    const texts = [
+      this.add.text(CANVAS_WIDTH / 2, boxY + 32, `${branch.icon} ${branch.name} 의식 승인`, {
+        fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+      }).setOrigin(0.5),
+      this.add.text(CANVAS_WIDTH / 2, boxY + 65, `등급 ${view.tier} → ${view.tier + 1}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+      }).setOrigin(0.5),
+      this.add.text(boxX + 22, boxY + 104, `현재 · ${view.currentEffect}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+      }).setOrigin(0, 0.5),
+      this.add.text(boxX + 22, boxY + 137, `해방 · ${view.nextEffect}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
+      }).setOrigin(0, 0.5),
+      this.add.text(boxX + 22, boxY + 183, `소모 · 영혼 수정 ${view.cost}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+      }).setOrigin(0, 0.5),
+      this.add.text(boxX + boxW - 22, boxY + 183, `보유 ${formatHudResourceValue(this.gameState.soulCrystals)} → ${formatHudResourceValue(this.gameState.soulCrystals - view.cost)}`, {
+        fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+      }).setOrigin(1, 0.5),
+      this.add.text(CANVAS_WIDTH / 2, boxY + 220, '영구 성장 선택이며 현재 진행에 즉시 적용됩니다', {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5),
+    ];
+    overlay.add(texts);
+
+    const confirm = addPrimaryActionButton(this, {
+      x: boxX + 18,
+      y: boxY + 276,
+      w: 146,
+      h: 48,
+      label: '의식 승인',
+      fontSize: '12px',
+      once: true,
+      showArrow: false,
+      fillColor: DUNGEON_UI.BRASS,
+      hoverFillColor: DUNGEON_UI.BRASS_BRIGHT,
+      borderColor: 0x705126,
+      textColor: '#171006',
+      onPress: () => this.performUpgrade(branch, snapshot),
+    });
+    confirm.zone.setName('wisdom-confirm');
+    overlay.add([confirm.bg, confirm.text, confirm.zone]);
+
+    const cancel = addPrimaryActionButton(this, {
+      x: boxX + boxW - 164,
+      y: boxY + 276,
+      w: 146,
+      h: 48,
+      label: '취소',
+      fontSize: '12px',
+      once: true,
+      showArrow: false,
+      fillColor: DUNGEON_UI.STONE,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      textColor: DUNGEON_UI_CSS.TEXT,
+      onPress: () => this.closeConfirm(),
+    });
+    cancel.zone.setName('wisdom-cancel');
+    overlay.add([cancel.bg, cancel.text, cancel.zone]);
+
+    let decisionAdmitted = false;
+    for (const zone of [confirm.zone, cancel.zone]) {
+      const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+      if (!press) continue;
+      zone.removeAllListeners('pointerdown');
+      zone.on('pointerdown', (...args: unknown[]) => {
+        if (decisionAdmitted || this.confirmOverlay !== overlay) return;
+        decisionAdmitted = true;
+        confirm.zone.disableInteractive();
+        cancel.zone.disableInteractive();
+        press(...args);
+      });
+    }
+  }
+
+  private performUpgrade(branch: BranchDef, snapshot: WisdomUpgradeSnapshot): void {
+    this.lastTransactionAt = now();
+    const before = loadGameState();
+    this.confirmOverlay?.destroy(true);
+    this.confirmOverlay = undefined;
+
+    if (!isWisdomUpgradeSnapshotCurrent(before, snapshot)) {
+      this.gameState = before;
+      this.receipt = {
+        title: `${branch.name} · 저장 상태 변경 감지`,
+        detail: '승인한 등급·비용·잔액과 달라 의식을 실행하지 않았습니다',
+        tone: 'warning',
+      };
+      this.queueRender();
+      return;
+    }
+
+    const result = upgradeWisdomBranch(before, branch.id);
+
+    if (!result.ok) {
+      this.gameState = result.state;
+      this.receipt = {
+        title: `${branch.name} · ${this.failureTitle(result.reason)}`,
+        detail: '영혼 수정과 지혜 등급은 변경되지 않았습니다',
+        tone: 'warning',
+      };
+      this.queueRender();
+      return;
+    }
+
+    saveGameState(result.state);
+    this.gameState = result.state;
+    this.receipt = {
+      title: `${branch.name} · 등급 ${result.previousTier}→${result.nextTier} 해방`,
+      detail: `영혼 수정 ${formatHudResourceValue(before.soulCrystals)}→${formatHudResourceValue(result.state.soulCrystals)} · 정확히 ${result.cost} 소모`,
+      tone: 'success',
+    };
+    this.queueRender();
+  }
+
+  private closeConfirm(): void {
+    this.confirmOverlay?.destroy(true);
+    this.confirmOverlay = undefined;
+    this.actionLocked = false;
+  }
+
+  private selectLineage(lineageId: WisdomLineageId): void {
+    if (this.actionLocked || lineageId === this.activeLineage) return;
+    this.activeLineage = lineageId;
+    this.selectedBranchId = getWisdomLineageBranches(lineageId)[0]?.id ?? '';
+    this.queueRender(false);
+  }
+
+  private selectBranch(branchId: string): void {
+    if (this.actionLocked || branchId === this.selectedBranchId) return;
+    this.selectedBranchId = branchId;
+    this.queueRender(false);
+  }
+
+  private reconcileSelection(): void {
+    const branches = getWisdomLineageBranches(this.activeLineage);
+    if (!branches.some(branch => branch.id === this.selectedBranchId)) {
+      this.selectedBranchId = branches[0]?.id ?? '';
+    }
+  }
+
+  private selectedBranch(): BranchDef | undefined {
+    return getWisdomLineageBranches(this.activeLineage)
+      .find(branch => branch.id === this.selectedBranchId);
+  }
+
+  private bindOrderAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.actionLocked || this.renderQueued
+        || now() - this.lastTransactionAt < TRANSACTION_COOLDOWN_MS) return;
+      this.actionLocked = true;
+      press(...args);
+    });
+  }
+
+  private bindViewAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.actionLocked || this.confirmOverlay) return;
+      press(...args);
+    });
+  }
+
+  private queueRender(releaseLock = true): void {
+    if (this.renderQueued) return;
+    this.renderQueued = true;
+    this.events.once(Phaser.Scenes.Events.POST_UPDATE, () => {
+      this.renderQueued = false;
+      if (this.sys.isActive()) this.render();
+      if (releaseLock) this.actionLocked = false;
+    });
+  }
+
+  private returnToPreviousScene(): void {
+    if (this.actionLocked || this.confirmOverlay) return;
+    this.actionLocked = true;
+    this.scene.start((this.registry.get('previousScene') as string) ?? 'StageSelectScene');
+  }
+
+  private branchCostLabel(view: WisdomBranchView): string {
+    if (!view.validTier) return '진행 불가';
+    if (view.isMaxed) return '완성';
+    return `수정 ${view.cost ?? 0}`;
+  }
+
+  private branchStateLabel(view: WisdomBranchView): string {
+    if (!view.validTier) return '저장 등급 확인 필요';
+    if (view.isMaxed) return '최고 등급 해방';
+    if (view.canUpgrade) return `등급 ${view.tier} / ${MAX_WISDOM_TIER} · 해방 가능`;
+    return `등급 ${view.tier} / ${MAX_WISDOM_TIER} · 수정 부족`;
+  }
+
+  private nextEffectLabel(view: WisdomBranchView): string {
+    if (!view.validTier) return '다음 효과를 계산할 수 없습니다';
+    if (view.isMaxed) return '모든 잠재력이 해방되었습니다';
+    return `다음 · ${view.nextEffect}`;
+  }
+
+  private costConsequenceLabel(view: WisdomBranchView): string {
+    if (!view.validTier) return '거래 차단';
+    if (view.isMaxed) return '추가 비용 없음';
+    if (view.canUpgrade) return `비용 ${view.cost} · 이후 ${this.gameState.soulCrystals - (view.cost ?? 0)}`;
+    return `비용 ${view.cost} · ${view.deficit} 부족`;
+  }
+
+  private commandStatus(view: WisdomBranchView): string {
+    if (!view.validTier) return '저장된 등급 값이 올바르지 않아 거래를 차단했습니다';
+    if (view.isMaxed) return '이 가호는 최고 등급까지 완성되었습니다';
+    if (!view.canUpgrade) return `영혼 수정 ${view.deficit}개를 더 모아야 합니다`;
+    return `${view.cost}개를 바치면 다음 영구 효과가 즉시 적용됩니다`;
+  }
+
+  private commandLabel(view: WisdomBranchView): string {
+    if (!view.validTier) return '저장 데이터 확인 필요';
+    if (view.isMaxed) return '최고 등급 해방 완료';
+    if (!view.canUpgrade) return `영혼 수정 ${view.deficit} 부족`;
+    return `등급 ${view.tier + 1} 의식 승인`;
+  }
+
+  private failureTitle(reason: WisdomUpgradeFailureReason): string {
+    if (reason === 'max_tier') return '이미 최고 등급';
+    if (reason === 'insufficient_soul_crystals') return '영혼 수정 부족';
+    return '알 수 없는 가호';
   }
 }

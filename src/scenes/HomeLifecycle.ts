@@ -9,7 +9,6 @@
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { getUnlockedSlots } from '../data/wisdom';
 import {
   applyBattleReturnSettlement,
@@ -84,14 +83,14 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
   if (!scene.scene.isActive()) return;
   const cx = CANVAS_WIDTH / 2;
   const matParts = Object.entries(reward.materials)
-    .map(([id, q]) => `${MATERIAL_DEFS[id]?.emoji ?? '❔'}${q}`);
-  const w = 300, h = matParts.length ? 256 : 224;
+    .map(([id, q]) => `${MATERIAL_DEFS[id]?.name ?? id} ×${q}`);
+  const w = 318, h = matParts.length ? 256 : 230;
   const px = cx - w / 2;
   const py = CANVAS_HEIGHT / 2 - h / 2;
 
   // Tap-blocking scrim.
   const scrim = scene.add.graphics().setDepth(899);
-  scrim.fillStyle(CASUAL.SHADOW, 0.62);
+  scrim.fillStyle(0x000000, 0.76);
   scrim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   scrim.setInteractive(
     new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT),
@@ -101,47 +100,56 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
   const overlay = scene.add.container(0, 0).setDepth(900);
 
   const frame = addFramedPanel(scene, {
-    x: px, y: py, w, h, radius: 18,
-    fillColor: CASUAL.PANEL, borderColor: CASUAL.GOLD, borderAlpha: 1, borderWidth: 3,
-    accentColor: CASUAL.GOLD, accentAlpha: 0.5, glowColor: CASUAL.GOLD, glowOpacity: 0.1,
-    shadowOpacity: 0.5, shadowOffsetY: 5,
+    x: px, y: py, w, h, radius: 6,
+    fillColor: 0x070908, borderColor: 0xa98245, borderAlpha: 0.9, borderWidth: 2,
+    accentColor: 0x4f9b78, accentAlpha: 0.7, glowColor: 0x4f9b78, glowOpacity: 0.08,
+    shadowOpacity: 0.62, shadowOffsetY: 5,
   });
   overlay.add([frame.shadow, frame.panel, frame.glow]);
 
-  overlay.add(scene.add.text(cx, py + 28, '🏰 던전 방치 수익', {
-    fontFamily: 'Georgia, serif', fontSize: '18px', fontStyle: 'bold',
-    color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 3,
+  const seal = scene.add.graphics();
+  seal.fillStyle(0xa98245, 0.16);
+  seal.fillCircle(cx, py + 27, 15);
+  seal.lineStyle(1.5, 0xa98245, 0.86);
+  seal.strokeCircle(cx, py + 27, 10);
+  seal.lineBetween(cx - 5, py + 27, cx + 5, py + 27);
+  seal.lineBetween(cx, py + 22, cx, py + 32);
+  overlay.add(seal);
+
+  overlay.add(scene.add.text(cx, py + 52, '방치 수익 회수', {
+    fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
+    color: '#e7d6b5',
   }).setOrigin(0.5));
 
   const dur = formatIdleDuration(scene, reward.creditedMs);
-  overlay.add(scene.add.text(cx, py + 60, `던전을 비운 ${dur} 동안${reward.capped ? ' (최대 적립)' : ''}`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
+  overlay.add(scene.add.text(cx, py + 76, `던전을 비운 ${dur} 동안${reward.capped ? ' · 최대 적립' : ''}`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#a89c86',
   }).setOrigin(0.5));
 
-  let cy = py + 96;
+  let cy = py + 108;
   if (reward.gold > 0) {
-    overlay.add(scene.add.text(cx, cy, `💰 +${reward.gold.toLocaleString('ko-KR')}`, {
-      fontFamily: 'sans-serif', fontSize: '30px', fontStyle: 'bold',
-      color: CASUAL_CSS.GOLD, stroke: '#000000', strokeThickness: 4,
+    overlay.add(scene.add.text(cx, cy, `+${reward.gold.toLocaleString('ko-KR')} 황금`, {
+      fontFamily: 'sans-serif', fontSize: '25px', fontStyle: 'bold',
+      color: '#d8b869',
     }).setOrigin(0.5));
     cy += 34;
   }
   if (matParts.length) {
-    overlay.add(scene.add.text(cx, cy, `🏭 ${matParts.join('  ')}`, {
-      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#000000', strokeThickness: 2,
+    overlay.add(scene.add.text(cx, cy, matParts.join(' · '), {
+      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+      color: '#75b998', wordWrap: { width: w - 36 }, align: 'center',
     }).setOrigin(0.5));
     cy += 26;
   }
 
-  overlay.add(scene.add.text(cx, cy + 6, `던전 운영 ${Math.round(reward.ratePerMin)} 골드/분 · 생산 시설 + 최대 ${IDLE_CAP_HOURS}시간`, {
-    fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+  overlay.add(scene.add.text(cx, cy + 5, `운영 ${Math.round(reward.ratePerMin)} 황금/분 · 최대 ${IDLE_CAP_HOURS}시간 적립`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#8f8779',
   }).setOrigin(0.5));
 
   const btnW = 180, btnH = 44;
   const claim = addPrimaryActionButton(scene, {
     x: cx - btnW / 2, y: py + h - 58, w: btnW, h: btnH, label: '수령', fontSize: '17px',
-    fillColor: CASUAL.GOLD, hoverFillColor: 0xffd66a, borderColor: CASUAL.GOLD_DK,
+    fillColor: 0x16231d, hoverFillColor: 0x234133, borderColor: 0x66b58c,
     once: true,
     onPress: () => {
       const { state } = collectIdleIncome(scene.gs, Date.now());
@@ -260,7 +268,7 @@ export function showHomeRoomFeedbackBanner(
   }).setOrigin(0.5));
   c.add(scene.add.text(x + w - 51, y + h / 2 + 13, '방 반영', {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
+    fontSize: '10px',
     color: '#82cdbd',
     fontStyle: 'bold',
   }).setOrigin(0.5));

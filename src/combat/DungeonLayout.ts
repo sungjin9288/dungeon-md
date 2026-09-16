@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { Torch } from '../objects/Torch';
-import { COLORS, CSS, CASUAL } from '../constants/colors';
+import { COLORS, CSS, CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { addSceneAtmosphere } from '../ui/SceneAtmosphere';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
@@ -20,8 +20,7 @@ import { drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 import { getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
-import { MONSTER_DEFS, resolveMonsterDef } from '../data/monsters';
-import { HYBRID_DEFS } from '../data/fusion';
+import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile } from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
 
 export const WAVE_BUTTON_W = 270;
@@ -71,10 +70,12 @@ function getDefinedIds(ids: readonly (string | undefined | null)[] | undefined):
   return (ids ?? []).filter((id): id is string => Boolean(id));
 }
 
+function getDefinedMonsterIds(ids: readonly (string | undefined | null)[] | undefined): string[] {
+  return getDefinedIds(ids).filter(id => resolveOwnedMonsterProfile(id) !== null);
+}
+
 function getMonsterEmoji(monsterId: string): string {
-  return MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS]?.emoji
-    ?? HYBRID_DEFS[monsterId]?.emoji
-    ?? '👾';
+  return resolveOwnedMonsterProfile(monsterId)?.emoji ?? '👾';
 }
 
 export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): DungeonSlotDeploymentSummary {
@@ -107,7 +108,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
       if (typeDef) room.setRoomTypeBadge(typeDef.icon);
 
-      const monsterIds = getDefinedIds(slot.monsterIds);
+      const monsterIds = getDefinedMonsterIds(slot.monsterIds);
       const trapIds = getDefinedIds(slot.trapIds);
       const capacity = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
       const equippedCount = monsterIds.filter(id => equipmentMap.has(id)).length;
@@ -127,15 +128,9 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
 
       if (monsterIds.length > 0) {
         const primaryMonsterId = monsterIds[0];
-        data.monsterSlot = primaryMonsterId as typeof data.monsterSlot;
-        data.monsterSlots = monsterIds as typeof data.monsterSlots;
-        const primaryDef = resolveMonsterDef(primaryMonsterId);
-        if (primaryDef && primaryDef.attackCooldown > 0) {
-          data.attackCooldown = primaryDef.attackCooldown;
-        }
-        if (slot.roomType === 'magic' && data.attackCooldown > 0) {
-          data.attackCooldown = Math.round(data.attackCooldown * 0.8);
-        }
+        data.monsterSlot = primaryMonsterId;
+        data.monsterSlots = monsterIds;
+        data.attackCooldown = resolveMonsterAttackCooldown(primaryMonsterId, data.type);
         const hpBonus = equipmentMap.get(primaryMonsterId)?.roomHpBonus ?? 0;
         if (hpBonus > 0) room.addBonusHp(hpBonus);
         room.setMonsterSprite(primaryMonsterId, getMonsterEmoji(primaryMonsterId));
@@ -203,7 +198,7 @@ export function drawDungeonBackground(
   g.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
   g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // Subtle floor-tile grid — soft warm brown on cream, very low alpha.
+  // Subtle floor-tile grid — warm stone seams at very low alpha.
   const ts = 40;
   for (let x = 0; x < CANVAS_WIDTH; x += ts)
     for (let y = TOP_BAR_HEIGHT; y < CANVAS_HEIGHT; y += ts) {
@@ -302,7 +297,7 @@ function drawDungeonDefenseFrame(
     }
   }
 
-  // Entry gate — bright red nub on cream.
+  // Entry gate — ember signal against the carved stone route.
   const gateY = y + effectiveCellSize / 2;
   g.fillStyle(CASUAL.PANEL, 0.95);
   g.fillRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
@@ -311,7 +306,7 @@ function drawDungeonDefenseFrame(
   g.fillStyle(CASUAL.RED, 0.9);
   g.fillTriangle(x + gridW + 12, gateY, x + gridW + 2, gateY - 9, x + gridW + 2, gateY + 9);
 
-  // Core "heart" — gold on a cream circle with brown ring.
+  // Core "heart" — brass on a dark seal with an iron ring.
   const heartX = x - 14;
   const heartY = y + gridH - effectiveCellSize / 2;
   g.fillStyle(CASUAL.PANEL, 1);
@@ -324,7 +319,7 @@ function drawDungeonDefenseFrame(
   g.fillTriangle(heartX, heartY - 8, heartX - 8, heartY, heartX, heartY + 8);
   g.fillTriangle(heartX, heartY - 8, heartX + 8, heartY, heartX, heartY + 8);
 
-  // Corner studs — cream circles, brown ring, gold center.
+  // Corner studs — iron rings with brass centers.
   [[x - 14, y - 16], [x + gridW + 14, y - 16], [x - 14, y + gridH + 16], [x + gridW + 14, y + gridH + 16]].forEach(([sx, sy]) => {
     g.fillStyle(CASUAL.PANEL, 1);
     g.fillCircle(sx, sy, 8);
@@ -446,7 +441,7 @@ function drawRouteEndpoint(
 
   const text = scene.add.text(0, 20, label, {
     fontFamily: 'Georgia, serif',
-    fontSize: '9px',
+    fontSize: '10px',
     color: CSS.PARCHMENT,
     fontStyle: 'bold',
     stroke: '#1a0f00',
@@ -566,54 +561,37 @@ export function paintWaveButton(
   g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, hover: boolean,
 ): void {
   g.clear();
-  // Warm ember CTA — torch-lit, fits the dark dungeon while still popping.
-  const fillTop = hover ? 0xe8902c : 0xc9781f;
-  const fillBottom = hover ? 0x854019 : 0x6e3410;
-  const border = hover ? COLORS.TORCH_AMBER : 0xf0b85a;
+  const fill = hover ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE;
+  const border = hover ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS;
 
-  g.fillStyle(0x020711, 0.62);
-  g.fillRoundedRect(x - 6, y + 7, w + 12, h + 8, 15);
-  g.fillStyle(0x1f1305, 0.82);
-  g.fillRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
-  g.lineStyle(1, 0x8a5a2a, hover ? 0.42 : 0.28);
-  g.strokeRoundedRect(x - 3, y - 3, w + 6, h + 6, 13);
+  g.fillStyle(DUNGEON_UI.VOID, 0.72);
+  g.fillRoundedRect(x + 3, y + 5, w, h, 9);
+  g.fillStyle(fill, 1);
+  g.fillRoundedRect(x, y, w, h, 8);
+  g.fillStyle(DUNGEON_UI.EMBER, hover ? 1 : 0.88);
+  g.fillRect(x, y + 8, 4, h - 16);
+  g.lineStyle(1.5, border, 0.98);
+  g.strokeRoundedRect(x, y, w, h, 8);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.45);
+  g.lineBetween(x + 60, y + 10, x + w - 60, y + 10);
+  g.lineBetween(x + 60, y + h - 10, x + w - 60, y + h - 10);
 
-  g.fillGradientStyle(fillTop, fillTop, fillBottom, fillBottom, 1, 1, 1, 1);
-  g.fillRoundedRect(x, y, w, h, 11);
-  g.lineStyle(2, border, hover ? 0.96 : 0.76);
-  g.strokeRoundedRect(x, y, w, h, 11);
-
-  g.fillStyle(0xffffff, hover ? 0.16 : 0.1);
-  g.fillRoundedRect(x + 8, y + 8, w - 16, h * 0.34, 9);
-  g.fillStyle(COLORS.TORCH_GOLD, hover ? 0.34 : 0.22);
-  g.fillRoundedRect(x + 16, y + 7, w - 32, 4, 2);
-  g.fillStyle(0xffffff, hover ? 0.18 : 0.1);
-  g.fillRoundedRect(x + 64, y + 15, w - 128, 3, 2);
-  g.fillStyle(0x140c03, 0.32);
-  g.fillRoundedRect(x + 68, y + h - 15, w - 136, 3, 2);
-
-  g.fillStyle(0x140c03, 0.5);
-  g.fillRoundedRect(x + 14, y + 13, 36, h - 26, 9);
-  g.lineStyle(1, 0xffffff, 0.18);
-  g.strokeRoundedRect(x + 14, y + 13, 36, h - 26, 9);
-  g.fillStyle(COLORS.TORCH_GOLD, 0.86);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.92);
+  g.fillRoundedRect(x + 14, y + 13, 36, h - 26, 6);
+  g.lineStyle(1, DUNGEON_UI.IRON, 1);
+  g.strokeRoundedRect(x + 14, y + 13, 36, h - 26, 6);
+  g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.9);
   g.fillCircle(x + 32, y + h / 2, 7);
-  g.fillStyle(0x140c03, 0.5);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.9);
   g.fillCircle(x + 32, y + h / 2, 3);
 
   const arrowX = x + w - 31;
-  g.fillStyle(0x140c03, 0.38);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.92);
   g.fillCircle(arrowX, y + h / 2, 17);
-  g.lineStyle(1.3, 0xffffff, 0.22);
+  g.lineStyle(1.3, border, 0.7);
   g.strokeCircle(arrowX, y + h / 2, 17);
-  g.fillStyle(0xffffff, hover ? 0.88 : 0.68);
+  g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, hover ? 1 : 0.82);
   g.fillTriangle(arrowX - 4, y + h / 2 - 7, arrowX - 4, y + h / 2 + 7, arrowX + 6, y + h / 2);
-  g.fillStyle(COLORS.TORCH_GOLD, hover ? 0.74 : 0.5);
-  g.fillRoundedRect(x + w - 82, y + 17, 18, 4, 2);
-  g.fillRoundedRect(x + w - 82, y + h - 21, 18, 4, 2);
-
-  g.lineStyle(1, 0x140c03, 0.24);
-  g.lineBetween(x + 60, y + h - 10, x + w - 60, y + h - 10);
 }
 
 /**
@@ -634,13 +612,13 @@ export function buildWaveStartButton(
   const bg = scene.add.graphics().setDepth(60);
   paintWaveButton(bg, bx, by, bw, bh, false);
 
-  const label = scene.add.text(CANVAS_WIDTH / 2, by + bh / 2 - 1, '🛡  방어 시작', {
+  const label = scene.add.text(CANVAS_WIDTH / 2, by + bh / 2 - 1, '침입 방어 개시', {
     fontFamily: 'Georgia, serif',
     fontSize: '17px',
     fontStyle: 'bold',
-    color: '#fff8d8',
-    stroke: '#2a1404',
-    strokeThickness: 3,
+    color: DUNGEON_UI_CSS.PARCHMENT,
+    stroke: '#030504',
+    strokeThickness: 2,
   }).setOrigin(0.5).setDepth(61);
 
   const zone = scene.add.zone(CANVAS_WIDTH / 2, by + bh / 2, bw, bh)
@@ -649,11 +627,11 @@ export function buildWaveStartButton(
   zone.on('pointerover', () => {
     if (callbacks.isLocked()) return;
     paintWaveButton(bg, bx, by, bw, bh, true);
-    label.setColor(CSS.TORCH_AMBER);
+    label.setColor(DUNGEON_UI_CSS.BRASS);
   });
   zone.on('pointerout', () => {
     paintWaveButton(bg, bx, by, bw, bh, false);
-    label.setColor(CSS.PARCHMENT);
+    label.setColor(DUNGEON_UI_CSS.PARCHMENT);
   });
   zone.on('pointerdown', () => {
     if (!callbacks.isLocked()) callbacks.onPress();

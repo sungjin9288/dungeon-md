@@ -8,8 +8,8 @@
  */
 
 import Phaser from 'phaser';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { MONSTER_DEFS, type MonsterDef } from '../data/monsters';
+import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import { resolveOwnedMonsterProfile, type MonsterDef } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import {
   
@@ -44,7 +44,7 @@ export function formatCompactTrapCost(cost: number, unlockLv: number, compact: b
   return compact ? `${cost}g Lv${unlockLv}` : `${cost}g · Lv.${unlockLv}`;
 }
 
-export function getMonsterRarityMeta(monster: MonsterDef): typeof MONSTER_RARITY_META[keyof typeof MONSTER_RARITY_META] {
+export function getMonsterRarityMeta(monster: Pick<MonsterDef, 'rarityTier'>): typeof MONSTER_RARITY_META[keyof typeof MONSTER_RARITY_META] {
   return MONSTER_RARITY_META[monster.rarityTier ?? 'C'] ?? MONSTER_RARITY_META.C;
 }
 
@@ -69,19 +69,19 @@ export function drawCollectorCardSkin(
   g.fillCircle(x + 12, y + h - 13, 1.2);
   g.fillStyle(rarity.color, owned ? 0.3 : 0.14);
   g.fillCircle(x + 28, y + 35, 20);
-  g.fillStyle(0xffffff, 0.9);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.96);
   g.fillRoundedRect(x + w - 52, y + 9, 43, 13, 5);
   g.lineStyle(1.5, rarity.color, owned ? 0.85 : 0.45);
   g.strokeRoundedRect(x + w - 52, y + 9, 43, 13, 5);
   c.add(g);
   c.add(scene.add.text(x + w - 30.5, y + 15.5, rarity.label, {
     fontFamily: 'sans-serif',
-    fontSize: '6px',
+    fontSize: '10px',
     color: rarity.css,
     fontStyle: 'bold' }).setOrigin(0.5));
   c.add(scene.add.text(x + w - 10, y + h - 14, rarity.stars, {
     fontFamily: 'sans-serif',
-    fontSize: '7px',
+    fontSize: '10px',
     color: rarity.css,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 }
@@ -97,40 +97,38 @@ export function drawCompactLoadoutSlotFrame(
   filled: boolean,
   slotLabel: string,
 ): void {
-  const cardFill = filled ? CASUAL.PANEL : CASUAL.PANEL_SOFT;
-  const cardBorder = filled ? accent : CASUAL.EDGE_SOFT;
+  const cardFill = filled ? DUNGEON_UI.STONE : DUNGEON_UI.SOOT;
+  const cardBorder = filled ? accent : DUNGEON_UI.EDGE;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.SHADOW, 0.22);
-  g.fillRoundedRect(x + 2, y + 3, w, h, 8);
+  g.fillStyle(DUNGEON_UI.VOID, 0.4);
+  g.fillRoundedRect(x + 2, y + 3, w, h, 4);
   g.fillStyle(cardFill, 1);
-  g.fillRoundedRect(x, y, w, h, 8);
-  g.fillStyle(CASUAL.PANEL_SOFT, filled ? 0.5 : 0.7);
-  g.fillRoundedRect(x + 4, y + 4, w - 8, h - 8, 7);
-  g.fillStyle(0xffffff, 0.7);
-  g.fillRoundedRect(x + 9, y + 29, 38, h - 39, 8);
-  g.lineStyle(filled ? 3 : 2, cardBorder, filled ? 1 : 0.7);
-  g.strokeRoundedRect(x, y, w, h, 8);
-  g.fillStyle(0xffffff, 0.12);
-  g.fillRoundedRect(x + 5, y + 5, w - 10, 4, 3);
+  g.fillRoundedRect(x, y, w, h, 4);
+  g.fillStyle(DUNGEON_UI.VOID, filled ? 0.46 : 0.62);
+  g.fillRoundedRect(x + 4, y + 4, w - 8, h - 8, 3);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.92);
+  g.fillRoundedRect(x + 9, y + 29, 38, h - 39, 4);
+  g.lineStyle(filled ? 2 : 1, cardBorder, filled ? 0.92 : 0.58);
+  g.strokeRoundedRect(x, y, w, h, 4);
   g.fillStyle(accent, filled ? 0.9 : 0.3);
   g.fillRoundedRect(x + 5, y + 5, w - 10, 4, 3);
-  g.fillStyle(0xffffff, 0.85);
-  g.fillRoundedRect(x + 7, y + 10, 26, 16, 5);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.96);
+  g.fillRoundedRect(x + 7, y + 10, 26, 16, 3);
   g.lineStyle(1.5, cardBorder, filled ? 0.85 : 0.45);
-  g.strokeRoundedRect(x + 7, y + 10, 26, 16, 5);
+  g.strokeRoundedRect(x + 7, y + 10, 26, 16, 3);
   g.fillStyle(accent, filled ? 0.9 : 0.3);
   g.fillRoundedRect(x + 2, y + 12, 3, h - 24, 2);
   g.fillStyle(accent, filled ? 0.7 : 0.3);
   g.fillCircle(x + w - 9, y + 13, 2.3);
   g.fillCircle(x + w - 9, y + h - 13, 2.3);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, filled ? 0.4 : 0.25);
+  g.lineStyle(1, DUNGEON_UI.EDGE, filled ? 0.4 : 0.25);
   g.lineBetween(x + 45, y + 18, x + w - 12, y + 18);
   g.lineBetween(x + 45, y + h - 30, x + w - 12, y + h - 30);
   c.add(g);
   c.add(scene.add.text(x + 20, y + 18, slotLabel, {
     fontFamily: 'sans-serif',
-    fontSize: '9px',
-    color: filled ? CASUAL_CSS.INK : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: filled ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -146,14 +144,12 @@ export function addCompactAttributeChip(
   const chip = scene.add.graphics();
   chip.fillStyle(accent, 1);
   chip.fillRoundedRect(x, y, chipW, 13, 5);
-  chip.fillStyle(0xffffff, 0.3);
-  chip.fillRoundedRect(x + 2, y + 2, chipW - 4, 3, 2);
-  chip.lineStyle(1.5, CASUAL.EDGE, 0.45);
+  chip.lineStyle(1, DUNGEON_UI.IRON, 0.7);
   chip.strokeRoundedRect(x, y, chipW, 13, 5);
   c.add(chip);
   c.add(scene.add.text(x + chipW / 2 + 2, y + 6.5, label, {
     fontFamily: 'sans-serif',
-    fontSize: '8px',
+    fontSize: '10px',
     color: '#ffffff',
     fontStyle: 'bold' }).setOrigin(0.5));
 }
@@ -168,24 +164,15 @@ export function addCompactEquipmentSocket(
 ): void {
   const socket = scene.add.graphics();
   const filled = Boolean(equipment);
-  socket.fillStyle(filled ? CASUAL.GOLD : CASUAL.PANEL_SOFT, 1);
+  socket.fillStyle(filled ? DUNGEON_UI.BRASS : DUNGEON_UI.SOOT, 1);
   socket.fillCircle(x, y, 8);
   socket.lineStyle(1.5, filled ? CASUAL.GOLD_DK : accent, filled ? 0.9 : 0.6);
   socket.strokeCircle(x, y, 8);
   socket.fillStyle(filled ? 0xffffff : accent, filled ? 0.3 : 0.16);
   socket.fillCircle(x, y, 5);
+  socket.lineStyle(1, filled ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE, 0.9);
+  socket.strokeTriangle(x, y - 4, x + 4, y + 3, x - 4, y + 3);
   c.add(socket);
-  if (equipment) {
-    c.add(scene.add.text(x, y, equipment.icon, {
-      fontFamily: 'sans-serif',
-      fontSize: '10px' }).setOrigin(0.5));
-    return;
-  }
-  c.add(scene.add.text(x, y, '◇', {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
-    fontStyle: 'bold' }).setOrigin(0.5));
 }
 
 export function addCompactEmptySlotGlyph(
@@ -197,10 +184,10 @@ export function addCompactEmptySlotGlyph(
   icon: string,
 ): void {
   const glyph = scene.add.graphics();
-  glyph.fillStyle(0xffffff, 0.85);
-  glyph.fillRoundedRect(x - 17, y - 17, 34, 34, 8);
+  glyph.fillStyle(DUNGEON_UI.STONE_RAISED, 0.94);
+  glyph.fillRoundedRect(x - 17, y - 17, 34, 34, 4);
   glyph.lineStyle(2, accent, 0.55);
-  glyph.strokeRoundedRect(x - 17, y - 17, 34, 34, 8);
+  glyph.strokeRoundedRect(x - 17, y - 17, 34, 34, 4);
   glyph.fillStyle(accent, 0.14);
   glyph.fillRoundedRect(x - 11, y - 11, 22, 22, 6);
   glyph.lineStyle(1.5, accent, 0.4);
@@ -212,7 +199,7 @@ export function addCompactEmptySlotGlyph(
   c.add(scene.add.text(x, y, icon, {
     fontFamily: 'sans-serif',
     fontSize: '17px',
-    color: CASUAL_CSS.INK_SOFT }).setOrigin(0.5).setAlpha(0.8));
+    color: DUNGEON_UI_CSS.MUTED }).setOrigin(0.5).setAlpha(0.8));
 }
 
 export function drawCompactGrowthMeter(
@@ -227,9 +214,9 @@ export function drawCompactGrowthMeter(
   const ready = xp >= 100;
   const progress = ready ? 1 : Phaser.Math.Clamp((xp % 100) / 100, 0, 1);
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillStyle(DUNGEON_UI.SOOT, 1);
   g.fillRoundedRect(x, y, w, 5, 3);
-  g.lineStyle(1, CASUAL.EDGE_SOFT, 0.5);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.5);
   g.strokeRoundedRect(x, y, w, 5, 3);
   g.fillStyle(ready ? CASUAL.GOLD : accent, 1);
   g.fillRoundedRect(x + 1, y + 1, Math.max(4, (w - 2) * progress), 3, 2);
@@ -238,8 +225,8 @@ export function drawCompactGrowthMeter(
   c.add(g);
   c.add(scene.add.text(x + w, y - 5, ready ? 'UP' : `${Math.round(progress * 100)}%`, {
     fontFamily: 'sans-serif',
-    fontSize: '6px',
-    color: ready ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
+    fontSize: '10px',
+    color: ready ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(1, 0.5));
 }
 
@@ -253,7 +240,7 @@ export function drawCompactTrapEffectTag(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillStyle(DUNGEON_UI.SOOT, 1);
   g.fillRoundedRect(x, y - 7, w, 16, 5);
   g.lineStyle(1.5, accent, 0.5);
   g.strokeRoundedRect(x, y - 7, w, 16, 5);
@@ -263,7 +250,7 @@ export function drawCompactTrapEffectTag(
   c.add(scene.add.text(x + 10, y + 1, fitSlotLabel(getCompactTrapEffectLabel(desc), w < 58 ? 4 : 5), {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 }
 
@@ -276,9 +263,9 @@ export function drawCompactEmptyTrapPlanTag(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.85);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.92);
   g.fillRoundedRect(x, y - 7, w, 16, 5);
-  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.5);
   g.strokeRoundedRect(x, y - 7, w, 16, 5);
   g.fillStyle(accent, 0.4);
   for (let sx = x + 4; sx < x + w - 5; sx += 8) {
@@ -288,7 +275,7 @@ export function drawCompactEmptyTrapPlanTag(
   c.add(scene.add.text(x + 9, y + 1, w < 58 ? '차단' : '경로 차단', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 }
 
@@ -302,7 +289,7 @@ export function drawCompactMonsterRoleTag(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 1);
+  g.fillStyle(DUNGEON_UI.SOOT, 1);
   g.fillRoundedRect(x, y - 7, w, 16, 5);
   g.lineStyle(1.5, accent, 0.5);
   g.strokeRoundedRect(x, y - 7, w, 16, 5);
@@ -312,7 +299,7 @@ export function drawCompactMonsterRoleTag(
   c.add(scene.add.text(x + 13, y + 1, fitSlotLabel(label, w < 58 ? 4 : 5), {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 }
 
@@ -330,9 +317,9 @@ export function drawCompactEmptyMonsterPlanTag(
   accent: number,
 ): void {
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL_SOFT, 0.85);
+  g.fillStyle(DUNGEON_UI.SOOT, 0.92);
   g.fillRoundedRect(x, y - 7, w, 16, 5);
-  g.lineStyle(1.5, CASUAL.EDGE_SOFT, 0.5);
+  g.lineStyle(1, DUNGEON_UI.EDGE, 0.5);
   g.strokeRoundedRect(x, y - 7, w, 16, 5);
   g.fillStyle(accent, 0.4);
   g.fillCircle(x + 7, y + 1, 3);
@@ -342,7 +329,7 @@ export function drawCompactEmptyMonsterPlanTag(
   c.add(scene.add.text(x + 36, y + 1, w < 58 ? '대기' : '대기 라인', {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: CASUAL_CSS.INK_SOFT,
+    color: DUNGEON_UI_CSS.MUTED,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 }
 
@@ -359,11 +346,9 @@ export function drawCompactRoomTypeStateTag(
   const tagW = Math.max(32, Math.min(42, 20 + label.length * 10));
   const highlight = isActive || isRecommended;
   const g = scene.add.graphics();
-  g.fillStyle(highlight ? accent : CASUAL.PANEL_SOFT, 1);
+  g.fillStyle(highlight ? accent : DUNGEON_UI.SOOT, 1);
   g.fillRoundedRect(x, y, tagW, 16, 6);
-  g.fillStyle(0xffffff, highlight ? 0.3 : 0.4);
-  g.fillRoundedRect(x + 2, y + 2, tagW - 4, 3, 2);
-  g.lineStyle(1.5, highlight ? accent : CASUAL.EDGE_SOFT, highlight ? 0.6 : 0.6);
+  g.lineStyle(1, highlight ? accent : DUNGEON_UI.EDGE, 0.7);
   g.strokeRoundedRect(x, y, tagW, 16, 6);
   if (!highlight) {
     g.fillStyle(accent, 0.7);
@@ -373,7 +358,7 @@ export function drawCompactRoomTypeStateTag(
   c.add(scene.add.text(x + tagW / 2, y + 8, label, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
-    color: highlight ? '#ffffff' : CASUAL_CSS.INK,
+    color: highlight ? '#ffffff' : DUNGEON_UI_CSS.TEXT,
     fontStyle: 'bold' }).setOrigin(0.5));
 }
 
@@ -390,20 +375,18 @@ export function addRecommendedMonsterSlotPreview(
   onPick: () => void,
 ): void {
   const compact = w < 132;
-  const recommendedDef = MONSTER_DEFS[recommendation.monsterTypeId as keyof typeof MONSTER_DEFS];
+  const recommendedDef = resolveOwnedMonsterProfile(recommendation.monsterId);
   const rarity = recommendedDef ? getMonsterRarityMeta(recommendedDef) : MONSTER_RARITY_META.C;
   const badgeW = compact ? 35 : 39;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 7);
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
   g.fillStyle(rarity.color, 0.16);
-  g.fillRoundedRect(x + 9, y + 29, 38, h - 39, 8);
+  g.fillRoundedRect(x + 9, y + 29, 38, h - 39, 4);
   g.lineStyle(3, rarity.color, 1);
-  g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 7);
+  g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
   g.fillStyle(rarity.color, 1);
   g.fillRoundedRect(x + w - badgeW - 8, y + 9, badgeW, 16, 5);
-  g.fillStyle(0xffffff, 0.14);
-  g.fillRoundedRect(x + 7, y + 7, w - 14, 4, 2);
   c.add(g);
 
   c.add(scene.add.text(x + w - badgeW / 2 - 8, y + 17, '추천', {
@@ -419,10 +402,10 @@ export function addRecommendedMonsterSlotPreview(
     equippedSkins: {} });
   c.add(scene.add.text(x + 8, y + h - 12, rarity.stars, {
     fontFamily: 'sans-serif',
-    fontSize: '7px',
+    fontSize: '10px',
     color: rarity.css,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
-  const recommendedType = MONSTER_DEFS[recommendation.monsterTypeId as keyof typeof MONSTER_DEFS]?.type;
+  const recommendedType = recommendedDef?.type;
   if (recommendedType) {
     addCompactAttributeChip(
       scene,
@@ -436,7 +419,7 @@ export function addRecommendedMonsterSlotPreview(
   c.add(scene.add.text(x + 52, y + 36, fitSlotLabel(recommendation.name, compact ? 5 : 7), {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   drawCompactMonsterRoleTag(
     scene,
@@ -454,8 +437,8 @@ export function addRecommendedMonsterSlotPreview(
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 
   const btnW = (w - 22) / 2;
-  addCompactLoadoutButton(scene, c, x + 7, y + h - 27, btnW, compact ? '추천' : '추천 배치', recommendation.accent, onApply, true);
-  addCompactLoadoutButton(scene, c, x + 15 + btnW, y + h - 27, btnW, compact ? '선택' : '직접 선택', accent, onPick);
+  addCompactLoadoutButton(scene, c, x + 7, y + h - 47, btnW, compact ? '추천' : '추천 배치', recommendation.accent, onApply, true);
+  addCompactLoadoutButton(scene, c, x + 15 + btnW, y + h - 47, btnW, compact ? '선택' : '직접 선택', accent, onPick);
 }
 
 export function addRecommendedTrapSlotPreview(
@@ -476,22 +459,20 @@ export function addRecommendedTrapSlotPreview(
   const unlockLv = trapDef?.unlockLv ?? 0;
   const badgeW = compact ? 35 : 39;
   const g = scene.add.graphics();
-  g.fillStyle(CASUAL.PANEL, 1);
-  g.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 7);
+  g.fillStyle(DUNGEON_UI.STONE, 1);
+  g.fillRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
   g.fillStyle(accent, 0.14);
-  g.fillRoundedRect(x + 9, y + 27, 38, h - 37, 8);
+  g.fillRoundedRect(x + 9, y + 27, 38, h - 37, 4);
   g.lineStyle(3, accent, 1);
-  g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 7);
+  g.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
   g.fillStyle(accent, 1);
   g.fillRoundedRect(x + w - badgeW - 8, y + 9, badgeW, 16, 5);
-  g.fillStyle(0xffffff, 0.85);
+  g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.96);
   g.fillCircle(x + 27, y + 33, 18);
   g.lineStyle(2, accent, 0.85);
   g.strokeCircle(x + 27, y + 33, 18);
   g.fillStyle(accent, 0.16);
   g.fillCircle(x + 27, y + 33, 12);
-  g.fillStyle(0xffffff, 0.14);
-  g.fillRoundedRect(x + 7, y + 7, w - 14, 4, 2);
   c.add(g);
 
   c.add(scene.add.text(x + w - badgeW / 2 - 8, y + 17, '추천', {
@@ -499,13 +480,17 @@ export function addRecommendedTrapSlotPreview(
     fontSize: '10px',
     color: '#ffffff',
     fontStyle: 'bold' }).setOrigin(0.5));
-  c.add(scene.add.text(x + 27, y + 33, recommendation.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '19px' }).setOrigin(0.5));
+  g.lineStyle(1.5, DUNGEON_UI.BRASS_BRIGHT, 0.9);
+  g.lineBetween(x + 18, y + 39, x + 36, y + 39);
+  g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.9);
+  for (let i = 0; i < 3; i += 1) {
+    const px = x + 20 + i * 7;
+    g.fillTriangle(px - 3, y + 38, px, y + 25, px + 3, y + 38);
+  }
   c.add(scene.add.text(x + 52, y + 29, fitSlotLabel(recommendation.name, compact ? 5 : 7), {
     fontFamily: 'sans-serif',
     fontSize: '11px',
-    color: CASUAL_CSS.INK,
+    color: DUNGEON_UI_CSS.PARCHMENT,
     fontStyle: 'bold' }).setOrigin(0, 0.5));
   drawCompactTrapEffectTag(
     scene,
@@ -523,8 +508,8 @@ export function addRecommendedTrapSlotPreview(
     fontStyle: 'bold' }).setOrigin(0, 0.5));
 
   const btnW = (w - 22) / 2;
-  addCompactLoadoutButton(scene, c, x + 7, y + h - 25, btnW, compact ? '추천' : '추천 설치', accent, onApply, true);
-  addCompactLoadoutButton(scene, c, x + 15 + btnW, y + h - 25, btnW, compact ? '선택' : '직접 선택', accent, onPick);
+  addCompactLoadoutButton(scene, c, x + 7, y + h - 47, btnW, compact ? '추천' : '추천 설치', accent, onApply, true);
+  addCompactLoadoutButton(scene, c, x + 15 + btnW, y + h - 47, btnW, compact ? '선택' : '직접 선택', accent, onPick);
 }
 
 export function addCompactLoadoutButton(
@@ -542,16 +527,14 @@ export function addCompactLoadoutButton(
     x,
     y,
     w,
-    h: 22,
+    h: 44,
     label,
     fontSize: '10px',
-    fillColor: primary ? accent : CASUAL.PANEL,
-    hoverFillColor: primary ? accent : CASUAL.PANEL_SOFT,
-    borderColor: primary ? accent : CASUAL.EDGE,
-    hoverBorderColor: primary ? accent : CASUAL.EDGE_SOFT,
-    textColor: primary ? '#ffffff' : CASUAL_CSS.INK,
+    fillColor: primary ? accent : DUNGEON_UI.STONE,
+    hoverFillColor: primary ? accent : DUNGEON_UI.STONE_RAISED,
+    borderColor: primary ? accent : DUNGEON_UI.EDGE,
+    hoverBorderColor: primary ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS,
+    textColor: primary ? '#090705' : DUNGEON_UI_CSS.TEXT,
     onPress });
   c.add([button.bg, button.text, button.zone]);
 }
-
-

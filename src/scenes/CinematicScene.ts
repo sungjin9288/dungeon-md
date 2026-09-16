@@ -1,321 +1,277 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { type DialogueLine, type CinematicDef, getCinematic } from '../data/cinematics';
+import { DUNGEON_UI as UI, DUNGEON_UI_CSS as CSS } from '../constants/colors';
+import { type DialogueLine, getCinematic } from '../data/cinematics';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { markCinematicSeen } from '../data/storyTransactions';
-
-// ─── Scene data passed via scene.start ────────────────────────────────────────
+import { getCharacterArtForSpeaker, selectCharacterArtSource } from '../data/characterArt';
+import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { getReducedMotion } from '../utils/reducedMotion';
 
 export interface CinematicSceneData {
-  cinematicId: string;         // which cinematic to play
-  nextScene:   string;         // scene key to launch after finish
-  nextData?:   object;         // data to pass to next scene
+  cinematicId: string;
+  nextScene: string;
+  nextData?: object;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PANEL_H   = 260;
-const PANEL_Y   = CANVAS_HEIGHT - PANEL_H;
-const CHAR_MS   = 28;   // ms per character (typewriter speed)
-const PANEL_PAD = 20;
-
-// Emoji → glow color
-function glowColor(emoji: string): number {
-  if (emoji === '⛩️') return 0xff8800;
-  if (emoji === '👹') return 0xff2200;
-  if (emoji === '🦊') return 0xff44aa;
-  if (emoji === '🐉') return 0x0088ff;
-  return 0x8800cc;   // 💀 and others → purple
-}
+const CHAR_MS = 28;
 
 export class CinematicScene extends Phaser.Scene {
-  private lines:      DialogueLine[] = [];
-  private lineIndex   = 0;
-  private nextScene   = 'StageSelectScene';
-  private nextData?:  object;
-
-  // UI objects
-  private panel!:       Phaser.GameObjects.Container;
-  private panelBg!:     Phaser.GameObjects.Graphics;
-  private emojiGlow!:   Phaser.GameObjects.Graphics;
-  private emojiText!:   Phaser.GameObjects.Text;
-  private speakerText!: Phaser.GameObjects.Text;
-  private dialogText!:  Phaser.GameObjects.Text;
-  private nextBtn!:     Phaser.GameObjects.Text;
-  private pulseTween?:  Phaser.Tweens.Tween;
-
-  // Typewriter state
-  private fullText    = '';
-  private shownChars  = 0;
+  private lines: DialogueLine[] = [];
+  private lineIndex = 0;
+  private nextScene = 'StageSelectScene';
+  private nextData?: object;
+  private phase: 'typing' | 'ready' | 'transition' | 'finished' = 'transition';
+  private lineVersion = 0;
+  private inputReadyAt = 0;
+  private reducedMotion = false;
   private typeTimer?: Phaser.Time.TimerEvent;
-  private isTyping    = false;
+  private pauseTimer?: Phaser.Time.TimerEvent;
+  private lineTween?: Phaser.Tweens.Tween;
+  private exitTween?: Phaser.Tweens.Tween;
+
+  private folio!: Phaser.GameObjects.Container;
+  private speakerText!: Phaser.GameObjects.Text;
+  private speakerEmoji!: Phaser.GameObjects.Text;
+  private speakerArt!: Phaser.GameObjects.Image;
+  private speakerSeal!: Phaser.GameObjects.Graphics;
+  private dialogueText!: Phaser.GameObjects.Text;
+  private progressText!: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Text;
+  private actionText!: Phaser.GameObjects.Text;
+  private progressRule!: Phaser.GameObjects.Graphics;
 
   constructor() { super({ key: 'CinematicScene' }); }
 
-  // ─── Lifecycle ──────────────────────────────────────────────────────────────
+  create(data?: CinematicSceneData): void {
+    this.lines = [];
+    this.lineIndex = 0;
+    this.phase = 'transition';
+    this.lineVersion++;
+    this.inputReadyAt = 0;
+    this.reducedMotion = getReducedMotion();
+    this.nextScene = data?.nextScene ?? 'StageSelectScene';
+    this.nextData = data?.nextData;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
 
-  create(data: CinematicSceneData): void {
-    this.lineIndex  = 0;
-    this.nextScene  = data.nextScene ?? 'StageSelectScene';
-    this.nextData   = data.nextData;
-
-    const def: CinematicDef | undefined = getCinematic(data.cinematicId);
-    if (!def) { this.finish(); return; }
-
+    const def = getCinematic(data?.cinematicId ?? '');
+    if (!def || def.lines.length === 0) {
+      this.phase = 'finished';
+      this.scene.start(this.nextScene, this.nextData ?? {});
+      return;
+    }
     this.lines = def.lines;
-
-    // Mark as seen
-    const seenResult = markCinematicSeen(loadGameState(), data.cinematicId);
+    const seenResult = markCinematicSeen(loadGameState(), def.id);
     if (seenResult.changed) saveGameState(seenResult.state);
 
-    // Dim overlay — 40% so dungeon is visible behind
-    const dim = this.add.graphics().setDepth(0);
-    dim.fillStyle(0x000000, 0.4);
-    dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.buildTheatre(def.id);
+    this.showLine(0);
+  }
 
-    // Panel container (slides up from bottom)
-    this.panel = this.add.container(0, CANVAS_HEIGHT).setDepth(10);
-    this.buildPanelGraphics();
+  private text(x: number, y: number, value: string, size: number, color: string = CSS.TEXT): Phaser.GameObjects.Text {
+    return this.add.text(x, y, value, {
+      fontFamily: 'sans-serif', fontSize: `${size}px`, color,
+    });
+  }
 
-    // Skip button
-    const skipT = this.add.text(CANVAS_WIDTH - 16, 20, 'SKIP ▶▶', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#888888',
-      backgroundColor: '#00000088', padding: { x: 8, y: 4 },
-    }).setOrigin(1, 0).setDepth(15).setInteractive();
-    skipT.on('pointerdown', () => this.finish());
+  private buildTheatre(id: string): void {
+    this.cameras.main.setBackgroundColor(UI.VOID);
+    const stone = this.add.graphics();
+    stone.fillStyle(UI.SOOT).fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    stone.fillStyle(UI.STONE).fillRect(20, 112, 350, 347);
+    stone.fillStyle(UI.VOID).fillRoundedRect(56, 146, 278, 290, { tl: 130, tr: 130, bl: 0, br: 0 });
+    stone.lineStyle(2, UI.IRON).strokeRoundedRect(55, 145, 280, 292, { tl: 130, tr: 130, bl: 0, br: 0 });
+    stone.fillStyle(UI.STONE_RAISED);
+    for (const x of [28, 346]) {
+      stone.fillRect(x, 158, 16, 270);
+      stone.fillRect(x - 4, 150, 24, 10);
+      stone.fillRect(x - 4, 424, 24, 12);
+    }
+    stone.lineStyle(1, UI.IRON);
+    for (let y = 189; y < 410; y += 42) {
+      stone.lineBetween(28, y, 44, y);
+      stone.lineBetween(346, y, 362, y);
+    }
+    stone.fillStyle(UI.IRON).fillRect(46, 426, 298, 8);
+    stone.fillStyle(UI.STONE_RAISED).fillRect(32, 438, 326, 10);
+    stone.lineStyle(1, UI.BRASS, 0.55).lineBetween(32, 103, 358, 103);
 
-    // Slide panel up
-    this.tweens.add({ targets: this.panel, y: 0, duration: 400, ease: 'Power2.easeOut' });
-    this.time.delayedCall(450, () => this.showLine(0));
+    const chapter = id.match(/^ch(\d+)_/);
+    const context = chapter ? `${chapter[1]}장 · 수호의 이야기`
+      : id === 'game_complete' ? '수호자가 남긴 기록'
+        : id.includes('boss') ? '결전을 앞두고' : '던전에서 전해진 이야기';
+    this.text(24, 25, context, 11, CSS.MUTED);
+    this.text(24, 48, '던전 연대기', 27, CSS.PARCHMENT).setFontStyle('bold');
 
-    // Tap on panel to advance
-    const tapZone = this.add.zone(
-      CANVAS_WIDTH / 2, PANEL_Y + PANEL_H / 2,
-      CANVAS_WIDTH, PANEL_H,
-    ).setInteractive().setDepth(20);
+    const skip = addPrimaryActionButton(this, {
+      x: 270, y: 27, w: 96, h: 44, label: '건너뛰기', fontSize: '12px',
+      fillColor: UI.SOOT, hoverFillColor: UI.STONE, borderColor: UI.IRON,
+      hoverBorderColor: UI.EDGE, textColor: CSS.MUTED, showArrow: false,
+      onPress: () => this.finish(),
+    });
+    skip.zone.setName('cinematic-skip').removeAllListeners('pointerdown');
+    skip.zone.on('pointerdown', () => this.finish());
+
+    this.speakerSeal = this.add.graphics();
+    this.speakerEmoji = this.text(121, 295, '', 82).setOrigin(0.5).setName('cinematic-speaker-emoji');
+    this.speakerArt = this.add.image(195, 284, '__WHITE').setVisible(false).setName('cinematic-speaker-art');
+    this.text(195, 449, '수호의 이야기는 계속된다', 11, CSS.MUTED).setOrigin(0.5);
+
+    const panel = addFramedPanel(this, {
+      x: 24, y: 473, w: 342, h: 238, radius: 3,
+      fillColor: UI.STONE, borderColor: UI.IRON, borderWidth: 1,
+      shadowOpacity: 0.3,
+    });
+    this.folio = this.add.container(0, 0, [panel.shadow, panel.panel, panel.glow]);
+    this.speakerText = this.text(44, 492, '', 18, CSS.BRASS).setFontStyle('bold').setName('cinematic-speaker');
+    this.progressText = this.text(344, 496, '', 12, CSS.MUTED).setOrigin(1, 0).setName('cinematic-progress');
+    this.dialogueText = this.text(44, 535, '', 18, CSS.PARCHMENT)
+      .setWordWrapWidth(302).setLineSpacing(9).setName('cinematic-dialogue');
+    this.hintText = this.text(44, 680, '', 11, CSS.MUTED).setName('cinematic-hint');
+    this.progressRule = this.add.graphics();
+    this.folio.add([this.speakerText, this.progressText, this.dialogueText, this.hintText, this.progressRule]);
+
+    const tapZone = this.add.zone(24, 473, 342, 238).setOrigin(0).setInteractive().setName('cinematic-dialogue-tap');
     tapZone.on('pointerdown', () => this.onTap());
+    const action = addPrimaryActionButton(this, {
+      x: 24, y: 739, w: 342, h: 50, label: '대사 펼치기', fontSize: '16px',
+      fillColor: UI.BRASS, hoverFillColor: UI.BRASS_BRIGHT,
+      borderColor: UI.BRASS_BRIGHT, hoverBorderColor: UI.BRASS_BRIGHT,
+      textColor: '#101612', onPress: () => this.onTap(),
+    });
+    this.actionText = action.text.setName('cinematic-action-label');
+    action.zone.setName('cinematic-next').removeAllListeners('pointerdown');
+    action.zone.on('pointerdown', () => this.onTap());
+    this.text(195, 812, '대사를 누르거나 아래 명령으로 진행하세요', 11, CSS.MUTED).setOrigin(0.5);
   }
-
-  // ─── Panel graphics ──────────────────────────────────────────────────────────
-
-  private buildPanelGraphics(): void {
-    this.panelBg = this.add.graphics();
-
-    // Gradient simulation: dark-top to lighter-bottom
-    const steps = 10;
-    for (let i = 0; i < steps; i++) {
-      const t = i / (steps - 1);
-      const r = Math.round(0x1a + (0x2d - 0x1a) * t);
-      const g = Math.round(0x0f + (0x24 - 0x0f) * t);
-      const b = Math.round(0x00 + (0x16 - 0x00) * t);
-      this.panelBg.fillStyle((r << 16) | (g << 8) | b, 1);
-      const stripY = PANEL_Y + Math.floor(i * PANEL_H / steps);
-      const stripH = Math.ceil(PANEL_H / steps) + 1;
-      this.panelBg.fillRect(0, stripY, CANVAS_WIDTH, stripH);
-    }
-
-    // Gold top border (full opacity)
-    this.panelBg.lineStyle(2, 0xc8921a, 1);
-    this.panelBg.lineBetween(0, PANEL_Y, CANVAS_WIDTH, PANEL_Y);
-
-    // Subtle horizontal stone texture lines
-    this.panelBg.lineStyle(1, 0x2a2010, 0.35);
-    for (let y = PANEL_Y + 28; y < CANVAS_HEIGHT; y += 22) {
-      this.panelBg.lineBetween(0, y, CANVAS_WIDTH, y);
-    }
-
-    this.panel.add(this.panelBg);
-
-    // Emoji glow (drawn before emoji so it appears behind)
-    this.emojiGlow = this.add.graphics();
-    this.panel.add(this.emojiGlow);
-
-    // Speaker name — gold, uppercase feel
-    this.speakerText = this.add.text(
-      PANEL_PAD + 56, PANEL_Y + 16, '',
-      {
-        fontFamily: 'Georgia, serif',
-        fontSize: '12px',
-        color: '#c8921a',
-        fontStyle: 'bold',
-        letterSpacing: 2,
-      },
-    );
-    this.panel.add(this.speakerText);
-
-    // Character emoji
-    this.emojiText = this.add.text(
-      PANEL_PAD + 28, PANEL_Y + 52, '',
-      { fontFamily: 'sans-serif', fontSize: '56px' },
-    ).setOrigin(0.5);
-    this.panel.add(this.emojiText);
-
-    // Dialogue text — parchment 16px
-    this.dialogText = this.add.text(
-      PANEL_PAD + 56, PANEL_Y + 38, '',
-      {
-        fontFamily: 'Georgia, serif',
-        fontSize:   '16px',
-        color:      '#f0e6c8',
-        wordWrap:   { width: CANVAS_WIDTH - PANEL_PAD * 2 - 64 },
-        lineSpacing: 5,
-      },
-    );
-    this.panel.add(this.dialogText);
-
-    // Pulsing ▶ tap indicator (bottom-right, hidden initially)
-    this.nextBtn = this.add.text(
-      CANVAS_WIDTH - PANEL_PAD, CANVAS_HEIGHT - 16, '▶',
-      { fontFamily: 'sans-serif', fontSize: '18px', color: '#c8921a' },
-    ).setOrigin(1, 1).setAlpha(0);
-    this.panel.add(this.nextBtn);
-  }
-
-  // ─── Emoji glow ──────────────────────────────────────────────────────────────
-
-  private drawEmojiGlow(localX: number, localY: number, color: number): void {
-    this.emojiGlow.clear();
-    // Soft glow constrained to ~32px (half of 64px emoji container)
-    // Outermost ring subtle, innermost bright — like box-shadow
-    const layers = [
-      { r: 32, a: 0.08 },
-      { r: 24, a: 0.14 },
-      { r: 16, a: 0.20 },
-      { r:  8, a: 0.18 },
-    ];
-    for (const { r, a } of layers) {
-      this.emojiGlow.fillStyle(color, a);
-      this.emojiGlow.fillCircle(localX, localY, r);
-    }
-  }
-
-  // ─── Show a dialogue line ───────────────────────────────────────────────────
 
   private showLine(index: number): void {
-    if (index >= this.lines.length) { this.finish(); return; }
-
+    this.clearLineWork();
+    const version = ++this.lineVersion;
     const line = this.lines[index];
     this.lineIndex = index;
+    this.inputReadyAt = this.time.now + 120;
+    this.speakerText.setText(line.speaker);
+    this.progressText.setText(`${index + 1} / ${this.lines.length}`);
+    this.progressRule.clear().fillStyle(UI.IRON).fillRect(44, 522, 302, 1);
+    this.progressRule.fillStyle(UI.BRASS).fillRect(44, 522, 302 * (index + 1) / this.lines.length, 1);
 
-    // Hide/kill pulse on next btn
-    this.pulseTween?.stop();
-    this.pulseTween = undefined;
-    this.nextBtn.setAlpha(0);
-
-    // Update speaker name (uppercase for small-caps feel)
-    this.speakerText.setText(line.speaker.toUpperCase());
-
-    // Position elements based on side
-    let emojiLocalX: number;
-    if (line.side === 'left') {
-      emojiLocalX = PANEL_PAD + 28;
-      this.emojiText.setX(emojiLocalX);
-      this.speakerText.setX(PANEL_PAD + 56);
-      this.dialogText.setX(PANEL_PAD + 56);
-      this.dialogText.setStyle({ ...this.dialogText.style, align: 'left' });
-    } else {
-      emojiLocalX = CANVAS_WIDTH - PANEL_PAD - 28;
-      this.emojiText.setX(emojiLocalX);
-      this.speakerText.setX(CANVAS_WIDTH - PANEL_PAD - 56);
-      this.dialogText.setX(PANEL_PAD);
-      this.dialogText.setStyle({ ...this.dialogText.style, align: 'left' });
+    const speakerX = line.side === 'left' ? 126 : 264;
+    this.speakerEmoji.setPosition(speakerX, 289).setText(line.emoji).setAlpha(1).setScale(1);
+    const art = getCharacterArtForSpeaker(line.speaker);
+    const source = art ? selectCharacterArtSource(art.monsterId, key => this.textures.exists(key)) : null;
+    this.speakerEmoji.setVisible(!source);
+    this.speakerArt.setVisible(Boolean(source));
+    if (source) {
+      this.speakerArt.setTexture(source.textureKey)
+        .setPosition(line.side === 'left' ? 155 : 235, 284).setDisplaySize(248, 248);
     }
-    this.emojiText.setText(line.emoji);
+    this.speakerSeal.clear();
+    if (!source) {
+      this.speakerSeal.fillStyle(UI.STONE_RAISED).fillCircle(speakerX, 289, 66);
+      this.speakerSeal.lineStyle(1, UI.BRASS, 0.7).strokeCircle(speakerX, 289, 70);
+    }
+    this.speakerSeal.lineStyle(2, UI.BRASS).lineBetween(speakerX - 36, 423, speakerX + 36, 423);
+    this.dialogueText.setAlpha(1).setText('');
+    this.phase = 'typing';
+    this.actionText.setText('대사 펼치기');
+    this.hintText.setText('누르면 대사 전체를 바로 읽습니다');
 
-    // Draw glow behind emoji
-    this.drawEmojiGlow(emojiLocalX, PANEL_Y + 52, glowColor(line.emoji));
-
-    // Emoji pop-in
-    this.emojiText.setScale(0.6).setAlpha(0.4);
-    this.tweens.add({ targets: this.emojiText, scaleX: 1, scaleY: 1, alpha: 1, duration: 250, ease: 'Back.easeOut' });
-
-    // Start typewriter
-    this.fullText   = line.text;
-    this.shownChars = 0;
-    this.isTyping   = true;
-    this.dialogText.setText('');
-
-    this.typeTimer?.remove(false);
+    if (this.reducedMotion || line.text.length === 0) {
+      this.revealLine(version);
+      return;
+    }
+    let shown = 0;
     this.typeTimer = this.time.addEvent({
-      delay: CHAR_MS,
-      repeat: this.fullText.length - 1,
+      delay: CHAR_MS, repeat: line.text.length - 1,
       callback: () => {
-        this.shownChars++;
-        this.dialogText.setText(this.fullText.slice(0, this.shownChars));
-        if (this.shownChars >= this.fullText.length) {
-          this.typeTimer = undefined;
-          this.isTyping  = false;
-          this.onTypeComplete(line);
-        }
+        if (version !== this.lineVersion || this.phase !== 'typing') return;
+        this.dialogueText.setText(line.text.slice(0, ++shown));
+        if (shown >= line.text.length) this.revealLine(version);
       },
     });
   }
 
-  private onTypeComplete(line: DialogueLine): void {
-    // Start pulsing ▶
-    this.nextBtn.setAlpha(0.4);
-    this.pulseTween = this.tweens.add({
-      targets:  this.nextBtn,
-      alpha:    { from: 0.4, to: 1.0 },
-      duration: 800,
-      yoyo:     true,
-      repeat:   -1,
-      ease:     'Sine.easeInOut',
-    });
-
+  private revealLine(version = this.lineVersion): void {
+    if (version !== this.lineVersion || this.phase !== 'typing') return;
+    this.typeTimer?.remove(false);
+    this.typeTimer = undefined;
+    const line = this.lines[this.lineIndex];
+    this.dialogueText.setText(line.text);
+    this.phase = 'ready';
+    this.actionText.setText(this.lineIndex === this.lines.length - 1 ? '이야기 마치기' : '다음 대사');
+    this.hintText.setText(line.pause ? '잠시 후 이어집니다 · 눌러서 바로 진행' : '준비되면 다음 이야기를 펼치세요');
     if (line.pause && line.pause > 0) {
-      this.time.delayedCall(line.pause, () => this.advance());
-    }
-  }
-
-  // ─── Input handling ──────────────────────────────────────────────────────────
-
-  private onTap(): void {
-    if (this.isTyping) {
-      this.typeTimer?.remove(false);
-      this.typeTimer = undefined;
-      this.isTyping = false;
-      this.shownChars = this.fullText.length;
-      this.dialogText.setText(this.fullText);
-      this.onTypeComplete(this.lines[this.lineIndex]);
-    } else {
-      this.advance();
-    }
-  }
-
-  private advance(): void {
-    const next = this.lineIndex + 1;
-    if (next >= this.lines.length) {
-      this.finish();
-    } else {
-      this.tweens.add({
-        targets: [this.dialogText, this.speakerText, this.emojiText, this.emojiGlow],
-        alpha: 0, duration: 150,
-        onComplete: () => {
-          this.dialogText.setAlpha(1);
-          this.speakerText.setAlpha(1);
-          this.emojiText.setAlpha(1);
-          this.emojiGlow.setAlpha(1);
-          this.showLine(next);
-        },
+      const index = this.lineIndex;
+      this.pauseTimer = this.time.delayedCall(line.pause, () => {
+        if (version === this.lineVersion) this.advance(index);
       });
     }
   }
 
-  // ─── Finish ──────────────────────────────────────────────────────────────────
+  private onTap(): void {
+    if (this.time.now < this.inputReadyAt) return;
+    if (this.phase === 'typing') {
+      this.inputReadyAt = this.time.now + 180;
+      this.revealLine();
+    } else if (this.phase === 'ready') {
+      this.advance(this.lineIndex);
+    }
+  }
 
-  private finish(): void {
-    this.typeTimer?.remove(false);
-    this.typeTimer = undefined;
-    this.pulseTween?.stop();
-    this.tweens.add({
-      targets: this.panel,
-      y: CANVAS_HEIGHT,
-      duration: 300,
-      ease: 'Power2.easeIn',
+  private advance(index: number): void {
+    if (this.phase !== 'ready' || index !== this.lineIndex) return;
+    this.phase = 'transition';
+    this.clearLineWork();
+    if (index + 1 >= this.lines.length) {
+      this.finish();
+      return;
+    }
+    const version = this.lineVersion;
+    if (this.reducedMotion) {
+      this.showLine(index + 1);
+      return;
+    }
+    this.lineTween = this.tweens.add({
+      targets: this.dialogueText, alpha: 0, duration: 140,
       onComplete: () => {
-        this.scene.start(this.nextScene, this.nextData ?? {});
+        this.lineTween = undefined;
+        if (version === this.lineVersion && this.phase === 'transition') this.showLine(index + 1);
       },
     });
+  }
+
+  private finish(): void {
+    if (this.phase === 'finished') return;
+    this.phase = 'finished';
+    this.clearLineWork();
+    const version = ++this.lineVersion;
+    const route = (): void => {
+      if (version === this.lineVersion) this.scene.start(this.nextScene, this.nextData ?? {});
+    };
+    if (this.reducedMotion) {
+      route();
+      return;
+    }
+    this.exitTween = this.tweens.add({
+      targets: this.folio, alpha: 0, duration: 160, onComplete: route,
+    });
+  }
+
+  private clearLineWork(): void {
+    this.typeTimer?.remove(false);
+    this.pauseTimer?.remove(false);
+    this.lineTween?.stop();
+    this.typeTimer = undefined;
+    this.pauseTimer = undefined;
+    this.lineTween = undefined;
+  }
+
+  private cleanup(): void {
+    this.phase = 'finished';
+    this.lineVersion++;
+    this.clearLineWork();
+    this.exitTween?.stop();
+    this.exitTween = undefined;
   }
 }

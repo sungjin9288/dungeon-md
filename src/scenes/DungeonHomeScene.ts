@@ -7,7 +7,7 @@ import {
 } from '../data/wisdom';
 
 import { xpForDmLevel } from '../data/invasionTransactions';
-import { MONSTER_DEFS, resolveMonsterTypeId } from '../data/monsters';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import {
   type HomeMainQuestCompletionResult,
 } from '../data/questLifecycleTransactions';
@@ -18,7 +18,6 @@ import {
   openQuestLog,
   type QuestLogState,
 } from '../ui/QuestLogPanel';
-import { buildDailyContentPanel, showChallengePanel } from '../ui/DailyContentPanel';
 import { getReducedMotion } from '../utils/reducedMotion';
 import {
   createRoomDetailState,
@@ -254,7 +253,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.buildCommandDeck();
     buildStatsBar(this, this.gs, this.theme, BOT_Y);
     this.buildBottomNav();
-    buildDailyContentPanel(this, () => showChallengePanel(this));
     this.addAmbientEffects();
     if (this.pendingRoomFeedback) this.showHomeRoomFeedbackBanner(this.pendingRoomFeedback);
 
@@ -425,8 +423,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   /** @internal */ resolveMonsterVisual(monsterId: string): { emoji: string; name: string } {
-    const baseId = resolveMonsterTypeId(monsterId);
-    const def = baseId ? MONSTER_DEFS[baseId] : undefined;
+    const def = resolveOwnedMonsterProfile(monsterId);
     const name = def?.name ?? '수호자';
     return {
       emoji: def?.emoji ?? '👹',

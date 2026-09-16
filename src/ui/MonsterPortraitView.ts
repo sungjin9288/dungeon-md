@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { generatePortrait } from '../art/PortraitGenerator';
-import { MONSTER_DEFS, getSkinForMonster, resolveMonsterTypeId } from '../data/monsters';
+import { MONSTER_DEFS, getSkinForMonster, resolveOwnedMonsterProfile } from '../data/monsters';
 import { getMonsterVisualIdentity } from '../data/monsterVisualIdentity';
 
 export interface MonsterPortraitOptions {
@@ -46,7 +46,8 @@ export function addMonsterPortrait(
     bgColor = 0x090d10,
     equippedSkins,
   } = options;
-  const typeId = resolveMonsterTypeId(monsterId);
+  const profile = resolveOwnedMonsterProfile(monsterId);
+  const typeId = profile?.registryId ?? null;
   const def = typeId ? MONSTER_DEFS[typeId] : undefined;
   const skin = typeId && equippedSkins ? getSkinForMonster(typeId, equippedSkins) : null;
   const radius = Math.max(5, Math.round(size * 0.16));
@@ -78,7 +79,7 @@ export function addMonsterPortrait(
   }
 
   if (!image) {
-    fallbackText = scene.add.text(x, y, skin?.emoji ?? def?.emoji ?? '👹', {
+    fallbackText = scene.add.text(x, y, skin?.emoji ?? profile?.emoji ?? '👹', {
       fontFamily: 'sans-serif',
       fontSize: `${Math.max(18, Math.round(size * 0.58))}px`,
     }).setOrigin(0.5).setDepth(depth + 0.1);

@@ -6,13 +6,17 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { buildBattleForecast, type BattleForecastRisk, type StoryInvasionTarget } from '../data/battleForecast';
 import type { GameState } from '../data/wisdom';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import {
+  DUNGEON_UI,
+  DUNGEON_UI_CSS,
+  ZONE_ACCENTS,
+} from '../constants/colors';
 
 const RISK_COLOR: Record<BattleForecastRisk, number> = {
-  secure: CASUAL.GREEN,
-  guarded: CASUAL.GOLD,
-  strained: CASUAL.RED,
-  critical: CASUAL.RED_DK,
+  secure: DUNGEON_UI.JADE,
+  guarded: DUNGEON_UI.BRASS_BRIGHT,
+  strained: DUNGEON_UI.EMBER,
+  critical: ZONE_ACCENTS.invasion,
 };
 
 const RISK_LABEL: Record<BattleForecastRisk, string> = {
@@ -44,13 +48,15 @@ export function openSimulationModal(
   const cw = 340, ch = 410;
   const cx = (CW - cw) / 2, cy = (CH - ch) / 2;
   const card = scene.add.graphics().setDepth(201);
-  card.fillStyle(CASUAL.PANEL, 1);
+  card.fillStyle(DUNGEON_UI.STONE, 1);
   card.fillRoundedRect(cx, cy, cw, ch, 8);
-  card.lineStyle(2, CASUAL.EDGE, 0.9);
+  card.fillStyle(ZONE_ACCENTS.invasion, 0.92);
+  card.fillRect(cx, cy + 8, 3, ch - 16);
+  card.lineStyle(1.5, DUNGEON_UI.IRON, 0.96);
   card.strokeRoundedRect(cx, cy, cw, ch, 8);
-  // Cave strata texture
+  // Deterministic stone strata keep visual evidence stable.
   for (let ry = cy + 8; ry < cy + ch; ry += 18) {
-    card.lineStyle(1, CASUAL.EDGE_SOFT, 0.03 + Math.random() * 0.03);
+    card.lineStyle(1, DUNGEON_UI.EDGE, 0.045);
     card.lineBetween(cx + 4, ry, cx + cw - 4, ry);
   }
   card.setY(-60).setAlpha(0);
@@ -60,8 +66,8 @@ export function openSimulationModal(
   container.add([dim, card]);
 
   // Title
-  const title = scene.add.text(cx + cw / 2, cy + 22, '⚗  던전 전투 예측', {
-    fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
+  const title = scene.add.text(cx + cw / 2, cy + 22, '던전 전투 예측', {
+    fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0.5).setAlpha(0);
   container.add(title);
   scene.tweens.add({ targets: title, alpha: 1, duration: 250, delay: 150 });
@@ -90,15 +96,15 @@ export function openSimulationModal(
       `웨이브 ${'waveNumber' in diagnostic ? diagnostic.waveNumber : diagnostic.waveNum}: ${diagnostic.invaderType}`,
     ) ?? ['침략 대상이 없습니다.'];
     const unavailable = scene.add.text(cx + cw / 2, cy + 104, '예측을 완료할 수 없습니다', {
-      fontFamily: 'sans-serif', fontSize: '15px', color: CASUAL_CSS.RED, fontStyle: 'bold',
+      fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0);
     const heuristic = scene.add.text(cx + cw / 2, cy + 132,
       forecast?.heuristicCopy ?? '결정론적 DPS·이동시간 휴리스틱을 계산할 수 없습니다.', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, wordWrap: { width: cw - 42 }, align: 'center',
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, wordWrap: { width: cw - 42 }, align: 'center',
       }).setOrigin(0.5, 0).setAlpha(0);
     const diagnostics = scene.add.text(cx + 20, cy + 194,
       `확인 필요: ${diagnosticLines.join(', ')}`, {
-        fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.RED, wordWrap: { width: cw - 40 },
+        fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.EMBER, wordWrap: { width: cw - 40 },
       }).setAlpha(0);
     container.add([unavailable, heuristic, diagnostics]);
     scene.tweens.add({ targets: [unavailable, heuristic, diagnostics], alpha: 1, duration: 180, delay: 160 });
@@ -109,7 +115,11 @@ export function openSimulationModal(
   const result = forecast.simulation;
 
   // DPS row
-  const dpsColor = result.totalDps < 8 ? '#ff6666' : result.totalDps < 18 ? '#ffcc44' : '#44cc88';
+  const dpsColor = result.totalDps < 8
+    ? DUNGEON_UI_CSS.EMBER
+    : result.totalDps < 18
+      ? DUNGEON_UI_CSS.BRASS
+      : DUNGEON_UI_CSS.JADE;
   const dpsT = scene.add.text(cx + 16, cy + 50,
     `방어 DPS: ${result.totalDps.toFixed(1)} / 초 · 위험 ${RISK_LABEL[forecast.risk]}`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: dpsColor,
@@ -122,7 +132,7 @@ export function openSimulationModal(
   const barW = cw - 32;
   const hpRatio = result.startHp > 0 ? result.finalHp / result.startHp : 0;
   const barBg = scene.add.graphics().setAlpha(0).setDepth(202);
-  barBg.fillStyle(CASUAL.PANEL_SOFT, 1);
+  barBg.fillStyle(DUNGEON_UI.SOOT, 1);
   barBg.fillRoundedRect(cx + 16, barY, barW, 10, 3);
   const barFill = scene.add.graphics().setAlpha(0).setDepth(202);
   const fillColor = RISK_COLOR[forecast.risk];
@@ -136,14 +146,14 @@ export function openSimulationModal(
 
   // Divider
   const divG = scene.add.graphics().setAlpha(0).setDepth(202);
-  divG.lineStyle(1, CASUAL.EDGE, 0.3);
+  divG.lineStyle(1, DUNGEON_UI.IRON, 0.7);
   divG.lineBetween(cx + 16, barY + 18, cx + cw - 16, barY + 18);
   container.add(divG);
   scene.tweens.add({ targets: divG, alpha: 1, duration: 150, delay: 320 });
 
   // Per-wave results (compact rows)
   const methodT = scene.add.text(cx + cw / 2, barY + 21, forecast.heuristicCopy, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: cw - 40 }, align: 'center',
   }).setOrigin(0.5, 0).setAlpha(0).setDepth(202);
   container.add(methodT);
@@ -152,7 +162,10 @@ export function openSimulationModal(
   const waveStartY = barY + 63;
   const rowH = 22;
   const DIFF_COLOR: Record<string, string> = {
-    easy: '#44cc88', medium: '#88ccff', hard: '#ffcc44', extreme: '#ff6666',
+    easy: DUNGEON_UI_CSS.JADE,
+    medium: '#9aabd8',
+    hard: DUNGEON_UI_CSS.BRASS,
+    extreme: DUNGEON_UI_CSS.EMBER,
   };
   const DIFF_LABEL: Record<string, string> = {
     easy: '쉬움', medium: '보통', hard: '어려움', extreme: '위험',
@@ -162,20 +175,20 @@ export function openSimulationModal(
   visibleWaves.forEach((wr, i) => {
     const wy = waveStartY + i * rowH;
     const rowT = scene.add.text(cx + 16, wy + 11, `${wr.waveNum}웨이브`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5).setAlpha(0).setDepth(202);
     container.add(rowT);
 
     const diffT = scene.add.text(cx + 80, wy + 11,
       `${DIFF_LABEL[wr.difficulty]} (잔존 ${wr.survived}/${wr.invaderCount})`, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: DIFF_COLOR[wr.difficulty],
+      fontFamily: 'sans-serif', fontSize: '10px', color: DIFF_COLOR[wr.difficulty],
     }).setOrigin(0, 0.5).setAlpha(0).setDepth(202);
     container.add(diffT);
 
     const hpLostT = scene.add.text(cx + cw - 16, wy + 11,
       wr.hpLost > 0 ? `-${wr.hpLost}HP` : '무피해', {
-      fontFamily: 'sans-serif', fontSize: '9px',
-      color: wr.hpLost > 0 ? '#ff8888' : '#44cc88',
+      fontFamily: 'sans-serif', fontSize: '10px',
+      color: wr.hpLost > 0 ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE,
     }).setOrigin(1, 0.5).setAlpha(0).setDepth(202);
     container.add(hpLostT);
 
@@ -185,11 +198,11 @@ export function openSimulationModal(
   // Recommendation
   const recY = waveStartY + visibleWaves.length * rowH + 4;
   const recG = scene.add.graphics().setAlpha(0).setDepth(202);
-  recG.lineStyle(1, CASUAL.EDGE, 0.3);
+  recG.lineStyle(1, DUNGEON_UI.IRON, 0.7);
   recG.lineBetween(cx + 16, recY, cx + cw - 16, recY);
   container.add(recG);
-  const recT = scene.add.text(cx + cw / 2, recY + 14, `💡 ${forecast.marginCopy}`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK,
+  const recT = scene.add.text(cx + cw / 2, recY + 14, forecast.marginCopy, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
     wordWrap: { width: cw - 40 }, align: 'center',
   }).setOrigin(0.5, 0).setAlpha(0).setDepth(202);
   container.add(recT);
@@ -208,11 +221,21 @@ function addCloseButton(
   close: () => void,
 ): void {
   const closeY = cy + ch - 28;
-  const closeT = scene.add.text(cx + cw / 2, closeY, '✕  닫기', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-  }).setOrigin(0.5).setDepth(203).setInteractive();
-  container.add(closeT);
-  closeT.on('pointerdown', () => {
+  const closeW = cw - 40;
+  const closeH = 44;
+  const closeX = cx + 20;
+  const closeBg = scene.add.graphics().setDepth(203);
+  closeBg.fillStyle(DUNGEON_UI.SOOT, 0.92);
+  closeBg.fillRoundedRect(closeX, closeY - closeH / 2, closeW, closeH, 6);
+  closeBg.lineStyle(1, DUNGEON_UI.IRON, 0.82);
+  closeBg.strokeRoundedRect(closeX, closeY - closeH / 2, closeW, closeH, 6);
+  const closeT = scene.add.text(cx + cw / 2, closeY, '닫기', {
+    fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(203);
+  const closeZone = scene.add.zone(closeX, closeY - closeH / 2, closeW, closeH)
+    .setOrigin(0).setDepth(204).setInteractive({ useHandCursor: true });
+  container.add([closeBg, closeT, closeZone]);
+  closeZone.on('pointerdown', () => {
     scene.tweens.add({ targets: closeT, scaleX: 0.9, scaleY: 0.9, duration: 80, yoyo: true });
     close();
   });

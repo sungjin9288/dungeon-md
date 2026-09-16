@@ -86,14 +86,14 @@ export function showInvasionBanner(
   if (!cfg) return;
   if (!state.invasionShownAt) state.invasionShownAt = Date.now();
 
-  const bannerH = 124;
+  const bannerH = 150;
   const c = scene.add.container(0, -bannerH).setDepth(60);
 
   const frame = addFramedPanel(scene, {
     x: 12,
     y: 10,
     w: CANVAS_WIDTH - 24,
-    h: 106,
+    h: 132,
     radius: 9,
     fillColor: 0x1a0800,
     borderColor: 0xff6655,
@@ -107,22 +107,22 @@ export function showInvasionBanner(
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
-  c.add(scene.add.text(24, 28, '침략 발생', {
+  c.add(scene.add.text(24, 24, '침략 발생', {
     fontFamily: 'Georgia, serif', fontSize: '17px', color: '#ff7755', fontStyle: 'bold',
   }));
-  c.add(scene.add.text(24, 52, cfg.name, {
+  c.add(scene.add.text(24, 47, cfg.name, {
     fontFamily: 'Georgia, serif', fontSize: '13px', color: '#f0c8a0',
   }));
   const waveCount = cfg.waves.length;
-  c.add(scene.add.text(24, 71, `총 ${waveCount} 웨이브 · 방어 실패 시 퀘스트 진행 불가`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: '#cc8844',
+  c.add(scene.add.text(24, 69, `총 ${waveCount} 웨이브\n실패 시 퀘스트 진행 불가`, {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844', lineSpacing: 3,
   }));
 
   const prepBtn = addPrimaryActionButton(scene, {
     x: CANVAS_WIDTH - 152,
-    y: 74,
+    y: 48,
     w: 124,
-    h: 32,
+    h: 44,
     label: '방어 준비',
     fontSize: '13px',
     once: true,
@@ -132,15 +132,15 @@ export function showInvasionBanner(
 
   const laterBg = scene.add.graphics();
   laterBg.fillStyle(0x120904, 0.88);
-  laterBg.fillRoundedRect(24, 78, 82, 26, 8);
+  laterBg.fillRoundedRect(CANVAS_WIDTH - 152, 98, 124, 34, 8);
   laterBg.lineStyle(1, 0x3a2810, 0.72);
-  laterBg.strokeRoundedRect(24, 78, 82, 26, 8);
+  laterBg.strokeRoundedRect(CANVAS_WIDTH - 152, 98, 124, 34, 8);
   c.add(laterBg);
 
-  const laterBtn = scene.add.text(65, 91, '잠시 후에', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#9a7650',
+  const laterBtn = scene.add.text(CANVAS_WIDTH - 90, 115, '잠시 후에', {
+    fontFamily: 'sans-serif', fontSize: '12px', color: '#9a7650',
   }).setOrigin(0.5);
-  const laterZone = scene.add.zone(24, 78, 82, 26).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+  const laterZone = scene.add.zone(CANVAS_WIDTH - 152, 94, 124, 42).setOrigin(0, 0).setInteractive({ useHandCursor: true });
   laterZone.on('pointerover', () => laterBtn.setColor('#c8921a'));
   laterZone.on('pointerout', () => laterBtn.setColor('#9a7650'));
   laterZone.on('pointerdown', () => dismissBanner(scene, state));
@@ -163,7 +163,7 @@ export function dismissBanner(
   if (!banner) return;
   state.alertBanner = undefined;
   scene.tweens.add({
-    targets: banner, y: -124,
+    targets: banner, y: -150,
     duration: 200, ease: 'Quad.easeIn',
     onComplete: () => { banner.destroy(); showReminderIcon(scene, state); },
   });

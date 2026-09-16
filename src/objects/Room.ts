@@ -48,7 +48,9 @@ export class Room extends Phaser.GameObjects.Container {
   private readonly reducedMotion = getReducedMotion();
   /** @internal */ levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
-  private roomTypeBadge?: Phaser.GameObjects.Text;
+  /** @internal */ roomTypeBadge?: Phaser.GameObjects.Text;
+  /** @internal */ baseRoomIcon?: Phaser.GameObjects.Text;
+  /** @internal */ baseRoomNameLabel?: Phaser.GameObjects.Text;
   /** @internal */ slotLoadoutGfx?: Phaser.GameObjects.Graphics;
   /** @internal */ slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
   /** @internal */ slotLoadoutSprite?: Phaser.GameObjects.Image;
@@ -312,15 +314,15 @@ export class Room extends Phaser.GameObjects.Container {
     this.add(stripe);
 
     // Room icon (emoji)
-    const icon = this.scene.add.text(0, -14, def.emoji, { fontSize: '28px' }).setOrigin(0.5);
-    this.add(icon);
+    this.baseRoomIcon = this.scene.add.text(0, -14, def.emoji, { fontSize: '28px' }).setOrigin(0.5);
+    this.add(this.baseRoomIcon);
 
     // Room name — parchment ink so it reads on the dark pixel room.
-    const nameLabel = this.scene.add.text(0, 24, def.koreanName, {
+    this.baseRoomNameLabel = this.scene.add.text(0, 24, def.koreanName, {
       fontFamily: "Georgia, serif", fontSize: '10px', color: CASUAL_CSS.INK,
       fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add(nameLabel);
+    this.add(this.baseRoomNameLabel);
 
     // Level badge (Lv1 = none visible yet)
     this.levelBadge = this.scene.add.graphics();

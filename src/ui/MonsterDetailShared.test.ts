@@ -6,6 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import { defaultOwnedMonster } from '../data/barracks';
 import { loadGameState } from '../data/wisdom';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { OwnedMonster } from '../data/barracks';
 import type { GameState } from '../data/wisdom';
 import {
@@ -16,6 +17,7 @@ import {
   formatCraftedStatLine,
   getGrowthDirective,
   getFeedTrainingPreview,
+  getDetailCollectionMeta,
   type EquipmentDisplay,
 } from './MonsterDetailShared';
 
@@ -41,6 +43,18 @@ function makeEquipment(overrides: Partial<EquipmentDisplay> = {}): EquipmentDisp
     ...overrides,
   };
 }
+
+describe('getDetailCollectionMeta', () => {
+  it('keeps a fusion-only hybrid outside the numbered registry', () => {
+    const monster = makeMonster({ id: 'storm_spirit', rarity: 2 });
+    const profile = resolveOwnedMonsterProfile(monster.id);
+    expect(profile).not.toBeNull();
+    expect(getDetailCollectionMeta(monster, profile!)).toMatchObject({
+      indexLabel: 'No.---',
+      tier: 'R',
+    });
+  });
+});
 
 // ─── getEquipmentStars ────────────────────────────────────────────────────────
 

@@ -29,8 +29,8 @@ export interface RoomData {
   attackCooldown: number;
   lastAttackTime: number;
   goldPerSec: number;
-  monsterSlot:          import('./monsters').MonsterId | null;   // primary (slot 0)
-  monsterSlots:         (import('./monsters').MonsterId | null)[];  // all slots incl. primary
+  monsterSlot:          string | null;   // primary owned monster id (slot 0)
+  monsterSlots:         (string | null)[];  // all owned monster ids incl. evolved/hybrid ids
   hasFirstStrikeUsed:   boolean;   // reset each wave
   lastScrollBurstTime:  number;    // scroll_library Lv3 burst cooldown
   scrollBurstActiveUntil: number;  // when the 2× magic-room buff expires

@@ -11,11 +11,10 @@ import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import type { RoomData, RoomType } from '../data/rooms';
 import { ROOM_DEFS } from '../data/rooms';
-import { HYBRID_DEFS } from '../data/fusion';
 import { ACTIVE_SKILLS } from '../data/barracks';
 import type { EquipmentStats } from '../data/barracks';
 import { getRoomSlotCapacity, loadGameState, ROOM_SLOT_TYPE_DEFS, type RoomSlotType } from '../data/wisdom';
-import { getMonstersForRoom, MONSTER_DEFS, type ElementId } from '../data/monsters';
+import { getMonstersForRoom, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -258,16 +257,12 @@ function shorten(text: string, max: number): string {
 }
 
 function getMonsterLabel(monsterId: string): string {
-  return MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS]?.name
-    ?? HYBRID_DEFS[monsterId]?.name
-    ?? monsterId;
+  return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
 }
 
 function getMonsterToken(monsterId: string): string {
-  const def = MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS];
-  const hybrid = HYBRID_DEFS[monsterId];
-  const emoji = def?.emoji ?? hybrid?.emoji ?? '👾';
-  return `${emoji} ${shorten(def?.name ?? hybrid?.name ?? monsterId, 5)}`;
+  const profile = resolveOwnedMonsterProfile(monsterId);
+  return `${profile?.emoji ?? '👾'} ${shorten(profile?.name ?? monsterId, 5)}`;
 }
 
 function getTrapToken(trapId: string): string {
@@ -534,10 +529,14 @@ export function onRoomClick(ctx: RoomInputContext, room: Room): void {
   } else if (room.state === 'occupied' && room.roomData) {
     showRoomIntelTip(room);
 
-    const ownedHybrid      = Object.values(HYBRID_DEFS)
-      .some(h => h.roomTypes.includes(room.roomData!.type as string)
-              && loadGameState().ownedMonsters.some(m => m.id === h.id));
-    const hasMonstersAvail = getMonstersForRoom(room.roomData.type, ctx.unlockedStage).length > 0 || ownedHybrid;
+    const ownedVariant = loadGameState().ownedMonsters.some(monster => {
+      const profile = resolveOwnedMonsterProfile(monster.id);
+      return Boolean(profile && (
+        profile.roomTypes.includes(room.roomData!.type)
+        || profile.roomTypes.includes('any')
+      ));
+    });
+    const hasMonstersAvail = getMonstersForRoom(room.roomData.type, ctx.unlockedStage).length > 0 || ownedVariant;
 
     if (hasMonstersAvail && !room.roomData.monsterSlot) {
       ctx.openMonsterPanel(room.row, room.col, room.roomData.type as RoomType, ctx.unlockedStage, ctx.dailyElementRestrict);

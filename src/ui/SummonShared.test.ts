@@ -81,6 +81,16 @@ describe('getCollectionSummary', () => {
     expect(summary.total).toBeGreaterThan(0);
   });
 
+  it('counts an evolved instance as its canonical collection entry', () => {
+    const gs = makeGs({
+      ownedMonsters: [{
+        id: 'dokkaebi_warrior_leg', level: 1, xp: 0, skillPoints: 0,
+        spentSkills: {}, equippedSkills: [], equipment: null, rarity: 4,
+      }],
+    });
+    expect(getCollectionSummary(gs).owned).toBe(1);
+  });
+
   it('counts epics and legends from summonHistory', () => {
     const gs = makeGs({
       summonHistory: [

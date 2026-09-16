@@ -1,11 +1,9 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_HEIGHT } from '../constants/layout';
-import { ZONE_ACCENTS, CASUAL, CASUAL_CSS } from '../constants/colors';
-import { applyCasualBackground } from '../ui/AmbientBackground';
+import { DUNGEON_UI, DUNGEON_UI_CSS, ZONE_ACCENTS } from '../constants/colors';
 import {
   getBlueprintRecommendation, getMonsterDefForOwned,
 } from '../data/forgeRecommendations';
-import { addTabBar } from '../ui/GameUiPrimitives';
 import {
   loadGameState,
   saveGameState,
@@ -43,6 +41,12 @@ import { createForgeFocusContext, getContextualBackTarget, getZoneDestination } 
 import { getReducedMotion } from '../utils/reducedMotion';
 import { findAssignedRoom } from '../data/reinforcementRecommendations';
 import { buildHomeZoneNavigation, buildZoneBackButton } from '../ui/GameZoneNavigation';
+import {
+  drawDismantleSigil,
+  drawEquipmentSigil,
+  drawForgeCrest,
+  drawSupplySigil,
+} from '../ui/ForgeSkin';
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
 // 제작소 씬. 렌더(워크벤치/탭/카드)·연출(FX)·순수 헬퍼는 ForgeShared/ForgeWorkbench/
@@ -56,6 +60,8 @@ export class ForgeScene extends Phaser.Scene {
   private headerContainer?: Phaser.GameObjects.Container;
   private selectedBpId: string | null = null;
   private selectedEqIdx: number | null = null;
+  private craftPage = 0;
+  private dismantlePage = 0;
   private returnScene = 'DungeonHomeScene';
   private focusMonsterId: string | null = null;
   private focusSourceLabel: string | null = null;
@@ -69,6 +75,8 @@ export class ForgeScene extends Phaser.Scene {
     this.activeTab    = 'craft';
     this.selectedBpId = null;
     this.selectedEqIdx = null;
+    this.craftPage = 0;
+    this.dismantlePage = 0;
     this.returnScene = this.consumeReturnScene();
     this.focusMonsterId = this.peekFocusMonsterId();
     this.focusSourceLabel = this.peekFocusSourceLabel();
@@ -87,23 +95,35 @@ export class ForgeScene extends Phaser.Scene {
   // ─── Background ──────────────────────────────────────────────────────────
 
   private drawBackground(): void {
-    // Bright casual storybook backdrop (gradient + sun glow + polka dots).
-    applyCasualBackground(this);
-
     const g = this.add.graphics().setDepth(-10);
-    // Cream content tray behind craft/dismantle cards.
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CONTENT_Y);
+    g.fillStyle(DUNGEON_UI.STONE, 0.98);
+    g.fillRect(0, CONTENT_Y, CANVAS_WIDTH, CANVAS_HEIGHT - CONTENT_Y - ROOT_NAV_HEIGHT);
+
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.34);
+    for (let y = CONTENT_Y + 22; y < CANVAS_HEIGHT - ROOT_NAV_HEIGHT; y += 58) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = Math.floor((y - CONTENT_Y) / 58) % 2 === 0 ? 32 : 78;
+      for (let x = offset; x < CANVAS_WIDTH; x += 94) g.lineBetween(x, y - 58, x, y);
+    }
+
+    g.fillStyle(ZONE_ACCENTS.forge, 0.08);
+    g.fillCircle(18, CONTENT_Y + 108, 92);
+    g.fillCircle(CANVAS_WIDTH - 16, CONTENT_Y + 108, 92);
+
     const trayX = 10;
-    const trayY = CONTENT_Y + 8;
+    const trayY = CONTENT_Y + 6;
     const trayW = CANVAS_WIDTH - 20;
-    const trayH = CANVAS_HEIGHT - CONTENT_Y - ROOT_NAV_HEIGHT - 18;
-    g.fillStyle(CASUAL.SHADOW, 0.16);
-    g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 18);
-    g.fillStyle(CASUAL.PANEL_SOFT, 0.92);
-    g.fillRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.lineStyle(3, CASUAL.EDGE, 0.9);
-    g.strokeRoundedRect(trayX, trayY, trayW, trayH, 18);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(trayX + 5, trayY + 5, trayW - 10, 6, 3);
+    const trayH = CANVAS_HEIGHT - CONTENT_Y - ROOT_NAV_HEIGHT - 14;
+    g.fillStyle(DUNGEON_UI.VOID, 0.5);
+    g.fillRoundedRect(trayX, trayY + 4, trayW, trayH, 10);
+    g.fillStyle(DUNGEON_UI.SOOT, 0.9);
+    g.fillRoundedRect(trayX, trayY, trayW, trayH, 10);
+    g.lineStyle(1.5, DUNGEON_UI.IRON, 0.9);
+    g.strokeRoundedRect(trayX, trayY, trayW, trayH, 10);
   }
 
   // ─── Header ──────────────────────────────────────────────────────────────
@@ -113,33 +133,37 @@ export class ForgeScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(10);
     this.headerContainer = c;
 
-    // Cream header band with brown bottom edge + white top highlight.
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.PANEL, 1);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
     g.fillRect(0, 0, CANVAS_WIDTH, HEADER_H);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRect(0, 0, CANVAS_WIDTH, 4);
-    g.fillStyle(CASUAL.EDGE, 1);
+    g.fillStyle(DUNGEON_UI.STONE_RAISED, 0.72);
+    g.fillRect(0, 54, CANVAS_WIDTH, HEADER_H - 54);
+    g.fillStyle(DUNGEON_UI.BRASS, 0.72);
     g.fillRect(0, HEADER_H - 3, CANVAS_WIDTH, 3);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.62);
+    g.lineBetween(0, 54, CANVAS_WIDTH, 54);
     c.add(g);
 
-    c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 - 7, '공방 · 제작소', {
+    c.add(this.add.text(CANVAS_WIDTH / 2, 21, '심층 단조 공방', {
       fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#ffffff', strokeThickness: 4,
+      color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0.5));
     const gs = loadGameState();
     const focusName = getFocusMonsterName(gs, this.focusMonsterId);
     const headerSub = focusName
       ? `${this.focusSourceLabel ?? '선택 수호자'} · ${focusName} 장비 보강`
-      : '장비 제작 · 바로 장착';
-    c.add(this.add.text(CANVAS_WIDTH / 2, HEADER_H / 2 + 14, headerSub, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK_SOFT,
+      : '방어선 장비 제작 · 즉시 장착';
+    c.add(this.add.text(CANVAS_WIDTH / 2, 43, headerSub, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: focusName ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
 
     buildZoneBackButton(this, {
       label: this.returnScene === 'BarracksScene' ? '← 군단' : '← 던전',
-      width: 68,
+      width: 86,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      textColor: DUNGEON_UI_CSS.TEXT,
       onBack: () => {
         const target = this.returnScene || getContextualBackTarget('ForgeScene');
         if (getReducedMotion()) {
@@ -153,81 +177,77 @@ export class ForgeScene extends Phaser.Scene {
       },
     });
 
-    // Farm-loop shortcut: jump to the Abyss to gather crafting materials.
     if (this.focusRoomSlotIdx === null) {
-      this.buildBtn(c, 80, 10, '🕳 심연', () => this.scene.start('AbyssScene'));
+      this.buildHeaderAction(c, CANVAS_WIDTH - 96, '심연 수급', 'supply', DUNGEON_UI.BRASS, () => {
+        this.scene.start('AbyssScene');
+      });
     }
 
     if (this.focusRoomSlotIdx !== null) {
-      const returnX = CANVAS_WIDTH - 78;
-      const returnY = 10;
-      const returnW = 66;
-      const returnH = 44;
-      const returnBg = this.add.graphics();
-      returnBg.fillStyle(CASUAL.GREEN_DK, 1);
-      returnBg.fillRoundedRect(returnX, returnY + 3, returnW, returnH, 13);
-      returnBg.fillStyle(CASUAL.GREEN, 1);
-      returnBg.fillRoundedRect(returnX, returnY, returnW, returnH, 13);
-      returnBg.fillStyle(0xffffff, 0.32);
-      returnBg.fillRoundedRect(returnX + 6, returnY + 4, returnW - 12, 7, 3);
-      c.add(returnBg);
-
-      const returnText = this.add.text(returnX + returnW / 2, returnY + 13, '방 복귀', {
-        fontFamily: 'sans-serif',
-        fontSize: '11px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      }).setOrigin(0.5).setY(returnY + returnH / 2);
-      const returnZone = this.add.zone(returnX, returnY, returnW, returnH)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true });
-      returnZone.on('pointerdown', () => this.returnToFocusedRoom());
-      c.add([returnText, returnZone]);
+      this.buildHeaderAction(c, CANVAS_WIDTH - 96, '방 복귀', 'return', DUNGEON_UI.JADE, () => {
+        this.returnToFocusedRoom();
+      });
     }
 
-    // Material inventory strip (right side of header)
-    const materialEntries = Object.entries(gs.materials ?? {})
-      .filter(([, qty]) => qty > 0)
-      .map(([id, qty]) => `${getMaterialDisplay(id).emoji}×${qty}`);
-    const matLine = materialEntries.length > 0
-      ? `${materialEntries.slice(0, 3).join(' ')}${materialEntries.length > 3 ? ` +${materialEntries.length - 3}` : ''}`
-      : '';
-    if (matLine && this.focusRoomSlotIdx === null) {
-      c.add(this.add.text(CANVAS_WIDTH - 10, 13, matLine, {
-        fontFamily: 'sans-serif', fontSize: '8px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
-      }).setOrigin(1, 0.5));
-    }
-
-    // Awakening stones indicator
+    const materialEntries = Object.values(gs.materials ?? {}).filter(qty => qty > 0);
+    const materialTotal = materialEntries.reduce((sum, qty) => sum + qty, 0);
     const stones = gs.awakeningStones ?? 0;
-    if (this.focusRoomSlotIdx === null) {
-      c.add(this.add.text(CANVAS_WIDTH - 12, HEADER_H - 14, `각성석: ${stones}`, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
-      }).setOrigin(1, 1));
-    }
+    const resourceLabel = this.focusRoomSlotIdx !== null
+      ? `방 #${this.focusRoomSlotIdx + 1} 보강 명령`
+      : `재료 ${materialTotal} · 종류 ${materialEntries.length} · 각성석 ${stones}`;
+    const resourceX = CANVAS_WIDTH / 2 - 78;
+    const resourceY = 59;
+    const resourceW = 156;
+    const resourceBg = this.add.graphics();
+    resourceBg.fillStyle(DUNGEON_UI.VOID, 0.96);
+    resourceBg.fillRoundedRect(resourceX, resourceY, resourceW, 21, 5);
+    resourceBg.lineStyle(1, this.focusRoomSlotIdx !== null ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS, 0.58);
+    resourceBg.strokeRoundedRect(resourceX, resourceY, resourceW, 21, 5);
+    drawForgeCrest(
+      resourceBg,
+      resourceX + 15,
+      resourceY + 9,
+      this.focusRoomSlotIdx !== null ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS_BRIGHT,
+      0.9,
+      0.46,
+    );
+    c.add(resourceBg);
+    c.add(this.add.text(resourceX + 29, resourceY + 10.5, resourceLabel, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5));
   }
 
-  // Cream pill button (back button), added to the header container.
-  private buildBtn(
+  private buildHeaderAction(
     c: Phaser.GameObjects.Container,
     x: number,
-    y: number,
     label: string,
+    kind: 'supply' | 'return',
+    accent: number,
     cb: () => void,
   ): void {
-    const w = label.length * 8 + 18;
+    const y = 8;
+    const w = 86;
+    const h = 44;
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.EDGE, 1);
-    g.fillRoundedRect(x, y + 3, w, 44, 13);
-    g.fillStyle(CASUAL.PANEL, 1);
-    g.fillRoundedRect(x, y, w, 44, 13);
-    g.fillStyle(0xffffff, 0.12);
-    g.fillRoundedRect(x + 4, y + 4, w - 8, 7, 3);
+    g.fillStyle(DUNGEON_UI.VOID, 0.52);
+    g.fillRoundedRect(x, y + 3, w, h, 10);
+    g.fillStyle(DUNGEON_UI.STONE, 1);
+    g.fillRoundedRect(x, y, w, h, 10);
+    g.fillStyle(accent, 0.12);
+    g.fillRoundedRect(x + 5, y + 5, 28, h - 10, 7);
+    g.lineStyle(1.5, accent, 0.72);
+    g.strokeRoundedRect(x, y, w, h, 10);
+    if (kind === 'supply') drawSupplySigil(g, x + 19, y + 22, accent, 0.92, 0.62);
+    else {
+      g.lineStyle(2.2, accent, 0.92);
+      g.lineBetween(x + 25, y + 15, x + 14, y + 22);
+      g.lineBetween(x + 14, y + 22, x + 25, y + 29);
+    }
     c.add(g);
-    c.add(this.add.text(x + w / 2, y + 22, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+    c.add(this.add.text(x + 58, y + h / 2, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
     }).setOrigin(0.5));
-    const zone = this.add.zone(x, y, w, 44).setOrigin(0)
+    const zone = this.add.zone(x, y, w, h).setOrigin(0)
       .setInteractive({ useHandCursor: true });
     zone.on('pointerdown', cb);
     c.add(zone);
@@ -320,24 +340,45 @@ export class ForgeScene extends Phaser.Scene {
 
   private drawTabBar(): void {
     this.tabContainer?.destroy();
-    this.tabContainer = addTabBar<'craft' | 'dismantle'>(this, {
-      tabs: [
-        { id: 'craft',     label: '⚒️  제작' },
-        { id: 'dismantle', label: '🔨  분해' },
-      ],
-      active:    this.activeTab,
-      y:         HEADER_H,
-      height:    TAB_H,
-      accent:    ZONE_ACCENTS.forge,
-      accentCSS: '#ffaa44',
-      onSelect:  id => {
-        this.activeTab     = id;
-        this.selectedBpId  = null;
+    const c = this.add.container(0, HEADER_H).setDepth(10);
+    this.tabContainer = c;
+    const tabs: Array<{ id: 'craft' | 'dismantle'; label: string; accent: number }> = [
+      { id: 'craft', label: '제작', accent: ZONE_ACCENTS.forge },
+      { id: 'dismantle', label: '분해', accent: DUNGEON_UI.EMBER },
+    ];
+    const tabW = CANVAS_WIDTH / tabs.length;
+    tabs.forEach((tab, index) => {
+      const active = this.activeTab === tab.id;
+      const x = tabW * index;
+      const bg = this.add.graphics();
+      bg.fillStyle(active ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
+      bg.fillRect(x, 0, tabW, TAB_H);
+      bg.fillStyle(tab.accent, active ? 0.12 : 0.03);
+      bg.fillRect(x, 0, tabW, TAB_H);
+      bg.lineStyle(1, DUNGEON_UI.IRON, 0.7);
+      bg.strokeRect(x, 0, tabW, TAB_H);
+      if (active) {
+        bg.fillStyle(tab.accent, 1);
+        bg.fillRect(x + 10, TAB_H - 4, tabW - 20, 4);
+      }
+      if (tab.id === 'craft') drawForgeCrest(bg, x + tabW / 2 - 28, 21, tab.accent, active ? 1 : 0.48, 0.55);
+      else drawDismantleSigil(bg, x + tabW / 2 - 28, 21, tab.accent, active ? 1 : 0.48, 0.55);
+      c.add(bg);
+      c.add(this.add.text(x + tabW / 2 + 9, TAB_H / 2, tab.label, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
+        color: active ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5));
+      const zone = this.add.zone(x, 0, tabW, TAB_H).setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', () => {
+        this.activeTab = tab.id;
+        this.selectedBpId = null;
         this.selectedEqIdx = null;
         this.drawTabBar();
         this.renderContent();
-      },
-    }).container;
+      });
+      c.add(zone);
+    });
   }
 
   private buildRootNavigation(): void {
@@ -353,6 +394,7 @@ export class ForgeScene extends Phaser.Scene {
     return {
       gs,
       activeTab:        this.activeTab,
+      page:             this.activeTab === 'craft' ? this.craftPage : this.dismantlePage,
       focusMonsterId:   this.focusMonsterId,
       focusSourceLabel: this.focusSourceLabel,
       selectedBpId:     this.selectedBpId,
@@ -368,6 +410,14 @@ export class ForgeScene extends Phaser.Scene {
       },
       onSelectEquipment: (idx) => {
         this.selectedEqIdx = this.selectedEqIdx === idx ? null : idx;
+        this.renderContent();
+      },
+      onOpenAbyss:        ()             => this.scene.start('AbyssScene'),
+      onPageChange: (page) => {
+        if (this.activeTab === 'craft') this.craftPage = Math.max(0, page);
+        else this.dismantlePage = Math.max(0, page);
+        this.selectedBpId = null;
+        this.selectedEqIdx = null;
         this.renderContent();
       },
       onConfirmCraft:     (bpId)     => this.confirmCraft(bpId),
@@ -396,13 +446,13 @@ export class ForgeScene extends Phaser.Scene {
 
     const matEntries = Object.entries(result.consumedMaterials);
 
-    // Float feedback per material
     matEntries.forEach(([id, qty], i) => {
-      const emoji  = getMaterialDisplay(id).emoji;
-      const baseX  = CANVAS_WIDTH / 2 - ((matEntries.length - 1) * 32) / 2 + i * 32;
-      const floatT = this.add.text(baseX, 120, `-${qty}${emoji}`, {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
-        color: '#ffaa66', stroke: '#000000', strokeThickness: 3,
+      const name = getMaterialDisplay(id).name;
+      const spacing = matEntries.length > 1 ? 270 / (matEntries.length - 1) : 0;
+      const baseX = matEntries.length > 1 ? 60 + i * spacing : CANVAS_WIDTH / 2;
+      const floatT = this.add.text(baseX, 120, `-${qty} ${name}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+        color: DUNGEON_UI_CSS.EMBER, stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(260).setAlpha(0);
       this.tweens.add({
         targets: floatT, y: 96, alpha: { from: 1, to: 0 },
@@ -434,7 +484,7 @@ export class ForgeScene extends Phaser.Scene {
     const shouldReturnToFocusedRoom = this.focusMonsterId !== null;
     const result = equipMonsterEquipment(beforeState, targetMonsterId, bp.resultId);
     if (!result.ok) {
-      this.showToast('장착 실패', '#ff6666');
+      this.showToast('장착 실패', DUNGEON_UI_CSS.EMBER);
       return false;
     }
     saveGameState(result.state);
@@ -450,7 +500,7 @@ export class ForgeScene extends Phaser.Scene {
     this.drawHeader();
     this.renderContent();
     const name = getMonsterDefForOwned(targetMonsterId)?.name ?? '수호자';
-    this.showToast(`✅ ${name} 장착 완료`, '#b8fff0');
+    this.showToast(`${name} 장착 완료`, DUNGEON_UI_CSS.JADE);
     return true;
   }
 
@@ -462,11 +512,11 @@ export class ForgeScene extends Phaser.Scene {
     if (!bp || !canCraftBlueprint(bp, gs.materials ?? {})) return;
     const recommendation = getBlueprintRecommendation(gs, bp, { monsterId: this.focusMonsterId, sourceLabel: this.focusSourceLabel });
 
-    const matStr = Object.entries(bp.materials)
-      .map(([id, qty]) => {
-        const material = getMaterialDisplay(id);
-        return `${material.emoji} ${material.name} ×${qty}`;
-      }).join('\n');
+    const matStr = Object.entries(bp.materials).map(([id, qty]) => {
+      const material = getMaterialDisplay(id);
+      const before = gs.materials?.[id] ?? 0;
+      return `${material.name}  ${before}→${Math.max(0, before - qty)} · 소모 ${qty}`;
+    }).join('\n');
 
     const ov = this.add.container(0, 0).setDepth(50);
     const dim = this.add.graphics();
@@ -474,57 +524,68 @@ export class ForgeScene extends Phaser.Scene {
     dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ov.add(dim);
 
-    const pw = 280;
+    const pw = 310;
     const materialCount = Object.keys(bp.materials).length;
-    const ph = (recommendation ? 280 : 226) + materialCount * 16;
+    const ph = recommendation ? 380 : 300;
     const cx = CANVAS_WIDTH / 2, cy = CANVAS_HEIGHT / 2;
     const accent = rarityHex(bp.rarity);
-    const materialY = recommendation ? cy - ph / 2 + 164 : cy - ph / 2 + 112;
+    const top = cy - ph / 2;
+    const materialY = top + (recommendation ? 218 : 148);
+    const materialH = 32 + materialCount * 16;
     const box = this.add.graphics();
-    box.fillStyle(CASUAL.PANEL, 1);
-    box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
+    box.fillStyle(DUNGEON_UI.STONE, 1);
+    box.fillRoundedRect(cx - pw / 2, top, pw, ph, 10);
     box.fillStyle(accent, 0.12);
-    box.fillRoundedRect(cx - pw / 2 + 12, cy - ph / 2 + 38, pw - 24, 44, 9);
-    box.fillStyle(CASUAL.SHADOW, 0.34);
-    box.fillRoundedRect(cx - pw / 2 + 18, materialY - 8, pw - 36, materialCount * 16 + 36, 8);
-    box.lineStyle(2, accent, 0.96);
-    box.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
-    box.lineStyle(1, 0xffffff, 0.12);
-    box.strokeRoundedRect(cx - pw / 2 + 5, cy - ph / 2 + 5, pw - 10, ph - 10, 6);
+    box.fillRoundedRect(cx - pw / 2 + 12, top + 42, pw - 24, 72, 8);
+    box.fillStyle(DUNGEON_UI.VOID, 0.76);
+    box.fillRoundedRect(cx - pw / 2 + 18, materialY, pw - 36, materialH, 7);
+    box.lineStyle(2, DUNGEON_UI.IRON, 1);
+    box.strokeRoundedRect(cx - pw / 2, top, pw, ph, 10);
+    box.fillStyle(accent, 1);
+    box.fillRect(cx - pw / 2 + 1, top + 1, 3, ph - 2);
     ov.add(box);
 
-    ov.add(this.add.text(cx, cy - ph / 2 + 22, '⚒️ 제작 확인', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ffaa44', fontStyle: 'bold',
+    const itemSigil = this.add.graphics();
+    itemSigil.fillStyle(accent, 0.1);
+    itemSigil.fillCircle(cx - pw / 2 + 48, top + 78, 25);
+    itemSigil.lineStyle(1.4, accent, 0.72);
+    itemSigil.strokeCircle(cx - pw / 2 + 48, top + 78, 25);
+    drawEquipmentSigil(itemSigil, cx - pw / 2 + 48, top + 78, bp.type, accent, 0.96, 1);
+    ov.add(itemSigil);
+
+    ov.add(this.add.text(cx, top + 23, '제작 명령 확인', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
     }).setOrigin(0.5));
-    ov.add(this.add.text(cx, cy - ph / 2 + 48, `${bp.resultEmoji} ${bp.name}`, {
-      fontFamily: 'Georgia, serif', fontSize: '14px', color: RARITY_COLORS[bp.rarity] ?? '#ffaa44',
-    }).setOrigin(0.5));
-    ov.add(this.add.text(cx, cy - ph / 2 + 68, bp.statDesc, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#aa8844',
-    }).setOrigin(0.5));
-    drawEffectChips(this, ov, summarizeBlueprintEffects(bp), cx - 92, cy - ph / 2 + 84, accent, 184);
+    ov.add(this.add.text(cx - pw / 2 + 82, top + 58, bp.name, {
+      fontFamily: 'sans-serif', fontSize: '14px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
+      fontStyle: 'bold',
+    }));
+    ov.add(this.add.text(cx - pw / 2 + 82, top + 80, bp.statDesc, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    }));
+    drawEffectChips(this, ov, summarizeBlueprintEffects(bp), cx - pw / 2 + 82, top + 94, accent, 190);
 
     if (recommendation) {
       drawForgeRecommendationPreview(
         this,
         ov,
         recommendation,
-        cx - 112,
-        cy - ph / 2 + 106,
-        224,
-        48,
+        cx - 137,
+        top + 148,
+        274,
+        58,
         '제작 후 추천 장착',
       );
     }
 
-    ov.add(this.add.text(cx, materialY, `소모 재료:\n${matStr}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#c8b080',
-      align: 'center', lineSpacing: 3,
-    }).setOrigin(0.5, 0));
+    ov.add(this.add.text(cx - pw / 2 + 28, materialY + 11, `소모 재료\n${matStr}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+      lineSpacing: 5,
+    }));
 
-    const buttonY = cy + ph / 2 - 42;
-    addModalButton(this, ov, cx - 112, buttonY, 96, 44, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
-    addModalButton(this, ov, cx + 16, buttonY, 96, 44, '제작', accent, 'primary', () => {
+    const buttonY = top + ph - 54;
+    addModalButton(this, ov, cx - 137, buttonY, 126, 44, '취소', DUNGEON_UI.IRON, 'secondary', () => ov.destroy());
+    addModalButton(this, ov, cx + 11, buttonY, 126, 44, '단조 시작', accent, 'primary', () => {
       ov.destroy();
       this.executeCraft(bpId);
     });
@@ -540,12 +601,8 @@ export class ForgeScene extends Phaser.Scene {
     const bp = Object.values(BLUEPRINT_DEFS).find(b => b.resultId === eq.id);
     const returned = getDismantleReturns(bp);
     const retStr = Object.keys(returned).length > 0
-      ? Object.entries(returned)
-          .map(([id, qty]) => {
-            const material = getMaterialDisplay(id);
-            return `${material.emoji} ${material.name} ×${qty}`;
-          }).join('\n')
-      : '없음';
+      ? Object.entries(returned).map(([id, qty]) => `${getMaterialDisplay(id).name} +${qty}`).join('\n')
+      : '반환 재료 없음';
 
     const ov = this.add.container(0, 0).setDepth(50);
 
@@ -554,41 +611,62 @@ export class ForgeScene extends Phaser.Scene {
     dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ov.add(dim);
 
-    const pw = 280, ph = holder ? 204 : 180;
+    const pw = 310, ph = holder ? 292 : 256;
     const cx = CANVAS_WIDTH / 2, cy = CANVAS_HEIGHT / 2;
+    const top = cy - ph / 2;
+    const accent = rarityHex(eq.rarity);
 
     const box = this.add.graphics();
-    box.fillStyle(CASUAL.PANEL, 1);
-    box.fillRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
+    box.fillStyle(DUNGEON_UI.STONE, 1);
+    box.fillRoundedRect(cx - pw / 2, top, pw, ph, 10);
+    box.fillStyle(accent, 0.1);
+    box.fillRoundedRect(cx - pw / 2 + 12, top + 42, pw - 24, 68, 8);
+    box.fillStyle(DUNGEON_UI.VOID, 0.74);
+    box.fillRoundedRect(cx - pw / 2 + 22, top + 126, pw - 44, 58, 7);
     if (holder) {
-      box.fillStyle(CASUAL.RED_DK, 0.72);
-      box.fillRoundedRect(cx - pw / 2 + 18, cy - ph / 2 + 74, pw - 36, 28, 8);
+      box.fillStyle(DUNGEON_UI.EMBER, 0.12);
+      box.fillRoundedRect(cx - pw / 2 + 22, top + 194, pw - 44, 36, 7);
     }
-    box.lineStyle(2, 0xcc4400, 0.9);
-    box.strokeRoundedRect(cx - pw / 2, cy - ph / 2, pw, ph, 8);
+    box.lineStyle(2, DUNGEON_UI.EMBER, 0.86);
+    box.strokeRoundedRect(cx - pw / 2, top, pw, ph, 10);
+    box.fillStyle(DUNGEON_UI.EMBER, 1);
+    box.fillRect(cx - pw / 2 + 1, top + 1, 3, ph - 2);
     ov.add(box);
 
-    ov.add(this.add.text(cx, cy - ph / 2 + 22, '장비 분해', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#cc8844', fontStyle: 'bold',
-    }).setOrigin(0.5));
+    const eqSigil = this.add.graphics();
+    eqSigil.fillStyle(accent, 0.1);
+    eqSigil.fillCircle(cx - pw / 2 + 49, top + 76, 24);
+    eqSigil.lineStyle(1.3, accent, 0.68);
+    eqSigil.strokeCircle(cx - pw / 2 + 49, top + 76, 24);
+    drawEquipmentSigil(eqSigil, cx - pw / 2 + 49, top + 76, eq.type, accent, 0.94, 1);
+    ov.add(eqSigil);
 
-    ov.add(this.add.text(cx, holder ? cy - 34 : cy - 20, `${eq.emoji} ${eq.name} 분해?\n재료 반환:\n${retStr}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: '#c8b090',
-      align: 'center', lineSpacing: 4,
+    ov.add(this.add.text(cx, top + 23, '분해 명령 확인', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
     }).setOrigin(0.5));
+    ov.add(this.add.text(cx - pw / 2 + 84, top + 58, eq.name, {
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: RARITY_COLORS[eq.rarity] ?? DUNGEON_UI_CSS.BRASS,
+    }));
+    ov.add(this.add.text(cx - pw / 2 + 84, top + 82, '이 장비를 재료로 되돌립니다.', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+    }));
+    ov.add(this.add.text(cx - pw / 2 + 32, top + 138, `예상 반환\n${retStr}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS, lineSpacing: 5,
+    }));
 
     if (holder) {
-      ov.add(this.add.text(cx, cy + 28, `${holder.emoji} ${holder.name} 장착 중 · 분해 시 장착 해제`, {
+      ov.add(this.add.text(cx, top + 212, `${holder.name} Lv.${holder.level} 장착 중 · 분해 시 자동 해제`, {
         fontFamily: 'sans-serif',
         fontSize: '10px',
-        color: '#ffb088',
+        color: DUNGEON_UI_CSS.EMBER,
+        fontStyle: 'bold',
         align: 'center',
       }).setOrigin(0.5));
     }
 
-    const buttonY = cy + ph / 2 - 40;
-    addModalButton(this, ov, cx - 112, buttonY, 96, 44, '취소', CASUAL.EDGE, 'secondary', () => ov.destroy());
-    addModalButton(this, ov, cx + 16, buttonY, 96, 44, '분해', CASUAL.RED, 'primary', () => {
+    const buttonY = top + ph - 54;
+    addModalButton(this, ov, cx - 137, buttonY, 126, 44, '취소', DUNGEON_UI.IRON, 'secondary', () => ov.destroy());
+    addModalButton(this, ov, cx + 11, buttonY, 126, 44, '분해 실행', DUNGEON_UI.EMBER, 'primary', () => {
       ov.destroy();
       this.executeDismantle(idx, bp);
     });
@@ -613,15 +691,15 @@ export class ForgeScene extends Phaser.Scene {
     this.renderContent();
 
     const parts = Object.entries(result.returnedMaterials)
-      .map(([id, qty]) => `${getMaterialDisplay(id).emoji}×${qty}`);
-    const matStr = parts.length > 0 ? parts.join('  ') : '';
-    this.showToast(`✅ 분해 완료!  ${matStr}`, '#88ff88');
+      .map(([id, qty]) => `${getMaterialDisplay(id).name} +${qty}`);
+    const matStr = parts.length > 0 ? ` · ${parts.join(' · ')}` : '';
+    this.showToast(`분해 완료${matStr}`, DUNGEON_UI_CSS.JADE);
   }
 
-  private showToast(msg: string, color = '#ffcc44'): void {
+  private showToast(msg: string, color: string = DUNGEON_UI_CSS.BRASS): void {
     const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 100, msg, {
       fontFamily: 'sans-serif', fontSize: '13px', color,
-      backgroundColor: '#1a1200', padding: { x: 12, y: 6 },
+      backgroundColor: '#080b09', padding: { x: 14, y: 8 },
     }).setOrigin(0.5).setDepth(200).setAlpha(0);
 
     this.tweens.add({

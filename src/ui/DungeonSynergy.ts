@@ -158,6 +158,12 @@ export function drawSynergySummary(
 ): void {
   const { scene, theme: t, slots, gridRows, slotPadY, gridStartY, layout } = ctx;
 
+  // The vertical cutaway uses its final strip for the dungeon heart and starts
+  // the command deck immediately below it. Its room-to-room connector already
+  // communicates active synergy; a second badge row would be covered by the
+  // deck and obscure the heart labels.
+  if (layout) return;
+
   const typeCounts: Record<string, number> = {};
   for (const slot of slots) {
     if (slot?.roomType && slot.hp > 0) {
@@ -168,10 +174,7 @@ export function drawSynergySummary(
   const activeTypes = Object.entries(typeCounts).filter(([, cnt]) => cnt >= 2);
   if (activeTypes.length === 0) return;
 
-  // In vertical-cutaway mode use contentBottomY from the layout; otherwise the flat-grid formula.
-  const baseY = layout
-    ? layout.contentBottomY + 4
-    : gridStartY + gridRows * (SLOT_H + slotPadY) + 4;
+  const baseY = gridStartY + gridRows * (SLOT_H + slotPadY) + 4;
   let xOff = 8;
 
   for (const [type, count] of activeTypes) {

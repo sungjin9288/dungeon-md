@@ -1,196 +1,213 @@
-// ─── Awakening Tab ─────────────────────────────────────────────────────────────
-// Implements the 각성 (Awakening) tab for FusionScene.
-// Requires 100 affinity + 1 awakening stone → unlocks passive ability.
-
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
 import { applyFusionAwakening } from '../data/fusionTransactions';
 import {
   AWAKENED_PASSIVES,
-  getBaseId, getMonsterEmoji, getMonsterDisplayName,
+  getBaseId,
+  getMonsterDisplayName,
 } from '../data/fusion';
 import { logger } from '../utils/logger';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { addMonsterPortrait } from './MonsterPortraitView';
+import { addPrimaryActionButton, addProgressBar } from './GameUiPrimitives';
 import {
   type FusionTabContext,
-  showFusionAnimation, showResultToast,
+  TAB_ACCENT,
+  bindFusionTransactionAction,
+  openMonsterPicker,
+  showConfirmDialog,
+  showFusionAnimation,
+  showFusionResultPanel,
 } from './FusionTabs';
+
+export interface AwakeningState {
+  readonly awakenTarget: OwnedMonster | null;
+  readonly setAwakenTarget: (monster: OwnedMonster | null) => void;
+}
 
 export function buildAwakeningTab(
   ctx: FusionTabContext,
   c: Phaser.GameObjects.Container,
+  state: AwakeningState,
 ): void {
-  const gs  = loadGameState();
-  const PAD = 16;
-  const rowH = 70;
-  const rowW = CANVAS_WIDTH - PAD * 2;
-  let   y    = ctx.contentY + 238;
+  const gameState = loadGameState();
+  const target = state.awakenTarget;
+  const affinity = target ? gameState.monsterAffinity?.[target.id] ?? 0 : 0;
+  const awakened = target ? gameState.monsterAwakened?.[target.id] ?? false : false;
+  const stones = gameState.awakeningStones ?? 0;
+  const eligible = Boolean(target) && affinity >= 100 && !awakened && stones >= 1;
+  const affectedCount = target
+    ? gameState.ownedMonsters.filter(monster => monster.id === target.id).length
+    : 0;
+  const passive = target ? AWAKENED_PASSIVES[getBaseId(target.id)] : undefined;
 
-  c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y - 26,
-    `친밀도 100 + 각성석 1개 → 몬스터 각성   🪨 보유: ${gs.awakeningStones ?? 0}개`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
+  const panelX = 18;
+  const panelY = ctx.contentY + 154;
+  const panelW = CANVAS_WIDTH - 36;
+  const panelH = CANVAS_HEIGHT - panelY - 18;
+  const panel = ctx.scene.add.graphics();
+  panel.fillStyle(DUNGEON_UI.STONE, 0.96);
+  panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+  panel.lineStyle(1, DUNGEON_UI.IRON, 0.9);
+  panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+  c.add(panel);
+
+  c.add(ctx.scene.add.text(panelX + 16, panelY + 20, '각성 서약진', {
+    fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + panelW - 16, panelY + 20, '친밀도 100 · 각성석 1', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: '#aeb8ed', fontStyle: 'bold',
+  }).setOrigin(1, 0.5));
+
+  const targetX = panelX + 16;
+  const targetY = panelY + 44;
+  const targetW = 132;
+  const targetH = 148;
+  const targetBg = ctx.scene.add.graphics();
+  targetBg.fillStyle(DUNGEON_UI.SOOT, 0.98);
+  targetBg.fillRoundedRect(targetX, targetY, targetW, targetH, 8);
+  targetBg.lineStyle(1.5, target ? TAB_ACCENT['각성'] : DUNGEON_UI.IRON, target ? 0.85 : 0.7);
+  targetBg.strokeRoundedRect(targetX, targetY, targetW, targetH, 8);
+  c.add(targetBg);
+
+  if (target) {
+    addMonsterPortrait(ctx.scene, c, targetX + targetW / 2, targetY + 58, target.id, {
+      size: 86, frameColor: TAB_ACCENT['각성'], glowColor: TAB_ACCENT['각성'],
+      bgColor: DUNGEON_UI.VOID, equippedSkins: gameState.equippedSkins,
+    });
+    c.add(ctx.scene.add.text(targetX + targetW / 2, targetY + 111, getMonsterDisplayName(target.id), {
+      fontFamily: 'sans-serif', fontSize: '13px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
+      align: 'center', wordWrap: { width: targetW - 10 },
     }).setOrigin(0.5));
-
-  // Farm-loop hint + shortcut: awakening stones drop from Abyss boss floors.
-  const stoneChip = ctx.scene.add.text(CANVAS_WIDTH / 2, y - 8,
-    '🕳 각성석은 심연 보스층(10·20·30…)에서 파밍 →', {
-      fontFamily: 'sans-serif', fontSize: '9px', color: '#ffffff', fontStyle: 'bold',
-      backgroundColor: CASUAL_CSS.PURPLE, padding: { x: 8, y: 3 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-  stoneChip.on('pointerdown', () => ctx.scene.scene.start('AbyssScene'));
-  c.add(stoneChip);
-
-  const monsters = gs.ownedMonsters;
-  if (!monsters.length) {
-    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y + 50, '보유 몬스터 없음', {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK_SOFT,
+    c.add(ctx.scene.add.text(targetX + targetW / 2, targetY + 134, `Lv.${target.level} · 대상 변경`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#aeb8ed', fontStyle: 'bold',
     }).setOrigin(0.5));
+  } else {
+    c.add(ctx.scene.add.text(targetX + targetW / 2, targetY + 62, '각성 대상 없음', {
+      fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+    }).setOrigin(0.5));
+    c.add(ctx.scene.add.text(targetX + targetW / 2, targetY + 91, '눌러서 선택', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: '#aeb8ed',
+    }).setOrigin(0.5));
+  }
+  const targetZone = ctx.scene.add.zone(targetX, targetY, targetW, targetH).setOrigin(0)
+    .setInteractive({ useHandCursor: true });
+  targetZone.once('pointerdown', () => {
+    openMonsterPicker(ctx, undefined, monster => {
+      state.setAwakenTarget(monster);
+      ctx.refreshTab();
+    });
+  });
+  c.add(targetZone);
+
+  const infoX = targetX + targetW + 14;
+  const infoW = panelX + panelW - 16 - infoX;
+  c.add(ctx.scene.add.text(infoX, targetY + 10, '서약 조건', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(infoX, targetY + 34, `친밀도 ${affinity}/100`, {
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: affinity >= 100 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT,
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  const progress = addProgressBar(ctx.scene, {
+    x: infoX, y: targetY + 48, w: infoW, h: 9, ratio: affinity / 100,
+    fillColor: TAB_ACCENT['각성'], trackColor: DUNGEON_UI.SOOT,
+    borderColor: DUNGEON_UI.IRON, animate: false,
+  });
+  c.add([progress.track, progress.fill]);
+  c.add(ctx.scene.add.text(infoX, targetY + 78, `각성석 ${stones}개`, {
+    fontFamily: 'sans-serif', fontSize: '12px',
+    color: stones >= 1 ? '#aeb8ed' : DUNGEON_UI_CSS.EMBER,
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(infoX, targetY + 106,
+    awakened ? '이미 각성한 개체' : eligible ? '모든 조건 충족' : '조건 미충족', {
+      fontFamily: 'sans-serif', fontSize: '12px',
+      color: awakened ? '#aeb8ed' : eligible ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(infoX, targetY + 132, `동일 ID ${affectedCount}체 적용`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+
+  const previewY = targetY + targetH + 18;
+  const preview = ctx.scene.add.graphics();
+  preview.fillStyle(DUNGEON_UI.SOOT, 0.96);
+  preview.fillRoundedRect(panelX + 16, previewY, panelW - 32, 112, 8);
+  preview.lineStyle(1, DUNGEON_UI.IRON, 0.78);
+  preview.strokeRoundedRect(panelX + 16, previewY, panelW - 32, 112, 8);
+  c.add(preview);
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 21, '각성 효과', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 48,
+    target ? `동일 ID ${affectedCount}체 모두 ATK stack +3` : '대상을 선택하면 적용 범위를 계산합니다', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#aeb8ed', fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+  c.add(ctx.scene.add.text(panelX + 30, previewY + 78,
+    passive ? `고유 passive · ${passive.desc}` : '해당 계보의 고유 passive 정보 없음', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+      wordWrap: { width: panelW - 60 },
+    }).setOrigin(0, 0.5));
+
+  const farm = addPrimaryActionButton(ctx.scene, {
+    x: panelX + 16, y: previewY + 126, w: panelW - 32, h: 44,
+    label: '각성석 획득처 · 심연 보스층으로 이동', fontSize: '12px', once: true,
+    showArrow: false, fillColor: DUNGEON_UI.STONE_RAISED, borderColor: DUNGEON_UI.EDGE,
+    hoverFillColor: DUNGEON_UI.IRON, hoverBorderColor: TAB_ACCENT['각성'],
+    onPress: () => ctx.scene.scene.start('AbyssScene'),
+  });
+  c.add([farm.bg, farm.text, farm.zone]);
+
+  const action = addPrimaryActionButton(ctx.scene, {
+    x: panelX + 16, y: previewY + 182, w: panelW - 32, h: 48,
+    label: eligible
+      ? '각성 서약 준비'
+      : awakened ? '이미 각성한 개체입니다' : '친밀도와 각성석을 확인하세요',
+    fontSize: '15px', enabled: eligible, once: true, showArrow: false,
+    fillColor: TAB_ACCENT['각성'], borderColor: DUNGEON_UI.BRASS_BRIGHT,
+    hoverFillColor: TAB_ACCENT['각성'], hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+    disabledFillColor: DUNGEON_UI.SOOT, disabledBorderColor: DUNGEON_UI.IRON,
+    disabledTextColor: DUNGEON_UI_CSS.MUTED,
+    onPress: () => {},
+  });
+  bindFusionTransactionAction(ctx, action, () => {
+      if (!target) return;
+      showConfirmDialog(
+        ctx,
+        `${getMonsterDisplayName(target.id)}의 서약을 완성합니다`,
+        `각성석 1개 소모 · 동일 ID ${affectedCount}체 ATK stack +3\n${passive?.desc ?? '고유 passive 정보 없음'}`,
+        '각성',
+        () => executeAwakening(ctx, state, target),
+      );
+    });
+  c.add([action.bg, action.text, action.zone]);
+}
+
+function executeAwakening(
+  ctx: FusionTabContext,
+  state: AwakeningState,
+  monster: OwnedMonster,
+): void {
+  const result = applyFusionAwakening(loadGameState(), monster);
+  if (!result.ok) {
+    logger.warn(`[AWAKEN] rejected: ${result.reason}`);
+    showFusionResultPanel(ctx, {
+      tabId: '각성', status: 'failure', title: '각성 조건이 바뀌었습니다',
+      detail: '친밀도, 각성 여부, 각성석 잔액을 다시 확인하세요.',
+    });
     return;
   }
 
-  monsters.forEach((m, i) => {
-    const ry       = y + i * (rowH + 6);
-    const affinity = gs.monsterAffinity?.[m.id] ?? 0;
-    const awakened = gs.monsterAwakened?.[m.id] ?? false;
-    const stones   = gs.awakeningStones ?? 0;
-    const eligible = affinity >= 100 && !awakened && stones >= 1;
-
-    const rg = ctx.scene.add.graphics().setDepth(3);
-    const borderCol = awakened ? CASUAL.PURPLE : eligible ? CASUAL.PURPLE_DK : CASUAL.EDGE;
-    rg.fillStyle(CASUAL.SHADOW, 0.18);
-    rg.fillRoundedRect(PAD, ry + 3, rowW, rowH - 4, 12);
-    rg.fillStyle(awakened ? CASUAL.PANEL : CASUAL.PANEL_SOFT, 1);
-    rg.fillRoundedRect(PAD, ry, rowW, rowH - 4, 12);
-    rg.fillStyle(0xffffff, 0.12);
-    rg.fillRoundedRect(PAD + 4, ry + 4, rowW - 8, 6, 3);
-    rg.lineStyle(3, borderCol, awakened ? 1 : 0.9);
-    rg.strokeRoundedRect(PAD, ry, rowW, rowH - 4, 12);
-    c.add(rg);
-
-    c.add(ctx.scene.add.text(PAD + 24, ry + (rowH - 4) / 2, getMonsterEmoji(m.id), {
-      fontFamily: 'sans-serif', fontSize: '26px',
-    }).setOrigin(0.5));
-
-    c.add(ctx.scene.add.text(PAD + 48, ry + 10, getMonsterDisplayName(m.id), {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
-      color: awakened ? CASUAL_CSS.PURPLE : CASUAL_CSS.INK,
-    }));
-    c.add(ctx.scene.add.text(PAD + 48, ry + 26, `Lv.${m.level}`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-    }));
-
-    // Affinity bar
-    const barX = PAD + 48, barY = ry + 40, barW = 120, barH = 6;
-    const barBg = ctx.scene.add.graphics();
-    barBg.fillStyle(CASUAL.EDGE_SOFT, 0.4);
-    barBg.fillRoundedRect(barX, barY, barW, barH, 3);
-    if (affinity > 0) {
-      barBg.fillStyle(CASUAL.PURPLE, 1);
-      barBg.fillRoundedRect(barX, barY, Math.round(barW * affinity / 100), barH, 3);
-    }
-    c.add(barBg);
-    c.add(ctx.scene.add.text(barX + barW + 4, barY + 3, `${affinity}/100`, {
-      fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-
-    if (awakened) {
-      c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, '✨ 각성 완료', {
-        fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.PURPLE, fontStyle: 'bold',
-      }).setOrigin(1, 0.5));
-      const ap = AWAKENED_PASSIVES[getBaseId(m.id)];
-      if (ap) {
-        c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2 + 14, ap.desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-        }).setOrigin(1, 0.5));
-      }
-    } else if (eligible) {
-      const awakBtn = ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, '⚡ 각성 실행', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.WHITE, fontStyle: 'bold',
-        backgroundColor: CASUAL_CSS.PURPLE, padding: { x: 8, y: 4 },
-      }).setOrigin(1, 0.5).setInteractive();
-      awakBtn.on('pointerdown', () => confirmAwakening(ctx, m));
-      c.add(awakBtn);
-    } else {
-      const reasons: string[] = [];
-      if (affinity < 100) reasons.push(`친밀도 ${affinity}/100`);
-      if (stones < 1)     reasons.push('각성석 필요');
-      c.add(ctx.scene.add.text(CANVAS_WIDTH - PAD - 6, ry + (rowH - 4) / 2, reasons.join(' · '), {
-        fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
-      }).setOrigin(1, 0.5));
-    }
-  });
-}
-
-function confirmAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
-  const name    = getMonsterDisplayName(monster.id);
-  const stoneGs = loadGameState();
-  const passive = AWAKENED_PASSIVES[getBaseId(monster.id)];
-
-  const ov = ctx.scene.add.container(0, 0).setDepth(80);
-  const dim = ctx.scene.add.graphics();
-  dim.fillStyle(0x000000, 0.75);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  ov.add(dim);
-
-  const PW = 300, PH = passive ? 220 : 198;
-  const PX = (CANVAS_WIDTH - PW) / 2, PY = (CANVAS_HEIGHT - PH) / 2;
-  const pg = ctx.scene.add.graphics();
-  pg.fillStyle(0x0d000d, 1);
-  pg.fillRoundedRect(PX, PY, PW, PH, 8);
-  pg.lineStyle(2, 0xcc44cc, 0.9);
-  pg.strokeRoundedRect(PX, PY, PW, PH, 8);
-  ov.add(pg);
-
-  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 28, '각성 확인', {
-    fontFamily: 'Georgia, serif', fontSize: '17px', color: '#cc44cc', fontStyle: 'bold',
-  }).setOrigin(0.5));
-  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 60,
-    `각성석 1개가 소모됩니다. 계속하시겠습니까?`, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#c8b0c8',
-      align: 'center',
-    }).setOrigin(0.5));
-  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 84, `▶ ${name}`, {
-    fontFamily: 'Georgia, serif', fontSize: '12px', color: '#884488',
-  }).setOrigin(0.5));
-  ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 104, `🪨 보유 각성석: ${stoneGs.awakeningStones ?? 0}개`, {
-    fontFamily: 'sans-serif', fontSize: '11px', color: '#664466',
-  }).setOrigin(0.5));
-
-  if (passive) {
-    ov.add(ctx.scene.add.text(CANVAS_WIDTH / 2, PY + 126, `✨ ${passive.desc}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: '#cc44cc',
-      align: 'center', wordWrap: { width: PW - 32 },
-    }).setOrigin(0.5));
-  }
-
-  const confirmBtn = ctx.scene.add.text(CANVAS_WIDTH / 2 - 52, PY + PH - 36, '확인', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#cc44cc',
-    backgroundColor: '#2a003a', padding: { x: 22, y: 8 },
-  }).setOrigin(0.5).setInteractive();
-  confirmBtn.on('pointerdown', () => { ov.destroy(true); executeAwakening(ctx, monster); });
-  ov.add(confirmBtn);
-
-  const cancelBtn = ctx.scene.add.text(CANVAS_WIDTH / 2 + 52, PY + PH - 36, '취소', {
-    fontFamily: 'Georgia, serif', fontSize: '14px', color: '#664466',
-    backgroundColor: '#150015', padding: { x: 22, y: 8 },
-  }).setOrigin(0.5).setInteractive();
-  cancelBtn.on('pointerdown', () => ov.destroy(true));
-  ov.add(cancelBtn);
-
-  ov.setAlpha(0);
-  ctx.scene.tweens.add({ targets: ov, alpha: 1, duration: 200, ease: 'Quad.easeOut' });
-}
-
-function executeAwakening(ctx: FusionTabContext, monster: OwnedMonster): void {
-  const result = applyFusionAwakening(loadGameState(), monster);
-  if (!result.ok) return;
-
   saveGameState(result.state);
-  logger.debug(`[AWAKEN] ${monster.id} awakened! Stones remaining: ${result.state.awakeningStones}`);
-
+  state.setAwakenTarget(result.monster);
+  logger.debug(`[AWAKEN] ${monster.id}; affected ${result.affectedCount}; stones ${result.state.awakeningStones}`);
   showFusionAnimation(ctx, '각성', () => {
-    ctx.refreshTab();
-    showResultToast(ctx, `${getMonsterDisplayName(monster.id)} 각성 완료!`, '#cc44cc');
+    showFusionResultPanel(ctx, {
+      tabId: '각성', title: `${getMonsterDisplayName(monster.id)} 각성 완료`,
+      detail: `동일 ID ${result.affectedCount}체 모두 ATK stack +3\n고유 passive가 해방되었습니다.`,
+    });
   });
 }

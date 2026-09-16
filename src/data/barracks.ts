@@ -60,7 +60,7 @@ export interface SkillNode {
 }
 
 export interface SkillTree {
-  monsterId: MonsterId;
+  monsterId: string;
   branchNames: { A: string; B: string; C: string };
   nodes: SkillNode[];
 }
@@ -337,7 +337,7 @@ const SEA_GOD_SPEAR_TREE: SkillTree = {
 
 // ─── Simplified trees for other Ch1 monsters ──────────────────────────────────
 
-function simpleTree(id: MonsterId, bA: string, bB: string, bC: string): SkillTree {
+function simpleTree(id: string, bA: string, bB: string, bC: string): SkillTree {
   return {
     monsterId: id,
     branchNames: { A: bA, B: bB, C: bC },
@@ -482,8 +482,8 @@ export const SKILL_TREES: Partial<Record<MonsterId, SkillTree>> = {
 };
 
 /** Resolve a monster's skill tree; monsters without a custom tree get the standard fallback. */
-export function getSkillTree(monsterId: MonsterId): SkillTree {
-  return SKILL_TREES[monsterId] ?? simpleTree(monsterId, '공격', '방어', '지원');
+export function getSkillTree(monsterId: string): SkillTree {
+  return SKILL_TREES[monsterId as MonsterId] ?? simpleTree(monsterId, '공격', '방어', '지원');
 }
 
 // ─── Active Skills (purchasable) ──────────────────────────────────────────────

@@ -1,221 +1,620 @@
 /**
- * 심연 (The Abyss) — material-farming hub scene.
+ * Abyss expedition room — fixed-view depth selection and material farming.
  *
- * A descending tower of floors. Climb the next floor (battle) to advance depth
- * and earn a first-clear bonus; SWEEP any cleared floor instantly (spends an
- * Abyss Key) to farm its materials for evolution (Fusion) + crafting (Forge).
+ * Floor/page selection is presentation-only. Key refill, sweep rewards,
+ * first-clear progression, and battle waves remain owned by the data layer.
  */
 
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { CASUAL_CSS, COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
 import { MATERIAL_DEFS } from '../data/fusion';
 import {
-  ABYSS_MAX_FLOOR, ABYSS_KEY_MAX,
-  getAbyssFloorConfig, getAbyssFloorLoot, isAbyssBossFloor,
-  refilledKeys, canSweepAbyss, nextAbyssFloor, buildAbyssFloorWaves,
+  ABYSS_KEY_MAX,
+  ABYSS_MAX_FLOOR,
+  buildAbyssFloorWaves,
+  canSweepAbyss,
+  getAbyssFloorConfig,
+  getAbyssFloorLoot,
+  isAbyssBossFloor,
+  nextAbyssFloor,
+  refilledKeys,
   type AbyssLoot,
 } from '../data/abyss';
-import { sweepAbyssFloor, clearAbyssFloor } from '../data/abyssTransactions';
-import { addSceneHeader, addPrimaryActionButton } from '../ui/GameUiPrimitives';
+import { clearAbyssFloor, sweepAbyssFloor } from '../data/abyssTransactions';
+import {
+  addFramedPanel,
+  addPrimaryActionButton,
+  addSceneHeader,
+} from '../ui/GameUiPrimitives';
+import { formatHudResourceValue } from '../ui/HudResourceFormatting';
 
-const CARD_X = 14;
-const CARD_W = CANVAS_WIDTH - 28;
-const CARD_H = 86;
-const LIST_TOP = 150;
-const CARD_GAP = 10;
-const SHORTCUT_H = 56;   // craft-shortcut bar height (top of the scroll content)
+type ReceiptTone = 'success' | 'warning';
+type AbyssActionKind = 'challenge' | 'sweep';
+
+interface AbyssReceipt {
+  readonly title: string;
+  readonly detail: string;
+  readonly tone: ReceiptTone;
+}
+
+interface AbyssActionView {
+  readonly kind: AbyssActionKind;
+  readonly label: string;
+  readonly enabled: boolean;
+  readonly status: string;
+  readonly fillColor: number;
+  readonly borderColor: number;
+}
+
+const PANEL_X = 14;
+const PANEL_W = CANVAS_WIDTH - PANEL_X * 2;
+const STATUS_Y = 76;
+const DEPTH_Y = 144;
+const INTEL_Y = 324;
+const COMMAND_Y = 498;
+const ROUTES_Y = 716;
+const FLOORS_PER_PAGE = 5;
+const TRANSACTION_COOLDOWN_MS = 250;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function now(): number {
+  return Date.now();
+}
+
 export class AbyssScene extends Phaser.Scene {
   private gs!: GameState;
-  private maxScrollY = 0;
-  private dragStartY = 0;
-  private dragging = false;
-  // DPR camera base scroll (the "top" set by main.ts applyDprCamera's centerOn).
-  // Vertical scroll runs in [baseScrollY, baseScrollY + maxScrollY].
-  private baseScrollX = 0;
-  private baseScrollY = 0;
+  private selectedFloor = 1;
+  private pageStart = 1;
+  private receipt: AbyssReceipt | null = null;
+  private transactionPending = false;
+  private lastTransactionAt = 0;
 
-  constructor() { super({ key: 'AbyssScene' }); }
-
-  private resultToast: { loot: AbyssLoot; firstClear: boolean; floor: number } | null = null;
+  constructor() {
+    super({ key: 'AbyssScene' });
+  }
 
   create(): void {
     this.gs = loadGameState();
-    this.resolveReturnedBattle();
-    // Daily key refill on entry.
+    this.receipt = null;
+    this.transactionPending = false;
+    this.lastTransactionAt = 0;
+
+    const returnedFloor = this.resolveReturnedBattle();
     const refilled = refilledKeys(this.gs.abyss, today());
     if (refilled !== this.gs.abyss) {
       this.gs = { ...this.gs, abyss: refilled };
       saveGameState(this.gs);
     }
+
+    this.selectedFloor = returnedFloor ?? nextAbyssFloor(this.gs.abyss);
+    this.pageStart = this.pageStartFor(this.selectedFloor);
+    this.resetCamera();
     this.render();
-    if (this.resultToast) {
-      const { loot, firstClear, floor } = this.resultToast;
-      this.resultToast = null;
-      const prefix = firstClear ? `${floor}층 정복! ` : `${floor}층 클리어 `;
-      this.time.delayedCall(120, () => this.showLootToast(loot.materials, loot.awakeningStones, loot.gold, prefix));
-    }
   }
 
-  /** If we returned from an Abyss floor battle, apply the result (advance depth on win). */
-  private resolveReturnedBattle(): void {
+  private resolveReturnedBattle(): number | null {
     const pendingFloor = this.registry.get('abyssPendingFloor') as number | undefined;
     const result = this.registry.get('battleResult') as { won: boolean } | undefined;
-    if (pendingFloor === undefined) return;
+    if (pendingFloor === undefined) return null;
 
     this.registry.remove('abyssPendingFloor');
     this.registry.remove('battleResult');
     this.registry.remove('returnTo');
 
+    const deepestBefore = this.gs.abyss.highestFloor;
     if (result?.won) {
-      const r = clearAbyssFloor(this.gs, pendingFloor);
-      this.gs = r.state;
+      const resolved = clearAbyssFloor(this.gs, pendingFloor);
+      this.gs = resolved.state;
       saveGameState(this.gs);
-      this.resultToast = { loot: r.loot, firstClear: r.firstClear, floor: pendingFloor };
+      this.receipt = {
+        title: resolved.firstClear
+          ? `${pendingFloor}층 정복 완료 · 최심 ${deepestBefore}→${this.gs.abyss.highestFloor}`
+          : `${pendingFloor}층 원정 완료 · 최심 ${this.gs.abyss.highestFloor}층`,
+        detail: this.formatLoot(resolved.loot),
+        tone: 'success',
+      };
+      return pendingFloor;
     }
+
+    this.receipt = {
+      title: result ? `${pendingFloor}층 원정 실패 · 최심 ${deepestBefore}층 유지` : `${pendingFloor}층 원정 결과 확인 불가`,
+      detail: result ? '심연 정복 보상 없음 · 같은 층에 다시 도전할 수 있습니다' : '진행과 보상은 변경되지 않았습니다',
+      tone: 'warning',
+    };
+    return pendingFloor;
   }
 
   private render(): void {
-    this.children.removeAll();
+    this.clearRenderedObjects();
+    this.resetCamera();
+    this.drawBackdrop();
 
     addSceneHeader(this, {
-      title: '심연',
-      subtitle: '재료 파밍 · 진화 · 장비 제작',
-      onBack: () => this.scene.start('StageSelectScene'),
+      title: '심연 원정실',
+      subtitle: '깊이를 정찰하고 재료 보급선을 확보',
+      onBack: () => {
+        if (!this.transactionPending) this.scene.start('StageSelectScene');
+      },
     });
 
-    this.drawStatusBar();
-    this.drawFloorList();   // sets maxScrollY + camera bounds
-    // Reset to the DPR-centered top and capture it as the scroll base. The old
-    // setScroll(0,0) clamped to the BOTTOM (main.ts applyDprCamera offsets the
-    // camera so the real top is scroll≈(-dpr-derived), not 0). Vertical scroll
-    // runs in [baseScrollY, baseScrollY + maxScrollY] from this top.
-    this.cameras.main.centerOn(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-    this.baseScrollX = this.cameras.main.scrollX;
-    this.baseScrollY = this.cameras.main.scrollY;
-    this.setupScroll();
-    this.drawCraftShortcuts();
+    this.drawStatusRail();
+    this.drawDepthWindow();
+    this.drawFloorIntel();
+    this.drawCommandPlate();
+    this.drawSupplyRoutes();
   }
 
-  // ─── Status bar: depth + keys ──────────────────────────────────────────────
-  private drawStatusBar(): void {
-    const y = 92, w = CANVAS_WIDTH - 28;
-    const g = this.add.graphics().setScrollFactor(0).setDepth(20);
-    g.fillStyle(CASUAL.SHADOW, 0.4); g.fillRoundedRect(14, y + 3, w, 40, 12);
-    g.fillStyle(CASUAL.PANEL, 1);    g.fillRoundedRect(14, y, w, 40, 12);
-    g.fillStyle(0xffffff, 0.08);     g.fillRoundedRect(18, y + 3, w - 8, 4, 2);
-    g.lineStyle(2.5, CASUAL.EDGE, 1);g.strokeRoundedRect(14, y, w, 40, 12);
+  private clearRenderedObjects(): void {
+    this.tweens.killAll();
+    for (const child of [...this.children.list]) child.destroy();
+  }
 
-    this.add.text(28, y + 20, `🗝 심연 열쇠  ${this.gs.abyss.keys}/${ABYSS_KEY_MAX}`, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+  private resetCamera(): void {
+    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    this.cameras.main.centerOn(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+  }
+
+  private drawBackdrop(): void {
+    const g = this.add.graphics().setDepth(-900);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(0, 68, CANVAS_WIDTH, CANVAS_HEIGHT - 68);
+
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.3);
+    for (let y = 84; y < CANVAS_HEIGHT; y += 38) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = ((y - 84) / 38) % 2 === 0 ? 26 : 0;
+      for (let x = offset; x < CANVAS_WIDTH; x += 58) g.lineBetween(x, y, x, y + 38);
+    }
+
+    g.fillStyle(DUNGEON_UI.STONE, 0.72);
+    g.fillRect(0, 68, 20, CANVAS_HEIGHT - 68);
+    g.fillRect(CANVAS_WIDTH - 20, 68, 20, CANVAS_HEIGHT - 68);
+    g.lineStyle(2, DUNGEON_UI.BRASS, 0.12);
+    g.lineBetween(29, 72, 29, CANVAS_HEIGHT);
+    g.lineBetween(CANVAS_WIDTH - 29, 72, CANVAS_WIDTH - 29, CANVAS_HEIGHT);
+
+    g.fillStyle(COLORS.MAGIC_GLOW, 0.035);
+    g.fillCircle(CANVAS_WIDTH / 2, DEPTH_Y + 80, 150);
+  }
+
+  private drawStatusRail(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: STATUS_Y,
+      w: PANEL_W,
+      h: 58,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.28,
+    });
 
     const deepest = this.gs.abyss.highestFloor;
-    this.add.text(CANVAS_WIDTH - 28, y + 20, `최심 도달  ${deepest}/${ABYSS_MAX_FLOOR}층`, {
-      fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(21);
+    const items = [
+      { label: '심연 열쇠', value: `${this.gs.abyss.keys} / ${ABYSS_KEY_MAX}`, color: this.gs.abyss.keys > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER },
+      { label: '최심 정복', value: `${deepest} / ${ABYSS_MAX_FLOOR}층`, color: deepest > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED },
+      { label: '다음 원정', value: deepest >= ABYSS_MAX_FLOOR ? '완주' : `${deepest + 1}층`, color: deepest >= ABYSS_MAX_FLOOR ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT },
+    ];
+
+    items.forEach((item, index) => {
+      const cellW = PANEL_W / items.length;
+      const x = PANEL_X + cellW * index;
+      if (index > 0) {
+        const divider = this.add.graphics();
+        divider.lineStyle(1, DUNGEON_UI.IRON, 0.85);
+        divider.lineBetween(x, STATUS_Y + 10, x, STATUS_Y + 48);
+      }
+      this.add.text(x + cellW / 2, STATUS_Y + 18, item.label, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5);
+      this.add.text(x + cellW / 2, STATUS_Y + 40, item.value, {
+        fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: item.color,
+      }).setOrigin(0.5);
+    });
   }
 
-  // ─── Floor list (descent) ──────────────────────────────────────────────────
-  private drawFloorList(): void {
-    const next = nextAbyssFloor(this.gs.abyss);
-    // Show every reachable floor (1..next), shallowest at top → descend downward.
-    const floors: number[] = [];
-    for (let f = 1; f <= next; f++) floors.push(f);
-
-    const floorsTop = LIST_TOP + SHORTCUT_H + CARD_GAP;
-    floors.forEach((floor, i) => {
-      const y = floorsTop + i * (CARD_H + CARD_GAP);
-      this.drawFloorCard(floor, y);
+  private drawDepthWindow(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: DEPTH_Y,
+      w: PANEL_W,
+      h: 170,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: DUNGEON_UI.IRON,
+      accentColor: DUNGEON_UI.BRASS,
+      glowColor: COLORS.MAGIC_GLOW,
+      glowOpacity: 0.04,
     });
 
-    const contentBottom = floorsTop + floors.length * (CARD_H + CARD_GAP) + 20;
-    this.maxScrollY = Math.max(0, contentBottom - CANVAS_HEIGHT);
-    this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT + this.maxScrollY);
+    const reachable = nextAbyssFloor(this.gs.abyss);
+    this.add.text(PANEL_X + 16, DEPTH_Y + 19, '심도 관측창 · 정복층은 소탕, 다음 층은 원정', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, DEPTH_Y + 19, `${this.pageStart}–${Math.min(ABYSS_MAX_FLOOR, this.pageStart + FLOORS_PER_PAGE - 1)}층`, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
+
+    const gap = 8;
+    const nodeW = (PANEL_W - 16 - gap * (FLOORS_PER_PAGE - 1)) / FLOORS_PER_PAGE;
+    for (let index = 0; index < FLOORS_PER_PAGE; index++) {
+      const floor = this.pageStart + index;
+      const x = PANEL_X + 8 + index * (nodeW + gap);
+      this.drawFloorNode(floor, x, DEPTH_Y + 36, nodeW, 64, reachable);
+    }
+
+    const maxPageStart = this.pageStartFor(reachable);
+    const previousEnabled = this.pageStart > 1;
+    const nextEnabled = this.pageStart < maxPageStart;
+    const previous = addPrimaryActionButton(this, {
+      x: PANEL_X + 10,
+      y: DEPTH_Y + 112,
+      w: 88,
+      h: 44,
+      label: '← 이전 5층',
+      fontSize: '11px',
+      enabled: previousEnabled,
+      showArrow: false,
+      fillColor: DUNGEON_UI.STONE,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      onPress: () => this.changePage(-1),
+    });
+    previous.zone.setName('abyss-page-previous');
+
+    this.add.text(CANVAS_WIDTH / 2, DEPTH_Y + 134, `선택 ${this.selectedFloor}층 · 도달 ${reachable}층`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+
+    const next = addPrimaryActionButton(this, {
+      x: PANEL_X + PANEL_W - 98,
+      y: DEPTH_Y + 112,
+      w: 88,
+      h: 44,
+      label: '다음 5층 →',
+      fontSize: '11px',
+      enabled: nextEnabled,
+      showArrow: false,
+      fillColor: DUNGEON_UI.STONE,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.EDGE,
+      disabledFillColor: DUNGEON_UI.SOOT,
+      disabledBorderColor: DUNGEON_UI.IRON,
+      onPress: () => this.changePage(1),
+    });
+    next.zone.setName('abyss-page-next');
   }
 
-  private drawFloorCard(floor: number, y: number): void {
-    const cfg = getAbyssFloorConfig(floor);
-    const cleared = floor <= this.gs.abyss.highestFloor;
-    const isNext = floor === this.gs.abyss.highestFloor + 1;
-    const boss = isAbyssBossFloor(floor);
-    const accent = boss ? CASUAL.PURPLE : cleared ? CASUAL.GREEN : CASUAL.GOLD;
+  private drawFloorNode(floor: number, x: number, y: number, w: number, h: number, reachable: number): void {
+    const withinRange = floor <= ABYSS_MAX_FLOOR;
+    const cleared = withinRange && floor <= this.gs.abyss.highestFloor;
+    const available = withinRange && floor <= reachable;
+    const selected = floor === this.selectedFloor;
+    const boss = withinRange && isAbyssBossFloor(floor);
+    const isNext = withinRange && this.gs.abyss.highestFloor < ABYSS_MAX_FLOOR && floor === this.gs.abyss.highestFloor + 1;
+    const semanticTone = boss ? COLORS.MAGIC_GLOW : cleared ? DUNGEON_UI.JADE : isNext ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON;
+    const borderTone = selected ? DUNGEON_UI.BRASS_BRIGHT : semanticTone;
 
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.35); g.fillRoundedRect(CARD_X, y + 4, CARD_W, CARD_H, 12);
-    g.fillStyle(CASUAL.PANEL, 1);     g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 12);
-    g.fillStyle(0xffffff, 0.07);      g.fillRoundedRect(CARD_X + 5, y + 4, CARD_W - 10, 5, 3);
-    g.lineStyle(3, accent, 1);        g.strokeRoundedRect(CARD_X, y, CARD_W, CARD_H, 12);
-
-    // Floor number plate (pixel-ish stone tile)
-    g.fillStyle(CASUAL.PANEL_SOFT, 1); g.fillRoundedRect(CARD_X + 10, y + 12, 54, 54, 8);
-    g.lineStyle(2, accent, 0.9);       g.strokeRoundedRect(CARD_X + 10, y + 12, 54, 54, 8);
-    this.add.text(CARD_X + 37, y + 32, `${floor}`, {
-      fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold',
-      color: CASUAL_CSS.INK, stroke: '#000000', strokeThickness: 2,
-    }).setOrigin(0.5);
-    this.add.text(CARD_X + 37, y + 54, boss ? '보스' : '층', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: boss ? CASUAL_CSS.PURPLE : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5);
-
-    // Band label + recommended power
-    this.add.text(CARD_X + 76, y + 16, `${cfg.bandLabel}${boss ? ' · 보스' : ''}`, {
-      fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setOrigin(0, 0);
-    this.add.text(CARD_X + 76, y + 34, `권장 전투력 ${cfg.recommendedPower}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0);
-
-    // Loot preview (material emojis)
-    const lootIds = [...new Set(getAbyssFloorLoot(floor).map(e => e.id))].slice(0, 6);
-    const emojis = lootIds.map(id => MATERIAL_DEFS[id]?.emoji ?? '❔').join(' ');
-    this.add.text(CARD_X + 76, y + 52, emojis, {
-      fontFamily: 'sans-serif', fontSize: '14px',
-    }).setOrigin(0, 0);
-
-    // Action button
-    const btnX = CARD_X + CARD_W - 96, btnW = 88, btnY = y + 24, btnH = 38;
-    if (isNext) {
-      addPrimaryActionButton(this, {
-        x: btnX, y: btnY, w: btnW, h: btnH, label: '⚔ 도전', fontSize: '14px',
-        fillColor: CASUAL.GOLD, hoverFillColor: 0xffd66a, borderColor: CASUAL.GOLD_DK,
-        onPress: () => this.climb(floor),
-      });
-    } else if (cleared) {
-      const canSweep = canSweepAbyss(this.gs.abyss, floor).ok;
-      addPrimaryActionButton(this, {
-        x: btnX, y: btnY, w: btnW, h: btnH, label: '🗝 소탕', fontSize: '14px',
-        enabled: canSweep,
-        fillColor: CASUAL.GREEN, hoverFillColor: 0x6fdc70, borderColor: CASUAL.GREEN_DK,
-        onPress: () => this.sweep(floor),
-      });
+    g.fillStyle(selected ? DUNGEON_UI.STONE : DUNGEON_UI.SOOT, 1);
+    g.fillRoundedRect(x, y, w, h, 8);
+    g.lineStyle(selected ? 2 : 1, borderTone, available || selected ? 0.95 : 0.55);
+    g.strokeRoundedRect(x, y, w, h, 8);
+    if (selected) {
+      g.fillStyle(DUNGEON_UI.BRASS, 1);
+      g.fillRect(x + 7, y + h - 5, w - 14, 2);
     }
+
+    this.add.text(x + w / 2, y + 23, withinRange ? `${floor}` : '—', {
+      fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
+      color: available ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+    const stateLabel = !withinRange ? '봉인' : boss ? '보스' : cleared ? '정복' : isNext ? '원정' : '잠김';
+    this.add.text(x + w / 2, y + 47, stateLabel, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: boss ? CASUAL_CSS.PURPLE : cleared ? DUNGEON_UI_CSS.JADE : isNext ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+
+    if (!available) return;
+    const zone = this.add.zone(x, y, w, h).setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    zone.setName(`abyss-floor-${floor}`);
+    zone.on('pointerdown', () => {
+      if (this.transactionPending || this.selectedFloor === floor) return;
+      this.selectedFloor = floor;
+      this.render();
+    });
   }
 
-  // ─── Actions ───────────────────────────────────────────────────────────────
+  private drawFloorIntel(): void {
+    const config = getAbyssFloorConfig(this.selectedFloor);
+    const boss = config.isBoss;
+    const cleared = this.selectedFloor <= this.gs.abyss.highestFloor;
+    const stateLabel = boss ? '보스 심도' : cleared ? '정복 심도' : '다음 원정';
+    const tone = boss ? COLORS.MAGIC_GLOW : cleared ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS;
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: INTEL_Y,
+      w: PANEL_W,
+      h: 164,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: tone,
+      accentColor: tone,
+      glowColor: tone,
+      glowOpacity: 0.05,
+    });
+
+    this.add.text(PANEL_X + 16, INTEL_Y + 21, `${this.selectedFloor}층 · ${config.bandLabel}`, {
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, INTEL_Y + 21, stateLabel, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: boss ? CASUAL_CSS.PURPLE : cleared ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
+
+    this.drawIntelRow(INTEL_Y + 40, '권장 전투력', formatHudResourceValue(config.recommendedPower), DUNGEON_UI_CSS.TEXT);
+    const materialNames = [...new Set(getAbyssFloorLoot(this.selectedFloor).map((entry) => entry.id))]
+      .map((id) => `${MATERIAL_DEFS[id]?.emoji ?? '•'} ${MATERIAL_DEFS[id]?.name ?? id}`)
+      .join(' · ');
+    this.drawIntelRow(INTEL_Y + 73, '획득 자원', materialNames, DUNGEON_UI_CSS.TEXT, 44);
+    const rewardNote = boss
+      ? '보스 정수 확정 · 각성석 획득 가능'
+      : cleared
+        ? '심연 열쇠 1개로 즉시 소탕'
+        : '승리 시 첫 정복 보너스 · 열쇠 소모 없음';
+    this.drawIntelRow(INTEL_Y + 122, '원정 규칙', rewardNote, boss ? CASUAL_CSS.PURPLE : DUNGEON_UI_CSS.MUTED, 28);
+  }
+
+  private drawIntelRow(y: number, label: string, value: string, valueColor: string, h = 28): void {
+    const x = PANEL_X + 14;
+    const w = PANEL_W - 28;
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.SOOT, 0.78);
+    g.fillRoundedRect(x, y, w, h, 6);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.72);
+    g.strokeRoundedRect(x, y, w, h, 6);
+    this.add.text(x + 11, y + h / 2, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(x + 82, y + h / 2, value, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: valueColor,
+      align: 'right', wordWrap: { width: w - 94 }, lineSpacing: 2,
+    }).setOrigin(0, 0.5);
+  }
+
+  private drawCommandPlate(): void {
+    const action = this.getActionView();
+    const tone = action.enabled
+      ? action.kind === 'challenge' ? DUNGEON_UI.BRASS : DUNGEON_UI.JADE
+      : DUNGEON_UI.EMBER;
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: COMMAND_Y,
+      w: PANEL_W,
+      h: 208,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: tone,
+      accentColor: tone,
+      glowColor: tone,
+      glowOpacity: action.enabled ? 0.06 : 0,
+    });
+
+    this.add.text(PANEL_X + 16, COMMAND_Y + 22, action.kind === 'challenge' ? '심층 원정 명령' : '정복층 소탕 명령', {
+      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 16, COMMAND_Y + 22, `${this.selectedFloor}층`, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: action.enabled ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
+    }).setOrigin(1, 0.5);
+    this.add.text(PANEL_X + 16, COMMAND_Y + 49, action.status, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: action.enabled ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.EMBER,
+      wordWrap: { width: PANEL_W - 32 },
+    }).setOrigin(0, 0.5);
+
+    const receiptTone = this.receipt?.tone === 'warning' ? DUNGEON_UI.EMBER : this.receipt ? DUNGEON_UI.JADE : DUNGEON_UI.IRON;
+    const receiptG = this.add.graphics();
+    receiptG.fillStyle(DUNGEON_UI.SOOT, 0.78);
+    receiptG.fillRoundedRect(PANEL_X + 14, COMMAND_Y + 68, PANEL_W - 28, 66, 7);
+    receiptG.lineStyle(1, receiptTone, this.receipt ? 0.9 : 0.65);
+    receiptG.strokeRoundedRect(PANEL_X + 14, COMMAND_Y + 68, PANEL_W - 28, 66, 7);
+    this.add.text(PANEL_X + 26, COMMAND_Y + 84, this.receipt?.title ?? '원정 기록 대기', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+      color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + 26, COMMAND_Y + 111, this.receipt?.detail ?? '명령 후 보상과 진행 결과가 이곳에 유지됩니다', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+      wordWrap: { width: PANEL_W - 52 }, lineSpacing: 2,
+    }).setOrigin(0, 0.5);
+
+    const button = addPrimaryActionButton(this, {
+      x: PANEL_X + 16,
+      y: COMMAND_Y + 145,
+      w: PANEL_W - 32,
+      h: 50,
+      label: action.label,
+      fontSize: '14px',
+      enabled: action.enabled,
+      once: true,
+      fillColor: action.fillColor,
+      hoverFillColor: action.kind === 'challenge' ? DUNGEON_UI.BRASS_BRIGHT : 0x63ad89,
+      borderColor: action.borderColor,
+      disabledFillColor: DUNGEON_UI.STONE,
+      disabledBorderColor: DUNGEON_UI.EMBER,
+      textColor: '#fff6dc',
+      onPress: () => this.executeAction(this.selectedFloor, action.kind),
+    });
+    button.zone.setName('abyss-order');
+    this.bindTransactionAction(button.zone);
+  }
+
+  private drawSupplyRoutes(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: ROUTES_Y,
+      w: PANEL_W,
+      h: 114,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.24,
+    });
+    this.add.text(PANEL_X + 16, ROUTES_Y + 20, '보급선 · 획득한 재료와 각성석을 사용', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+
+    const gap = 8;
+    const buttonW = (PANEL_W - 24 - gap) / 2;
+    const forge = addPrimaryActionButton(this, {
+      x: PANEL_X + 12,
+      y: ROUTES_Y + 44,
+      w: buttonW,
+      h: 52,
+      label: '제작소 · 장비 제작',
+      fontSize: '12px',
+      once: true,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: DUNGEON_UI.BRASS,
+      textColor: DUNGEON_UI_CSS.PARCHMENT,
+      onPress: () => this.scene.start('ForgeScene'),
+    });
+    forge.zone.setName('abyss-route-forge');
+    this.bindRouteAction(forge.zone);
+
+    const fusion = addPrimaryActionButton(this, {
+      x: PANEL_X + 20 + buttonW,
+      y: ROUTES_Y + 44,
+      w: buttonW,
+      h: 52,
+      label: '의식실 · 진화 각성',
+      fontSize: '12px',
+      once: true,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      hoverFillColor: DUNGEON_UI.IRON,
+      borderColor: COLORS.MAGIC_GLOW,
+      textColor: DUNGEON_UI_CSS.PARCHMENT,
+      onPress: () => this.scene.start('FusionScene'),
+    });
+    fusion.zone.setName('abyss-route-fusion');
+    this.bindRouteAction(fusion.zone);
+  }
+
+  private pageStartFor(floor: number): number {
+    const clamped = Phaser.Math.Clamp(Math.floor(floor), 1, ABYSS_MAX_FLOOR);
+    return Math.floor((clamped - 1) / FLOORS_PER_PAGE) * FLOORS_PER_PAGE + 1;
+  }
+
+  private changePage(direction: -1 | 1): void {
+    if (this.transactionPending) return;
+    const reachable = nextAbyssFloor(this.gs.abyss);
+    const maxPageStart = this.pageStartFor(reachable);
+    const nextPage = Phaser.Math.Clamp(
+      this.pageStart + direction * FLOORS_PER_PAGE,
+      1,
+      maxPageStart,
+    );
+    if (nextPage === this.pageStart) return;
+    this.pageStart = nextPage;
+    const lastReachableOnPage = Math.min(reachable, nextPage + FLOORS_PER_PAGE - 1);
+    this.selectedFloor = direction > 0 ? nextPage : lastReachableOnPage;
+    this.render();
+  }
+
+  private getActionView(): AbyssActionView {
+    const cleared = this.selectedFloor <= this.gs.abyss.highestFloor;
+    if (cleared) {
+      const check = canSweepAbyss(this.gs.abyss, this.selectedFloor);
+      return {
+        kind: 'sweep',
+        label: check.ok ? `선택 ${this.selectedFloor}층 소탕 · 열쇠 1` : '소탕 불가 · 심연 열쇠 없음',
+        enabled: check.ok,
+        status: check.ok
+          ? `즉시 파밍 · 열쇠 ${this.gs.abyss.keys}→${this.gs.abyss.keys - 1} · 정복 깊이는 유지됩니다`
+          : `심연 열쇠 0 / ${ABYSS_KEY_MAX} · 다음 일일 refill 후 소탕할 수 있습니다`,
+        fillColor: DUNGEON_UI.JADE,
+        borderColor: 0x2d6c52,
+      };
+    }
+
+    return {
+      kind: 'challenge',
+      label: `${this.selectedFloor}층 심층 원정 시작`,
+      enabled: this.selectedFloor === this.gs.abyss.highestFloor + 1 && this.selectedFloor <= ABYSS_MAX_FLOOR,
+      status: `승리 시 ${this.selectedFloor}층 정복 · 첫 정복 보너스 · 심연 열쇠 소모 없음`,
+      fillColor: DUNGEON_UI.BRASS,
+      borderColor: 0x705126,
+    };
+  }
+
+  private bindTransactionAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.transactionPending) return;
+      this.transactionPending = true;
+      press(...args);
+    });
+  }
+
+  private bindRouteAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.transactionPending) return;
+      this.transactionPending = true;
+      press(...args);
+    });
+  }
+
+  private beginTransaction(): boolean {
+    this.transactionPending = false;
+    const timestamp = now();
+    if (timestamp - this.lastTransactionAt < TRANSACTION_COOLDOWN_MS) return false;
+    this.lastTransactionAt = timestamp;
+    return true;
+  }
+
+  private executeAction(floor: number, kind: AbyssActionKind): void {
+    if (!this.beginTransaction()) return;
+    if (kind === 'sweep') this.sweep(floor);
+    else this.climb(floor);
+  }
+
   private sweep(floor: number): void {
+    const keysBefore = this.gs.abyss.keys;
     const result = sweepAbyssFloor(this.gs, floor, today());
     if (!result.ok || !result.loot) {
-      this.showToast(result.reason === 'no_keys' ? '열쇠가 부족합니다' : '아직 잠긴 층입니다', CASUAL_CSS.RED);
+      this.gs = result.state;
+      this.receipt = {
+        title: result.reason === 'no_keys' ? `${floor}층 소탕 불가 · 열쇠 없음` : `${floor}층 소탕 불가 · 잠긴 심도`,
+        detail: '진행과 보상은 변경되지 않았습니다',
+        tone: 'warning',
+      };
+      this.render();
       return;
     }
+
     this.gs = result.state;
     saveGameState(this.gs);
-    this.showLootToast(result.loot.materials, result.loot.awakeningStones, result.loot.gold);
+    this.receipt = {
+      title: `${floor}층 소탕 완료 · 열쇠 ${keysBefore}→${this.gs.abyss.keys}`,
+      detail: this.formatLoot(result.loot),
+      tone: 'success',
+    };
     this.render();
   }
 
   private climb(floor: number): void {
-    // Launch a depth-scaled floor battle. The player's placed dungeon
-    // auto-deploys to defend (inline waves). On victory return, create() →
-    // resolveReturnedBattle() advances depth + grants the first-clear reward.
     this.registry.remove('battleResult');
     this.registry.set('abyssPendingFloor', floor);
     this.registry.set('returnTo', 'AbyssScene');
@@ -227,71 +626,11 @@ export class AbyssScene extends Phaser.Scene {
     this.scene.start('DungeonScene');
   }
 
-  // ─── Toasts ────────────────────────────────────────────────────────────────
-  private showLootToast(materials: Record<string, number>, stones: number, gold: number, prefix = '획득  '): void {
-    const parts: string[] = [];
-    for (const [id, qty] of Object.entries(materials)) parts.push(`${MATERIAL_DEFS[id]?.emoji ?? '❔'}${qty}`);
-    if (stones > 0) parts.push(`🔯${stones}`);
-    if (gold > 0) parts.push(`💰${gold}`);
-    this.showToast(`${prefix}${parts.join('  ')}`, CASUAL_CSS.GOLD);
-  }
-
-  private showToast(msg: string, color: string): void {
-    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 80, msg, {
-      fontFamily: 'sans-serif', fontSize: '14px', color, fontStyle: 'bold',
-      backgroundColor: CASUAL_CSS.CREAM, padding: { x: 16, y: 9 },
-      align: 'center', wordWrap: { width: CANVAS_WIDTH - 60 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(80).setAlpha(0);
-    this.tweens.add({ targets: t, alpha: 1, y: t.y - 14, duration: 250, ease: 'Back.easeOut' });
-    this.time.delayedCall(1900, () => {
-      this.tweens.add({ targets: t, alpha: 0, duration: 300, onComplete: () => t.destroy() });
-    });
-  }
-
-  // ─── Scroll (camera drag) ──────────────────────────────────────────────────
-  private setupScroll(): void {
-    // Scroll tracked as an offset in [0, maxScrollY] relative to the DPR base
-    // (baseScrollY) — raw camera scroll would break since the DPR camera's
-    // "top" is baseScrollY (negative), not 0.
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      this.dragging = true;
-      this.dragStartY = p.y + (this.cameras.main.scrollY - this.baseScrollY);
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.dragging) return;
-      const offset = Phaser.Math.Clamp(this.dragStartY - p.y, 0, this.maxScrollY);
-      this.cameras.main.setScroll(this.baseScrollX, this.baseScrollY + offset);
-    });
-    this.input.on('pointerup', () => { this.dragging = false; });
-  }
-
-  // ─── Craft-loop shortcuts (farm → craft) ───────────────────────────────────
-  // A bar at the top of the scroll content (scrollFactor 1, like the cards — the
-  // DPR zoom-2 camera misaligns scrollFactor-0 elements low on screen). Makes the
-  // farming loop navigable: materials/stones farmed here feed Forge (equipment)
-  // + Fusion (evolution/awakening), so jump straight there.
-  private drawCraftShortcuts(): void {
-    const barY = LIST_TOP;
-    const bar = this.add.graphics();
-    bar.fillStyle(CASUAL.SHADOW, 0.3); bar.fillRoundedRect(CARD_X, barY + 3, CARD_W, SHORTCUT_H, 12);
-    bar.fillStyle(CASUAL.PANEL, 1);    bar.fillRoundedRect(CARD_X, barY, CARD_W, SHORTCUT_H, 12);
-    bar.fillStyle(0xffffff, 0.07);     bar.fillRoundedRect(CARD_X + 5, barY + 3, CARD_W - 10, 4, 2);
-    bar.lineStyle(2, CASUAL.EDGE, 1);  bar.strokeRoundedRect(CARD_X, barY, CARD_W, SHORTCUT_H, 12);
-
-    this.add.text(CARD_X + 12, barY + 11, '심연 재료 사용처', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-
-    const half = (CARD_W - 24) / 2;
-    addPrimaryActionButton(this, {
-      x: CARD_X + 8, y: barY + 22, w: half, h: 28, label: '🔨 제작소', fontSize: '12px',
-      fillColor: CASUAL.BLUE, hoverFillColor: 0x6aa8e0, borderColor: CASUAL.BLUE_DK,
-      onPress: () => this.scene.start('ForgeScene'),
-    });
-    addPrimaryActionButton(this, {
-      x: CARD_X + 16 + half, y: barY + 22, w: half, h: 28, label: '✨ 진화 · 각성', fontSize: '12px',
-      fillColor: CASUAL.PURPLE, hoverFillColor: 0xb98ae0, borderColor: CASUAL.PURPLE_DK,
-      onPress: () => this.scene.start('FusionScene'),
-    });
+  private formatLoot(loot: AbyssLoot): string {
+    const parts = Object.entries(loot.materials)
+      .map(([id, quantity]) => `${MATERIAL_DEFS[id]?.name ?? id} +${quantity}`);
+    if (loot.awakeningStones > 0) parts.push(`각성석 +${loot.awakeningStones}`);
+    if (loot.gold > 0) parts.push(`골드 +${loot.gold.toLocaleString('ko-KR')}`);
+    return parts.length > 0 ? parts.join(' · ') : '획득 보상 없음';
   }
 }

@@ -1,237 +1,542 @@
 /**
- * 생산 시설 (Production facilities) hub — the dungeon's in-base farming/mining.
+ * Production district — the dungeon's compact mine, workshop, and treasury loop.
  *
- * Build & upgrade facilities (광산/약초원/직조실/마력 우물/보물고) that passively
- * produce crafting materials + gold over the shared idle clock. Collect the
- * accrued production here or from the home idle panel — whichever resets the
- * clock. Fits on one screen (5 facilities) so no scroll → no DPR camera pitfalls.
+ * Facility selection is presentation-only. Build/upgrade and collection remain
+ * owned by the existing immutable data transactions.
  */
 
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
 import { MATERIAL_DEFS } from '../data/fusion';
 import {
-  FACILITY_DEFS, FACILITY_ORDER, facilityRatePerHour, facilityUpgradeCost,
+  FACILITY_DEFS,
+  FACILITY_ORDER,
+  builtFacilityCount,
+  facilityRatePerHour,
+  facilityUpgradeCost,
+  type FacilityDef,
 } from '../data/production';
 import { buildOrUpgradeFacility } from '../data/productionTransactions';
-import { computeIdleReward, collectIdleIncome, hasIdlePayout, type IdleReward } from '../data/idleIncome';
-import { addSceneHeader, addPrimaryActionButton, addPillTag, addIconMedallion } from '../ui/GameUiPrimitives';
-import { getReducedMotion } from '../utils/reducedMotion';
+import {
+  IDLE_CAP_HOURS,
+  collectIdleIncome,
+  computeIdleReward,
+  hasIdlePayout,
+  type IdleReward,
+} from '../data/idleIncome';
+import {
+  addFramedPanel,
+  addPrimaryActionButton,
+  addSceneHeader,
+} from '../ui/GameUiPrimitives';
+import { formatHudResourceValue } from '../ui/HudResourceFormatting';
 
-const CARD_X = 14;
-const CARD_W = CANVAS_WIDTH - 28;
-const CARD_H = 92;
-const LIST_TOP = 214;
-const CARD_GAP = 8;
+type ReceiptTone = 'success' | 'warning';
 
-function now(): number { return Date.now(); }
+interface ProductionReceipt {
+  readonly text: string;
+  readonly tone: ReceiptTone;
+}
+
+const PANEL_X = 14;
+const PANEL_W = CANVAS_WIDTH - PANEL_X * 2;
+const STATUS_Y = 82;
+const COLLECT_Y = 140;
+const DISTRICT_Y = 260;
+const COMMAND_Y = 570;
+const TRANSACTION_COOLDOWN_MS = 250;
+
+function now(): number {
+  return Date.now();
+}
+
+function formatRate(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function formatElapsed(reward: IdleReward, clockStarted: boolean): string {
+  if (!clockStarted) return '첫 시설 가동 후 적립을 시작합니다';
+  if (reward.capped) return `${IDLE_CAP_HOURS}시간 적립 상한 도달`;
+
+  const minutes = Math.floor(reward.creditedMs / 60_000);
+  if (minutes < 1) return '1분 미만 누적';
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest}분 누적`;
+  return rest > 0 ? `${hours}시간 ${rest}분 누적` : `${hours}시간 누적`;
+}
 
 export class ProductionScene extends Phaser.Scene {
   private gs!: GameState;
+  private selectedFacilityId = FACILITY_ORDER[0];
+  private receipt: ProductionReceipt | null = null;
+  private transactionPending = false;
+  private lastTransactionAt = 0;
 
-  constructor() { super({ key: 'ProductionScene' }); }
+  constructor() {
+    super({ key: 'ProductionScene' });
+  }
 
   create(): void {
     this.gs = loadGameState();
+    this.selectedFacilityId = FACILITY_ORDER[0];
+    this.receipt = null;
+    this.transactionPending = false;
+    this.lastTransactionAt = 0;
     this.render();
   }
 
   private render(): void {
-    this.children.removeAll();
-    // NOTE: do NOT setScroll(0,0) here. main.ts applyDprCamera centers the camera
-    // (zoom=dpr + centerOn) on scene CREATE only; this view doesn't scroll, so
-    // resetting scroll on a re-render (after build/collect) would de-center the
-    // whole scene until the next scene change. Leave the DPR-centered camera alone.
+    this.clearRenderedObjects();
+    this.drawBackdrop();
 
     addSceneHeader(this, {
-      title: '🏭 생산 시설',
-      subtitle: '방치 재료·골드 생산',
-      onBack: () => this.scene.start('StageSelectScene'),
+      title: '생산 구역',
+      subtitle: '던전의 자원맥과 저장고',
+      onBack: () => {
+        if (!this.transactionPending) this.scene.start('StageSelectScene');
+      },
     });
 
-    this.drawCollectBar();
-    FACILITY_ORDER.forEach((id, i) => this.drawFacilityCard(id, LIST_TOP + i * (CARD_H + CARD_GAP)));
+    const reward = computeIdleReward(this.gs, now());
+    this.drawStatusRail();
+    this.drawCollectionCistern(reward);
+    this.drawDistrict();
+    this.drawCommandPlate();
   }
 
-  // ─── Accrued-production collect bar ────────────────────────────────────────
-  private drawCollectBar(): void {
-    const y = 92, w = CANVAS_WIDTH - 28;
-    const reward = computeIdleReward(this.gs, now());
+  private clearRenderedObjects(): void {
+    this.tweens.killAll();
+    for (const child of [...this.children.list]) child.destroy();
+  }
 
-    const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.4); g.fillRoundedRect(14, y + 3, w, 56, 12);
-    g.fillStyle(CASUAL.PANEL, 1);    g.fillRoundedRect(14, y, w, 56, 12);
-    g.fillStyle(0xffffff, 0.07);     g.fillRoundedRect(18, y + 3, w - 8, 4, 2);
-    g.lineStyle(2, CASUAL.EDGE, 1);  g.strokeRoundedRect(14, y, w, 56, 12);
+  private drawBackdrop(): void {
+    const g = this.add.graphics().setDepth(-900);
+    g.fillStyle(DUNGEON_UI.VOID, 1);
+    g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    this.add.text(26, y + 13, '🪙 보유 골드', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-    this.add.text(26, y + 33, `${this.gs.homeGold.toLocaleString('ko-KR')}`, {
-      fontFamily: 'sans-serif', fontSize: '15px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-
-    // Accrued production preview + collect button.
-    const parts = this.rewardParts(reward);
-    this.add.text(150, y + 13, '방치 누적', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-    this.add.text(150, y + 33, parts.length ? parts : '—', {
-      fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-    }).setOrigin(0, 0.5);
-
-    const payable = hasIdlePayout(reward);
-    const btnX = CANVAS_WIDTH - 14 - 86;
-    // pulsing glow when production is ready to collect — the tycoon "come tap me" cue
-    if (payable) {
-      const glow = this.add.graphics();
-      glow.fillStyle(CASUAL.GOLD, 0.34);
-      glow.fillRoundedRect(btnX - 5, y + 9, 96, 40, 16);
-      // perpetual pulse is decorative → gate behind reduced-motion (static glow stays)
-      if (!getReducedMotion()) {
-        this.tweens.add({ targets: glow, alpha: { from: 0.45, to: 1 }, duration: 760, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      }
+    g.fillStyle(DUNGEON_UI.SOOT, 1);
+    g.fillRect(0, 70, CANVAS_WIDTH, CANVAS_HEIGHT - 70);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.28);
+    for (let y = 78; y < CANVAS_HEIGHT; y += 34) {
+      g.lineBetween(0, y, CANVAS_WIDTH, y);
+      const offset = ((y - 78) / 34) % 2 === 0 ? 22 : 0;
+      for (let x = offset; x < CANVAS_WIDTH; x += 52) g.lineBetween(x, y, x, y + 34);
     }
-    addPrimaryActionButton(this, {
-      x: btnX, y: y + 11, w: 86, h: 34, label: payable ? '✨ 수령' : '수령', fontSize: '14px',
+
+    g.lineStyle(2, DUNGEON_UI.BRASS, 0.22);
+    g.beginPath();
+    g.arc(CANVAS_WIDTH / 2, 345, 214, Phaser.Math.DegToRad(205), Phaser.Math.DegToRad(335));
+    g.strokePath();
+    g.fillStyle(DUNGEON_UI.JADE, 0.05);
+    g.fillCircle(CANVAS_WIDTH / 2, 430, 178);
+  }
+
+  private drawStatusRail(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: STATUS_Y,
+      w: PANEL_W,
+      h: 50,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.28,
+    });
+
+    const built = builtFacilityCount(this.gs.productionFacilities);
+    let materialRate = 0;
+    let treasuryRate = 0;
+    for (const id of FACILITY_ORDER) {
+      const def = FACILITY_DEFS[id];
+      const rate = facilityRatePerHour(def, this.gs.productionFacilities?.[id] ?? 0);
+      if (def.output.kind === 'gold') treasuryRate += rate;
+      else materialRate += rate;
+    }
+
+    const items = [
+      { label: '보유 골드', value: formatHudResourceValue(this.gs.homeGold), color: DUNGEON_UI_CSS.BRASS },
+      { label: '가동 시설', value: `${built} / ${FACILITY_ORDER.length}`, color: built > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED },
+      { label: '재료 / 시간', value: formatRate(materialRate), color: DUNGEON_UI_CSS.TEXT },
+      { label: '보물고 / 시간', value: formatRate(treasuryRate), color: DUNGEON_UI_CSS.TEXT },
+    ];
+
+    items.forEach((item, index) => {
+      const cellW = PANEL_W / items.length;
+      const x = PANEL_X + cellW * index;
+      if (index > 0) {
+        const divider = this.add.graphics();
+        divider.lineStyle(1, DUNGEON_UI.IRON, 0.7);
+        divider.lineBetween(x, STATUS_Y + 10, x, STATUS_Y + 40);
+      }
+      this.add.text(x + cellW / 2, STATUS_Y + 15, item.label, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      }).setOrigin(0.5);
+      this.add.text(x + cellW / 2, STATUS_Y + 34, item.value, {
+        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: item.color,
+      }).setOrigin(0.5);
+    });
+  }
+
+  private drawCollectionCistern(reward: IdleReward): void {
+    const payable = hasIdlePayout(reward);
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: COLLECT_Y,
+      w: PANEL_W,
+      h: 110,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: payable ? DUNGEON_UI.JADE : DUNGEON_UI.IRON,
+      accentColor: payable ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
+      glowColor: DUNGEON_UI.JADE,
+      glowOpacity: payable ? 0.08 : 0,
+    });
+
+    this.drawCisternGauge(38, COLLECT_Y + 54, payable);
+    this.add.text(65, COLLECT_Y + 19, '누적 생산 저장조', {
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 14, COLLECT_Y + 19, `최대 ${IDLE_CAP_HOURS}시간`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+
+    this.add.text(65, COLLECT_Y + 42, formatElapsed(reward, (this.gs.lastIdleCollect ?? 0) > 0), {
+      fontFamily: 'sans-serif', fontSize: '10px', color: reward.capped ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+
+    const rewardLines = this.rewardLines(reward);
+    this.add.text(65, COLLECT_Y + 64, rewardLines[0], {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: payable ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    if (rewardLines[1]) {
+      this.add.text(65, COLLECT_Y + 82, rewardLines[1], {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
+      }).setOrigin(0, 0.5);
+    }
+
+    const button = addPrimaryActionButton(this, {
+      x: 250,
+      y: COLLECT_Y + 48,
+      w: 112,
+      h: 48,
+      label: payable ? '생산 수령' : '대기 중',
+      fontSize: '13px',
       enabled: payable,
-      fillColor: CASUAL.GREEN, hoverFillColor: 0x6fdc70, borderColor: CASUAL.GREEN_DK,
+      once: true,
+      fillColor: DUNGEON_UI.JADE,
+      hoverFillColor: 0x63ad89,
+      borderColor: 0x2d6c52,
+      disabledFillColor: DUNGEON_UI.STONE,
+      disabledBorderColor: DUNGEON_UI.IRON,
       onPress: () => this.collect(),
     });
+    button.zone.setName('production-collect');
+    this.bindTransactionAction(button.zone);
   }
 
-  private rewardParts(reward: IdleReward): string {
-    const parts: string[] = [];
-    if (reward.gold > 0) parts.push(`💰${reward.gold.toLocaleString('ko-KR')}`);
-    for (const [id, qty] of Object.entries(reward.materials)) {
-      parts.push(`${MATERIAL_DEFS[id]?.emoji ?? '❔'}${qty}`);
+  private drawCisternGauge(cx: number, cy: number, active: boolean): void {
+    const g = this.add.graphics();
+    const tone = active ? DUNGEON_UI.JADE : DUNGEON_UI.EDGE;
+    g.lineStyle(2, tone, 0.9);
+    g.strokeRoundedRect(cx - 15, cy - 22, 30, 44, 7);
+    g.fillStyle(tone, active ? 0.55 : 0.14);
+    g.fillRoundedRect(cx - 11, cy + (active ? -7 : 9), 22, active ? 25 : 7, 4);
+    g.lineStyle(1, DUNGEON_UI.BRASS, 0.7);
+    g.lineBetween(cx - 7, cy - 28, cx + 7, cy - 28);
+    g.lineBetween(cx, cy - 28, cx, cy - 22);
+  }
+
+  private rewardLines(reward: IdleReward): readonly [string, string?] {
+    const values: string[] = [];
+    if (reward.gold > 0) values.push(`골드 +${reward.gold.toLocaleString('ko-KR')}`);
+    for (const [id, quantity] of Object.entries(reward.materials)) {
+      values.push(`${MATERIAL_DEFS[id]?.name ?? id} +${quantity}`);
     }
-    return parts.join('  ');
+    if (values.length === 0) return ['저장된 자원이 없습니다'];
+    return [values.slice(0, 2).join(' · '), values.slice(2).join(' · ') || undefined];
   }
 
-  // ─── Facility card ─────────────────────────────────────────────────────────
-  private drawFacilityCard(id: string, y: number): void {
+  private drawDistrict(): void {
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: DISTRICT_Y,
+      w: PANEL_W,
+      h: 300,
+      fillColor: DUNGEON_UI.STONE,
+      borderColor: DUNGEON_UI.IRON,
+      shadowOpacity: 0.32,
+    });
+
+    this.add.text(PANEL_X + 14, DISTRICT_Y + 18, '지하 생산망', {
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 14, DISTRICT_Y + 18, '시설을 선택해 명령을 내리세요', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+
+    this.drawDistrictConduits();
+    const positions = [
+      { x: 18, y: DISTRICT_Y + 40 },
+      { x: 141, y: DISTRICT_Y + 40 },
+      { x: 264, y: DISTRICT_Y + 40 },
+      { x: 80, y: DISTRICT_Y + 168 },
+      { x: 203, y: DISTRICT_Y + 168 },
+    ];
+    FACILITY_ORDER.forEach((id, index) => this.drawFacilityNode(id, positions[index].x, positions[index].y));
+  }
+
+  private drawDistrictConduits(): void {
+    const g = this.add.graphics();
+    g.lineStyle(5, DUNGEON_UI.SOOT, 1);
+    g.lineBetween(72, DISTRICT_Y + 154, 318, DISTRICT_Y + 154);
+    g.lineBetween(134, DISTRICT_Y + 154, 134, DISTRICT_Y + 168);
+    g.lineBetween(257, DISTRICT_Y + 154, 257, DISTRICT_Y + 168);
+    g.lineStyle(1, DUNGEON_UI.BRASS, 0.42);
+    g.lineBetween(72, DISTRICT_Y + 154, 318, DISTRICT_Y + 154);
+    g.fillStyle(DUNGEON_UI.BRASS, 0.7);
+    for (const x of [72, 195, 318]) g.fillCircle(x, DISTRICT_Y + 154, 3);
+  }
+
+  private drawFacilityNode(id: string, x: number, y: number): void {
     const def = FACILITY_DEFS[id];
     const level = this.gs.productionFacilities?.[id] ?? 0;
     const built = level > 0;
-    const accent = built ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
+    const selected = id === this.selectedFacilityId;
+    const accent = selected ? DUNGEON_UI.BRASS_BRIGHT : built ? DUNGEON_UI.JADE : DUNGEON_UI.EDGE;
+    const w = 108;
+    const h = 112;
 
-    // Card body — raised stone with chiseled bottom + lit top bevel.
     const g = this.add.graphics();
-    g.fillStyle(CASUAL.SHADOW, 0.34); g.fillRoundedRect(CARD_X, y + 4, CARD_W, CARD_H, 14);
-    g.fillStyle(CASUAL.PANEL, 1);     g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 14);
-    // built facilities glow with a warm gold tint so "active" cards read at a glance
-    if (built) { g.fillStyle(CASUAL.GOLD, 0.07); g.fillRoundedRect(CARD_X, y, CARD_W, CARD_H, 14); }
-    g.fillStyle(0xffffff, 0.06);      g.fillRoundedRect(CARD_X + 6, y + 4, CARD_W - 12, 5, 3);
-    // bottom inner shade for depth
-    g.fillStyle(CASUAL.SHADOW, 0.22);  g.fillRoundedRect(CARD_X + 6, y + CARD_H * 0.62, CARD_W - 12, CARD_H * 0.34, 8);
-    g.lineStyle(3, accent, built ? 1 : 0.75); g.strokeRoundedRect(CARD_X, y, CARD_W, CARD_H, 14);
-    // left accent strip — "active production" signal on built cards
-    if (built) { g.fillStyle(CASUAL.GOLD, 0.9); g.fillRoundedRect(CARD_X + 3, y + 10, 4, CARD_H - 20, 2); }
+    g.fillStyle(selected ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
+    g.fillRoundedRect(x, y, w, h, 10);
+    g.lineStyle(selected ? 2 : 1, accent, selected ? 1 : 0.75);
+    g.strokeRoundedRect(x, y, w, h, 10);
+    if (built) {
+      g.fillStyle(DUNGEON_UI.JADE, 0.13);
+      g.fillRect(x + 6, y + 6, w - 12, 3);
+    }
+    if (selected) {
+      g.fillStyle(DUNGEON_UI.BRASS_BRIGHT, 0.9);
+      g.fillTriangle(x + w / 2 - 5, y + 2, x + w / 2 + 5, y + 2, x + w / 2, y + 9);
+    }
 
-    // Icon medallion (accent ring + glow) instead of a flat dark tile
-    addIconMedallion(this, { cx: CARD_X + 42, cy: y + CARD_H / 2, size: 58, emoji: def.emoji, accent, glow: built });
+    this.drawFacilitySigil(id, x + w / 2, y + 31, accent);
+    this.add.text(x + w / 2, y + 58, def.name, {
+      fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0.5);
+    this.add.text(x + w / 2, y + 78, built ? `가동 · Lv.${level}` : '미건설', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: built ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
+    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, facilityRatePerHour(def, level), true) : '생산 중지', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: built ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0.5);
 
-    // Name
-    const nameText = this.add.text(CARD_X + 82, y + 15, def.name, {
-      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    }).setOrigin(0, 0);
-    // State badge pill — Lv.N (gold) / 미건설 (muted)
-    addPillTag(this, {
-      x: CARD_X + 82 + Math.ceil(nameText.width) + 8, y: y + 22,
-      label: built ? `Lv.${level}` : '미건설',
-      fillColor: built ? CASUAL.GOLD : CASUAL.PANEL_SOFT,
-      borderColor: built ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT,
-      textColor: built ? '#2b2114' : CASUAL_CSS.INK_SOFT,
-      fontSize: '10px', height: 17,
+    const zone = this.add.zone(x, y, w, h).setOrigin(0).setName(`production-facility-${id}`)
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => {
+      if (this.transactionPending || id === this.selectedFacilityId) return;
+      this.selectedFacilityId = id;
+      this.render();
     });
+  }
 
-    // Production-rate chip (icon + per-hour output)
-    const rate = facilityRatePerHour(def, built ? level : 1);
-    const outIcon = def.output.kind === 'gold' ? '💰' : (MATERIAL_DEFS[def.output.materialId]?.emoji ?? '❔');
-    addPillTag(this, {
-      x: CARD_X + 82, y: y + 44,
-      icon: outIcon, label: `${built ? '' : '건설 시 '}+${rate}/시간`,
-      fillColor: CASUAL.PANEL_SOFT,
-      borderColor: built ? CASUAL.GOLD_DK : CASUAL.EDGE_SOFT,
-      textColor: built ? CASUAL_CSS.GOLD : CASUAL_CSS.INK_SOFT,
-      fontSize: '10px', height: 18,
-    });
-    this.add.text(CARD_X + 82, y + 66, def.desc, {
-      fontFamily: 'sans-serif', fontSize: '9px', color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0, 0);
+  private drawFacilitySigil(id: string, cx: number, cy: number, accent: number): void {
+    const g = this.add.graphics();
+    g.lineStyle(2, accent, 1);
+    g.fillStyle(accent, 0.16);
+    g.fillCircle(cx, cy, 20);
 
-    // Build / upgrade button
-    const cost = facilityUpgradeCost(def, level);
-    const btnX = CARD_X + CARD_W - 102, btnW = 92, btnY = y + 26, btnH = 40;
-    if (cost === null) {
-      addPillTag(this, {
-        x: btnX + 22, y: btnY + btnH / 2, icon: '👑', label: 'MAX',
-        fillColor: CASUAL.GOLD, borderColor: CASUAL.GOLD_DK, textColor: '#2b2114',
-        fontSize: '12px', height: 26, glowColor: CASUAL.GOLD,
-      });
+    if (id === 'mine') {
+      g.lineBetween(cx - 10, cy + 10, cx + 8, cy - 10);
+      g.lineBetween(cx - 5, cy - 8, cx + 11, cy + 9);
+      g.lineStyle(3, accent, 1);
+      g.lineBetween(cx + 2, cy - 11, cx + 12, cy - 4);
+    } else if (id === 'herb_garden') {
+      g.lineBetween(cx, cy + 12, cx, cy - 10);
+      g.fillStyle(accent, 0.82);
+      g.fillEllipse(cx - 7, cy - 3, 12, 7);
+      g.fillEllipse(cx + 7, cy + 3, 12, 7);
+      g.fillEllipse(cx + 5, cy - 9, 10, 6);
+    } else if (id === 'weavery') {
+      g.strokeRect(cx - 11, cy - 11, 22, 22);
+      for (const dx of [-7, -2, 3, 8]) g.lineBetween(cx + dx, cy - 9, cx + dx, cy + 9);
+      g.lineBetween(cx - 11, cy - 3, cx + 11, cy + 5);
+    } else if (id === 'mana_well') {
+      g.strokeCircle(cx, cy - 3, 10);
+      g.lineBetween(cx - 13, cy + 9, cx + 13, cy + 9);
+      g.lineBetween(cx - 8, cy + 4, cx - 8, cy + 13);
+      g.lineBetween(cx + 8, cy + 4, cx + 8, cy + 13);
+      g.fillStyle(accent, 0.9);
+      g.fillCircle(cx, cy - 3, 3);
     } else {
-      const affordable = this.gs.homeGold >= cost;
-      // affordable CTA glow — draws the eye to the actionable button
-      if (affordable) {
-        const glow = this.add.graphics();
-        glow.fillStyle(built ? CASUAL.BLUE : CASUAL.GREEN, 0.30);
-        glow.fillRoundedRect(btnX - 4, btnY - 2, btnW + 8, btnH + 10, 16);
-      }
-      addPrimaryActionButton(this, {
-        x: btnX, y: btnY, w: btnW, h: btnH,
-        label: built ? `Lv.${level}→${level + 1}` : '건설',
-        fontSize: '12px',
-        enabled: affordable,
-        fillColor: built ? CASUAL.BLUE : CASUAL.GREEN,
-        hoverFillColor: built ? 0x6aa8e0 : 0x6fdc70,
-        borderColor: built ? CASUAL.BLUE_DK : CASUAL.GREEN_DK,
-        onPress: () => this.build(id),
-      });
-      this.add.text(btnX + btnW / 2, btnY + btnH + 7, `💰${cost.toLocaleString('ko-KR')}`, {
-        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-        color: affordable ? CASUAL_CSS.GOLD : CASUAL_CSS.RED,
-      }).setOrigin(0.5);
+      g.fillStyle(accent, 0.2);
+      g.fillRoundedRect(cx - 13, cy - 7, 26, 19, 3);
+      g.lineStyle(2, accent, 1);
+      g.strokeRoundedRect(cx - 13, cy - 7, 26, 19, 3);
+      g.lineBetween(cx - 13, cy - 1, cx + 13, cy - 1);
+      g.fillStyle(accent, 1);
+      g.fillRect(cx - 2, cy - 2, 4, 7);
     }
   }
 
-  // ─── Actions ───────────────────────────────────────────────────────────────
-  private build(id: string): void {
-    const r = buildOrUpgradeFacility(this.gs, id);
-    if (!r.ok) {
-      this.showToast(r.reason === 'no_gold' ? '골드가 부족합니다' : r.reason === 'maxed' ? '최대 레벨입니다' : '건설 불가', CASUAL_CSS.RED);
+  private drawCommandPlate(): void {
+    const def = FACILITY_DEFS[this.selectedFacilityId];
+    const level = this.gs.productionFacilities?.[def.id] ?? 0;
+    const currentRate = facilityRatePerHour(def, level);
+    const cost = facilityUpgradeCost(def, level);
+    const nextRate = cost === null ? currentRate : facilityRatePerHour(def, level + 1);
+    const affordable = cost !== null && this.gs.homeGold >= cost;
+    const accent = affordable ? DUNGEON_UI.BRASS_BRIGHT : cost === null ? DUNGEON_UI.JADE : DUNGEON_UI.EMBER;
+
+    addFramedPanel(this, {
+      x: PANEL_X,
+      y: COMMAND_Y,
+      w: PANEL_W,
+      h: 256,
+      fillColor: DUNGEON_UI.STONE_RAISED,
+      borderColor: accent,
+      accentColor: accent,
+      glowColor: accent,
+      glowOpacity: affordable ? 0.06 : 0,
+      shadowOpacity: 0.38,
+    });
+
+    this.drawFacilitySigil(def.id, 43, COMMAND_Y + 35, accent);
+    this.add.text(72, COMMAND_Y + 22, def.name, {
+      fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    });
+    this.add.text(PANEL_X + PANEL_W - 16, COMMAND_Y + 29, level > 0 ? `Lv.${level} / ${def.maxLevel}` : '미건설', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: level > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    this.add.text(72, COMMAND_Y + 47, def.desc, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    });
+
+    this.drawOutputRow(COMMAND_Y + 76, '현재 생산', level > 0 ? this.outputLabel(def, currentRate) : '생산 중지', level > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED);
+    this.drawOutputRow(COMMAND_Y + 108, cost === null ? '시설 상태' : '다음 단계', cost === null ? '최대 효율 도달' : this.outputLabel(def, nextRate), cost === null ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT);
+
+    const status = cost === null
+      ? '추가 명령 없음 · 최대 레벨'
+      : affordable
+        ? `명령 가능 · 골드 ${cost.toLocaleString('ko-KR')} 소모`
+        : `골드 ${(cost - this.gs.homeGold).toLocaleString('ko-KR')} 부족 · 필요 ${cost.toLocaleString('ko-KR')}`;
+    this.add.text(PANEL_X + 16, COMMAND_Y + 157, status, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: cost === null ? DUNGEON_UI_CSS.JADE : affordable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
+    }).setOrigin(0, 0.5);
+
+    const receiptText = this.receipt?.text ?? '선택한 시설의 생산량과 비용을 확인하세요';
+    this.add.text(PANEL_X + 16, COMMAND_Y + 188, receiptText, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: this.receipt ? 'bold' : 'normal',
+      color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+      wordWrap: { width: 194 },
+      lineSpacing: 2,
+    }).setOrigin(0, 0.5);
+
+    const action = addPrimaryActionButton(this, {
+      x: 226,
+      y: COMMAND_Y + 181,
+      w: 136,
+      h: 54,
+      label: cost === null ? 'MAX' : level > 0 ? `Lv.${level + 1} 강화` : '시설 건설',
+      fontSize: '14px',
+      enabled: affordable,
+      once: true,
+      fillColor: DUNGEON_UI.BRASS,
+      hoverFillColor: DUNGEON_UI.BRASS_BRIGHT,
+      borderColor: 0x705126,
+      textColor: '#fff6dc',
+      disabledFillColor: DUNGEON_UI.STONE,
+      disabledBorderColor: cost === null ? DUNGEON_UI.JADE : DUNGEON_UI.EMBER,
+      onPress: () => this.buildOrUpgrade(def.id),
+    });
+    action.zone.setName('production-order');
+    this.bindTransactionAction(action.zone);
+  }
+
+  private drawOutputRow(y: number, label: string, value: string, valueColor: string): void {
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.SOOT, 0.78);
+    g.fillRoundedRect(PANEL_X + 14, y, PANEL_W - 28, 25, 6);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.7);
+    g.strokeRoundedRect(PANEL_X + 14, y, PANEL_W - 28, 25, 6);
+    this.add.text(PANEL_X + 26, y + 12.5, label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    this.add.text(PANEL_X + PANEL_W - 26, y + 12.5, value, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: valueColor,
+    }).setOrigin(1, 0.5);
+  }
+
+  private outputLabel(def: FacilityDef, rate: number, compact = false): string {
+    const amount = formatRate(rate);
+    if (def.output.kind === 'gold') return compact ? `골드 +${amount}/h` : `골드 +${amount} / 시간`;
+    const name = MATERIAL_DEFS[def.output.materialId]?.name ?? def.output.materialId;
+    return compact ? `${name} +${amount}/h` : `${name} +${amount} / 시간`;
+  }
+
+  private bindTransactionAction(zone: Phaser.GameObjects.Zone): void {
+    const press = zone.listeners('pointerdown')[0] as ((...args: unknown[]) => void) | undefined;
+    if (!press) return;
+
+    zone.removeAllListeners('pointerdown');
+    zone.on('pointerdown', (...args: unknown[]) => {
+      if (this.transactionPending) return;
+      this.transactionPending = true;
+      press(...args);
+    });
+  }
+
+  private beginTransaction(): boolean {
+    this.transactionPending = false;
+
+    const timestamp = now();
+    if (timestamp - this.lastTransactionAt < TRANSACTION_COOLDOWN_MS) return false;
+    this.lastTransactionAt = timestamp;
+    return true;
+  }
+
+  private buildOrUpgrade(id: string): void {
+    if (!this.beginTransaction()) return;
+    const result = buildOrUpgradeFacility(this.gs, id);
+    if (!result.ok) {
+      this.receipt = {
+        text: result.reason === 'no_gold' ? '명령 실패 · 골드가 부족합니다' : result.reason === 'maxed' ? '명령 실패 · 최대 레벨입니다' : '명령 실패 · 알 수 없는 시설입니다',
+        tone: 'warning',
+      };
+      this.render();
       return;
     }
-    // First build initializes the idle clock so production starts accruing now.
-    const seeded = (this.gs.lastIdleCollect ?? 0) > 0 ? r.state : { ...r.state, lastIdleCollect: now() };
+
+    const seeded = (this.gs.lastIdleCollect ?? 0) > 0
+      ? result.state
+      : { ...result.state, lastIdleCollect: now() };
     this.gs = seeded;
     saveGameState(this.gs);
     const def = FACILITY_DEFS[id];
-    this.showToast(`${def.emoji} ${def.name} ${r.newLevel === 1 ? '건설' : `Lv.${r.newLevel}`} 완료`, CASUAL_CSS.GOLD);
+    this.receipt = {
+      text: `${def.name} ${result.newLevel === 1 ? '건설' : `Lv.${result.newLevel} 강화`} 완료 · 골드 ${result.spent.toLocaleString('ko-KR')} 소모`,
+      tone: 'success',
+    };
     this.render();
   }
 
   private collect(): void {
+    if (!this.beginTransaction()) return;
     const { state, reward } = collectIdleIncome(this.gs, now());
-    if (!hasIdlePayout(reward)) { this.showToast('아직 모인 생산이 없습니다', CASUAL_CSS.INK_SOFT); return; }
+    if (!hasIdlePayout(reward)) {
+      this.receipt = { text: '수령 대기 · 아직 저장된 생산이 없습니다', tone: 'warning' };
+      this.render();
+      return;
+    }
+
     this.gs = state;
     saveGameState(this.gs);
-    this.showToast(`방치 수령  ${this.rewardParts(reward)}`, CASUAL_CSS.GOLD);
+    this.receipt = {
+      text: `수령 완료 · ${this.rewardLines(reward).filter(Boolean).join(' · ')}`,
+      tone: 'success',
+    };
     this.render();
-  }
-
-  // ─── Toast ─────────────────────────────────────────────────────────────────
-  private showToast(msg: string, color: string): void {
-    const t = this.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT - 90, msg, {
-      fontFamily: 'sans-serif', fontSize: '14px', color, fontStyle: 'bold',
-      backgroundColor: CASUAL_CSS.CREAM, padding: { x: 16, y: 9 },
-      align: 'center', wordWrap: { width: CANVAS_WIDTH - 60 },
-    }).setOrigin(0.5).setDepth(80).setAlpha(0);
-    this.tweens.add({ targets: t, alpha: 1, y: t.y - 14, duration: 250, ease: 'Back.easeOut' });
-    this.time.delayedCall(1700, () => {
-      this.tweens.add({ targets: t, alpha: 0, duration: 300, onComplete: () => t.destroy() });
-    });
   }
 }
