@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-16T00:56:04.438Z",
+  "generatedAt": "2026-09-16T01:15:03.261Z",
   "base": "http://127.0.0.1:8083",
   "scope": "15 initial states / 16 registered scenes including paired DungeonScene+UIScene, three viewports, DPR2; four-zone navigation and selected save-neutral controls. Cinematic and EndlessResult have current separate evidence. StageRewardOverlay has historical evidence only and was not re-run in this Goal. Not exhaustive nested UI, gameplay, campaign, native, or accessibility verification.",
   "fixture": "Fresh browser contexts; partial starter save merges through loadGameState. tutorialStage=99; current lastIdleCollect. PreBattle starts canonical MQ-003 through startQuest and passes its invasion config through the existing registry contract. This is a seeded entry, not proof of organic quest progression.",
@@ -16,20 +16,20 @@
     "src/scenes/AncestralWisdomScene.ts": "6230bd0d84ed9e8d1cc9288f33d51b0bc6680414281a91647d3a2cbbaa6b4af5",
     "src/scenes/CodexScene.ts": "d4588b5c999d8b0906db9d0cab9961dd431ae8c36f2c130a8452bbc8115b2b88",
     "src/scenes/AchievementScene.ts": "68def60b5474e74b071c012141799b4cc6447f0f7954ec639d00c5530e9870ac",
-    "src/scenes/AbyssScene.ts": "2c5d0627052da5ec6b8a7b85b97626099cdd927964f98f424e13dcc414d9a978",
+    "src/scenes/AbyssScene.ts": "884ec60832accd89305b5f768412d6fbbc604af215b1d52c26981383cf96a56e",
     "src/scenes/ProductionScene.ts": "c89132e4c3201cad1e48e661a8f05f554eff49024f16032234465d3c3e03adcf",
     "src/scenes/DecorationScene.ts": "d1e430fdc0ef3836b2fb18bb6fff3ffda69ff9b1d6058c38d58c58bb9396a44a",
     "src/scenes/DungeonScene.ts": "5f53c26839d92fd4c9583ccb24307f7e9e7cf8de96f8e7de40618f2efc1011f3",
     "src/scenes/UIScene.ts": "4967aeb9988ce7de03b21b35fbe620d76d854097f0c4421b6f4f1f47c7d2baef",
     "src/main.ts": "06f6dff8e7acd35d7e71e06d4d10f2825ba4aafe2e68c6a7e08b644c4532350b",
     "src/ui/GameZoneNavigation.ts": "6d7635e7a7d902c8396bfbc0f5169c9fb33c47c5dafaf8983c7aaee1c32b8c6d",
-    "src/data/navigationContract.ts": "5ec825a71831804d210db008fd9afa028f2959699677d28a20943a3255211f7d",
+    "src/data/navigationContract.ts": "04e41f8d010857ab2476a6cbbf810924dbb1bebea515116827a9c96391632b54",
     "src/scenes/HomeCommandDeck.ts": "e603f2e08e1f9137c9c45deb1f48380f82a10e517436efc82258ba4ad5b17aa4",
     "src/ui/BarracksCard.ts": "20aa59932a47540bc9191d3540b396c45bc58ed604f2e89f7e80fefeef3b2997",
     "src/ui/BarracksGrowthHall.ts": "0805925affa18fe51373f02f438dfc19ab0e581c7c89bc79aecbaa7bc64f0a15",
     "src/ui/SummonShared.ts": "37951268491ce9b6685718371182e976108dd010bf6650968849f54166631403",
     "src/ui/SummonBannerCard.ts": "7086c50d62ee3799a7c0a840ce5d43c6025734fc1a02c9c5ef09eee061a993b8",
-    "scripts/verify-web-surfaces.mjs": "77e83f6f9741737da009bc63293922d39e47678caf723572daa69a3ff9356f7b"
+    "scripts/verify-web-surfaces.mjs": "fc4516a507b81d3cf417666c531430ea9388614c9d258db9622baa3c975daff6"
   },
   "results": [
     {
@@ -4894,7 +4894,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "45일 14시간 남음",
+              "text": "45일 13시간 남음",
               "fontSize": 10,
               "renderedFontSize": 10,
               "bounds": {
@@ -5468,7 +5468,7 @@
         "width": 720,
         "height": 1600
       },
-      "sha256": "159c9e1a9279bcb0f789425bae29b32162d9817241a013caa2ea830fdfc490c3"
+      "sha256": "457813d297ed2ea00728e839662cf9661aa31a03da3627b42929ae65b965ec19"
     },
     {
       "scene": "ShopScene",
@@ -6712,7 +6712,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "23:03:38",
+              "text": "22:44:37",
               "fontSize": 11,
               "renderedFontSize": 11,
               "bounds": {
@@ -6859,7 +6859,7 @@
         "width": 720,
         "height": 1600
       },
-      "sha256": "af0a2599dab248011fe565cf32b4f7915b996f8bbe65ca610dc0209976eaec27"
+      "sha256": "ed07ac46818ba3d914e460263facda1c8375f0565c99343063dbe92afce69c90"
     },
     {
       "scene": "FusionScene",
@@ -14644,7 +14644,7 @@
         "width": 720,
         "height": 1600
       },
-      "sha256": "0018db0cc8c27e86a081fafaa2949b129aa07d233fbdfac811a75ff77a2aa8f5"
+      "sha256": "51e73092d12798f00b99e1b24dc813a1c93e87c03275953f02753194ba66c584"
     },
     {
       "scene": "DungeonHomeScene",
@@ -19508,7 +19508,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "45일 14시간 남음",
+              "text": "45일 13시간 남음",
               "fontSize": 10,
               "renderedFontSize": 10,
               "bounds": {
@@ -20082,7 +20082,7 @@
         "width": 780,
         "height": 1688
       },
-      "sha256": "406437806a3af273ebd7c6149dbc0403fe88825cea49715acbb7c70e55a34ec3"
+      "sha256": "bb7ec7249cf3e2e0cb40f2418b5962951d6288ce5fa8a368503a5d4016efb103"
     },
     {
       "scene": "ShopScene",
@@ -21326,7 +21326,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "23:02:51",
+              "text": "22:43:44",
               "fontSize": 11,
               "renderedFontSize": 11,
               "bounds": {
@@ -21473,7 +21473,7 @@
         "width": 780,
         "height": 1688
       },
-      "sha256": "7bba1e129fddb7d1b903917061ce6f2c36fd2c892fafa165d0ad35c53f694c5d"
+      "sha256": "c50a907ef35408d83e611bd635634b68e83768fb8d417f946f84f7a23eb590bb"
     },
     {
       "scene": "FusionScene",
@@ -29258,7 +29258,7 @@
         "width": 780,
         "height": 1688
       },
-      "sha256": "dbe1171904bf9193da1c06bc6618ca0c2d95326ddfb63811508fe63d7d32ab8a"
+      "sha256": "dcb11725042dd6b4a5aeda7e6a18d4f0329c4960b2bbe697acdd0fb1380c573a"
     },
     {
       "scene": "DungeonHomeScene",
@@ -34122,7 +34122,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "45일 14시간 남음",
+              "text": "45일 13시간 남음",
               "fontSize": 10,
               "renderedFontSize": 10,
               "bounds": {
@@ -34696,7 +34696,7 @@
         "width": 860,
         "height": 1864
       },
-      "sha256": "08011731099c142f09e0f1216a1a2a747038cad80a0456af4ee14f23a5cb7c96"
+      "sha256": "151081d2593e2d45a85baec67e4bbe5b0920e6887280fb5ba9f72be0804877e7"
     },
     {
       "scene": "ShopScene",
@@ -35940,7 +35940,7 @@
             {
               "name": null,
               "type": "Text",
-              "text": "23:02:04",
+              "text": "22:42:52",
               "fontSize": 11,
               "renderedFontSize": 11,
               "bounds": {
@@ -36087,7 +36087,7 @@
         "width": 860,
         "height": 1864
       },
-      "sha256": "a7fb43816e725bc01bed0d5e8813e58d09eb15e6bb49a0a7f5fa9856048f86d3"
+      "sha256": "df4f837596ae58223bb3242d0c9c09775a1a2f07248684cbaa056376df5339d0"
     },
     {
       "scene": "FusionScene",
@@ -43872,7 +43872,7 @@
         "width": 860,
         "height": 1864
       },
-      "sha256": "3c23c196316d9d6520e1b6cc3570fc84af044e18276ae50bd3b1a147896b8a28"
+      "sha256": "475c9f0753e96d2596d08c3911060070a9835ee9d28820a3ce9a71f41e2f25b6"
     }
   ],
   "bannerResults": [
@@ -46953,7 +46953,7 @@
         "height": 800
       },
       "screenshot": "tools/screenshots/completion-contact-360x800.png",
-      "sha256": "f05b56e4c43649325235a4b54837183319850cfba361ea947991cf4d431dbeed"
+      "sha256": "10f4ac8f975f4a237536ffd91c15c4db9adfb478b05109aaf8d2ebeba10d2f54"
     },
     {
       "viewport": {
@@ -46961,7 +46961,7 @@
         "height": 844
       },
       "screenshot": "tools/screenshots/completion-contact-390x844.png",
-      "sha256": "e963e5ab91865d7e3073c5600dde008b10df1ce4dec3a20632f8290d74af78f0"
+      "sha256": "2fc7df4fcba4d33a447dac9b346fcf53424ac6dc8101878d8a534582b17e2fa3"
     },
     {
       "viewport": {
@@ -46969,7 +46969,7 @@
         "height": 932
       },
       "screenshot": "tools/screenshots/completion-contact-430x932.png",
-      "sha256": "425ea5e6c598dfa96fe7fbdbb77f6122e209bb7ec2739772999865271c191b94"
+      "sha256": "5bc9a75ecbcfc77215297c2629ba300937df951ed197b325e6377b51a3342af4"
     }
   ],
   "summary": {

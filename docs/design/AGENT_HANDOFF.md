@@ -449,8 +449,9 @@ release readiness를 의미하지 않는다.
 - 이전 추천인 progression-valid organic gameplay acceptance(Abyss win/loss,
   campaign/endless endurance)는 후속 목록에 유지한다. 캐릭터 요청이
   balance/data/native 변경 권한을 열지는 않는다.
-- Nested modal/selection/result states: PARTIAL. 아래 2026-09-16 기록 참조.
-  Viewport 축(360×800 / 430×932)은 닫혔고, 남은 것은 modal 상태 자체의 폭이다.
+- ~~Nested modal/selection/result states at 360×800 and 430×932~~
+  → CLOSED 2026-09-16. Viewport 축은 구조적으로 닫혔고, modal/selection/result
+  17개 상태를 재현 가능한 하네스로 감사했다. 아래 기록 참조.
 - Abyss floor battle: hand-off seam은 닫혔고, 남은 것은 organic play-through
   (실제 wave를 싸워서 이기는 구간)이다. 아래 2026-09-16 기록 참조.
 - Whole-app Android/iOS packaging and store release validation
@@ -521,6 +522,34 @@ artifact이므로 실결함으로 계수하지 않는다.
 
 남은 것: organic play-through. 위 검증은 hand-off 계약과 정산을 닫은 것이지,
 실제 wave를 싸워 이기는 전투 구간을 대체하지 않는다.
+
+**Modal/selection/result 전수 (CLOSED).** `scripts/verify-modal-states.mjs`를
+신설해 각 surface의 초기 상태에서 한 단계 더 들어간 17개 상태를 감사했다:
+`{cases:17, fixedOverflow:0, undersizedTargets:0, textBelow10:0, errors:0,
+hardFailures:0}` (`tools/modal-state-audit.json`).
+
+덮은 상태 유형:
+- 오버레이 modal — Shop 외형 검수대/구매 확인, Codex 수호자 상세,
+  Fusion 재료 피커, Summon 확률 상세, Barracks 관리
+- 인라인 selection — Wisdom 가지, Achievement 기록, Production 시설,
+  Decoration 유물 (텍스트 수가 1:1 교체되어 개수는 불변이나 선택은 반영됨)
+- 탭 전환 — Codex 침략자, Fusion 흡수, Forge 분해
+- **자원 게이트 뒤 confirm 레이어** — 기본 픽스처는 보석/영혼수정이 0이라
+  도달 자체가 불가능했다. 해당 게이트가 요구하는 자원만 시드해 열었고,
+  Wisdom `의식 승인` modal이 등급 0→1·소모 5·보유 500→495의 정확한
+  스냅샷을 렌더하는 것을 확인했다.
+
+구조 변경: `verify-web-surfaces.mjs`의 `openScene`/`inventory`/`logicalClick`/
+`namedClick`을 `scripts/lib/web-audit.mjs`로 **순수 추출**해 두 하네스가 동일
+기하로 측정하도록 했다(갈라지면 두 감사 수치가 비교 불가능해진다). 추출은
+동작 변경이 없음을 실증했다 — 추출 전후 표면 하네스 summary가
+`{45,3,0,0,4,4}`로 동일하다. `openScene`에 선택적 `seed`를 추가했고 기본값은
+기존과 같다. 입력 탐색용 `scripts/discover-inputs.mjs`도 추가해 트리거를
+추측이 아니라 실측 라벨로 고르게 했다.
+
+남은 것: overlapCandidates 48건은 hardFailure가 아닌 review candidate이며,
+표본 확인 결과 썸네일 배지·아이콘 칩의 bounding-box 중첩이었다. 전수 육안
+심사는 하지 않았다.
 
 현재 사용자 요청과 `CHARACTER_ART_REVISION.md`에 따라 다음 한 batch의 exact IDs,
 acceptance와 허용 파일을 먼저 확정한다. Packaging/publishing 권한은 포함되지 않는다.

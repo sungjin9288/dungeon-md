@@ -1,0 +1,507 @@
+{
+  "generatedAt": "2026-09-16T01:13:32.373Z",
+  "base": "http://127.0.0.1:8083",
+  "scope": "17 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
+  "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
+  "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
+  "sourceHashes": {
+    "scripts/lib/web-audit.mjs": "061ccb13f82259f4d757b972892cd69e5c6a233bdb48bae7d0aab48899f7e49e",
+    "scripts/verify-modal-states.mjs": "c35f0c404987eb7e21d6f2c5445d81d346fcca2098d8ff473109b36753091c08"
+  },
+  "results": [
+    {
+      "id": "shop-skin-preview",
+      "scene": "ShopScene",
+      "expect": "외형 검수대 미리보기",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 77,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 15,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
+      "sha256": "d4829558ce999a2deb924fbd9c7cad8ea72392e768b317aa075d8d24f83af8d9"
+    },
+    {
+      "id": "shop-purchase-confirm",
+      "scene": "ShopScene",
+      "expect": "구매 확인",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 71,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
+      "sha256": "60efd977162a547ef9de36280adf39828a30bf951f9c9fe69e7c3ca3a325c402"
+    },
+    {
+      "id": "codex-monster-detail",
+      "scene": "CodexScene",
+      "expect": "수호자 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 59,
+      "visibleTextAfter": 88,
+      "inputsAfter": 28,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 9,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-monster-detail-390x844.png",
+      "sha256": "22ce9607e5fca8c7a42222faa079d378b262c15f6ff42827810a983782f80fe8"
+    },
+    {
+      "id": "codex-invader-tab",
+      "scene": "CodexScene",
+      "expect": "침략자 기록",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 59,
+      "visibleTextAfter": 45,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-invader-tab-390x844.png",
+      "sha256": "b8e94afe519b54abf4545446034788bb16c74ff8d6d0ba8c0bf8af288242d34a"
+    },
+    {
+      "id": "wisdom-branch-confirm",
+      "scene": "AncestralWisdomScene",
+      "expect": "가지 강화 확인",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AncestralWisdomScene"
+      ],
+      "visibleTextBefore": 40,
+      "visibleTextAfter": 40,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-wisdom-branch-confirm-390x844.png",
+      "sha256": "8c53086c8d07fee3ef75f6f599a7e8492ca3d11955225b94b41416997030e6d2"
+    },
+    {
+      "id": "achievement-record",
+      "scene": "AchievementScene",
+      "expect": "업적 기록 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AchievementScene"
+      ],
+      "visibleTextBefore": 46,
+      "visibleTextAfter": 46,
+      "inputsAfter": 13,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-achievement-record-390x844.png",
+      "sha256": "db7793a13a5d4cf6f7cbad3db202f3f44ba7e94fe1332ac379d238a5228895eb"
+    },
+    {
+      "id": "abyss-floor-order",
+      "scene": "AbyssScene",
+      "expect": "심연 층 지시",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonScene",
+        "UIScene"
+      ],
+      "visibleTextBefore": 41,
+      "visibleTextAfter": 32,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
+      "sha256": "95eb3e65dbb79723cb624cc2c374fcb69bdf6b520595ca283cb54851619cd140"
+    },
+    {
+      "id": "production-facility-order",
+      "scene": "ProductionScene",
+      "expect": "생산 지시",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 43,
+      "visibleTextAfter": 43,
+      "inputsAfter": 6,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-facility-order-390x844.png",
+      "sha256": "91fc2502c1182f859ded19dde2af25d52776a75dc98d17a16b49d9fba12b7c3b"
+    },
+    {
+      "id": "decoration-relic-select",
+      "scene": "DecorationScene",
+      "expect": "유물 선택",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DecorationScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-decoration-relic-select-390x844.png",
+      "sha256": "7d74afba398a159a42357e86cab0976efbafb336ea82714b28dffc018ef96f4c"
+    },
+    {
+      "id": "fusion-material-picker",
+      "scene": "FusionScene",
+      "expect": "재료 선택 피커",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "FusionScene"
+      ],
+      "visibleTextBefore": 28,
+      "visibleTextAfter": 37,
+      "inputsAfter": 13,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-fusion-material-picker-390x844.png",
+      "sha256": "707033bf88c20ccd0cbbd46b4605fe336aadd6b2276e22da6c14dfc63030e276"
+    },
+    {
+      "id": "fusion-absorb-tab",
+      "scene": "FusionScene",
+      "expect": "흡수 탭",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "FusionScene"
+      ],
+      "visibleTextBefore": 28,
+      "visibleTextAfter": 31,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-fusion-absorb-tab-390x844.png",
+      "sha256": "0877ffb84bd23d1194f170030c303866774ab7abf1a0429d01c3768ead771a5b"
+    },
+    {
+      "id": "summon-rate-detail",
+      "scene": "SummonScene",
+      "expect": "확률 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "SummonScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 75,
+      "inputsAfter": 10,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 5,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-summon-rate-detail-390x844.png",
+      "sha256": "28d8375eb03f2fea43e3570397ffde9ffa4aa93d4e089e39343e03e287668cf0"
+    },
+    {
+      "id": "barracks-manage",
+      "scene": "BarracksScene",
+      "expect": "수호자 관리",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 52,
+      "visibleTextAfter": 64,
+      "inputsAfter": 14,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 1,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-manage-390x844.png",
+      "sha256": "46f61738809e61f7fa9d5875054528c775acfeba0402cb2c3b258372fcdb9405"
+    },
+    {
+      "id": "forge-disassemble-tab",
+      "scene": "ForgeScene",
+      "expect": "분해 탭",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ForgeScene"
+      ],
+      "visibleTextBefore": 35,
+      "visibleTextAfter": 25,
+      "inputsAfter": 7,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-forge-disassemble-tab-390x844.png",
+      "sha256": "e9ddf35234bd31fa4aab3a31555afea7177342cad22ed3fb6eee339266b611d8"
+    },
+    {
+      "id": "shop-purchase-result",
+      "scene": "ShopScene",
+      "expect": "구매 확정 후 영수증",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 71,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "gems"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
+      "sha256": "4669ff3ddc0385c10e14aed398ab9d98d9925562508e61722f23a90206b3bf0c"
+    },
+    {
+      "id": "wisdom-upgrade-result",
+      "scene": "AncestralWisdomScene",
+      "expect": "가지 강화 확정 후 기록",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AncestralWisdomScene"
+      ],
+      "visibleTextBefore": 40,
+      "visibleTextAfter": 49,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "soulCrystals"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-wisdom-upgrade-result-390x844.png",
+      "sha256": "5c3e72499261e937b9af6aec5ca59480eea8ffb29cee6025523b45473fdf72ef"
+    },
+    {
+      "id": "abyss-sweep-result",
+      "scene": "AbyssScene",
+      "expect": "심연 소탕 영수증",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonScene",
+        "UIScene"
+      ],
+      "visibleTextBefore": 41,
+      "visibleTextAfter": 32,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "abyss"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
+      "sha256": "34ac4b139c5f8ed7e32993ce1bee09a11941d3a5cca981e47d036a8f57797adb"
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "cases": 17,
+    "fixedOverflow": 0,
+    "undersizedTargets": 0,
+    "textBelow10": 0,
+    "overlapCandidates": 48,
+    "errors": 0,
+    "hardFailures": 0
+  }
+}
