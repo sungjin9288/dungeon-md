@@ -83,6 +83,30 @@ describe('navigationContract — transient context hand-offs', () => {
     expect(applyNavigationContextOperation(focusContext, 'battle-result')).not.toHaveProperty('returnTo');
   });
 
+  it('drops every field the abyss climb hand-off owns on return', () => {
+    // AbyssScene.climb() writes abyssPendingFloor + returnTo, the battle writes
+    // battleResult back, and resolveReturnedBattle() settles the floor. Leaving
+    // any of the three behind would misroute the next battle or re-settle a
+    // floor that was never played, so the scene drives removal from this rule.
+    expect(NAVIGATION_CONTEXT_OPERATIONS['abyss-return']).toEqual({
+      consume: ['abyssPendingFloor', 'battleResult', 'returnTo'], preserve: [],
+    });
+
+    const returned = applyNavigationContextOperation(
+      { ...focusContext, returnTo: 'AbyssScene', abyssPendingFloor: 7, battleResult: true },
+      'abyss-return',
+    );
+    expect(returned).not.toHaveProperty('abyssPendingFloor');
+    expect(returned).not.toHaveProperty('battleResult');
+    expect(returned).not.toHaveProperty('returnTo');
+    // Unrelated focus context survives an abyss return.
+    expect(returned).toMatchObject({ focusMonsterId: 'dokkaebi_warrior', previousScene: 'BarracksScene' });
+
+    // The generic battle return stays narrower: it must not silently clear
+    // abyss ownership, otherwise the abyss floor would never be settled.
+    expect(NAVIGATION_CONTEXT_OPERATIONS['battle-result'].consume).not.toContain('abyssPendingFloor');
+  });
+
   it('uses only a live assigned room for focused Forge return context', () => {
     expect(createForgeFocusContext('dokkaebi_warrior', 1)).toEqual({
       monsterId: 'dokkaebi_warrior', sourceLabel: '방 #2 수호자', roomSlotIdx: 1,

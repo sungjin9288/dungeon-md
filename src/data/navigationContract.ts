@@ -104,6 +104,8 @@ export const NAVIGATION_CONTEXT_FIELDS = [
   'previousScene',
   'preBattleEditReturn',
   'returnTo',
+  'abyssPendingFloor',
+  'battleResult',
 ] as const;
 
 export type NavigationContextField = (typeof NAVIGATION_CONTEXT_FIELDS)[number];
@@ -113,7 +115,8 @@ export type NavigationContextOperation =
   | 'focused-room-return'
   | 'utility-back'
   | 'prebattle-resume'
-  | 'battle-result';
+  | 'battle-result'
+  | 'abyss-return';
 
 /**
  * Registry field ownership mirrors existing scene behavior. These are a testable
@@ -145,6 +148,18 @@ export const NAVIGATION_CONTEXT_OPERATIONS: Readonly<Record<
   },
   'battle-result': {
     consume: ['returnTo'],
+    preserve: [],
+  },
+  /**
+   * Abyss climb hand-off. `AbyssScene.climb()` writes `abyssPendingFloor`,
+   * `returnTo` and a cleared `battleResult` before starting `DungeonScene`;
+   * the battle writes `battleResult` back on win or loss. `resolveReturnedBattle()`
+   * settles the floor and must drop all three, otherwise a stale `returnTo`
+   * would misroute the next unrelated battle and a stale `abyssPendingFloor`
+   * would re-settle a floor that was never played.
+   */
+  'abyss-return': {
+    consume: ['abyssPendingFloor', 'battleResult', 'returnTo'],
     preserve: [],
   },
 };

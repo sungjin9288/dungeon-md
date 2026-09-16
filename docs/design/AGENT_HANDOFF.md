@@ -451,7 +451,8 @@ release readiness를 의미하지 않는다.
   balance/data/native 변경 권한을 열지는 않는다.
 - Nested modal/selection/result states: PARTIAL. 아래 2026-09-16 기록 참조.
   Viewport 축(360×800 / 430×932)은 닫혔고, 남은 것은 modal 상태 자체의 폭이다.
-- Abyss floor battle의 launch→organic win/loss return full E2E play-through
+- Abyss floor battle: hand-off seam은 닫혔고, 남은 것은 organic play-through
+  (실제 wave를 싸워서 이기는 구간)이다. 아래 2026-09-16 기록 참조.
 - Whole-app Android/iOS packaging and store release validation
 - ~~Clean commit/merge/release history for the accumulated dirty worktree~~
   → CLOSED 2026-09-16. 아래 기록 참조.
@@ -502,6 +503,24 @@ undersized target 0, 10px 미만 텍스트 0, interactive 21개. Barracks 몬스
 남은 것: 나머지 surface의 confirm/result/picker 상태 전수. 임시 probe가
 보고하는 추가 overflow는 `scrollFactor:0` 고정 하단 내비의 월드 좌표
 artifact이므로 실결함으로 계수하지 않는다.
+
+**Abyss hand-off seam (CLOSED).** `AbyssScene.climb()` → `DungeonScene` →
+`resolveReturnedBattle()` 왕복을 실제 런타임에서 세 경로 전부 태웠다:
+승리 시 `clearAbyssFloor` 적용 + `highestFloor 0→1` + firstClear receipt,
+패배 시 `highestFloor` 불변 + 재도전 안내, `battleResult` 부재 시 상태 불변
++ "결과 확인 불가". 세 경우 모두 `abyssPendingFloor`/`battleResult`/`returnTo`
+잔여가 없음을 확인했다(console error 0).
+
+이 과정에서 계약 결함을 하나 고쳤다: `navigationContract.ts`는 스스로를
+"transient hand-off의 테스트 가능한 기록"이라 선언하면서도 `battle-result`가
+`returnTo` 하나만 소비한다고 적어, 실제로 3개를 소비하는 abyss 복귀를
+과소 선언하고 있었다. `abyssPendingFloor`/`battleResult` 필드와 `abyss-return`
+연산을 추가하고, `AbyssScene`이 수동 `registry.remove` 3회 대신 그 계약을
+순회하도록 바꿔 선언과 런타임이 갈라질 수 없게 했다. 회귀 테스트를
+`navigationContract.test.ts`에 추가했다(6→7 케이스).
+
+남은 것: organic play-through. 위 검증은 hand-off 계약과 정산을 닫은 것이지,
+실제 wave를 싸워 이기는 전투 구간을 대체하지 않는다.
 
 현재 사용자 요청과 `CHARACTER_ART_REVISION.md`에 따라 다음 한 batch의 exact IDs,
 acceptance와 허용 파일을 먼저 확정한다. Packaging/publishing 권한은 포함되지 않는다.

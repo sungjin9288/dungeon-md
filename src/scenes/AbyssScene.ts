@@ -23,6 +23,7 @@ import {
   type AbyssLoot,
 } from '../data/abyss';
 import { clearAbyssFloor, sweepAbyssFloor } from '../data/abyssTransactions';
+import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import {
   addFramedPanel,
   addPrimaryActionButton,
@@ -102,9 +103,11 @@ export class AbyssScene extends Phaser.Scene {
     const result = this.registry.get('battleResult') as { won: boolean } | undefined;
     if (pendingFloor === undefined) return null;
 
-    this.registry.remove('abyssPendingFloor');
-    this.registry.remove('battleResult');
-    this.registry.remove('returnTo');
+    // Drop every field the abyss hand-off owns. Driving this from the shared
+    // contract keeps the declared rule and the runtime behavior from drifting.
+    NAVIGATION_CONTEXT_OPERATIONS['abyss-return'].consume.forEach(field => {
+      this.registry.remove(field);
+    });
 
     const deepestBefore = this.gs.abyss.highestFloor;
     if (result?.won) {
