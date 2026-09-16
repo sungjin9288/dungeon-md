@@ -15,6 +15,8 @@
         --sab: env(safe-area-inset-bottom, 0px);
         --sal: env(safe-area-inset-left,   0px);
         --sar: env(safe-area-inset-right,  0px);
+        --native-safe-top: 0px;
+        --native-safe-bottom: 0px;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body {
@@ -32,8 +34,8 @@
         /* Keep the game canvas out of the notch/Dynamic Island and home bar.
            Phaser FIT mode scales into the padded box, so scenes don't need
            per-element safe-area offsets. */
-        padding-top: var(--sat);
-        padding-bottom: var(--sab);
+        padding-top: max(var(--sat), var(--native-safe-top));
+        padding-bottom: max(var(--sab), var(--native-safe-bottom));
         padding-left: var(--sal);
         padding-right: var(--sar);
       }

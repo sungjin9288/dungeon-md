@@ -8,9 +8,8 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   ios: {
-    // 'never' lets env(safe-area-inset-*) report real notch insets inside the
-    // WebView — index.html pads <body> with them so the canvas avoids the
-    // Dynamic Island/home bar. ('always' zeroes env() via scroll insets.)
+    // Avoid UIKit scroll insets resizing the fixed Phaser viewport twice.
+    // CSS env() plus the native-iOS fallback in main.ts owns the safe frame.
     contentInset: 'never',
   },
   plugins: {

@@ -22,7 +22,7 @@
     "tone": "^15.1.22"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.2.1",
+    "@capacitor/cli": "8.2.0",
     "@vitest/coverage-v8": "^4.1.3",
     "happy-dom": "^20.8.9",
     "typescript": "^5.4.5",
