@@ -1,7 +1,46 @@
-import { defineConfig } from 'vite';
+import { readdir, rm } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { defineConfig, type Plugin } from 'vite';
+
+// `public/` is copied into `dist/` verbatim, which also ships the drop-in
+// guides that deliberately live next to the folders they document
+// (`assets/ASSET_GUIDE.md`, `assets/backgrounds/README.md`). Those are
+// contributor docs: nothing fetches them at runtime, and Capacitor packages
+// `dist/` into the APK/IPA, so a store build would carry them where anyone
+// unzipping it can read them. Dropping them after the copy keeps the guides
+// where contributors expect them while leaving them out of the shipped app.
+function stripBundledDocs(): Plugin {
+  let outDir = '';
+  return {
+    name: 'strip-bundled-docs',
+    apply: 'build',
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    async closeBundle() {
+      for (const path of await removeMarkdown(outDir)) {
+        this.info(`stripped contributor doc: ${path}`);
+      }
+    },
+  };
+}
+
+async function removeMarkdown(dir: string): Promise<string[]> {
+  const removed: string[] = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) removed.push(...(await removeMarkdown(path)));
+    else if (entry.name.endsWith('.md')) {
+      await rm(path);
+      removed.push(path);
+    }
+  }
+  return removed;
+}
 
 export default defineConfig({
   base: './',
+  plugins: [stripBundledDocs()],
   server: {
     port: 8083,
     host: true,

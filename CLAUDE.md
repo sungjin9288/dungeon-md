@@ -162,12 +162,25 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 
 ### 네이티브 빌드 전제조건
 
+2026-09-17 양 플랫폼 빌드 + 실제 구동까지 실측 확인.
+
 | 대상 | 필요한 것 | 검증 명령 |
 |------|-----------|-----------|
 | 동기화 | 없음 (`dist/` 최신이면 됨) | `npm run build && LANG=en_US.UTF-8 npx cap sync` |
 | iOS 빌드 | Xcode + CocoaPods | `xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator build` |
-| Android 빌드 | **JDK 21 + ANDROID_HOME** | `cd android && ./gradlew assembleDebug` |
+| Android 빌드 | **JDK 21** + SDK(platform 36, build-tools 36.x) | `cd android && ./gradlew assembleDebug` |
+
+`ANDROID_HOME`은 필요 없다 — `android/local.properties`의 `sdk.dir`가 Gradle에
+SDK 위치를 알려준다. Capacitor 8이 Java 21을 요구하므로 JDK만 맞추면 된다.
 
 동기화 산출물(`android/app/src/main/assets/public`, `ios/App/App/public`)은
 Capacitor가 생성한 중첩 `.gitignore`가 제외하므로 커밋되지 않는다. 네이티브
 빌드 전에는 반드시 `cap sync`를 먼저 돌려야 최신 `dist/`가 들어간다.
+
+### 번들에 실리는 것 / 안 실리는 것
+
+`public/`은 Vite가 `dist/`로 그대로 복사하고, Capacitor가 그 `dist/`를 APK/IPA에
+패키징한다. 즉 `public/`에 둔 파일은 전부 출하된다. 기여자용 `.md` 가이드
+(`assets/ASSET_GUIDE.md`, `assets/backgrounds/README.md`)는 문서화 대상 폴더
+옆에 두되, `vite.config.ts`의 `strip-bundled-docs` 플러그인이 빌드 산출물에서
+`.md`를 제거한다. `public/`에 새 기여자 문서를 추가할 때는 `.md`로 두면 된다.

@@ -456,8 +456,9 @@ release readiness를 의미하지 않는다.
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
-  iOS 시뮬레이터 빌드까지는 통과했고, 남은 것은 Android 빌드와 서명/스토어다.
-  아래 2026-09-16 기록 참조.
+  Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
+  남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
+  아래 2026-09-16 / 2026-09-17 기록 참조.
 - ~~Clean commit/merge/release history for the accumulated dirty worktree~~
   → CLOSED 2026-09-16. 아래 기록 참조.
 - ~~Global performance/bundle remediation for the existing large-chunk advisory~~
@@ -604,6 +605,58 @@ hardFailures:0}` (`tools/modal-state-audit.json`).
 
 현재 사용자 요청과 `CHARACTER_ART_REVISION.md`에 따라 다음 한 batch의 exact IDs,
 acceptance와 허용 파일을 먼저 확정한다. Packaging/publishing 권한은 포함되지 않는다.
+
+### 2026-09-17 — 네이티브 빌드·구동 검증 · 기여자 문서 번들 제외
+
+2026-09-16에 환경 제약으로 막혀 있던 두 항목을 사용자가 해소해(Xcode 선택,
+Temurin JDK 21 설치) 나머지를 실측했다.
+
+**Android (CLOSED).** `./gradlew assembleDebug` → `BUILD SUCCESSFUL`.
+산출 APK 20MB, aapt2 badging 실측 `com.dungeon.guardian` / versionName 1.1 /
+versionCode 2 / minSdk 24 / targetSdk 36 — `variables.gradle`과 일치한다.
+APK 내부 `assets/public/assets/`에 분리 청크 9개가 모두 들어간다.
+
+에뮬레이터(Medium_Phone_API_36.1) 구동까지 확인: Capacitor가 10개 청크를
+`https://localhost/assets/...` 로컬 스킴으로 서빙하고, 부팅 화면 → 홈 보드
+렌더 → 튜토리얼 각인 1/4 → 탭 → 2/4 진행. `FATAL EXCEPTION`/`AndroidRuntime`/
+JS 예외 0건.
+
+**iOS (CLOSED).** 시뮬레이터 빌드 `** BUILD SUCCEEDED **` 후 iPhone 17
+(iOS 26.5)에 설치·실행. WebView 전 리소스 200, 홈 보드 렌더, 탭으로 각인
+1/4 → 2/4 진행 확인. 양 플랫폼이 동일 화면을 렌더한다.
+
+**빌드 전제조건 정정.** `ANDROID_HOME`은 **필요 없다**. `android/local.properties`의
+`sdk.dir`가 Gradle에 SDK 위치를 알려주므로, 환경변수 없이도 빌드된다. 실제로
+필요한 것은 JDK 21과 SDK(platform 36 + build-tools 36.x)다. `CLAUDE.md`의
+전제조건 표를 이에 맞게 고쳤다.
+
+**함정 — 에뮬레이터 저장소 임계치.** `/data`가 96% 차 있으면 APK 크기와
+무관하게 `IOException: Requested internal only, but not enough space`로 설치가
+거부된다. Android의 저장소 저한계는 `min(파티션의 5%, 500MB)`라, 5.8G 파티션
+기준 약 304MB 아래로 떨어지면 20MB APK도 못 들어간다. `pm trim-caches`는
+2MB밖에 회수하지 못했다. 다른 프로젝트 앱을 지우거나 파티션을 건드리는 대신
+`settings put global sys_storage_threshold_percentage 1`로 임계치만 일시
+완화해 설치하고, 끝난 뒤 `settings delete`로 기본값(null)에 원복하는 것이
+가장 부작용이 적다.
+
+**기여자 문서 번들 제외 (신규 수정).** `public/assets/ASSET_GUIDE.md`와
+`public/assets/backgrounds/README.md`가 스토어 빌드에 그대로 실려 나가고
+있었다. `public/`은 Vite가 `dist/`로 그대로 복사하고 Capacitor가 그 `dist/`를
+APK/IPA에 패키징하므로, 빌드를 압축 해제하면 누구나 읽을 수 있는 상태였다.
+런타임에서 fetch하지 않고 주석에서만 참조되는 기여자 문서다.
+
+두 문서는 각자 문서화 대상 폴더 옆에 있어야 쓸모가 있으므로 **이동하지 않고**,
+`vite.config.ts`에 `strip-bundled-docs` 플러그인을 추가해 빌드 산출물에서만
+`.md`를 제거한다. `outDir`은 하드코딩하지 않고 `configResolved`에서 읽는다.
+제거 대상은 빌드 로그에 그대로 남는다(조용히 사라지지 않게).
+
+검증: `dist` `.md` 0건 / `privacy.html`·청크 10개 보존 / 재빌드한 APK의 `.md`
+엔트리 0건 / `cap sync` 후 양쪽 네이티브 셸 `.md` 0건 / tsc clean /
+2905 tests pass.
+
+**남은 것.** 서명·스토어 업로드(자격증명 필요), 그리고 캐릭터 아트 127종
+(`docs/design/CHARACTER_ART_CODEX_HANDOFF.md`) — 둘 다 agent 단독으로 끝낼 수
+없는 항목이다.
 
 ## 8. Completed implementation record: Fusion Chamber
 
