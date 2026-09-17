@@ -16,6 +16,8 @@
 import { getWisdomBonuses, type GameState, type DungeonSlot } from './wisdom';
 import { facilityProductionOverMs } from './production';
 import { computeDecorationBonuses } from './decorations';
+import { getNotorietyTier } from './notoriety';
+import { getSlotBuilding } from './roomBuildings';
 
 // ─── Tunable rate constants (gold per minute) ────────────────────────────────
 export const IDLE_BASE_PER_MIN     = 1;     // a staffed dungeon ticks over at all
@@ -23,8 +25,26 @@ export const IDLE_PER_ROOM         = 3;     // each built room
 export const IDLE_PER_LEVEL        = 2;     // each room level beyond 1
 export const IDLE_PER_GUARDIAN     = 1.5;   // each deployed guardian
 export const IDLE_DM_BONUS         = 0.04;  // ×(1 + dmLevel * this)
-export const IDLE_CAP_HOURS        = 8;     // max accumulation window
+export const IDLE_PER_GOLD_ROOM    = 12;    // a 황금 광맥 built at home is a revenue room (no battle income)
+/** A famous dungeon draws paying visitors: ×(1 + this × (tier − 1)) on gold (operation + treasury). */
+export const IDLE_NOTORIETY_BONUS  = 0.15;
+export const IDLE_CAP_HOURS        = 12;    // max accumulation window
+/** From this notoriety tier the window doubles — the name keeps the doors open overnight. */
+export const IDLE_LONG_CAP_TIER    = 5;
+export const IDLE_LONG_CAP_HOURS   = 24;
 export const IDLE_CAP_MS           = IDLE_CAP_HOURS * 60 * 60 * 1000;
+
+export function idleCapHours(state: Readonly<Pick<GameState, 'notorietyTier'>>): number {
+  return getNotorietyTier(state) >= IDLE_LONG_CAP_TIER ? IDLE_LONG_CAP_HOURS : IDLE_CAP_HOURS;
+}
+
+export function idleCapMs(state: Readonly<Pick<GameState, 'notorietyTier'>>): number {
+  return idleCapHours(state) * 60 * 60 * 1000;
+}
+
+export function notorietyIncomeMult(state: Readonly<Pick<GameState, 'notorietyTier'>>): number {
+  return 1 + IDLE_NOTORIETY_BONUS * (getNotorietyTier(state) - 1);
+}
 
 export interface IdleReward {
   /** Total gold earned — dungeon operation + treasury facility (floored). */
@@ -37,7 +57,7 @@ export interface IdleReward {
   readonly creditedMs: number;
   /** Whether the elapsed time hit the accumulation cap. */
   readonly capped: boolean;
-  /** The dungeon's current operation gold-per-minute rate (excludes facilities). */
+  /** The dungeon's current operation gold-per-minute rate (excludes facilities and the name multiplier). */
   readonly ratePerMin: number;
 }
 
@@ -66,16 +86,19 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
 
   let levelSum = 0;
   let guardians = 0;
+  let goldRooms = 0;
   for (const slot of built) {
     levelSum  += Math.max(0, (slot.roomLevel ?? 1) - 1);
     guardians += definedCount(slot.monsterIds);
+    if (getSlotBuilding(slot) === 'gold') goldRooms++;
   }
 
   const raw =
     IDLE_BASE_PER_MIN +
     built.length * IDLE_PER_ROOM +
     levelSum * IDLE_PER_LEVEL +
-    guardians * IDLE_PER_GUARDIAN;
+    guardians * IDLE_PER_GUARDIAN +
+    goldRooms * IDLE_PER_GOLD_ROOM;
 
   const dmScale = 1 + Math.max(0, (state.dmLevel ?? 1)) * IDLE_DM_BONUS;
   // 지혜의 나무 `황금의 손` — the tree's only economy branch now that battles
@@ -98,23 +121,26 @@ export function computeIdleReward(state: Readonly<GameState>, now: number): Idle
   }
 
   const elapsedMs  = now - last;
-  const creditedMs = Math.min(elapsedMs, IDLE_CAP_MS);
+  const capMs      = idleCapMs(state);
+  const creditedMs = Math.min(elapsedMs, capMs);
 
-  // Decoration set bonuses scale idle gold + facility production.
+  // 운영수익 = (방 수익 + 보물고) × 명성 배수 × 장식 세트 배수 (GAME_DESIGN_BENCHMARK §4.1 ③).
   const deco = computeDecorationBonuses(state.placedDecorations);
-  const goldMult = 1 + deco.idleGoldPct / 100;
+  const nameMult = notorietyIncomeMult(state);
+  const goldMult = (1 + deco.idleGoldPct / 100) * nameMult;
   const prodMult = 1 + deco.idleProductionPct / 100;
 
   const operationGold = Math.floor(ratePerMin * (creditedMs / 60000) * goldMult);
-  // Apply the production bonus by scaling the credited window before flooring.
-  const production = facilityProductionOverMs(state.productionFacilities, creditedMs * prodMult);
+  // Apply the production bonus by scaling the credited window before flooring;
+  // the treasury's gold shares the name multiplier, materials do not.
+  const production = facilityProductionOverMs(state.productionFacilities, creditedMs * prodMult, state.facilityStaff);
 
   return {
-    gold: operationGold + production.gold,
+    gold: operationGold + Math.floor(production.gold * nameMult),
     materials: production.materials,
     elapsedMs,
     creditedMs,
-    capped: elapsedMs > IDLE_CAP_MS,
+    capped: elapsedMs > capMs,
     ratePerMin,
   };
 }

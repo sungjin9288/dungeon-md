@@ -5,13 +5,15 @@ import {
   type RoomActionKind,
   type RoomActionRecommendation,
 } from './roomActionRecommendations';
+import { getLineageNextStep, getLineageGoalPlan } from './lineage';
+import { getMonsterDisplayName, getMonsterEmoji } from './fusion';
 import type { GameState } from './wisdom';
 
-export type HomePrimaryDestination = 'room-detail' | 'forge' | 'barracks' | 'pre-battle';
+export type HomePrimaryDestination = 'room-detail' | 'forge' | 'barracks' | 'pre-battle' | 'codex';
 
 export interface HomeReadinessDirective {
   readonly destination: HomePrimaryDestination;
-  readonly kind: RoomActionKind | 'ready';
+  readonly kind: RoomActionKind | 'ready' | 'lineage';
   readonly slotIdx: number | null;
   readonly icon: string;
   readonly title: string;
@@ -57,6 +59,9 @@ export function getHomeReadinessDirective(
     };
   }
 
+  const lineage = getLineageDirective(state);
+  if (lineage) return lineage;
+
   const readiness = calculateDungeonMetrics(state, unlockedSlots).readiness;
   const copy = getReadinessDirectiveCopy('battle-ready', { readiness });
   return {
@@ -70,6 +75,31 @@ export function getHomeReadinessDirective(
     statLabel: copy.statLabel,
     statValue: `${readiness}%`,
     accent: copy.accent,
+    roomAction: null,
+  };
+}
+
+export const LINEAGE_DIRECTIVE_ACCENT = 0xc181ff;
+
+/** The pinned 계보도 goal as a directive: its next concrete step, or null when unpinned / reached. */
+export function getLineageDirective(state: Readonly<Pick<GameState, 'lineageGoal' | 'ownedMonsters'>>): HomeReadinessDirective | null {
+  const goalId = state.lineageGoal;
+  if (!goalId) return null;
+  const step = getLineageNextStep(state, goalId);
+  if (!step) return null;
+  const plan = getLineageGoalPlan(state, goalId);
+  const remaining = plan.filter(entry => entry.kind !== 'owned').length;
+  return {
+    destination: 'codex',
+    kind: 'lineage',
+    slotIdx: null,
+    icon: getMonsterEmoji(goalId),
+    title: `목표 · ${getMonsterDisplayName(goalId)}`,
+    body: step.label,
+    ctaLabel: '계보 보기',
+    statLabel: '남은 단계',
+    statValue: `${remaining}`,
+    accent: LINEAGE_DIRECTIVE_ACCENT,
     roomAction: null,
   };
 }

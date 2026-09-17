@@ -173,6 +173,7 @@ export function buildMonsterCard(
   const zone = scene.add.zone(x, y, CARD_W, CARD_H)
     .setOrigin(0)
     .setInteractive({ useHandCursor: true });
+  zone.setName(`barracks-card-${monster.id}`);
   zone.on('pointerdown', () => ctx.onSelect(monster));
   ctx.contentContainer.add(zone);
 }

@@ -154,6 +154,38 @@ export async function namedClick(page, name) {
  * text rendered on them. Smallest-area wins so a button is preferred over the
  * card or panel that contains it.
  */
+/**
+ * Logical center of the first interactive object with `name`, walking the
+ * live scene tree — including objects inside masked viewports, which
+ * `inventory` deliberately leaves out of `inputs`. Null when not rendered.
+ */
+export async function namedCenter(page, name) {
+  return page.evaluate(name => {
+    const game = window.__phaserGame;
+    const dpr = window.__gameDpr;
+    for (const scene of game.scene.getScenes(true)) {
+      const camera = scene.cameras.main;
+      let found = null;
+      const walk = (list, sx, sy) => {
+        for (const object of list) {
+          if (!object || object.visible === false || found) continue;
+          const nsx = sx * (object.scrollFactorX ?? 1), nsy = sy * (object.scrollFactorY ?? 1);
+          if (object.type === 'Container' && object.list) walk(object.list, nsx, nsy);
+          if (object.name === name && object.input?.enabled && object.getBounds) {
+            const b = object.getBounds();
+            const a = camera.matrix.transformPoint(b.x - camera.scrollX * nsx, b.y - camera.scrollY * nsy);
+            const c = camera.matrix.transformPoint(b.right - camera.scrollX * nsx, b.bottom - camera.scrollY * nsy);
+            found = { x: (a.x + c.x) / 2 / dpr, y: (a.y + c.y) / 2 / dpr };
+          }
+        }
+      };
+      walk(scene.children.list, 1, 1);
+      if (found) return found;
+    }
+    return null;
+  }, name);
+}
+
 export async function labelClick(page, label, state) {
   const snapshot = state ?? await inventory(page);
   const matches = snapshot.scenes

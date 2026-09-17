@@ -5,6 +5,8 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { getLineageNextStep } from '../data/lineage';
+import { getMonsterDisplayName } from '../data/fusion';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
@@ -103,12 +105,23 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   const exhausted = isForecastExhausted(scene.gs, getTodayString());
   const tierLabel = `명성 ${getNotorietyTier(scene.gs)}단계${canRaiseNotorietyTier(scene.gs) ? ' ▲' : ''}`;
   // Sits after the '다음 수비 지시' header label (≈80px at 11px bold).
-  deck.add(scene.add.text(deckX + 104, deckY + 15, `· ${tierLabel}`, {
+  const tierText = scene.add.text(deckX + 104, deckY + 15, `· ${tierLabel}`, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
     color: canRaiseNotorietyTier(scene.gs) ? CASUAL_CSS.GOLD : '#a89c86',
     fontStyle: 'bold',
-  }).setOrigin(0, 0.5));
+  }).setOrigin(0, 0.5);
+  deck.add(tierText);
+  // A pinned 계보 goal stays visible here even while room work owns the directive card.
+  const goalStep = scene.gs.lineageGoal ? getLineageNextStep(scene.gs, scene.gs.lineageGoal) : null;
+  if (scene.gs.lineageGoal && goalStep) {
+    deck.add(scene.add.text(tierText.x + tierText.width + 6, deckY + 15, `· 📌 ${getMonsterDisplayName(scene.gs.lineageGoal)}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '11px',
+      color: '#c9a8ff',
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setName('home-lineage-goal-chip'));
+  }
 
   const readinessCss = dungeonMetrics.readiness >= 80
     ? CASUAL_CSS.GREEN : dungeonMetrics.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
@@ -217,6 +230,20 @@ function getHomeDirective(
       accent: action.accent,
       slotIdx: action.slotIdx,
       onPress,
+    };
+  }
+
+  if (canonical.kind === 'lineage') {
+    return {
+      icon: canonical.icon,
+      title: canonical.title,
+      body: canonical.body,
+      ctaLabel: canonical.ctaLabel,
+      statLabel: canonical.statLabel,
+      statValue: canonical.statValue,
+      accent: canonical.accent,
+      slotIdx: null,
+      onPress: () => scene.navigateFromHome('CodexScene'),
     };
   }
 

@@ -64,6 +64,9 @@ describe('summonTransactions — applySummonPull', () => {
         rarityIdx: 0,
         isNew: true,
         scComp: 0,
+        tribe: null,
+        tribeShards: 0,
+        awakeningStones: 0,
         ceilingHit: false,
       },
     ]);
@@ -107,6 +110,9 @@ describe('summonTransactions — applySummonPull', () => {
       monsterId: 'dokkaebi_warrior',
       isNew: false,
       scComp: 5,
+      tribe: 'dokkaebi',
+      tribeShards: 5,
+      awakeningStones: 0,
     });
     expect(result.state.soulCrystals).toBe(5);
     expect(result.state.ownedMonsters).toEqual([existing]);

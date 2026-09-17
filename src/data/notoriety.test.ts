@@ -104,15 +104,15 @@ describe('notoriety points and the sign', () => {
 });
 
 describe('weekly settlement', () => {
-  it('stamps the first week, pays tier × 30 gems on later weeks, and is idempotent', () => {
+  it('stamps the first week, pays 100 + tier × 30 gems on later weeks, and is idempotent', () => {
     const first = settleNotorietyWeek(state({ notorietyTier: 3, gems: 10 }), '2026-09-14');
     expect(first).toMatchObject({ changed: true, gems: 0 });
     expect(first.state.gems).toBe(10);
     const again = settleNotorietyWeek(first.state, '2026-09-14');
     expect(again.changed).toBe(false);
     const paid = settleNotorietyWeek(first.state, '2026-09-21');
-    expect(paid.gems).toBe(90);
-    expect(paid.state.gems).toBe(100);
+    expect(paid.gems).toBe(190);
+    expect(paid.state.gems).toBe(200);
     expect(paid.state.notorietyWeekStart).toBe('2026-09-21');
   });
 });

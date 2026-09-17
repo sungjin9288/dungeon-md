@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-17T16:18:57.102Z",
+  "generatedAt": "2026-09-17T17:04:45.581Z",
   "base": "http://127.0.0.1:8084",
-  "scope": "21 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
+  "scope": "28 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
   "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
   "sourceHashes": {
-    "scripts/lib/web-audit.mjs": "83eb46a7c3ade24e72b272b0460542840c0153d2545ae31d79d313272f75da9b",
-    "scripts/verify-modal-states.mjs": "45c0076380a0da762ccaa819013a4218819be6f0940c6aafcfe1ff4a1ad00886"
+    "scripts/lib/web-audit.mjs": "055dec27ccc9bdd98ddd55bc01994b7f5e066dd67327f95fbba2881d33055553",
+    "scripts/verify-modal-states.mjs": "72cb2e00a58716554d2fad07100dce4b49eb76fe926aa95d4997a0d0171cec9b"
   },
   "results": [
     {
@@ -35,7 +35,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
-      "sha256": "a71136b1638d22a5f9b8c606f41e17f3c38d585f5341be2e7c1852ca831e9d6d"
+      "sha256": "f1d16308753eaf603f9fc27d45c7528a8068758c8a13ae175f54f38cf38c1edb"
     },
     {
       "id": "shop-purchase-confirm",
@@ -63,7 +63,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
-      "sha256": "10d35d4f75f02ba75adddc91b595c53f52744cc96df656b93a515d2d8e70977e"
+      "sha256": "748ef1469e9b3ba6be6fff7a11988ceeab830dfc274533c863df25a2fc1435ce"
     },
     {
       "id": "codex-monster-detail",
@@ -77,21 +77,21 @@
         "CodexScene"
       ],
       "visibleTextBefore": 58,
-      "visibleTextAfter": 87,
-      "inputsAfter": 28,
+      "visibleTextAfter": 90,
+      "inputsAfter": 29,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
       "textBelow10": 0,
       "renderedTextBelow10": 0,
-      "overlapCandidates": 9,
+      "overlapCandidates": 10,
       "overflowDetail": [],
       "undersizedDetail": [],
       "seeded": null,
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-codex-monster-detail-390x844.png",
-      "sha256": "22ce9607e5fca8c7a42222faa079d378b262c15f6ff42827810a983782f80fe8"
+      "sha256": "31ad1effb46bc01a46d99e59244aecdfbc49742d7202fc5a230eda1e2f7ff9f5"
     },
     {
       "id": "codex-invader-tab",
@@ -120,6 +120,64 @@
       "errors": [],
       "screenshot": "tools/screenshots/modal-codex-invader-tab-390x844.png",
       "sha256": "eda3f2cd09e7ffc159f490fda30d476169c41177b5b6454872c9836b1c93a6f9"
+    },
+    {
+      "id": "codex-lineage-pin",
+      "scene": "CodexScene",
+      "expect": "수호자 상세 계보 스트립 · 목표 핀 토글 후 토스트",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 58,
+      "visibleTextAfter": 91,
+      "inputsAfter": 29,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 11,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-lineage-pin-390x844.png",
+      "sha256": "db405609f221e52eb1a0e89a642849cda23c72bd511b4b308f56d949f0f1cc51"
+    },
+    {
+      "id": "home-lineage-goal-chip",
+      "scene": "DungeonHomeScene",
+      "expect": "홈 지시 헤더에 📌 여우 전사 목표 칩 (방 작업이 카드를 차지해도 보임)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 43,
+      "visibleTextAfter": 43,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 1,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "lineageGoal"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-lineage-goal-chip-390x844.png",
+      "sha256": "2027664cabe756393d078357a99f35a22284eea16c4c520987c8031490bc9bf8"
     },
     {
       "id": "wisdom-branch-confirm",
@@ -204,7 +262,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
-      "sha256": "1a411ba89051ac535ac65b95e54ccdd6e4cb6305ed540525cd43077f0929c0af"
+      "sha256": "0d4e156694cc8f7edb2a735f72bc25c64679a0e6281adc858d18281d6462ed63"
     },
     {
       "id": "production-facility-order",
@@ -217,9 +275,9 @@
       "activeScenes": [
         "ProductionScene"
       ],
-      "visibleTextBefore": 43,
-      "visibleTextAfter": 43,
-      "inputsAfter": 6,
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
@@ -232,7 +290,69 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-production-facility-order-390x844.png",
-      "sha256": "91fc2502c1182f859ded19dde2af25d52776a75dc98d17a16b49d9fba12b7c3b"
+      "sha256": "d6eb3b52f16aef15a5cfc122f5bc2304634f43ce1831c7a29d0703eac532a4ed"
+    },
+    {
+      "id": "production-staff-picker",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 피커 (적성 표시 · 해제/닫기)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 67,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 10,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-picker-390x844.png",
+      "sha256": "5ef4be4fcfa25ae2255084201592045075817b23e192e8a13e0c10e96c62df6d"
+    },
+    {
+      "id": "production-staff-assigned",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 후 명령판 (산출 ×1.5 영수증)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-assigned-390x844.png",
+      "sha256": "9a816c451aaa9387bc85cca93cd9514c004943ebd6c7c2f9e5cd583e84f60160"
     },
     {
       "id": "decoration-relic-select",
@@ -329,22 +449,52 @@
       "activeScenes": [
         "SummonScene"
       ],
-      "visibleTextBefore": 54,
-      "visibleTextAfter": 75,
+      "visibleTextBefore": 55,
+      "visibleTextAfter": 76,
       "inputsAfter": 10,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
       "textBelow10": 0,
       "renderedTextBelow10": 0,
-      "overlapCandidates": 5,
+      "overlapCandidates": 7,
       "overflowDetail": [],
       "undersizedDetail": [],
       "seeded": null,
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-summon-rate-detail-390x844.png",
-      "sha256": "ed149cba4b6190321b3b23a6f7bbfb67a9d71e879ffec5a499ea2e0e41e70739"
+      "sha256": "4b823f717868e42962c5d0c2887bff3cd73863bfdc30d4fd9fca6de59bad682c"
+    },
+    {
+      "id": "summon-shard-redeem",
+      "scene": "SummonScene",
+      "expect": "계약 기록 탭의 부족 조각 스트립에서 교환 → 토스트 · 20/100로 갱신",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "SummonScene"
+      ],
+      "visibleTextBefore": 55,
+      "visibleTextAfter": 23,
+      "inputsAfter": 6,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "tribeShards"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-summon-shard-redeem-390x844.png",
+      "sha256": "5ed05670bc838c85f4c36a10aa4cb4424e4e2ba8a07e649426dcf6e12a7e34fc"
     },
     {
       "id": "barracks-manage",
@@ -373,6 +523,70 @@
       "errors": [],
       "screenshot": "tools/screenshots/modal-barracks-manage-390x844.png",
       "sha256": "171d5cff4c043f9776a0cb7cae1bae548083914dd396364a4e3606eb7a7d004c"
+    },
+    {
+      "id": "barracks-bond-tab",
+      "scene": "BarracksScene",
+      "expect": "수호자 상세 교감 탭 (친밀도 바 · 간식/대화/합동 훈련)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 62,
+      "inputsAfter": 14,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "monsterAffinity",
+        "materials",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-bond-tab-390x844.png",
+      "sha256": "dfaa21b318e1225b2482e9f8b4e1c646f0a4575c50b31dcbc75e2cd5910a489c"
+    },
+    {
+      "id": "barracks-bond-action",
+      "scene": "BarracksScene",
+      "expect": "간식 후 교감 52 · 우정 도달 · 이야기 해금 · 토스트",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 63,
+      "inputsAfter": 14,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "monsterAffinity",
+        "materials",
+        "homeGold"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-bond-action-390x844.png",
+      "sha256": "3f32066baa106d83ecb989a8ff6b12cb55471f762708281e1ace364acf36d5aa"
     },
     {
       "id": "forge-disassemble-tab",
@@ -553,7 +767,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
-      "sha256": "040493f7d98a10e750e3bd157df52312f838ce151501e0dc2b6fd49d70f670db"
+      "sha256": "f0e344687daca82f8a962b34f44842391cd3d1246c7f1c3bd70bc6b637213692"
     },
     {
       "id": "wisdom-upgrade-result",
@@ -614,16 +828,16 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
-      "sha256": "482beaa3efbeb5dfd6f8acf65e074c081cfcb3f22b2ee266575297488f5b65cc"
+      "sha256": "7c116cd8b8627624df627d8b8033d0725064142d7b97674f169e7313b0f9c1a7"
     }
   ],
   "failures": [],
   "summary": {
-    "cases": 21,
+    "cases": 28,
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 55,
+    "overlapCandidates": 96,
     "errors": 0,
     "hardFailures": 0
   }

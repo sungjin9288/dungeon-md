@@ -12,6 +12,9 @@
  * into the shared idle clock by idleIncome.ts.
  */
 
+import { resolveOwnedMonsterProfile } from './monsters';
+import type { TribeId } from './monstersTypes';
+
 export type FacilityOutput =
   | { readonly kind: 'gold' }
   | { readonly kind: 'material'; readonly materialId: string };
@@ -56,6 +59,30 @@ export const FACILITY_DEFS: Record<string, FacilityDef> = {
   },
 };
 
+/** A tribe whose lore fits the facility: its members work it at +50% instead of +20%. */
+export const FACILITY_AFFINITY: Readonly<Record<string, TribeId>> = {
+  mine: 'dragon',
+  herb_garden: 'sansin',
+  weavery: 'mask',
+  mana_well: 'sea',
+  treasury: 'dokkaebi',
+};
+/** Any guardian on shift lifts output; the affine tribe lifts it more. */
+export const STAFF_MULT = 1.2;
+export const STAFF_AFFINITY_MULT = 1.5;
+
+export function isFacilityAffineTribe(facilityId: string, tribe: string | undefined | null): boolean {
+  return Boolean(tribe) && FACILITY_AFFINITY[facilityId] === tribe;
+}
+
+/** Output multiplier for the monster on shift at `facilityId` (1 when unstaffed). */
+export function facilityStaffMult(facilityId: string, monsterId: string | undefined | null): number {
+  if (!monsterId) return 1;
+  const profile = resolveOwnedMonsterProfile(monsterId);
+  if (!profile) return 1;
+  return isFacilityAffineTribe(facilityId, profile.tribe) ? STAFF_AFFINITY_MULT : STAFF_MULT;
+}
+
 /** Stable display order for the facility list. */
 export const FACILITY_ORDER: readonly string[] = ['mine', 'herb_garden', 'weavery', 'mana_well', 'treasury'];
 
@@ -64,10 +91,10 @@ export interface FacilityProduction {
   gold: number;
 }
 
-/** Production per hour at a given level (0 when not built). */
-export function facilityRatePerHour(def: FacilityDef, level: number): number {
+/** Production per hour at a given level (0 when not built), times the shift multiplier. */
+export function facilityRatePerHour(def: FacilityDef, level: number, staffMult = 1): number {
   if (level <= 0) return 0;
-  return def.baseRatePerHour * Math.min(level, def.maxLevel);
+  return def.baseRatePerHour * Math.min(level, def.maxLevel) * staffMult;
 }
 
 /**
@@ -83,11 +110,13 @@ export function facilityUpgradeCost(def: FacilityDef, currentLevel: number): num
 /**
  * Total facility production over `ms` of elapsed time. Each material/gold total
  * is floored independently (short idles may round down to nothing). `facilities`
- * maps facilityId → level (0/absent = not built).
+ * maps facilityId → level (0/absent = not built); `staff` maps facilityId → the
+ * monster on shift (see facilityStaffMult).
  */
 export function facilityProductionOverMs(
   facilities: Readonly<Record<string, number>> | undefined,
   ms: number,
+  staff: Readonly<Record<string, string>> | undefined = undefined,
 ): FacilityProduction {
   const hours = Math.max(0, ms) / 3_600_000;
   const matFloat: Record<string, number> = {};
@@ -97,7 +126,7 @@ export function facilityProductionOverMs(
     const level = facilities?.[id] ?? 0;
     if (level <= 0) continue;
     const def = FACILITY_DEFS[id];
-    const amount = facilityRatePerHour(def, level) * hours;
+    const amount = facilityRatePerHour(def, level, facilityStaffMult(id, staff?.[id])) * hours;
     if (def.output.kind === 'gold') {
       goldFloat += amount;
     } else {

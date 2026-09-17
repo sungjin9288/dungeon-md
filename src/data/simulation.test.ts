@@ -3,6 +3,7 @@ import { calcDungeonDps, simulateDungeon, type SimResult } from './simulation';
 import type { DungeonSlot } from './wisdom';
 import type { WaveSpec } from './stages';
 import { resolveMonsterDef } from './monsters';
+import { guardianAtkMult } from './barracks';
 import { tempoCooldown } from './combatTempo';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -72,11 +73,15 @@ describe('calcDungeonDps', () => {
     expect(combined).toBeGreaterThan(calcDungeonDps([s2], []));
   });
 
-  it('guardian level does not change simulated DPS — combat scales by room level only', () => {
+  it('guardian level scales simulated DPS by the same raising multiplier combat uses', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
     const dpsLv1 = calcDungeonDps([slot], [{ id: 'dokkaebi_warrior', level: 1, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }]);
     const dpsLv5 = calcDungeonDps([slot], [{ id: 'dokkaebi_warrior', level: 5, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }]);
-    expect(dpsLv5).toBe(dpsLv1);
+    const dpsHit = calcDungeonDps([slot], [{ id: 'dokkaebi_warrior', level: 1, xp: 0, spentSkills: { A1: 1 }, equippedSkills: [], skillPoints: 0, equipment: null }]);
+    expect(dpsLv5).toBeCloseTo(dpsLv1 * guardianAtkMult(5, {}), 6);
+    expect(dpsHit).toBeCloseTo(dpsLv1 * 1.15, 6);
+    // A roster entry that is not in the room changes nothing.
+    expect(calcDungeonDps([slot], [{ id: 'village_archer', level: 40, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }])).toBe(dpsLv1);
   });
 
   it('monsters with attackCooldown=0 (passive types like gold_turtle) contribute 0 DPS', () => {
@@ -511,11 +516,16 @@ describe('calcDungeonDps — two monsters in same slot & level=10 pin', () => {
     expect(dps2).toBeCloseTo(dps1 * 2, 5);
   });
 
-  it('level=10 and level=1 guardians simulate identically (combat ignores guardian level)', () => {
+  it('a level-10 guardian simulates ×1.03^9 of level 1, and extra guardians carry their own level', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
     const dpsLv1  = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 1)]);
     const dpsLv10 = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 10)]);
-    expect(dpsLv10).toBe(dpsLv1);
+    expect(dpsLv10).toBeCloseTo(dpsLv1 * Math.pow(1.03, 9), 6);
+    const two = makeSlot(['dokkaebi_warrior', 'village_archer']);
+    const base = calcDungeonDps([two], [makeOwned('dokkaebi_warrior', 1), makeOwned('village_archer', 1)]);
+    const extraRaised = calcDungeonDps([two], [makeOwned('dokkaebi_warrior', 1), makeOwned('village_archer', 10)]);
+    expect(extraRaised).toBeGreaterThan(base);
+    expect(extraRaised).toBeLessThan(base * Math.pow(1.03, 9));
   });
 
   it('slot with hp=-1 (negative) is skipped by the hp<=0 guard', () => {

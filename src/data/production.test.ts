@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { GameState } from './wisdom';
 import { MATERIAL_DEFS } from './fusion';
 import {
-  FACILITY_DEFS, FACILITY_ORDER,
-  facilityRatePerHour, facilityUpgradeCost, facilityProductionOverMs, builtFacilityCount,
+  FACILITY_AFFINITY, FACILITY_DEFS, FACILITY_ORDER, STAFF_AFFINITY_MULT, STAFF_MULT,
+  facilityRatePerHour, facilityStaffMult, facilityUpgradeCost, facilityProductionOverMs, builtFacilityCount,
 } from './production';
 import { buildOrUpgradeFacility } from './productionTransactions';
 
@@ -106,5 +106,23 @@ describe('buildOrUpgradeFacility', () => {
   it('rejects upgrading past max level', () => {
     const maxed = makeState({ productionFacilities: { mine: FACILITY_DEFS.mine.maxLevel } });
     expect(buildOrUpgradeFacility(maxed, 'mine')).toEqual({ ok: false, reason: 'maxed' });
+  });
+});
+
+describe('facility staffing (P1 ④)', () => {
+  it('lifts output +20% for any guardian on shift and +50% for the affine tribe', () => {
+    expect(facilityStaffMult('mine', undefined)).toBe(1);
+    expect(facilityStaffMult('mine', 'not_a_monster')).toBe(1);
+    // dokkaebi_warrior is a dokkaebi: affine to the treasury, ordinary staff at the mine.
+    expect(facilityStaffMult('treasury', 'dokkaebi_warrior')).toBe(STAFF_AFFINITY_MULT);
+    expect(facilityStaffMult('mine', 'dokkaebi_warrior')).toBe(STAFF_MULT);
+    for (const id of FACILITY_ORDER) expect(FACILITY_AFFINITY[id], id).toBeDefined();
+  });
+
+  it('applies the shift multiplier to production over time', () => {
+    const facilities = { treasury: 1 };
+    const plain = facilityProductionOverMs(facilities, 10 * HOUR);
+    const staffed = facilityProductionOverMs(facilities, 10 * HOUR, { treasury: 'dokkaebi_warrior' });
+    expect(staffed.gold).toBe(Math.floor(plain.gold * STAFF_AFFINITY_MULT));
   });
 });

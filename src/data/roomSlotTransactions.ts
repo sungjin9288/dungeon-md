@@ -253,7 +253,10 @@ export function assignMonsterToRoomSlot(
   const nextSlot = normalizeDungeonSlot({ ...base, monsterIds });
   const dungeonSlots = [...clearedSlots];
   dungeonSlots[slotIdx] = nextSlot;
-  const withSlot = { ...state, dungeonSlots };
+  // A guardian defends or works, never both — a room placement ends its shift.
+  const facilityStaff: Record<string, string> = {};
+  for (const [facilityId, staffed] of Object.entries(state.facilityStaff ?? {})) if (staffed !== monsterId) facilityStaff[facilityId] = staffed;
+  const withSlot = { ...state, dungeonSlots, facilityStaff };
 
   // Quest tick only for NET-NEW placements — moving an already-placed monster
   // between slots must not re-count toward assign_monster objectives.

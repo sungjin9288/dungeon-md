@@ -52,6 +52,8 @@ export interface CombatResolverContext {
   readonly effectiveCols:      number;
   readonly effectiveCellSize:  number;
   readonly equipmentMap:       Map<string, EquipmentStats>;
+  /** monsterId → raising multiplier (level growth · 강타); see barracks.guardianAtkMult. */
+  readonly guardianAtkMult?:   ReadonlyMap<string, number>;
   readonly waveAtkMult:        number;
   readonly wisdomBonuses:      { monsterAtkMult: number };
   readonly prestigeDmgMult:    number;
@@ -143,6 +145,9 @@ export function resolveAttack(
     * ctx.waveAtkMult
     * ctx.wisdomBonuses.monsterAtkMult
     * ctx.prestigeDmgMult;
+
+  // ── Raising: the guardian's level (and 강타) — what the barracks promised ──
+  if (data.monsterSlot) dmg *= ctx.guardianAtkMult?.get(data.monsterSlot) ?? 1;
 
   // ── Equipment bonus ─────────────────────────────────────────────────────────
   const eqStats = data.monsterSlot ? ctx.equipmentMap.get(data.monsterSlot) : undefined;

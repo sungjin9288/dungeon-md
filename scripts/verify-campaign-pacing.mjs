@@ -98,7 +98,8 @@ async function fightStage(page) {
     // long invader lines) must not eat the iterations a later wave needs.
     // Every slice costs real seconds (advanceTime serializes the game), so the
     // budget is tight: 200 slices × 2.5s ≈ 8 game-minutes at 3x.
-    const BUDGET = 70;
+    // Slices per run (each ≈2.5s of battle at 3×). 15-wave veteran stages need more: PACING_BUDGET=140.
+    const BUDGET = Number(process.env.PACING_BUDGET ?? 70);
     let slices = 0;
     let stalls = 0;
     while (slices < BUDGET) {

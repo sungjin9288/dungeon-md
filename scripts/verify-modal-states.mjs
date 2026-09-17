@@ -19,7 +19,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { createSceneOpener, inventory, labelClick, logicalClick, storage } from './lib/web-audit.mjs';
+import { createSceneOpener, inventory, labelClick, logicalClick, storage, namedCenter } from './lib/web-audit.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = process.env.PLAYWRIGHT_MODULE ?? '/Users/sungjin/.codex/node_modules/playwright/index.mjs';
@@ -41,15 +41,34 @@ const CASES = [
   { id: 'shop-purchase-confirm', scene: 'ShopScene', steps: [{ label: '구매' }], expect: '구매 확인' },
   { id: 'codex-monster-detail', scene: 'CodexScene', steps: [{ name: 'codex-detail-open' }], expect: '수호자 상세' },
   { id: 'codex-invader-tab', scene: 'CodexScene', steps: [{ name: 'codex-tab-invaders' }], expect: '침략자 기록' },
+  { id: 'codex-lineage-pin', scene: 'CodexScene', steps: [{ name: 'codex-detail-open' }, { name: 'codex-lineage-pin' }], expect: '수호자 상세 계보 스트립 · 목표 핀 토글 후 토스트' },
+  { id: 'home-lineage-goal-chip', scene: 'DungeonHomeScene', seed: { lineageGoal: 'fox_warrior' }, steps: [], expect: '홈 지시 헤더에 📌 여우 전사 목표 칩 (방 작업이 카드를 차지해도 보임)' },
   { id: 'wisdom-branch-confirm', scene: 'AncestralWisdomScene', steps: [{ name: 'wisdom-branch-goldHands' }], expect: '가지 강화 확인' },
   { id: 'achievement-record', scene: 'AchievementScene', steps: [{ name: 'achievement-record-dm_lv5' }], expect: '업적 기록 상세' },
   { id: 'abyss-floor-order', scene: 'AbyssScene', steps: [{ name: 'abyss-floor-1' }, { name: 'abyss-order' }], expect: '심연 층 지시' },
   { id: 'production-facility-order', scene: 'ProductionScene', steps: [{ name: 'production-facility-mine' }, { name: 'production-order' }], expect: '생산 지시' },
+  {
+    id: 'production-staff-picker', scene: 'ProductionScene', seed: { dmLevel: 10, productionFacilities: { mine: 1, treasury: 1 } },
+    steps: [{ name: 'production-facility-treasury' }, { name: 'production-staff' }], expect: '근무 배정 피커 (적성 표시 · 해제/닫기)',
+  },
+  {
+    id: 'production-staff-assigned', scene: 'ProductionScene', seed: { dmLevel: 10, productionFacilities: { mine: 1, treasury: 1 } },
+    steps: [{ name: 'production-facility-treasury' }, { name: 'production-staff' }, { name: 'production-staff-dokkaebi_warrior' }], expect: '근무 배정 후 명령판 (산출 ×1.5 영수증)',
+  },
   { id: 'decoration-relic-select', scene: 'DecorationScene', steps: [{ name: 'decoration-relic-golden_pot' }], expect: '유물 선택' },
   { id: 'fusion-material-picker', scene: 'FusionScene', steps: [{ label: '재료 1' }], expect: '재료 선택 피커' },
   { id: 'fusion-absorb-tab', scene: 'FusionScene', steps: [{ label: '흡수' }], expect: '흡수 탭' },
   { id: 'summon-rate-detail', scene: 'SummonScene', steps: [{ label: '확률 상세' }], expect: '확률 상세' },
+  { id: 'summon-shard-redeem', scene: 'SummonScene', seed: { tribeShards: { dokkaebi: 120 } }, steps: [{ label: '계약 기록' }, { name: 'summon-shard-redeem' }], expect: '계약 기록 탭의 부족 조각 스트립에서 교환 → 토스트 · 20/100로 갱신' },
   { id: 'barracks-manage', scene: 'BarracksScene', steps: [{ label: '관리' }], expect: '수호자 관리' },
+  {
+    id: 'barracks-bond-tab', scene: 'BarracksScene', seed: { monsterAffinity: { dokkaebi_warrior: 44 }, materials: { herb: 3 }, homeGold: 1000 },
+    steps: [{ name: 'barracks-card-dokkaebi_warrior' }, { name: 'monster-detail-tab-bond' }], expect: '수호자 상세 교감 탭 (친밀도 바 · 간식/대화/합동 훈련)',
+  },
+  {
+    id: 'barracks-bond-action', scene: 'BarracksScene', seed: { monsterAffinity: { dokkaebi_warrior: 44 }, materials: { herb: 3 }, homeGold: 1000 },
+    steps: [{ name: 'barracks-card-dokkaebi_warrior' }, { name: 'monster-detail-tab-bond' }, { name: 'monster-bond-treat' }], expect: '간식 후 교감 52 · 우정 도달 · 이야기 해금 · 토스트',
+  },
   { id: 'forge-disassemble-tab', scene: 'ForgeScene', steps: [{ label: '분해' }], expect: '분해 탭' },
   {
     id: 'forge-trap-tab', scene: 'ForgeScene', seed: { dmLevel: 20, materials: { iron_shard: 12, herb: 9, old_cloth: 8 }, trapStock: { spike_trap: 1, poison_trap: 1 }, trapMastery: { spike_trap: 2 } },
@@ -107,8 +126,14 @@ async function runStep(page, step) {
   if (step.name) {
     const state = await inventory(page);
     const input = state.scenes.flatMap(scene => scene.inputs).find(entry => entry.name === step.name);
-    if (!input) throw new Error(`missing input name: ${step.name}`);
-    await logicalClick(page, input.bounds.x + input.bounds.width / 2, input.bounds.y + input.bounds.height / 2);
+    if (input) {
+      await logicalClick(page, input.bounds.x + input.bounds.width / 2, input.bounds.y + input.bounds.height / 2);
+      return;
+    }
+    // Inputs inside a masked viewport (the barracks roster) are not in `inputs`; click them by name.
+    const center = await namedCenter(page, step.name);
+    if (!center) throw new Error(`missing input name: ${step.name}`);
+    await logicalClick(page, center.x, center.y);
     return;
   }
   await labelClick(page, step.label);

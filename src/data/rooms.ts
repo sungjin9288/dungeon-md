@@ -69,7 +69,7 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     goldPerSec: 0, baseHp: 100, upgradeMult: 1.5,
   },
   gold: {
-    type: 'gold', koreanName: '황금 광맥', description: '초당 골드 10 생산',
+    type: 'gold', koreanName: '황금 광맥', description: '홈 운영 수익 +12 황금/분 (전투 중 생산 없음)',
     emoji: '💰', cost: 120, accentColor: 0xc8921a, accentCSS: '#c8921a',
     attackDamage: 0, attackRange: 0, attackCooldown: 0,
     goldPerSec: 10, baseHp: 120, upgradeMult: 1.4,

@@ -23,6 +23,9 @@ export interface SummonResult {
   isNew:      boolean;
   scComp:     number;
   ceilingHit: boolean;
+  /** Duplicate extras (tribeShards.ts); absent for new pulls or older callers. */
+  tribeShards?:     number;
+  awakeningStones?: number;
 }
 
 // ─── Shared constants ─────────────────────────────────────────────────────────
@@ -351,7 +354,7 @@ export function playSinglePullAnimation(
       wait(scene,400, () => {
         const badgeText = result.isNew
           ? '새 몬스터 도감 등록'
-          : `중복 보상 +${result.scComp}💠`;
+          : `중복 보상 +${result.scComp}💠${(result.tribeShards ?? 0) > 0 ? ` · 조각 +${result.tribeShards}` : ''}${(result.awakeningStones ?? 0) > 0 ? ` · 각성석 +${result.awakeningStones}` : ''}`;
         const badgeT = scene.add.text(CX, panY + 270, badgeText, {
           fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
           color: result.isNew ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.JADE,

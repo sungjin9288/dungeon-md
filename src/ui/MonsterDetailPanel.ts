@@ -39,6 +39,7 @@ import {
   buildEquippedSkillSlots,
 } from './MonsterDetailEquipment';
 import { buildSkinSlot } from './MonsterDetailSkin';
+import { buildBondTab } from './MonsterDetailBond';
 import {
   buildGrowthCommandPanel,
   buildFeedTrainingAction,
@@ -49,7 +50,7 @@ import {
 export type { MonsterDetailContext } from './MonsterDetailShared';
 
 // ─── Monster Detail Overlay ───────────────────────────────────────────────────
-type MonsterDetailTab = 'growth' | 'loadout' | 'appearance';
+type MonsterDetailTab = 'growth' | 'loadout' | 'appearance' | 'bond';
 
 export function showMonsterDetailPanel(
   ctx: MonsterDetailContext,
@@ -62,7 +63,7 @@ export function showMonsterDetailPanel(
   const collection = getDetailCollectionMeta(monster, def);
   const xpNeeded = xpToNextLevel(monster.level);
   const xpPct = monster.level >= 50 ? 1 : Math.min(1, monster.xp / xpNeeded);
-  const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills);
+  const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills, loadGameState().monsterAffinity?.[monster.id] ?? 0);
   const accent = def.accentColor ?? collection.color;
   const roomPlan = getMonsterRoomPlan(loadGameState(), monster);
 
@@ -219,11 +220,12 @@ export function showMonsterDetailPanel(
     const tabs: ReadonlyArray<{ key: MonsterDetailTab; label: string }> = [
       { key: 'growth', label: '성장' },
       { key: 'loadout', label: '장비 · 스킬' },
+      { key: 'bond', label: '교감' },
       { key: 'appearance', label: '외형' },
     ];
     const tabY = py + 169;
     const gap = 5;
-    const tabW = (pw - 20 - gap * 2) / 3;
+    const tabW = (pw - 20 - gap * (tabs.length - 1)) / tabs.length;
     tabs.forEach((tab, index) => {
       const x = px + 10 + index * (tabW + gap);
       const selected = tab.key === activeTab;
@@ -246,6 +248,7 @@ export function showMonsterDetailPanel(
       if (!selected) {
         const zone = scene.add.zone(x, tabY, tabW, 44)
           .setOrigin(0)
+          .setName(`monster-detail-tab-${tab.key}`)
           .setInteractive({ useHandCursor: true });
         zone.on('pointerdown', () => {
           activeTab = tab.key;
@@ -440,12 +443,32 @@ export function showMonsterDetailPanel(
     buildSkinSlot(sectionContext, container, monster, px + 14, py + 256, pw - 28);
   };
 
+  const showBondToast = (text: string, color: string): void => {
+    const t = scene.add.text(px + pw / 2, py + ph - 70, text, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color,
+      backgroundColor: '#080b09', padding: { x: 12, y: 7 }, wordWrap: { width: pw - 40 }, align: 'center',
+    }).setOrigin(0.5).setDepth(120).setAlpha(0);
+    ov.add(t);
+    scene.tweens.add({ targets: t, alpha: 1, duration: 160, onComplete: () => {
+      scene.tweens.add({ targets: t, alpha: 0, duration: 260, delay: 1500, onComplete: () => t.destroy() });
+    } });
+  };
+
+  const renderBondBody = (container: Phaser.GameObjects.Container): void => {
+    buildBondTab(sectionContext, container, monster, {
+      x: px + 14, y: py + 228, w: pw - 28,
+      rerender: () => renderBody(),
+      toast: showBondToast,
+    });
+  };
+
   const renderBody = (): void => {
     bodyContainer?.destroy();
     bodyContainer = scene.add.container(0, 0);
     ov.add(bodyContainer);
     if (activeTab === 'growth') renderGrowthBody(bodyContainer);
     if (activeTab === 'loadout') renderLoadoutBody(bodyContainer);
+    if (activeTab === 'bond') renderBondBody(bodyContainer);
     if (activeTab === 'appearance') renderAppearanceBody(bodyContainer);
   };
 

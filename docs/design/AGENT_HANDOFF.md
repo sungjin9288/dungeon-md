@@ -461,7 +461,12 @@ release readiness를 의미하지 않는다.
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
 - ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
-- ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치), 아래 기록 참조. P1 ③④(운영 수익 통합·근무)는 미착수.
+- ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치, main 병합 `0bfd911`), 아래 기록 참조.
+- ~~운영 수익 통합·몬스터 근무 (Phase 3, P1 ③④)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
+- ~~중복 소환 → 각성석·부족 조각 (Phase 4, P4 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~주간 보석 인플로우 밴드 (Phase 4, P4 ①)~~ → CLOSED 2026-09-18: `gemInflow.ts` 추정 + 명성 주간 정산에 기본 100 추가(티어 1: 190→290, 티어 2~5 밴드 안). P4 ③은 배너가 이미 부족 픽업이라 `bannerSynergy.ts` 전망 한 줄만 추가해 CLOSED.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -729,8 +734,15 @@ abyss organic 승/패 왕복 통과.
 **organic 실측 (2026-09-18, main `6b59321` 그리드 수정 후).** 20:lean(dm8·슬롯 9·
 방 Lv2·로스터 9) 방 9/9 배치, 10/10 웨이브 HP 660/2500(26%) 승; 32:lean(dm10·Lv3·
 로스터 13) 10/10 HP 4500/4500(100%) 승. 스톨 0, `{runs:2, wins:2, hardFailures:0}`.
-20의 26%는 시뮬 80%와 방향이 같다(시뮬이 여전히 낙관). 42~80 lean·90 veteran은
-Phase 3 병합 후 main에서 이어서 주행한다.
+20의 26%는 시뮬 80%와 방향이 같다(시뮬이 여전히 낙관).
+
+**organic 챕터 경계 (2026-09-18, main `0bfd911` = Phase 3a/3b 병합 후, 8083).**
+42:lean(dm11·Lv3·로스터 17) 10/10 HP 89% 승 · 56:lean(dm13·Lv3·21) 96% 승 ·
+68:lean(dm14·Lv3·25) 100% 승(스톨 2 복구) · 80:lean(dm15·Lv4·29) 15/15 HP 100% 승.
+90:veteran(dm52·Lv5·33, 시뮬 DPS 3491)은 HP 100%인 채 4/15 웨이브에서 **예산(70
+슬라이스) 소진**으로 미정산 — 패배가 아니라 하니스 예산 한계(15웨이브 스테이지 +
+스톨 1). `{runs:5, wins:4, hardFailures:1}`. 후속: `PACING_BUDGET` env로 예산을
+올려 90만 재주행. 1~80 lean 경계는 모두 organic으로 닫혔다.
 
 **Phase 2 구조.** `notoriety.ts`(밴드 10·승인제 승격·감소·주간 정산),
 `forecast.ts`(카드 정의·시드 발급·밴드 웨이브 생성기), `forecastTransactions.ts`
@@ -779,6 +791,105 @@ hardFailures 0}` (overlap 1 = 토스트가 페이지 내비 위에 뜨는 기존
 
 **남은 것.** P1 ③④(운영 수익 통합·몬스터 근무), 콤보의 organic 체감 확인(전투
 로그로 콤보 배율 발화 횟수 측정은 미실시), P3·P4.
+
+### 2026-09-18 — Phase 3 (P1 ③④): 운영 수익 통합 + 몬스터 근무
+
+`CLAUDE.md` "운영 수익 · 몬스터 근무" 절이 계약의 단일 진실원.
+
+**구조.** `idleIncome.ts`: 골드 = (운영 방 수익 + 보물고) × 명성 `1+0.15×(티어−1)` ×
+장식, 재료는 명성 미적용; 상한 12h → 티어 5부터 24h(`idleCapHours`); 홈 `황금 광맥`
+= 수익 방 12/분. 전투 `runGoldVeins`·`goldTick` 삭제(옵션 B: 전투 골드는 전리품).
+`production.ts` `FACILITY_AFFINITY`·`facilityStaffMult`(×1.2 / 적성 ×1.5),
+`facilityRatePerHour(def, level, staffMult)`, `facilityProductionOverMs(…, staff)`.
+`productionTransactions.ts` `assignFacilityStaff`(방·다른 시설에서 이동)·
+`clearFacilityStaff`·`staffedMonsterIds`; `assignMonsterToRoomSlot`은 근무 해제;
+`deployDungeonSlotsToGrid.staffedMonsterIds`·추천 제외. UI: `ProductionScene` 명령판
+'근무 수호자' 줄(44px) + `ProductionStaffPicker.ts`(적성·현재 위치 표시, 9칩/페이지),
+배치 트레이 '근무 중' 표기.
+
+**검증.** tsc clean, vitest 113 파일 2914 pass(`facilityStaff.test.ts` 신규,
+production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체, 전원 방 배치 중
+표시) → 도깨비 전사 배정 → 방 #1 비워짐·`facilityStaff.mine` 설정·산출 2→2.4/h·
+영수증 "방에서 이동", 방치 골드가 수호자 1체분 감소(21,717→20,969, 3h·티어5 ×1.6).
+모달 하니스 `production-facility-order`(명령판 재배치 회귀)·`production-staff-picker`·
+`production-staff-assigned` 결과는 커밋 메시지 참조.
+
+**남은 것.** P3(몬스터 레벨 전투 배선 → 계보도·교감), P4(재화 순환·중복·부족 배너),
+4.6 통폐합. 근무 몬스터의 교감(§4.3 ②) 연결은 P3에서.
+
+### 2026-09-18 — Phase 3 (P3 첫 단계): 수호자 레벨 → 전투 피해 배선
+
+**왜 먼저.** 사용자 결정 "개별 육성 = 노가다 콘텐츠"가 성립하려면 병영의 레벨·스킬이
+실전 피해에 들어가야 한다. 지금까지 전투는 방 레벨(`1.4^(lv-1)`)만 봤다.
+
+**구조.** `barracks.guardianAtkMult(level, spentSkills)` = `1.03^(lv-1)` × 강타(A1) 1.15
+— 병영 ATK 표시(`getMonsterAtk`)와 같은 식. `DungeonScene.guardianAtkMult`
+(`buildGuardianAtkMultMap(ownedMonsters)`, `equipmentMap`과 같은 수명)를
+`CombatResolver.resolveAttack`(첫 몬스터)·`runExtraMonsterAttacks`(추가 몬스터)가
+곱하고, `simulation.calcDungeonDps`도 같은 맵을 적용해 예보가 육성을 반영한다.
+근무 중인 수호자는 배치에서 이미 빠지므로 여기서 따로 걸러내지 않는다.
+
+**검증.** tsc clean, vitest 2916 pass(`barracks.test` 2건 추가, `simulation.test`의
+"레벨 무시" 고정 2건을 "레벨 배율" 검증으로 반전). 페이싱 가드는 로스터 Lv1이라
+수치 불변 — 육성은 가드 위의 여유분이다. organic 재주행은 불필요(Lv1 로스터).
+
+**주의.** 하니스가 8084를 쓰는 동안 이 트리의 `src/`를 편집하면 HMR 리로드로
+`Execution context was destroyed` 실패가 난다(`forge-trap-fuse-result` 1건이 그
+사례 — 제품 결함 아님, 격리 재실행 통과). 하니스 주행 중엔 문서만 만진다.
+
+### 2026-09-18 — Phase 3 (P3 ②): 교감
+
+`CLAUDE.md` "교감" 절이 계약의 단일 진실원. `monsterAffinity`는 각성 게이트(100)만
+읽고 아무도 올리지 않던 필드였다 — 각성이 도달 불가능했던 셈. 이 슬라이스가 그
+경로를 연다.
+
+**구조.** `bond.ts`(행동 3종·임계 4단·부족별 이야기·`bondAtkMult`),
+`bondTransactions.ts`(`performBondAction`: 소유·최대·일일 한도·골드·재료 대안 검증,
+임계 통과 보상 1회, 합동 훈련 XP는 복사본에 `addXp`), `GameState.bondDaily`,
+`guardianAtkMult(level, spentSkills, affinity)`로 전투·시뮬·병영 ATK 표시가 같은
+수를 본다. UI `MonsterDetailBond.ts` + 상세 패널 4탭(탭 너비 = 탭 수로 계산).
+
+**검증.** tsc clean, vitest 114 파일 2922 pass(`bond.test.ts` 6건). 프리뷰(8084)
+병영 → 도깨비 전사 상세 → 교감 탭: 44 → 간식(약초 3→2) 52 → 대화 57, 우정(50)
+통과로 이야기 해금·헤더 "우정 · 공격 ×1.06", 토스트 "대화 · 교감 52 → 57",
+`bondDaily` 기록. 모달 하니스 `barracks-bond-tab`/`barracks-bond-action` 결과는
+커밋 메시지 참조.
+
+**남은 것.** P3 ① 계보도(진화·조합 트리 시각화 + 목표 핀 → 홈 directive), P4(재화
+순환·중복→각성석/부족 조각·부족 배너), 4.6 통폐합(장식 세트 흡수는 idleIncome에서
+이미 배수로 소비 중), 근무·교감을 홈 directive에 노출.
+
+### 2026-09-18 — Phase 3 (P3 ①): 계보도 · 목표 핀
+
+`CLAUDE.md` "계보도 · 목표 핀" 절이 계약의 단일 진실원.
+
+**구조.** `lineage.ts`(노드 파생·목표 계획·다음 단계·핀 제안, 데이터 추가 없음),
+`GameState.lineageGoal`, `homeReadinessDirective.getLineageDirective`(방 작업 →
+**계보 목표** → 전투 준비 순), `HomeCommandDeck`이 `'codex'` 목적지를 CodexScene으로
+라우팅, `CodexMonsterDetail` 하단 44px '계보' 스트립(진화/조합 요약 + 핀 토글, 토글
+시 스트립 전체 재렌더).
+
+**범위 결정.** §4.3 ①의 "부족별 트리 시각화"는 그리지 않았다. 상세 스트립(어디서
+와서 어디로 가는가)과 홈 directive(지금 할 한 가지)가 "목표 있는 반복"에 필요한
+노출을 이미 채우고, 전체 트리 그림은 아트 파이프라인(Codex 핸드오프)과 함께 다룰
+것. 핀은 하나만 둔다(directive가 한 줄이므로).
+
+**검증.** tsc clean, vitest 115 파일 2927 pass(`lineage.test.ts` 4건). 모달 하니스
+`codex-lineage-pin`·`home-lineage-goal-chip` 결과는 커밋 메시지 참조. 프리뷰 실측: 기대 홈(40)조차 빈 몬스터 슬롯 때문에 방 작업 큐가 9건이라 directive 카드는 거의 방 작업이 차지한다 → 헤더 📌 칩을 추가해 핀이 항상 보이게 했다.
+
+### 2026-09-18 — Phase 4 (P4 ②): 중복 소환 → 각성석 · 부족 조각
+
+`CLAUDE.md` "중복 소환 → 각성석 · 부족 조각" 절이 계약의 단일 진실원.
+
+**구조.** `tribeShards.ts`(희귀도별 조각/각성석 표, `redeemableTribeMonsters`는 소환
+풀 ∪·해금 게이트·미보유로 좁힘, `redeemTribeShards` 100 소모 → 1체), `applySummonPull`
+중복 분기 확장(영혼 결정은 그대로), `GameState.tribeShards`, `SummonScene` 스트립 +
+`redeemShards`(토스트 후 소환 탭 재구성), 결과 뱃지 확장. 조각 스트립은 시즌 배너가
+없을 때만 카드 아래 44px에 들어간다 — 배너가 있을 때의 노출은 후속(배너 카드 안에
+한 줄) 과제.
+
+**검증.** tsc clean, vitest 결과·모달 하니스 `summon-shard-redeem`·프리뷰 교환 실측은
+커밋 메시지 참조.
 
 ## 8. Completed implementation record: Fusion Chamber
 

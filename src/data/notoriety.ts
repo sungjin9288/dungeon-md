@@ -18,6 +18,12 @@ export const NOTORIETY_TIER_THRESHOLDS: readonly number[] = [100, 250, 500, 900,
 
 /** Gems paid each Monday for the tier held through the previous week. */
 export const NOTORIETY_WEEKLY_GEMS_PER_TIER = 30;
+/**
+ * Flat weekly base so a fresh dungeon's free gem inflow (attendance 110 +
+ * ~0.9 treasure cards) clears the 300–450/week band from tier 2 instead of
+ * tier 5 (gemInflow.ts is the guard). GAME_DESIGN_BENCHMARK.md §4.4 ①.
+ */
+export const NOTORIETY_WEEKLY_GEMS_BASE = 100;
 
 export const NOTORIETY_GAIN = {
   raid: 10,
@@ -174,7 +180,7 @@ export interface NotorietyWeekSettlement {
 }
 
 /**
- * First visit of a new week pays gems for the tier held. Idempotent per week
+ * First visit of a new week pays the base plus gems for the tier held. Idempotent per week
  * via `notorietyWeekStart`; the very first week only stamps the date.
  */
 export function settleNotorietyWeek(state: GameState, weekStart: string): NotorietyWeekSettlement {
@@ -182,7 +188,7 @@ export function settleNotorietyWeek(state: GameState, weekStart: string): Notori
   if (!state.notorietyWeekStart) {
     return { state: { ...state, notorietyWeekStart: weekStart }, changed: true, gems: 0 };
   }
-  const gems = getNotorietyTier(state) * NOTORIETY_WEEKLY_GEMS_PER_TIER;
+  const gems = NOTORIETY_WEEKLY_GEMS_BASE + getNotorietyTier(state) * NOTORIETY_WEEKLY_GEMS_PER_TIER;
   return {
     state: { ...state, notorietyWeekStart: weekStart, gems: (state.gems ?? 0) + gems },
     changed: true,

@@ -12,7 +12,7 @@ import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
 import { computeDecorationBonuses, EMPTY_BONUSES, type DecorationBonuses } from '../data/decorations';
-import { type EquipmentStats } from '../data/barracks';
+import { type EquipmentStats, buildGuardianAtkMultMap } from '../data/barracks';
 import { applyDailyChallengeTick, type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import type { ObjectiveType } from '../data/quests';
 import { applyChapterTheme } from './ChapterTheme';
@@ -29,7 +29,6 @@ import {
   type RoomMechanicsContext,
   runTigersPounce as _runTigersPounce,
   runMercenaryAuras as _runMercenaryAuras,
-  runGoldVeins as _runGoldVeins,
   runHealers as _runHealers,
   runSoulHarvest as _runSoulHarvest,
   runMedicineHallHeal as _runMedicineHallHeal,
@@ -176,6 +175,7 @@ export class DungeonScene extends Phaser.Scene {
   lastKillTime     = 0;
   materialsEarnedThisRun: Record<string, number> = {};
   equipmentMap = new Map<string, EquipmentStats>();  // monsterId → equipment stats
+  guardianAtkMult = new Map<string, number>();       // monsterId → level·강타 multiplier
 
   // ── Per-wave stats ─────────────────────────────────────────────────────────
   killsThisWave      = 0;
@@ -236,8 +236,9 @@ export class DungeonScene extends Phaser.Scene {
     this.trapMastery      = gameState.trapMastery ?? {};
     this.decorationBonuses = computeDecorationBonuses(gameState.placedDecorations);
 
-    // Build monster → equipment stats lookup
+    // Build monster → equipment stats / raising multiplier lookups
     this.equipmentMap = buildEquipmentMap(gameState);
+    this.guardianAtkMult = buildGuardianAtkMultMap(gameState.ownedMonsters, gameState.monsterAffinity);
 
     // Resolve stage config, wave list, daily/weekly overrides
     const setup           = resolveStageSetup(this.registry, gameState);
@@ -364,6 +365,7 @@ export class DungeonScene extends Phaser.Scene {
 
     // Clear cached data
     this.equipmentMap.clear();
+    this.guardianAtkMult.clear();
   }
 
   // ── FPS monitor (dev mode) ─────────────────────────────────────────────────
@@ -375,7 +377,6 @@ export class DungeonScene extends Phaser.Scene {
     this.runCombat(_time, rmCtx);
     _runTrapEffects(rmCtx, _time);
     _runHealers(rmCtx, _time);
-    _runGoldVeins(rmCtx, _time);
     this.updateBossHpBar();
     this.checkWaveEnd();
     _runMercenaryAuras(rmCtx, _time);
@@ -560,10 +561,6 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Tigers Pounce update loop ──────────────────────────────────────────────
   pounceReadyMap = new Map<string, { ready: boolean; cooldownUntil: number }>();
-
-  // ─── Gold Vein passive income ─────────────────────────────────────────────
-
-  goldTick = 0;
 
   // ─── Wave End Detection ───────────────────────────────────────────────────
 

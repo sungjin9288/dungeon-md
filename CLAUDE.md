@@ -115,8 +115,11 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   설정에 슬롯 수를 넣지 말 것.
 - 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). 전투 피해는 `1.4^(lv-1)`이며
   방의 첫 몬스터에만 적용, 나머지 몬스터는 기본 피해(`runExtraMonsterAttacks`).
-  몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. `simulation.ts`는 이
-  셋을 그대로 모델링하므로 예측과 실전이 같은 레버를 본다.
+  몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. **수호자 육성**은
+  `guardianAtkMult(level, spentSkills)`(barracks.ts, `1.03^(lv-1)` × 강타 1.15)로
+  전투(`guardianAtkMult` 맵, 첫/추가 몬스터 모두)와 `simulation.ts`에 같이 들어간다
+  (2026-09-18, P3 첫 배선). `simulation.ts`는 이 넷을 그대로 모델링하므로 예측과
+  실전이 같은 레버를 본다.
 - 홈 방 = **가족 4종**(combat/trap/support/magic, 용량 보너스·픽셀 픽스처·추천)
   **× 건물 12종**(`ROOM_DEFS`, 실제로 싸우는 방). `DungeonSlot.building`이 없으면
   가족 기본 건물(`FAMILY_DEFAULT_ROOM`). 챕터 방은 도달한 챕터부터 해금
@@ -169,6 +172,83 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 - 가드: `traps.test.ts`(티어 구조·레시피 상속·콤보/숙련 수식), `trapTransactions.test.ts`,
   `trapForgeView.test.ts`, 추천 재고 인식(`roomLoadoutRecommendations.test.ts`). 모달
   하니스 `forge-trap-tab`/`forge-trap-fuse-result`.
+
+### 운영 수익 · 몬스터 근무 (2026-09-18, Phase 3 / P1 ③④)
+
+**운영수익 = (방 수익 + 보물고) × 명성 배수 × 장식 세트 배수** (`idleIncome.ts
+computeIdleReward`). 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
+곱하고 재료에는 곱하지 않는다. 방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
+UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광맥`은 **수익 방**
+(`IDLE_PER_GOLD_ROOM` 12/분)이며 전투 중 골드 생산은 없다(`runGoldVeins` 삭제 —
+전투 골드는 전리품뿐).
+
+**근무**(`productionTransactions.ts assignFacilityStaff/clearFacilityStaff`,
+`GameState.facilityStaff: facilityId → monsterId`): 생산 시설마다 수호자 1체. 산출
+×1.2, 적성 부족(`FACILITY_AFFINITY` 광산 용족·약초원 산신·직조실 탈족·마력우물
+해신·보물고 도깨비)이면 ×1.5. **수호자는 방어하거나 일하거나 둘 중 하나** —
+근무 배정은 방에서 빼고(`movedFromRoom`), 방 배치(`assignMonsterToRoomSlot`)는
+근무를 끝낸다. 전투 배치(`deployDungeonSlotsToGrid.staffedMonsterIds`)와 추천
+(`collectAssignedMonsterIds`)도 근무자를 제외한다. UI: 생산 구역 명령판의 '근무
+수호자' 줄(`production-staff`) → `ProductionStaffPicker`(칩 `production-staff-<id>`),
+배치 트레이 몬스터 칩은 '근무 중' 표기.
+
+- 가드: `facilityStaff.test.ts`(배타성 양방향·추천 제외), `production.test.ts`(적성
+  배율), `idleIncome.test.ts`(명성 배수·수익 방·상한). 모달 하니스
+  `production-staff-picker`/`production-staff-assigned`.
+
+### 교감 (2026-09-18, Phase 3 / P3 ②)
+
+수호자의 세 번째 상태(방어·근무·**돌봄**). `GameState.monsterAffinity`(0~100, 각성이
+100을 요구하던 죽은 필드)를 `bondTransactions.performBondAction`이 올린다. 행동 3종
+(`bond.ts BOND_ACTIONS`): 간식 🍖 +8(약초 1 또는 일반 광석 1, 1일 3회 — 생산 시설의
+두 번째 수요처), 대화 💬 +5(무료 1일 1회), 합동 훈련 ⚔️ +6(120골드, XP +10, 1일
+2회). 일일 횟수는 `GameState.bondDaily[monsterId] = {date, counts}`(UTC 날짜, `daily.ts
+getTodayString`). 임계 25/50/75/100 = 신뢰·우정·유대·일심: 공격 ×1.03/1.06/1.10/1.15
+(`bondAtkMult` → `guardianAtkMult`의 세 번째 인자 → 전투·시뮬 동일), 50에서 부족별
+이야기 한 줄(`BOND_STORY_BY_TRIBE`), 75에서 영혼 결정 30, 100에서 각성 가능.
+UI: 수호자 상세 4번째 탭 '교감'(`MonsterDetailBond.ts`, 존 `monster-detail-tab-bond`,
+버튼 `monster-bond-<action>`), 탭 안에서 커밋·토스트·재렌더(패널은 열린 채).
+
+- 가드: `bond.test.ts`(임계·비용 대안·일일 한도·날짜 리셋·보상 1회·100 마감).
+  모달 하니스 `barracks-bond-tab`/`barracks-bond-action`.
+
+### 계보도 · 목표 핀 (2026-09-18, Phase 3 / P3 ①)
+
+신규 데이터 없음 — `lineage.ts`가 레지스트리·진화 티어(`EVOLUTION_TIERS`, 이제
+export)·`COMBINATION_TABLE`에서 노드(`getLineageNode`: base/evolution/hybrid, parents,
+children)를 파생한다. **목표 핀** `GameState.lineageGoal`(monster id | null):
+`getLineageGoalPlan(state, goal)`이 보유 상태에서 목표까지의 단계(소환 → 진화 ×3 →
+조합 영혼 결정 100)를 만들고, `getLineageNextStep`이 첫 단계를 준다. 홈 directive는
+방 작업이 없을 때 `getLineageDirective`(kind `'lineage'`, destination `'codex'`)를
+전투 준비 카드보다 먼저 보여준다(`HomeCommandDeck` → CodexScene). 방 작업은 거의
+항상 있으므로 핀은 지시 헤더의 `📌 <이름>` 칩(`home-lineage-goal-chip`)으로도 항상
+보인다. 도감 상세 하단
+'계보' 스트립(`codex-lineage-pin`)이 `suggestLineageGoal`(미보유면 자기 자신, 보유면
+다음 진화, 아니면 첫 하이브리드 자식)을 핀/해제한다.
+
+- 가드: `lineage.test.ts`(노드 파생·계획·모으기 단계·핀 제안). 모달 하니스
+  `codex-lineage-pin`/`home-lineage-goal-chip`.
+
+### 중복 소환 → 각성석 · 부족 조각 (2026-09-18, Phase 4 / P4 ②)
+
+중복 뽑기는 영혼 결정 보상(`SC_COMP`)에 더해 **각성석**(희귀도별 0/0/1/1/2)과
+**부족 조각**(5/8/15/25/40, 그 몬스터의 `tribe`)을 준다(`tribeShards.ts
+duplicateReward`, `applySummonPull` 중복 분기, `SummonPullResult.tribe/tribeShards/
+awakeningStones`). `GameState.tribeShards[tribe]` 100개 → `redeemTribeShards`가 그
+부족의 **미보유·소환 가능**(`RARITY_POOLS` ∪, 해금 스테이지 게이트) 1체를 확정 지급.
+UI: 소환 탭 카드 아래 44px 스트립(`SummonTribeShards.ts`, 선두 부족 하나 + 바 +
+`summon-shard-redeem` 버튼; 시즌 배너가 활성일 땐 공간이 없어 생략), 결과 뱃지에
+`조각 +N · 각성석 +K`.
+
+- 가드: `tribeShards.test.ts`(희귀도 표·중복 분기·100개/부족 완성 거절·정확히 100 소모),
+  `summonTransactions.test.ts` 결과 필드 확장. 모달 하니스 `summon-shard-redeem`.
+- **주간 무과금 보석 인플로우**(`gemInflow.ts estimateWeeklyFreeGems`): 출석 110 + 명성
+  주간 정산 `100 + 30×티어`(`NOTORIETY_WEEKLY_GEMS_BASE`) + 보물 사냥꾼 카드 기대값
+  (6일 × 15% × (50+5×티어)). 가드 `gemInflow.test.ts`: 티어 2~5가 300~450 밴드 안
+  (티어 1 ≈ 290, 6+는 의도적으로 초과 — 밴드 폭 150에 티어당 +34.5).
+- 배너 = 부족 픽업(기존 `SEASON_BANNERS`가 이미 부족 단위). `bannerSynergy.ts`가 피처드
+  목록의 최빈 부족·보유 수·다음 시너지 단계(`synergy.ts`)를 내고, 배너 카드가 "저승 1체
+  보유 · 2체면 저승 수확" 한 줄(≤196px, 초상 앞)로 보여준다(P4 ③).
 
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |

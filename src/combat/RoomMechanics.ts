@@ -33,6 +33,8 @@ import { logger } from '../utils/logger';
 
 export interface RoomMechanicsContext {
   /** Per-trap-type mastery from the save (trapId → +0..+5). */
+  /** monsterId → raising multiplier (level growth · 강타). */
+  readonly guardianAtkMult?: ReadonlyMap<string, number>;
   readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
@@ -89,7 +91,6 @@ export interface RoomMechanicsContext {
 
   // ── Tick timers (mutable, written back through context) ──────────────────
 
-  goldTick: number;
   medicineHealTick: number;
   medicineGlobalPulseLast: number;
   poisonDamageTick: number;
@@ -173,21 +174,6 @@ export function runMercenaryAuras(ctx: RoomMechanicsContext, _now: number): void
       inv.pathTween.timeScale = 1;
     }
   });
-}
-
-// ─── runGoldVeins ───────────────────────────────────────────────────────────
-
-export function runGoldVeins(ctx: RoomMechanicsContext, now: number): void {
-  if (now - ctx.goldTick < 1000) return;
-  ctx.goldTick = now;
-  let income = 0;
-  for (const row of ctx.roomGrid)
-    for (const data of row)
-      if (data?.goldPerSec) income += data.goldPerSec;
-  if (income <= 0) return;
-  ctx.gold += income;
-  ctx.setGoldRegistry(ctx.gold);
-  ctx.showGoldFloat(`+${income}`, CANVAS_WIDTH / 2, GRID_Y - 20);
 }
 
 // ─── runHealers ─────────────────────────────────────────────────────────────
@@ -454,7 +440,8 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
         ctx.extraMonsterCooldowns.set(cdKey, now);
         let dmg = (mDef.baseDamage > 0 ? mDef.baseDamage : ROOM_DEFS[data.type].attackDamage)
           * Math.pow(1.4, data.level - 1)
-          * data.roomTypeDmgMult;
+          * data.roomTypeDmgMult
+          * (ctx.guardianAtkMult?.get(mId) ?? 1);
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
         dmg *= comboMultiplier(target.comboCount(now));

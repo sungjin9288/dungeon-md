@@ -266,7 +266,9 @@ export interface GameState {
   questProgress:     Record<string, QuestProgress>;
   unlockedFeatures:  string[];   // e.g. ['summon_altar', 'affinity_system', 'research_lab']
   // Monster Life system (Phase 3)
-  monsterAffinity:   Record<string, number>;   // monsterId → 0–100
+  monsterAffinity:   Record<string, number>;   // monsterId → 0–100 (교감; bondTransactions raises it, awakening needs 100)
+  bondDaily:         Record<string, import('./bondTransactions').BondDayLog>;  // monsterId → today's care-action counts
+  lineageGoal:       string | null;  // 계보도 목표 핀 — monster id the home directive steers toward
   monsterAwakened:   Record<string, boolean>;
   personalStorySeen: Record<string, boolean>;
   lastTalkTime:      Record<string, number>;   // monsterId → timestamp ms
@@ -276,6 +278,7 @@ export interface GameState {
   // Fusion / Forge system (Phase 4)
   discoveredCombinations: string[];            // hybrid monster IDs discovered
   awakeningStones:   number;
+  tribeShards:       Record<string, number>;   // 부족 조각 — 중복 소환이 쌓고 100개로 그 부족 미보유 1체
   blueprints:        string[];                 // blueprint IDs owned
   materials:         Record<string, number>;   // materialId → quantity
   abyss:             AbyssState;                // 심연 farming progress (depth + sweep keys)
@@ -283,6 +286,7 @@ export interface GameState {
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   productionFacilities: Record<string, number>;  // 생산 시설 facilityId → level (0/absent = not built)
+  facilityStaff: Record<string, string>;         // 생산 시설 facilityId → 근무 몬스터 id (근무 중인 몬스터는 방어에 참여하지 않는다)
   ownedDecorations:  string[];        // 장식품 owned (decorationId)
   placedDecorations: string[];        // 장식품 currently placed (active for set bonuses)
   // Summon system (Phase 5)
@@ -363,6 +367,8 @@ function defaultGameState(): GameState {
     questProgress:     {},
     unlockedFeatures:  [],
     monsterAffinity:   {},
+    bondDaily:         {},
+    lineageGoal:       null,
     monsterAwakened:   {},
     personalStorySeen: {},
     lastTalkTime:      {},
@@ -371,6 +377,7 @@ function defaultGameState(): GameState {
     trainLastReset:    '',
     discoveredCombinations: [],
     awakeningStones:   0,
+    tribeShards:       {},
     blueprints:        [],
     materials:         {},
     abyss:             { ...DEFAULT_ABYSS_STATE },
@@ -378,6 +385,7 @@ function defaultGameState(): GameState {
     dungeonSlots:      [],
     lastIdleCollect:   0,
     productionFacilities: {},
+    facilityStaff: {},
     ownedDecorations:  [],
     placedDecorations: [],
     summonPity:        { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } },

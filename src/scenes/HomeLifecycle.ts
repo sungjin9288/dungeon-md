@@ -31,7 +31,7 @@ import {
   showGameCompleteOverlay,
 } from '../ui/QuestLogPanel';
 import {
-  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, IDLE_CAP_HOURS,
+  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, idleCapHours,
   type IdleReward,
 } from '../data/idleIncome';
 import { MATERIAL_DEFS } from '../data/fusion';
@@ -146,7 +146,7 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
     cy += 26;
   }
 
-  overlay.add(scene.add.text(cx, cy + 5, `운영 ${Math.round(reward.ratePerMin)} 황금/분 · 최대 ${IDLE_CAP_HOURS}시간 적립`, {
+  overlay.add(scene.add.text(cx, cy + 5, `운영 ${Math.round(reward.ratePerMin)} 황금/분 · 최대 ${idleCapHours(scene.gs)}시간 적립`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#8f8779',
   }).setOrigin(0.5));
 

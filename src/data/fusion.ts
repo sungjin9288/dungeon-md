@@ -65,14 +65,14 @@ export interface EvolutionTier {
   unlockedSkill: string;
 }
 
-const EVOLUTION_TIERS: EvolutionTier[] = [
+export const EVOLUTION_TIERS: EvolutionTier[] = [
   { resultId: '_unc',  rarity: 1, atkMult: 1.30, unlockedSkill: 'A2' },
   { resultId: '_rare', rarity: 2, atkMult: 1.69, unlockedSkill: 'A3' },
   { resultId: '_epic', rarity: 3, atkMult: 2.20, unlockedSkill: 'B2' },
   { resultId: '_leg',  rarity: 4, atkMult: 2.86, unlockedSkill: 'C2' },
 ];
 
-const EVOLVABLE_BASES = new Set([
+export const EVOLVABLE_BASES = new Set([
   'dokkaebi_warrior', 'dokkaebi_junior', 'village_archer', 'gold_turtle',
   'fire_dokkaebi', 'sage', 'gumiho_guardian', 'frost_spirit',
   'white_tiger', 'sea_god_spear', 'fox_shaman', 'iron_mask',
