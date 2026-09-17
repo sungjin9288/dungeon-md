@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17T16:57:31.792Z",
+  "generatedAt": "2026-09-17T17:04:45.581Z",
   "base": "http://127.0.0.1:8084",
   "scope": "28 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
@@ -35,7 +35,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
-      "sha256": "52d82c2f1d11ad576f3dc34b15f8cab3fef2394892fab5e58308839f0fd3fa3e"
+      "sha256": "f1d16308753eaf603f9fc27d45c7528a8068758c8a13ae175f54f38cf38c1edb"
     },
     {
       "id": "shop-purchase-confirm",
@@ -63,7 +63,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
-      "sha256": "48c3ad69bdafa50737dbe348302bfec21517362323725e4a543518180b5010b8"
+      "sha256": "748ef1469e9b3ba6be6fff7a11988ceeab830dfc274533c863df25a2fc1435ce"
     },
     {
       "id": "codex-monster-detail",
@@ -262,7 +262,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
-      "sha256": "fbfc63bebf25504b7ab6cf070561a1db42b4ec5e5b531163b887dcae4714eb49"
+      "sha256": "0d4e156694cc8f7edb2a735f72bc25c64679a0e6281adc858d18281d6462ed63"
     },
     {
       "id": "production-facility-order",
@@ -449,22 +449,22 @@
       "activeScenes": [
         "SummonScene"
       ],
-      "visibleTextBefore": 54,
-      "visibleTextAfter": 75,
+      "visibleTextBefore": 55,
+      "visibleTextAfter": 76,
       "inputsAfter": 10,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
       "textBelow10": 0,
       "renderedTextBelow10": 0,
-      "overlapCandidates": 5,
+      "overlapCandidates": 7,
       "overflowDetail": [],
       "undersizedDetail": [],
       "seeded": null,
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-summon-rate-detail-390x844.png",
-      "sha256": "ed149cba4b6190321b3b23a6f7bbfb67a9d71e879ffec5a499ea2e0e41e70739"
+      "sha256": "4b823f717868e42962c5d0c2887bff3cd73863bfdc30d4fd9fca6de59bad682c"
     },
     {
       "id": "summon-shard-redeem",
@@ -477,7 +477,7 @@
       "activeScenes": [
         "SummonScene"
       ],
-      "visibleTextBefore": 54,
+      "visibleTextBefore": 55,
       "visibleTextAfter": 23,
       "inputsAfter": 6,
       "fixedOverflow": 0,
@@ -494,7 +494,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-summon-shard-redeem-390x844.png",
-      "sha256": "91fcf727b0b29a9bb059cfb0c582de82978ef0bf9cc31ba2d6f2e42697f6db4b"
+      "sha256": "5ed05670bc838c85f4c36a10aa4cb4424e4e2ba8a07e649426dcf6e12a7e34fc"
     },
     {
       "id": "barracks-manage",
@@ -767,7 +767,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
-      "sha256": "73bfdd4a2f84dfcab8e7acc52c6e0aebf9bb787d0163d7d0b36381817e7147e8"
+      "sha256": "f0e344687daca82f8a962b34f44842391cd3d1246c7f1c3bd70bc6b637213692"
     },
     {
       "id": "wisdom-upgrade-result",
@@ -828,7 +828,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
-      "sha256": "006ece47157129bdec1983c08d35d42596710ddc41543bcaa87ffcb4d25ebe94"
+      "sha256": "7c116cd8b8627624df627d8b8033d0725064142d7b97674f169e7313b0f9c1a7"
     }
   ],
   "failures": [],
@@ -837,7 +837,7 @@
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 94,
+    "overlapCandidates": 96,
     "errors": 0,
     "hardFailures": 0
   }
