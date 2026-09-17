@@ -1,134 +1,20 @@
 {
-  "generatedAt": "2026-09-17T15:55:17.128Z",
+  "generatedAt": "2026-09-17T16:25:49.565Z",
   "base": "http://127.0.0.1:8083",
   "scope": "Campaign stages fought organically by the pacing model's starter / lean / expected homes. Calibrates campaignPacing.test.ts (headless sim) against real combat. Not a full campaign endurance run.",
   "method": "Home seeded in-page from src/data/campaignPacing.ts, DungeonScene started with { stageNumber }, waves driven through window.advanceTime at 3x. Outcome = dungeon HP after the last wave.",
   "sourceHashes": {
     "src/data/campaignPacing.ts": "c4ba4702ed2832f5e33d8c92ac6341920ffde77933f506cadcaef197bcb1ef0d",
-    "src/data/simulation.ts": "2c0ea8b0a2c67bc66c951cb83d86059be32435748a80cc6e94a86384c260aa89",
+    "src/data/simulation.ts": "4f59ee5d99176de820d804ea9b433c33343bf75f9c9c4cf709a6b5ea6cf0060a",
     "src/combat/DungeonLayout.ts": "7ff6bef627beed3102567d9727b57c622b677d21a772acf9ec487a2793e39530",
     "scripts/verify-campaign-pacing.mjs": "1f609fd62d7cedef901d3d8f196134968d6526596b40ff884df9ff33e2df425f"
   },
   "runs": [
     {
-      "stageNumber": 20,
+      "stageNumber": 42,
       "kind": "lean",
       "seeded": {
-        "dmLevel": 8,
-        "slotCount": 9,
-        "roomLevel": 2,
-        "roster": [
-          "dokkaebi_warrior",
-          "village_archer",
-          "dokkaebi_junior",
-          "one_tail_fox",
-          "fire_dokkaebi",
-          "ice_dokkaebi",
-          "thunder_dokkaebi",
-          "gumiho_guardian",
-          "skeleton_knight"
-        ],
-        "sim": {
-          "winPct": 80,
-          "finalHp": 2000,
-          "startHp": 2500,
-          "totalDps": 81.5,
-          "worstWave": 10
-        }
-      },
-      "battle": {
-        "wave": 10,
-        "maxWave": 10,
-        "dungeonHp": 660,
-        "maxHp": 2500,
-        "builtRooms": 9,
-        "armedRooms": 9,
-        "gold": 6170,
-        "stalls": 0,
-        "timeline": [
-          {
-            "wave": 1,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 3
-          },
-          {
-            "wave": 2,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 6
-          },
-          {
-            "wave": 3,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 10
-          },
-          {
-            "wave": 4,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 15
-          },
-          {
-            "wave": 5,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 20
-          },
-          {
-            "wave": 6,
-            "hp": 2500,
-            "settled": true,
-            "stalled": false,
-            "slices": 25
-          },
-          {
-            "wave": 7,
-            "hp": 2200,
-            "settled": true,
-            "stalled": false,
-            "slices": 33
-          },
-          {
-            "wave": 8,
-            "hp": 1900,
-            "settled": true,
-            "stalled": false,
-            "slices": 41
-          },
-          {
-            "wave": 9,
-            "hp": 1160,
-            "settled": true,
-            "stalled": false,
-            "slices": 49
-          },
-          {
-            "wave": 10,
-            "hp": 660,
-            "settled": true,
-            "stalled": false,
-            "slices": 56
-          }
-        ]
-      },
-      "outcome": "win",
-      "hpPct": 26,
-      "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-20-lean.png",
-      "sha256": "75526d42a908a0ae411d8767d5a26163fdf4a8d6a92e4825d8b844f9e239715d"
-    },
-    {
-      "stageNumber": 32,
-      "kind": "lean",
-      "seeded": {
-        "dmLevel": 10,
+        "dmLevel": 11,
         "slotCount": 9,
         "roomLevel": 3,
         "roster": [
@@ -141,95 +27,99 @@
           "one_tail_fox",
           "white_tiger",
           "fire_dokkaebi",
+          "jellyfish_sorcerer",
           "ice_dokkaebi",
+          "sea_god_spear",
           "thunder_dokkaebi",
+          "frost_spirit",
           "gumiho_guardian",
+          "iron_mask",
           "skeleton_knight"
         ],
         "sim": {
-          "winPct": 84,
-          "finalHp": 3800,
-          "startHp": 4500,
-          "totalDps": 150.4,
-          "worstWave": 10
+          "winPct": 100,
+          "finalHp": 3500,
+          "startHp": 3500,
+          "totalDps": 189.6,
+          "worstWave": 0
         }
       },
       "battle": {
         "wave": 10,
         "maxWave": 10,
-        "dungeonHp": 4500,
-        "maxHp": 4500,
+        "dungeonHp": 3100,
+        "maxHp": 3500,
         "builtRooms": 9,
         "armedRooms": 9,
-        "gold": 7635,
+        "gold": 8255,
         "stalls": 0,
         "timeline": [
           {
             "wave": 1,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 2
           },
           {
             "wave": 2,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 4
           },
           {
             "wave": 3,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 6
           },
           {
             "wave": 4,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 8
           },
           {
             "wave": 5,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 10
           },
           {
             "wave": 6,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
-            "slices": 13
+            "slices": 12
           },
           {
             "wave": 7,
-            "hp": 4500,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
-            "slices": 15
+            "slices": 14
           },
           {
             "wave": 8,
-            "hp": 4500,
+            "hp": 3500,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 9,
+            "hp": 3500,
             "settled": true,
             "stalled": false,
             "slices": 18
           },
           {
-            "wave": 9,
-            "hp": 4500,
-            "settled": true,
-            "stalled": false,
-            "slices": 21
-          },
-          {
             "wave": 10,
-            "hp": 4500,
+            "hp": 3100,
             "settled": true,
             "stalled": false,
             "slices": 26
@@ -237,16 +127,582 @@
         ]
       },
       "outcome": "win",
+      "hpPct": 89,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-42-lean.png",
+      "sha256": "62164a1dfcf6eb9b8eccd5d6dda25413e9f924f258a9ecc81b5bf099286511a1"
+    },
+    {
+      "stageNumber": 56,
+      "kind": "lean",
+      "seeded": {
+        "dmLevel": 13,
+        "slotCount": 9,
+        "roomLevel": 3,
+        "roster": [
+          "dokkaebi_warrior",
+          "mask_archer",
+          "dokkaebi_captain",
+          "village_archer",
+          "three_tail_fox",
+          "dokkaebi_bomber",
+          "dokkaebi_junior",
+          "sea_dragon_archer",
+          "ice_gumiho",
+          "one_tail_fox",
+          "white_tiger",
+          "fire_dokkaebi",
+          "jellyfish_sorcerer",
+          "ice_dokkaebi",
+          "sea_god_spear",
+          "thunder_dokkaebi",
+          "frost_spirit",
+          "gumiho_guardian",
+          "iron_mask",
+          "skeleton_knight",
+          "five_tail_fox"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 5300,
+          "startHp": 5300,
+          "totalDps": 234.4,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 5082,
+        "maxHp": 5300,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 9750,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 5300,
+            "settled": true,
+            "stalled": false,
+            "slices": 1
+          },
+          {
+            "wave": 2,
+            "hp": 5300,
+            "settled": true,
+            "stalled": false,
+            "slices": 2
+          },
+          {
+            "wave": 3,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 3
+          },
+          {
+            "wave": 4,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 5
+          },
+          {
+            "wave": 5,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 7
+          },
+          {
+            "wave": 6,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 9
+          },
+          {
+            "wave": 7,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 11
+          },
+          {
+            "wave": 8,
+            "hp": 5205,
+            "settled": true,
+            "stalled": false,
+            "slices": 13
+          },
+          {
+            "wave": 9,
+            "hp": 5082,
+            "settled": true,
+            "stalled": false,
+            "slices": 15
+          },
+          {
+            "wave": 10,
+            "hp": 5082,
+            "settled": true,
+            "stalled": false,
+            "slices": 18
+          }
+        ]
+      },
+      "outcome": "win",
+      "hpPct": 96,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-56-lean.png",
+      "sha256": "1f9881c92979f4a3179f71f60b05537ecf113c5b8e78d5e325dc21bd28242678"
+    },
+    {
+      "stageNumber": 68,
+      "kind": "lean",
+      "seeded": {
+        "dmLevel": 14,
+        "slotCount": 9,
+        "roomLevel": 3,
+        "roster": [
+          "dokkaebi_warrior",
+          "mask_archer",
+          "dokkaebi_captain",
+          "village_archer",
+          "three_tail_fox",
+          "dokkaebi_bomber",
+          "dokkaebi_junior",
+          "sea_dragon_archer",
+          "ice_gumiho",
+          "one_tail_fox",
+          "white_tiger",
+          "underworld_archer",
+          "fire_dokkaebi",
+          "jellyfish_sorcerer",
+          "bear_god",
+          "ice_dokkaebi",
+          "sea_god_spear",
+          "dokkaebi_duelist",
+          "thunder_dokkaebi",
+          "frost_spirit",
+          "sea_general",
+          "gumiho_guardian",
+          "iron_mask",
+          "skeleton_knight",
+          "five_tail_fox"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 7200,
+          "startHp": 7200,
+          "totalDps": 275.4,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 7200,
+        "maxHp": 7200,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 14685,
+        "stalls": 2,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 2
+          },
+          {
+            "wave": 2,
+            "hp": 7200,
+            "settled": true,
+            "stalled": true,
+            "slices": 5
+          },
+          {
+            "wave": 3,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 4,
+            "hp": 7200,
+            "settled": true,
+            "stalled": true,
+            "slices": 12
+          },
+          {
+            "wave": 5,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 6,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 20
+          },
+          {
+            "wave": 7,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 24
+          },
+          {
+            "wave": 8,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 28
+          },
+          {
+            "wave": 9,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 33
+          },
+          {
+            "wave": 10,
+            "hp": 7200,
+            "settled": true,
+            "stalled": false,
+            "slices": 38
+          }
+        ]
+      },
+      "outcome": "win",
       "hpPct": 100,
       "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-32-lean.png",
-      "sha256": "b385ecb28125308a513fedeaccbe90f2b4fee6ff7475f36714fa2940a583d5cb"
+      "screenshot": "tools/screenshots/campaign-pacing-68-lean.png",
+      "sha256": "9c30d8b6f27a1b6bf2843d384346556c5abf61ad3167f0bce1c03bc62ec33aa6"
+    },
+    {
+      "stageNumber": 80,
+      "kind": "lean",
+      "seeded": {
+        "dmLevel": 15,
+        "slotCount": 9,
+        "roomLevel": 4,
+        "roster": [
+          "dokkaebi_warrior",
+          "mask_archer",
+          "dokkaebi_captain",
+          "sea_witch",
+          "village_archer",
+          "three_tail_fox",
+          "dokkaebi_bomber",
+          "cheoyong_warrior",
+          "dokkaebi_junior",
+          "sea_dragon_archer",
+          "ice_gumiho",
+          "one_tail_fox",
+          "white_tiger",
+          "underworld_archer",
+          "fire_dokkaebi",
+          "jellyfish_sorcerer",
+          "bear_god",
+          "ice_dokkaebi",
+          "sea_god_spear",
+          "dokkaebi_duelist",
+          "thunder_dokkaebi",
+          "frost_spirit",
+          "sea_general",
+          "gumiho_guardian",
+          "iron_mask",
+          "bongsan_maskman",
+          "skeleton_knight",
+          "five_tail_fox",
+          "underworld_witch"
+        ],
+        "sim": {
+          "winPct": 82,
+          "finalHp": 9000,
+          "startHp": 11000,
+          "totalDps": 364.6,
+          "worstWave": 15
+        }
+      },
+      "battle": {
+        "wave": 15,
+        "maxWave": 15,
+        "dungeonHp": 11000,
+        "maxHp": 11000,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 51070,
+        "stalls": 1,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 1
+          },
+          {
+            "wave": 2,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 3
+          },
+          {
+            "wave": 3,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 5
+          },
+          {
+            "wave": 4,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 5,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 13
+          },
+          {
+            "wave": 6,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 17
+          },
+          {
+            "wave": 7,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 22
+          },
+          {
+            "wave": 8,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 26
+          },
+          {
+            "wave": 9,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 32
+          },
+          {
+            "wave": 10,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 38
+          },
+          {
+            "wave": 11,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 44
+          },
+          {
+            "wave": 12,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 49
+          },
+          {
+            "wave": 13,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 55
+          },
+          {
+            "wave": 14,
+            "hp": 11000,
+            "settled": true,
+            "stalled": false,
+            "slices": 61
+          },
+          {
+            "wave": 15,
+            "hp": 11000,
+            "settled": true,
+            "stalled": true,
+            "slices": 67
+          }
+        ]
+      },
+      "outcome": "win",
+      "hpPct": 100,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-80-lean.png",
+      "sha256": "62e1bf976dace2eeab8c35a5d4fe992965b5b8d4a980bd0397d925dbdc5beb42"
+    },
+    {
+      "stageNumber": 90,
+      "kind": "veteran",
+      "seeded": {
+        "dmLevel": 52,
+        "slotCount": 9,
+        "roomLevel": 5,
+        "roster": [
+          "void_monarch",
+          "abyssal_warden",
+          "empyrean_sovereign",
+          "solar_eclipse_warrior",
+          "eternal_colossus",
+          "chaos_reaver",
+          "black_dragon_assassin",
+          "red_dragon_warrior",
+          "soul_reaver",
+          "starlight_knight",
+          "black_dragon_dokkaebi",
+          "galaxy_warrior",
+          "soul_devourer",
+          "void_archon",
+          "banya_guardian",
+          "dragon_avatar",
+          "god_realm_general",
+          "null_sorcerer",
+          "thunder_mask_warrior",
+          "dokkaebi_general",
+          "oblivion_devourer",
+          "void_harbinger",
+          "mask_berserker",
+          "celestial_sage",
+          "abyss_titan",
+          "solar_warrior",
+          "fire_dokkaebi_king",
+          "rift_stalker",
+          "celestial_guardian",
+          "gumiho_demon",
+          "primordial_devourer",
+          "primordial_shaman",
+          "twilight_dragon"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 15000,
+          "startHp": 15000,
+          "totalDps": 3491.4,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 4,
+        "maxWave": 15,
+        "dungeonHp": 15000,
+        "maxHp": 15000,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 13075,
+        "stalls": 1,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 15000,
+            "settled": true,
+            "stalled": false,
+            "slices": 2
+          },
+          {
+            "wave": 2,
+            "hp": 15000,
+            "settled": true,
+            "stalled": false,
+            "slices": 5
+          },
+          {
+            "wave": 3,
+            "hp": 15000,
+            "settled": true,
+            "stalled": true,
+            "slices": 37
+          },
+          {
+            "wave": 4,
+            "hp": 15000,
+            "settled": false,
+            "stalled": false,
+            "slices": 70
+          }
+        ]
+      },
+      "outcome": "unsettled",
+      "hpPct": 100,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-90-veteran.png",
+      "sha256": "8f72200477f1d62c8b10e810d7a24c3a0b0eb2e6f2487dcd7c5a4070dd3ffc21"
     }
   ],
-  "failures": [],
+  "failures": [
+    {
+      "run": "90:veteran",
+      "reason": "battle ended unsettled",
+      "battle": {
+        "wave": 4,
+        "maxWave": 15,
+        "dungeonHp": 15000,
+        "maxHp": 15000,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 13075,
+        "stalls": 1,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 15000,
+            "settled": true,
+            "stalled": false,
+            "slices": 2
+          },
+          {
+            "wave": 2,
+            "hp": 15000,
+            "settled": true,
+            "stalled": false,
+            "slices": 5
+          },
+          {
+            "wave": 3,
+            "hp": 15000,
+            "settled": true,
+            "stalled": true,
+            "slices": 37
+          },
+          {
+            "wave": 4,
+            "hp": 15000,
+            "settled": false,
+            "stalled": false,
+            "slices": 70
+          }
+        ]
+      }
+    }
+  ],
   "summary": {
-    "runs": 2,
-    "wins": 2,
-    "hardFailures": 0
+    "runs": 5,
+    "wins": 4,
+    "hardFailures": 1
   }
 }
