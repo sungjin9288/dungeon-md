@@ -61,7 +61,7 @@ describe('navigationContract — transient context hand-offs', () => {
       consume: ['focusMonsterId', 'focusSourceLabel', 'focusRoomSlotIdx'], preserve: [],
     });
     expect(NAVIGATION_CONTEXT_OPERATIONS['forge-entry']).toEqual({
-      consume: ['forgeReturnScene'], preserve: ['focusMonsterId', 'focusSourceLabel', 'focusRoomSlotIdx'],
+      consume: ['forgeReturnScene', 'forgeTab'], preserve: ['focusMonsterId', 'focusSourceLabel', 'focusRoomSlotIdx'],
     });
     expect(applyNavigationContextOperation(focusContext, 'barracks-entry')).toMatchObject({
       forgeReturnScene: 'BarracksScene', previousScene: 'BarracksScene',

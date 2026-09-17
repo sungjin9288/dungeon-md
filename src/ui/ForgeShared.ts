@@ -64,9 +64,11 @@ export interface ForgeTargetCue {
 // The scene keeps ownership of mutable state; modules receive read-only snapshots
 // plus callbacks for the actions they can trigger.
 
+export type ForgeTab = 'craft' | 'dismantle' | 'trap';
+
 export interface ForgeContext {
   readonly gs: GameState;
-  readonly activeTab: 'craft' | 'dismantle';
+  readonly activeTab: ForgeTab;
   readonly page: number;
   readonly focusMonsterId: string | null;
   readonly focusSourceLabel: string | null;
@@ -86,6 +88,10 @@ export interface ForgeContext {
   readonly onConfirmCraft: (bpId: string) => void;
   /** Called when the user confirms dismantling a crafted equipment. */
   readonly onConfirmDismantle: (idx: number, eq: CraftedEquipment) => void;
+  /** '함정' tab: craft one trap into stock. */
+  readonly onCraftTrap: (trapId: string) => void;
+  /** '함정' tab: raise a trap type's mastery by one. */
+  readonly onEnhanceTrap: (trapId: string) => void;
 }
 
 // ─── Pure Helpers ─────────────────────────────────────────────────────────────

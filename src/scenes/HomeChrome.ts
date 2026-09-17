@@ -281,6 +281,11 @@ export function selectRoomForPlacement(scene: DungeonHomeScene, slotIdx: number)
       scene.selectedRoomIdx = null;
       scene.rebuildDungeonSlots();
     },
+    openForgeTraps: () => {
+      scene.registry.set('forgeReturnScene', 'DungeonHomeScene');
+      scene.registry.set('forgeTab', 'trap');
+      scene.navigateFromHome('ForgeScene');
+    },
   }, slotIdx);
 }
 
