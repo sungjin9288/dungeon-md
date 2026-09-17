@@ -229,6 +229,21 @@ children)를 파생한다. **목표 핀** `GameState.lineageGoal`(monster id | n
 - 가드: `lineage.test.ts`(노드 파생·계획·모으기 단계·핀 제안). 모달 하니스
   `codex-lineage-pin`/`home-lineage-goal-chip`.
 
+### 중복 소환 → 각성석 · 부족 조각 (2026-09-18, Phase 4 / P4 ②)
+
+중복 뽑기는 영혼 결정 보상(`SC_COMP`)에 더해 **각성석**(희귀도별 0/0/1/1/2)과
+**부족 조각**(5/8/15/25/40, 그 몬스터의 `tribe`)을 준다(`tribeShards.ts
+duplicateReward`, `applySummonPull` 중복 분기, `SummonPullResult.tribe/tribeShards/
+awakeningStones`). `GameState.tribeShards[tribe]` 100개 → `redeemTribeShards`가 그
+부족의 **미보유·소환 가능**(`RARITY_POOLS` ∪, 해금 스테이지 게이트) 1체를 확정 지급.
+UI: 소환 탭 카드 아래 44px 스트립(`SummonTribeShards.ts`, 선두 부족 하나 + 바 +
+`summon-shard-redeem` 버튼; 시즌 배너가 활성일 땐 공간이 없어 생략), 결과 뱃지에
+`조각 +N · 각성석 +K`.
+
+- 가드: `tribeShards.test.ts`(희귀도 표·중복 분기·100개/부족 완성 거절·정확히 100 소모),
+  `summonTransactions.test.ts` 결과 필드 확장. 모달 하니스 `summon-shard-redeem`.
+- 미착수: P4 ① 인플로우 목표치(무과금 주 300~450 보석) 시뮬, P4 ③ 부족 픽업 배너.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|

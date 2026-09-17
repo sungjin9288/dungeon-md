@@ -278,6 +278,7 @@ export interface GameState {
   // Fusion / Forge system (Phase 4)
   discoveredCombinations: string[];            // hybrid monster IDs discovered
   awakeningStones:   number;
+  tribeShards:       Record<string, number>;   // 부족 조각 — 중복 소환이 쌓고 100개로 그 부족 미보유 1체
   blueprints:        string[];                 // blueprint IDs owned
   materials:         Record<string, number>;   // materialId → quantity
   abyss:             AbyssState;                // 심연 farming progress (depth + sweep keys)
@@ -376,6 +377,7 @@ function defaultGameState(): GameState {
     trainLastReset:    '',
     discoveredCombinations: [],
     awakeningStones:   0,
+    tribeShards:       {},
     blueprints:        [],
     materials:         {},
     abyss:             { ...DEFAULT_ABYSS_STATE },

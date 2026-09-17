@@ -10,6 +10,7 @@ import { loadGameState } from '../data/wisdom';
 import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { RARITIES, RARITY_COLORS, RARITY_CSS, RARITY_STARS, RARITY_KO } from '../data/summonPools';
 import { CX, CARDS_Y, getDexNo, getMonsterTagLine } from './SummonShared';
+import { buildTribeShardStrip, SHARD_STRIP_H } from './SummonTribeShards';
 import { addFramedPanel } from './GameUiPrimitives';
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -19,6 +20,8 @@ export type HistoryFilter = 'all' | 'new' | 'dupe';
 export interface SummonHistoryContext {
   historyFilter: HistoryFilter;
   onFilterChange: (filter: HistoryFilter) => void;
+  /** Redeem 100 tribe shards for an unowned guardian of that tribe (SummonTribeShards). */
+  onRedeemShards?: (tribe: string) => void;
 }
 
 // ─── buildHistoryTab ──────────────────────────────────────────────────────────
@@ -125,7 +128,8 @@ export function rebuildHistory(
     }).setOrigin(0.5));
   } else {
     let ry = CARDS_Y + 58;
-    filtered.slice(0, 8).forEach(rec => {
+    // Seven rows leave room for the 부족 조각 strip above the lifetime line.
+    filtered.slice(0, 7).forEach(rec => {
       const def = MONSTER_DEFS[rec.monsterId as MonsterId];
       if (!def) return;
       const rarityIdx   = RARITIES.indexOf(rec.rarity);
@@ -196,6 +200,11 @@ export function rebuildHistory(
       }).setOrigin(0.5));
       ry += 52;
     });
+  }
+
+  // ── 부족 조각 (always here; the summon tab only shows it when no banner takes the space) ──
+  if (ctx.onRedeemShards) {
+    buildTribeShardStrip(scene, c, { gs, y: CANVAS_HEIGHT - 52 - 14 - SHARD_STRIP_H, onRedeem: ctx.onRedeemShards });
   }
 
   // ── Lifetime stats ───────────────────────────────────────────────────────────

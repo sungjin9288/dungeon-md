@@ -465,6 +465,7 @@ release readiness를 의미하지 않는다.
 - ~~운영 수익 통합·몬스터 근무 (Phase 3, P1 ③④)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
+- ~~중복 소환 → 각성석·부족 조각 (Phase 4, P4 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. P4 ①(주간 보석 인플로우 시뮬) · ③(부족 픽업 배너)은 미착수.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -867,6 +868,20 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 
 **검증.** tsc clean, vitest 115 파일 2927 pass(`lineage.test.ts` 4건). 모달 하니스
 `codex-lineage-pin`·`home-lineage-goal-chip` 결과는 커밋 메시지 참조. 프리뷰 실측: 기대 홈(40)조차 빈 몬스터 슬롯 때문에 방 작업 큐가 9건이라 directive 카드는 거의 방 작업이 차지한다 → 헤더 📌 칩을 추가해 핀이 항상 보이게 했다.
+
+### 2026-09-18 — Phase 4 (P4 ②): 중복 소환 → 각성석 · 부족 조각
+
+`CLAUDE.md` "중복 소환 → 각성석 · 부족 조각" 절이 계약의 단일 진실원.
+
+**구조.** `tribeShards.ts`(희귀도별 조각/각성석 표, `redeemableTribeMonsters`는 소환
+풀 ∪·해금 게이트·미보유로 좁힘, `redeemTribeShards` 100 소모 → 1체), `applySummonPull`
+중복 분기 확장(영혼 결정은 그대로), `GameState.tribeShards`, `SummonScene` 스트립 +
+`redeemShards`(토스트 후 소환 탭 재구성), 결과 뱃지 확장. 조각 스트립은 시즌 배너가
+없을 때만 카드 아래 44px에 들어간다 — 배너가 있을 때의 노출은 후속(배너 카드 안에
+한 줄) 과제.
+
+**검증.** tsc clean, vitest 결과·모달 하니스 `summon-shard-redeem`·프리뷰 교환 실측은
+커밋 메시지 참조.
 
 ## 8. Completed implementation record: Fusion Chamber
 

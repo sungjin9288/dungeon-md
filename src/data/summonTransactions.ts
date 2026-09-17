@@ -11,6 +11,7 @@ import {
   type SummonType,
 } from './summonPools';
 import { getWisdomBonuses, type GameState, type SummonRarity, type SummonRecord } from './wisdom';
+import { duplicateReward } from './tribeShards';
 
 export interface SummonPullResult {
   monsterId: MonsterId;
@@ -19,6 +20,10 @@ export interface SummonPullResult {
   isNew: boolean;
   scComp: number;
   ceilingHit: boolean;
+  /** Duplicate extras (P4 ②): tribe shards toward a guaranteed unowned guardian, and awakening stones. */
+  tribe: string | null;
+  tribeShards: number;
+  awakeningStones: number;
 }
 
 export type SummonTransactionFailureReason =
@@ -122,6 +127,8 @@ export function applySummonPull(
 
   let gems = state.gems ?? 0;
   let soulCrystals = state.soulCrystals ?? 0;
+  let awakeningStones = state.awakeningStones ?? 0;
+  const tribeShards = { ...(state.tribeShards ?? {}) };
   let lastFriendSummon = state.lastFriendSummon;
 
   if (type === 'friendship') {
@@ -186,11 +193,15 @@ export function applySummonPull(
 
     const alreadyOwned = ownedMonsters.some(monster => monster.id === monsterId);
     let scComp = 0;
+    let dup: ReturnType<typeof duplicateReward> = { tribe: null, shards: 0, awakeningStones: 0 };
     if (!alreadyOwned) {
       ownedMonsters.push(defaultOwnedMonster(monsterId));
     } else {
       scComp = SC_COMP[rarityIdx];
       soulCrystals += scComp;
+      dup = duplicateReward(monsterId, rarityIdx);
+      if (dup.tribe && dup.shards > 0) tribeShards[dup.tribe] = (tribeShards[dup.tribe] ?? 0) + dup.shards;
+      awakeningStones += dup.awakeningStones;
     }
 
     if (type === 'friendship') lastFriendSummon = today;
@@ -205,7 +216,7 @@ export function applySummonPull(
       ceilingHit: ceilingHit || undefined,
     };
     summonHistory.push(record);
-    results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit });
+    results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit, tribe: dup.tribe, tribeShards: dup.shards, awakeningStones: dup.awakeningStones });
   }
 
   const wisdomSoulCrystals = Math.max(0, getWisdomBonuses(state).summonBonusCrystal * count);
@@ -215,6 +226,8 @@ export function applySummonPull(
     ...state,
     gems,
     soulCrystals,
+    awakeningStones,
+    tribeShards,
     summonPity: pity,
     ownedMonsters,
     summonHistory,

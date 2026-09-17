@@ -59,6 +59,7 @@ const CASES = [
   { id: 'fusion-material-picker', scene: 'FusionScene', steps: [{ label: '재료 1' }], expect: '재료 선택 피커' },
   { id: 'fusion-absorb-tab', scene: 'FusionScene', steps: [{ label: '흡수' }], expect: '흡수 탭' },
   { id: 'summon-rate-detail', scene: 'SummonScene', steps: [{ label: '확률 상세' }], expect: '확률 상세' },
+  { id: 'summon-shard-redeem', scene: 'SummonScene', seed: { tribeShards: { dokkaebi: 120 } }, steps: [{ label: '계약 기록' }, { name: 'summon-shard-redeem' }], expect: '계약 기록 탭의 부족 조각 스트립에서 교환 → 토스트 · 20/100로 갱신' },
   { id: 'barracks-manage', scene: 'BarracksScene', steps: [{ label: '관리' }], expect: '수호자 관리' },
   {
     id: 'barracks-bond-tab', scene: 'BarracksScene', seed: { monsterAffinity: { dokkaebi_warrior: 44 }, materials: { herb: 3 }, homeGold: 1000 },

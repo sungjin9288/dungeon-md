@@ -21,6 +21,10 @@ import {
   RARITY_RATES, RARITIES, RARITY_COLORS,
 } from '../data/summonPools';
 import { buildBannerCard } from '../ui/SummonBannerCard';
+import { buildTribeShardStrip } from '../ui/SummonTribeShards';
+import { redeemTribeShards } from '../data/tribeShards';
+import { saveGameState } from '../data/wisdom';
+import { getMonsterDisplayName } from '../data/fusion';
 import { executePull as runPull } from '../ui/SummonPullLogic';
 import {
   RARITY_STARS, RARITY_CSS, RARITY_KO,
@@ -255,6 +259,29 @@ export class SummonScene extends Phaser.Scene {
       const y   = CARDS_Y + cardsOffsetY + row * (CARD_H + CARD_GAP);
       this.buildSummonCard(def, cx, y);
     });
+
+    // 부족 조각 strip under the cards — only when a season banner is not using that space.
+    if (!this.activeBanner) {
+      const rows = Math.ceil(SUMMON_TYPE_DEFS.length / 2);
+      buildTribeShardStrip(this, this.summonTabContainer, {
+        gs: loadGameState(),
+        y: CARDS_Y + rows * (CARD_H + CARD_GAP) + 2,
+        onRedeem: (tribe) => this.redeemShards(tribe),
+      });
+    }
+  }
+
+  private redeemShards(tribe: string): void {
+    if (this.pullInFlight) return;
+    const result = redeemTribeShards(loadGameState(), tribe);
+    if (!result.ok) { this.showToast(result.reason === 'tribe_complete' ? '이 부족은 이미 전부 보유 중' : '부족 조각이 부족합니다'); return; }
+    saveGameState(result.state);
+    this.showToast(`✨ ${getMonsterDisplayName(result.monsterId)} 획득 · 조각 -${result.spent}`);
+    this.summonTabContainer.destroy();
+    this.buildSummonTab();
+    this.historyTabContainer.destroy();
+    this.buildHistoryTabLocal();
+    this.showTab(this.activeTab);
   }
 
   private buildBannerCard(banner: SeasonBanner, topY: number): void {
@@ -605,11 +632,13 @@ export class SummonScene extends Phaser.Scene {
   private buildHistoryTabLocal(): void {
     const ctx: SummonHistoryContext = {
       historyFilter: this.historyFilter,
+      onRedeemShards: (tribe) => this.redeemShards(tribe),
       onFilterChange: (filter: HistoryFilter) => {
         this.historyFilter = filter;
         const updatedCtx: SummonHistoryContext = {
           historyFilter: this.historyFilter,
           onFilterChange: ctx.onFilterChange,
+          onRedeemShards: ctx.onRedeemShards,
         };
         rebuildHistory(this, this.historyTabContainer, updatedCtx);
       },
