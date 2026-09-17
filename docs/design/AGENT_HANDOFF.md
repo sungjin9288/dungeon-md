@@ -866,7 +866,7 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 것. 핀은 하나만 둔다(directive가 한 줄이므로).
 
 **검증.** tsc clean, vitest 115 파일 2927 pass(`lineage.test.ts` 4건). 모달 하니스
-`codex-lineage-pin`·`home-lineage-directive` 결과는 커밋 메시지 참조.
+`codex-lineage-pin`·`home-lineage-goal-chip` 결과는 커밋 메시지 참조. 프리뷰 실측: 기대 홈(40)조차 빈 몬스터 슬롯 때문에 방 작업 큐가 9건이라 directive 카드는 거의 방 작업이 차지한다 → 헤더 📌 칩을 추가해 핀이 항상 보이게 했다.
 
 ## 8. Completed implementation record: Fusion Chamber
 

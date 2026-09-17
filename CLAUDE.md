@@ -220,12 +220,14 @@ children)를 파생한다. **목표 핀** `GameState.lineageGoal`(monster id | n
 `getLineageGoalPlan(state, goal)`이 보유 상태에서 목표까지의 단계(소환 → 진화 ×3 →
 조합 영혼 결정 100)를 만들고, `getLineageNextStep`이 첫 단계를 준다. 홈 directive는
 방 작업이 없을 때 `getLineageDirective`(kind `'lineage'`, destination `'codex'`)를
-전투 준비 카드보다 먼저 보여준다(`HomeCommandDeck` → CodexScene). 도감 상세 하단
+전투 준비 카드보다 먼저 보여준다(`HomeCommandDeck` → CodexScene). 방 작업은 거의
+항상 있으므로 핀은 지시 헤더의 `📌 <이름>` 칩(`home-lineage-goal-chip`)으로도 항상
+보인다. 도감 상세 하단
 '계보' 스트립(`codex-lineage-pin`)이 `suggestLineageGoal`(미보유면 자기 자신, 보유면
 다음 진화, 아니면 첫 하이브리드 자식)을 핀/해제한다.
 
 - 가드: `lineage.test.ts`(노드 파생·계획·모으기 단계·핀 제안). 모달 하니스
-  `codex-lineage-pin`/`home-lineage-directive`.
+  `codex-lineage-pin`/`home-lineage-goal-chip`.
 
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |

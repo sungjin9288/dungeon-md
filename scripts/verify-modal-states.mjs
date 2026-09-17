@@ -42,7 +42,7 @@ const CASES = [
   { id: 'codex-monster-detail', scene: 'CodexScene', steps: [{ name: 'codex-detail-open' }], expect: '수호자 상세' },
   { id: 'codex-invader-tab', scene: 'CodexScene', steps: [{ name: 'codex-tab-invaders' }], expect: '침략자 기록' },
   { id: 'codex-lineage-pin', scene: 'CodexScene', steps: [{ name: 'codex-detail-open' }, { name: 'codex-lineage-pin' }], expect: '수호자 상세 계보 스트립 · 목표 핀 토글 후 토스트' },
-  { id: 'home-lineage-directive', scene: 'DungeonHomeScene', seed: { lineageGoal: 'fox_warrior' }, steps: [], expect: '홈 지시 카드가 계보 목표(여우 전사 · 다음 단계)를 가리킴' },
+  { id: 'home-lineage-goal-chip', scene: 'DungeonHomeScene', seed: { lineageGoal: 'fox_warrior' }, steps: [], expect: '홈 지시 헤더에 📌 여우 전사 목표 칩 (방 작업이 카드를 차지해도 보임)' },
   { id: 'wisdom-branch-confirm', scene: 'AncestralWisdomScene', steps: [{ name: 'wisdom-branch-goldHands' }], expect: '가지 강화 확인' },
   { id: 'achievement-record', scene: 'AchievementScene', steps: [{ name: 'achievement-record-dm_lv5' }], expect: '업적 기록 상세' },
   { id: 'abyss-floor-order', scene: 'AbyssScene', steps: [{ name: 'abyss-floor-1' }, { name: 'abyss-order' }], expect: '심연 층 지시' },
