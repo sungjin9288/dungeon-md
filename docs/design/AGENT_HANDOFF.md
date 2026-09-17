@@ -466,6 +466,7 @@ release readiness를 의미하지 않는다.
 - ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
 - ~~중복 소환 → 각성석·부족 조각 (Phase 4, P4 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~보스 처치 슬로모 고착 (Ch9 90 veteran 미정산의 실제 원인)~~ → 수정 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~Phase 3~4 마감 작업(홈 할 일 배지·콤보 피드백·구 세이브 회귀)~~ → CLOSED 2026-09-18, 아래 기록 참조.
 - ~~주간 보석 인플로우 밴드 (Phase 4, P4 ①)~~ → CLOSED 2026-09-18: `gemInflow.ts` 추정 + 명성 주간 정산에 기본 100 추가(티어 1: 190→290, 티어 2~5 밴드 안). P4 ③은 배너가 이미 부족 픽업이라 `bannerSynergy.ts` 전망 한 줄만 추가해 CLOSED.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
@@ -924,6 +925,37 @@ simulation이 전부 무예외 동작함을 고정.
 **검증.** tsc clean, vitest 119 파일 2940 pass, `npm run build` 성공(청크 경고는
 기존 Phaser 권고), 모달 하니스 `home-todo-badges`·`home-staffing-route`
 `{overflow 0, small 0, tiny 0, errors 0, hardFailures 0}`.
+
+### 2026-09-18 — 보스 처치 슬로모 고착 (밸런스가 아니라 버그였다)
+
+이전 기록에서 "Ch9 스폰 루프/웨이브 종료 조건 과제"로 남겨둔 90 veteran 미정산의
+원인을 계측으로 특정했다. **밸런스도, 스폰 루프도 아니었다.**
+
+**계측.** 스테이지 90을 veteran 홈으로 띄우고 슬라이스마다 `waveActive/
+waveHasSpawned/waveEndChecked/spawnQueue/alive/coreHp/roomHp/time.timeScale`를
+기록(55슬라이스). 결과: 웨이브 1~2는 2~3슬라이스에 정리, **웨이브 3에 진입하는
+순간 `time.timeScale`이 3 → 0.15로 떨어지고 끝까지 돌아오지 않았다.** 그 뒤 모든
+슬라이스에서 `alive=0`, 방 HP 9칸 전부 200/200 무손상, 코어 15000/15000 —
+싸움이 느린 게 아니라 **시계가 기어가고 있었다**. 큐는 슬라이스당 1/3개꼴로만
+빠졌다(설정 간격 1300ms인데도).
+
+**원인.** `ImpactVfx.playBossKillReaction`이 160ms 히트 포즈를 위해 `time/
+tweens.timeScale`을 0.15로 낮추고 **직전 값을 캡처해** wall-clock `setTimeout`으로
+복원한다. (a) 160ms 안에 보스가 둘 죽으면 두 번째가 0.15를 "직전 값"으로 캡처해
+**영구 0.15배**가 된다 — 전 캠페인에서 보스 2기 이상 웨이브는 6개(스테이지 89 14,
+90의 9·11·13·14·15)로 전부 최종 그라인드 챕터이고, 무한 모드는 더 자주 겹친다.
+(b) 복원이 `tweens.timeScale = 1`이라 3배속 전투가 1배속 모션으로 떨어졌다.
+(c) 하니스는 `page.evaluate` 안 동기 pump 루프라 wall-clock 타이머가 **굶어서**
+보스 1기만 죽어도 복원이 영영 오지 않았다 — 웨이브 3(거인 1기)에서 고착된 이유.
+
+**수정.** 모듈 토큰으로 최신 슬로모만 복원하고, 시계·트윈 모두 `baseScale`
+(`DungeonScene.speedMult`)로 되돌린다(`KillHandlerContext.speedMult` 추가).
+양 organic 하니스는 슬라이스마다 `await yieldToTimers()`로 이벤트 루프를 양보한다.
+가드 `bossSlowMo.test.ts` 3건(복원 대상·중첩 캡처·씬 종료). vitest 2951 pass.
+
+**함의.** 이 버그 이전의 **Ch9/보스 웨이브 organic 측정치는 전부 무효**다(0.15배
+게임을 측정했다). 1~80 lean 경계는 보스 2기 웨이브가 없고 단일 보스도 최종 웨이브
+뿐이라 결론은 유지되지만, 90 veteran은 수정 후 재주행이 진실원이다.
 
 ## 8. Completed implementation record: Fusion Chamber
 
