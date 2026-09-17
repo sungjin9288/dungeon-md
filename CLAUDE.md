@@ -196,6 +196,22 @@ UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광
   배율), `idleIncome.test.ts`(명성 배수·수익 방·상한). 모달 하니스
   `production-staff-picker`/`production-staff-assigned`.
 
+### 교감 (2026-09-18, Phase 3 / P3 ②)
+
+수호자의 세 번째 상태(방어·근무·**돌봄**). `GameState.monsterAffinity`(0~100, 각성이
+100을 요구하던 죽은 필드)를 `bondTransactions.performBondAction`이 올린다. 행동 3종
+(`bond.ts BOND_ACTIONS`): 간식 🍖 +8(약초 1 또는 일반 광석 1, 1일 3회 — 생산 시설의
+두 번째 수요처), 대화 💬 +5(무료 1일 1회), 합동 훈련 ⚔️ +6(120골드, XP +10, 1일
+2회). 일일 횟수는 `GameState.bondDaily[monsterId] = {date, counts}`(UTC 날짜, `daily.ts
+getTodayString`). 임계 25/50/75/100 = 신뢰·우정·유대·일심: 공격 ×1.03/1.06/1.10/1.15
+(`bondAtkMult` → `guardianAtkMult`의 세 번째 인자 → 전투·시뮬 동일), 50에서 부족별
+이야기 한 줄(`BOND_STORY_BY_TRIBE`), 75에서 영혼 결정 30, 100에서 각성 가능.
+UI: 수호자 상세 4번째 탭 '교감'(`MonsterDetailBond.ts`, 존 `monster-detail-tab-bond`,
+버튼 `monster-bond-<action>`), 탭 안에서 커밋·토스트·재렌더(패널은 열린 채).
+
+- 가드: `bond.test.ts`(임계·비용 대안·일일 한도·날짜 리셋·보상 1회·100 마감).
+  모달 하니스 `barracks-bond-tab`/`barracks-bond-action`.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|

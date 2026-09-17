@@ -19,7 +19,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { createSceneOpener, inventory, labelClick, logicalClick, storage } from './lib/web-audit.mjs';
+import { createSceneOpener, inventory, labelClick, logicalClick, storage, namedCenter } from './lib/web-audit.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = process.env.PLAYWRIGHT_MODULE ?? '/Users/sungjin/.codex/node_modules/playwright/index.mjs';
@@ -58,6 +58,14 @@ const CASES = [
   { id: 'fusion-absorb-tab', scene: 'FusionScene', steps: [{ label: '흡수' }], expect: '흡수 탭' },
   { id: 'summon-rate-detail', scene: 'SummonScene', steps: [{ label: '확률 상세' }], expect: '확률 상세' },
   { id: 'barracks-manage', scene: 'BarracksScene', steps: [{ label: '관리' }], expect: '수호자 관리' },
+  {
+    id: 'barracks-bond-tab', scene: 'BarracksScene', seed: { monsterAffinity: { dokkaebi_warrior: 44 }, materials: { herb: 3 }, homeGold: 1000 },
+    steps: [{ name: 'barracks-card-dokkaebi_warrior' }, { name: 'monster-detail-tab-bond' }], expect: '수호자 상세 교감 탭 (친밀도 바 · 간식/대화/합동 훈련)',
+  },
+  {
+    id: 'barracks-bond-action', scene: 'BarracksScene', seed: { monsterAffinity: { dokkaebi_warrior: 44 }, materials: { herb: 3 }, homeGold: 1000 },
+    steps: [{ name: 'barracks-card-dokkaebi_warrior' }, { name: 'monster-detail-tab-bond' }, { name: 'monster-bond-treat' }], expect: '간식 후 교감 52 · 우정 도달 · 이야기 해금 · 토스트',
+  },
   { id: 'forge-disassemble-tab', scene: 'ForgeScene', steps: [{ label: '분해' }], expect: '분해 탭' },
   {
     id: 'forge-trap-tab', scene: 'ForgeScene', seed: { dmLevel: 20, materials: { iron_shard: 12, herb: 9, old_cloth: 8 }, trapStock: { spike_trap: 1, poison_trap: 1 }, trapMastery: { spike_trap: 2 } },
@@ -115,8 +123,14 @@ async function runStep(page, step) {
   if (step.name) {
     const state = await inventory(page);
     const input = state.scenes.flatMap(scene => scene.inputs).find(entry => entry.name === step.name);
-    if (!input) throw new Error(`missing input name: ${step.name}`);
-    await logicalClick(page, input.bounds.x + input.bounds.width / 2, input.bounds.y + input.bounds.height / 2);
+    if (input) {
+      await logicalClick(page, input.bounds.x + input.bounds.width / 2, input.bounds.y + input.bounds.height / 2);
+      return;
+    }
+    // Inputs inside a masked viewport (the barracks roster) are not in `inputs`; click them by name.
+    const center = await namedCenter(page, step.name);
+    if (!center) throw new Error(`missing input name: ${step.name}`);
+    await logicalClick(page, center.x, center.y);
     return;
   }
   await labelClick(page, step.label);

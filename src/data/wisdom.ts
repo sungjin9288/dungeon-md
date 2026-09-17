@@ -266,7 +266,8 @@ export interface GameState {
   questProgress:     Record<string, QuestProgress>;
   unlockedFeatures:  string[];   // e.g. ['summon_altar', 'affinity_system', 'research_lab']
   // Monster Life system (Phase 3)
-  monsterAffinity:   Record<string, number>;   // monsterId → 0–100
+  monsterAffinity:   Record<string, number>;   // monsterId → 0–100 (교감; bondTransactions raises it, awakening needs 100)
+  bondDaily:         Record<string, import('./bondTransactions').BondDayLog>;  // monsterId → today's care-action counts
   monsterAwakened:   Record<string, boolean>;
   personalStorySeen: Record<string, boolean>;
   lastTalkTime:      Record<string, number>;   // monsterId → timestamp ms
@@ -364,6 +365,7 @@ function defaultGameState(): GameState {
     questProgress:     {},
     unlockedFeatures:  [],
     monsterAffinity:   {},
+    bondDaily:         {},
     monsterAwakened:   {},
     personalStorySeen: {},
     lastTalkTime:      {},

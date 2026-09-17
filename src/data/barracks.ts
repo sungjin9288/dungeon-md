@@ -1,4 +1,5 @@
 import type { MonsterId } from './monsters';
+import { bondAtkMult } from './bond';
 
 // ─── Owned Monster ────────────────────────────────────────────────────────────
 
@@ -48,22 +49,26 @@ export const GUARDIAN_LEVEL_ATK_GROWTH = 1.03;
  * the forecast simulation both apply this, so the barracks ATK figure is the
  * number that actually fights.
  */
-export function guardianAtkMult(level: number, spentSkills: Readonly<Record<string, number>> | undefined): number {
+export function guardianAtkMult(level: number, spentSkills: Readonly<Record<string, number>> | undefined, affinity = 0): number {
   let mult = Math.pow(GUARDIAN_LEVEL_ATK_GROWTH, Math.max(1, level) - 1);
   // Combat tree A1 강타: +15%
   if ((spentSkills?.['A1'] ?? 0) >= 1) mult *= 1.15;
-  return mult;
+  // 교감 tiers (bond.ts): +3/6/10/15% at 25/50/75/100.
+  return mult * bondAtkMult(affinity);
 }
 
 /** Map monsterId → guardianAtkMult for a roster; unknown ids read as ×1. */
-export function buildGuardianAtkMultMap(ownedMonsters: readonly OwnedMonster[] | undefined): Map<string, number> {
+export function buildGuardianAtkMultMap(
+  ownedMonsters: readonly OwnedMonster[] | undefined,
+  monsterAffinity: Readonly<Record<string, number>> | undefined = undefined,
+): Map<string, number> {
   const map = new Map<string, number>();
-  for (const monster of ownedMonsters ?? []) map.set(monster.id, guardianAtkMult(monster.level, monster.spentSkills));
+  for (const monster of ownedMonsters ?? []) map.set(monster.id, guardianAtkMult(monster.level, monster.spentSkills, monsterAffinity?.[monster.id] ?? 0));
   return map;
 }
 
-export function getMonsterAtk(baseAtk: number, level: number, spentSkills: Record<string, number>): number {
-  return Math.round(baseAtk * guardianAtkMult(level, spentSkills));
+export function getMonsterAtk(baseAtk: number, level: number, spentSkills: Record<string, number>, affinity = 0): number {
+  return Math.round(baseAtk * guardianAtkMult(level, spentSkills, affinity));
 }
 
 // ─── Skill Trees ──────────────────────────────────────────────────────────────

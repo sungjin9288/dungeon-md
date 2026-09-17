@@ -463,6 +463,7 @@ release readiness를 의미하지 않는다.
 - ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
 - ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치, main 병합 `0bfd911`), 아래 기록 참조.
 - ~~운영 수익 통합·몬스터 근무 (Phase 3, P1 ③④)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. P3 ① 계보도(목표 핀)는 미착수.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -825,6 +826,28 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 **주의.** 하니스가 8084를 쓰는 동안 이 트리의 `src/`를 편집하면 HMR 리로드로
 `Execution context was destroyed` 실패가 난다(`forge-trap-fuse-result` 1건이 그
 사례 — 제품 결함 아님, 격리 재실행 통과). 하니스 주행 중엔 문서만 만진다.
+
+### 2026-09-18 — Phase 3 (P3 ②): 교감
+
+`CLAUDE.md` "교감" 절이 계약의 단일 진실원. `monsterAffinity`는 각성 게이트(100)만
+읽고 아무도 올리지 않던 필드였다 — 각성이 도달 불가능했던 셈. 이 슬라이스가 그
+경로를 연다.
+
+**구조.** `bond.ts`(행동 3종·임계 4단·부족별 이야기·`bondAtkMult`),
+`bondTransactions.ts`(`performBondAction`: 소유·최대·일일 한도·골드·재료 대안 검증,
+임계 통과 보상 1회, 합동 훈련 XP는 복사본에 `addXp`), `GameState.bondDaily`,
+`guardianAtkMult(level, spentSkills, affinity)`로 전투·시뮬·병영 ATK 표시가 같은
+수를 본다. UI `MonsterDetailBond.ts` + 상세 패널 4탭(탭 너비 = 탭 수로 계산).
+
+**검증.** tsc clean, vitest 114 파일 2922 pass(`bond.test.ts` 6건). 프리뷰(8084)
+병영 → 도깨비 전사 상세 → 교감 탭: 44 → 간식(약초 3→2) 52 → 대화 57, 우정(50)
+통과로 이야기 해금·헤더 "우정 · 공격 ×1.06", 토스트 "대화 · 교감 52 → 57",
+`bondDaily` 기록. 모달 하니스 `barracks-bond-tab`/`barracks-bond-action` 결과는
+커밋 메시지 참조.
+
+**남은 것.** P3 ① 계보도(진화·조합 트리 시각화 + 목표 핀 → 홈 directive), P4(재화
+순환·중복→각성석/부족 조각·부족 배너), 4.6 통폐합(장식 세트 흡수는 idleIncome에서
+이미 배수로 소비 중), 근무·교감을 홈 directive에 노출.
 
 ## 8. Completed implementation record: Fusion Chamber
 

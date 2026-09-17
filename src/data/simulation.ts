@@ -60,9 +60,10 @@ export interface SimResult {
 export function calcDungeonDps(
   slots: DungeonSlot[],
   ownedMonsters: OwnedMonster[],
+  monsterAffinity: Readonly<Record<string, number>> | undefined = undefined,
 ): number {
   let dps = 0;
-  const raising = buildGuardianAtkMultMap(ownedMonsters);
+  const raising = buildGuardianAtkMultMap(ownedMonsters, monsterAffinity);
 
   for (const slot of slots) {
     if (!slot || slot.hp <= 0) continue;
