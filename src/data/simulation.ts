@@ -4,11 +4,23 @@
  */
 import { resolveMonsterDef } from './monsters';
 import { INVADER_DEFS } from './invaders';
+import { ROOM_DEFS } from './rooms';
+import { getSlotBuilding } from './roomBuildings';
+import { GRID_ROWS } from '../constants/layout';
 import type { DungeonSlot, OwnedMonster } from './wisdom';
 import type { WaveSpec } from './stages';
 
 // Approximate one-way path length for an invader traversing the dungeon (px)
 const PATH_LENGTH_PX = 640;
+
+// A room only hits invaders within its reach, and the invasion path crosses
+// every board row once. So a range-1 room sees each invader for a third of the
+// journey, a range-2 room for two thirds, and only range-3 reach covers it all.
+// Organic play-throughs measured the uncovered model as ~3x optimistic for a
+// three-room home — exactly this factor.
+function pathCoverage(range: number): number {
+  return Math.min(1, Math.max(0, range) / GRID_ROWS);
+}
 
 // Effective flat DPS contribution per trap type (simplified)
 const TRAP_EFFECTIVE_DPS: Record<string, number> = {
@@ -49,7 +61,7 @@ export interface SimResult {
 /** Calculate approximate total DPS of the current dungeon configuration. */
 export function calcDungeonDps(
   slots: DungeonSlot[],
-  ownedMonsters: OwnedMonster[],
+  _ownedMonsters: OwnedMonster[],
 ): number {
   let dps = 0;
 
@@ -61,21 +73,34 @@ export function calcDungeonDps(
       if (tId && TRAP_EFFECTIVE_DPS[tId]) dps += TRAP_EFFECTIVE_DPS[tId];
     }
 
-    // Monster DPS
-    for (const mId of slot.monsterIds) {
-      if (!mId) continue;
-      const def = resolveMonsterDef(mId);
-      if (!def || def.attackCooldown === 0) continue;
+    // Room level is the home dungeon's main damage lever; mirror
+    // CombatResolver.resolveAttack's 1.4^(level-1) so the forecast tracks it.
+    const roomMult = Math.pow(1.4, Math.max(0, (slot.roomLevel ?? 1) - 1));
+    const monsterIds = slot.monsterIds.filter((id): id is string => Boolean(id));
 
-      // Level multiplier from owned-monster record (10% per level above 1)
-      const om = ownedMonsters.find(m => m.id === mId);
-      const levelMult = om ? 1 + (om.level - 1) * 0.10 : 1;
-      // Room level is the home dungeon's main damage lever; mirror
-      // CombatResolver.resolveAttack's 1.4^(level-1) so the forecast tracks it.
-      const roomMult = Math.pow(1.4, Math.max(0, (slot.roomLevel ?? 1) - 1));
-
-      dps += (def.baseDamage * levelMult * roomMult) / (def.attackCooldown / 1000);
+    // A room with no guardian still fights with its own attack (DungeonLayout
+    // gives it ROOM_DEFS' damage and cooldown), so an early home of empty
+    // guardian rooms is not defenceless.
+    if (monsterIds.length === 0) {
+      const building = getSlotBuilding(slot);
+      const room = building ? ROOM_DEFS[building] : null;
+      if (room && room.attackDamage > 0 && room.attackCooldown > 0) {
+        dps += (room.attackDamage * roomMult * pathCoverage(room.attackRange)) / (room.attackCooldown / 1000);
+      }
+      continue;
     }
+
+    // Monster DPS. The primary guardian carries the room's level multiplier;
+    // the extra guardians attack at base damage (RoomMechanics.runExtraMonsterAttacks).
+    // Guardian level is deliberately NOT a factor: CombatResolver.resolveAttack
+    // scales by room level only. (Wiring guardian level into damage is the P3
+    // "raising" work; the forecast must not promise it before it exists.)
+    monsterIds.forEach((mId, index) => {
+      const def = resolveMonsterDef(mId);
+      if (!def || def.attackCooldown === 0) return;
+      const mult = index === 0 ? roomMult : 1;
+      dps += (def.baseDamage * mult * pathCoverage(def.range)) / (def.attackCooldown / 1000);
+    });
   }
 
   return dps;
@@ -88,7 +113,18 @@ export function simulateDungeon(
   waves: WaveSpec[],
   startHp: number,
 ): SimResult {
-  const dps = calcDungeonDps(slots, ownedMonsters);
+  return simulateWavesAtDps(calcDungeonDps(slots, ownedMonsters), waves, startHp);
+}
+
+/**
+ * The wave model at a given sustained DPS. Split out so balance tooling can
+ * ask "what DPS does this stage demand?" without inventing a loadout.
+ */
+export function simulateWavesAtDps(
+  dps: number,
+  waves: WaveSpec[],
+  startHp: number,
+): SimResult {
   let hp = startHp;
   const waveResults: WaveSimResult[] = [];
   let worstWave = 0;
@@ -162,7 +198,9 @@ export function simulateDungeon(
   const winPct = Math.round(Math.max(0, Math.min(100, (hp / startHp) * 100)));
 
   let recommendation: string;
-  if (dps < 8)          recommendation = '몬스터를 더 배치하세요!';
+  // Below one armed range-1 room's worth of covered DPS (≈4.4) the home is
+  // effectively unmanned.
+  if (dps < 4)          recommendation = '몬스터를 더 배치하세요!';
   else if (hp <= 0)      recommendation = '방어 불충분 — 몬스터 업그레이드 필요';
   else if (worstHpLost > startHp * 0.25)
                          recommendation = `${worstWave}웨이브가 취약 — 강화 권장`;

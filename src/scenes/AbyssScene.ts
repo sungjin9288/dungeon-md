@@ -623,7 +623,6 @@ export class AbyssScene extends Phaser.Scene {
     this.registry.set('returnTo', 'AbyssScene');
     this.registry.set('stageConfig', {
       stageNumber: 0,
-      slots: 9,
       waves: buildAbyssFloorWaves(floor),
     });
     this.scene.start('DungeonScene');

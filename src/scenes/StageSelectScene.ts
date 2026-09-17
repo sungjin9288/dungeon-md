@@ -292,7 +292,7 @@ export class StageSelectScene extends Phaser.Scene {
         '⚔ 무한 던전',
         CASUAL.RED, CASUAL_CSS.RED,
         () => {
-          this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
+          this.registry.set('stageConfig', { stageNumber: 0, endless: true });
           this.scene.start('DungeonScene');
         },
         '12px',

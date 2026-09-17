@@ -493,9 +493,15 @@ export function importGameState(encoded: string): { success: boolean; error?: st
 // ─── DM Level → Room Slot progression ────────────────────────────────────────
 
 /** [minDmLevel, slotsUnlocked] — must be sorted ascending by level. Max 9 (3×3 grid). */
+// One entry per board cell: [DM level required, slots unlocked once reached].
+// The board fills out early — three rooms from the first day, all nine by
+// DM 8 — because the campaign's 90 stages were tuned around that allowance
+// (the retired per-stage build budget: 3 rooms at stage 1, 9 by stage 9).
+// Nothing is built mid-battle any more, so the home has to be that dungeon.
+// Later DM levels deepen the dungeon instead: room level caps (getMaxRoomLevel).
 export const SLOT_UNLOCK_LEVELS: [number, number][] = [
-  [0, 1], [2, 2], [4, 3], [6, 4], [8, 5], [10, 6],
-  [12, 7], [15, 8], [18, 9],
+  [0, 1], [0, 2], [0, 3], [2, 4], [4, 5], [5, 6],
+  [6, 7], [7, 8], [8, 9],
 ];
 
 /** Returns how many dungeon room slots a DM level unlocks on its own. */

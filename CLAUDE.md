@@ -100,10 +100,37 @@ const hasInlineWaves = !stageConfig?.stageNumber; // true → 침략 배틀
 const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침략 귀환
 ```
 
+### 홈 던전 단일화 (2026-09-17, 옵션 B)
+
+**전투 그리드 = 홈 슬롯.** 전투 중 건설·업그레이드·몬스터 배치는 없다.
+`DungeonLayout.deployDungeonSlotsToGrid`가 `GameState.dungeonSlots`(가족·건물·
+레벨·HP·몬스터·함정)를 그대로 시드하고, 빈 칸은 지을 수 없다. 전투 중 남는
+행위는 액티브 스킬·몬스터 자리 교체(스왑)·긴급 수리뿐이다.
+
+- 전투 골드 = **전리품**. 0에서 시작해 처치·웨이브 보상으로만 쌓이고, 소비처는
+  긴급 수리뿐. 정산 시 남은 전리품이 `homeGold`로 귀속(`applyBattleReturnSettlement`).
+  `StageConfig.startGold`는 존재하지 않는다.
+- 슬롯 수의 단일 진실원은 `getUnlockedSlotCount(state)`(DM 레벨 + 지혜 `선조의
+  지혜`, 9 캡). 홈 보드·전투 그리드·추천·직렬화 전부 이 함수를 쓴다. 스테이지
+  설정에 슬롯 수를 넣지 말 것.
+- 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). 전투 피해는 `1.4^(lv-1)`이며
+  방의 첫 몬스터에만 적용, 나머지 몬스터는 기본 피해(`runExtraMonsterAttacks`).
+  몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. `simulation.ts`는 이
+  셋을 그대로 모델링하므로 예측과 실전이 같은 레버를 본다.
+- 홈 방 = **가족 4종**(combat/trap/support/magic, 용량 보너스·픽셀 픽스처·추천)
+  **× 건물 12종**(`ROOM_DEFS`, 실제로 싸우는 방). `DungeonSlot.building`이 없으면
+  가족 기본 건물(`FAMILY_DEFAULT_ROOM`). 챕터 방은 도달한 챕터부터 해금
+  (`roomBuildings.ts`). 첫 설계 시 `roomsBuilt`에 건물이 기록된다.
+- 밸런스 가드 `campaignPacing.test.ts`: 스타터(방 1개·도깨비 전사)가 스테이지 1을,
+  lean(퀘스트 0·클리어 XP/전리품만)이 전 스테이지를, expected(메인 퀘스트 진행)가
+  여유 1.5×로 클리어해야 한다. 헤드리스 시뮬은 낙관적이므로 임계치는
+  `scripts/verify-campaign-pacing.mjs`(실전 organic 주행)로 보정한다.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|
-| `RoomActions.ts` | `placeRoom`, `assignMonster`, `upgradeRoom` |
+| `DungeonLayout.ts` | 홈 슬롯 → 전투 방 배치(`deployDungeonSlotsToGrid`), 그리드 |
+| `RoomInput.ts` | 방 탭 라우팅: 스왑 → 스킬 타깃 → 수리 → 스킬 팝업 → 점검 |
 | `ActiveSkills.ts` | `activateSkillEffect` |
 | `StageClearFlow.ts` | `showChapterClear` |
 | `ResultFlow.ts` | `triggerWaveFail`, `showWaveClear` |

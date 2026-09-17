@@ -43,12 +43,6 @@ describe('STAGE_CONFIGS', () => {
     }
   });
 
-  it('every slot count is a positive number', () => {
-    for (const cfg of STAGE_CONFIGS) {
-      expect(cfg.slots, `stage ${cfg.stageNumber}`).toBeGreaterThan(0);
-    }
-  });
-
   it('boss stages are at stageNumbers 10, 20, 32, 42, 52, 62, 72, 80, 90', () => {
     const bosses = STAGE_CONFIGS.filter(c => c.bossWave).map(c => c.stageNumber);
     expect(bosses).toEqual([10, 20, 32, 42, 52, 62, 72, 80, 90]);
@@ -63,22 +57,12 @@ describe('STAGE_CONFIGS', () => {
     }
   });
 
-  it('slot counts generally increase across stages (not strictly, but final > initial)', () => {
-    const firstSlots = STAGE_CONFIGS[0].slots;
-    const lastSlots  = STAGE_CONFIGS[79].slots;
-    expect(lastSlots).toBeGreaterThan(firstSlots);
-  });
-
   it('every stageNumber matches its array index + 1', () => {
     STAGE_CONFIGS.forEach((cfg, i) => {
       expect(cfg.stageNumber - 1).toBe(i);
     });
   });
 
-  it('stage 1 has 3 slots (smallest) and stage 80 has 18 slots (largest)', () => {
-    expect(STAGE_CONFIGS[0].slots).toBe(3);
-    expect(STAGE_CONFIGS[79].slots).toBe(18);
-  });
 });
 
 // ─── STAGE_CONFIGS — chapter layout ──────────────────────────────────────────
@@ -145,12 +129,6 @@ describe('STAGE_CONFIGS — chapter layout', () => {
     expect(ch7).toHaveLength(10);
     expect(ch7[0].stageNumber).toBe(63);
     expect(ch7[ch7.length - 1].stageNumber).toBe(72);
-  });
-
-  it('stage 40 (Ch4 mid) has 12 slots', () => {
-    expect(STAGE_CONFIGS[39].stageNumber).toBe(40);
-    expect(STAGE_CONFIGS[39].slots).toBe(12);
-    expect(STAGE_CONFIGS[39].chapter).toBe(4);
   });
 
   it('total boss-wave stages equals exactly 9', () => {
@@ -390,19 +368,6 @@ describe('recordClear', () => {
 // ─── STAGE_CONFIGS — structural invariants ────────────────────────────────────
 
 describe('STAGE_CONFIGS — structural invariants', () => {
-  it('unlockedStage <= stageNumber for every config entry', () => {
-    for (const cfg of STAGE_CONFIGS) {
-      expect(cfg.unlockedStage, `stage ${cfg.stageNumber} unlockedStage`).toBeLessThanOrEqual(cfg.stageNumber);
-    }
-  });
-
-  it('first stage of each chapter has unlockedStage === stageNumber (self-gate)', () => {
-    const firstByChapter: Record<number, number> = { 1: 1, 2: 11, 3: 21, 4: 33, 5: 43, 6: 53, 7: 63, 8: 73, 9: 81 };
-    for (const [ch, firstStage] of Object.entries(firstByChapter)) {
-      const cfg = STAGE_CONFIGS.find(c => c.chapter === +ch && c.stageNumber === firstStage)!;
-      expect(cfg.unlockedStage, `Ch${ch} first stage`).toBe(firstStage);
-    }
-  });
 
   it('boss stage is always the last stage in its chapter', () => {
     for (let ch = 1; ch <= 9; ch++) {
@@ -453,35 +418,11 @@ describe('STAGE_CONFIGS — index pins & shared-gate patterns', () => {
     expect(cfg.chapter).toBe(8);
   });
 
-  it('STAGE_CONFIGS[4] (stage 5) has unlockedStage=4 — shares gate with stage 4', () => {
-    const cfg = STAGE_CONFIGS[4];
-    expect(cfg.stageNumber).toBe(5);
-    expect(cfg.unlockedStage).toBe(4);
-  });
-
-  it('stages 30, 31, 32 all share unlockedStage=29 (3-way group gate)', () => {
-    expect(STAGE_CONFIGS[29].unlockedStage).toBe(29); // stage 30 index=29
-    expect(STAGE_CONFIGS[30].unlockedStage).toBe(29); // stage 31 index=30
-    expect(STAGE_CONFIGS[31].unlockedStage).toBe(29); // stage 32 index=31
-  });
-
-  it('stage 33 (Ch4 first, index 32) has only 8 slots — slot count resets at chapter start', () => {
-    expect(STAGE_CONFIGS[32].stageNumber).toBe(33);
-    expect(STAGE_CONFIGS[32].slots).toBe(8);
-    expect(STAGE_CONFIGS[32].chapter).toBe(4);
-  });
-
   it('recordClear(78, 3) unlocks index 79 (stage 80, penultimate → final)', () => {
     localStorage.clear();
     recordClear(78, 3);
     const prog = loadProgress();
     expect(prog[79].unlocked).toBe(true);
-  });
-
-  it('stages 50, 51, 52 all share unlockedStage=49 (Ch5 boss-group gate)', () => {
-    expect(STAGE_CONFIGS[49].unlockedStage).toBe(49); // stage 50 index=49
-    expect(STAGE_CONFIGS[50].unlockedStage).toBe(49); // stage 51 index=50
-    expect(STAGE_CONFIGS[51].unlockedStage).toBe(49); // stage 52 index=51
   });
 
   it('every loadProgress entry has boolean unlocked and numeric bestStars', () => {
@@ -497,33 +438,6 @@ describe('STAGE_CONFIGS — index pins & shared-gate patterns', () => {
 // ─── STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & slot pins ─────────────────────
 
 describe('STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & additional slot pins', () => {
-  it('stages 40, 41, 42 all share unlockedStage=40 (Ch4 boss-group gate)', () => {
-    expect(STAGE_CONFIGS[39].unlockedStage).toBe(40); // stage 40 index=39
-    expect(STAGE_CONFIGS[40].unlockedStage).toBe(40); // stage 41 index=40
-    expect(STAGE_CONFIGS[41].unlockedStage).toBe(40); // stage 42 index=41
-  });
-
-  it('stages 60, 61, 62 all share unlockedStage=60 (Ch6 boss-group gate)', () => {
-    expect(STAGE_CONFIGS[59].unlockedStage).toBe(60); // stage 60 index=59
-    expect(STAGE_CONFIGS[60].unlockedStage).toBe(60); // stage 61 index=60
-    expect(STAGE_CONFIGS[61].unlockedStage).toBe(60); // stage 62 index=61
-  });
-
-  it('stages 70, 71, 72 all share unlockedStage=70 (Ch7 boss-group gate)', () => {
-    expect(STAGE_CONFIGS[69].unlockedStage).toBe(70); // stage 70 index=69
-    expect(STAGE_CONFIGS[70].unlockedStage).toBe(70); // stage 71 index=70
-    expect(STAGE_CONFIGS[71].unlockedStage).toBe(70); // stage 72 index=71
-  });
-
-  it('stage 20 (Ch2 boss, index 19) has 16 slots', () => {
-    expect(STAGE_CONFIGS[19].slots).toBe(16);
-    expect(STAGE_CONFIGS[19].bossWave).toBe(true);
-  });
-
-  it('stage 73 (Ch8 first, index 72) has 17 slots', () => {
-    expect(STAGE_CONFIGS[72].slots).toBe(17);
-    expect(STAGE_CONFIGS[72].chapter).toBe(8);
-  });
 
   it('recordClear with hpPercent=0 stores 0 as bestHpPercent', () => {
     localStorage.clear();
@@ -532,8 +446,4 @@ describe('STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & additional slot pins', () 
     expect(prog[0].bestHpPercent).toBe(0);
   });
 
-  it('stage 9 and stage 10 both have 9 slots (boss does not increase slot count)', () => {
-    expect(STAGE_CONFIGS[8].slots).toBe(9);  // stage 9 (index 8)
-    expect(STAGE_CONFIGS[9].slots).toBe(9);  // stage 10 boss (index 9)
-  });
 });

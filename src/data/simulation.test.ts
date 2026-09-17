@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calcDungeonDps, simulateDungeon, type SimResult } from './simulation';
 import type { DungeonSlot } from './wisdom';
 import type { WaveSpec } from './stages';
+import { resolveMonsterDef } from './monsters';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,16 @@ function makeSlot(
 
 function makeWave(type: 'peasant' | 'knight' | 'soldier', count = 3): WaveSpec {
   return { invaders: [{ type, count, spawnDelay: 1200 }] };
+}
+
+/** Share of the 3-row path a monster's reach covers (mirrors simulation.ts). */
+function coverageOf(id: string): number {
+  return Math.min(1, (resolveMonsterDef(id)?.range ?? 1) / 3);
+}
+
+/** Three range-1 guardian rooms: together they cover the whole path at ≈13.3 DPS. */
+function threeWarriorRooms(trapIds: (string | undefined)[] = []): DungeonSlot[] {
+  return [makeSlot(['dokkaebi_warrior'], trapIds), makeSlot(['dokkaebi_warrior']), makeSlot(['dokkaebi_warrior'])];
 }
 
 // ─── calcDungeonDps ───────────────────────────────────────────────────────────
@@ -35,10 +46,15 @@ describe('calcDungeonDps', () => {
     expect(calcDungeonDps([slot], [])).toBeGreaterThan(0);
   });
 
-  it('DPS matches formula: baseDamage / (cooldown/1000)', () => {
+  it('DPS matches formula: baseDamage / (cooldown/1000) × path coverage (range / rows)', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
-    // 20 / 1.5 ≈ 13.33
-    expect(calcDungeonDps([slot], [])).toBeCloseTo(20 / 1.5, 1);
+    // 20 / 1.5 ≈ 13.33 sustained, but a range-1 room covers one of three rows
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((20 / 1.5) / 3, 1);
+  });
+
+  it('longer reach covers more of the path', () => {
+    // village_archer: 15 / 2.0 = 7.5 sustained at range 2 → 2/3 coverage
+    expect(calcDungeonDps([makeSlot(['village_archer'])], [])).toBeCloseTo(7.5 * (2 / 3), 2);
   });
 
   it('adds trap DPS for known trap types', () => {
@@ -55,11 +71,11 @@ describe('calcDungeonDps', () => {
     expect(combined).toBeGreaterThan(calcDungeonDps([s2], []));
   });
 
-  it('level > 1 monster contributes more DPS than level 1', () => {
+  it('guardian level does not change simulated DPS — combat scales by room level only', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
     const dpsLv1 = calcDungeonDps([slot], [{ id: 'dokkaebi_warrior', level: 1, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }]);
     const dpsLv5 = calcDungeonDps([slot], [{ id: 'dokkaebi_warrior', level: 5, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }]);
-    expect(dpsLv5).toBeGreaterThan(dpsLv1);
+    expect(dpsLv5).toBe(dpsLv1);
   });
 
   it('monsters with attackCooldown=0 (passive types like gold_turtle) contribute 0 DPS', () => {
@@ -101,20 +117,18 @@ describe('calcDungeonDps', () => {
 
   it('uses evolved damage for an evolved owned-monster id', () => {
     const slot = makeSlot(['dokkaebi_warrior_leg']);
-    expect(calcDungeonDps([slot], [])).toBeCloseTo(57 / 1.5, 5);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((57 / 1.5) * coverageOf('dokkaebi_warrior_leg'), 5);
   });
 
   it('includes fusion-only hybrids in the battle estimate', () => {
     const slot = makeSlot(['storm_spirit']);
-    expect(calcDungeonDps([slot], [])).toBeCloseTo(24 / 2, 5);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((24 / 2) * coverageOf('storm_spirit'), 5);
   });
 
-  it('level 5 monster contributes exactly 1.4× the DPS of level 1', () => {
-    const slot  = makeSlot(['dokkaebi_warrior']);
-    const owned = (level: number) => [{ id: 'dokkaebi_warrior', level, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
-    const dpsLv1 = calcDungeonDps([slot], owned(1));
-    const dpsLv5 = calcDungeonDps([slot], owned(5));
-    expect(dpsLv5).toBeCloseTo(dpsLv1 * 1.4, 5);
+  it('room level scales the primary guardian by 1.4 per level, as CombatResolver does', () => {
+    const lv1 = { ...makeSlot(['dokkaebi_warrior']), roomLevel: 1 };
+    const lv5 = { ...makeSlot(['dokkaebi_warrior']), roomLevel: 5 };
+    expect(calcDungeonDps([lv5], [])).toBeCloseTo(calcDungeonDps([lv1], []) * Math.pow(1.4, 4), 5);
   });
 });
 
@@ -203,11 +217,10 @@ describe('simulateDungeon — difficulty labels', () => {
   });
 
   it('hard difficulty when medium DPS partially damages knights (ratio ≈ 0.73)', () => {
-    // dokkaebi_warrior(12 DPS) + slow_trap(4 DPS) = 16 DPS
-    // knight: hp=350, speed=40 → travelSec=16 → damage=256 < 350 → survives
-    // ratio = 256/350 ≈ 0.731 → hard (0.55 ≤ r < 0.80)
-    const slot = makeSlot(['dokkaebi_warrior'], ['slow_trap']);
-    const r = simulateDungeon([slot], [], [makeWave('knight', 1)], 1000);
+    // three warrior rooms (13.3 DPS) + slow_trap(4 DPS) = 17.3 DPS
+    // knight: hp=350, speed=40 → travelSec=16 → damage=277 < 350 → survives
+    // ratio = 277/350 ≈ 0.79 → hard (0.55 ≤ r < 0.80)
+    const r = simulateDungeon(threeWarriorRooms(['slow_trap']), [], [makeWave('knight', 1)], 1000);
     expect(r.waveResults[0].difficulty).toBe('hard');
   });
 });
@@ -215,7 +228,7 @@ describe('simulateDungeon — difficulty labels', () => {
 // ─── simulateDungeon — recommendation strings ────────────────────────────────
 
 describe('simulateDungeon — recommendations', () => {
-  it('suggests placing monsters when totalDps < 8', () => {
+  it('suggests placing monsters when totalDps < 4 (less than one armed room)', () => {
     const r = simulateDungeon([], [], [makeWave('peasant', 1)], 1000);
     expect(r.recommendation).toContain('몬스터를 더 배치하세요');
   });
@@ -258,23 +271,21 @@ describe('simulateDungeon — recommendations', () => {
   });
 
   it('"{N}웨이브가 취약" when one wave causes > 25% startHp damage', () => {
-    // dokkaebi_warrior DPS=12, knight hp=350, damage=200
-    // travelSec=16 → damagePerInvader=192 < 350 → 2 knights survive → hpLost=400
+    // three warrior rooms DPS≈13.3, knight hp=350, damage=200
+    // travelSec=16 → damagePerInvader≈213 < 350 → 2 knights survive → hpLost=400
     // startHp=500 → 25% = 125, 400 > 125 → worstWave recommendation
-    const slot = makeSlot(['dokkaebi_warrior']);
-    const r = simulateDungeon([slot], [], [makeWave('knight', 2)], 500);
+    const r = simulateDungeon(threeWarriorRooms(), [], [makeWave('knight', 2)], 500);
     expect(r.finalHp).toBeGreaterThan(0);  // not fully depleted
     expect(r.recommendation).toContain('웨이브가 취약');
     expect(r.recommendation).toContain('강화 권장');
   });
 
   it('"업그레이드로 생존율을 높이세요" when moderate damage spread across waves', () => {
-    // dokkaebi_warrior DPS=12; 2 waves each with 1 surviving knight (hpLost=200 each)
+    // three warrior rooms DPS≈13.3; 2 waves each with 1 surviving knight (hpLost=200 each)
     // totalHpLost=400, winPct=round(600/1000*100)=60 < 80
     // worstHpLost per wave = 200 <= 1000*0.25=250 → no "취약" branch
-    const slot = makeSlot(['dokkaebi_warrior']);
     const r = simulateDungeon(
-      [slot], [],
+      threeWarriorRooms(), [],
       [makeWave('knight', 1), makeWave('knight', 1)],
       1000,
     );
@@ -377,12 +388,12 @@ describe('simulateDungeon — winPct edge cases', () => {
     expect(r.waveResults[0].hpLost).toBe(100); // 2 × 50 damage, not 2 × 60 hp
   });
 
-  it('recommendation priority: dps<8 takes precedence over hp=0', () => {
-    // DPS=0 (< 8) and hp will hit 0 from wave damage
+  it('recommendation priority: dps<4 takes precedence over hp=0', () => {
+    // DPS=0 (< 4) and hp will hit 0 from wave damage
     // Expected: "몬스터를 더 배치하세요!" (not "방어 불충분")
     const r = simulateDungeon([], [], [makeWave('knight', 50)], 1);
     expect(r.finalHp).toBe(0);                             // hp does hit 0
-    expect(r.recommendation).toBe('몬스터를 더 배치하세요!'); // dps<8 fires first
+    expect(r.recommendation).toBe('몬스터를 더 배치하세요!'); // dps<4 fires first
   });
 });
 
@@ -449,13 +460,6 @@ describe('calcDungeonDps — trap combos & level pins', () => {
     expect(calcDungeonDps([slot], [])).toBeGreaterThan(0);
   });
 
-  it('level=2 monster contributes exactly 1.1× level=1 DPS (10% per level)', () => {
-    const slot = makeSlot(['dokkaebi_warrior']);
-    const lv2  = [{ id: 'dokkaebi_warrior', level: 2, xp: 0, spentSkills: {}, equippedSkills: [], skillPoints: 0, equipment: null }];
-    const dpsLv1 = calcDungeonDps([slot], []);
-    const dpsLv2 = calcDungeonDps([slot], lv2);
-    expect(dpsLv2).toBeCloseTo(dpsLv1 * 1.1, 5);
-  });
 
   it('level=1 owned record → same DPS as no record (mult = 1 + 0×0.1 = 1.0)', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
@@ -484,9 +488,8 @@ describe('simulateDungeon — unknown invader type & multi-wave tracking', () =>
   });
 
   it('recommendation "클리어 가능" when dps kills all invaders in a real wave', () => {
-    // dokkaebi_warrior (≈13.3 DPS) kills peasants → survived=0, winPct=100
-    const slot = makeSlot(['dokkaebi_warrior']);
-    const r = simulateDungeon([slot], [], [makeWave('peasant', 1)], 1000);
+    // three warrior rooms (≈13.3 DPS) kill peasants → survived=0, winPct=100
+    const r = simulateDungeon(threeWarriorRooms(), [], [makeWave('peasant', 1)], 1000);
     expect(r.waveResults[0].survived).toBe(0);
     expect(r.recommendation).toContain('클리어 가능');
   });
@@ -507,12 +510,11 @@ describe('calcDungeonDps — two monsters in same slot & level=10 pin', () => {
     expect(dps2).toBeCloseTo(dps1 * 2, 5);
   });
 
-  it('level=10 monster contributes exactly 1.9× the DPS of level=1', () => {
-    // levelMult = 1 + (10-1) × 0.10 = 1.90
+  it('level=10 and level=1 guardians simulate identically (combat ignores guardian level)', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
     const dpsLv1  = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 1)]);
     const dpsLv10 = calcDungeonDps([slot], [makeOwned('dokkaebi_warrior', 10)]);
-    expect(dpsLv10).toBeCloseTo(dpsLv1 * 1.9, 5);
+    expect(dpsLv10).toBe(dpsLv1);
   });
 
   it('slot with hp=-1 (negative) is skipped by the hp<=0 guard', () => {
@@ -542,9 +544,8 @@ describe('calcDungeonDps — two monsters in same slot & level=10 pin', () => {
   });
 
   it('hpLost=0 in wave when DPS kills all invaders (no survivors to deal damage)', () => {
-    // dokkaebi_warrior DPS kills peasants → survived=0 → hpLost=0
-    const slot = makeSlot(['dokkaebi_warrior']);
-    const r = simulateDungeon([slot], [], [makeWave('peasant', 1)], 1000);
+    // three warrior rooms kill peasants → survived=0 → hpLost=0
+    const r = simulateDungeon(threeWarriorRooms(), [], [makeWave('peasant', 1)], 1000);
     expect(r.waveResults[0].survived).toBe(0);
     expect(r.waveResults[0].hpLost).toBe(0);
   });

@@ -21,6 +21,10 @@ export interface BattleReturnSettlement {
   defendUpdate: ObjectiveUpdate | null;
 }
 
+/** DM XP a campaign/invasion battle settles with. One source for combat and pacing tooling. */
+export const STAGE_CLEAR_DM_XP  = 150;
+export const STAGE_DEFEAT_DM_XP = 30;
+
 export function xpForDmLevel(level: number): number {
   return level * 100;
 }

@@ -2,6 +2,7 @@
 // Handles the animated stage-clear overlay after each chapter is beaten.
 // Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
+import { STAGE_CLEAR_DM_XP } from '../data/invasionTransactions';
 import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
 import {
@@ -290,7 +291,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
           scene.registry.set('battleResult', {
             won: true,
             goldEarned,
-            dmXP: 150,
+            dmXP: STAGE_CLEAR_DM_XP,
             materialsEarned: { ...ctx.materialsEarnedThisRun },
             ...(returnCallout ? { callout: returnCallout } : {}),
           });

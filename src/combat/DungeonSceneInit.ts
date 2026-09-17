@@ -51,11 +51,13 @@ export function resolveStageSetup(
   gameState: ReturnType<typeof loadGameState>,
 ): StageSetup {
   const stageCfg = registry.get('stageConfig') as {
-    stageNumber?: number; slots?: number; endless?: boolean;
+    stageNumber?: number; endless?: boolean;
     waves?: WaveSpec[]; chapter?: number; dungeonHp?: number;
   } | undefined;
 
-  const baseSlots = stageCfg?.slots ?? getUnlockedSlotCount(gameState);
+  // The battle grid mirrors the home board exactly: nothing is built mid-battle,
+  // so a stage cannot offer more (or fewer) cells than the player designed.
+  const baseSlots = getUnlockedSlotCount(gameState);
   const isEndless = stageCfg?.endless ?? false;
   const endlessHighScore = isEndless ? (gameState.endlessHighScore ?? 0) : 0;
 

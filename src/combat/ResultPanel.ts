@@ -13,6 +13,7 @@
 //   revive           — gem/ad revive (called by fail-panel action)
 //   resetStage       — full stage reset (called by fail-panel action)
 
+import { STAGE_DEFEAT_DM_XP } from '../data/invasionTransactions';
 import Phaser from 'phaser';
 import {
   CASUAL,
@@ -403,7 +404,7 @@ function buildFailContent(
       tone: 'primary' as const,
       action: () => {
         scene.registry.set('battleResult', {
-          won: false, goldEarned: ctx.gold, dmXP: 30,
+          won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP,
           materialsEarned: { ...ctx.materialsEarnedThisRun },
           ...(callout ? { callout } : {}),
         });

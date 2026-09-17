@@ -171,7 +171,7 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
 
   const launchDaily = (): void => {
     close();
-    scene.registry.set('stageConfig', { stageNumber: 1, slots: 12, endless: false });
+    scene.registry.set('stageConfig', { stageNumber: 1, endless: false });
     scene.registry.set('dailyMode', daily);
     if (getReducedMotion()) {
       scene.scene.start('DungeonScene');

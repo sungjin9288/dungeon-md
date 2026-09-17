@@ -129,19 +129,18 @@ describe('getMaxRoomLevel', () => {
 // ─── Unlocked slots ──────────────────────────────────────────────────────────
 
 describe('getUnlockedSlots', () => {
-  it('returns 1 slot at DM Lv.0–1', () => {
-    expect(getUnlockedSlots(0)).toBe(1);
-    expect(getUnlockedSlots(1)).toBe(1);
+  it('opens the three-room starting board at DM Lv.0–1', () => {
+    expect(getUnlockedSlots(0)).toBe(3);
+    expect(getUnlockedSlots(1)).toBe(3);
   });
 
   it('unlocks progressively with DM level', () => {
-    expect(getUnlockedSlots(2)).toBe(2);
-    expect(getUnlockedSlots(4)).toBe(3);
-    expect(getUnlockedSlots(6)).toBe(4);
-    expect(getUnlockedSlots(8)).toBe(5);
-    expect(getUnlockedSlots(10)).toBe(6);
-    expect(getUnlockedSlots(12)).toBe(7);
-    expect(getUnlockedSlots(15)).toBe(8);
+    expect(getUnlockedSlots(2)).toBe(4);
+    expect(getUnlockedSlots(4)).toBe(5);
+    expect(getUnlockedSlots(5)).toBe(6);
+    expect(getUnlockedSlots(6)).toBe(7);
+    expect(getUnlockedSlots(7)).toBe(8);
+    expect(getUnlockedSlots(8)).toBe(9);
     expect(getUnlockedSlots(18)).toBe(9);
   });
 

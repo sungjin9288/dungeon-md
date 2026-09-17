@@ -123,7 +123,7 @@ export class EndlessResultScene extends Phaser.Scene {
         textColor: action.primary ? '#171006' : DUNGEON_UI_CSS.TEXT,
         onPress: () => {
           if (action.primary) {
-            this.registry.set('stageConfig', { stageNumber: 0, slots: 9, endless: true });
+            this.registry.set('stageConfig', { stageNumber: 0, endless: true });
           }
           this.scene.start(action.route);
         },

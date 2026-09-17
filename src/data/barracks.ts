@@ -649,4 +649,7 @@ export function defaultOwnedMonster(id: string): OwnedMonster {
   return { id, level: 1, xp: 0, skillPoints: 0, spentSkills: {}, equippedSkills: [], equipment: null, rarity: 0, absorptionStacks: 0 };
 }
 
-export const STARTER_ROSTER: MonsterId[] = ['dokkaebi_warrior'];
+// One guardian per starting room (the DM-1 board opens three). Before the
+// home dungeon became the only dungeon, stage 1 lent these out for free via
+// the in-battle picker; now the player owns them from the first day.
+export const STARTER_ROSTER: MonsterId[] = ['dokkaebi_warrior', 'village_archer', 'dokkaebi_junior'];
