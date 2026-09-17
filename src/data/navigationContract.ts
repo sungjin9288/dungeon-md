@@ -106,6 +106,7 @@ export const NAVIGATION_CONTEXT_FIELDS = [
   'returnTo',
   'abyssPendingFloor',
   'battleResult',
+  'forecastCardId',
 ] as const;
 
 export type NavigationContextField = (typeof NAVIGATION_CONTEXT_FIELDS)[number];
@@ -116,7 +117,8 @@ export type NavigationContextOperation =
   | 'utility-back'
   | 'prebattle-resume'
   | 'battle-result'
-  | 'abyss-return';
+  | 'abyss-return'
+  | 'forecast-return';
 
 /**
  * Registry field ownership mirrors existing scene behavior. These are a testable
@@ -160,6 +162,12 @@ export const NAVIGATION_CONTEXT_OPERATIONS: Readonly<Record<
    */
   'abyss-return': {
     consume: ['abyssPendingFloor', 'battleResult', 'returnTo'],
+    preserve: [],
+  },
+  // A forecast card's battle returns home: the card id that launched it, the
+  // result, and the return route are all owned by that one settlement.
+  'forecast-return': {
+    consume: ['forecastCardId', 'battleResult', 'returnTo'],
     preserve: [],
   },
 };

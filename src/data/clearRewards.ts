@@ -2,6 +2,8 @@ import type { GameState } from './wisdom';
 import type { DailyDungeon, WeeklyBoss } from './daily';
 import { getThisWeekMonday, getTodayString } from './daily';
 import { applyStageClear } from './stageProgress';
+import { ALL_STAGES } from './allStages';
+import { NOTORIETY_GAIN } from './notoriety';
 
 export interface ClearRewardOptions {
   readonly earnedCrystals: number;
@@ -27,6 +29,11 @@ export function applyClearRewards(state: GameState, options: ClearRewardOptions)
   const stageProgress = stageNumber !== undefined
     ? applyStageClear(state.stageProgress, stageNumber - 1, stars, hpPercent)
     : state.stageProgress;
+
+  // A stage's first clear spreads the dungeon's name, scaled by its chapter.
+  const firstClear = stageNumber !== undefined && (state.stageProgress?.[stageNumber - 1]?.bestStars ?? 0) === 0;
+  const chapter = firstClear ? (ALL_STAGES.find(stage => stage.id === stageNumber)?.chapter ?? 1) : 0;
+  const notoriety = (state.notoriety ?? 0) + (firstClear ? NOTORIETY_GAIN.stageClearPerChapter * chapter : 0);
 
   let soulCrystals = (state.soulCrystals ?? 0) + earnedCrystals;
   const materials = { ...(state.materials ?? {}) };
@@ -59,6 +66,7 @@ export function applyClearRewards(state: GameState, options: ClearRewardOptions)
 
   return {
     ...state,
+    notoriety,
     soulCrystals,
     stageProgress,
     materials,

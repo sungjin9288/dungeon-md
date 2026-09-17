@@ -39,6 +39,8 @@ export interface ForecastCard {
   readonly preview: ForecastPreview;
   readonly reward: ForecastReward;
   readonly dailyRule?: DailyRule;
+  /** The daily dungeon this card wraps — its own rewards flow through applyClearRewards. */
+  readonly daily?: DailyDungeon;
   readonly weeklyBoss?: WeeklyBoss;
 }
 
@@ -152,8 +154,10 @@ function dailyRuleCard(id: string, band: NotorietyBand, daily: DailyDungeon): Fo
   return {
     id, kind: 'daily_rule', bandTier: band.tier, title: `${FORECAST_TITLES.daily_rule[0]} · ${daily.name}`,
     waves: daily.waves, dungeonHp: band.dungeonHp, preview: previewOf(daily.waves),
-    reward: { soulCrystals: daily.rewards.crystals, notoriety: NOTORIETY_GAIN.daily_rule },
+    // Crystals/materials are paid by applyClearRewards through `daily`; the card adds the name only.
+    reward: { notoriety: NOTORIETY_GAIN.daily_rule },
     dailyRule: daily.rule,
+    daily,
   };
 }
 

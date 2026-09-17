@@ -107,6 +107,22 @@ describe('navigationContract — transient context hand-offs', () => {
     expect(NAVIGATION_CONTEXT_OPERATIONS['battle-result'].consume).not.toContain('abyssPendingFloor');
   });
 
+  it('drops every field the forecast card hand-off owns on return', () => {
+    expect(NAVIGATION_CONTEXT_OPERATIONS['forecast-return']).toEqual({
+      consume: ['forecastCardId', 'battleResult', 'returnTo'], preserve: [],
+    });
+    const returned = applyNavigationContextOperation(
+      { ...focusContext, returnTo: 'DungeonHomeScene', forecastCardId: '2026-09-17-0', battleResult: true },
+      'forecast-return',
+    );
+    expect(returned).not.toHaveProperty('forecastCardId');
+    expect(returned).not.toHaveProperty('battleResult');
+    expect(returned).not.toHaveProperty('returnTo');
+    expect(returned).toMatchObject({ focusMonsterId: 'dokkaebi_warrior' });
+    // The generic battle return must not swallow a forecast card either.
+    expect(NAVIGATION_CONTEXT_OPERATIONS['battle-result'].consume).not.toContain('forecastCardId');
+  });
+
   it('uses only a live assigned room for focused Forge return context', () => {
     expect(createForgeFocusContext('dokkaebi_warrior', 1)).toEqual({
       monsterId: 'dokkaebi_warrior', sourceLabel: '방 #2 수호자', roomSlotIdx: 1,
