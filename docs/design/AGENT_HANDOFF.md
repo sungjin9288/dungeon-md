@@ -96,6 +96,9 @@ Korean-folklore dungeon으로 연결되어야 한다. 각 surface는 `현재 상
 3. `docs/MONSTER_DUNGEON_DESIGN.md` — 전역 design authority와 장기 roadmap
 4. `docs/design/DESIGN.md` — 실제 완료 surface별 contract와 evidence
    현재 캐릭터 작업은 `docs/design/CHARACTER_ART_REVISION.md`도 읽는다.
+   게임 루프·경제·성장 곡선 작업은 `docs/design/GAME_DESIGN_BENCHMARK.md`
+   (2026-09-17 승인)를 읽는다 — `MONSTER_DUNGEON_DESIGN.md`가 DEFER한
+   economy/meta-progression 범위를 이어받는 제안서다.
 5. `CLAUDE.md` — scene/data/runtime 구조 참고
 6. 대상 scene, 연결 UI, data transaction, 관련 tests
 7. `git status --short --branch`와 대상별 `git diff -- <paths>`
