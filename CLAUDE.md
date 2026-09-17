@@ -121,10 +121,11 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   **× 건물 12종**(`ROOM_DEFS`, 실제로 싸우는 방). `DungeonSlot.building`이 없으면
   가족 기본 건물(`FAMILY_DEFAULT_ROOM`). 챕터 방은 도달한 챕터부터 해금
   (`roomBuildings.ts`). 첫 설계 시 `roomsBuilt`에 건물이 기록된다.
-- 밸런스 가드 `campaignPacing.test.ts`: 스타터(방 1개·도깨비 전사)가 스테이지 1을,
-  lean(퀘스트 0·클리어 XP/전리품만)이 전 스테이지를, expected(메인 퀘스트 진행)가
-  여유 1.5×로 클리어해야 한다. 헤드리스 시뮬은 낙관적이므로 임계치는
-  `scripts/verify-campaign-pacing.mjs`(실전 organic 주행)로 보정한다.
+- 밸런스 가드 `campaignPacing.test.ts`: 스타터(시작 보드 방 3개·스타터 3체)가
+  스테이지 1을, lean(퀘스트 0·클리어 XP/전리품만)이 1~80을, expected(메인 퀘스트
+  진행)가 1~80을 여유 1.3×로, veteran(강한 로스터)이 Ch9를 클리어해야 한다.
+  시뮬은 사거리/행 커버리지는 보지만 방의 단일 표적 처리량은 못 보므로 초반
+  절대 난이도는 `scripts/verify-campaign-pacing.mjs`(실전 organic 주행)가 진실원.
 
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |

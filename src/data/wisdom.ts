@@ -1,6 +1,7 @@
 import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barracks';
 import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
 import type { RoomFamily, RoomType } from './rooms';
+import type { ForecastCard } from './forecast';
 export type { OwnedMonster };
 
 // ─── Branch definitions ───────────────────────────────────────────────────────
@@ -316,6 +317,16 @@ export interface GameState {
   completedSubQuestIds: string[];             // claimed sub-quest IDs
   // New Game+ / Prestige
   prestigeLevel?: number;   // 0 = not prestiged, 1+ = prestige count
+  // Notoriety (명성) — the dungeon's name as a business; see notoriety.ts
+  notoriety:          number;   // points, never below 0
+  notorietyTier:      number;   // 1–10, raised only by the player's approval
+  notorietyWeekStart: string;   // Monday YYYY-MM-DD of the last weekly settlement ('' = never)
+  // Invasion forecast (침입 예보) — today's three visitors; see forecast.ts
+  forecast: {
+    date:  string;          // YYYY-MM-DD the cards were issued for ('' = never)
+    cards: ForecastCard[];
+    taken: string[];        // card ids already chosen today
+  };
 }
 
 const GAME_STATE_KEY = 'dungeonGameState';
@@ -386,6 +397,10 @@ function defaultGameState(): GameState {
     activeSubQuestIds:     [],
     subQuestProgress:      {},
     completedSubQuestIds:  [],
+    notoriety:             0,
+    notorietyTier:         1,
+    notorietyWeekStart:    '',
+    forecast:              { date: '', cards: [], taken: [] },
   };
 }
 

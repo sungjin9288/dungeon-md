@@ -16,6 +16,11 @@ function getDayIndex(): number {
   return Math.floor(Date.now() / 86_400_000);
 }
 
+/** Day index of a YYYY-MM-DD date — the seed forecasts and dailies share. */
+export function dayIndexOf(date: string): number {
+  return Math.floor(Date.parse(`${date}T00:00:00Z`) / 86_400_000);
+}
+
 function getWeekIndex(): number {
   // Monday-based week number
   const d = new Date();
@@ -25,7 +30,7 @@ function getWeekIndex(): number {
   return Math.floor(monday.getTime() / (7 * 86_400_000));
 }
 
-function seededRand(seed: number): () => number {
+export function seededRand(seed: number): () => number {
   let s = seed;
   return () => {
     s = (s * 1664525 + 1013904223) & 0xffffffff;
