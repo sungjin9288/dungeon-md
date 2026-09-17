@@ -99,6 +99,8 @@ Korean-folklore dungeon으로 연결되어야 한다. 각 surface는 `현재 상
    게임 루프·경제·성장 곡선 작업은 `docs/design/GAME_DESIGN_BENCHMARK.md`
    (2026-09-17 승인)를 읽는다 — `MONSTER_DUNGEON_DESIGN.md`가 DEFER한
    economy/meta-progression 범위를 이어받는 제안서다.
+   Phase 2(침입 예보·명성) 구현은 `docs/design/PHASE2_NOTORIETY_FORECAST.md`의
+   데이터 모델·트랜잭션·테스트 계약을 따른다.
 5. `CLAUDE.md` — scene/data/runtime 구조 참고
 6. 대상 scene, 연결 UI, data transaction, 관련 tests
 7. `git status --short --branch`와 대상별 `git diff -- <paths>`
@@ -694,9 +696,16 @@ Ch2~8 lean 1.5~5×, Ch9는 veteran 5.9×(lean 0.69 — 의도된 로스터 관�
 늘리면 시간이 폭증한다(480×4런 = 3시간 행). 웨이브 종료 후 "즉시 시작" 경로와
 스폰 스톨 복구(2슬라이스 idle → `checkWaveEnd`)가 없으면 멈춘다.
 
+**organic 실측 (2026-09-17, `a0d71be`).** 시뮬이 70%로 본 스타터 홈이 재구성한
+스테이지 1에서도 웨이브 6에 패배했다. 시작 보드는 1행 3개 단일 표적 방이라
+**농민조차 웨이브당 1~2기 새어 나간다** — 시뮬은 사거리 커버리지까지만 보고 방의
+처리량(쿨다운당 1타)은 못 본다. 초반은 organic이 진실원: 스테이지 1을 6웨이브·
+HP 1500으로, 2를 8웨이브·HP 1500으로 줄인 뒤 실측 **스타터 스테이지 1 승리
+(HP 83%)**, **lean 스테이지 2 승리(HP 60%)**. 챕터 경계(5/10/20/…/80 lean, 90
+veteran) 주행은 아래 후속 기록 참조.
+
 **검증.** tsc clean, 2885 pass, 모달 하니스 17상태 `{0,0,0,48,0,0}` 동일,
-abyss organic 승/패 왕복 통과. 새 Ch1 organic(1/2/5/10)과 챕터 경계 주행은
-아래 후속 기록 참조(진행 중이면 미기록).
+abyss organic 승/패 왕복 통과.
 
 **P3에 넘기는 발견.** (1) 전투 피해는 몬스터 레벨을 쓰지 않는다 — "개별 육성
 노가다"가 의미를 가지려면 `CombatResolver`에 배선해야 한다. (2) 먹이(`feedOwnedMonster`, 골드→XP)는 `MonsterDetailPanel`에서
