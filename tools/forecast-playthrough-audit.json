@@ -1,0 +1,124 @@
+{
+  "generatedAt": "2026-09-17T15:44:06.062Z",
+  "base": "http://127.0.0.1:8083",
+  "scope": "One forecast raid card fought organically from the home tray and settled on return. Not a multi-day or multi-card endurance run.",
+  "method": "Home seeded with the starter board and a stage-10 lean home (campaignPacing.leanHome) so the tier-1 raid is winnable; the tray is opened by pressing the deck chip, the raid card by its own button; waves advance through window.advanceTime at 3x; return via the result-flow button.",
+  "sourceHashes": {
+    "src/ui/ForecastTray.ts": "51c55f95a6c5a770d21486c38e5ec09888cb7e678103d5e1b0b47bfa299243c7",
+    "src/scenes/HomeLifecycle.ts": "594185ac2460feee268d3b2c9935aeb67310e62f727f7ad75a0e93faf2edb62f",
+    "src/data/forecastTransactions.ts": "8a8ea8e4acf6be2ef2e1f5eb891bfe59c22468d7be0af490acddf36cd0060426",
+    "scripts/verify-forecast-playthrough.mjs": "62146d9e9a1291733abfb78dc596d2c4aa5df4431b9c49da8d2aa2b6e94bb97e"
+  },
+  "runs": [
+    {
+      "seeded": {
+        "dmLevel": 5,
+        "slotCount": 6,
+        "roomLevel": 2,
+        "roster": 6
+      },
+      "before": {
+        "activeScenes": [
+          "DungeonHomeScene"
+        ],
+        "notoriety": 40,
+        "tier": 1,
+        "homeGold": 200,
+        "forecast": {
+          "date": "2026-09-17",
+          "cards": [
+            {
+              "id": "2026-09-17-0",
+              "kind": "raid",
+              "tier": 1
+            },
+            {
+              "id": "2026-09-17-1",
+              "kind": "raid",
+              "tier": 2
+            },
+            {
+              "id": "2026-09-17-2",
+              "kind": "merchant",
+              "tier": 1
+            }
+          ],
+          "taken": []
+        },
+        "residue": {
+          "forecastCardId": null,
+          "battleResult": null,
+          "returnTo": null
+        }
+      },
+      "openTray": {
+        "pressed": true,
+        "label": "오늘의 손님",
+        "candidates": 1
+      },
+      "takeCard": {
+        "pressed": true,
+        "label": "맞이",
+        "candidates": 1
+      },
+      "battle": {
+        "started": true,
+        "wave": 6,
+        "maxWave": 6,
+        "dungeonHp": 1500,
+        "maxHp": 1500,
+        "gold": 790
+      },
+      "outcome": "win",
+      "returned": {
+        "pressed": true,
+        "label": "던전으로 귀환 · 방어선 확인",
+        "candidates": 2
+      },
+      "after": {
+        "activeScenes": [
+          "DungeonHomeScene"
+        ],
+        "notoriety": 55,
+        "tier": 1,
+        "homeGold": 1081,
+        "forecast": {
+          "date": "2026-09-17",
+          "cards": [
+            {
+              "id": "2026-09-17-0",
+              "kind": "raid",
+              "tier": 1
+            },
+            {
+              "id": "2026-09-17-1",
+              "kind": "raid",
+              "tier": 2
+            },
+            {
+              "id": "2026-09-17-2",
+              "kind": "merchant",
+              "tier": 1
+            }
+          ],
+          "taken": [
+            "2026-09-17-0"
+          ]
+        },
+        "residue": {
+          "forecastCardId": null,
+          "battleResult": null,
+          "returnTo": null
+        }
+      },
+      "errors": [],
+      "screenshot": "tools/screenshots/forecast-playthrough.png",
+      "sha256": "ffa5917acf277ad36ce0fc1dcf9378bd946e55aed36f012a9f3c75bcc6454503"
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "runs": 1,
+    "hardFailures": 0
+  }
+}

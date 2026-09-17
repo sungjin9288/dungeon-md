@@ -712,6 +712,40 @@ abyss organic 승/패 왕복 통과.
 닿지만 `monsterAffinity/lastTalkTime/dailyTrainCount`는 어디서도 읽지 않는다 —
 교감은 먹이 한 축만 살아 있고, 생산 산출물과는 연결돼 있지 않다.
 
+### 2026-09-18 — Phase 2: 침입 예보(하루 카드) + 명성
+
+`PHASE2_NOTORIETY_FORECAST.md` 스펙대로 4단계 커밋(phase2 브랜치 → main ff):
+`6f9e1de`(2a 데이터) → `6385a79`(2b 트랜잭션·계약) → `b4887f0`(1d-3 홈 방어
+템포, Phase 1 잔여) → `8765cee`(2c 홈 트레이·정산 배선).
+
+**Phase 1 잔여 — 홈 방어 템포.** organic 실측에서 완화한 Ch1조차 lean 홈이
+스테이지 5·10·20에서 졌다. 방 하나가 쿨다운당 1타로 단일 표적을 잡는 처리량이
+침입자 도착 속도를 못 따라간다 — 옵션 B가 전투 중 성장을 뺀 만큼의 구멍.
+`combatTempo.ts HOME_DEFENSE_TEMPO = 1.5`(모든 방·수호자 쿨다운 ÷1.5, 시뮬 동일)
+하나로 해결: 스타터 스테이지 1 HP 100%, lean 2 100%, 5 42%, 10 81% (4/4 승).
+챕터 경계(20~80 lean, 90 veteran) 주행은 아래 후속 기록 참조.
+
+**Phase 2 구조.** `notoriety.ts`(밴드 10·승인제 승격·감소·주간 정산),
+`forecast.ts`(카드 정의·시드 발급·밴드 웨이브 생성기), `forecastTransactions.ts`
+(하루 시작·선택·정산; 일일/주간 보상은 전투 씬 소유), `navigationContract`의
+`forecast-return`, `ForecastTray.ts`(홈 트레이), `HomeCommandDeck`('오늘의 손님'
+칩·명성 헤더), `HomeLifecycle`(하루 시작·정산 분기), `DailyContentPanel`은
+도전 과제·출석만. `CLAUDE.md` "침입 예보 · 명성" 절이 계약의 단일 진실원.
+
+**검증.** notoriety/forecast/forecastTransactions/notorietyBands 테스트 46건,
+전체 2931 pass, tsc clean. 모달 하니스 19케이스(트레이 2케이스 추가)
+`{overflow 0, small 0, tiny 0, errors 0, hardFailures 0}`. 예보 organic
+(`verify-forecast-playthrough.mjs`): stage-10 lean 홈이 트레이에서 일반 카드를
+맞이 → 6웨이브 무피해 승리 → 귀환 정산 **명성 40 → 55**(10 × 무피해 1.5), 카드
+처리 완료, 레지스트리 잔여 0, 콘솔 오류 0 — `{runs:1, hardFailures:0}`.
+
+**부수 수정.** 스타터 3체로 병영 로스터가 캔버스 아래로 이어져 하니스가
+overflow로 읽던 것을 뷰포트 마스크로 클립(`BarracksScene`).
+
+**남은 것 (Phase 3~4).** 함정 제작·조합·콤보(P2), 운영 수익 통합·근무(P1 ③④),
+계보도·교감(P3), 재화 순환·중복·부족 배너(P4). P3 첫 작업은 몬스터 레벨의
+전투 배선(현재 전투는 방 레벨만 본다).
+
 ## 8. Completed implementation record: Fusion Chamber
 
 사용자가 2026-09-04에 Fusion continuation을 승인했고, 아래 F0–F4 slice는 current

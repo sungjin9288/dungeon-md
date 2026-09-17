@@ -127,6 +127,26 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   시뮬은 사거리/행 커버리지는 보지만 방의 단일 표적 처리량은 못 보므로 초반
   절대 난이도는 `scripts/verify-campaign-pacing.mjs`(실전 organic 주행)가 진실원.
 
+### 침입 예보 · 명성 (2026-09-18, Phase 2)
+
+홈의 하루 결정 = **오늘의 손님 카드 3장**(`forecast.ts`, 날짜·명성 티어로 시드된
+결정적 발급). 1번 = 일반 침입(현재 티어), 2번 = 정예(60%)/한 단계 위 일반, 3번 =
+특수(상인·순례자·보물·일일 규칙) — 월요일은 주간 보스. 카드 전투는 스토리 침입과
+같은 인라인 경로(`stageConfig{waves,dungeonHp}` + `returnTo` + `forecastCardId`)로
+DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
+`settleForecastBattle`로 정산한 뒤 `'forecast-return'` 계약대로 레지스트리를 비운다.
+일일 규칙·주간 보스 카드는 `dailyMode/weeklyBossMode`를 세팅해 **전투 씬이 규칙과
+보상을 소유**하고, 카드는 명성만 더한다(이중 지급 없음).
+
+- **명성**(`notoriety.ts`): 포인트는 승리·최초 클리어로 쌓이고, **티어는 플레이어가
+  '간판 올리기'로 승인**해야 오른다(자동 승격 없음). 밴드 10단계가 침입자 38종을
+  `hp×speed/640` 임계로 누적 배치(무한 전용·소환 전용 제외). 패배 −10%, 7일
+  유예 후 일 −5%(티어 유지), 주간 정산 tier×30 보석.
+- 하루 시작은 `beginHomeForecastDay`(홈 `create()`의 `checkBattleReturn` 직후).
+- 가드: `notorietyBands.test.ts` — 티어 n 편성을 기준 스테이지의 기대 홈이 막는지
+  (9~10티어는 veteran). organic: `scripts/verify-forecast-playthrough.mjs`.
+- 홈 `DailyContentPanel`은 도전 과제·출석만 남는다(일일 던전·주간 보스 진입은 카드로).
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|
