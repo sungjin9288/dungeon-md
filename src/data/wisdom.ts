@@ -321,6 +321,9 @@ export interface GameState {
   notoriety:          number;   // points, never below 0
   notorietyTier:      number;   // 1–10, raised only by the player's approval
   notorietyWeekStart: string;   // Monday YYYY-MM-DD of the last weekly settlement ('' = never)
+  // Traps (함정) — crafted stock and per-type mastery; see traps.ts / trapTransactions.ts
+  trapStock:   Record<string, number>;   // trapId → crafted traps not yet installed
+  trapMastery: Record<string, number>;   // trapId → +0..+5
   // Invasion forecast (침입 예보) — today's three visitors; see forecast.ts
   forecast: {
     date:  string;          // YYYY-MM-DD the cards were issued for ('' = never)
@@ -401,6 +404,8 @@ function defaultGameState(): GameState {
     notorietyTier:         1,
     notorietyWeekStart:    '',
     forecast:              { date: '', cards: [], taken: [] },
+    trapStock:             {},
+    trapMastery:           {},
   };
 }
 

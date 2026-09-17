@@ -101,6 +101,7 @@ export const NAVIGATION_CONTEXT_FIELDS = [
   'focusMonsterId',
   'focusSourceLabel',
   'forgeReturnScene',
+  'forgeTab',
   'previousScene',
   'preBattleEditReturn',
   'returnTo',
@@ -133,7 +134,7 @@ export const NAVIGATION_CONTEXT_OPERATIONS: Readonly<Record<
     preserve: [],
   },
   'forge-entry': {
-    consume: ['forgeReturnScene'],
+    consume: ['forgeReturnScene', 'forgeTab'],
     preserve: ['focusMonsterId', 'focusSourceLabel', 'focusRoomSlotIdx'],
   },
   'focused-room-return': {

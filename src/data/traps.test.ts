@@ -1,305 +1,84 @@
-import { describe, it, expect } from 'vitest';
-import { TRAP_DEFS, type TrapDef } from './traps';
+import { describe, expect, it } from 'vitest';
+import { MATERIAL_DEFS } from './fusion';
+import {
+  AFFLICTION_DEFS,
+  AFFLICTION_ORDER,
+  COMBO_MAX_AFFLICTIONS,
+  comboMultiplier,
+  getTrapDef,
+  isTrapRecipeFusion,
+  TRAP_DEFS,
+  TRAP_MASTERY_MAX,
+  trapEffectiveDps,
+  trapMasteryCost,
+  trapMasteryMult,
+} from './traps';
 
-// ─── TRAP_DEFS — structural integrity ────────────────────────────────────────
-
-describe('TRAP_DEFS — structural integrity', () => {
-  it('defines exactly 4 traps', () => {
-    expect(TRAP_DEFS).toHaveLength(4);
+describe('trap definitions', () => {
+  it('has 16 traps: six tier-1 singles, six tier-2 pairs, four tier-3 triples', () => {
+    const byTier = (tier: number) => TRAP_DEFS.filter(t => t.tier === tier);
+    expect(byTier(1)).toHaveLength(6);
+    expect(byTier(2)).toHaveLength(6);
+    expect(byTier(3)).toHaveLength(4);
+    for (const trap of byTier(1)) expect(trap.afflictions).toHaveLength(1);
+    for (const trap of byTier(2)) expect(trap.afflictions).toHaveLength(2);
+    for (const trap of byTier(3)) expect(trap.afflictions).toHaveLength(3);
+    expect(new Set(TRAP_DEFS.map(t => t.id)).size).toBe(TRAP_DEFS.length);
   });
 
-  it('every trap has a non-empty id, emoji, name, desc', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.id.length,   `${t.id} id`  ).toBeGreaterThan(0);
-      expect(t.emoji.length,`${t.id} emoji`).toBeGreaterThan(0);
-      expect(t.name.length, `${t.id} name` ).toBeGreaterThan(0);
-      expect(t.desc.length, `${t.id} desc` ).toBeGreaterThan(0);
+  it('keeps the four legacy trap ids so saved slots still resolve', () => {
+    for (const id of ['spike_trap', 'slow_trap', 'poison_trap', 'stun_trap']) expect(getTrapDef(id)?.tier).toBe(1);
+  });
+
+  it('every tier-1 affliction is unique and covers all six afflictions', () => {
+    const singles = TRAP_DEFS.filter(t => t.tier === 1).map(t => t.afflictions[0]);
+    expect([...singles].sort()).toEqual([...AFFLICTION_ORDER].sort());
+  });
+
+  it('fusion recipes reference lower-tier traps whose afflictions they inherit, and known materials', () => {
+    for (const trap of TRAP_DEFS) {
+      for (const material of Object.keys(trap.recipe.materials)) expect(MATERIAL_DEFS[material], `${trap.id} ${material}`).toBeDefined();
+      if (trap.tier === 1) { expect(isTrapRecipeFusion(trap.recipe)).toBe(false); continue; }
+      expect(isTrapRecipeFusion(trap.recipe)).toBe(true);
+      if (!isTrapRecipeFusion(trap.recipe)) continue;
+      const inputs = trap.recipe.traps.map(id => getTrapDef(id));
+      for (const input of inputs) {
+        expect(input, `${trap.id} input`).toBeDefined();
+        expect(input!.tier).toBe(trap.tier - 1);
+      }
+      const inherited = new Set(inputs.flatMap(input => input!.afflictions));
+      for (const affliction of trap.afflictions) expect(inherited.has(affliction), `${trap.id} ${affliction}`).toBe(true);
     }
   });
 
-  it('ids are unique', () => {
-    const ids = TRAP_DEFS.map(t => t.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('all trap ids match the expected set', () => {
-    const ids = TRAP_DEFS.map(t => t.id);
-    expect(ids).toContain('spike_trap');
-    expect(ids).toContain('slow_trap');
-    expect(ids).toContain('poison_trap');
-    expect(ids).toContain('stun_trap');
-  });
-
-  it('every cost is a positive integer', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.cost, `${t.id} cost`).toBeGreaterThan(0);
-      expect(Number.isInteger(t.cost), `${t.id} cost integer`).toBe(true);
-    }
-  });
-
-  it('every unlockLv is a non-negative integer', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.unlockLv, `${t.id} unlockLv`).toBeGreaterThanOrEqual(0);
-      expect(Number.isInteger(t.unlockLv), `${t.id} unlockLv integer`).toBe(true);
-    }
+  it('only tier-1 traps carry a gold price; higher tiers install from stock', () => {
+    for (const trap of TRAP_DEFS) expect(trap.cost > 0).toBe(trap.tier === 1);
   });
 });
 
-// ─── TRAP_DEFS — cost ordering ────────────────────────────────────────────────
-
-describe('TRAP_DEFS — cost ordering', () => {
-  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
-
-  it('spike_trap (50) is the cheapest trap', () => {
-    const minCost = Math.min(...TRAP_DEFS.map(t => t.cost));
-    expect(get('spike_trap').cost).toBe(minCost);
-    expect(get('spike_trap').cost).toBe(50);
+describe('combo and mastery', () => {
+  it('multiplies damage by +25% per distinct affliction past the first, capped at four', () => {
+    expect(comboMultiplier(0)).toBe(1);
+    expect(comboMultiplier(1)).toBe(1);
+    expect(comboMultiplier(2)).toBeCloseTo(1.25);
+    expect(comboMultiplier(3)).toBeCloseTo(1.5);
+    expect(comboMultiplier(COMBO_MAX_AFFLICTIONS)).toBeCloseTo(1.75);
+    expect(comboMultiplier(9)).toBeCloseTo(1.75);
   });
 
-  it('stun_trap (200) is the most expensive trap', () => {
-    const maxCost = Math.max(...TRAP_DEFS.map(t => t.cost));
-    expect(get('stun_trap').cost).toBe(maxCost);
-    expect(get('stun_trap').cost).toBe(200);
+  it('mastery adds 15% per level up to +5 and prices the next level off the recipe', () => {
+    expect(trapMasteryMult(0)).toBe(1);
+    expect(trapMasteryMult(2)).toBeCloseTo(1.3);
+    expect(trapMasteryMult(TRAP_MASTERY_MAX + 3)).toBeCloseTo(1.75);
+    const spike = getTrapDef('spike_trap')!;
+    expect(trapMasteryCost(spike, 0)).toEqual({ iron_shard: 2 });
+    expect(trapMasteryCost(spike, 2)).toEqual({ iron_shard: 6 });
   });
 
-  it('cost order is spike(50) < slow(80) < poison(120) < stun(200)', () => {
-    expect(get('spike_trap').cost).toBeLessThan(get('slow_trap').cost);
-    expect(get('slow_trap').cost).toBeLessThan(get('poison_trap').cost);
-    expect(get('poison_trap').cost).toBeLessThan(get('stun_trap').cost);
-  });
-
-  it('stun_trap costs 4× spike_trap', () => {
-    expect(get('stun_trap').cost / get('spike_trap').cost).toBe(4);
-  });
-});
-
-// ─── TRAP_DEFS — unlock level gating ─────────────────────────────────────────
-
-describe('TRAP_DEFS — unlock level gating', () => {
-  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
-
-  it('spike_trap and slow_trap are available from the start (unlockLv 0)', () => {
-    expect(get('spike_trap').unlockLv).toBe(0);
-    expect(get('slow_trap').unlockLv).toBe(0);
-  });
-
-  it('poison_trap unlocks at level 6', () => {
-    expect(get('poison_trap').unlockLv).toBe(6);
-  });
-
-  it('stun_trap unlocks at level 10', () => {
-    expect(get('stun_trap').unlockLv).toBe(10);
-  });
-
-  it('higher-cost traps have higher or equal unlockLv', () => {
-    // spike(50, lv0) ≤ slow(80, lv0) ≤ poison(120, lv6) ≤ stun(200, lv10)
-    const sorted = [...TRAP_DEFS].sort((a, b) => a.cost - b.cost);
-    for (let i = 1; i < sorted.length; i++) {
-      expect(sorted[i].unlockLv, `${sorted[i].id} unlockLv ≥ ${sorted[i-1].id}`)
-        .toBeGreaterThanOrEqual(sorted[i - 1].unlockLv);
-    }
-  });
-});
-
-// ─── TRAP_DEFS — per-trap spot-checks ────────────────────────────────────────
-
-describe('TRAP_DEFS — per-trap spot-checks', () => {
-  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
-
-  it('spike_trap: emoji=🗡, cost=50, unlockLv=0', () => {
-    const t = get('spike_trap');
-    expect(t.emoji).toBe('🗡');
-    expect(t.cost).toBe(50);
-    expect(t.unlockLv).toBe(0);
-  });
-
-  it('slow_trap: emoji=🕸, cost=80, unlockLv=0', () => {
-    const t = get('slow_trap');
-    expect(t.emoji).toBe('🕸');
-    expect(t.cost).toBe(80);
-    expect(t.unlockLv).toBe(0);
-  });
-
-  it('poison_trap: emoji=☠️, cost=120, unlockLv=6', () => {
-    const t = get('poison_trap');
-    expect(t.emoji).toBe('☠️');
-    expect(t.cost).toBe(120);
-    expect(t.unlockLv).toBe(6);
-  });
-
-  it('stun_trap: emoji=⚡, cost=200, unlockLv=10', () => {
-    const t = get('stun_trap');
-    expect(t.emoji).toBe('⚡');
-    expect(t.cost).toBe(200);
-    expect(t.unlockLv).toBe(10);
-  });
-
-  it('spike_trap name is "가시 덫"', () => {
-    expect(get('spike_trap').name).toBe('가시 덫');
-  });
-
-  it('slow_trap name is "느림 덫"', () => {
-    expect(get('slow_trap').name).toBe('느림 덫');
-  });
-
-  it('poison_trap name is "독 덫"', () => {
-    expect(get('poison_trap').name).toBe('독 덫');
-  });
-
-  it('stun_trap name is "감전 덫"', () => {
-    expect(get('stun_trap').name).toBe('감전 덫');
-  });
-});
-
-// ─── TRAP_DEFS — per-trap desc spot-checks ────────────────────────────────────
-
-describe('TRAP_DEFS — per-trap desc spot-checks', () => {
-  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
-
-  it('spike_trap desc encodes 20 damage on entry', () => {
-    expect(get('spike_trap').desc).toBe('진입 시 20 피해');
-  });
-
-  it('slow_trap desc encodes -40% speed for 2 seconds', () => {
-    expect(get('slow_trap').desc).toBe('이동속도 -40%, 2초');
-  });
-
-  it('poison_trap desc encodes 8 damage per second for 4 seconds', () => {
-    expect(get('poison_trap').desc).toBe('8 피해/초, 4초');
-  });
-
-  it('stun_trap desc encodes 1-second stun', () => {
-    expect(get('stun_trap').desc).toBe('기절 1초');
-  });
-});
-
-// ─── TRAP_DEFS — array ordering & derived stats ───────────────────────────────
-
-describe('TRAP_DEFS — array ordering & derived stats', () => {
-  it('TRAP_DEFS[0] is spike_trap (cheapest first)', () => {
-    expect(TRAP_DEFS[0].id).toBe('spike_trap');
-  });
-
-  it('TRAP_DEFS[3] is stun_trap (most expensive last)', () => {
-    expect(TRAP_DEFS[3].id).toBe('stun_trap');
-  });
-
-  it('array is sorted by cost ascending (each entry ≤ next)', () => {
-    for (let i = 1; i < TRAP_DEFS.length; i++) {
-      expect(TRAP_DEFS[i].cost, `index ${i} cost ≥ index ${i - 1}`)
-        .toBeGreaterThanOrEqual(TRAP_DEFS[i - 1].cost);
-    }
-  });
-
-  it('exactly 2 traps are available from the start (unlockLv === 0)', () => {
-    const free = TRAP_DEFS.filter(t => t.unlockLv === 0);
-    expect(free).toHaveLength(2);
-  });
-
-  it('sum of all trap costs is 450', () => {
-    const total = TRAP_DEFS.reduce((acc, t) => acc + t.cost, 0);
-    expect(total).toBe(450); // 50 + 80 + 120 + 200
-  });
-
-  it('every TrapDef has exactly the six expected keys', () => {
-    const expectedKeys = ['id', 'emoji', 'name', 'cost', 'desc', 'unlockLv'].sort();
-    for (const t of TRAP_DEFS) {
-      expect(Object.keys(t).sort(), `${t.id} keys`).toStrictEqual(expectedKeys);
-    }
-  });
-
-  it('every locked trap (unlockLv > 0) costs more than every free trap (unlockLv === 0)', () => {
-    const freeCosts   = TRAP_DEFS.filter(t => t.unlockLv === 0).map(t => t.cost);
-    const lockedCosts = TRAP_DEFS.filter(t => t.unlockLv >  0).map(t => t.cost);
-    const maxFree   = Math.max(...freeCosts);
-    const minLocked = Math.min(...lockedCosts);
-    expect(minLocked).toBeGreaterThan(maxFree);
-  });
-});
-
-// ─── TRAP_DEFS — middle-index pins ───────────────────────────────────────────
-
-describe('TRAP_DEFS — middle-index pins', () => {
-  it('TRAP_DEFS[1] is slow_trap', () => {
-    expect(TRAP_DEFS[1].id).toBe('slow_trap');
-  });
-
-  it('TRAP_DEFS[2] is poison_trap', () => {
-    expect(TRAP_DEFS[2].id).toBe('poison_trap');
-  });
-
-  it('find by unknown id returns undefined (lookup miss)', () => {
-    expect(TRAP_DEFS.find(t => t.id === 'nonexistent_trap')).toBeUndefined();
-  });
-});
-
-// ─── TRAP_DEFS — unlockLv derived stats & string patterns ────────────────────
-
-describe('TRAP_DEFS — unlockLv derived stats', () => {
-  it('maximum unlockLv across all traps is 10 (stun_trap)', () => {
-    const maxLv = Math.max(...TRAP_DEFS.map(t => t.unlockLv));
-    expect(maxLv).toBe(10);
-  });
-
-  it('sum of all unlockLv values is 16 (0 + 0 + 6 + 10)', () => {
-    const total = TRAP_DEFS.reduce((acc, t) => acc + t.unlockLv, 0);
-    expect(total).toBe(16);
-  });
-
-  it('all trap ids end with the "_trap" suffix', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.id.endsWith('_trap'), `${t.id} suffix`).toBe(true);
-    }
-  });
-
-  it('all trap names end with "덫" (Korean for trap)', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.name.endsWith('덫'), `${t.id} name`).toBe(true);
-    }
-  });
-});
-
-// ─── TRAP_DEFS — uniqueness & cross-field checks ──────────────────────────────
-
-describe('TRAP_DEFS — uniqueness & cross-field checks', () => {
-  const get = (id: string): TrapDef => TRAP_DEFS.find(t => t.id === id)!;
-
-  it('all 4 emojis are distinct', () => {
-    const emojis = TRAP_DEFS.map(t => t.emoji);
-    expect(new Set(emojis).size).toBe(4);
-  });
-
-  it('all 4 desc strings are distinct', () => {
-    const descs = TRAP_DEFS.map(t => t.desc);
-    expect(new Set(descs).size).toBe(4);
-  });
-
-  it('all costs are multiples of 10', () => {
-    for (const t of TRAP_DEFS) {
-      expect(t.cost % 10, `${t.id} cost % 10`).toBe(0);
-    }
-  });
-
-  it('slow_trap.cost + poison_trap.cost === stun_trap.cost (80 + 120 = 200)', () => {
-    expect(get('slow_trap').cost + get('poison_trap').cost).toBe(get('stun_trap').cost);
-  });
-
-  it('exactly 1 trap has unlockLv === 10 (stun_trap)', () => {
-    const atMax = TRAP_DEFS.filter(t => t.unlockLv === 10);
-    expect(atMax).toHaveLength(1);
-    expect(atMax[0].id).toBe('stun_trap');
-  });
-
-  it('TRAP_DEFS is sorted by unlockLv ascending (0, 0, 6, 10)', () => {
-    for (let i = 1; i < TRAP_DEFS.length; i++) {
-      expect(TRAP_DEFS[i].unlockLv, `index ${i} unlockLv ≥ index ${i - 1}`)
-        .toBeGreaterThanOrEqual(TRAP_DEFS[i - 1].unlockLv);
-    }
-  });
-
-  it('cheapest trap (spike_trap, cost=50) is also the earliest-unlocked (unlockLv=0)', () => {
-    const cheapest = [...TRAP_DEFS].reduce((a, b) => a.cost < b.cost ? a : b);
-    expect(cheapest.unlockLv).toBe(0);
-    expect(cheapest.id).toBe('spike_trap');
+  it('simulation worth sums the afflictions and scales with mastery', () => {
+    expect(trapEffectiveDps('spike_trap')).toBe(AFFLICTION_DEFS.bleed.simDps);
+    expect(trapEffectiveDps('thorn_wall')).toBe(AFFLICTION_DEFS.bleed.simDps + AFFLICTION_DEFS.poison.simDps);
+    expect(trapEffectiveDps('thorn_wall', 2)).toBeCloseTo((5 + 8) * 1.3);
+    expect(trapEffectiveDps('nope')).toBe(0);
   });
 });

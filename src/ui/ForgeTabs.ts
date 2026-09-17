@@ -32,7 +32,7 @@ import {
 const CRAFT_PAGE_SIZE = 2;
 const DISMANTLE_PAGE_SIZE = 3;
 
-function drawPageNavigator(
+export function drawPageNavigator(
   scene: Phaser.Scene,
   ctx: ForgeContext,
   c: Phaser.GameObjects.Container,

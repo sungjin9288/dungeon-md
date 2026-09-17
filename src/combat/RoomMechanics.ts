@@ -4,6 +4,7 @@
  * Each function receives a RoomMechanicsContext that provides read/write
  * access to scene state, plus any per-mechanic local state structures.
  */
+import { comboMultiplier } from '../data/traps';
 import type Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { Room } from '../objects/Room';
@@ -31,6 +32,8 @@ import { logger } from '../utils/logger';
 // ─── RoomMechanicsContext ───────────────────────────────────────────────────
 
 export interface RoomMechanicsContext {
+  /** Per-trap-type mastery from the save (trapId → +0..+5). */
+  readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
 
@@ -454,6 +457,7 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
           * data.roomTypeDmgMult;
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
+        dmg *= comboMultiplier(target.comboCount(now));
         target.takeDamage(dmg);
         ctx.flashRoom(row, col);
       }

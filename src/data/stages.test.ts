@@ -255,8 +255,8 @@ describe('chapter-level constraints', () => {
 // ─── TRAP_DEFS — data integrity ───────────────────────────────────────────────
 
 describe('TRAP_DEFS', () => {
-  it('contains exactly 4 trap definitions', () => {
-    expect(TRAP_DEFS).toHaveLength(4);
+  it('contains the 16 crafted trap definitions', () => {
+    expect(TRAP_DEFS).toHaveLength(16);
   });
 
   it('every trap has a non-empty id', () => {
@@ -288,9 +288,10 @@ describe('TRAP_DEFS', () => {
     }
   });
 
-  it('every trap cost is positive', () => {
+  it('tier-1 traps are priced in gold; crafted tiers install from stock', () => {
     for (const t of TRAP_DEFS) {
-      expect(t.cost, `${t.id} cost`).toBeGreaterThan(0);
+      if (t.tier === 1) expect(t.cost, `${t.id} cost`).toBeGreaterThan(0);
+      else expect(t.cost, `${t.id} cost`).toBe(0);
     }
   });
 

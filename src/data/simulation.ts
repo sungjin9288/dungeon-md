@@ -8,6 +8,7 @@ import { ROOM_DEFS } from './rooms';
 import { getSlotBuilding } from './roomBuildings';
 import { GRID_ROWS } from '../constants/layout';
 import { tempoCooldown } from './combatTempo';
+import { trapEffectiveDps } from './traps';
 import type { DungeonSlot, OwnedMonster } from './wisdom';
 import type { WaveSpec } from './stages';
 
@@ -23,13 +24,8 @@ function pathCoverage(range: number): number {
   return Math.min(1, Math.max(0, range) / GRID_ROWS);
 }
 
-// Effective flat DPS contribution per trap type (simplified)
-const TRAP_EFFECTIVE_DPS: Record<string, number> = {
-  spike_trap:  5,   // 20 dmg on entry ÷ ~4s average encounter window
-  slow_trap:   4,   // speed reduction means more time exposed to monster attacks
-  poison_trap: 8,   // 8 dmg/s × 4s = 32 per invader, divided over encounter
-  stun_trap:   6,   // 1s stun buys extra attack time
-};
+// Trap worth comes from the trap's afflictions (traps.ts); mastery is not
+// modelled here, so the forecast stays a floor.
 
 export interface WaveSimResult {
   waveNum:     number;
@@ -71,7 +67,7 @@ export function calcDungeonDps(
 
     // Trap DPS
     for (const tId of slot.trapIds) {
-      if (tId && TRAP_EFFECTIVE_DPS[tId]) dps += TRAP_EFFECTIVE_DPS[tId];
+      dps += trapEffectiveDps(tId);
     }
 
     // Room level is the home dungeon's main damage lever; mirror

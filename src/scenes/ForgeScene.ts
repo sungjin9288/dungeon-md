@@ -25,6 +25,7 @@ import { calculateRoomMetrics } from '../data/dungeonMetrics';
 import { logger } from '../utils/logger';
 import {
   HEADER_H, TAB_H, CONTENT_Y,
+  type ForgeTab,
   rarityHex,
   getMaterialDisplay,
   getFocusMonsterName,
@@ -36,6 +37,9 @@ import {
 } from '../ui/ForgeShared';
 import { drawEffectChips, drawForgeRecommendationPreview } from '../ui/ForgeWorkbench';
 import { buildCraftTab, buildDismantleTab } from '../ui/ForgeTabs';
+import { buildTrapTab } from '../ui/ForgeTrapTab';
+import { craftTrap, enhanceTrap } from '../data/trapTransactions';
+import { getTrapDef } from '../data/traps';
 import { showCraftAnimation, addModalButton } from '../ui/ForgeCraftFx';
 import { createForgeFocusContext, getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -54,7 +58,7 @@ import {
 // (제작/분해 확인·실행)·방 복귀 피드백만 보유한다.
 
 export class ForgeScene extends Phaser.Scene {
-  private activeTab: 'craft' | 'dismantle' = 'craft';
+  private activeTab: ForgeTab = 'craft';
   private contentContainer?: Phaser.GameObjects.Container;
   private tabContainer?: Phaser.GameObjects.Container;
   private headerContainer?: Phaser.GameObjects.Container;
@@ -62,6 +66,7 @@ export class ForgeScene extends Phaser.Scene {
   private selectedEqIdx: number | null = null;
   private craftPage = 0;
   private dismantlePage = 0;
+  private trapPage = 0;
   private returnScene = 'DungeonHomeScene';
   private focusMonsterId: string | null = null;
   private focusSourceLabel: string | null = null;
@@ -72,11 +77,12 @@ export class ForgeScene extends Phaser.Scene {
   // ─── Lifecycle ────────────────────────────────────────────────────────────
 
   create(): void {
-    this.activeTab    = 'craft';
+    this.activeTab    = this.consumeRequestedTab();
     this.selectedBpId = null;
     this.selectedEqIdx = null;
     this.craftPage = 0;
     this.dismantlePage = 0;
+    this.trapPage = 0;
     this.returnScene = this.consumeReturnScene();
     this.focusMonsterId = this.peekFocusMonsterId();
     this.focusSourceLabel = this.peekFocusSourceLabel();
@@ -253,6 +259,13 @@ export class ForgeScene extends Phaser.Scene {
     c.add(zone);
   }
 
+  /** A caller (the placement tray's empty-stock trap chip) may ask for a tab up front. */
+  private consumeRequestedTab(): ForgeTab {
+    const tab = this.registry.get('forgeTab');
+    this.registry.remove('forgeTab');
+    return tab === 'trap' || tab === 'dismantle' ? tab : 'craft';
+  }
+
   private consumeReturnScene(): string {
     const sceneKey = this.registry.get('forgeReturnScene');
     this.registry.remove('forgeReturnScene');
@@ -342,8 +355,9 @@ export class ForgeScene extends Phaser.Scene {
     this.tabContainer?.destroy();
     const c = this.add.container(0, HEADER_H).setDepth(10);
     this.tabContainer = c;
-    const tabs: Array<{ id: 'craft' | 'dismantle'; label: string; accent: number }> = [
+    const tabs: Array<{ id: ForgeTab; label: string; accent: number }> = [
       { id: 'craft', label: '제작', accent: ZONE_ACCENTS.forge },
+      { id: 'trap', label: '함정', accent: DUNGEON_UI.JADE },
       { id: 'dismantle', label: '분해', accent: DUNGEON_UI.EMBER },
     ];
     const tabW = CANVAS_WIDTH / tabs.length;
@@ -362,6 +376,7 @@ export class ForgeScene extends Phaser.Scene {
         bg.fillRect(x + 10, TAB_H - 4, tabW - 20, 4);
       }
       if (tab.id === 'craft') drawForgeCrest(bg, x + tabW / 2 - 28, 21, tab.accent, active ? 1 : 0.48, 0.55);
+      else if (tab.id === 'trap') drawSupplySigil(bg, x + tabW / 2 - 28, 21, tab.accent, active ? 1 : 0.48, 0.55);
       else drawDismantleSigil(bg, x + tabW / 2 - 28, 21, tab.accent, active ? 1 : 0.48, 0.55);
       c.add(bg);
       c.add(this.add.text(x + tabW / 2 + 9, TAB_H / 2, tab.label, {
@@ -394,7 +409,7 @@ export class ForgeScene extends Phaser.Scene {
     return {
       gs,
       activeTab:        this.activeTab,
-      page:             this.activeTab === 'craft' ? this.craftPage : this.dismantlePage,
+      page:             this.activeTab === 'craft' ? this.craftPage : this.activeTab === 'trap' ? this.trapPage : this.dismantlePage,
       focusMonsterId:   this.focusMonsterId,
       focusSourceLabel: this.focusSourceLabel,
       selectedBpId:     this.selectedBpId,
@@ -415,6 +430,7 @@ export class ForgeScene extends Phaser.Scene {
       onOpenAbyss:        ()             => this.scene.start('AbyssScene'),
       onPageChange: (page) => {
         if (this.activeTab === 'craft') this.craftPage = Math.max(0, page);
+        else if (this.activeTab === 'trap') this.trapPage = Math.max(0, page);
         else this.dismantlePage = Math.max(0, page);
         this.selectedBpId = null;
         this.selectedEqIdx = null;
@@ -422,6 +438,8 @@ export class ForgeScene extends Phaser.Scene {
       },
       onConfirmCraft:     (bpId)     => this.confirmCraft(bpId),
       onConfirmDismantle: (idx, eq)  => this.confirmDismantle(idx, eq),
+      onCraftTrap:        (trapId)   => this.executeCraftTrap(trapId),
+      onEnhanceTrap:      (trapId)   => this.executeEnhanceTrap(trapId),
     };
   }
 
@@ -431,8 +449,35 @@ export class ForgeScene extends Phaser.Scene {
     this.contentContainer = c;
 
     const ctx = this.buildCtx(loadGameState());
-    if (this.activeTab === 'craft') buildCraftTab(this, ctx, c);
-    else                            buildDismantleTab(this, ctx, c);
+    if (this.activeTab === 'craft')     buildCraftTab(this, ctx, c);
+    else if (this.activeTab === 'trap') buildTrapTab(this, ctx, c);
+    else                                buildDismantleTab(this, ctx, c);
+  }
+
+  // ─── Trap craft / enhance ──────────────────────────────────────────────────
+  // Traps are cheap and repeatable, so both actions commit on tap with a toast;
+  // the row already shows the exact cost before the tap.
+
+  private executeCraftTrap(trapId: string): void {
+    const result = craftTrap(loadGameState(), trapId);
+    if (!result.ok) { this.showToast('제작할 수 없습니다', DUNGEON_UI_CSS.EMBER); return; }
+    saveGameState(result.state);
+    const fused = Object.keys(result.consumedTraps).length > 0;
+    logger.debug(`[FORGE] trap ${trapId} ${fused ? 'fused' : 'crafted'} → stock ${result.state.trapStock[trapId]}`);
+    this.showToast(`${result.trap.emoji} ${result.trap.name} ${fused ? '융합' : '제작'} 완료 · 재고 ${result.state.trapStock[trapId]}`, DUNGEON_UI_CSS.JADE);
+    this.drawHeader();
+    this.renderContent();
+  }
+
+  private executeEnhanceTrap(trapId: string): void {
+    const result = enhanceTrap(loadGameState(), trapId);
+    if (!result.ok) { this.showToast('강화할 수 없습니다', DUNGEON_UI_CSS.EMBER); return; }
+    saveGameState(result.state);
+    const level = result.state.trapMastery[trapId];
+    logger.debug(`[FORGE] trap ${trapId} mastery → ${level}`);
+    this.showToast(`${getTrapDef(trapId)?.name ?? trapId} 숙련 +${level}`, DUNGEON_UI_CSS.BRASS);
+    this.drawHeader();
+    this.renderContent();
   }
 
   // ─── Craft execution ───────────────────────────────────────────────────────

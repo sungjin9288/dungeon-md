@@ -12,6 +12,7 @@ import {
 } from '../data/wisdom';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
+import { getTrapStock } from '../data/trapTransactions';
 import { ROOM_DEFS, ROOM_FAMILY } from '../data/rooms';
 import { getSlotBuilding, listUnlockedBuildings } from '../data/roomBuildings';
 import {
@@ -36,6 +37,7 @@ export interface PlacementTrayCtx {
   rebuildSlots: () => void;                    // live board update
   openDetail:   (slotIdx: number) => void;     // advanced overlay fallback
   onClose:      () => void;                    // deselect room
+  openForgeTraps: () => void;                  // crafted trap out of stock → forge '함정' tab
 }
 
 const TAB_BAR_H = 64;
@@ -352,13 +354,17 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
   let x = 0;
   for (const trap of TRAP_DEFS) {
     const locked = gs.dmLevel < trap.unlockLv;
-    const afford = (gs.homeGold ?? 0) >= trap.cost;
+    // Tier 1 is bought with gold on the spot; crafted tiers come out of forge stock.
+    const stock = getTrapStock(gs, trap.id);
+    const afford = trap.tier === 1 ? (gs.homeGold ?? 0) >= trap.cost : stock > 0;
     const on = placed.has(trap.id);
-    const accent = locked ? 0x555044 : on ? COLORS.JADE : 0xc8921a;
+    const accent = locked ? 0x555044 : on ? COLORS.JADE : trap.tier === 1 ? 0xc8921a : trap.tier === 2 ? 0x8ac7ff : 0xd48cff;
     const z = chipBase(inner, x, 0, itemW, h, on, accent);
     addText(inner, x + itemW / 2, 20, trap.emoji, '22px', '#ffffff', false, 0.5).setAlpha(locked ? 0.35 : 1);
+    addText(inner, x + 6, 4, `T${trap.tier}`, '9px', locked ? '#6a6052' : '#c8b890', true);
     addText(inner, x + itemW / 2, h - 30, trap.name, '11px', locked ? '#6a6052' : '#f0e6c8', false, 0.5);
-    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : `${trap.cost}💰`,
+    const priceLabel = trap.tier === 1 ? `${trap.cost}💰` : stock > 0 ? `재고 ${stock}` : '재고 없음';
+    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : priceLabel,
       '10px', on ? '#9fe1cb' : locked ? '#6a6052' : afford ? '#c8b890' : '#cc6a5a', false, 0.5, on ? 'sans-serif' : 'monospace');
     if (on) {
       z.on('pointerdown', () => {
@@ -375,6 +381,8 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
         const r = installTrapInRoomSlot(gsNow, activeSlot, tIdx, trap.id);
         if (r.ok) commit(r.state);
       });
+    } else if (!locked && trap.tier > 1) {
+      z.on('pointerdown', () => ctxRef?.openForgeTraps());
     }
     x += itemW + gap;
   }

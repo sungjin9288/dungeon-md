@@ -151,3 +151,17 @@ describe('roomLoadoutRecommendations — trap', () => {
     expect(getTrapLoadoutRecommendation(state, 0)).toBeNull();
   });
 });
+
+describe('roomLoadoutRecommendations — crafted traps', () => {
+  it('offers a stocked tier-2 trap even with no gold, and never an unstocked one', () => {
+    const state = makeState({
+      dmLevel: 10,
+      homeGold: 0,
+      trapStock: { thorn_wall: 1 },
+      dungeonSlots: [makeSlot('trap')],
+    });
+
+    expect(getTrapLoadoutRecommendation(state, 0)?.trapId).toBe('thorn_wall');
+    expect(getTrapLoadoutRecommendation({ ...state, trapStock: {} }, 0)).toBeNull();
+  });
+});

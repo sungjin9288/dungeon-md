@@ -147,6 +147,29 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
   (9~10티어는 veteran). organic: `scripts/verify-forecast-playthrough.mjs`.
 - 홈 `DailyContentPanel`은 도전 과제·출석만 남는다(일일 던전·주간 보스 진입은 카드로).
 
+### 함정 제작 · 콤보 (2026-09-18, Phase 3)
+
+함정은 골드 소모품이 아니라 **제작 자산**이다. `traps.ts`: 상태이상 6종(출혈·둔화·
+중독·감전·화상·공포) × 함정 16종 — 1티어 6종(단일 상태이상, 트레이에서 골드로 즉시
+설치), 2티어 6종(1티어 둘 융합), 3티어 4종(2티어 둘 + `boss_essence`). 제작·융합·
+숙련은 공방 **'함정' 탭**(`ForgeTrapTab` ← `trapForgeView.ts` 투영 ←
+`trapTransactions.ts`)에서 하고 결과는 `GameState.trapStock`(타입별 재고)에 쌓인다.
+2·3티어 설치는 재고에서만(`installTrapInRoomSlot`, 골드 0), 해제·교체 시 재고로
+복귀. 재고 없는 칩을 탭하면 `forgeTab` 레지스트리로 공방 함정 탭에 딥링크한다
+(`forge-entry`가 소비).
+
+- 숙련 `trapMastery[id]` 0~5, 효과 +15%/lv(`trapMasteryMult`), 비용 = 레시피 재료
+  ×(1+lv). 전투에는 `DungeonScene.trapMastery` → `RoomMechanicsContext.trapMastery`
+  로 들어가 `applyTrapToInvader` 배율에 곱한다.
+- 콤보: 침입자가 2초 창 안에 받은 **상이한 상태이상 수**(`Invader.comboCount`)로
+  수호자 피해 `1 + 0.25×(n−1)`, 최대 4종(`comboMultiplier`). `CombatResolver`(첫
+  몬스터)·`runExtraMonsterAttacks`(나머지) 양쪽에 적용.
+- 시뮬은 `trapEffectiveDps`(상태이상 simDps 합 × 숙련)로 함정 가치를 본다. 콤보는
+  시뮬에 없다(보수적).
+- 가드: `traps.test.ts`(티어 구조·레시피 상속·콤보/숙련 수식), `trapTransactions.test.ts`,
+  `trapForgeView.test.ts`, 추천 재고 인식(`roomLoadoutRecommendations.test.ts`). 모달
+  하니스 `forge-trap-tab`/`forge-trap-fuse-result`.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|
