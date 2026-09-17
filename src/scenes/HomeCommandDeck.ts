@@ -6,6 +6,7 @@
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
 import { getLineageNextStep } from '../data/lineage';
+import { getHomeTodos } from '../data/homeTodos';
 import { getMonsterDisplayName } from '../data/fusion';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
@@ -114,13 +115,32 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   deck.add(tierText);
   // A pinned 계보 goal stays visible here even while room work owns the directive card.
   const goalStep = scene.gs.lineageGoal ? getLineageNextStep(scene.gs, scene.gs.lineageGoal) : null;
+  let headerX = tierText.x + tierText.width + 6;
   if (scene.gs.lineageGoal && goalStep) {
-    deck.add(scene.add.text(tierText.x + tierText.width + 6, deckY + 15, `· 📌 ${getMonsterDisplayName(scene.gs.lineageGoal)}`, {
+    const goalChip = scene.add.text(headerX, deckY + 15, `· 📌 ${getMonsterDisplayName(scene.gs.lineageGoal)}`, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       color: '#c9a8ff',
       fontStyle: 'bold',
-    }).setOrigin(0, 0.5).setName('home-lineage-goal-chip'));
+    }).setOrigin(0, 0.5).setName('home-lineage-goal-chip');
+    deck.add(goalChip);
+    headerX += goalChip.width + 6;
+  }
+  // 생산 구역 is otherwise only reachable from the stage map, so home says when
+  // a built facility has nobody on shift and offers the route.
+  const todos = getHomeTodos(scene.gs, getTodayString());
+  if (todos.unstaffedFacilities > 0 && headerX < deckX + deckW - 150) {
+    const staffChip = scene.add.text(headerX, deckY + 15, `· ⛏ 근무 ${todos.unstaffedFacilities}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '11px',
+      color: CASUAL_CSS.GOLD,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    deck.add(staffChip);
+    const staffZone = scene.add.zone(headerX - 4, deckY - 7, staffChip.width + 12, 44)
+      .setOrigin(0, 0).setName('home-staffing-chip').setInteractive({ useHandCursor: true });
+    staffZone.on('pointerdown', () => scene.navigateFromHome('ProductionScene'));
+    deck.add(staffZone);
   }
 
   const readinessCss = dungeonMetrics.readiness >= 80
@@ -171,11 +191,13 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   const chipRowH = 44;
   const chipW = (deckW - 24) / 5;
   const directiveSlotIdx = directive.slotIdx ?? 0;
-  const secondaryChips: Array<{ label: string; onPress: () => void }> = [
+  // A chip carries a count when its destination has something waiting today
+  // (교감 가능 수호자 / 지금 융합 가능한 함정) — the directive card has room for one thing only.
+  const secondaryChips: Array<{ label: string; todo?: number; onPress: () => void }> = [
     { label: '도감', onPress: () => scene.navigateFromHome('CodexScene') },
     { label: '방 관리', onPress: () => openFirstDungeonSlot(scene, directiveSlotIdx) },
-    { label: '육성', onPress: () => openFocusedMonsterGrowth(scene, directiveSlotIdx) },
-    { label: '제작', onPress: () => openFocusedForge(scene, directiveSlotIdx) },
+    { label: '육성', todo: todos.bondGuardians, onPress: () => openFocusedMonsterGrowth(scene, directiveSlotIdx) },
+    { label: '제작', todo: todos.trapFusions, onPress: () => openFocusedForge(scene, directiveSlotIdx) },
     { label: exhausted ? '손님 완료' : '오늘의 손님', onPress: () => showForecastTray(scene) },
   ];
   secondaryChips.forEach((chip, i) => {
@@ -184,12 +206,13 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
       g.lineStyle(1, 0x6e5736, 0.32);
       g.lineBetween(chipX, chipRowY + 11, chipX, chipRowY + chipRowH - 11);
     }
-    g.fillStyle(0xa98245, 0.62);
-    g.fillCircle(chipX + chipW / 2, chipRowY + 9, 1.8);
-    const labelT = scene.add.text(chipX + chipW / 2, chipRowY + 27, chip.label, {
+    const pending = chip.todo ?? 0;
+    g.fillStyle(pending > 0 ? CASUAL.GOLD : 0xa98245, pending > 0 ? 1 : 0.62);
+    g.fillCircle(chipX + chipW / 2, chipRowY + 9, pending > 0 ? 2.8 : 1.8);
+    const labelT = scene.add.text(chipX + chipW / 2, chipRowY + 27, pending > 0 ? `${chip.label} ${pending}` : chip.label, {
       fontFamily: 'sans-serif',
       fontSize: '10px',
-      color: '#b8aa91',
+      color: pending > 0 ? CASUAL_CSS.GOLD : '#b8aa91',
       fontStyle: 'bold',
     }).setOrigin(0.5);
     const zone = scene.add.zone(chipX, chipRowY, chipW, chipRowH)
@@ -197,7 +220,7 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
       .setInteractive({ useHandCursor: true });
     deck.add([labelT, zone]);
     zone.on('pointerover', () => labelT.setColor('#ead9b8'));
-    zone.on('pointerout', () => labelT.setColor('#b8aa91'));
+    zone.on('pointerout', () => labelT.setColor(pending > 0 ? CASUAL_CSS.GOLD : '#b8aa91'));
     zone.on('pointerdown', () => {
       audioManager.playSfx('button_click');
       chip.onPress();

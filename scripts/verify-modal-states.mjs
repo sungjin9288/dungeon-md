@@ -43,6 +43,16 @@ const CASES = [
   { id: 'codex-invader-tab', scene: 'CodexScene', steps: [{ name: 'codex-tab-invaders' }], expect: '침략자 기록' },
   { id: 'codex-lineage-pin', scene: 'CodexScene', steps: [{ name: 'codex-detail-open' }, { name: 'codex-lineage-pin' }], expect: '수호자 상세 계보 스트립 · 목표 핀 토글 후 토스트' },
   { id: 'home-lineage-goal-chip', scene: 'DungeonHomeScene', seed: { lineageGoal: 'fox_warrior' }, steps: [], expect: '홈 지시 헤더에 📌 여우 전사 목표 칩 (방 작업이 카드를 차지해도 보임)' },
+  {
+    id: 'home-todo-badges', scene: 'DungeonHomeScene',
+    seed: { dmLevel: 20, materials: { iron_shard: 9, herb: 9 }, trapStock: { spike_trap: 1, poison_trap: 1 }, productionFacilities: { mine: 1, treasury: 1 }, homeGold: 900 },
+    steps: [], expect: '홈 헤더 ⛏ 근무 2 칩 + 육성/제작 칩 카운트 배지',
+  },
+  {
+    id: 'home-staffing-route', scene: 'DungeonHomeScene',
+    seed: { dmLevel: 20, productionFacilities: { mine: 1 }, homeGold: 900 },
+    steps: [{ name: 'home-staffing-chip' }], expect: '근무 칩 → 생산 구역 진입',
+  },
   { id: 'wisdom-branch-confirm', scene: 'AncestralWisdomScene', steps: [{ name: 'wisdom-branch-goldHands' }], expect: '가지 강화 확인' },
   { id: 'achievement-record', scene: 'AchievementScene', steps: [{ name: 'achievement-record-dm_lv5' }], expect: '업적 기록 상세' },
   { id: 'abyss-floor-order', scene: 'AbyssScene', steps: [{ name: 'abyss-floor-1' }, { name: 'abyss-order' }], expect: '심연 층 지시' },
