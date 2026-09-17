@@ -734,8 +734,15 @@ abyss organic 승/패 왕복 통과.
 **organic 실측 (2026-09-18, main `6b59321` 그리드 수정 후).** 20:lean(dm8·슬롯 9·
 방 Lv2·로스터 9) 방 9/9 배치, 10/10 웨이브 HP 660/2500(26%) 승; 32:lean(dm10·Lv3·
 로스터 13) 10/10 HP 4500/4500(100%) 승. 스톨 0, `{runs:2, wins:2, hardFailures:0}`.
-20의 26%는 시뮬 80%와 방향이 같다(시뮬이 여전히 낙관). 42~80 lean·90 veteran은
-Phase 3 병합 후 main에서 이어서 주행한다.
+20의 26%는 시뮬 80%와 방향이 같다(시뮬이 여전히 낙관).
+
+**organic 챕터 경계 (2026-09-18, main `0bfd911` = Phase 3a/3b 병합 후, 8083).**
+42:lean(dm11·Lv3·로스터 17) 10/10 HP 89% 승 · 56:lean(dm13·Lv3·21) 96% 승 ·
+68:lean(dm14·Lv3·25) 100% 승(스톨 2 복구) · 80:lean(dm15·Lv4·29) 15/15 HP 100% 승.
+90:veteran(dm52·Lv5·33, 시뮬 DPS 3491)은 HP 100%인 채 4/15 웨이브에서 **예산(70
+슬라이스) 소진**으로 미정산 — 패배가 아니라 하니스 예산 한계(15웨이브 스테이지 +
+스톨 1). `{runs:5, wins:4, hardFailures:1}`. 후속: `PACING_BUDGET` env로 예산을
+올려 90만 재주행. 1~80 lean 경계는 모두 organic으로 닫혔다.
 
 **Phase 2 구조.** `notoriety.ts`(밴드 10·승인제 승격·감소·주간 정산),
 `forecast.ts`(카드 정의·시드 발급·밴드 웨이브 생성기), `forecastTransactions.ts`
