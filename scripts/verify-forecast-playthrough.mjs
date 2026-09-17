@@ -137,9 +137,12 @@ async function readHome(page) {
 }
 
 async function fight(page) {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
     const game = window.__phaserGame;
     const ds = game.scene.getScene('DungeonScene');
+    // See verify-campaign-pacing.mjs: wall-clock timers (boss slow-mo restore)
+    // need the event loop between slices.
+    const yieldToTimers = () => new Promise(resolve => setTimeout(resolve, 0));
     if (!ds || !game.scene.isActive('DungeonScene')) return { started: false };
     const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
     ds.setSpeed(3);
@@ -151,6 +154,7 @@ async function fight(page) {
       let idle = 0;
       while (slices < 80) {
         pump(2500); slices++;
+        await yieldToTimers();
         const alive = (ds.activeInvaders ?? []).filter(i => i.active).length;
         const queued = (ds.spawnQueue ?? []).length;
         if ((!ds.waveActive && queued === 0 && alive === 0) || ds.dungeonHp <= 0) break;

@@ -436,6 +436,7 @@ export function buildKillHandlerCtx(ds: DungeonScene): KillHandlerContext {
     get killCounterText()    { return ds.killCounterText; },
     get waveInvaderTotal()   { return ds.waveInvaderTotal; },
     roomGrid:                ds.roomGrid,
+    speedMult:         ds.speedMult,
     get wave()               { return ds.wave; },
     get maxWave()            { return ds.maxWave; },
     get isEndless()          { return ds.isEndless; },

@@ -39,6 +39,8 @@ export interface KillHandlerContext {
   readonly killCounterText:  Phaser.GameObjects.Text | undefined;
   readonly waveInvaderTotal: number;
   readonly roomGrid:         (RoomData | null)[][];
+  /** Battle speed setting; the boss slow-mo returns the clock and tweens to it. */
+  readonly speedMult:        number;
 
   get gold(): number;          set gold(v: number);
   get killsThisRun(): number;  set killsThisRun(v: number);
@@ -81,7 +83,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   const { scene, equipmentMap } = ctx;
 
   // Boss kills get a dramatic "slow-mo → white flash → shake" reaction.
-  if (inv.def.isBoss) playBossKillReaction(scene);
+  if (inv.def.isBoss) playBossKillReaction(scene, ctx.speedMult);
 
   // ── Gold reward ─────────────────────────────────────────────────────────────
   let goldReward = inv.def.reward;

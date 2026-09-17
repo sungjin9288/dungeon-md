@@ -206,16 +206,32 @@ export function showRallyCryEffect(
 // scene-level timeScale dip is restored via window.setTimeout (which is
 // unaffected by timeScale itself).
 
-export function playBossKillReaction(scene: Phaser.Scene): void {
+/**
+ * Only the newest slow-mo restores the clock. Without this, two boss kills
+ * inside the 160ms window make the second capture the *dipped* scale as its
+ * "previous" value and strand the battle at 0.15× forever (seen organically on
+ * stage 90, whose late waves kill two titans in quick succession).
+ */
+let bossSlowMoToken = 0;
+
+export const BOSS_SLOWMO_SCALE = 0.15;
+export const BOSS_SLOWMO_MS = 160;
+
+/**
+ * `baseScale` is the battle's speed setting (DungeonScene.speedMult) — the
+ * clock AND the tweens return to it, so a boss kill never silently drops a 3×
+ * battle back to 1× motion.
+ */
+export function playBossKillReaction(scene: Phaser.Scene, baseScale = 1): void {
   // Brief slow-motion hit pause — 160ms at 0.15× speed.
-  const prevScale = scene.time.timeScale;
-  scene.time.timeScale   = 0.15;
-  scene.tweens.timeScale = 0.15;
+  const token = ++bossSlowMoToken;
+  scene.time.timeScale   = BOSS_SLOWMO_SCALE;
+  scene.tweens.timeScale = BOSS_SLOWMO_SCALE;
   window.setTimeout(() => {
-    if (!scene.scene.isActive()) return;
-    scene.time.timeScale   = prevScale;
-    scene.tweens.timeScale = 1;
-  }, 160);
+    if (!scene.scene.isActive() || token !== bossSlowMoToken) return;
+    scene.time.timeScale   = baseScale;
+    scene.tweens.timeScale = baseScale;
+  }, BOSS_SLOWMO_MS);
 
   // Full-screen white flash
   const flash = scene.add.graphics().setDepth(295);

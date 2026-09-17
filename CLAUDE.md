@@ -261,6 +261,25 @@ UI: 소환 탭 카드 아래 44px 스트립(`SummonTribeShards.ts`, 선두 부�
 (지금 융합 가능한 2·3티어 함정). 가드: `homeTodos.test.ts`, 모달 하니스
 `home-todo-badges`/`home-staffing-route`.
 
+### 보스 처치 슬로모 (2026-09-18 수정)
+
+`ImpactVfx.playBossKillReaction(scene, baseScale)`는 160ms 동안 `time/tweens.timeScale`
+을 0.15로 떨어뜨리고 **wall-clock `setTimeout`**(게임 배속의 영향을 받지 않아야 하므로)
+으로 되돌린다. 두 가지 함정이 있었고 둘 다 막아뒀다:
+
+1. 이전 값을 캡처해 복원하면 **160ms 안에 보스가 둘 죽을 때** 두 번째가 0.15를
+   "이전 값"으로 캡처해 전투가 영구히 0.15배로 고착된다(스테이지 90 후반 웨이브는
+   거인을 연달아 잡는다). → 모듈 토큰으로 **최신 슬로모만** 복원한다.
+2. 복원 시 `tweens.timeScale = 1`은 3배속 전투를 1배속 모션으로 되돌린다. →
+   시계·트윈 모두 `baseScale`(= `DungeonScene.speedMult`)로 복원한다.
+
+organic 하니스는 `page.evaluate` 안에서 동기 루프로 시간을 밀기 때문에 wall-clock
+타이머가 굶는다. `verify-campaign-pacing.mjs`/`verify-forecast-playthrough.mjs`는
+슬라이스마다 `await yieldToTimers()`로 이벤트 루프를 양보한다 — 이게 없으면 하니스가
+0.15배에 갇혀 예산을 스폰 대기에만 쓴다(90 veteran 미정산의 실제 원인).
+
+가드: `bossSlowMo.test.ts`(복원 대상·중첩·씬 종료).
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|

@@ -90,7 +90,11 @@ async function launchStage(page, stageNumber) {
 
 /** Drive every wave of the current battle to its end (same loop as the abyss harness). */
 async function fightStage(page) {
-  return page.evaluate((budget) => {
+  return page.evaluate(async (budget) => {
+    // Yield to the event loop between slices: the boss-kill slow-mo restores the
+    // clock from a wall-clock setTimeout, which a fully synchronous pump loop
+    // would starve — leaving the battle stuck at 0.15× and eating the budget.
+    const yieldToTimers = () => new Promise(resolve => setTimeout(resolve, 0));
     const game = window.__phaserGame;
     const ds = game.scene.getScene('DungeonScene');
     const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
@@ -109,12 +113,13 @@ async function fightStage(page) {
       if (!ds.waveActive) {
         // Take the "즉시 시작" path instead of waiting out the 10s prep countdown.
         ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
-        ds.startWave(); pump(1000);
+        ds.startWave(); pump(1000); await yieldToTimers();
       }
       let settled = false;
       let idle = 0;
       while (slices < BUDGET) {
         pump(2500); slices++;
+        await yieldToTimers();
         const alive = (ds.activeInvaders ?? []).filter(invader => invader.active).length;
         const queued = (ds.spawnQueue ?? []).length;
         settled = !ds.waveActive && queued === 0 && alive === 0;
