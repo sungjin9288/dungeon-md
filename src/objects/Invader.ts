@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { InvaderDef } from '../data/invaders';
-import { COMBO_WINDOW_MS, type AfflictionId } from '../data/traps';
+import { COMBO_WINDOW_MS, type AfflictionId, shouldAnnounceCombo } from '../data/traps';
 import { logger } from '../utils/logger';
 import { showFloatText } from '../combat/VisualEffects';
 import {
@@ -223,6 +223,22 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   /** A trap applied `affliction` now; it counts toward the combo for COMBO_WINDOW_MS. */
   noteAffliction(affliction: AfflictionId, now: number): void {
     this.recentAfflictions.set(affliction, now + COMBO_WINDOW_MS);
+  }
+
+  /** Highest combo level already shown for this invader; resets when the combo lapses. */
+  private announcedCombo = 0;
+
+  /**
+   * True once per escalation (2 → 3 → 4 afflictions), so the battle shows the
+   * combo multiplier when it changes instead of on every hit.
+   */
+  noteComboAnnounce(count: number): boolean {
+    if (!shouldAnnounceCombo(this.announcedCombo, count)) {
+      if (count < 2) this.announcedCombo = 0;
+      return false;
+    }
+    this.announcedCombo = count;
+    return true;
   }
 
   /** Distinct afflictions still inside the combo window. */

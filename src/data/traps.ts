@@ -121,6 +121,15 @@ export const COMBO_WINDOW_MS = 2000;
 export const COMBO_STEP = 0.25;
 export const COMBO_MAX_AFFLICTIONS = 4;
 
+/**
+ * Whether a combo at `current` distinct afflictions is worth announcing to the
+ * player, given the highest level already announced for that invader. Only
+ * escalation is shown, so a sustained combo does not spam one float per hit.
+ */
+export function shouldAnnounceCombo(previousAnnounced: number, current: number): boolean {
+  return current >= 2 && current > previousAnnounced;
+}
+
 /** Damage multiplier for a guardian hitting an invader under `distinct` afflictions. */
 export function comboMultiplier(distinct: number): number {
   const n = Math.min(COMBO_MAX_AFFLICTIONS, Math.max(0, Math.floor(distinct)));

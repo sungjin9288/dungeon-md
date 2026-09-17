@@ -166,7 +166,9 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
   로 들어가 `applyTrapToInvader` 배율에 곱한다.
 - 콤보: 침입자가 2초 창 안에 받은 **상이한 상태이상 수**(`Invader.comboCount`)로
   수호자 피해 `1 + 0.25×(n−1)`, 최대 4종(`comboMultiplier`). `CombatResolver`(첫
-  몬스터)·`runExtraMonsterAttacks`(나머지) 양쪽에 적용.
+  몬스터)·`runExtraMonsterAttacks`(나머지) 양쪽에 적용. 플레이어가 배울 수 있도록
+  **단계가 오를 때만** 침입자 위에 `콤보 ×N` 플로트를 띄운다
+  (`shouldAnnounceCombo` + `Invader.noteComboAnnounce`, 매 타격 스팸 방지).
 - 시뮬은 `trapEffectiveDps`(상태이상 simDps 합 × 숙련)로 함정 가치를 본다. 콤보는
   시뮬에 없다(보수적).
 - 가드: `traps.test.ts`(티어 구조·레시피 상속·콤보/숙련 수식), `trapTransactions.test.ts`,

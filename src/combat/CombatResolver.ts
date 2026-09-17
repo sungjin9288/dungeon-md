@@ -38,6 +38,7 @@ import {
   showTideWave       as _showTideWave,
   showMagicImmuneMiss as _showMagicImmuneMiss,
   showGoldFloat      as _showGoldFloat,
+  showFloatText      as _showFloatText,
   triggerDragonRoar  as _triggerDragonRoar,
 } from './VisualEffects';
 import { logger } from '../utils/logger';
@@ -380,8 +381,13 @@ export function resolveAttack(
   // ── Apply final damage ────────────────────────────────────────────────────────
   const finalDmg = Math.round(dmg);
   // Trap combo: each distinct affliction the target carries (2s window) adds +25%.
-  const comboDmg = finalDmg * comboMultiplier(target.comboCount(now));
-  target.takeDamage(comboDmg);
+  const combo = target.comboCount(now);
+  const comboMult = comboMultiplier(combo);
+  target.takeDamage(finalDmg * comboMult);
+  // Teach the combo: announce only when it escalates, above the invader.
+  if (target.noteComboAnnounce(combo)) {
+    _showFloatText(ctx.scene, target.x, target.y - 26, `콤보 ×${comboMult.toFixed(2)}`, '#ffd36e');
+  }
   data.lastAttackTime = now;
   ctx.rooms[row][col].flashAttack();
   _showAttackLine(ctx.scene, roomX, cellCenterY, target.x, target.y);

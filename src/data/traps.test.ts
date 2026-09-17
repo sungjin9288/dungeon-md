@@ -12,6 +12,7 @@ import {
   trapEffectiveDps,
   trapMasteryCost,
   trapMasteryMult,
+  shouldAnnounceCombo,
 } from './traps';
 
 describe('trap definitions', () => {
@@ -80,5 +81,15 @@ describe('combo and mastery', () => {
     expect(trapEffectiveDps('thorn_wall')).toBe(AFFLICTION_DEFS.bleed.simDps + AFFLICTION_DEFS.poison.simDps);
     expect(trapEffectiveDps('thorn_wall', 2)).toBeCloseTo((5 + 8) * 1.3);
     expect(trapEffectiveDps('nope')).toBe(0);
+  });
+});
+
+describe('combo announcement', () => {
+  it('announces only escalation past the last shown level, and only from two afflictions', () => {
+    expect(shouldAnnounceCombo(0, 1)).toBe(false);
+    expect(shouldAnnounceCombo(0, 2)).toBe(true);
+    expect(shouldAnnounceCombo(2, 2)).toBe(false);
+    expect(shouldAnnounceCombo(2, 3)).toBe(true);
+    expect(shouldAnnounceCombo(4, 3)).toBe(false);
   });
 });
