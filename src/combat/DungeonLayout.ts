@@ -468,19 +468,24 @@ export function buildDungeonGrid(
   const { effectiveCols: gc, effectiveCellSize: cs, availableSlots, waterCells, dungeonTrapSlots, onRoomClick } = cfg;
   const rooms: Room[][] = [];
 
-  let slotIndex = 0;
+  // Only the home board's 3 columns can hold rooms: the battle mirrors the home
+  // slot for slot, so a wider stage grid (4 columns from chapter 2) keeps its
+  // extra column as sealed path. Counting that column as a buildable cell used
+  // to push two of the player's nine rooms off the board.
   for (let row = 0; row < GRID_ROWS; row++) {
     rooms[row] = [];
     for (let col = 0; col < gc; col++) {
       const cx = GRID_X + col * cs + cs / 2;
       const cy = GRID_Y + row * cs + cs / 2;
       const flatIdx = row * gc + col;
+      const homeSlotIdx = getHomeSlotIndex(row, col);
       let state: 'empty' | 'locked' | 'water';
-      if (waterCells.has(flatIdx)) {
-        state = 'water';
+      if (homeSlotIdx !== null) {
+        // A stage cannot flood the player's own rooms: water on a home column is
+        // ignored, and the cell shows exactly what the home board holds.
+        state = homeSlotIdx < availableSlots ? 'empty' : 'locked';
       } else {
-        state = slotIndex < availableSlots ? 'empty' : 'locked';
-        slotIndex++;
+        state = waterCells.has(flatIdx) ? 'water' : 'locked';
       }
       const room = new Room(scene, cx, cy, row, col, state, onRoomClick, cs);
       room.setDepth(10);
@@ -493,8 +498,8 @@ export function buildDungeonGrid(
   // dynamic-cast pattern verbatim to avoid scope-creep into Room's public API.
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < gc; col++) {
-      const idx  = row * gc + col;
-      const slot = dungeonTrapSlots[idx];
+      const idx  = getHomeSlotIndex(row, col);
+      const slot = idx === null ? undefined : dungeonTrapSlots[idx];
       if (!slot) continue;
       const room = rooms[row][col];
       if (room.state !== 'empty') continue;
