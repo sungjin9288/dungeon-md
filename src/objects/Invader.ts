@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { InvaderDef } from '../data/invaders';
+import { COMBO_WINDOW_MS, type AfflictionId } from '../data/traps';
 import { logger } from '../utils/logger';
 import { showFloatText } from '../combat/VisualEffects';
 import {
@@ -42,6 +43,8 @@ export class Invader extends Phaser.GameObjects.PathFollower {
 
   // ── Burn (EMBER_TRAIL) ─────────────────────────────────────────────────────
   public  burnStacks: BurnStack[] = [];
+  /** Trap afflictions received recently: affliction → expiry (scene time). Feeds comboMultiplier. */
+  public  recentAfflictions = new Map<AfflictionId, number>();
   /** @internal */ burnAura!:  Phaser.GameObjects.Graphics;
   /** @internal */ burnLabel!: Phaser.GameObjects.Text;
 
@@ -216,6 +219,21 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   }
 
   // ─── Stun ─────────────────────────────────────────────────────────────────
+
+  /** A trap applied `affliction` now; it counts toward the combo for COMBO_WINDOW_MS. */
+  noteAffliction(affliction: AfflictionId, now: number): void {
+    this.recentAfflictions.set(affliction, now + COMBO_WINDOW_MS);
+  }
+
+  /** Distinct afflictions still inside the combo window. */
+  comboCount(now: number): number {
+    let count = 0;
+    for (const [affliction, expiresAt] of this.recentAfflictions) {
+      if (expiresAt > now) count++;
+      else this.recentAfflictions.delete(affliction);
+    }
+    return count;
+  }
 
   applyStun(durationMs: number): void {
     if (this.isDead || this.isStunned || this.isUnstoppable) return;

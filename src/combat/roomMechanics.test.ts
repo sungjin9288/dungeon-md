@@ -30,6 +30,7 @@ describe('runExtraMonsterAttacks', () => {
         x: 0,
         y: GRID_Y + cellSize / 2,
         takeDamage,
+        comboCount: () => 0,
       }],
       extraMonsterCooldowns: new Map<string, number>(),
       speedMult: 1,

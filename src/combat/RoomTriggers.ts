@@ -16,6 +16,7 @@ import { Invader } from '../objects/Invader';
 import type { RoomData } from '../data/rooms';
 import { getArmoryDmgBonus, getArmoryRadius } from '../data/rooms';
 import type { DungeonSlot } from '../data/wisdom';
+import { getTrapDef, trapMasteryMult, type AfflictionId } from '../data/traps';
 import { GRID_ROWS, GRID_X, GRID_Y, CELL_SIZE } from '../constants/layout';
 import { logger } from '../utils/logger';
 import type { RoomMechanicsContext } from './RoomMechanics';
@@ -90,29 +91,41 @@ export function applyTrapToInvader(
   trapId: string | undefined,
   now: number,
 ): void {
-  if (!trapId || slot.hp <= 0) return;   // broken rooms don't trigger traps
-  // Trap room bonus: +20% trap damage + synergy bonus + 함정술사 set bonus
+  const def = getTrapDef(trapId);
+  if (!def || slot.hp <= 0) return;   // broken rooms don't trigger traps
+  // Trap room bonus: +20% trap damage + synergy bonus + 함정술사 set bonus,
+  // then the trap type's mastery (+15% per level).
   const trapRoomMult  = slot.roomType === 'trap' ? 1.2 : 1.0;
   const synergyMult   = ctx.slotTrapSynergyMult.get(slotIdx) ?? 1.0;
-  const dmgMult = slot.roomLevel * trapRoomMult * synergyMult * (ctx.decorationTrapMult ?? 1);
-  switch (trapId) {
-    case 'spike_trap': {
-      const dmg = 20 * dmgMult;
-      inv.takeDamage(dmg);
-      logger.debug(`[TRAP] slot${slotIdx} spike_trap: ${dmg} dmg`);
+  const mastery       = trapMasteryMult(ctx.trapMastery?.[def.id] ?? 0);
+  const dmgMult = slot.roomLevel * trapRoomMult * synergyMult * (ctx.decorationTrapMult ?? 1) * mastery;
+  for (const affliction of def.afflictions) {
+    applyAffliction(inv, affliction, dmgMult, mastery, now);
+    inv.noteAffliction(affliction, now);
+  }
+  logger.debug(`[TRAP] slot${slotIdx} ${def.id}: ${def.afflictions.join('+')} ×${dmgMult.toFixed(2)}`);
+}
+
+/** One affliction's concrete effect. Durations scale with mastery, damage with dmgMult. */
+function applyAffliction(inv: Invader, affliction: AfflictionId, dmgMult: number, mastery: number, now: number): void {
+  switch (affliction) {
+    case 'bleed':
+      inv.takeDamage(20 * dmgMult);
       break;
-    }
-    case 'slow_trap':
-      inv.applySlow(0.6, 2000);
-      logger.debug(`[TRAP] slot${slotIdx} slow_trap: -40% speed 2s`);
+    case 'slow':
+      inv.applySlow(0.6, Math.round(2000 * mastery));
       break;
-    case 'poison_trap':
-      inv.burnStacks.push({ startTime: now, lastTickTime: now, damage: 8, duration: 4000 });
-      logger.debug(`[TRAP] slot${slotIdx} poison_trap: DoT 8/s x 4s`);
+    case 'poison':
+      inv.burnStacks.push({ startTime: now, lastTickTime: now, damage: 8 * dmgMult, duration: 4000 });
       break;
-    case 'stun_trap':
-      inv.applyStun(1000);
-      logger.debug(`[TRAP] slot${slotIdx} stun_trap: stun 1s`);
+    case 'shock':
+      inv.applyStun(Math.round(1000 * mastery));
+      break;
+    case 'burn':
+      inv.burnStacks.push({ startTime: now, lastTickTime: now, damage: 10 * dmgMult, duration: 3000 });
+      break;
+    case 'fear':
+      inv.applyCharm(Math.round(2000 * mastery));
       break;
   }
 }

@@ -193,6 +193,8 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Dungeon slot traps ──────────────────────────────────────────────────────
   dungeonTrapSlots: import('../data/wisdom').DungeonSlot[] = [];
+  /** Per-trap-type mastery from the save; read once per battle like the slots. */
+  trapMastery: Readonly<Record<string, number>> = {};
   // Extra monster attack cooldowns: key = `${row}_${col}_${slotIdx}` → lastAttackTime ms
   extraMonsterCooldowns = new Map<string, number>();
   /** Per-slot trap damage synergy multiplier (populated by recalcRoomTypeBonuses) */
@@ -231,6 +233,7 @@ export class DungeonScene extends Phaser.Scene {
     this.prestigeDmgMult  = getPrestigeDmgMult(gameState);
     this.synergyManager   = new SynergyManager(this);
     this.dungeonTrapSlots = gameState.dungeonSlots ?? [];
+    this.trapMastery      = gameState.trapMastery ?? {};
     this.decorationBonuses = computeDecorationBonuses(gameState.placedDecorations);
 
     // Build monster → equipment stats lookup

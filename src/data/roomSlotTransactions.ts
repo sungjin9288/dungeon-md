@@ -1,4 +1,4 @@
-import { TRAP_DEFS } from './traps';
+import { getTrapDef, TRAP_DEFS } from './traps';
 import { FAMILY_DEFAULT_ROOM, ROOM_FAMILY, type RoomType } from './rooms';
 import { getSlotBuilding, isRoomBuildingUnlocked } from './roomBuildings';
 import {
@@ -290,34 +290,49 @@ function getTrapCost(trapId: string | undefined): number {
   return TRAP_DEFS.find(t => t.id === trapId)?.cost ?? 0;
 }
 
+function usesStock(trapId: string | undefined): boolean {
+  const def = getTrapDef(trapId);
+  return Boolean(def && def.tier >= 2);
+}
+
+/**
+ * Install a trap. Tier-1 traps are bought with gold on the spot (replacing one
+ * refunds half); tier 2–3 traps come out of crafted stock and go back to it
+ * when removed or replaced.
+ */
 export function installTrapInRoomSlot(
   state: GameState,
   slotIdx: number,
   trapSlotIdx: number,
   trapId: string,
 ): RoomSlotTransactionResult & { cost?: number; refund?: number } {
-  const trapCost = getTrapCost(trapId);
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
+  if (!getTrapDef(trapId)) return { ok: false, state, reason: 'invalid_slot_index' };
   const cap = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
   if (trapSlotIdx < 0 || trapSlotIdx >= cap.traps) {
     return { ok: false, state, reason: 'invalid_slot_index' };
   }
-  if ((state.homeGold ?? 0) < trapCost) {
-    return { ok: false, state, reason: 'insufficient_gold' };
-  }
-  const refund = Math.floor(getTrapCost(slot.trapIds?.[trapSlotIdx]) * 0.5);
+  const fromStock = usesStock(trapId);
+  const trapCost = fromStock ? 0 : getTrapCost(trapId);
+  if (fromStock && (state.trapStock?.[trapId] ?? 0) <= 0) return { ok: false, state, reason: 'insufficient_gold' };
+  if (!fromStock && (state.homeGold ?? 0) < trapCost) return { ok: false, state, reason: 'insufficient_gold' };
+
+  const replaced = slot.trapIds?.[trapSlotIdx];
+  const refund = replaced && !usesStock(replaced) ? Math.floor(getTrapCost(replaced) / 2) : 0;
+  const trapStock = { ...(state.trapStock ?? {}) };
+  if (fromStock) trapStock[trapId] = (trapStock[trapId] ?? 0) - 1;
+  if (replaced && usesStock(replaced)) trapStock[replaced] = (trapStock[replaced] ?? 0) + 1;
+
   const trapIds = Array.from({ length: cap.traps }, (_, i) => slot.trapIds?.[i]);
   trapIds[trapSlotIdx] = trapId;
   const nextSlot = normalizeDungeonSlot({ ...slot, trapIds });
-  return {
-    ok: true,
-    state: replaceSlot({ ...state, homeGold: (state.homeGold ?? 0) + refund - trapCost }, slotIdx, nextSlot),
-    slot: nextSlot,
-    changed: true,
-    cost: trapCost,
-    refund,
-  };
+  const nextState = replaceSlot(
+    { ...state, homeGold: (state.homeGold ?? 0) - trapCost + refund, trapStock },
+    slotIdx,
+    nextSlot,
+  );
+  return { ok: true, state: nextState, slot: nextSlot, changed: true, cost: trapCost, refund };
 }
 
 export function removeTrapFromRoomSlot(
@@ -331,15 +346,13 @@ export function removeTrapFromRoomSlot(
   if (trapSlotIdx < 0 || trapSlotIdx >= cap.traps) {
     return { ok: false, state, reason: 'invalid_slot_index' };
   }
-  const refund = Math.floor(getTrapCost(slot.trapIds?.[trapSlotIdx]) * 0.5);
+  const removed = slot.trapIds?.[trapSlotIdx];
+  const refund = removed && !usesStock(removed) ? Math.floor(getTrapCost(removed) / 2) : 0;
+  const trapStock = { ...(state.trapStock ?? {}) };
+  if (removed && usesStock(removed)) trapStock[removed] = (trapStock[removed] ?? 0) + 1;
   const trapIds = Array.from({ length: cap.traps }, (_, i) => slot.trapIds?.[i]);
   trapIds[trapSlotIdx] = undefined;
   const nextSlot = normalizeDungeonSlot({ ...slot, trapIds });
-  return {
-    ok: true,
-    state: replaceSlot({ ...state, homeGold: (state.homeGold ?? 0) + refund }, slotIdx, nextSlot),
-    slot: nextSlot,
-    changed: true,
-    refund,
-  };
+  const nextState = replaceSlot({ ...state, homeGold: (state.homeGold ?? 0) + refund, trapStock }, slotIdx, nextSlot);
+  return { ok: true, state: nextState, slot: nextSlot, changed: true, refund };
 }

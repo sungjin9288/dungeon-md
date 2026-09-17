@@ -4,7 +4,8 @@ import {
   type OwnedMonster,
 } from './barracks';
 import { resolveOwnedMonsterProfile, type OwnedMonsterProfile } from './monsters';
-import { TRAP_DEFS, type TrapDef } from './traps';
+import { trapEffectiveDps, TRAP_DEFS, type TrapDef } from './traps';
+import { getTrapMastery, getTrapStock } from './trapTransactions';
 import type { GameState, RoomSlotType } from './wisdom';
 
 export interface MonsterLoadoutRecommendation {
@@ -143,13 +144,15 @@ export function getTrapLoadoutRecommendation(
   const installedTrapIds = new Set(
     (slot?.trapIds ?? []).filter((trapId): trapId is string => typeof trapId === 'string' && trapId.length > 0),
   );
+  // Tier 1 is bought with gold; crafted tiers install only from stock.
   const affordableTraps = TRAP_DEFS
-    .filter(trap => dmLevel >= trap.unlockLv && gold >= trap.cost);
+    .filter(trap => dmLevel >= trap.unlockLv)
+    .filter(trap => (trap.tier === 1 ? gold >= trap.cost : getTrapStock(state, trap.id) > 0));
   const diverseTraps = affordableTraps.filter(trap => !installedTrapIds.has(trap.id));
   const candidates = (diverseTraps.length > 0 ? diverseTraps : affordableTraps)
     .map(trap => ({
       trap,
-      score: getTrapScore(trap, roomType),
+      score: getTrapScore(trap, roomType, getTrapMastery(state, trap.id)),
     }))
     .sort((a, b) => b.score - a.score || b.trap.cost - a.trap.cost);
 
@@ -205,7 +208,8 @@ function collectAssignedMonsterIds(state: GameState): Set<string> {
   );
 }
 
-function getTrapScore(trap: TrapDef, roomType: RoomSlotType | undefined): number {
+function getTrapScore(trap: TrapDef, roomType: RoomSlotType | undefined, mastery: number): number {
   const roleBonus = roomType ? TRAP_ROOM_TYPE_BONUS[roomType][trap.id] ?? 0 : 0;
-  return roleBonus + Math.round(trap.cost * 0.2);
+  // Crafted traps have no gold price; their worth is the afflictions they stack.
+  return roleBonus + Math.round(trap.cost * 0.2) + Math.round(trapEffectiveDps(trap.id, mastery) * 2);
 }

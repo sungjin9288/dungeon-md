@@ -9,6 +9,7 @@
 //                     next grid cell (charm-orb, spectral-bolt, etc. intercept
 //                     the normal damage path).
 
+import { comboMultiplier } from '../data/traps';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { Room } from '../objects/Room';
@@ -373,7 +374,9 @@ export function resolveAttack(
 
   // ── Apply final damage ────────────────────────────────────────────────────────
   const finalDmg = Math.round(dmg);
-  target.takeDamage(finalDmg);
+  // Trap combo: each distinct affliction the target carries (2s window) adds +25%.
+  const comboDmg = finalDmg * comboMultiplier(target.comboCount(now));
+  target.takeDamage(comboDmg);
   data.lastAttackTime = now;
   ctx.rooms[row][col].flashAttack();
   _showAttackLine(ctx.scene, roomX, cellCenterY, target.x, target.y);
