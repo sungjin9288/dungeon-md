@@ -7,6 +7,7 @@ import { INVADER_DEFS } from './invaders';
 import { ROOM_DEFS } from './rooms';
 import { getSlotBuilding } from './roomBuildings';
 import { GRID_ROWS } from '../constants/layout';
+import { tempoCooldown } from './combatTempo';
 import type { DungeonSlot, OwnedMonster } from './wisdom';
 import type { WaveSpec } from './stages';
 
@@ -85,7 +86,7 @@ export function calcDungeonDps(
       const building = getSlotBuilding(slot);
       const room = building ? ROOM_DEFS[building] : null;
       if (room && room.attackDamage > 0 && room.attackCooldown > 0) {
-        dps += (room.attackDamage * roomMult * pathCoverage(room.attackRange)) / (room.attackCooldown / 1000);
+        dps += (room.attackDamage * roomMult * pathCoverage(room.attackRange)) / (tempoCooldown(room.attackCooldown) / 1000);
       }
       continue;
     }
@@ -99,7 +100,7 @@ export function calcDungeonDps(
       const def = resolveMonsterDef(mId);
       if (!def || def.attackCooldown === 0) return;
       const mult = index === 0 ? roomMult : 1;
-      dps += (def.baseDamage * mult * pathCoverage(def.range)) / (def.attackCooldown / 1000);
+      dps += (def.baseDamage * mult * pathCoverage(def.range)) / (tempoCooldown(def.attackCooldown) / 1000);
     });
   }
 

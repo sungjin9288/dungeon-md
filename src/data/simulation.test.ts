@@ -3,6 +3,7 @@ import { calcDungeonDps, simulateDungeon, type SimResult } from './simulation';
 import type { DungeonSlot } from './wisdom';
 import type { WaveSpec } from './stages';
 import { resolveMonsterDef } from './monsters';
+import { tempoCooldown } from './combatTempo';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -48,13 +49,13 @@ describe('calcDungeonDps', () => {
 
   it('DPS matches formula: baseDamage / (cooldown/1000) × path coverage (range / rows)', () => {
     const slot = makeSlot(['dokkaebi_warrior']);
-    // 20 / 1.5 ≈ 13.33 sustained, but a range-1 room covers one of three rows
-    expect(calcDungeonDps([slot], [])).toBeCloseTo((20 / 1.5) / 3, 1);
+    // 20 dmg at the home tempo (1500ms → 1000ms), but a range-1 room covers one of three rows
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((20 / (tempoCooldown(1500) / 1000)) / 3, 1);
   });
 
   it('longer reach covers more of the path', () => {
-    // village_archer: 15 / 2.0 = 7.5 sustained at range 2 → 2/3 coverage
-    expect(calcDungeonDps([makeSlot(['village_archer'])], [])).toBeCloseTo(7.5 * (2 / 3), 2);
+    // village_archer: 15 dmg per tempo cooldown at range 2 → 2/3 coverage
+    expect(calcDungeonDps([makeSlot(['village_archer'])], [])).toBeCloseTo((15 / (tempoCooldown(2000) / 1000)) * (2 / 3), 2);
   });
 
   it('adds trap DPS for known trap types', () => {
@@ -117,12 +118,12 @@ describe('calcDungeonDps', () => {
 
   it('uses evolved damage for an evolved owned-monster id', () => {
     const slot = makeSlot(['dokkaebi_warrior_leg']);
-    expect(calcDungeonDps([slot], [])).toBeCloseTo((57 / 1.5) * coverageOf('dokkaebi_warrior_leg'), 5);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((57 / (tempoCooldown(1500) / 1000)) * coverageOf('dokkaebi_warrior_leg'), 5);
   });
 
   it('includes fusion-only hybrids in the battle estimate', () => {
     const slot = makeSlot(['storm_spirit']);
-    expect(calcDungeonDps([slot], [])).toBeCloseTo((24 / 2) * coverageOf('storm_spirit'), 5);
+    expect(calcDungeonDps([slot], [])).toBeCloseTo((24 / (tempoCooldown(2000) / 1000)) * coverageOf('storm_spirit'), 5);
   });
 
   it('room level scales the primary guardian by 1.4 per level, as CombatResolver does', () => {
@@ -217,10 +218,10 @@ describe('simulateDungeon — difficulty labels', () => {
   });
 
   it('hard difficulty when medium DPS partially damages knights (ratio ≈ 0.73)', () => {
-    // three warrior rooms (13.3 DPS) + slow_trap(4 DPS) = 17.3 DPS
+    // two warrior rooms (2 × 20/1.0s × 1/3 ≈ 13.3 DPS) + slow_trap(4 DPS) = 17.3 DPS
     // knight: hp=350, speed=40 → travelSec=16 → damage=277 < 350 → survives
     // ratio = 277/350 ≈ 0.79 → hard (0.55 ≤ r < 0.80)
-    const r = simulateDungeon(threeWarriorRooms(['slow_trap']), [], [makeWave('knight', 1)], 1000);
+    const r = simulateDungeon(threeWarriorRooms(['slow_trap']).slice(0, 2), [], [makeWave('knight', 1)], 1000);
     expect(r.waveResults[0].difficulty).toBe('hard');
   });
 });

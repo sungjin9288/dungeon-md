@@ -21,6 +21,7 @@ import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 import { getRoomSlotCapacity, MAX_ROOM_LEVEL, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
 import { ROOM_DEFS, type RoomData } from '../data/rooms';
 import { getSlotBuilding } from '../data/roomBuildings';
+import { tempoCooldown } from '../data/combatTempo';
 import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
 
@@ -132,7 +133,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       } else {
         data.monsterSlot = null;
         data.monsterSlots = [];
-        data.attackCooldown = ROOM_DEFS[roomType].attackCooldown;
+        data.attackCooldown = tempoCooldown(ROOM_DEFS[roomType].attackCooldown);
       }
 
       room.setDungeonSlotLoadoutVisual({

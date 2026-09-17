@@ -1,3 +1,4 @@
+import { tempoCooldown } from './combatTempo';
 import { describe, it, expect } from 'vitest';
 import {
   MONSTER_DEFS,
@@ -418,11 +419,11 @@ describe('resolveOwnedMonsterProfile', () => {
 
 describe('resolveMonsterAttackCooldown', () => {
   it('applies the magic-room cadence bonus to a fusion-only magic monster', () => {
-    expect(resolveMonsterAttackCooldown('storm_spirit', 'scroll_library')).toBe(1600);
+    expect(resolveMonsterAttackCooldown('storm_spirit', 'scroll_library')).toBe(tempoCooldown(1600));
   });
 
   it('restores the base cadence when an evolved monster changes rooms', () => {
-    expect(resolveMonsterAttackCooldown('dokkaebi_warrior_leg', 'guardian')).toBe(1500);
+    expect(resolveMonsterAttackCooldown('dokkaebi_warrior_leg', 'guardian')).toBe(tempoCooldown(1500));
   });
 
   it('fails closed for an unknown monster in a non-attacking room', () => {

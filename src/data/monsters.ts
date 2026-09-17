@@ -1,4 +1,5 @@
 // ─── Re-export all types (keeps existing import paths working) ────────────────
+import { tempoCooldown } from './combatTempo';
 export type {
   TribeId,
   ElementId,
@@ -208,7 +209,8 @@ export function resolveMonsterAttackCooldown(
   const baseCooldown = profile?.attackCooldown && profile.attackCooldown > 0
     ? profile.attackCooldown
     : ROOM_DEFS[roomType].attackCooldown;
-  return roomType === 'scroll_library' && baseCooldown > 0
+  const roomCooldown = roomType === 'scroll_library' && baseCooldown > 0
     ? Math.round(baseCooldown * 0.8)
     : baseCooldown;
+  return tempoCooldown(roomCooldown);
 }
