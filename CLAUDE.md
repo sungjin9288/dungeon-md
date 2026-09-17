@@ -242,7 +242,11 @@ UI: 소환 탭 카드 아래 44px 스트립(`SummonTribeShards.ts`, 선두 부�
 
 - 가드: `tribeShards.test.ts`(희귀도 표·중복 분기·100개/부족 완성 거절·정확히 100 소모),
   `summonTransactions.test.ts` 결과 필드 확장. 모달 하니스 `summon-shard-redeem`.
-- 미착수: P4 ① 인플로우 목표치(무과금 주 300~450 보석) 시뮬, P4 ③ 부족 픽업 배너.
+- **주간 무과금 보석 인플로우**(`gemInflow.ts estimateWeeklyFreeGems`): 출석 110 + 명성
+  주간 정산 `100 + 30×티어`(`NOTORIETY_WEEKLY_GEMS_BASE`) + 보물 사냥꾼 카드 기대값
+  (6일 × 15% × (50+5×티어)). 가드 `gemInflow.test.ts`: 티어 2~5가 300~450 밴드 안
+  (티어 1 ≈ 290, 6+는 의도적으로 초과 — 밴드 폭 150에 티어당 +34.5).
+- 미착수: P4 ③ 부족 픽업 배너.
 
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
