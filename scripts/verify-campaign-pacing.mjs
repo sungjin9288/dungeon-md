@@ -30,6 +30,8 @@ const viewport = { width: 390, height: 844 };
 
 // Chapter boundaries plus the two homes the guard treats as hard floors.
 const DEFAULT_RUNS = '1:starter,2:lean,5:lean,10:lean,20:lean,32:lean,42:lean,52:lean,62:lean,72:lean,80:lean,90:veteran';
+// Slices per run (each ≈2.5s of battle at 3×). 15-wave veteran stages need more: PACING_BUDGET=160.
+const PACING_BUDGET = Number(process.env.PACING_BUDGET ?? 70);
 const RUNS = (process.env.PACING_RUNS ?? DEFAULT_RUNS).split(',').map(entry => {
   const [stage, kind] = entry.split(':');
   return { stageNumber: Number(stage), kind: kind ?? 'lean' };
@@ -88,7 +90,7 @@ async function launchStage(page, stageNumber) {
 
 /** Drive every wave of the current battle to its end (same loop as the abyss harness). */
 async function fightStage(page) {
-  return page.evaluate(() => {
+  return page.evaluate((budget) => {
     const game = window.__phaserGame;
     const ds = game.scene.getScene('DungeonScene');
     const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
@@ -98,8 +100,7 @@ async function fightStage(page) {
     // long invader lines) must not eat the iterations a later wave needs.
     // Every slice costs real seconds (advanceTime serializes the game), so the
     // budget is tight: 200 slices × 2.5s ≈ 8 game-minutes at 3x.
-    // Slices per run (each ≈2.5s of battle at 3×). 15-wave veteran stages need more: PACING_BUDGET=140.
-    const BUDGET = Number(process.env.PACING_BUDGET ?? 70);
+    const BUDGET = budget;
     let slices = 0;
     let stalls = 0;
     while (slices < BUDGET) {
@@ -137,7 +138,7 @@ async function fightStage(page) {
       stalls,
       timeline,
     };
-  });
+  }, PACING_BUDGET);
 }
 
 try {
