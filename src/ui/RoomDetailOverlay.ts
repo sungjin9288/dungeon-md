@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { getSlotBuildingName } from '../data/roomBuildings';
 import {
   getRoomSlotCapacity, getMaxRoomLevel, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
@@ -155,7 +156,7 @@ export function openRoomDetail(
   c.add(backZone);
 
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
-  const typeLabel = typeDef?.name ?? '미설계 방';
+  const typeLabel = typeDef ? getSlotBuildingName(slot, typeDef.name) : '미설계 방';
   const titleIconX = -CW / 2 + 112;
   drawRoomTypeSigil(hdrG, slot.roomType, titleIconX, backCY, 22, slot.roomType ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EDGE);
   c.add(scene.add.text(titleIconX + 18, backCY - 7, `방 #${slotIdx + 1} · ${typeLabel}`, {

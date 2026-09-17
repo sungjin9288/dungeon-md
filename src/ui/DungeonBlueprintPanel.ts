@@ -1,8 +1,10 @@
+import { getSlotBuildingName } from '../data/roomBuildings';
 import Phaser from 'phaser';
 import {
   getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   SLOT_UNLOCK_LEVELS,
+  type DungeonSlot,
   type GameState,
   type RoomSlotType,
 } from '../data/wisdom';
@@ -41,11 +43,11 @@ const ROOM_PREVIEW_STYLE: Record<RoomSlotType | 'empty' | 'locked', { fill: numb
   locked:  { fill: 0x111a22, accent: 0x3d3020, text: '#617586' },
 };
 
-function getRoomVisual(roomType: RoomSlotType | undefined): { icon: string; name: string } {
-  const def = ROOM_SLOT_TYPE_DEFS.find(t => t.id === roomType);
+function getRoomVisual(slot: DungeonSlot | undefined): { icon: string; name: string } {
+  const def = ROOM_SLOT_TYPE_DEFS.find(t => t.id === slot?.roomType);
   return {
     icon: def?.icon ?? '+',
-    name: def?.name ?? '미설계',
+    name: def && slot ? getSlotBuildingName(slot, def.name) : '미설계',
   };
 }
 
@@ -183,7 +185,7 @@ export function buildDungeonBlueprintPanel(
     const style = unlocked
       ? ROOM_PREVIEW_STYLE[slot?.roomType ?? 'empty']
       : ROOM_PREVIEW_STYLE.locked;
-    const roomVisual = getRoomVisual(slot?.roomType);
+    const roomVisual = getRoomVisual(slot ?? undefined);
     const monsterCount = (slot?.monsterIds ?? []).filter(Boolean).length;
     const trapCount = (slot?.trapIds ?? []).filter(Boolean).length;
     const built = unlocked && !!slot?.roomType;

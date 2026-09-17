@@ -1,5 +1,6 @@
 import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barracks';
 import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
+import type { RoomFamily, RoomType } from './rooms';
 export type { OwnedMonster };
 
 // ─── Branch definitions ───────────────────────────────────────────────────────
@@ -162,7 +163,8 @@ export interface SummonRecord {
 
 // ─── Room slot type ──────────────────────────────────────────────────────────
 
-export type RoomSlotType = 'combat' | 'trap' | 'support' | 'magic';
+/** A slot's family. Kept as its own name because save data and UI copy call it the slot "type". */
+export type RoomSlotType = RoomFamily;
 
 export interface RoomSlotTypeDef {
   id:       RoomSlotType;
@@ -212,6 +214,8 @@ export function getMaxRoomLevel(dmLevel: number): number {
 
 export interface DungeonSlot {
   roomType?:   RoomSlotType;
+  /** Concrete room that deploys; absent means the family's default (see roomBuildings.ts). */
+  building?:   RoomType;
   monsterIds:  (string | undefined)[];  // ordered monster slots (length = capacity.monsters)
   trapIds:     (string | undefined)[];  // ordered trap slots    (length = capacity.traps)
   roomLevel:   number;   // 1–5

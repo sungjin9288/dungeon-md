@@ -1,8 +1,11 @@
 import { TRAP_DEFS } from './traps';
+import { FAMILY_DEFAULT_ROOM, ROOM_FAMILY, type RoomType } from './rooms';
+import { getSlotBuilding, isRoomBuildingUnlocked } from './roomBuildings';
 import {
   getMaxRoomLevel,
   getRoomSlotCapacity,
   getWisdomBonuses,
+  recordBuiltRoom,
   type DungeonSlot,
   type GameState,
   type RoomSlotType,
@@ -13,6 +16,7 @@ export const ROOM_UPGRADE_COSTS = [150, 300, 600, 1200, 2400];
 export const ROOM_UPGRADE_HP = [300, 450, 650, 900, 1200];
 
 export type RoomSlotTransactionFailureReason =
+  | 'building_locked'
   | 'slot_not_found'
   | 'insufficient_gold'
   | 'room_level_cap_reached'
@@ -30,10 +34,11 @@ export interface RoomSlotHpSnapshotResult {
   changed:      boolean;
 }
 
-export function createDefaultDungeonSlot(roomType?: RoomSlotType): DungeonSlot {
+export function createDefaultDungeonSlot(roomType?: RoomSlotType, building?: RoomType): DungeonSlot {
   const cap = getRoomSlotCapacity(1, roomType);
   return {
     roomType,
+    ...(roomType ? { building: building ?? FAMILY_DEFAULT_ROOM[roomType] } : {}),
     monsterIds: Array<string | undefined>(cap.monsters).fill(undefined),
     trapIds: Array<string | undefined>(cap.traps).fill(undefined),
     roomLevel: 1,
@@ -116,11 +121,42 @@ export function changeRoomSlotType(
 ): RoomSlotTransactionResult {
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
+  // A building survives a family change only if it belongs to the new family.
+  const building = slot.building && ROOM_FAMILY[slot.building] === roomType
+    ? slot.building
+    : FAMILY_DEFAULT_ROOM[roomType];
+  return applySlotDesign(state, slotIdx, slot, roomType, building);
+}
+
+/** Pick the concrete building a slot fights as; its family follows the building. */
+export function setRoomSlotBuilding(
+  state: GameState,
+  slotIdx: number,
+  building: RoomType,
+): RoomSlotTransactionResult {
+  const slot = state.dungeonSlots?.[slotIdx];
+  if (!slot) return { ok: false, state, reason: 'slot_not_found' };
+  if (!isRoomBuildingUnlocked(building, state)) return { ok: false, state, reason: 'building_locked' };
+  return applySlotDesign(state, slotIdx, slot, ROOM_FAMILY[building], building);
+}
+
+function applySlotDesign(
+  state: GameState,
+  slotIdx: number,
+  slot: DungeonSlot,
+  roomType: RoomSlotType,
+  building: RoomType,
+): RoomSlotTransactionResult {
   const isFirstDesign = slot.roomLevel < 1 || slot.maxHp <= 0;
   const nextSlot = normalizeDungeonSlot(isFirstDesign
-    ? createDefaultDungeonSlot(roomType)
-    : { ...slot, roomType });
-  return { ok: true, state: replaceSlot(state, slotIdx, nextSlot), slot: nextSlot, changed: true };
+    ? createDefaultDungeonSlot(roomType, building)
+    : { ...slot, roomType, building });
+  const withSlot = replaceSlot(state, slotIdx, nextSlot);
+  // Achievements count buildings ("raise a void forge"), so the first design of
+  // a slot — the moment a room actually exists — is what gets recorded.
+  const previousBuilding = getSlotBuilding(slot);
+  const nextState = previousBuilding === null ? recordBuiltRoom(withSlot, building) : withSlot;
+  return { ok: true, state: nextState, slot: nextSlot, changed: true };
 }
 
 export function getRoomRepairCost(slot: DungeonSlot): number {

@@ -5,6 +5,7 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { getSlotBuildingName } from '../data/roomBuildings';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
@@ -206,7 +207,7 @@ function drawHomeDungeonHotspot(
   const metrics = calculateRoomMetrics(scene.gs, slot);
   const monsterIds = (slot.monsterIds ?? []).filter((id): id is string => Boolean(id));
   const trapCount = (slot.trapIds ?? []).filter(Boolean).length;
-  const title = broken ? '파손된 방' : typeDef?.name ?? '던전 방';
+  const title = broken ? '파손된 방' : typeDef ? getSlotBuildingName(slot, typeDef.name) : '던전 방';
   c.add(scene.add.text(cx, y + 8, title, {
     fontFamily: 'Georgia, serif', fontSize: '11px',
     color: broken ? CASUAL_CSS.RED : '#ead7af', fontStyle: 'bold',

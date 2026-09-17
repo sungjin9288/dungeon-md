@@ -19,7 +19,8 @@ import type { DungeonTheme } from '../themes/themes';
 import { drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes/decorations';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 import { getRoomSlotCapacity, MAX_ROOM_LEVEL, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
-import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
+import { ROOM_DEFS, type RoomData } from '../data/rooms';
+import { getSlotBuilding } from '../data/roomBuildings';
 import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
 
@@ -27,13 +28,6 @@ export const WAVE_BUTTON_W = 270;
 export const WAVE_BUTTON_H = 60;
 
 const HOME_SLOT_COLS = 3;
-
-const SLOT_TO_COMBAT_ROOM: Record<RoomSlotType, RoomType> = {
-  combat:  'guardian',
-  trap:    'trap',
-  support: 'medicine_hall',
-  magic:   'scroll_library',
-};
 
 const SLOT_VISUAL_ACCENT: Record<RoomSlotType, number> = {
   combat:  0xff8a45,
@@ -58,10 +52,6 @@ export interface DungeonSlotDeploymentSummary {
   readonly equippedMonsters: number;
   readonly activeTraps:      number;
   readonly brokenRooms:      number;
-}
-
-export function resolveSlotCombatRoomType(roomType: RoomSlotType | undefined): RoomType | null {
-  return roomType ? SLOT_TO_COMBAT_ROOM[roomType] : null;
 }
 
 function getHomeSlotIndex(row: number, col: number): number | null {
@@ -94,7 +84,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       if (slotIndex === null) continue;
 
       const slot = dungeonTrapSlots[slotIndex];
-      const roomType = resolveSlotCombatRoomType(slot?.roomType);
+      const roomType = slot ? getSlotBuilding(slot) : null;
       const room = rooms[row]?.[col];
       if (!slot || !roomType || !room || room.state !== 'empty') continue;
 

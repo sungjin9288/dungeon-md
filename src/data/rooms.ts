@@ -190,3 +190,35 @@ export function getDragonsLairCooldown(level: number): number {
 export function getRoomStructuralHp(type: RoomType): number {
   return ROOM_DEFS[type]?.baseHp ?? 100;
 }
+
+// ─── Room families ────────────────────────────────────────────────────────────
+// The home board designs a slot by *family* (what role the room plays, which
+// also fixes its monster/trap capacity bonus) and then by *building* (which of
+// the concrete rooms above actually fights). Every building belongs to exactly
+// one family; a family's default building is the one a fresh design gets.
+
+export type RoomFamily = 'combat' | 'trap' | 'support' | 'magic';
+
+export const ROOM_FAMILY: Record<RoomType, RoomFamily> = {
+  guardian:         'combat',
+  tower:            'combat',
+  dragons_lair:     'combat',
+  celestial_shrine: 'combat',
+  void_forge:       'combat',
+  trap:             'trap',
+  trap_corridor:    'trap',
+  gold:             'support',
+  medicine_hall:    'support',
+  armory:           'support',
+  scroll_library:   'magic',
+  spirit_altar:     'magic',
+};
+
+export const FAMILY_DEFAULT_ROOM: Record<RoomFamily, RoomType> = {
+  combat:  'guardian',
+  trap:    'trap',
+  support: 'medicine_hall',
+  magic:   'scroll_library',
+};
+
+export const ROOM_FAMILY_ORDER: readonly RoomFamily[] = ['combat', 'trap', 'support', 'magic'];

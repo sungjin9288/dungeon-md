@@ -6,6 +6,7 @@ import {
   assignMonsterToRoomSlot,
   changeRoomSlotType,
   createDefaultDungeonSlot,
+  setRoomSlotBuilding,
   ensureDungeonSlot,
   getRoomRepairCost,
   installTrapInRoomSlot,
@@ -98,6 +99,52 @@ describe('roomSlotTransactions — slot shape', () => {
     expect(result.slot.monsterIds).toEqual(['m1', undefined]);
     expect(result.slot.trapIds).toEqual(['t1']);
     expect(state.dungeonSlots[0].monsterIds).toEqual(['m1']);
+  });
+
+  it('gives a fresh design its family default building and records it as built', () => {
+    const slot = makeSlot({ roomType: undefined, roomLevel: 0, hp: 0, maxHp: 0, monsterIds: [], trapIds: [] });
+    const state = makeState({ dungeonSlots: [slot] });
+
+    const result = changeRoomSlotType(state, 0, 'combat');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.slot.building).toBe('guardian');
+    expect(result.state.roomsBuilt).toEqual(['guardian']);
+    expect(state.roomsBuilt ?? []).toEqual([]);
+  });
+
+  it('keeps a building across a family change only when it belongs to the new family', () => {
+    const slot = makeSlot({ roomType: 'combat', building: 'tower', roomLevel: 2 });
+    const state = makeState({ dungeonSlots: [slot], roomsBuilt: ['tower'] });
+
+    const sameFamily = changeRoomSlotType(state, 0, 'combat');
+    expect(sameFamily.ok && sameFamily.slot.building).toBe('tower');
+
+    const otherFamily = changeRoomSlotType(state, 0, 'magic');
+    expect(otherFamily.ok && otherFamily.slot.building).toBe('scroll_library');
+    // an already-built room changing role is not a new building
+    expect(otherFamily.ok && otherFamily.state.roomsBuilt).toEqual(['tower']);
+  });
+
+  it('setRoomSlotBuilding syncs the family to the building and refuses locked buildings', () => {
+    const slot = makeSlot({ roomType: 'combat', roomLevel: 1 });
+    const state = makeState({ dungeonSlots: [slot] });
+
+    const tower = setRoomSlotBuilding(state, 0, 'tower');
+    expect(tower.ok).toBe(true);
+    if (!tower.ok) return;
+    expect(tower.slot.building).toBe('tower');
+    expect(tower.slot.roomType).toBe('combat');
+
+    const altar = setRoomSlotBuilding(state, 0, 'spirit_altar');
+    expect(altar.ok).toBe(false);
+    if (altar.ok) return;
+    expect(altar.reason).toBe('building_locked');
+    expect(altar.state).toBe(state);
+
+    const library = setRoomSlotBuilding(state, 0, 'scroll_library');
+    expect(library.ok && library.slot.roomType).toBe('magic');
   });
 
   it('initializes a first-time room design as a healthy level 1 room', () => {

@@ -8,13 +8,15 @@ import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
   ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel,
-  type GameState, type DungeonSlot, type RoomSlotType,
+  type GameState, type DungeonSlot,
 } from '../data/wisdom';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
+import { ROOM_DEFS, ROOM_FAMILY } from '../data/rooms';
+import { getSlotBuilding, listUnlockedBuildings } from '../data/roomBuildings';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
-  ensureDungeonSlot,
+  ensureDungeonSlot, setRoomSlotBuilding,
   removeMonsterFromRoomSlot, removeTrapFromRoomSlot,
   upgradeRoomSlot, getRoomUpgradeCost,
   repairRoomSlot, getRoomRepairCost,
@@ -275,24 +277,31 @@ function render(): void {
   // ── Content ────────────────────────────────────────────────────────────────
   const stripY = tabY + 40;
   const stripH = TRAY_H - (stripY - TRAY_Y) - 12;
-  if (activeTab === 'type') renderTypeStrip(c, slot, stripY, stripH);
+  if (activeTab === 'type') renderTypeStrip(c, gs, slot, stripY, stripH);
   else if (activeTab === 'monster') renderMonsterStrip(c, gs, slot, stripY, stripH);
   else renderTrapStrip(c, gs, slot, stripY, stripH);
 }
 
 // ── 방 설계 ──────────────────────────────────────────────────────────────────
-function renderTypeStrip(c: Phaser.GameObjects.Container, slot: DungeonSlot | undefined, y: number, h: number): void {
+// Lists every building the campaign has unlocked, in family order. Picking one
+// sets both the slot's family (capacity bonus) and the room that deploys.
+function renderTypeStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: DungeonSlot | undefined, y: number, h: number): void {
   const cardW = 86, gap = 8;
-  const inner = buildStrip(c, y, h, ROOM_SLOT_TYPE_DEFS.length, cardW, gap);
+  const buildings = listUnlockedBuildings(gs);
+  const inner = buildStrip(c, y, h, buildings.length, cardW, gap);
+  const active = slot ? getSlotBuilding(slot) : null;
   let x = 0;
-  for (const def of ROOM_SLOT_TYPE_DEFS) {
-    const on = slot?.roomType === def.id;
+  for (const type of buildings) {
+    const def = ROOM_DEFS[type];
+    const family = ROOM_SLOT_TYPE_DEFS.find(t => t.id === ROOM_FAMILY[type]);
+    const on = active === type;
     const z = chipBase(inner, x, 0, cardW, h, on, COLORS.JADE);
-    addText(inner, x + cardW / 2, h / 2 - 12, def.icon, '26px', '#ffffff', false, 0.5);
-    addText(inner, x + cardW / 2, h - 18, def.name, '12px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
+    addText(inner, x + cardW / 2, h / 2 - 14, def.emoji, '24px', '#ffffff', false, 0.5);
+    addText(inner, x + cardW / 2, h - 30, def.koreanName, '11px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
+    addText(inner, x + cardW / 2, h - 14, family?.name ?? '', '9px', on ? '#9fe1cb' : '#8f8468', false, 0.5);
     z.on('pointerdown', () => {
       const ensured = ensureDungeonSlot(ctxRef!.getGameState(), activeSlot);
-      const r = changeRoomSlotType(ensured.state, activeSlot, def.id as RoomSlotType);
+      const r = setRoomSlotBuilding(ensured.state, activeSlot, type);
       if (r.ok) commit(r.state);
     });
     x += cardW + gap;
