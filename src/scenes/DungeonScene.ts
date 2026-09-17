@@ -2,15 +2,12 @@ import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { Invader } from '../objects/Invader';
 import { audioManager } from '../audio/AudioManager';
-import { RoomSelectionPanel }  from '../ui/RoomSelectionPanel';
-import { MonsterSelectPanel }  from '../ui/MonsterSelectPanel';
-import { RoomUpgradePanel }    from '../ui/RoomUpgradePanel';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
   CANVAS_HEIGHT,
   GRID_COLS, GRID_ROWS, CELL_SIZE,
 } from '../constants/layout';
-import { type RoomData, type RoomType } from '../data/rooms';
+import { type RoomData } from '../data/rooms';
 import type { InvaderType, InvaderDef } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
@@ -18,7 +15,6 @@ import { computeDecorationBonuses, EMPTY_BONUSES, type DecorationBonuses } from 
 import { type EquipmentStats } from '../data/barracks';
 import { applyDailyChallengeTick, type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import type { ObjectiveType } from '../data/quests';
-import { STAGE_CONFIGS } from '../data/stageProgress';
 import { applyChapterTheme } from './ChapterTheme';
 import { resolveStageSetup, buildEquipmentMap } from '../combat/DungeonSceneInit';
 import { SkillHUD } from '../combat/SkillHUD';
@@ -28,7 +24,7 @@ import { processSpawnQueue as _processSpawnQueue, spawnInvaderByType as _spawnIn
 import { registerDynamicSpawn as _registerDynamicSpawn } from '../combat/waveSpawnAccounting';
 import { showSkillPopup as _showSkillPopup } from '../combat/SkillPopup';
 import { handleInvaderKilled as _handleInvaderKilled } from '../combat/KillHandler';
-import { spawnBuildParticles as _spawnBuildParticles, showRangePreview as _showRangePreview, hideRangePreview as _hideRangePreview } from '../combat/RoomVfx';
+import { showRangePreview as _showRangePreview, hideRangePreview as _hideRangePreview } from '../combat/RoomVfx';
 import {
   type RoomMechanicsContext,
   runTigersPounce as _runTigersPounce,
@@ -63,7 +59,6 @@ import { activateSkillEffect } from '../combat/ActiveSkills';
 import { BossHud } from '../combat/BossHud';
 import { startWave as _startWave } from '../combat/WaveStart';
 import { showWaveEnemyPreview as _showWaveEnemyPreview, showEndlessMilestoneToast as _showEndlessMilestoneToast, showEndlessResult as _showEndlessResult, checkWaveEnd as _checkWaveEnd } from '../combat/WaveLifecycle';
-import { placeRoom as _placeRoom, assignMonster as _assignMonster, upgradeRoom as _upgradeRoom } from '../combat/RoomActions';
 import { onRoomClick as _onRoomClick } from '../combat/RoomInput';
 import { initSkillHUD as _initSkillHUD, initSwapManager as _initSwapManager } from '../combat/GameplayInit';
 import {
@@ -77,7 +72,6 @@ import {
 import {
   buildRoomInputCtx,
   buildActiveSkillContext,
-  buildRoomActionsCtx,
   buildWaveStartCtx,
   buildSpawnPipelineCtx,
   buildResultFlowCtx,
@@ -124,11 +118,6 @@ export class DungeonScene extends Phaser.Scene {
   seenTraitBehaviors: Set<string> = new Set();
 
   // ── UI ─────────────────────────────────────────────────────────────────────
-  panel!:         RoomSelectionPanel;
-  monsterPanel!:  MonsterSelectPanel;
-  upgradePanel!:  RoomUpgradePanel;
-  selectedRoom:   Room | null = null;
-  unlockedStage   = 1;        // Chapter 1 start
   // Active skill system
   skillPopup?:    Phaser.GameObjects.Container;
   skillCooldowns  = new Map<string, number>();  // `${row}_${col}_${skillId}` → ready-at ms
@@ -286,14 +275,10 @@ export class DungeonScene extends Phaser.Scene {
     this.spawnQueue      = [];
     this.waveEndChecked  = false;
     this.waveHasSpawned  = false;
-    this.selectedRoom    = null;
     this.killsThisRun    = 0;
     this.goldEarnedThisRun = 0;
     this.endlessRecordBroken = false;
     this.skillCooldowns.clear();
-
-    // Load unlockedStage from STAGE_CONFIGS so the monster picker shows correct options
-    this.unlockedStage = STAGE_CONFIGS.find(s => s.stageNumber === setup.stageNumber)?.unlockedStage ?? setup.stageNumber;
 
     logger.debug(`[WISDOM] maxHp: ${this.maxHp}, slots: ${this.baseSlots}`);
 
@@ -319,9 +304,6 @@ export class DungeonScene extends Phaser.Scene {
     this.addDustMotes();
     this.addFog();
     this.buildWaveButton();
-    this.buildPanel();
-    this.buildMonsterPanel();
-    this.buildUpgradePanel();
     this.setupEvents();
     applyChapterTheme(this, this.stageChapter, this.effectiveCellSize);
 
@@ -485,32 +467,6 @@ export class DungeonScene extends Phaser.Scene {
     this.waveBtnZone = refs.zone;
   }
 
-  // ─── Panel ────────────────────────────────────────────────────────────────
-
-  private buildPanel(): void {
-    this.panel = new RoomSelectionPanel(
-      this,
-      (row, col, type) => this.placeRoom(row, col, type),
-      () => { this.selectedRoom?.deselect(); this.selectedRoom = null; },
-    );
-  }
-
-  private buildMonsterPanel(): void {
-    this.monsterPanel = new MonsterSelectPanel(
-      this,
-      (row, col, id) => this.assignMonster(row, col, id),
-      () => { /* no-op: room already placed */ },
-    );
-  }
-
-  private buildUpgradePanel(): void {
-    this.upgradePanel = new RoomUpgradePanel(
-      this,
-      (row, col) => this.upgradeRoom(row, col),
-      () => { this.hideRangePreview(); },
-    );
-  }
-
   // ─── Room Interaction ─────────────────────────────────────────────────────
 
   private onRoomClick(room: Room): void {
@@ -540,20 +496,6 @@ export class DungeonScene extends Phaser.Scene {
     activateSkillEffect(skillId, buildActiveSkillContext(this, room));
   }
 
-  private placeRoom(row: number, col: number, type: RoomType): void {
-    _placeRoom(buildRoomActionsCtx(this), row, col, type);
-  }
-
-  private assignMonster(row: number, col: number, id: string): void {
-    _assignMonster(buildRoomActionsCtx(this), row, col, id);
-  }
-
-  private upgradeRoom(row: number, col: number): void {
-    _upgradeRoom(buildRoomActionsCtx(this), row, col);
-  }
-
-  // ─── Build particles ──────────────────────────────────────────────────────
-
   // ─── Attack range preview ─────────────────────────────────────────────────
 
   /** Draw a semi-transparent dashed range ring on the room at (row, col). */
@@ -567,10 +509,6 @@ export class DungeonScene extends Phaser.Scene {
     if (!this.rangePreviewGfx) return;
     _hideRangePreview(this, this.rangePreviewGfx);
     this.rangePreviewGfx = undefined;
-  }
-
-  spawnBuildParticles(x: number, y: number): void {
-    _spawnBuildParticles(this, x, y);
   }
 
   // ─── Wave Flow ────────────────────────────────────────────────────────────

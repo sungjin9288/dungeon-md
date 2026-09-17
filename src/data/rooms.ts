@@ -15,7 +15,6 @@ export interface RoomDef {
   goldPerSec: number;
   baseHp: number;
   upgradeMult: number;
-  upgradeCosts?: number[];  // explicit [Lv1→2 cost, Lv2→3 cost] override
   chapter?: number;         // 1, 2, or 3; undefined = Ch1
   isPassive?: boolean;      // armory: no monster, no attack — pure buff
   healRate?: number;        // medicine_hall: HP/sec to adjacent rooms
@@ -90,7 +89,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '📚', cost: 120, accentColor: 0x7a20c0, accentCSS: '#7a20c0',
     attackDamage: 0, attackRange: 0, attackCooldown: 0,   // no direct attack — monsters do the damage
     goldPerSec: 0, baseHp: 160, upgradeMult: 1.5,
-    upgradeCosts: [170, 300],
   },
   trap_corridor: {
     type: 'trap_corridor', koreanName: '함정 복도', chapter: 2,
@@ -98,7 +96,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '⚙️', cost: 110, accentColor: 0x2a7a30, accentCSS: '#2a7a30',
     attackDamage: 15, attackRange: 1, attackCooldown: 2500,
     goldPerSec: 0, baseHp: 130, upgradeMult: 1.5,
-    upgradeCosts: [160, 320],
   },
 
   // ─── Chapter 3 rooms ───────────────────────────────────────────────────────
@@ -109,7 +106,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '⚒️', cost: 90, accentColor: 0x8b6914, accentCSS: '#8b6914',
     attackDamage: 0, attackRange: 0, attackCooldown: 0,
     goldPerSec: 0, baseHp: 180, upgradeMult: 1.5,
-    upgradeCosts: [140, 280],
   },
   medicine_hall: {
     type: 'medicine_hall', koreanName: '의술 방', chapter: 3,
@@ -117,7 +113,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '🌿', cost: 100, accentColor: 0x228b22, accentCSS: '#228b22',
     attackDamage: 0, attackRange: 0, attackCooldown: 0,
     goldPerSec: 0, baseHp: 140, upgradeMult: 1.5, healRate: 2,
-    upgradeCosts: [150, 250],
   },
   spirit_altar: {
     type: 'spirit_altar', koreanName: '제단', chapter: 4,
@@ -125,7 +120,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '⛩️', cost: 150, accentColor: 0x7700cc, accentCSS: '#7700cc',
     attackDamage: 0, attackRange: 0, attackCooldown: 0,
     goldPerSec: 0, baseHp: 160, upgradeMult: 1.5,
-    upgradeCosts: [200, 400],
   },
   dragons_lair: {
     type: 'dragons_lair', koreanName: '용의 둥지', chapter: 4,
@@ -133,7 +127,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '🐲', cost: 200, accentColor: 0x440088, accentCSS: '#440088',
     attackDamage: 30, attackRange: 1, attackCooldown: 5000,
     goldPerSec: 0, baseHp: 300, upgradeMult: 1.6,
-    upgradeCosts: [250, 500],
   },
 
   // ─── Chapter 5 rooms ───────────────────────────────────────────────────────
@@ -144,7 +137,6 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '🕌', cost: 160, accentColor: 0xe8c060, accentCSS: '#e8c060',
     attackDamage: 22, attackRange: 1, attackCooldown: 3000,
     goldPerSec: 0, baseHp: 180, upgradeMult: 1.5,
-    upgradeCosts: [200, 380],
   },
 
   // ─── Chapter 6 rooms ───────────────────────────────────────────────────────
@@ -155,38 +147,28 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     emoji: '🔥', cost: 190, accentColor: 0x3300aa, accentCSS: '#3300aa',
     attackDamage: 260, attackRange: 3, attackCooldown: 5500,
     goldPerSec: 0, baseHp: 220, upgradeMult: 1.6,
-    upgradeCosts: [280, 560],
   },
 };
 
-export const MAX_ROOM_LEVEL = 3;
-
-export function getUpgradeCost(type: RoomType, level: number): number {
-  const d = ROOM_DEFS[type];
-  if (d.upgradeCosts && d.upgradeCosts[level - 1] !== undefined) {
-    return d.upgradeCosts[level - 1];
-  }
-  return Math.round(d.cost * Math.pow(d.upgradeMult, level));
-}
-
-export function getAttackDamage(type: RoomType, level: number): number {
-  const d = ROOM_DEFS[type];
-  return Math.round(d.attackDamage * Math.pow(1.4, level - 1));
+// Per-level effect tables. Home rooms climb to MAX_ROOM_LEVEL (5); a level past
+// the end of a table holds the last value rather than falling off a cliff.
+function atLevel<T>(table: readonly T[], level: number): T {
+  return table[Math.min(Math.max(level, 1), table.length) - 1];
 }
 
 /** Aura bonus (as a multiplier) that a scroll_library grants adjacent rooms */
 export function getScrollAuraBonus(level: number): number {
-  return [0.15, 0.25, 0.40][level - 1] ?? 0;
+  return atLevel([0.15, 0.25, 0.40, 0.50, 0.60], level);
 }
 
 /** Heal rate (HP/sec) that a medicine_hall grants adjacent rooms at given level */
 export function getMedicineHealRate(level: number): number {
-  return [2, 5, 10][level - 1] ?? 2;
+  return atLevel([2, 5, 10, 15, 20], level);
 }
 
 /** Damage bonus multiplier that an armory grants to adjacent guardian rooms */
 export function getArmoryDmgBonus(level: number): number {
-  return [0.25, 0.35, 0.50][level - 1] ?? 0.25;
+  return atLevel([0.25, 0.35, 0.50, 0.60, 0.70], level);
 }
 
 /** Armory radius in grid tiles */
@@ -196,12 +178,12 @@ export function getArmoryRadius(level: number): number {
 
 /** Kills needed per level to summon a ghost from spirit_altar */
 export function getAltarKillsNeeded(level: number): number {
-  return [10, 8, 6][level - 1] ?? 10;
+  return atLevel([10, 8, 6, 5, 4], level);
 }
 
 /** Dragon's Lair attack cooldown (ms) per level */
 export function getDragonsLairCooldown(level: number): number {
-  return [5000, 4000, 3000][level - 1] ?? 5000;
+  return atLevel([5000, 4000, 3000, 2500, 2000], level);
 }
 
 /** Room structural HP for Ch3 — returns baseHp from RoomDef */

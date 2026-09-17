@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   ROOM_DEFS,
-  MAX_ROOM_LEVEL,
-  getUpgradeCost,
-  getAttackDamage,
   getScrollAuraBonus,
   getMedicineHealRate,
   getArmoryDmgBonus,
@@ -83,79 +80,9 @@ describe('ROOM_DEFS', () => {
     expect(ROOM_DEFS['guardian'].goldPerSec).toBe(0);
   });
 
-  it('MAX_ROOM_LEVEL is 3', () => {
-    expect(MAX_ROOM_LEVEL).toBe(3);
-  });
 });
 
 // ─── getUpgradeCost ───────────────────────────────────────────────────────────
-
-describe('getUpgradeCost', () => {
-  it('uses explicit upgradeCosts when provided (scroll_library Lv1→2)', () => {
-    // upgradeCosts: [170, 300]
-    expect(getUpgradeCost('scroll_library', 1)).toBe(170);
-  });
-
-  it('uses explicit upgradeCosts Lv2→3', () => {
-    expect(getUpgradeCost('scroll_library', 2)).toBe(300);
-  });
-
-  it('falls back to formula cost × upgradeMult^level (guardian Lv1→2)', () => {
-    // cost=100, upgradeMult=1.6, level=1 → round(100 × 1.6^1) = 160
-    expect(getUpgradeCost('guardian', 1)).toBe(160);
-  });
-
-  it('formula for Lv2→3 compounds correctly', () => {
-    // cost=100, mult=1.6, level=2 → round(100 × 1.6^2) = round(256) = 256
-    expect(getUpgradeCost('guardian', 2)).toBe(256);
-  });
-
-  it('upgrade cost increases with level', () => {
-    expect(getUpgradeCost('guardian', 2)).toBeGreaterThan(getUpgradeCost('guardian', 1));
-  });
-
-  it('returns a rounded integer', () => {
-    expect(Number.isInteger(getUpgradeCost('trap', 1))).toBe(true);
-  });
-});
-
-// ─── getAttackDamage ──────────────────────────────────────────────────────────
-
-describe('getAttackDamage', () => {
-  it('returns base attackDamage at level 1', () => {
-    expect(getAttackDamage('guardian', 1)).toBe(20);
-  });
-
-  it('applies 1.4× scaling at level 2', () => {
-    // 20 × 1.4^1 = 28
-    expect(getAttackDamage('guardian', 2)).toBe(28);
-  });
-
-  it('applies 1.4^2 scaling at level 3', () => {
-    // 20 × 1.96 = 39.2 → rounded 39
-    expect(getAttackDamage('guardian', 3)).toBe(39);
-  });
-
-  it('strictly increases per level', () => {
-    const d1 = getAttackDamage('tower', 1);
-    const d2 = getAttackDamage('tower', 2);
-    const d3 = getAttackDamage('tower', 3);
-    expect(d2).toBeGreaterThan(d1);
-    expect(d3).toBeGreaterThan(d2);
-  });
-
-  it('returns 0 for passive/gold rooms at any level', () => {
-    expect(getAttackDamage('gold', 1)).toBe(0);
-    expect(getAttackDamage('gold', 3)).toBe(0);
-    expect(getAttackDamage('armory', 1)).toBe(0);
-  });
-
-  it('returns a rounded integer', () => {
-    expect(Number.isInteger(getAttackDamage('trap', 2))).toBe(true);
-  });
-});
-
-// ─── getScrollAuraBonus ───────────────────────────────────────────────────────
 
 describe('getScrollAuraBonus', () => {
   it('returns 0.15 at level 1', () => {
@@ -400,35 +327,32 @@ describe('ROOM_DEFS — cost and HP ordering', () => {
 
 // ─── out-of-range fallbacks & additional spot-checks ─────────────────────────
 
-describe('helper functions — out-of-range fallbacks & spot-checks', () => {
-  it('getScrollAuraBonus(4) returns 0 (out-of-range ?? 0 fallback)', () => {
-    expect(getScrollAuraBonus(4)).toBe(0);
+describe('helper functions — home rooms climb to Lv5, tables hold their last value past the end', () => {
+  it('getScrollAuraBonus keeps rising through Lv5 and holds beyond', () => {
+    expect(getScrollAuraBonus(4)).toBeCloseTo(0.50);
+    expect(getScrollAuraBonus(5)).toBeCloseTo(0.60);
+    expect(getScrollAuraBonus(6)).toBeCloseTo(0.60);
+    expect(getScrollAuraBonus(0)).toBeCloseTo(0.15);
   });
 
-  it('getMedicineHealRate(4) returns 2 (out-of-range ?? 2 fallback)', () => {
-    expect(getMedicineHealRate(4)).toBe(2);
+  it('getMedicineHealRate Lv4/Lv5 = 15/20, holds beyond', () => {
+    expect(getMedicineHealRate(4)).toBe(15);
+    expect(getMedicineHealRate(5)).toBe(20);
+    expect(getMedicineHealRate(9)).toBe(20);
   });
 
-  it('getArmoryDmgBonus(4) returns 0.25 (out-of-range ?? 0.25 fallback)', () => {
-    expect(getArmoryDmgBonus(4)).toBeCloseTo(0.25);
+  it('getArmoryDmgBonus Lv4/Lv5 = 0.60/0.70', () => {
+    expect(getArmoryDmgBonus(4)).toBeCloseTo(0.60);
+    expect(getArmoryDmgBonus(5)).toBeCloseTo(0.70);
   });
 
-  it('getAltarKillsNeeded(4) returns 10 (out-of-range ?? 10 fallback)', () => {
-    expect(getAltarKillsNeeded(4)).toBe(10);
+  it('getAltarKillsNeeded keeps falling: Lv4=5, Lv5=4', () => {
+    expect(getAltarKillsNeeded(4)).toBe(5);
+    expect(getAltarKillsNeeded(5)).toBe(4);
   });
 
-  it('getDragonsLairCooldown(4) returns 5000 (out-of-range ?? 5000 fallback)', () => {
-    expect(getDragonsLairCooldown(4)).toBe(5000);
-  });
-
-  it('getUpgradeCost trap_corridor uses explicit costs: Lv1=160, Lv2=320', () => {
-    expect(getUpgradeCost('trap_corridor', 1)).toBe(160);
-    expect(getUpgradeCost('trap_corridor', 2)).toBe(320);
-  });
-
-  it('getAttackDamage: trap Lv1=10, Lv3=round(10×1.96)=20; void_forge Lv1=260', () => {
-    expect(getAttackDamage('trap', 1)).toBe(10);
-    expect(getAttackDamage('trap', 3)).toBe(Math.round(10 * Math.pow(1.4, 2))); // 20
-    expect(getAttackDamage('void_forge', 1)).toBe(260);
+  it('getDragonsLairCooldown keeps falling: Lv4=2500, Lv5=2000', () => {
+    expect(getDragonsLairCooldown(4)).toBe(2500);
+    expect(getDragonsLairCooldown(5)).toBe(2000);
   });
 });

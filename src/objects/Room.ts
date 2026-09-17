@@ -12,6 +12,7 @@ import {
   clearSlotLoadoutVisual,
   setSlotLoadoutVisual,
 } from './RoomVisuals';
+import { MAX_ROOM_LEVEL } from '../data/wisdom';
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
@@ -203,7 +204,7 @@ export class Room extends Phaser.GameObjects.Container {
 
   setInitialRoomLevel(level: number): void {
     if (!this.roomData) return;
-    this.roomData.level = Phaser.Math.Clamp(Math.round(level), 1, 3);
+    this.roomData.level = Phaser.Math.Clamp(Math.round(level), 1, MAX_ROOM_LEVEL);
     this.drawLevelBadge();
   }
 
@@ -340,51 +341,6 @@ export class Room extends Phaser.GameObjects.Container {
         });
       },
     });
-  }
-
-  upgrade(): void {
-    if (!this.roomData || this.roomData.level > 3) return;
-    // Level is already updated by caller; just refresh visuals
-    this.drawLevelBadge();
-
-    // Brief gold flash
-    const flash = this.scene.add.graphics();
-    flash.fillStyle(CASUAL.GOLD, 0.6);
-    flash.fillRoundedRect(-this.cs / 2 + 7, -this.cs / 2 + 7, this.cs - 14, this.cs - 14, 12);
-    this.add(flash);
-    this.scene.tweens.add({
-      targets: flash, alpha: 0, duration: 350,
-      onComplete: () => flash.destroy(),
-    });
-
-    // Scale bounce: pop to 1.18 then settle
-    this.scene.tweens.add({
-      targets: this, scaleX: 1.18, scaleY: 1.18,
-      duration: 140, ease: 'Back.easeOut',
-      onComplete: () => {
-        this.scene.tweens.add({
-          targets: this, scaleX: 1, scaleY: 1, duration: 180, ease: 'Back.easeIn',
-        });
-      },
-    });
-
-    // Star burst: 6 golden ★ flying outward
-    const angles = [0, 60, 120, 180, 240, 300];
-    for (const deg of angles) {
-      const rad  = (deg * Math.PI) / 180;
-      const dist = this.cs * 0.7;
-      const star = this.scene.add.text(this.x, this.y, '★', {
-        fontFamily: 'sans-serif', fontSize: '11px', color: '#ffee44',
-      }).setOrigin(0.5).setDepth(200).setAlpha(1);
-      this.scene.tweens.add({
-        targets: star,
-        x: this.x + Math.cos(rad) * dist,
-        y: this.y + Math.sin(rad) * dist,
-        alpha: 0, scaleX: 0.5, scaleY: 0.5,
-        duration: 480, ease: 'Quad.easeOut',
-        onComplete: () => star.destroy(),
-      });
-    }
   }
 
   private drawLevelBadge(): void {

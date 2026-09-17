@@ -26,6 +26,7 @@ export function deployDungeonSlots(scene: DungeonScene): DungeonSlotDeploymentSu
     effectiveCols:    scene.effectiveCols,
     dungeonTrapSlots: scene.dungeonTrapSlots,
     equipmentMap:     scene.equipmentMap,
+    elementRestrict:  scene.dailyMode?.elementRestrict,
   });
 
   if (summary.builtRooms > 0) {

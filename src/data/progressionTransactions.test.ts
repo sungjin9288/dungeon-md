@@ -2,9 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { defaultOwnedMonster } from './barracks';
 import { getDailyChallenges, getTodayString } from './daily';
 import {
-  applyCombatMonsterAssignmentProgress,
-  applyCombatRoomBuildProgress,
-  applyCombatRoomUpgradeProgress,
   applyInvaderKillProgress,
   applyQuestObjectiveProgress,
   applyConsecutiveDayProgress,
@@ -215,50 +212,6 @@ describe('progressionTransactions — quest objective progress', () => {
     expect(state.questProgress['MQ-001'].objectives.O1).toBe(0);
     expect(state.subQuestProgress['SQ-006']).toBe(0);
     expect(state.homeGold).toBe(0);
-  });
-});
-
-describe('progressionTransactions — combat room action progress', () => {
-  it('records built room history while ticking build_room quest and sub-quest progress', () => {
-    const state = startQuest(makeState({
-      activeSubQuestIds: ['SQ-006'],
-      subQuestProgress: { 'SQ-006': 0 },
-    }), 'MQ-001');
-
-    const result = applyCombatRoomBuildProgress(state, 'guardian');
-
-    expect(result.changed).toBe(true);
-    expect(result.questCompleted).toBe(true);
-    expect(result.recordedRoomType).toBe('guardian');
-    expect(result.state.roomsBuilt).toEqual(['guardian']);
-    expect(result.state.questProgress['MQ-001'].objectives.O1).toBe(1);
-    expect(result.state.subQuestProgress['SQ-006']).toBe(1);
-    expect(state.roomsBuilt).toEqual([]);
-  });
-
-  it('ticks assign_monster progress without recording a room build', () => {
-    const state = startQuest(makeState(), 'MQ-002');
-
-    const result = applyCombatMonsterAssignmentProgress(state);
-
-    expect(result.changed).toBe(true);
-    expect(result.questCompleted).toBe(true);
-    expect(result.state.questProgress['MQ-002'].objectives.O1).toBe(1);
-    expect(result.state.roomsBuilt).toEqual([]);
-  });
-
-  it('ticks upgrade_room progress through the shared room action helper', () => {
-    const state = startQuest(makeState({
-      activeSubQuestIds: ['SQ-005'],
-      subQuestProgress: { 'SQ-005': 0 },
-    }), 'MQ-007');
-
-    const result = applyCombatRoomUpgradeProgress(state);
-
-    expect(result.changed).toBe(true);
-    expect(result.questCompleted).toBe(true);
-    expect(result.state.questProgress['MQ-007'].objectives.O1).toBe(1);
-    expect(result.state.subQuestProgress['SQ-005']).toBe(1);
   });
 });
 

@@ -198,6 +198,9 @@ export function getRoomSlotCapacity(
   };
 }
 
+/** Hard cap on a home room's level; `getMaxRoomLevel` gates the climb by DM level. */
+export const MAX_ROOM_LEVEL = 5;
+
 /** Maximum room level allowed for a given DM level. */
 export function getMaxRoomLevel(dmLevel: number): number {
   if (dmLevel >= 20) return 5;

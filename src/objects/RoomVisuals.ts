@@ -86,7 +86,7 @@ export function drawLevelBadgeVisual(room: Room): void {
   const bx = room.cs / 2 - 14;
   const by = -room.cs / 2 + 6;
   const r  = 8;
-  const col = room.roomData.level === 3 ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
+  const col = room.roomData.level >= 3 ? CASUAL.GOLD : CASUAL.EDGE_SOFT;
   g.fillStyle(CASUAL.SHADOW, 0.4); g.fillCircle(bx + 1, by + 1, r);
   g.fillStyle(col, 1);             g.fillCircle(bx, by, r);
   g.lineStyle(2, CASUAL.EDGE, 0.9); g.strokeCircle(bx, by, r);

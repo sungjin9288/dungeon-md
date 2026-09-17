@@ -18,9 +18,9 @@ import {
 import type { DungeonTheme } from '../themes/themes';
 import { drawStalactites, drawStalagmites, drawCaveWallTexture } from '../themes/decorations';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
-import { getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
+import { getRoomSlotCapacity, MAX_ROOM_LEVEL, ROOM_SLOT_TYPE_DEFS, type DungeonSlot, type RoomSlotType } from '../data/wisdom';
 import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
-import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile } from '../data/monsters';
+import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
 
 export const WAVE_BUTTON_W = 270;
@@ -48,6 +48,8 @@ export interface DungeonSlotDeploymentConfig {
   readonly effectiveCols:     number;
   readonly dungeonTrapSlots:  DungeonSlot[];
   readonly equipmentMap:      ReadonlyMap<string, EquipmentStats>;
+  /** Daily-rule element lock: guardians of any other element sit this battle out. */
+  readonly elementRestrict?:  ElementId | null;
 }
 
 export interface DungeonSlotDeploymentSummary {
@@ -79,7 +81,7 @@ function getMonsterEmoji(monsterId: string): string {
 }
 
 export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): DungeonSlotDeploymentSummary {
-  const { rooms, roomGrid, effectiveCols, dungeonTrapSlots, equipmentMap } = cfg;
+  const { rooms, roomGrid, effectiveCols, dungeonTrapSlots, equipmentMap, elementRestrict } = cfg;
   let builtRooms = 0;
   let assignedMonsters = 0;
   let equippedMonsters = 0;
@@ -100,7 +102,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       const data = room.roomData;
       if (!data) continue;
 
-      const visualLevel = Phaser.Math.Clamp(slot.roomLevel, 1, 3);
+      const visualLevel = Phaser.Math.Clamp(slot.roomLevel, 1, MAX_ROOM_LEVEL);
       room.setInitialRoomLevel(visualLevel);
       room.setRoomHpSnapshot(slot.hp, slot.maxHp);
       data.level = visualLevel;
@@ -108,7 +110,9 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
       if (typeDef) room.setRoomTypeBadge(typeDef.icon);
 
-      const monsterIds = getDefinedMonsterIds(slot.monsterIds);
+      const monsterIds = getDefinedMonsterIds(slot.monsterIds).filter(id => (
+        !elementRestrict || resolveOwnedMonsterProfile(id)?.element === elementRestrict
+      ));
       const trapIds = getDefinedIds(slot.trapIds);
       const capacity = getRoomSlotCapacity(slot.roomLevel, slot.roomType);
       const equippedCount = monsterIds.filter(id => equipmentMap.has(id)).length;

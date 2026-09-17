@@ -5,28 +5,20 @@
 //   2. SkillHUD targeting mode  (skill waiting for a target room)
 //   3. Repair option            (wave active, damaged room)
 //   4. Skill popup              (wave active, occupied room)
-//   5. Normal build / upgrade / monster panel flow
+//   5. Prep-phase inspection (rooms are designed at home, never mid-battle)
 
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
-import type { RoomData, RoomType } from '../data/rooms';
+import type { RoomData } from '../data/rooms';
 import { ROOM_DEFS } from '../data/rooms';
 import { ACTIVE_SKILLS } from '../data/barracks';
 import type { EquipmentStats } from '../data/barracks';
-import { getRoomSlotCapacity, loadGameState, ROOM_SLOT_TYPE_DEFS, type RoomSlotType } from '../data/wisdom';
-import { getMonstersForRoom, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
+import { getRoomSlotCapacity, loadGameState, ROOM_SLOT_TYPE_DEFS } from '../data/wisdom';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
-import type { RoomUpgradeLoadoutSummary } from '../ui/RoomUpgradePanel';
-
-const ROOM_SLOT_ACCENT: Record<RoomSlotType, number> = {
-  combat:  0xff8a45,
-  trap:    0x5fb854,
-  support: 0x55b88a,
-  magic:   0x9a6cd8,
-};
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -35,14 +27,11 @@ export interface RoomInputContext {
   readonly equipmentMap:  Map<string, EquipmentStats>;
   readonly skillCooldowns: Map<string, number>;
   readonly speedMult:     number;
-  readonly unlockedStage: number;
   readonly nowMs:         number;
-  readonly dailyElementRestrict: ElementId | undefined | null;
 
   get targetingSkillId(): string | null;    set targetingSkillId(v: string | null);
   get skillPopup(): Phaser.GameObjects.Container | undefined;
   set skillPopup(v: Phaser.GameObjects.Container | undefined);
-  get selectedRoom(): Room | null;          set selectedRoom(v: Room | null);
 
   isInSwapMode(): boolean;
   routeSwapTap(row: number, col: number): void;
@@ -52,19 +41,7 @@ export interface RoomInputContext {
   clearSkillSelection(): void;
   showRepairOption(row: number, col: number): void;
   showSkillPopup(room: Room): void;
-  closeRoomPanel(): void;
-  openRoomPanel(row: number, col: number, gold: number): void;
-  openMonsterPanel(row: number, col: number, type: RoomType, unlockedStage: number, restrict?: ElementId | null): void;
-  openUpgradePanel(
-    row: number,
-    col: number,
-    roomData: RoomData,
-    hints?: Array<{ name: string; desc: string }>,
-    loadout?: RoomUpgradeLoadoutSummary,
-  ): void;
   showRangePreview(row: number, col: number, range: number): void;
-  getSynergyHints(): Array<{ name: string; desc: string }>;
-  getGold(): number;
 }
 
 // ─── RepairUIContext ──────────────────────────────────────────────────────────
@@ -260,43 +237,6 @@ function getMonsterLabel(monsterId: string): string {
   return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
 }
 
-function getMonsterToken(monsterId: string): string {
-  const profile = resolveOwnedMonsterProfile(monsterId);
-  return `${profile?.emoji ?? '👾'} ${shorten(profile?.name ?? monsterId, 5)}`;
-}
-
-function getTrapToken(trapId: string): string {
-  const def = TRAP_DEFS.find(trap => trap.id === trapId);
-  return `${def?.emoji ?? '◇'} ${shorten(def?.name ?? trapId, 5)}`;
-}
-
-function getRoomLoadoutSummary(room: Room): RoomUpgradeLoadoutSummary | undefined {
-  if (!room.roomData) return undefined;
-
-  const gs = loadGameState();
-  const slotIndex = getSlotIndex(room.row, room.col);
-  const slot = slotIndex === null ? undefined : gs.dungeonSlots?.[slotIndex];
-  const def = ROOM_DEFS[room.roomData.type];
-  const roomTypeDef = ROOM_SLOT_TYPE_DEFS.find(td => td.id === slot?.roomType);
-  const roomLevel = slot?.roomLevel ?? room.roomData.level;
-  const capacity = getRoomSlotCapacity(roomLevel, slot?.roomType);
-  const monsterIds = (slot?.monsterIds ?? room.roomData.monsterSlots ?? []).filter((id): id is string => Boolean(id));
-  const trapIds = (slot?.trapIds ?? []).filter((id): id is string => Boolean(id));
-
-  return {
-    slotIcon: roomTypeDef?.icon ?? def.emoji,
-    slotName: roomTypeDef?.name ?? def.koreanName,
-    accentColor: slot?.roomType ? ROOM_SLOT_ACCENT[slot.roomType] : def.accentColor,
-    roomLevel,
-    monsters: monsterIds.map(getMonsterToken),
-    monsterCapacity: capacity.monsters,
-    traps: trapIds.map(getTrapToken),
-    trapCapacity: capacity.traps,
-    hp: room.roomData.roomHp ?? slot?.hp ?? def.baseHp,
-    maxHp: Math.max(1, room.roomData.maxRoomHp ?? slot?.maxHp ?? def.baseHp),
-  };
-}
-
 function showRoomIntelTip(room: Room): void {
   const scene = room.scene;
   scene.children.getByName('roomIntelTip')?.destroy();
@@ -461,6 +401,29 @@ function showInvalidSkillTarget(room: Room): void {
   });
 }
 
+function showDesignAtHomeTip(room: Room): void {
+  const scene = room.scene;
+  scene.children.getByName('designAtHomeTip')?.destroy();
+  const t = scene.add.text(room.x, room.y - 30, '홈에서 설계한 방만 방어에 나섭니다', {
+    fontFamily: 'sans-serif',
+    fontSize: '10px',
+    fontStyle: 'bold',
+    color: CASUAL_CSS.WHITE,
+    stroke: '#160004',
+    strokeThickness: 3,
+  }).setOrigin(0.5).setDepth(215).setName('designAtHomeTip');
+
+  scene.tweens.add({
+    targets: t,
+    y: t.y - 14,
+    alpha: 0,
+    delay: 900,
+    duration: 420,
+    ease: 'Cubic.easeOut',
+    onComplete: () => t.destroy(),
+  });
+}
+
 // ─── onRoomClick ──────────────────────────────────────────────────────────────
 
 export function onRoomClick(ctx: RoomInputContext, room: Room): void {
@@ -510,49 +473,22 @@ export function onRoomClick(ctx: RoomInputContext, room: Room): void {
     return;
   }
 
-  // ── 5. Normal build / upgrade / monster panel flow ────────────────────────
+  // ── 5. Prep-phase inspection ──────────────────────────────────────────────
+  // The dungeon is designed at home; a battle only tests it. Tapping a room here
+  // inspects it, and tapping an unbuilt cell explains where building happens.
   ctx.skillPopup?.destroy();
   ctx.skillPopup = undefined;
 
   if (room.state === 'empty') {
-    if (ctx.selectedRoom === room) {
-      room.deselect();
-      ctx.selectedRoom = null;
-      ctx.closeRoomPanel();
-      return;
-    }
-    ctx.selectedRoom?.deselect();
-    room.select();
-    ctx.selectedRoom = room;
-    ctx.openRoomPanel(room.row, room.col, ctx.getGold());
+    showDesignAtHomeTip(room);
+    return;
+  }
 
-  } else if (room.state === 'occupied' && room.roomData) {
+  if (room.state === 'occupied' && room.roomData) {
     showRoomIntelTip(room);
-
-    const ownedVariant = loadGameState().ownedMonsters.some(monster => {
-      const profile = resolveOwnedMonsterProfile(monster.id);
-      return Boolean(profile && (
-        profile.roomTypes.includes(room.roomData!.type)
-        || profile.roomTypes.includes('any')
-      ));
-    });
-    const hasMonstersAvail = getMonstersForRoom(room.roomData.type, ctx.unlockedStage).length > 0 || ownedVariant;
-
-    if (hasMonstersAvail && !room.roomData.monsterSlot) {
-      ctx.openMonsterPanel(room.row, room.col, room.roomData.type as RoomType, ctx.unlockedStage, ctx.dailyElementRestrict);
-    } else {
-      const hints = ctx.getSynergyHints();
-      ctx.openUpgradePanel(
-        room.row,
-        room.col,
-        room.roomData,
-        hints.length ? hints : undefined,
-        getRoomLoadoutSummary(room),
-      );
-      const def = ROOM_DEFS[room.roomData.type];
-      if (def && def.attackRange > 0) {
-        ctx.showRangePreview(room.row, room.col, def.attackRange);
-      }
+    const def = ROOM_DEFS[room.roomData.type];
+    if (def && def.attackRange > 0) {
+      ctx.showRangePreview(room.row, room.col, def.attackRange);
     }
   }
 }

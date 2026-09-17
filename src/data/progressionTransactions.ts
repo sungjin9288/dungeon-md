@@ -8,7 +8,7 @@ import {
   tickSubQuestProgress,
   type ObjectiveType,
 } from './quests';
-import { recordBuiltRoom, type GameState, type OwnedMonster } from './wisdom';
+import { type GameState, type OwnedMonster } from './wisdom';
 
 export interface AchievementUnlockResult {
   state:       GameState;
@@ -37,10 +37,6 @@ export interface QuestObjectiveProgressResult {
   state:          GameState;
   changed:        boolean;
   questCompleted: boolean;
-}
-
-export interface CombatRoomActionProgressResult extends QuestObjectiveProgressResult {
-  recordedRoomType?: string;
 }
 
 export interface InvaderKillProgressResult {
@@ -164,32 +160,6 @@ export function applyQuestObjectiveProgress(
     changed: subQuestState !== state,
     questCompleted: false,
   };
-}
-
-export function applyCombatRoomBuildProgress(
-  state: GameState,
-  roomType: string,
-): CombatRoomActionProgressResult {
-  const progress = applyQuestObjectiveProgress(state, 'build_room');
-  const recordedState = recordBuiltRoom(progress.state, roomType);
-  return {
-    state: recordedState,
-    changed: true,
-    questCompleted: progress.questCompleted,
-    recordedRoomType: roomType,
-  };
-}
-
-export function applyCombatMonsterAssignmentProgress(
-  state: GameState,
-): CombatRoomActionProgressResult {
-  return applyQuestObjectiveProgress(state, 'assign_monster');
-}
-
-export function applyCombatRoomUpgradeProgress(
-  state: GameState,
-): CombatRoomActionProgressResult {
-  return applyQuestObjectiveProgress(state, 'upgrade_room');
 }
 
 export function applyInvaderKillProgress(

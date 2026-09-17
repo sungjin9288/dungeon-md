@@ -10,7 +10,6 @@ import type { ObjectiveType } from '../data/quests';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type RoomInputContext, showRepairOption as _showRepairOption, type RepairUIContext } from './RoomInput';
 import { type ActiveSkillContext } from './ActiveSkills';
-import { type RoomActionsContext } from './RoomActions';
 import { type WaveStartContext } from './WaveStart';
 import { type SpawnPipelineContext } from './SpawnPipeline';
 import { type CombatResolverContext } from './CombatResolver';
@@ -32,7 +31,6 @@ import {
 import { showTigersPounce as _showTigersPounce } from './ImpactVfx';
 import {
   triggerChainLightning as _triggerChainLightning,
-  recalcRoomTypeBonuses as _recalcRoomTypeBonuses,
   triggerScrollBurst as _triggerScrollBurst,
   triggerSpectralBolt as _triggerSpectralBolt,
   triggerWhirlwind as _triggerWhirlwind,
@@ -56,15 +54,11 @@ export function buildRoomInputCtx(ds: DungeonScene): RoomInputContext {
     equipmentMap:         ds.equipmentMap,
     skillCooldowns:       ds.skillCooldowns,
     speedMult:            ds.speedMult,
-    unlockedStage:        ds.unlockedStage,
     nowMs:                ds.time.now,
-    dailyElementRestrict: ds.dailyMode?.elementRestrict,
     get targetingSkillId()    { return ds.targetingSkillId; },
     set targetingSkillId(v)   { ds.targetingSkillId = v; },
     get skillPopup()          { return ds.skillPopup; },
     set skillPopup(v)         { ds.skillPopup = v; },
-    get selectedRoom()        { return ds.selectedRoom; },
-    set selectedRoom(v)       { ds.selectedRoom = v; },
     isInSwapMode:       ()          => ds.swapManager?.isInSwapMode() ?? false,
     routeSwapTap:       (r, c)      => ds.swapManager?.onRoomTap(r, c),
     startSwapPress:     (r, c)      => ds.swapManager?.onRoomPointerDown(r, c),
@@ -73,13 +67,7 @@ export function buildRoomInputCtx(ds: DungeonScene): RoomInputContext {
     clearSkillSelection:()          => ds.skillHUD?.clearSelection(),
     showRepairOption:   (r, c)      => _showRepairOption(buildRepairCtx(ds), r, c),
     showSkillPopup:     (r)         => ds.showSkillPopup(r),
-    closeRoomPanel:     ()          => ds.panel.close(),
-    openRoomPanel:      (r, c, g)   => ds.panel.open(r, c, g),
-    openMonsterPanel:   (r, c, t, s, x) => ds.monsterPanel.open(r, c, t, s, x ?? undefined),
-    openUpgradePanel:   (r, c, d, h, l) => ds.upgradePanel.open(r, c, d, h, l),
     showRangePreview:   (r, c, rng) => ds.showRangePreview(r, c, rng),
-    getSynergyHints:    ()          => ds.synergyManager.activeSynergies.map(s => ({ name: s.tier.name, desc: s.tier.desc })),
-    getGold:            ()          => ds.gold,
   };
 }
 
@@ -111,34 +99,6 @@ export function buildActiveSkillContext(ds: DungeonScene, room: import('../objec
     },
     showGoldFloat:     (text, x, y) => _showGoldFloat(ds, text, x, y),
     spawnGhostWarrior: (r, c)       => _spawnGhostWarrior(buildRoomMechanicsCtx(ds), r, c),
-  };
-}
-
-// ─── RoomActions ──────────────────────────────────────────────────────────────
-
-export function buildRoomActionsCtx(ds: DungeonScene): RoomActionsContext {
-  return {
-    scene:             ds,
-    rooms:             ds.rooms,
-    roomGrid:          ds.roomGrid,
-    stageChapter:      ds.stageChapter,
-    effectiveCols:     ds.effectiveCols,
-    unlockedStage:     ds.unlockedStage,
-    dungeonTrapSlots:  ds.dungeonTrapSlots,
-    equipmentMap:      ds.equipmentMap,
-    wisdomBonuses:     ds.wisdomBonuses,
-    get gold()         { return ds.gold; },
-    set gold(v)        { ds.gold = v; },
-    setGoldRegistry:          (v)          => ds.registry.set('gold', v),
-    setGoldWarn:              ()           => ds.registry.set('goldWarn', true),
-    setSelectedRoom:          (r)          => { ds.selectedRoom = r; },
-    spawnBuildParticles:      (x, y)       => ds.spawnBuildParticles(x, y),
-    recalcRoomTypeBonuses:    ()           => _recalcRoomTypeBonuses(buildRoomMechanicsCtx(ds)),
-    recalcSynergies:          ()           => ds.synergyManager.recalc(ds.roomGrid, ds.effectiveCols),
-    checkAchievementsAndToast:(gs)         => ds.checkAchievementsAndToast(gs),
-    openMonsterPanel:         (r, c, t, s) => ds.monsterPanel.open(r, c, t, s),
-    shakeRoomSelectionPanel:  ()           => ds.panel.shakeInsufficient(),
-    shakeUpgradePanel:        ()           => ds.upgradePanel?.shakeInsufficient(),
   };
 }
 
