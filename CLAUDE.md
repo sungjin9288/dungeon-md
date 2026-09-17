@@ -90,7 +90,10 @@ EndlessResultScene        엔드리스 결과
 
 ---
 
-## 배틀 씬 핵심 패턴 (DungeonScene.ts)
+## 게임 시스템 계약 (배틀 · 홈 · 메타)
+
+각 절이 그 시스템의 단일 진실원이다. 배틀은 `DungeonScene.ts` + `src/combat/`,
+홈·메타는 `src/data/*Transactions.ts`(순수) → 씬 순서로 배선한다.
 
 ### 씬 시작
 ```typescript
