@@ -806,6 +806,26 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 **남은 것.** P3(몬스터 레벨 전투 배선 → 계보도·교감), P4(재화 순환·중복·부족 배너),
 4.6 통폐합. 근무 몬스터의 교감(§4.3 ②) 연결은 P3에서.
 
+### 2026-09-18 — Phase 3 (P3 첫 단계): 수호자 레벨 → 전투 피해 배선
+
+**왜 먼저.** 사용자 결정 "개별 육성 = 노가다 콘텐츠"가 성립하려면 병영의 레벨·스킬이
+실전 피해에 들어가야 한다. 지금까지 전투는 방 레벨(`1.4^(lv-1)`)만 봤다.
+
+**구조.** `barracks.guardianAtkMult(level, spentSkills)` = `1.03^(lv-1)` × 강타(A1) 1.15
+— 병영 ATK 표시(`getMonsterAtk`)와 같은 식. `DungeonScene.guardianAtkMult`
+(`buildGuardianAtkMultMap(ownedMonsters)`, `equipmentMap`과 같은 수명)를
+`CombatResolver.resolveAttack`(첫 몬스터)·`runExtraMonsterAttacks`(추가 몬스터)가
+곱하고, `simulation.calcDungeonDps`도 같은 맵을 적용해 예보가 육성을 반영한다.
+근무 중인 수호자는 배치에서 이미 빠지므로 여기서 따로 걸러내지 않는다.
+
+**검증.** tsc clean, vitest 2916 pass(`barracks.test` 2건 추가, `simulation.test`의
+"레벨 무시" 고정 2건을 "레벨 배율" 검증으로 반전). 페이싱 가드는 로스터 Lv1이라
+수치 불변 — 육성은 가드 위의 여유분이다. organic 재주행은 불필요(Lv1 로스터).
+
+**주의.** 하니스가 8084를 쓰는 동안 이 트리의 `src/`를 편집하면 HMR 리로드로
+`Execution context was destroyed` 실패가 난다(`forge-trap-fuse-result` 1건이 그
+사례 — 제품 결함 아님, 격리 재실행 통과). 하니스 주행 중엔 문서만 만진다.
+
 ## 8. Completed implementation record: Fusion Chamber
 
 사용자가 2026-09-04에 Fusion continuation을 승인했고, 아래 F0–F4 slice는 current

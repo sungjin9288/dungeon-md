@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-17T16:18:57.102Z",
+  "generatedAt": "2026-09-17T16:34:49.599Z",
   "base": "http://127.0.0.1:8084",
-  "scope": "21 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
+  "scope": "23 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
   "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
   "sourceHashes": {
     "scripts/lib/web-audit.mjs": "83eb46a7c3ade24e72b272b0460542840c0153d2545ae31d79d313272f75da9b",
-    "scripts/verify-modal-states.mjs": "45c0076380a0da762ccaa819013a4218819be6f0940c6aafcfe1ff4a1ad00886"
+    "scripts/verify-modal-states.mjs": "2470b6acb44118a159f3ade3e568dc0fb609d61d1e9d08ca51d38f25e56d48bc"
   },
   "results": [
     {
@@ -35,7 +35,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
-      "sha256": "a71136b1638d22a5f9b8c606f41e17f3c38d585f5341be2e7c1852ca831e9d6d"
+      "sha256": "4f24bff2a3d9a21b923179b02232a22ee9fd6bf792eaab022d99e3d4b50499d3"
     },
     {
       "id": "shop-purchase-confirm",
@@ -63,7 +63,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
-      "sha256": "10d35d4f75f02ba75adddc91b595c53f52744cc96df656b93a515d2d8e70977e"
+      "sha256": "2b7f54cb4a0dc435df5e58c0e69a0552e7a80be1a7f551226edb5eaf14f8c652"
     },
     {
       "id": "codex-monster-detail",
@@ -204,7 +204,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
-      "sha256": "1a411ba89051ac535ac65b95e54ccdd6e4cb6305ed540525cd43077f0929c0af"
+      "sha256": "867f829bcd6a5608adec9249028dfdf7fb2e7b36ae0620e77ee0b3ebea7a1830"
     },
     {
       "id": "production-facility-order",
@@ -217,9 +217,9 @@
       "activeScenes": [
         "ProductionScene"
       ],
-      "visibleTextBefore": 43,
-      "visibleTextAfter": 43,
-      "inputsAfter": 6,
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
@@ -232,7 +232,69 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-production-facility-order-390x844.png",
-      "sha256": "91fc2502c1182f859ded19dde2af25d52776a75dc98d17a16b49d9fba12b7c3b"
+      "sha256": "d6eb3b52f16aef15a5cfc122f5bc2304634f43ce1831c7a29d0703eac532a4ed"
+    },
+    {
+      "id": "production-staff-picker",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 피커 (적성 표시 · 해제/닫기)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 67,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 10,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-picker-390x844.png",
+      "sha256": "5ef4be4fcfa25ae2255084201592045075817b23e192e8a13e0c10e96c62df6d"
+    },
+    {
+      "id": "production-staff-assigned",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 후 명령판 (산출 ×1.5 영수증)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-assigned-390x844.png",
+      "sha256": "9a816c451aaa9387bc85cca93cd9514c004943ebd6c7c2f9e5cd583e84f60160"
     },
     {
       "id": "decoration-relic-select",
@@ -553,7 +615,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
-      "sha256": "040493f7d98a10e750e3bd157df52312f838ce151501e0dc2b6fd49d70f670db"
+      "sha256": "7c597080e598e665c6eb3feed351fe4f4d7749f0b44d7eb7845ccc77c9adb9c6"
     },
     {
       "id": "wisdom-upgrade-result",
@@ -614,16 +676,16 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
-      "sha256": "482beaa3efbeb5dfd6f8acf65e074c081cfcb3f22b2ee266575297488f5b65cc"
+      "sha256": "b46720690878f9819acd3ca1bde2f0b76bef9f5d8a70a9bd9480aeba683ae167"
     }
   ],
   "failures": [],
   "summary": {
-    "cases": 21,
+    "cases": 23,
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 55,
+    "overlapCandidates": 65,
     "errors": 0,
     "hardFailures": 0
   }
