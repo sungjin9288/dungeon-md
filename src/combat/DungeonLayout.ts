@@ -45,6 +45,8 @@ export interface DungeonSlotDeploymentConfig {
   readonly equipmentMap:      ReadonlyMap<string, EquipmentStats>;
   /** Daily-rule element lock: guardians of any other element sit this battle out. */
   readonly elementRestrict?:  ElementId | null;
+  /** Guardians on a facility shift (GameState.facilityStaff) sit this battle out. */
+  readonly staffedMonsterIds?: ReadonlySet<string>;
 }
 
 export interface DungeonSlotDeploymentSummary {
@@ -72,7 +74,7 @@ function getMonsterEmoji(monsterId: string): string {
 }
 
 export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): DungeonSlotDeploymentSummary {
-  const { rooms, roomGrid, effectiveCols, dungeonTrapSlots, equipmentMap, elementRestrict } = cfg;
+  const { rooms, roomGrid, effectiveCols, dungeonTrapSlots, equipmentMap, elementRestrict, staffedMonsterIds } = cfg;
   let builtRooms = 0;
   let assignedMonsters = 0;
   let equippedMonsters = 0;
@@ -102,7 +104,8 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       if (typeDef) room.setRoomTypeBadge(typeDef.icon);
 
       const monsterIds = getDefinedMonsterIds(slot.monsterIds).filter(id => (
-        !elementRestrict || resolveOwnedMonsterProfile(id)?.element === elementRestrict
+        !staffedMonsterIds?.has(id)
+        && (!elementRestrict || resolveOwnedMonsterProfile(id)?.element === elementRestrict)
       ));
       const trapIds = getDefinedIds(slot.trapIds);
       const capacity = getRoomSlotCapacity(slot.roomLevel, slot.roomType);

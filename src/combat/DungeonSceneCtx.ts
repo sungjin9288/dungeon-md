@@ -344,8 +344,6 @@ export function buildRoomMechanicsCtx(ds: DungeonScene): RoomMechanicsContext {
     get tauntBoostActiveUntil() { return ds.tauntBoostActiveUntil; },
     get speedMult() { return ds.speedMult; },
     pounceReadyMap: ds.pounceReadyMap,
-    get goldTick() { return ds.goldTick; },
-    set goldTick(v) { ds.goldTick = v; },
     get medicineHealTick() { return ds.medicineHealTick; },
     set medicineHealTick(v) { ds.medicineHealTick = v; },
     get medicineGlobalPulseLast() { return ds.medicineGlobalPulseLast; },

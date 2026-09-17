@@ -5,6 +5,8 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonScene TYPE only to avoid a runtime circular dependency.
  */
+import { loadGameState } from '../data/wisdom';
+import { staffedMonsterIds } from '../data/productionTransactions';
 import type { DungeonScene } from './DungeonScene';
 import Phaser from 'phaser';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
@@ -25,6 +27,7 @@ export function deployDungeonSlots(scene: DungeonScene): DungeonSlotDeploymentSu
     roomGrid:         scene.roomGrid,
     effectiveCols:    scene.effectiveCols,
     dungeonTrapSlots: scene.dungeonTrapSlots,
+    staffedMonsterIds: staffedMonsterIds(loadGameState()),
     equipmentMap:     scene.equipmentMap,
     elementRestrict:  scene.dailyMode?.elementRestrict,
   });

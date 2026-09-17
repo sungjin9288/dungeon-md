@@ -17,10 +17,13 @@ import {
   facilityRatePerHour,
   facilityUpgradeCost,
   type FacilityDef,
+  facilityStaffMult,
 } from '../data/production';
-import { buildOrUpgradeFacility } from '../data/productionTransactions';
+import { assignFacilityStaff, buildOrUpgradeFacility, clearFacilityStaff } from '../data/productionTransactions';
+import { resolveOwnedMonsterProfile } from '../data/monsters';
+import { openProductionStaffPicker } from '../ui/ProductionStaffPicker';
 import {
-  IDLE_CAP_HOURS,
+  idleCapHours,
   collectIdleIncome,
   computeIdleReward,
   hasIdlePayout,
@@ -56,9 +59,9 @@ function formatRate(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-function formatElapsed(reward: IdleReward, clockStarted: boolean): string {
+function formatElapsed(reward: IdleReward, clockStarted: boolean, capHours: number): string {
   if (!clockStarted) return '첫 시설 가동 후 적립을 시작합니다';
-  if (reward.capped) return `${IDLE_CAP_HOURS}시간 적립 상한 도달`;
+  if (reward.capped) return `${capHours}시간 적립 상한 도달`;
 
   const minutes = Math.floor(reward.creditedMs / 60_000);
   if (minutes < 1) return '1분 미만 누적';
@@ -150,7 +153,7 @@ export class ProductionScene extends Phaser.Scene {
     let treasuryRate = 0;
     for (const id of FACILITY_ORDER) {
       const def = FACILITY_DEFS[id];
-      const rate = facilityRatePerHour(def, this.gs.productionFacilities?.[id] ?? 0);
+      const rate = facilityRatePerHour(def, this.gs.productionFacilities?.[id] ?? 0, facilityStaffMult(id, this.gs.facilityStaff?.[id]));
       if (def.output.kind === 'gold') treasuryRate += rate;
       else materialRate += rate;
     }
@@ -197,11 +200,11 @@ export class ProductionScene extends Phaser.Scene {
     this.add.text(65, COLLECT_Y + 19, '누적 생산 저장조', {
       fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 14, COLLECT_Y + 19, `최대 ${IDLE_CAP_HOURS}시간`, {
+    this.add.text(PANEL_X + PANEL_W - 14, COLLECT_Y + 19, `최대 ${idleCapHours(this.gs)}시간`, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5);
 
-    this.add.text(65, COLLECT_Y + 42, formatElapsed(reward, (this.gs.lastIdleCollect ?? 0) > 0), {
+    this.add.text(65, COLLECT_Y + 42, formatElapsed(reward, (this.gs.lastIdleCollect ?? 0) > 0, idleCapHours(this.gs)), {
       fontFamily: 'sans-serif', fontSize: '10px', color: reward.capped ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
 
@@ -328,7 +331,8 @@ export class ProductionScene extends Phaser.Scene {
     this.add.text(x + w / 2, y + 78, built ? `가동 · Lv.${level}` : '미건설', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: built ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
-    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, facilityRatePerHour(def, level), true) : '생산 중지', {
+    const staffMult = facilityStaffMult(id, this.gs.facilityStaff?.[id]);
+    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, facilityRatePerHour(def, level, staffMult), true) : '생산 중지', {
       fontFamily: 'sans-serif', fontSize: '10px', color: built ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
 
@@ -383,9 +387,11 @@ export class ProductionScene extends Phaser.Scene {
   private drawCommandPlate(): void {
     const def = FACILITY_DEFS[this.selectedFacilityId];
     const level = this.gs.productionFacilities?.[def.id] ?? 0;
-    const currentRate = facilityRatePerHour(def, level);
+    const staffId = this.gs.facilityStaff?.[def.id];
+    const staffMult = facilityStaffMult(def.id, staffId);
+    const currentRate = facilityRatePerHour(def, level, staffMult);
     const cost = facilityUpgradeCost(def, level);
-    const nextRate = cost === null ? currentRate : facilityRatePerHour(def, level + 1);
+    const nextRate = cost === null ? currentRate : facilityRatePerHour(def, level + 1, staffMult);
     const affordable = cost !== null && this.gs.homeGold >= cost;
     const accent = affordable ? DUNGEON_UI.BRASS_BRIGHT : cost === null ? DUNGEON_UI.JADE : DUNGEON_UI.EMBER;
 
@@ -421,13 +427,15 @@ export class ProductionScene extends Phaser.Scene {
       : affordable
         ? `명령 가능 · 골드 ${cost.toLocaleString('ko-KR')} 소모`
         : `골드 ${(cost - this.gs.homeGold).toLocaleString('ko-KR')} 부족 · 필요 ${cost.toLocaleString('ko-KR')}`;
-    this.add.text(PANEL_X + 16, COMMAND_Y + 157, status, {
+    this.drawStaffStrip(COMMAND_Y + 138, def.id, level, staffId, staffMult);
+
+    this.add.text(PANEL_X + 16, COMMAND_Y + 196, status, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: cost === null ? DUNGEON_UI_CSS.JADE : affordable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0, 0.5);
 
     const receiptText = this.receipt?.text ?? '선택한 시설의 생산량과 비용을 확인하세요';
-    this.add.text(PANEL_X + 16, COMMAND_Y + 188, receiptText, {
+    this.add.text(PANEL_X + 16, COMMAND_Y + 224, receiptText, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: this.receipt ? 'bold' : 'normal',
       color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: 194 },
@@ -436,7 +444,7 @@ export class ProductionScene extends Phaser.Scene {
 
     const action = addPrimaryActionButton(this, {
       x: 226,
-      y: COMMAND_Y + 181,
+      y: COMMAND_Y + 190,
       w: 136,
       h: 54,
       label: cost === null ? 'MAX' : level > 0 ? `Lv.${level + 1} 강화` : '시설 건설',
@@ -453,6 +461,41 @@ export class ProductionScene extends Phaser.Scene {
     });
     action.zone.setName('production-order');
     this.bindTransactionAction(action.zone);
+  }
+
+  /** The guardian on shift here. Tapping opens the picker; an unbuilt facility only explains. */
+  private drawStaffStrip(y: number, facilityId: string, level: number, staffId: string | undefined, staffMult: number): void {
+    const h = 44;
+    const profile = staffId ? resolveOwnedMonsterProfile(staffId) : null;
+    const accent = profile ? DUNGEON_UI.JADE : level > 0 ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON;
+    const g = this.add.graphics();
+    g.fillStyle(DUNGEON_UI.SOOT, 0.86);
+    g.fillRoundedRect(PANEL_X + 14, y, PANEL_W - 28, h, 7);
+    g.lineStyle(1.2, accent, level > 0 ? 0.8 : 0.4);
+    g.strokeRoundedRect(PANEL_X + 14, y, PANEL_W - 28, h, 7);
+    this.add.text(PANEL_X + 26, y + h / 2, '근무 수호자', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5);
+    const value = profile
+      ? `${profile.emoji} ${profile.name} · 산출 ×${staffMult.toFixed(1)}`
+      : level > 0 ? '없음 · 탭하여 배정' : '시설 건설 후 배정';
+    this.add.text(PANEL_X + PANEL_W - 26, y + h / 2, value, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: profile ? DUNGEON_UI_CSS.JADE : level > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5);
+    if (level <= 0) return;
+    const zone = this.add.zone(PANEL_X + 14, y, PANEL_W - 28, h).setOrigin(0).setName('production-staff')
+      .setInteractive({ useHandCursor: true });
+    zone.on('pointerdown', () => {
+      if (this.transactionPending) return;
+      openProductionStaffPicker(this, {
+        gs: this.gs,
+        facilityId,
+        onAssign: (monsterId) => this.assignStaff(facilityId, monsterId),
+        onClear:  () => this.clearStaff(facilityId),
+        onClose:  () => this.render(),
+      });
+    });
   }
 
   private drawOutputRow(y: number, label: string, value: string, valueColor: string): void {
@@ -519,6 +562,32 @@ export class ProductionScene extends Phaser.Scene {
       text: `${def.name} ${result.newLevel === 1 ? '건설' : `Lv.${result.newLevel} 강화`} 완료 · 골드 ${result.spent.toLocaleString('ko-KR')} 소모`,
       tone: 'success',
     };
+    this.render();
+  }
+
+  private assignStaff(facilityId: string, monsterId: string): void {
+    if (!this.beginTransaction()) return;
+    const result = assignFacilityStaff(this.gs, facilityId, monsterId);
+    if (!result.ok) {
+      this.receipt = { text: result.reason === 'not_built' ? '배정 실패 · 시설을 먼저 건설하세요' : result.reason === 'not_owned' ? '배정 실패 · 보유하지 않은 수호자입니다' : '배정 실패 · 알 수 없는 시설입니다', tone: 'warning' };
+      this.render();
+      return;
+    }
+    this.gs = result.state;
+    saveGameState(this.gs);
+    const name = resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
+    const moved = result.movedFromRoom ? ' · 방에서 이동' : result.movedFromFacility ? ` · ${FACILITY_DEFS[result.movedFromFacility]?.name ?? ''}에서 이동` : '';
+    this.receipt = { text: `${name} 근무 시작 · 산출 ×${result.staffMult.toFixed(1)}${moved}`, tone: 'success' };
+    this.render();
+  }
+
+  private clearStaff(facilityId: string): void {
+    if (!this.beginTransaction()) return;
+    const result = clearFacilityStaff(this.gs, facilityId);
+    if (!result.ok) { this.render(); return; }
+    this.gs = result.state;
+    saveGameState(this.gs);
+    this.receipt = { text: `${FACILITY_DEFS[facilityId].name} 근무 해제 · 수호자가 대기로 돌아왔습니다`, tone: 'success' };
     this.render();
   }
 

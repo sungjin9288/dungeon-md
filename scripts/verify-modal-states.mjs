@@ -45,6 +45,14 @@ const CASES = [
   { id: 'achievement-record', scene: 'AchievementScene', steps: [{ name: 'achievement-record-dm_lv5' }], expect: '업적 기록 상세' },
   { id: 'abyss-floor-order', scene: 'AbyssScene', steps: [{ name: 'abyss-floor-1' }, { name: 'abyss-order' }], expect: '심연 층 지시' },
   { id: 'production-facility-order', scene: 'ProductionScene', steps: [{ name: 'production-facility-mine' }, { name: 'production-order' }], expect: '생산 지시' },
+  {
+    id: 'production-staff-picker', scene: 'ProductionScene', seed: { dmLevel: 10, productionFacilities: { mine: 1, treasury: 1 } },
+    steps: [{ name: 'production-facility-treasury' }, { name: 'production-staff' }], expect: '근무 배정 피커 (적성 표시 · 해제/닫기)',
+  },
+  {
+    id: 'production-staff-assigned', scene: 'ProductionScene', seed: { dmLevel: 10, productionFacilities: { mine: 1, treasury: 1 } },
+    steps: [{ name: 'production-facility-treasury' }, { name: 'production-staff' }, { name: 'production-staff-dokkaebi_warrior' }], expect: '근무 배정 후 명령판 (산출 ×1.5 영수증)',
+  },
   { id: 'decoration-relic-select', scene: 'DecorationScene', steps: [{ name: 'decoration-relic-golden_pot' }], expect: '유물 선택' },
   { id: 'fusion-material-picker', scene: 'FusionScene', steps: [{ label: '재료 1' }], expect: '재료 선택 피커' },
   { id: 'fusion-absorb-tab', scene: 'FusionScene', steps: [{ label: '흡수' }], expect: '흡수 탭' },

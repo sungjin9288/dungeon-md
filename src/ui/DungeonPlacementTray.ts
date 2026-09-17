@@ -13,6 +13,7 @@ import {
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
 import { getTrapStock } from '../data/trapTransactions';
+import { isMonsterOnShift } from '../data/productionTransactions';
 import { ROOM_DEFS, ROOM_FAMILY } from '../data/rooms';
 import { getSlotBuilding, listUnlockedBuildings } from '../data/roomBuildings';
 import {
@@ -328,7 +329,8 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
     addMonsterPortrait(ctxRef!.scene, inner, x + itemW / 2, 28, om.id, {
       size: 38, depth: 122, frameColor: on ? COLORS.JADE : 0xc8921a,
     });
-    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : `Lv.${om.level}`, '10px', on ? '#9fe1cb' : '#c8b890', false, 0.5, on ? 'sans-serif' : 'monospace');
+    const onShift = !on && isMonsterOnShift(gs, om.id);
+    addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : onShift ? '근무 중' : `Lv.${om.level}`, '10px', on ? '#9fe1cb' : onShift ? '#c8a04a' : '#c8b890', false, 0.5, on || onShift ? 'sans-serif' : 'monospace');
     z.on('pointerdown', () => {
       const gsNow = ctxRef!.getGameState();
       const cur = gsNow.dungeonSlots?.[activeSlot];

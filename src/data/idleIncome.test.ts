@@ -1,15 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import type { GameState, DungeonSlot } from './wisdom';
+import { getWisdomBonuses, type GameState, type DungeonSlot } from './wisdom';
 import {
   dungeonGoldPerMin,
   computeIdleReward,
   collectIdleIncome,
   startIdleClock,
+  idleCapHours,
+  notorietyIncomeMult,
   IDLE_CAP_MS,
   IDLE_BASE_PER_MIN,
   IDLE_PER_ROOM,
   IDLE_PER_LEVEL,
   IDLE_PER_GUARDIAN,
+  IDLE_PER_GOLD_ROOM,
   IDLE_DM_BONUS,
 } from './idleIncome';
 
@@ -157,5 +160,34 @@ describe('startIdleClock', () => {
   it('is a no-op once the clock is running', () => {
     const s = makeState({ lastIdleCollect: 999 });
     expect(startIdleClock(s, 12345)).toBe(s);
+  });
+});
+
+describe('operating income (P1 ③)', () => {
+  it('multiplies gold, not materials, by the name: ×(1 + 0.15 × (tier − 1))', () => {
+    const base = { ...makeState({ dungeonSlots: [slot('combat')], productionFacilities: { mine: 1, treasury: 1 } }), lastIdleCollect: 1_000 };
+    const later = base.lastIdleCollect + 10 * 60 * 60 * 1000;
+    const quiet = computeIdleReward({ ...base, notorietyTier: 1 }, later);
+    const famous = computeIdleReward({ ...base, notorietyTier: 5 }, later);
+    expect(notorietyIncomeMult({ notorietyTier: 5 })).toBeCloseTo(1.6);
+    expect(famous.materials).toEqual(quiet.materials);
+    expect(famous.gold).toBeGreaterThan(Math.floor(quiet.gold * 1.55));
+    expect(famous.gold).toBeLessThanOrEqual(Math.ceil(quiet.gold * 1.6) + 1);
+  });
+
+  it('a home 황금 광맥 is a revenue room worth IDLE_PER_GOLD_ROOM per minute', () => {
+    const plain = dungeonGoldPerMin(makeState({ dungeonSlots: [slot('combat')] }));
+    const vein  = dungeonGoldPerMin(makeState({ dungeonSlots: [{ ...slot('combat'), building: 'gold' }] }));
+    expect(vein - plain).toBeCloseTo(IDLE_PER_GOLD_ROOM * (1 + IDLE_DM_BONUS * makeState().dmLevel) * getWisdomBonuses(makeState()).idleIncomeMult, 5);
+  });
+
+  it('the accumulation window is 12h and doubles to 24h from notoriety tier 5', () => {
+    expect(idleCapHours({ notorietyTier: 1 })).toBe(12);
+    expect(idleCapHours({ notorietyTier: 4 })).toBe(12);
+    expect(idleCapHours({ notorietyTier: 5 })).toBe(24);
+    const built = { ...makeState({ dungeonSlots: [slot('combat')] }), lastIdleCollect: 1_000, notorietyTier: 7 };
+    const r = computeIdleReward(built, built.lastIdleCollect + 30 * 60 * 60 * 1000);
+    expect(r.capped).toBe(true);
+    expect(r.creditedMs).toBe(24 * 60 * 60 * 1000);
   });
 });

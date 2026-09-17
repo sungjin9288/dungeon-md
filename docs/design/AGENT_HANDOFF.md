@@ -461,7 +461,8 @@ release readiness를 의미하지 않는다.
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
 - ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
-- ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치), 아래 기록 참조. P1 ③④(운영 수익 통합·근무)는 미착수.
+- ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치, main 병합 `0bfd911`), 아래 기록 참조.
+- ~~운영 수익 통합·몬스터 근무 (Phase 3, P1 ③④)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -779,6 +780,31 @@ hardFailures 0}` (overlap 1 = 토스트가 페이지 내비 위에 뜨는 기존
 
 **남은 것.** P1 ③④(운영 수익 통합·몬스터 근무), 콤보의 organic 체감 확인(전투
 로그로 콤보 배율 발화 횟수 측정은 미실시), P3·P4.
+
+### 2026-09-18 — Phase 3 (P1 ③④): 운영 수익 통합 + 몬스터 근무
+
+`CLAUDE.md` "운영 수익 · 몬스터 근무" 절이 계약의 단일 진실원.
+
+**구조.** `idleIncome.ts`: 골드 = (운영 방 수익 + 보물고) × 명성 `1+0.15×(티어−1)` ×
+장식, 재료는 명성 미적용; 상한 12h → 티어 5부터 24h(`idleCapHours`); 홈 `황금 광맥`
+= 수익 방 12/분. 전투 `runGoldVeins`·`goldTick` 삭제(옵션 B: 전투 골드는 전리품).
+`production.ts` `FACILITY_AFFINITY`·`facilityStaffMult`(×1.2 / 적성 ×1.5),
+`facilityRatePerHour(def, level, staffMult)`, `facilityProductionOverMs(…, staff)`.
+`productionTransactions.ts` `assignFacilityStaff`(방·다른 시설에서 이동)·
+`clearFacilityStaff`·`staffedMonsterIds`; `assignMonsterToRoomSlot`은 근무 해제;
+`deployDungeonSlotsToGrid.staffedMonsterIds`·추천 제외. UI: `ProductionScene` 명령판
+'근무 수호자' 줄(44px) + `ProductionStaffPicker.ts`(적성·현재 위치 표시, 9칩/페이지),
+배치 트레이 '근무 중' 표기.
+
+**검증.** tsc clean, vitest 113 파일 2914 pass(`facilityStaff.test.ts` 신규,
+production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체, 전원 방 배치 중
+표시) → 도깨비 전사 배정 → 방 #1 비워짐·`facilityStaff.mine` 설정·산출 2→2.4/h·
+영수증 "방에서 이동", 방치 골드가 수호자 1체분 감소(21,717→20,969, 3h·티어5 ×1.6).
+모달 하니스 `production-facility-order`(명령판 재배치 회귀)·`production-staff-picker`·
+`production-staff-assigned` 결과는 커밋 메시지 참조.
+
+**남은 것.** P3(몬스터 레벨 전투 배선 → 계보도·교감), P4(재화 순환·중복·부족 배너),
+4.6 통폐합. 근무 몬스터의 교감(§4.3 ②) 연결은 P3에서.
 
 ## 8. Completed implementation record: Fusion Chamber
 

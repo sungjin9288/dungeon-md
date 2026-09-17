@@ -170,6 +170,29 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
   `trapForgeView.test.ts`, 추천 재고 인식(`roomLoadoutRecommendations.test.ts`). 모달
   하니스 `forge-trap-tab`/`forge-trap-fuse-result`.
 
+### 운영 수익 · 몬스터 근무 (2026-09-18, Phase 3 / P1 ③④)
+
+**운영수익 = (방 수익 + 보물고) × 명성 배수 × 장식 세트 배수** (`idleIncome.ts
+computeIdleReward`). 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
+곱하고 재료에는 곱하지 않는다. 방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
+UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광맥`은 **수익 방**
+(`IDLE_PER_GOLD_ROOM` 12/분)이며 전투 중 골드 생산은 없다(`runGoldVeins` 삭제 —
+전투 골드는 전리품뿐).
+
+**근무**(`productionTransactions.ts assignFacilityStaff/clearFacilityStaff`,
+`GameState.facilityStaff: facilityId → monsterId`): 생산 시설마다 수호자 1체. 산출
+×1.2, 적성 부족(`FACILITY_AFFINITY` 광산 용족·약초원 산신·직조실 탈족·마력우물
+해신·보물고 도깨비)이면 ×1.5. **수호자는 방어하거나 일하거나 둘 중 하나** —
+근무 배정은 방에서 빼고(`movedFromRoom`), 방 배치(`assignMonsterToRoomSlot`)는
+근무를 끝낸다. 전투 배치(`deployDungeonSlotsToGrid.staffedMonsterIds`)와 추천
+(`collectAssignedMonsterIds`)도 근무자를 제외한다. UI: 생산 구역 명령판의 '근무
+수호자' 줄(`production-staff`) → `ProductionStaffPicker`(칩 `production-staff-<id>`),
+배치 트레이 몬스터 칩은 '근무 중' 표기.
+
+- 가드: `facilityStaff.test.ts`(배타성 양방향·추천 제외), `production.test.ts`(적성
+  배율), `idleIncome.test.ts`(명성 배수·수익 방·상한). 모달 하니스
+  `production-staff-picker`/`production-staff-assigned`.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|

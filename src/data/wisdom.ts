@@ -283,6 +283,7 @@ export interface GameState {
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   productionFacilities: Record<string, number>;  // 생산 시설 facilityId → level (0/absent = not built)
+  facilityStaff: Record<string, string>;         // 생산 시설 facilityId → 근무 몬스터 id (근무 중인 몬스터는 방어에 참여하지 않는다)
   ownedDecorations:  string[];        // 장식품 owned (decorationId)
   placedDecorations: string[];        // 장식품 currently placed (active for set bonuses)
   // Summon system (Phase 5)
@@ -378,6 +379,7 @@ function defaultGameState(): GameState {
     dungeonSlots:      [],
     lastIdleCollect:   0,
     productionFacilities: {},
+    facilityStaff: {},
     ownedDecorations:  [],
     placedDecorations: [],
     summonPity:        { normal: { count: 0, guaranteed: 50 }, special: { count: 0, guaranteed: 80 } },

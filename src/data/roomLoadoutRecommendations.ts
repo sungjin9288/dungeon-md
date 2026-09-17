@@ -6,6 +6,7 @@ import {
 import { resolveOwnedMonsterProfile, type OwnedMonsterProfile } from './monsters';
 import { trapEffectiveDps, TRAP_DEFS, type TrapDef } from './traps';
 import { getTrapMastery, getTrapStock } from './trapTransactions';
+import { staffedMonsterIds } from './productionTransactions';
 import type { GameState, RoomSlotType } from './wisdom';
 
 export interface MonsterLoadoutRecommendation {
@@ -200,12 +201,14 @@ function calculateRecommendedAttack(owned: OwnedMonster, def: OwnedMonsterProfil
   return Math.round(baseAttack * (1 + (equipmentStats.atkMult ?? 0)));
 }
 
+/** Guardians already in a room or on a facility shift are not free to place. */
 function collectAssignedMonsterIds(state: GameState): Set<string> {
-  return new Set(
-    (state.dungeonSlots ?? [])
+  return new Set([
+    ...(state.dungeonSlots ?? [])
       .flatMap(slot => slot?.monsterIds ?? [])
       .filter((monsterId): monsterId is string => typeof monsterId === 'string' && monsterId.length > 0),
-  );
+    ...staffedMonsterIds(state),
+  ]);
 }
 
 function getTrapScore(trap: TrapDef, roomType: RoomSlotType | undefined, mastery: number): number {

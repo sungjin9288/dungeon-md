@@ -29,7 +29,6 @@ import {
   type RoomMechanicsContext,
   runTigersPounce as _runTigersPounce,
   runMercenaryAuras as _runMercenaryAuras,
-  runGoldVeins as _runGoldVeins,
   runHealers as _runHealers,
   runSoulHarvest as _runSoulHarvest,
   runMedicineHallHeal as _runMedicineHallHeal,
@@ -375,7 +374,6 @@ export class DungeonScene extends Phaser.Scene {
     this.runCombat(_time, rmCtx);
     _runTrapEffects(rmCtx, _time);
     _runHealers(rmCtx, _time);
-    _runGoldVeins(rmCtx, _time);
     this.updateBossHpBar();
     this.checkWaveEnd();
     _runMercenaryAuras(rmCtx, _time);
@@ -560,10 +558,6 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Tigers Pounce update loop ──────────────────────────────────────────────
   pounceReadyMap = new Map<string, { ready: boolean; cooldownUntil: number }>();
-
-  // ─── Gold Vein passive income ─────────────────────────────────────────────
-
-  goldTick = 0;
 
   // ─── Wave End Detection ───────────────────────────────────────────────────
 

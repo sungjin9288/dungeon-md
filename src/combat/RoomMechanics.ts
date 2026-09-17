@@ -89,7 +89,6 @@ export interface RoomMechanicsContext {
 
   // ── Tick timers (mutable, written back through context) ──────────────────
 
-  goldTick: number;
   medicineHealTick: number;
   medicineGlobalPulseLast: number;
   poisonDamageTick: number;
@@ -173,21 +172,6 @@ export function runMercenaryAuras(ctx: RoomMechanicsContext, _now: number): void
       inv.pathTween.timeScale = 1;
     }
   });
-}
-
-// ─── runGoldVeins ───────────────────────────────────────────────────────────
-
-export function runGoldVeins(ctx: RoomMechanicsContext, now: number): void {
-  if (now - ctx.goldTick < 1000) return;
-  ctx.goldTick = now;
-  let income = 0;
-  for (const row of ctx.roomGrid)
-    for (const data of row)
-      if (data?.goldPerSec) income += data.goldPerSec;
-  if (income <= 0) return;
-  ctx.gold += income;
-  ctx.setGoldRegistry(ctx.gold);
-  ctx.showGoldFloat(`+${income}`, CANVAS_WIDTH / 2, GRID_Y - 20);
 }
 
 // ─── runHealers ─────────────────────────────────────────────────────────────
