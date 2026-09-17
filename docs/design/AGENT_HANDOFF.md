@@ -461,6 +461,7 @@ release readiness를 의미하지 않는다.
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
 - ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
+- ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치), 아래 기록 참조. P1 ③④(운영 수익 통합·근무)는 미착수.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -745,6 +746,33 @@ overflow로 읽던 것을 뷰포트 마스크로 클립(`BarracksScene`).
 **남은 것 (Phase 3~4).** 함정 제작·조합·콤보(P2), 운영 수익 통합·근무(P1 ③④),
 계보도·교감(P3), 재화 순환·중복·부족 배너(P4). P3 첫 작업은 몬스터 레벨의
 전투 배선(현재 전투는 방 레벨만 본다).
+
+### 2026-09-18 — Phase 3a/3b: 함정 제작·융합·숙련·콤보
+
+phase2 브랜치 2커밋: `470d33d`(3a 데이터·전투·재고) → `75346b2`(3b 공방 탭·트레이).
+`CLAUDE.md` "함정 제작 · 콤보" 절이 계약의 단일 진실원.
+
+**구조.** `traps.ts` 상태이상 6종 × 함정 16종(1티어 6 / 2티어 6 융합 / 3티어 4
+융합+boss_essence), 숙련 +15%/lv(최대 5), 콤보 `1+0.25×(상이 상태이상−1)` 최대 4.
+`trapTransactions.ts`(craft/enhance, 재고 `trapStock`·숙련 `trapMastery`),
+`roomSlotTransactions`(2·3티어는 재고에서 설치·해제 시 복귀), `Invader.comboCount`
+(2초 창), `CombatResolver`/`runExtraMonsterAttacks` 콤보 배율, `applyTrapToInvader`
+일반화(숙련 배율), `simulation.ts` `trapEffectiveDps`. UI: `trapForgeView.ts`(순수
+행 투영) → `ForgeTrapTab.ts`, 공방 3탭(제작/함정/분해), 배치 트레이 함정 칩 티어
+배지·재고 표시·재고 없음 → 공방 딥링크(`forgeTab`, `forge-entry` 소비).
+기존 4종 id는 유지되므로 세이브 마이그레이션 없음(재고·숙련 기본 `{}`).
+
+**검증.** tsc clean, vitest 112 파일 2904 pass(traps/trapTransactions/trapForgeView
+신규, stages·roomMechanics·추천·navigationContract 갱신). 프리뷰(8084) 수동 주행:
+공방에서 독가시 벽 융합(가시 덫 1·독 덫 1·철 3·약초 3 소모, 재고 2) → 홈 트레이
+DM20에서 설치(재고 2→1, 골드 불변, 방 T1) → 해제(재고 복귀 2) → 재고 없는 뇌전
+그물 탭 → ForgeScene `activeTab='trap'`, 레지스트리 잔여 0. 모달 하니스
+`forge-trap-tab`·`forge-trap-fuse-result` `{overflow 0, small 0, tiny 0, errors 0,
+hardFailures 0}` (overlap 1 = 토스트가 페이지 내비 위에 뜨는 기존 토스트 위치, 검토
+후보).
+
+**남은 것.** P1 ③④(운영 수익 통합·몬스터 근무), 콤보의 organic 체감 확인(전투
+로그로 콤보 배율 발화 횟수 측정은 미실시), P3·P4.
 
 ## 8. Completed implementation record: Fusion Chamber
 

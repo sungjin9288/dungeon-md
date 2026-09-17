@@ -11,9 +11,12 @@ import { TRAP_MASTERY_MAX } from '../data/traps';
 import { drawPageNavigator } from './ForgeTabs';
 import { LIST_PAD, type ForgeContext } from './ForgeShared';
 
-export const TRAP_PAGE_SIZE = 4;
-const ROW_H = 118;
-const ROW_GAP = 8;
+export const TRAP_PAGE_SIZE = 3;
+// 3 rows + summary + pager fit the 644px content band with a two-line recipe
+// budget (tier-3 recipes list four inputs); buttons keep the 44px touch target.
+const ROW_H = 146;
+const ROW_GAP = 6;
+const BUTTON_H = 44;
 const TIER_HEX: Record<1 | 2 | 3, number> = { 1: 0xc8921a, 2: 0x8ac7ff, 3: 0xd48cff };
 const TIER_CSS: Record<1 | 2 | 3, string> = { 1: '#c8921a', 2: '#8ac7ff', 3: '#d48cff' };
 
@@ -43,7 +46,7 @@ function drawActionButton(
   scene: Phaser.Scene, c: Phaser.GameObjects.Container,
   x: number, y: number, w: number, label: string, enabled: boolean, accent: number, onTap: () => void,
 ): void {
-  const h = 30;
+  const h = BUTTON_H;
   const bg = scene.add.graphics();
   bg.fillStyle(enabled ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.VOID, 1);
   bg.fillRoundedRect(x, y, w, h, 6);
@@ -97,16 +100,18 @@ function drawTrapRow(scene: Phaser.Scene, ctx: ForgeContext, c: Phaser.GameObjec
   }));
 
   const craftNeeds = [...row.inputTraps, ...row.materials];
-  c.add(scene.add.text(textX, y + 46, `제작: ${needLine(craftNeeds)}`, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: row.craft.ok ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+  const craftLine = scene.add.text(textX, y + 46, `제작: ${needLine(craftNeeds)}`, {
+    fontFamily: 'sans-serif', fontSize: '10px', lineSpacing: 2, color: row.craft.ok ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: w - 72 },
-  }));
-  c.add(scene.add.text(textX, y + 62, row.enhanceMaterials.length ? `강화: ${needLine(row.enhanceMaterials)}` : '강화: 숙련 최대', {
+  });
+  c.add(craftLine);
+  // The recipe may take two lines; the enhance line follows it instead of a fixed slot.
+  c.add(scene.add.text(textX, craftLine.y + craftLine.height + 2, row.enhanceMaterials.length ? `강화: ${needLine(row.enhanceMaterials)}` : '강화: 숙련 최대', {
     fontFamily: 'sans-serif', fontSize: '10px', color: row.enhance.ok ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     wordWrap: { width: w - 72 },
   }));
 
-  const btnW = 108, btnY = y + ROW_H - 38;
+  const btnW = 108, btnY = y + ROW_H - BUTTON_H - 6;
   drawActionButton(scene, c, x + w - btnW * 2 - 20, btnY, btnW, row.craft.label, row.craft.ok, DUNGEON_UI.JADE, () => ctx.onCraftTrap(def.id));
   drawActionButton(scene, c, x + w - btnW - 10, btnY, btnW, row.enhance.label, row.enhance.ok, DUNGEON_UI.BRASS, () => ctx.onEnhanceTrap(def.id));
 }

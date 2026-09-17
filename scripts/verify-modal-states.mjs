@@ -51,6 +51,14 @@ const CASES = [
   { id: 'summon-rate-detail', scene: 'SummonScene', steps: [{ label: '확률 상세' }], expect: '확률 상세' },
   { id: 'barracks-manage', scene: 'BarracksScene', steps: [{ label: '관리' }], expect: '수호자 관리' },
   { id: 'forge-disassemble-tab', scene: 'ForgeScene', steps: [{ label: '분해' }], expect: '분해 탭' },
+  {
+    id: 'forge-trap-tab', scene: 'ForgeScene', seed: { dmLevel: 20, materials: { iron_shard: 12, herb: 9, old_cloth: 8 }, trapStock: { spike_trap: 1, poison_trap: 1 }, trapMastery: { spike_trap: 2 } },
+    steps: [{ label: '함정' }], expect: '함정 탭 (재고·숙련·제작/강화 행 3개 + 페이지)',
+  },
+  {
+    id: 'forge-trap-fuse-result', scene: 'ForgeScene', seed: { dmLevel: 20, materials: { iron_shard: 12, herb: 9, old_cloth: 8 }, trapStock: { spike_trap: 1, poison_trap: 1 } },
+    steps: [{ label: '함정' }, { label: '다음' }, { label: '다음' }, { label: '제작' }], expect: '2티어 융합(독가시 벽, 3페이지 첫 행) 후 토스트 · 재고 갱신',
+  },
   // Forecast tray: the day's three visitor cards, and the same tray once the
   // name has grown enough for the sign-raising control to appear.
   { id: 'home-forecast-tray', scene: 'DungeonHomeScene', steps: [{ label: '오늘의 손님' }], expect: '오늘의 손님 카드 3장' },
