@@ -463,7 +463,8 @@ release readiness를 의미하지 않는다.
 - ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
 - ~~함정 제작·융합·숙련·콤보 (Phase 3a/3b)~~ → 구현 CLOSED 2026-09-18 (phase2 브랜치, main 병합 `0bfd911`), 아래 기록 참조.
 - ~~운영 수익 통합·몬스터 근무 (Phase 3, P1 ③④)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
-- ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. P3 ① 계보도(목표 핀)는 미착수.
+- ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -848,6 +849,24 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 **남은 것.** P3 ① 계보도(진화·조합 트리 시각화 + 목표 핀 → 홈 directive), P4(재화
 순환·중복→각성석/부족 조각·부족 배너), 4.6 통폐합(장식 세트 흡수는 idleIncome에서
 이미 배수로 소비 중), 근무·교감을 홈 directive에 노출.
+
+### 2026-09-18 — Phase 3 (P3 ①): 계보도 · 목표 핀
+
+`CLAUDE.md` "계보도 · 목표 핀" 절이 계약의 단일 진실원.
+
+**구조.** `lineage.ts`(노드 파생·목표 계획·다음 단계·핀 제안, 데이터 추가 없음),
+`GameState.lineageGoal`, `homeReadinessDirective.getLineageDirective`(방 작업 →
+**계보 목표** → 전투 준비 순), `HomeCommandDeck`이 `'codex'` 목적지를 CodexScene으로
+라우팅, `CodexMonsterDetail` 하단 44px '계보' 스트립(진화/조합 요약 + 핀 토글, 토글
+시 스트립 전체 재렌더).
+
+**범위 결정.** §4.3 ①의 "부족별 트리 시각화"는 그리지 않았다. 상세 스트립(어디서
+와서 어디로 가는가)과 홈 directive(지금 할 한 가지)가 "목표 있는 반복"에 필요한
+노출을 이미 채우고, 전체 트리 그림은 아트 파이프라인(Codex 핸드오프)과 함께 다룰
+것. 핀은 하나만 둔다(directive가 한 줄이므로).
+
+**검증.** tsc clean, vitest 115 파일 2927 pass(`lineage.test.ts` 4건). 모달 하니스
+`codex-lineage-pin`·`home-lineage-directive` 결과는 커밋 메시지 참조.
 
 ## 8. Completed implementation record: Fusion Chamber
 

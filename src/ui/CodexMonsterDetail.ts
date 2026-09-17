@@ -8,6 +8,9 @@ import { generatePortrait } from '../art/PortraitGenerator';
 import { SKILL_TREES } from '../data/barracks';
 import type { loadGameState } from '../data/wisdom';
 import { getDexNo, getRarityMeta } from './CodexShared';
+import { getLineageNode, getLineageNextStep, suggestLineageGoal, withLineageGoal } from '../data/lineage';
+import { getMonsterDisplayName } from '../data/fusion';
+import { saveGameState } from '../data/wisdom';
 
 const TRIBE_LABELS: Record<string, string> = {
   dokkaebi: '도깨비', gumiho: '구미호', dragon: '용족', underworld: '저승',
@@ -83,7 +86,78 @@ export function showCodexMonsterDetail(
   drawPassive(scene, ctr, monster, x + 14, y + 278, w - 28, rarity.color);
   drawDeployment(scene, ctr, monster, x + 14, y + 388, w - 28);
   drawGrowth(scene, ctr, monster, x + 14, y + 472, w - 28);
+  drawLineage(scene, ctr, monster, gameState, x + 14, y + 622, w - 28);
   return ctr;
+}
+
+/**
+ * 계보 strip: where this guardian comes from / leads to, and a pin that makes
+ * the suggested next target the home directive's goal (toggle).
+ */
+function drawLineage(
+  scene: Phaser.Scene,
+  ctr: Phaser.GameObjects.Container,
+  monster: (typeof MONSTER_DEFS)[MonsterId],
+  gameState: ReturnType<typeof loadGameState>,
+  x: number,
+  y: number,
+  w: number,
+): void {
+  const node = getLineageNode(monster.id);
+  const suggested = suggestLineageGoal(gameState, monster.id);
+  const pinned = gameState.lineageGoal !== null && gameState.lineageGoal === suggested;
+  const buttonW = 108, h = 44;
+  // Everything the strip draws lives in one sub-container so a pin toggle can redraw it whole.
+  const strip = scene.add.container(0, 0);
+  ctr.add(strip);
+  const bg = scene.add.graphics();
+  bg.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+  bg.fillRoundedRect(x, y, w, h, 8);
+  bg.lineStyle(1, pinned ? 0xc181ff : DUNGEON_UI.IRON, pinned ? 0.95 : 0.9);
+  bg.strokeRoundedRect(x, y, w, h, 8);
+  strip.add(bg);
+
+  const nextEvo = node.children.find(child => getLineageNode(child).kind === 'evolution');
+  const hybrids = node.children.filter(child => getLineageNode(child).kind === 'hybrid');
+  const lines: string[] = [];
+  if (nextEvo) lines.push(`진화 → ${getMonsterDisplayName(nextEvo)}`);
+  if (hybrids.length) lines.push(`조합 → ${hybrids.map(getMonsterDisplayName).join(', ')}`);
+  const summary = lines.length ? lines.join(' · ') : '계보 없음 · 이 모습이 완성형';
+  addText(scene, strip, x + 12, y + 14, '계보', 10, DUNGEON_UI_CSS.BRASS, true);
+  addText(scene, strip, x + 12, y + 31, summary, 10, DUNGEON_UI_CSS.TEXT, false, 'left', w - buttonW - 30);
+
+  if (!suggested) return;
+  const step = getLineageNextStep(gameState, suggested);
+  const bx = x + w - buttonW - 6, by = y + (h - 36) / 2;
+  const btn = scene.add.graphics();
+  btn.fillStyle(pinned ? 0x3a2a55 : DUNGEON_UI.SOOT, 1);
+  btn.fillRoundedRect(bx, by, buttonW, 36, 7);
+  btn.lineStyle(1.2, pinned ? 0xc181ff : DUNGEON_UI.BRASS, 0.9);
+  btn.strokeRoundedRect(bx, by, buttonW, 36, 7);
+  strip.add(btn);
+  addText(scene, strip, bx + buttonW / 2, by + 18, pinned ? '📌 목표 해제' : `📌 목표: ${getMonsterDisplayName(suggested)}`, 10,
+    pinned ? '#e2ccff' : DUNGEON_UI_CSS.PARCHMENT, true, 'center', buttonW - 8);
+  // The 44px touch target spans the strip's full height even though the button is drawn at 36.
+  const zone = scene.add.zone(bx - 4, y, buttonW + 8, h).setOrigin(0)
+    .setInteractive({ useHandCursor: true }).setName('codex-lineage-pin');
+  zone.on('pointerdown', () => {
+    const next = pinned ? null : suggested;
+    const updated = withLineageGoal(gameState, next);
+    saveGameState(updated);
+    Object.assign(gameState, { lineageGoal: next });
+    const toast = scene.add.text(CANVAS_WIDTH / 2, y - 14, next
+      ? `목표 핀 · ${getMonsterDisplayName(next)}${step ? ` — ${step.label}` : ''}`
+      : '목표 핀 해제', {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#e2ccff',
+      backgroundColor: '#080b09', padding: { x: 10, y: 6 }, wordWrap: { width: w - 20 }, align: 'center',
+    }).setOrigin(0.5, 1).setDepth(230);
+    ctr.add(toast);
+    scene.tweens.add({ targets: toast, alpha: 0, duration: 300, delay: 1600, onComplete: () => toast.destroy() });
+    // Redraw the strip in place so the pin state and label follow the save.
+    strip.destroy();
+    drawLineage(scene, ctr, monster, gameState, x, y, w);
+  });
+  strip.add(zone);
 }
 
 function drawIdentity(

@@ -220,6 +220,20 @@ function getHomeDirective(
     };
   }
 
+  if (canonical.kind === 'lineage') {
+    return {
+      icon: canonical.icon,
+      title: canonical.title,
+      body: canonical.body,
+      ctaLabel: canonical.ctaLabel,
+      statLabel: canonical.statLabel,
+      statValue: canonical.statValue,
+      accent: canonical.accent,
+      slotIdx: null,
+      onPress: () => scene.navigateFromHome('CodexScene'),
+    };
+  }
+
   const readyCopy = getReadinessDirectiveCopy('battle-ready', { readiness: dungeonReadiness });
   return {
     ...readyCopy,

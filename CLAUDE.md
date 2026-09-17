@@ -212,6 +212,21 @@ UI: 수호자 상세 4번째 탭 '교감'(`MonsterDetailBond.ts`, 존 `monster-d
 - 가드: `bond.test.ts`(임계·비용 대안·일일 한도·날짜 리셋·보상 1회·100 마감).
   모달 하니스 `barracks-bond-tab`/`barracks-bond-action`.
 
+### 계보도 · 목표 핀 (2026-09-18, Phase 3 / P3 ①)
+
+신규 데이터 없음 — `lineage.ts`가 레지스트리·진화 티어(`EVOLUTION_TIERS`, 이제
+export)·`COMBINATION_TABLE`에서 노드(`getLineageNode`: base/evolution/hybrid, parents,
+children)를 파생한다. **목표 핀** `GameState.lineageGoal`(monster id | null):
+`getLineageGoalPlan(state, goal)`이 보유 상태에서 목표까지의 단계(소환 → 진화 ×3 →
+조합 영혼 결정 100)를 만들고, `getLineageNextStep`이 첫 단계를 준다. 홈 directive는
+방 작업이 없을 때 `getLineageDirective`(kind `'lineage'`, destination `'codex'`)를
+전투 준비 카드보다 먼저 보여준다(`HomeCommandDeck` → CodexScene). 도감 상세 하단
+'계보' 스트립(`codex-lineage-pin`)이 `suggestLineageGoal`(미보유면 자기 자신, 보유면
+다음 진화, 아니면 첫 하이브리드 자식)을 핀/해제한다.
+
+- 가드: `lineage.test.ts`(노드 파생·계획·모으기 단계·핀 제안). 모달 하니스
+  `codex-lineage-pin`/`home-lineage-directive`.
+
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |
 |------|------|

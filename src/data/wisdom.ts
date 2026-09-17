@@ -268,6 +268,7 @@ export interface GameState {
   // Monster Life system (Phase 3)
   monsterAffinity:   Record<string, number>;   // monsterId → 0–100 (교감; bondTransactions raises it, awakening needs 100)
   bondDaily:         Record<string, import('./bondTransactions').BondDayLog>;  // monsterId → today's care-action counts
+  lineageGoal:       string | null;  // 계보도 목표 핀 — monster id the home directive steers toward
   monsterAwakened:   Record<string, boolean>;
   personalStorySeen: Record<string, boolean>;
   lastTalkTime:      Record<string, number>;   // monsterId → timestamp ms
@@ -366,6 +367,7 @@ function defaultGameState(): GameState {
     unlockedFeatures:  [],
     monsterAffinity:   {},
     bondDaily:         {},
+    lineageGoal:       null,
     monsterAwakened:   {},
     personalStorySeen: {},
     lastTalkTime:      {},
