@@ -466,6 +466,7 @@ release readiness를 의미하지 않는다.
 - ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
 - ~~중복 소환 → 각성석·부족 조각 (Phase 4, P4 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
+- ~~Phase 3~4 마감 작업(홈 할 일 배지·콤보 피드백·구 세이브 회귀)~~ → CLOSED 2026-09-18, 아래 기록 참조.
 - ~~주간 보석 인플로우 밴드 (Phase 4, P4 ①)~~ → CLOSED 2026-09-18: `gemInflow.ts` 추정 + 명성 주간 정산에 기본 100 추가(티어 1: 190→290, 티어 2~5 밴드 안). P4 ③은 배너가 이미 부족 픽업이라 `bannerSynergy.ts` 전망 한 줄만 추가해 CLOSED.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
@@ -899,6 +900,30 @@ production/idleIncome 확장). 프리뷰(8084): 광산 명령판 → 피커(6체
 
 **검증.** tsc clean, vitest 결과·모달 하니스 `summon-shard-redeem`·프리뷰 교환 실측은
 커밋 메시지 참조.
+
+### 2026-09-18 — Phase 3~4 마감: 노출·피드백·회귀
+
+Phase 1~4 병합 후 남은 "만들었지만 보이지 않는" 구멍 셋을 닫았다.
+
+**① 홈 할 일 배지.** 지시 카드는 한 건만 보여주고 방 작업 큐가 거의 항상 이를
+차지한다(기대 홈 40에서도 큐 9건). 새 시스템을 배지로 노출: 헤더 `⛏ 근무 N`
+(`home-staffing-chip`) — **ProductionScene으로 가는 유일한 홈 경로**(그전까지 생산
+구역은 스테이지 지도에서만 도달), 칩 `육성 N`(오늘 교감 가능 수호자)·`제작 N`(지금
+융합 가능한 2·3티어 함정). 순수 계산은 `homeTodos.ts`.
+
+**② 콤보 피드백.** 콤보 배율이 전투에서 전혀 보이지 않아 "함정 조합이 전술"이라는
+설계가 학습되지 않았다. `shouldAnnounceCombo`(순수) + `Invader.noteComboAnnounce`로
+**단계가 오를 때만** 침입자 위에 `콤보 ×N`을 띄운다. 프리뷰 실측: 3티어 함정 2개를
+둔 방에서 한 웨이브에 `콤보 ×1.75` 5회(침입자당 1회, 타격당 스팸 없음).
+
+**③ 구 세이브 회귀.** `legacySaveMigration.test.ts` — Phase 3~4 이전 세이브를
+`importGameState`로 복원해 신규 필드 기본값(`{}`/null), 기존 함정 4종 설치 유지와
+골드 환급, 그리고 trapForgeView/homeTodos/lineage/bannerSynergy/gemInflow/idleIncome/
+simulation이 전부 무예외 동작함을 고정.
+
+**검증.** tsc clean, vitest 119 파일 2940 pass, `npm run build` 성공(청크 경고는
+기존 Phaser 권고), 모달 하니스 `home-todo-badges`·`home-staffing-route`
+`{overflow 0, small 0, tiny 0, errors 0, hardFailures 0}`.
 
 ## 8. Completed implementation record: Fusion Chamber
 
