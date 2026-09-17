@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { beginHomeForecastDay } from './HomeLifecycle';
 import { ROOT_NAV_Y } from '../constants/layout';
 import {
   loadGameState, saveGameState,
@@ -257,6 +258,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     if (this.pendingRoomFeedback) this.showHomeRoomFeedbackBanner(this.pendingRoomFeedback);
 
     this.checkBattleReturn();  // must run before initQuests so rewards applied first
+    beginHomeForecastDay(this);
     this.initQuests();
     // Store latest gs ref after battle return and quest initialization.
     this.registry.set('_invasionGs', this.gs);

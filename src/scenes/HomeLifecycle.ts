@@ -10,6 +10,10 @@ import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getUnlockedSlotCount } from '../data/wisdom';
+import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
+import { beginForecastDay, settleForecastBattle } from '../data/forecastTransactions';
+import { getTodayString } from '../data/daily';
+import { showToast } from '../ui/Toast';
 import {
   applyBattleReturnSettlement,
   type BattleReturnResult,
@@ -425,11 +429,24 @@ export function handleQuestComplete(
 
 // ─── checkBattleReturn ────────────────────────────────────────────────────────
 
+/**
+ * First visit of a day: erode the name for absences, pay the weekly settlement,
+ * issue today's cards. Runs after the battle return so a returning card is
+ * settled against the day it was taken on.
+ */
+export function beginHomeForecastDay(scene: DungeonHomeScene): void {
+  const started = scene.applyGameStateResult(beginForecastDay(scene.gs, getTodayString()));
+  if (started.weeklyGems > 0) {
+    scene.time.delayedCall(600, () => showToast(scene, `주간 명성 정산 — 보석 +${started.weeklyGems}`, { color: '#ffd166' }));
+  }
+}
+
 export function checkBattleReturn(scene: DungeonHomeScene): void {
   const result = scene.registry.get('battleResult') as BattleReturnResult | undefined;
   if (!result) return;
-  scene.registry.remove('battleResult');
-  scene.registry.remove('returnTo');
+  const forecastCardId = scene.registry.get('forecastCardId') as string | undefined;
+  NAVIGATION_CONTEXT_OPERATIONS[forecastCardId ? 'forecast-return' : 'battle-result'].consume
+    .forEach(field => scene.registry.remove(field));
 
   const prevGold    = scene.gs.homeGold;
   const prevCrystal = scene.gs.soulCrystals;
@@ -437,9 +454,25 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   const prevDmLevel = scene.gs.dmLevel;
   const prevSlots = getUnlockedSlotCount({ dmLevel: prevDmLevel, wisdomTree: scene.gs.wisdomTree });
 
-  const settlement = scene.applyGameStateResult(
-    applyBattleReturnSettlement(scene.gs, result),
-  );
+  // A forecast card's battle settles through the card (loot + DM XP once, then
+  // the card's reward and the name); any other battle settles as before.
+  const settlement = forecastCardId
+    ? (() => {
+        const forecast = settleForecastBattle(scene.gs, forecastCardId, result, {
+          flawless: result.won && (result.hpShare ?? 0) >= 0.999,
+        });
+        scene.applyGameStateResult(forecast);
+        if (forecast.card) {
+          const delta = forecast.notorietyDelta;
+          scene.time.delayedCall(500, () => showToast(
+            scene,
+            delta >= 0 ? `${forecast.card?.title} — 명성 +${delta}` : `${forecast.card?.title} — 명성 ${delta}`,
+            { color: delta >= 0 ? '#ffd166' : '#ff9a8a' },
+          ));
+        }
+        return forecast.battle;
+      })()
+    : scene.applyGameStateResult(applyBattleReturnSettlement(scene.gs, result));
   const didLevelUp = settlement.didLevelUp;
   const battleReturnGrowth = {
     previousDmLevel: prevDmLevel,

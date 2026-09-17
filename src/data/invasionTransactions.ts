@@ -10,6 +10,8 @@ export interface BattleReturnResult {
   won:              boolean;
   goldEarned:       number;
   dmXP:             number;
+  /** Dungeon HP left as a share of max (0–1); absent on older hand-offs. */
+  hpShare?:         number;
   materialsEarned?: Record<string, number>;
   readonly callout?: BattleResultCallout;
 }

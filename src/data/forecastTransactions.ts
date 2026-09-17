@@ -4,7 +4,6 @@
 // returns new state; the scene decides what to show and where to go.
 // Contract: docs/design/PHASE2_NOTORIETY_FORECAST.md §2.
 
-import { applyClearRewards } from './clearRewards';
 import { getThisWeekMonday } from './daily';
 import { dayIndexOf } from './daily';
 import { forecastIssueInputFor, isBattleCard, issueForecastCards, type ForecastCard, type ForecastIssueInput } from './forecast';
@@ -128,15 +127,16 @@ export function takeForecastCard(state: GameState, cardId: string): ForecastTake
 
 /**
  * A card's battle came back. Composes the ordinary battle settlement (loot,
- * DM XP, quest ticks) with the card's own reward and the name's movement, and
- * routes daily-rule / weekly-boss cards through the rewards those modes
- * already own — so nothing is paid twice.
+ * DM XP, quest ticks) with the card's own reward and the name's movement.
+ * Daily-rule and weekly-boss cards launch with `dailyMode` / `weeklyBossMode`
+ * in the registry, so the battle scene already paid those modes' rewards at
+ * clear time (StageClearFlow → applyClearRewards); this only adds the name.
  */
 export function settleForecastBattle(
   state: GameState,
   cardId: string,
   result: BattleReturnResult,
-  options: { readonly flawless?: boolean; readonly today?: string; readonly weekStart?: string } = {},
+  options: { readonly flawless?: boolean } = {},
 ): ForecastSettlement {
   const battle = applyBattleReturnSettlement(state, result);
   const card = findCard(state, cardId);
@@ -161,17 +161,6 @@ export function settleForecastBattle(
       soulCrystals:    (next.soulCrystals ?? 0) + (card.reward.soulCrystals ?? 0),
       materials,
     };
-
-    if (card.daily || card.weeklyBoss) {
-      next = applyClearRewards(next, {
-        earnedCrystals: 0,
-        stars: options.flawless ? 3 : 2,
-        dailyMode: card.daily ?? null,
-        weeklyBossMode: card.weeklyBoss ?? null,
-        today: options.today,
-        weekStart: options.weekStart,
-      });
-    }
   } else {
     const before = next.notoriety ?? 0;
     next = applyNotorietyDefeat(next);

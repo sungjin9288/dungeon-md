@@ -138,15 +138,15 @@ describe('settleForecastBattle', () => {
     expect(settled.state.homeGold).toBe(day.homeGold + 120);
   });
 
-  it('a Monday weekly-boss card routes through the weekly reward once', () => {
+  it('a Monday weekly-boss card adds the name only — the battle scene pays the weekly reward', () => {
     const day = beginForecastDay(state(), '2026-09-14', pinned('2026-09-14', true)).state;
     const boss = day.forecast.cards[2];
     expect(boss.kind).toBe('weekly_boss');
     const took = takeForecastCard(day, boss.id);
     if (!took.ok) throw new Error('take failed');
-    const settled = settleForecastBattle(took.state, boss.id, won, { weekStart: '2026-09-14' });
-    expect(settled.state.weeklyBossResetDate).toBe('2026-09-14');
-    expect(settled.state.blueprints).toContain('bp_boss_amulet');
+    const settled = settleForecastBattle(took.state, boss.id, won);
+    expect(settled.state.weeklyBossResetDate).toBe(day.weeklyBossResetDate);
+    expect(settled.state.blueprints ?? []).not.toContain('bp_boss_amulet');
     expect(settled.notorietyDelta).toBe(NOTORIETY_GAIN.weekly_boss);
   });
 });

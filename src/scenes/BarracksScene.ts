@@ -56,6 +56,7 @@ export class BarracksScene extends Phaser.Scene {
   private gs = loadGameState();
   private scrollY    = 0;
   private maxScrollY = 0;
+  private contentMask?: Phaser.GameObjects.Graphics;
   private contentContainer!: Phaser.GameObjects.Container;
   private detailOverlay?: Phaser.GameObjects.Container;
   private shopOverlay?:   Phaser.GameObjects.Container;
@@ -351,6 +352,14 @@ export class BarracksScene extends Phaser.Scene {
   private buildContent(): void {
     this.contentContainer?.destroy();
     this.contentContainer = this.add.container(0, 0).setDepth(5);
+    // The roster scrolls by moving this container, so clip it to the list's
+    // viewport: cards past the fold stay hidden instead of painting under the
+    // bottom navigation (and the audit no longer reads them as overflow).
+    this.contentMask?.destroy();
+    this.contentMask = this.make.graphics({ x: 0, y: 0 }, false);
+    this.contentMask.fillStyle(0xffffff, 1);
+    this.contentMask.fillRect(0, CARD_START_Y - 8, CANVAS_WIDTH, (ROOT_NAV_Y - 8) - (CARD_START_Y - 8));
+    this.contentContainer.setMask(this.contentMask.createGeometryMask());
 
     const sorted = [...this.gs.ownedMonsters]
       .filter(m => {

@@ -19,7 +19,10 @@ import { getHomeReadinessDirective } from '../data/homeReadinessDirective';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { goToPreBattle } from '../ui/InvasionUI';
-import { showDailyContentHub } from '../ui/DailyContentPanel';
+import { showForecastTray } from '../ui/ForecastTray';
+import { getNotorietyTier, canRaiseNotorietyTier } from '../data/notoriety';
+import { isForecastExhausted } from '../data/forecastTransactions';
+import { getTodayString } from '../data/daily';
 
 
 // ─── Layout constants (must match DungeonHomeScene.ts) ──────────────────────
@@ -97,6 +100,16 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
     color: '#e7d6b5',
     fontStyle: 'bold',
   }).setOrigin(0, 0.5));
+  const exhausted = isForecastExhausted(scene.gs, getTodayString());
+  const tierLabel = `명성 ${getNotorietyTier(scene.gs)}단계${canRaiseNotorietyTier(scene.gs) ? ' ▲' : ''}`;
+  // Sits after the '다음 수비 지시' header label (≈80px at 11px bold).
+  deck.add(scene.add.text(deckX + 104, deckY + 15, `· ${tierLabel}`, {
+    fontFamily: 'sans-serif',
+    fontSize: '11px',
+    color: canRaiseNotorietyTier(scene.gs) ? CASUAL_CSS.GOLD : '#a89c86',
+    fontStyle: 'bold',
+  }).setOrigin(0, 0.5));
+
   const readinessCss = dungeonMetrics.readiness >= 80
     ? CASUAL_CSS.GREEN : dungeonMetrics.readiness >= 55 ? CASUAL_CSS.GOLD : CASUAL_CSS.RED;
   deck.add(scene.add.text(deckX + deckW - 98, deckY + 15, '준비도', {
@@ -150,7 +163,7 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
     { label: '방 관리', onPress: () => openFirstDungeonSlot(scene, directiveSlotIdx) },
     { label: '육성', onPress: () => openFocusedMonsterGrowth(scene, directiveSlotIdx) },
     { label: '제작', onPress: () => openFocusedForge(scene, directiveSlotIdx) },
-    { label: '일일', onPress: () => showDailyContentHub(scene) },
+    { label: exhausted ? '손님 완료' : '오늘의 손님', onPress: () => showForecastTray(scene) },
   ];
   secondaryChips.forEach((chip, i) => {
     const chipX = deckX + 12 + i * chipW;

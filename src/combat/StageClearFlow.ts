@@ -292,6 +292,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
             won: true,
             goldEarned,
             dmXP: STAGE_CLEAR_DM_XP,
+            hpShare: ctx.maxHp > 0 ? ctx.dungeonHp / ctx.maxHp : 0,
             materialsEarned: { ...ctx.materialsEarnedThisRun },
             ...(returnCallout ? { callout: returnCallout } : {}),
           });

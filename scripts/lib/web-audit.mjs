@@ -116,7 +116,9 @@ export async function inventory(page) {
         textBelow10: texts.filter(text => text.fontSize < 10), text10: texts.filter(text => text.fontSize === 10), text11: texts.filter(text => text.fontSize === 11),
         renderedTextBelow10: texts.filter(text => text.renderedFontSize < 9.9),
         undersizedTargets: inputs.filter(input => input.logicalTarget.width < 43.9 || input.logicalTarget.height < 43.9),
-        fixedOverflow: overflow.filter(text => !text.scrollable), scrollBoundaryPartials: overflow.filter(text => text.scrollable),
+        // A masked text that runs past the frame is list content clipped by its own
+        // viewport (container-scrolled rosters), not a fixed-layout defect.
+        fixedOverflow: overflow.filter(text => !text.scrollable && !text.masked), scrollBoundaryPartials: overflow.filter(text => text.scrollable || text.masked),
         overlapCandidates: overlaps, excludedOffscreen: objects.filter(object => !object.inView).length,
         timers: scene.time._active.length, tweens: scene.tweens.getTweens().length,
       };

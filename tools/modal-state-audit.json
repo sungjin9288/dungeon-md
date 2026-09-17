@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-16T01:13:32.373Z",
+  "generatedAt": "2026-09-17T15:41:00.629Z",
   "base": "http://127.0.0.1:8083",
-  "scope": "17 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
+  "scope": "19 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
   "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
   "sourceHashes": {
-    "scripts/lib/web-audit.mjs": "061ccb13f82259f4d757b972892cd69e5c6a233bdb48bae7d0aab48899f7e49e",
-    "scripts/verify-modal-states.mjs": "c35f0c404987eb7e21d6f2c5445d81d346fcca2098d8ff473109b36753091c08"
+    "scripts/lib/web-audit.mjs": "83eb46a7c3ade24e72b272b0460542840c0153d2545ae31d79d313272f75da9b",
+    "scripts/verify-modal-states.mjs": "15638638950376cd9c850661fa4d988effb63fa0f3dd56c78dd4702e0cc0b16f"
   },
   "results": [
     {
@@ -35,7 +35,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
-      "sha256": "d4829558ce999a2deb924fbd9c7cad8ea72392e768b317aa075d8d24f83af8d9"
+      "sha256": "0a8615b2707fe9e5269a29914add915ee779b1987eb8f192ccb7b6239bba0fe4"
     },
     {
       "id": "shop-purchase-confirm",
@@ -63,7 +63,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
-      "sha256": "60efd977162a547ef9de36280adf39828a30bf951f9c9fe69e7c3ca3a325c402"
+      "sha256": "2ca9f8d3cdf92bc2f1fcf58736f158f6999052de6db3a316fa73973f773ed828"
     },
     {
       "id": "codex-monster-detail",
@@ -76,8 +76,8 @@
       "activeScenes": [
         "CodexScene"
       ],
-      "visibleTextBefore": 59,
-      "visibleTextAfter": 88,
+      "visibleTextBefore": 58,
+      "visibleTextAfter": 87,
       "inputsAfter": 28,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
@@ -104,7 +104,7 @@
       "activeScenes": [
         "CodexScene"
       ],
-      "visibleTextBefore": 59,
+      "visibleTextBefore": 58,
       "visibleTextAfter": 45,
       "inputsAfter": 21,
       "fixedOverflow": 0,
@@ -119,7 +119,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-codex-invader-tab-390x844.png",
-      "sha256": "b8e94afe519b54abf4545446034788bb16c74ff8d6d0ba8c0bf8af288242d34a"
+      "sha256": "eda3f2cd09e7ffc159f490fda30d476169c41177b5b6454872c9836b1c93a6f9"
     },
     {
       "id": "wisdom-branch-confirm",
@@ -147,7 +147,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-wisdom-branch-confirm-390x844.png",
-      "sha256": "8c53086c8d07fee3ef75f6f599a7e8492ca3d11955225b94b41416997030e6d2"
+      "sha256": "e1fdee1193352f9b1eae547bc0b8efbc2eb6352045dd590693f72dddd2ddf8ad"
     },
     {
       "id": "achievement-record",
@@ -175,7 +175,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-achievement-record-390x844.png",
-      "sha256": "db7793a13a5d4cf6f7cbad3db202f3f44ba7e94fe1332ac379d238a5228895eb"
+      "sha256": "f4d82438311d2cda5aba01e5d669a51cd425eaa0633af31fc89328886babd37f"
     },
     {
       "id": "abyss-floor-order",
@@ -190,7 +190,7 @@
         "UIScene"
       ],
       "visibleTextBefore": 41,
-      "visibleTextAfter": 32,
+      "visibleTextAfter": 38,
       "inputsAfter": 15,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
@@ -204,7 +204,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
-      "sha256": "95eb3e65dbb79723cb624cc2c374fcb69bdf6b520595ca283cb54851619cd140"
+      "sha256": "2240bd6e2b4d6014d50ec7dcabaf0ba8828f1f1edef9918a441a20897a702cf3"
     },
     {
       "id": "production-facility-order",
@@ -274,21 +274,21 @@
         "FusionScene"
       ],
       "visibleTextBefore": 28,
-      "visibleTextAfter": 37,
-      "inputsAfter": 13,
+      "visibleTextAfter": 45,
+      "inputsAfter": 15,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
       "textBelow10": 0,
       "renderedTextBelow10": 0,
-      "overlapCandidates": 0,
+      "overlapCandidates": 4,
       "overflowDetail": [],
       "undersizedDetail": [],
       "seeded": null,
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-fusion-material-picker-390x844.png",
-      "sha256": "707033bf88c20ccd0cbbd46b4605fe336aadd6b2276e22da6c14dfc63030e276"
+      "sha256": "336f87e80d95b4a11f72dbe05866b0f81f60107762dcd91e0361da3042d63d3b"
     },
     {
       "id": "fusion-absorb-tab",
@@ -316,7 +316,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-fusion-absorb-tab-390x844.png",
-      "sha256": "0877ffb84bd23d1194f170030c303866774ab7abf1a0429d01c3768ead771a5b"
+      "sha256": "9cb4c8ed41dc78cd120cb96ce5828df63392503be1daeab2133d716c888b8929"
     },
     {
       "id": "summon-rate-detail",
@@ -344,7 +344,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-summon-rate-detail-390x844.png",
-      "sha256": "28d8375eb03f2fea43e3570397ffde9ffa4aa93d4e089e39343e03e287668cf0"
+      "sha256": "ed149cba4b6190321b3b23a6f7bbfb67a9d71e879ffec5a499ea2e0e41e70739"
     },
     {
       "id": "barracks-manage",
@@ -357,22 +357,22 @@
       "activeScenes": [
         "BarracksScene"
       ],
-      "visibleTextBefore": 52,
-      "visibleTextAfter": 64,
-      "inputsAfter": 14,
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 43,
+      "inputsAfter": 12,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
       "undersizedTargets": 0,
       "textBelow10": 0,
       "renderedTextBelow10": 0,
-      "overlapCandidates": 1,
+      "overlapCandidates": 0,
       "overflowDetail": [],
       "undersizedDetail": [],
       "seeded": null,
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-barracks-manage-390x844.png",
-      "sha256": "46f61738809e61f7fa9d5875054528c775acfeba0402cb2c3b258372fcdb9405"
+      "sha256": "171d5cff4c043f9776a0cb7cae1bae548083914dd396364a4e3606eb7a7d004c"
     },
     {
       "id": "forge-disassemble-tab",
@@ -403,6 +403,64 @@
       "sha256": "e9ddf35234bd31fa4aab3a31555afea7177342cad22ed3fb6eee339266b611d8"
     },
     {
+      "id": "home-forecast-tray",
+      "scene": "DungeonHomeScene",
+      "expect": "오늘의 손님 카드 3장",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 42,
+      "visibleTextAfter": 61,
+      "inputsAfter": 20,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-forecast-tray-390x844.png",
+      "sha256": "43a05a9eec97033a5665413c63f042c97639f16cb7386b402609132f5fac3405"
+    },
+    {
+      "id": "home-forecast-tray-raise",
+      "scene": "DungeonHomeScene",
+      "expect": "간판 올리기 버튼이 있는 손님 트레이",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 42,
+      "visibleTextAfter": 62,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "notoriety"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-forecast-tray-raise-390x844.png",
+      "sha256": "7662dfd8a1dd36b6c40eb1932d128654c5cb32b309fdbbc12bba3c451bfaebfc"
+    },
+    {
       "id": "shop-purchase-result",
       "scene": "ShopScene",
       "expect": "구매 확정 후 영수증",
@@ -430,7 +488,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
-      "sha256": "4669ff3ddc0385c10e14aed398ab9d98d9925562508e61722f23a90206b3bf0c"
+      "sha256": "36569ce30b54dcafac04488db7ffae99aa4c002f35ed6fac5cce17c0238bc189"
     },
     {
       "id": "wisdom-upgrade-result",
@@ -460,7 +518,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-wisdom-upgrade-result-390x844.png",
-      "sha256": "5c3e72499261e937b9af6aec5ca59480eea8ffb29cee6025523b45473fdf72ef"
+      "sha256": "718d407f74389ae1c41f94056a0280d059ff32b342b403b737566db3edad46d2"
     },
     {
       "id": "abyss-sweep-result",
@@ -475,7 +533,7 @@
         "UIScene"
       ],
       "visibleTextBefore": 41,
-      "visibleTextAfter": 32,
+      "visibleTextAfter": 38,
       "inputsAfter": 15,
       "fixedOverflow": 0,
       "scrollBoundaryPartials": 0,
@@ -491,16 +549,16 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
-      "sha256": "34ac4b139c5f8ed7e32993ce1bee09a11941d3a5cca981e47d036a8f57797adb"
+      "sha256": "1a08bd432bfa9aab08103058cf73eb465e40d393e9c81da822c95309ebb52d91"
     }
   ],
   "failures": [],
   "summary": {
-    "cases": 17,
+    "cases": 19,
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 48,
+    "overlapCandidates": 55,
     "errors": 0,
     "hardFailures": 0
   }

@@ -5,13 +5,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import {
-  getDailyDungeon,
-  getWeeklyBoss,
-  prepareDailyChallengeViewState,
-  getTodayString,
-  getThisWeekMonday,
-} from '../data/daily';
+import { prepareDailyChallengeViewState, getTodayString } from '../data/daily';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
@@ -101,21 +95,7 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
 
   const gs = loadGameState();
   const today = getTodayString();
-  const daily = getDailyDungeon();
-  const weeklyBoss = getWeeklyBoss();
   const dailyView = prepareDailyChallengeViewState(gs, today);
-  const dailyDone = gs.dailyDungeonCompleted === today;
-  const ELEMENT_KR: Record<string, string> = {
-    fire: '화염', frost: '빙결', lightning: '뇌전', dark: '암흑', holy: '신성',
-  };
-  const RULE_LABELS: Record<string, { text: string; color: string }> = {
-    element_restrict: { text: ELEMENT_KR[daily.elementRestrict ?? ''] ?? '속성', color: CASUAL_CSS.BLUE },
-    gold_rush:        { text: '골드 3×',   color: CASUAL_CSS.GOLD },
-    speed_run:        { text: '스피드',     color: CASUAL_CSS.RED },
-    boss_rush:        { text: '보스전',     color: CASUAL_CSS.RED },
-  };
-  const ruleLabel = RULE_LABELS[daily.rule] ?? { text: daily.rule, color: CASUAL_CSS.INK_SOFT };
-  const weeklyDone = gs.weeklyBossResetDate === getThisWeekMonday();
   const completedCount = dailyView.completedCount;
   const attendClaimable = canClaimAttendance(gs, today);
 
@@ -152,10 +132,10 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
     shadowOffsetY: 5,
   });
   container.add([panel.shadow, panel.panel, panel.glow]);
-  container.add(scene.add.text(panelX + 20, panelY + 24, '◆ 일일 작전실', {
+  container.add(scene.add.text(panelX + 20, panelY + 24, '◆ 오늘의 기록', {
     fontFamily: 'Georgia, serif', fontSize: '18px', color: CASUAL_CSS.INK, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
-  container.add(scene.add.text(panelX + 20, panelY + 45, '오늘의 전투와 보상을 한곳에서 관리합니다.', {
+  container.add(scene.add.text(panelX + 20, panelY + 45, '도전 과제와 출석 보상. 오늘의 전투는 홈의 손님 카드에서.', {
     fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
   }).setOrigin(0, 0.5));
   const closeText = scene.add.text(panelX + panelW - 24, panelY + 26, '×', {
@@ -169,63 +149,9 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
     });
   container.add([closeText, closeZone]);
 
-  const launchDaily = (): void => {
-    close();
-    scene.registry.set('stageConfig', { stageNumber: 1, endless: false });
-    scene.registry.set('dailyMode', daily);
-    if (getReducedMotion()) {
-      scene.scene.start('DungeonScene');
-      return;
-    }
-    scene.cameras.main.fadeOut(220, 0, 0, 0);
-    scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start('DungeonScene'));
-  };
-  const launchWeeklyBoss = (): void => {
-    close();
-    const bossWave = [{
-      wave: 1,
-      clearReward: weeklyBoss.rewards.skinShards * 100,
-      invaders: [{ type: weeklyBoss.bossType, count: 1, spawnDelay: 0, isBoss: true }],
-    }];
-    scene.registry.set('stageConfig', {
-      waves: bossWave,
-      dungeonHp: 3000,
-      chapter: 1,
-    });
-    scene.registry.set('returnTo', 'DungeonHomeScene');
-    scene.registry.set('weeklyBossMode', { boss: weeklyBoss });
-    if (getReducedMotion()) {
-      scene.scene.stop('DungeonHomeScene');
-      scene.scene.start('DungeonScene');
-      return;
-    }
-    scene.cameras.main.fadeOut(220, 0, 0, 0);
-    scene.cameras.main.once('camerafadeoutcomplete', () => {
-      scene.scene.stop('DungeonHomeScene');
-      scene.scene.start('DungeonScene');
-    });
-  };
-
   const rowX = panelX + 12;
   const rowW = panelW - 24;
   const rows: DailyHubRow[] = [
-    {
-      icon: dailyDone ? '✅' : '⚔️',
-      title: '일일 던전',
-      status: dailyDone ? '오늘 보상 수령 완료' : `오늘 규칙 · ${ruleLabel.text}`,
-      accent: dailyDone ? CASUAL.GREEN : CASUAL.GOLD,
-      actionLabel: dailyDone ? '완료' : '입장',
-      enabled: !dailyDone,
-      onPress: launchDaily,
-    },
-    {
-      icon: weeklyDone ? '✅' : '👑',
-      title: '주간 보스',
-      status: `${weeklyBoss.name}${weeklyDone ? ' · 이번 주 완료' : ''}`,
-      accent: weeklyDone ? CASUAL.GREEN : CASUAL.PURPLE,
-      actionLabel: weeklyDone ? '재도전' : '도전',
-      onPress: launchWeeklyBoss,
-    },
     {
       icon: '🎯',
       title: '도전 과제',

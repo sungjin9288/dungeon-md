@@ -51,6 +51,13 @@ const CASES = [
   { id: 'summon-rate-detail', scene: 'SummonScene', steps: [{ label: '확률 상세' }], expect: '확률 상세' },
   { id: 'barracks-manage', scene: 'BarracksScene', steps: [{ label: '관리' }], expect: '수호자 관리' },
   { id: 'forge-disassemble-tab', scene: 'ForgeScene', steps: [{ label: '분해' }], expect: '분해 탭' },
+  // Forecast tray: the day's three visitor cards, and the same tray once the
+  // name has grown enough for the sign-raising control to appear.
+  { id: 'home-forecast-tray', scene: 'DungeonHomeScene', steps: [{ label: '오늘의 손님' }], expect: '오늘의 손님 카드 3장' },
+  {
+    id: 'home-forecast-tray-raise', scene: 'DungeonHomeScene', seed: { notoriety: 500 },
+    steps: [{ label: '오늘의 손님' }], expect: '간판 올리기 버튼이 있는 손님 트레이',
+  },
 
   // Resource-gated confirm / result layers. The default fixture holds zero
   // currency, so these seed only the resource that unlocks the gate.
