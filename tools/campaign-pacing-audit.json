@@ -1,0 +1,194 @@
+{
+  "generatedAt": "2026-09-17T13:15:05.249Z",
+  "base": "http://127.0.0.1:8083",
+  "scope": "Campaign stages fought organically by the pacing model's starter / lean / expected homes. Calibrates campaignPacing.test.ts (headless sim) against real combat. Not a full campaign endurance run.",
+  "method": "Home seeded in-page from src/data/campaignPacing.ts, DungeonScene started with { stageNumber }, waves driven through window.advanceTime at 3x. Outcome = dungeon HP after the last wave.",
+  "sourceHashes": {
+    "src/data/campaignPacing.ts": "c4ba4702ed2832f5e33d8c92ac6341920ffde77933f506cadcaef197bcb1ef0d",
+    "src/data/simulation.ts": "d8c4929a1e4394a4be00c9ada85883f4fb34560d26c5ad39eb396c12009ceca6",
+    "src/combat/DungeonLayout.ts": "dc212cc27e6cf64836420dc37f59b24afe109f7b6b52af6b8cc2468c1f4e25f4",
+    "scripts/verify-campaign-pacing.mjs": "1f609fd62d7cedef901d3d8f196134968d6526596b40ff884df9ff33e2df425f"
+  },
+  "runs": [
+    {
+      "stageNumber": 1,
+      "kind": "starter",
+      "seeded": {
+        "dmLevel": 1,
+        "slotCount": 3,
+        "roomLevel": 1,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior"
+        ],
+        "sim": {
+          "winPct": 87,
+          "finalHp": 1300,
+          "startHp": 1500,
+          "totalDps": 12.8,
+          "worstWave": 6
+        }
+      },
+      "battle": {
+        "wave": 6,
+        "maxWave": 6,
+        "dungeonHp": 1250,
+        "maxHp": 1500,
+        "builtRooms": 3,
+        "armedRooms": 3,
+        "gold": 610,
+        "stalls": 3,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 2
+          },
+          {
+            "wave": 2,
+            "hp": 1500,
+            "settled": true,
+            "stalled": true,
+            "slices": 5
+          },
+          {
+            "wave": 3,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 4,
+            "hp": 1500,
+            "settled": true,
+            "stalled": true,
+            "slices": 13
+          },
+          {
+            "wave": 5,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 18
+          },
+          {
+            "wave": 6,
+            "hp": 1250,
+            "settled": true,
+            "stalled": true,
+            "slices": 30
+          }
+        ]
+      },
+      "outcome": "win",
+      "hpPct": 83,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-1-starter.png",
+      "sha256": "18aee35bb13e4aa3af7f8af3e65298203259fc7a7615179eff927792a3275190"
+    },
+    {
+      "stageNumber": 2,
+      "kind": "lean",
+      "seeded": {
+        "dmLevel": 2,
+        "slotCount": 4,
+        "roomLevel": 1,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior"
+        ],
+        "sim": {
+          "winPct": 87,
+          "finalHp": 1300,
+          "startHp": 1500,
+          "totalDps": 17.2,
+          "worstWave": 8
+        }
+      },
+      "battle": {
+        "wave": 8,
+        "maxWave": 8,
+        "dungeonHp": 900,
+        "maxHp": 1500,
+        "builtRooms": 4,
+        "armedRooms": 3,
+        "gold": 1460,
+        "stalls": 1,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 3
+          },
+          {
+            "wave": 2,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 6
+          },
+          {
+            "wave": 3,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 9
+          },
+          {
+            "wave": 4,
+            "hp": 1400,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 5,
+            "hp": 1400,
+            "settled": true,
+            "stalled": true,
+            "slices": 20
+          },
+          {
+            "wave": 6,
+            "hp": 1250,
+            "settled": true,
+            "stalled": false,
+            "slices": 28
+          },
+          {
+            "wave": 7,
+            "hp": 1000,
+            "settled": true,
+            "stalled": false,
+            "slices": 35
+          },
+          {
+            "wave": 8,
+            "hp": 900,
+            "settled": true,
+            "stalled": false,
+            "slices": 46
+          }
+        ]
+      },
+      "outcome": "win",
+      "hpPct": 60,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-2-lean.png",
+      "sha256": "45bc919041ebe350b640719eaaa13dc786fad6703fd939b4be0d17160f4af743"
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "runs": 2,
+    "wins": 2,
+    "hardFailures": 0
+  }
+}

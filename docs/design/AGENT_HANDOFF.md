@@ -458,6 +458,7 @@ release readiness를 의미하지 않는다.
 - ~~Abyss floor battle의 launch→organic win/loss return full E2E play-through~~
   → CLOSED 2026-09-16. hand-off 계약과 organic 전투 양쪽 모두 닫혔다.
   아래 기록 참조.
+- ~~옵션 B 홈 던전 단일화 (Phase 1)~~ → 구현 CLOSED 2026-09-17, organic 검증 기록은 아래 참조.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.
@@ -660,6 +661,47 @@ APK/IPA에 패키징하므로, 빌드를 압축 해제하면 누구나 읽을 �
 **남은 것.** 서명·스토어 업로드(자격증명 필요), 그리고 캐릭터 아트 127종
 (`docs/design/CHARACTER_ART_CODEX_HANDOFF.md`) — 둘 다 agent 단독으로 끝낼 수
 없는 항목이다.
+
+### 2026-09-17 — 옵션 B: 홈 던전 단일화 (Phase 1)
+
+`GAME_DESIGN_BENCHMARK.md` §4.7 사용자 결정에 따라 전투 중 임시 방어선을 제거했다.
+커밋 4개: `65f6d7c`(1a 데이터 계약) → `e624bb6`(1b 전투 UI 제거) →
+`c2fb2ef`(1c 건물 12종) → `ac6a9cc`(1d 페이싱 모델·Ch1 재구성).
+
+**계약.** 전투 그리드 = 홈 슬롯(`getUnlockedSlotCount`, DM1 3 → DM8 9). 전투 골드는
+전리품(0 시작, 수리만 소비). `StageConfig.startGold`·`STAGE_CONFIGS.slots/
+unlockedStage` 삭제. 방 레벨 상한 5 단일 상수. 홈 방 = 가족 4 × 건물 12
+(`roomBuildings.ts`, 챕터 해금). 스타터 로스터 3체. 지혜 가지 3개 재배치.
+자세한 규칙은 `CLAUDE.md` "홈 던전 단일화".
+
+**페이싱 모델과 가드.** `campaignPacing.ts`의 starter/lean/expected/veteran 홈을
+`campaignPacing.test.ts`가 전 스테이지에 대해 가드한다(1~80: lean·expected,
+Ch9: veteran). 옛 `goldEconomy.test.ts`는 폐기.
+
+**시뮬 보정 — 이번 작업의 핵심 발견.** organic 주행(`scripts/verify-campaign-
+pacing.mjs`)에서 시뮬이 ~3배 낙관적이었다. 원인은 사거리: 사거리 1인 방은 3행
+경로 중 자기 행에서만 때린다. `simulation.ts`에 `range/GRID_ROWS` 커버리지를
+곱하자 시뮬 패배 웨이브가 실전(스타터 vs 옛 스테이지 1: 웨이브 9 패배)과
+일치했다. 방 없는 슬롯의 자체 공격, 2번째 이후 몬스터의 기본 피해, 방 레벨
+배수도 실전과 같게 했고, **전투가 쓰지 않는 몬스터 레벨 배수는 뺐다**.
+
+**Ch1 재구성.** 보정된 lean 하한(12.8/17.2/21.7/≈35 DPS)에 맞춰 10개 스테이지의
+침입자 구성만 바꿨다(보상·HP 유지). 병사≈13·무당≈15가 단계별 시험, 기사≈22는
+8스테이지 전까지 보스 전용. 시뮬: 스타터 스테이지 1 HP 70%, lean 여유 1.34~2.39,
+Ch2~8 lean 1.5~5×, Ch9는 veteran 5.9×(lean 0.69 — 의도된 로스터 관문).
+
+**하니스 함정.** 런당 ~15분. `advanceTime` 직렬화 비용 때문에 예산(100슬라이스)을
+늘리면 시간이 폭증한다(480×4런 = 3시간 행). 웨이브 종료 후 "즉시 시작" 경로와
+스폰 스톨 복구(2슬라이스 idle → `checkWaveEnd`)가 없으면 멈춘다.
+
+**검증.** tsc clean, 2885 pass, 모달 하니스 17상태 `{0,0,0,48,0,0}` 동일,
+abyss organic 승/패 왕복 통과. 새 Ch1 organic(1/2/5/10)과 챕터 경계 주행은
+아래 후속 기록 참조(진행 중이면 미기록).
+
+**P3에 넘기는 발견.** (1) 전투 피해는 몬스터 레벨을 쓰지 않는다 — "개별 육성
+노가다"가 의미를 가지려면 `CombatResolver`에 배선해야 한다. (2) 먹이(`feedOwnedMonster`, 골드→XP)는 `MonsterDetailPanel`에서
+닿지만 `monsterAffinity/lastTalkTime/dailyTrainCount`는 어디서도 읽지 않는다 —
+교감은 먹이 한 축만 살아 있고, 생산 산출물과는 연결돼 있지 않다.
 
 ## 8. Completed implementation record: Fusion Chamber
 

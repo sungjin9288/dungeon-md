@@ -18,63 +18,56 @@ export interface StageConfig {
 
 export const CHAPTER_1: StageConfig[] = [
   // Chapter 1 is fought by the home dungeon a brand-new player can have: the
-  // three-room starting board with the starter roster at stage 1 (≈13 covered
-  // DPS), four to six level-1/2 rooms by stage 10 (≈35). Soldiers (≈13 DPS to
-  // kill) are the first real test, shamans (≈15) the second, and knights (≈22)
-  // stay boss-tier — they leak against these homes, so the dungeon's HP is the
-  // lesson — until stage 8. Guarded by campaignPacing.test.ts.
+  // three-room starting board with the starter roster at stage 1, four to six
+  // level-1/2 rooms by stage 10. Soldiers are the first real test, shamans the
+  // second, and knights stay boss-tier — they leak against these homes, so the
+  // dungeon's HP is the lesson — until stage 8.
+  //
+  // The starting board is one row of three single-target rooms, so even
+  // peasants slip past it one or two per wave (organic play-throughs, not the
+  // simulation — which cannot see per-room throughput — set stages 1-3): short
+  // waves, generous spacing, and 1500 HP to absorb the leaks. Guarded by
+  // campaignPacing.test.ts and calibrated by scripts/verify-campaign-pacing.mjs.
   {
-    id: 1, chapter: 1, koreanName: '버려진 던전', dungeonHp: 1000,
+    id: 1, chapter: 1, koreanName: '버려진 던전', dungeonHp: 1500,
     waves: [
-      { wave: 1, clearReward: 50,
-        invaders: [{ type: 'peasant', count: 4, spawnDelay: 1920 }] },
-      { wave: 2, clearReward: 70,
-        invaders: [{ type: 'peasant', count: 5, spawnDelay: 1840 }] },
-      { wave: 3, clearReward: 90,
-        invaders: [{ type: 'peasant', count: 6, spawnDelay: 1760 }] },
-      { wave: 4, clearReward: 100,
-        invaders: [{ type: 'peasant', count: 6, spawnDelay: 1680 }] },
-      { wave: 5, clearReward: 130,
-        invaders: [{ type: 'peasant', count: 7, spawnDelay: 1600 }] },
-      { wave: 6, clearReward: 150,
-        invaders: [{ type: 'peasant', count: 7, spawnDelay: 1520 }] },
-      { wave: 7, clearReward: 160,
-        invaders: [{ type: 'peasant', count: 8, spawnDelay: 1440 }] },
-      { wave: 8, clearReward: 200,
-        invaders: [{ type: 'peasant', count: 8, spawnDelay: 1360 }] },
-      { wave: 9, clearReward: 250,
-        invaders: [{ type: 'peasant', count: 9, spawnDelay: 1280 }, { type: 'soldier', count: 1, spawnDelay: 1280 }] },
-      { wave: 10, clearReward: 500,
-        invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }, { type: 'peasant', count: 4, spawnDelay: 1200 }] },
+      { wave: 1, clearReward: 80,
+        invaders: [{ type: 'peasant', count: 3, spawnDelay: 2400 }] },
+      { wave: 2, clearReward: 100,
+        invaders: [{ type: 'peasant', count: 3, spawnDelay: 2400 }] },
+      { wave: 3, clearReward: 130,
+        invaders: [{ type: 'peasant', count: 4, spawnDelay: 2400 }] },
+      { wave: 4, clearReward: 160,
+        invaders: [{ type: 'peasant', count: 4, spawnDelay: 2400 }] },
+      { wave: 5, clearReward: 200,
+        invaders: [{ type: 'peasant', count: 5, spawnDelay: 2400 }] },
+      { wave: 6, clearReward: 500,
+        invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }, { type: 'peasant', count: 2, spawnDelay: 2400 }] },
     ],
   },
   {
-    id: 2, chapter: 1, koreanName: '동굴 입구', dungeonHp: 1050,
+    id: 2, chapter: 1, koreanName: '동굴 입구', dungeonHp: 1500,
     waves: [
-      { wave: 1, clearReward: 55,
-        invaders: [{ type: 'peasant', count: 5, spawnDelay: 1920 }] },
-      { wave: 2, clearReward: 80,
-        invaders: [{ type: 'peasant', count: 6, spawnDelay: 1840 }] },
-      { wave: 3, clearReward: 100,
-        invaders: [{ type: 'peasant', count: 6, spawnDelay: 1760 }, { type: 'soldier', count: 1, spawnDelay: 1760 }] },
-      { wave: 4, clearReward: 115,
-        invaders: [{ type: 'peasant', count: 7, spawnDelay: 1680 }] },
-      { wave: 5, clearReward: 145,
-        invaders: [{ type: 'peasant', count: 7, spawnDelay: 1600 }, { type: 'soldier', count: 1, spawnDelay: 1600 }] },
-      { wave: 6, clearReward: 170,
-        invaders: [{ type: 'peasant', count: 6, spawnDelay: 1520 }, { type: 'soldier', count: 2, spawnDelay: 1520 }] },
-      { wave: 7, clearReward: 180,
-        invaders: [{ type: 'peasant', count: 8, spawnDelay: 1440 }, { type: 'shaman', count: 1, spawnDelay: 1440 }] },
-      { wave: 8, clearReward: 225,
-        invaders: [{ type: 'peasant', count: 7, spawnDelay: 1360 }, { type: 'soldier', count: 2, spawnDelay: 1360 }] },
-      { wave: 9, clearReward: 280,
-        invaders: [{ type: 'peasant', count: 8, spawnDelay: 1280 }, { type: 'soldier', count: 2, spawnDelay: 1280 }, { type: 'shaman', count: 1, spawnDelay: 1280 }] },
-      { wave: 10, clearReward: 550,
-        invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }, { type: 'peasant', count: 5, spawnDelay: 1200 }] },
+      { wave: 1, clearReward: 70,
+        invaders: [{ type: 'peasant', count: 4, spawnDelay: 2200 }] },
+      { wave: 2, clearReward: 90,
+        invaders: [{ type: 'peasant', count: 4, spawnDelay: 2200 }] },
+      { wave: 3, clearReward: 110,
+        invaders: [{ type: 'peasant', count: 5, spawnDelay: 2200 }] },
+      { wave: 4, clearReward: 130,
+        invaders: [{ type: 'peasant', count: 5, spawnDelay: 2200 }, { type: 'soldier', count: 1, spawnDelay: 2200 }] },
+      { wave: 5, clearReward: 160,
+        invaders: [{ type: 'peasant', count: 5, spawnDelay: 2200 }] },
+      { wave: 6, clearReward: 190,
+        invaders: [{ type: 'peasant', count: 6, spawnDelay: 2200 }, { type: 'soldier', count: 1, spawnDelay: 2200 }] },
+      { wave: 7, clearReward: 230,
+        invaders: [{ type: 'peasant', count: 6, spawnDelay: 2200 }, { type: 'shaman', count: 1, spawnDelay: 2200 }] },
+      { wave: 8, clearReward: 550,
+        invaders: [{ type: 'knight', count: 1, spawnDelay: 0, isBoss: true }, { type: 'peasant', count: 3, spawnDelay: 2200 }] },
     ],
   },
   {
-    id: 3, chapter: 1, koreanName: '지하 통로', dungeonHp: 1100,
+    id: 3, chapter: 1, koreanName: '지하 통로', dungeonHp: 1500,
     waves: [
       { wave: 1, clearReward: 60,
         invaders: [{ type: 'peasant', count: 6, spawnDelay: 1920 }] },
