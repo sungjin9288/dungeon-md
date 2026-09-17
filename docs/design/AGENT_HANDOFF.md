@@ -466,7 +466,7 @@ release readiness를 의미하지 않는다.
 - ~~수호자 레벨 전투 배선 + 교감 (Phase 3, P3 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
 - ~~계보도 · 목표 핀 (Phase 3, P3 ①)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조. 부족별 트리 *시각화*(전체 그림)는 하지 않았다 — 상세 스트립 + 홈 directive로 노출.
 - ~~중복 소환 → 각성석·부족 조각 (Phase 4, P4 ②)~~ → 구현 CLOSED 2026-09-18, 아래 기록 참조.
-- ~~주간 보석 인플로우 밴드 (Phase 4, P4 ①)~~ → CLOSED 2026-09-18: `gemInflow.ts` 추정 + 명성 주간 정산에 기본 100 추가(티어 1: 190→290, 티어 2~5 밴드 안). P4 ③(부족 픽업 배너)은 미착수.
+- ~~주간 보석 인플로우 밴드 (Phase 4, P4 ①)~~ → CLOSED 2026-09-18: `gemInflow.ts` 추정 + 명성 주간 정산에 기본 100 추가(티어 1: 190→290, 티어 2~5 밴드 안). P4 ③은 배너가 이미 부족 픽업이라 `bannerSynergy.ts` 전망 한 줄만 추가해 CLOSED.
 - Whole-app Android/iOS packaging and store release validation — PARTIAL.
   Android/iOS 모두 **빌드 + 실제 구동(에뮬레이터/시뮬레이터)** 까지 검증됐다.
   남은 것은 서명/스토어 업로드뿐이며 자격증명이 필요하다.

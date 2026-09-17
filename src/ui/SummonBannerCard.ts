@@ -3,6 +3,9 @@
  * Extracted from SummonScene.buildBannerCard (~218-321).
  */
 
+import { getBannerSynergyOutlook } from '../data/bannerSynergy';
+import { loadGameState } from '../data/wisdom';
+import { SUMMON_TRIBE_LABELS } from './SummonShared';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
@@ -66,6 +69,20 @@ export function buildBannerCard(
   container.add(scene.add.text(BX + 16, topY + 50, banner.description, {
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0, 0.5));
+
+  // ── Tribe synergy outlook: what collecting this banner unlocks ───────────
+  const outlook = getBannerSynergyOutlook(banner, loadGameState());
+  if (outlook) {
+    const label = SUMMON_TRIBE_LABELS[outlook.tribe] ?? outlook.tribe;
+    // Short form: the featured portraits start ~238px in, so the line must stay under ~200px.
+    const line = outlook.next
+      ? `${label} ${outlook.owned}체 보유 · ${outlook.next.count}체면 ${outlook.next.name}`
+      : `${label} 시너지 완성`;
+    container.add(scene.add.text(BX + 16, topY + 65, line, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: banner.accentCss,
+      wordWrap: { width: 196 },
+    }).setOrigin(0, 0.5));
+  }
 
   // ── Countdown (bottom-left) ───────────────────────────────────
   const timeText = scene.add.text(BX + 16, topY + BANER_H - 12, getBannerTimeLeft(banner), {
