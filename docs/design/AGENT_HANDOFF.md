@@ -726,6 +726,12 @@ abyss organic 승/패 왕복 통과.
 하나로 해결: 스타터 스테이지 1 HP 100%, lean 2 100%, 5 42%, 10 81% (4/4 승).
 챕터 경계(20~80 lean, 90 veteran) 주행은 아래 후속 기록 참조.
 
+**organic 실측 (2026-09-18, main `6b59321` 그리드 수정 후).** 20:lean(dm8·슬롯 9·
+방 Lv2·로스터 9) 방 9/9 배치, 10/10 웨이브 HP 660/2500(26%) 승; 32:lean(dm10·Lv3·
+로스터 13) 10/10 HP 4500/4500(100%) 승. 스톨 0, `{runs:2, wins:2, hardFailures:0}`.
+20의 26%는 시뮬 80%와 방향이 같다(시뮬이 여전히 낙관). 42~80 lean·90 veteran은
+Phase 3 병합 후 main에서 이어서 주행한다.
+
 **Phase 2 구조.** `notoriety.ts`(밴드 10·승인제 승격·감소·주간 정산),
 `forecast.ts`(카드 정의·시드 발급·밴드 웨이브 생성기), `forecastTransactions.ts`
 (하루 시작·선택·정산; 일일/주간 보상은 전투 씬 소유), `navigationContract`의
