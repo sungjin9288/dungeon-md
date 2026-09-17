@@ -741,8 +741,17 @@ abyss organic 승/패 왕복 통과.
 68:lean(dm14·Lv3·25) 100% 승(스톨 2 복구) · 80:lean(dm15·Lv4·29) 15/15 HP 100% 승.
 90:veteran(dm52·Lv5·33, 시뮬 DPS 3491)은 HP 100%인 채 4/15 웨이브에서 **예산(70
 슬라이스) 소진**으로 미정산 — 패배가 아니라 하니스 예산 한계(15웨이브 스테이지 +
-스톨 1). `{runs:5, wins:4, hardFailures:1}`. 후속: `PACING_BUDGET` env로 예산을
-올려 90만 재주행. 1~80 lean 경계는 모두 organic으로 닫혔다.
+스톨 1). `{runs:5, wins:4, hardFailures:1}`. 1~80 lean 경계는 모두 organic으로 닫혔다.
+
+**90 veteran 재주행 (`PACING_BUDGET=160`, main `3b84a56`, 42분).** 여전히 미정산:
+5/15 웨이브, HP 15000/15000(100%), 스톨 2. 웨이브별 슬라이스 2·5·**37(스톨)**·
+**87(스톨)**·36+ — 웨이브 3부터 스폰 큐가 비고 생존 침입자도 없는데 `waveActive`가
+남는 스톨이 반복돼 예산을 먹는다(하니스가 `checkWaveEnd`로 강제 종료해도 다음
+웨이브가 같은 패턴). 방어는 무손실이므로 **밸런스 문제가 아니라 Ch9 스테이지의
+스폰 루프/웨이브 종료 조건 문제**(소환 전용·고스트 추가 침입자 또는 지연 스폰이
+큐 밖에서 대기하는 것으로 추정). 후속: 스테이지 90 `spawnQueue`/`waveActive`
+진단을 별도 슬라이스로; 그 전까지 Ch9 veteran 가드는 시뮬(`campaignPacing.test`)에
+의존한다. 감사 JSON은 5런 기록(`c3123cd`)을 유지하고 이 재주행은 여기에만 남긴다.
 
 **Phase 2 구조.** `notoriety.ts`(밴드 10·승인제 승격·감소·주간 정산),
 `forecast.ts`(카드 정의·시드 발급·밴드 웨이브 생성기), `forecastTransactions.ts`
