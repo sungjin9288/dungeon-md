@@ -33,6 +33,8 @@ import { logger } from '../utils/logger';
 
 export interface RoomMechanicsContext {
   /** Per-trap-type mastery from the save (trapId → +0..+5). */
+  /** monsterId → raising multiplier (level growth · 강타). */
+  readonly guardianAtkMult?: ReadonlyMap<string, number>;
   readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
@@ -438,7 +440,8 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
         ctx.extraMonsterCooldowns.set(cdKey, now);
         let dmg = (mDef.baseDamage > 0 ? mDef.baseDamage : ROOM_DEFS[data.type].attackDamage)
           * Math.pow(1.4, data.level - 1)
-          * data.roomTypeDmgMult;
+          * data.roomTypeDmgMult
+          * (ctx.guardianAtkMult?.get(mId) ?? 1);
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
         dmg *= comboMultiplier(target.comboCount(now));

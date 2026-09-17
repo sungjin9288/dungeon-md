@@ -39,11 +39,31 @@ export function addXp(monster: OwnedMonster, amount: number): { levelled: boolea
 
 // ─── Stat scaling from level ──────────────────────────────────────────────────
 
-export function getMonsterAtk(baseAtk: number, level: number, spentSkills: Record<string, number>): number {
-  let atk = baseAtk * Math.pow(1.03, level - 1);
+/** Per-level attack growth: +3% compounding (Lv.20 ≈ ×1.75, Lv.50 ≈ ×4.3). */
+export const GUARDIAN_LEVEL_ATK_GROWTH = 1.03;
+
+/**
+ * A guardian's own damage multiplier from raising: level growth and the
+ * combat-tree 강타 node. Combat (CombatResolver / runExtraMonsterAttacks) and
+ * the forecast simulation both apply this, so the barracks ATK figure is the
+ * number that actually fights.
+ */
+export function guardianAtkMult(level: number, spentSkills: Readonly<Record<string, number>> | undefined): number {
+  let mult = Math.pow(GUARDIAN_LEVEL_ATK_GROWTH, Math.max(1, level) - 1);
   // Combat tree A1 강타: +15%
-  if ((spentSkills['A1'] ?? 0) >= 1) atk *= 1.15;
-  return Math.round(atk);
+  if ((spentSkills?.['A1'] ?? 0) >= 1) mult *= 1.15;
+  return mult;
+}
+
+/** Map monsterId → guardianAtkMult for a roster; unknown ids read as ×1. */
+export function buildGuardianAtkMultMap(ownedMonsters: readonly OwnedMonster[] | undefined): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const monster of ownedMonsters ?? []) map.set(monster.id, guardianAtkMult(monster.level, monster.spentSkills));
+  return map;
+}
+
+export function getMonsterAtk(baseAtk: number, level: number, spentSkills: Record<string, number>): number {
+  return Math.round(baseAtk * guardianAtkMult(level, spentSkills));
 }
 
 // ─── Skill Trees ──────────────────────────────────────────────────────────────

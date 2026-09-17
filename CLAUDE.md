@@ -115,8 +115,11 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   설정에 슬롯 수를 넣지 말 것.
 - 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). 전투 피해는 `1.4^(lv-1)`이며
   방의 첫 몬스터에만 적용, 나머지 몬스터는 기본 피해(`runExtraMonsterAttacks`).
-  몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. `simulation.ts`는 이
-  셋을 그대로 모델링하므로 예측과 실전이 같은 레버를 본다.
+  몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. **수호자 육성**은
+  `guardianAtkMult(level, spentSkills)`(barracks.ts, `1.03^(lv-1)` × 강타 1.15)로
+  전투(`guardianAtkMult` 맵, 첫/추가 몬스터 모두)와 `simulation.ts`에 같이 들어간다
+  (2026-09-18, P3 첫 배선). `simulation.ts`는 이 넷을 그대로 모델링하므로 예측과
+  실전이 같은 레버를 본다.
 - 홈 방 = **가족 4종**(combat/trap/support/magic, 용량 보너스·픽셀 픽스처·추천)
   **× 건물 12종**(`ROOM_DEFS`, 실제로 싸우는 방). `DungeonSlot.building`이 없으면
   가족 기본 건물(`FAMILY_DEFAULT_ROOM`). 챕터 방은 도달한 챕터부터 해금

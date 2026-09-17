@@ -2,6 +2,7 @@
  * Dungeon simulation — pure math, no Phaser.
  * Estimates battle outcome based on current dungeon config vs stage waves.
  */
+import { buildGuardianAtkMultMap } from './barracks';
 import { resolveMonsterDef } from './monsters';
 import { INVADER_DEFS } from './invaders';
 import { ROOM_DEFS } from './rooms';
@@ -58,9 +59,10 @@ export interface SimResult {
 /** Calculate approximate total DPS of the current dungeon configuration. */
 export function calcDungeonDps(
   slots: DungeonSlot[],
-  _ownedMonsters: OwnedMonster[],
+  ownedMonsters: OwnedMonster[],
 ): number {
   let dps = 0;
+  const raising = buildGuardianAtkMultMap(ownedMonsters);
 
   for (const slot of slots) {
     if (!slot || slot.hp <= 0) continue;
@@ -89,13 +91,13 @@ export function calcDungeonDps(
 
     // Monster DPS. The primary guardian carries the room's level multiplier;
     // the extra guardians attack at base damage (RoomMechanics.runExtraMonsterAttacks).
-    // Guardian level is deliberately NOT a factor: CombatResolver.resolveAttack
-    // scales by room level only. (Wiring guardian level into damage is the P3
-    // "raising" work; the forecast must not promise it before it exists.)
+    // Every guardian carries its own raising multiplier (level · 강타), the same
+    // map CombatResolver / runExtraMonsterAttacks read — so the barracks ATK
+    // number is what the forecast counts.
     monsterIds.forEach((mId, index) => {
       const def = resolveMonsterDef(mId);
       if (!def || def.attackCooldown === 0) return;
-      const mult = index === 0 ? roomMult : 1;
+      const mult = (index === 0 ? roomMult : 1) * (raising.get(mId) ?? 1);
       dps += (def.baseDamage * mult * pathCoverage(def.range)) / (tempoCooldown(def.attackCooldown) / 1000);
     });
   }

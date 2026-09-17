@@ -12,8 +12,7 @@ import {
   defaultOwnedMonster,
   STARTER_ROSTER,
   type OwnedMonster,
-  type SkillNode,
-} from './barracks';
+  type SkillNode, guardianAtkMult, buildGuardianAtkMultMap } from './barracks';
 import { BLUEPRINT_DEFS } from './fusion';
 
 // ─── xpToNextLevel ────────────────────────────────────────────────────────────
@@ -678,5 +677,26 @@ describe('getSkillTree — custom trees & standard fallback', () => {
   it('node costs in the fallback match tier (cost === tier)', () => {
     const tree = getSkillTree('divine_healer' as Parameters<typeof getSkillTree>[0]);
     for (const node of tree.nodes) expect(node.cost).toBe(node.tier);
+  });
+});
+
+describe('guardianAtkMult — the raising multiplier combat and the forecast share', () => {
+  it('grows +3% per level, +15% with 강타, and never drops below ×1', () => {
+    expect(guardianAtkMult(1, {})).toBe(1);
+    expect(guardianAtkMult(0, undefined)).toBe(1);
+    expect(guardianAtkMult(20, {})).toBeCloseTo(Math.pow(1.03, 19));
+    expect(guardianAtkMult(1, { A1: 1 })).toBeCloseTo(1.15);
+    expect(getMonsterAtk(100, 11, { A1: 1 })).toBe(Math.round(100 * Math.pow(1.03, 10) * 1.15));
+  });
+
+  it('builds the roster map by monster id', () => {
+    const map = buildGuardianAtkMultMap([
+      { id: 'a', level: 11, xp: 0, skillPoints: 0, spentSkills: {}, equippedSkills: [], equipment: null },
+      { id: 'b', level: 1, xp: 0, skillPoints: 0, spentSkills: { A1: 1 }, equippedSkills: [], equipment: null },
+    ]);
+    expect(map.get('a')).toBeCloseTo(Math.pow(1.03, 10));
+    expect(map.get('b')).toBeCloseTo(1.15);
+    expect(map.get('zzz')).toBeUndefined();
+    expect(buildGuardianAtkMultMap(undefined).size).toBe(0);
   });
 });
