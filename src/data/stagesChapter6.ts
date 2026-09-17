@@ -5,7 +5,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_6: StageConfig[] = [
   // Stage 53 — 왕좌의 입구: mirror_knight introduced
   {
-    id: 53, chapter: 6, koreanName: '왕좌의 입구', gridCols: 4, startGold: 1200, dungeonHp: 5000,
+    id: 53, chapter: 6, koreanName: '왕좌의 입구', gridCols: 4, dungeonHp: 5000,
     waves: [
       { wave: 1,  clearReward: 270,  invaders: [{ type: 'plague_herald', count: 3, spawnDelay: 1600 }, { type: 'void_invader', count: 3, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 300,  invaders: [{ type: 'shadow_wraith', count: 3, spawnDelay: 1540 }, { type: 'scarecrow_mage', count: 3, spawnDelay: 1540 }] },
@@ -21,7 +21,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 54 — 군체의 둥지: swarm_larva introduced
   {
-    id: 54, chapter: 6, koreanName: '군체의 둥지', gridCols: 4, startGold: 1220, dungeonHp: 5100,
+    id: 54, chapter: 6, koreanName: '군체의 둥지', gridCols: 4, dungeonHp: 5100,
     waves: [
       { wave: 1,  clearReward: 285,  invaders: [{ type: 'shadow_wraith', count: 3, spawnDelay: 1600 }, { type: 'scarecrow_mage', count: 3, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 320,  invaders: [{ type: 'celestial_crusader', count: 3, spawnDelay: 1540 }, { type: 'void_invader', count: 3, spawnDelay: 1540 }] },
@@ -37,7 +37,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 55 — 망령의 회랑: shadow_wraith introduced
   {
-    id: 55, chapter: 6, koreanName: '망령의 회랑', gridCols: 4, startGold: 1240, dungeonHp: 5200,
+    id: 55, chapter: 6, koreanName: '망령의 회랑', gridCols: 4, dungeonHp: 5200,
     waves: [
       { wave: 1,  clearReward: 300,  invaders: [{ type: 'celestial_crusader', count: 3, spawnDelay: 1600 }, { type: 'void_invader', count: 3, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 335,  invaders: [{ type: 'void_assassin_elite', count: 3, spawnDelay: 1540 }, { type: 'scarecrow_mage', count: 3, spawnDelay: 1540 }] },
@@ -53,7 +53,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 56 — 십자군 진영: celestial_crusader introduced
   {
-    id: 56, chapter: 6, koreanName: '십자군 진영', gridCols: 4, startGold: 1260, dungeonHp: 5300,
+    id: 56, chapter: 6, koreanName: '십자군 진영', gridCols: 4, dungeonHp: 5300,
     waves: [
       { wave: 1,  clearReward: 315,  invaders: [{ type: 'void_assassin_elite', count: 3, spawnDelay: 1600 }, { type: 'scarecrow_mage', count: 3, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 355,  invaders: [{ type: 'undying_warrior', count: 3, spawnDelay: 1540 }, { type: 'void_invader', count: 3, spawnDelay: 1540 }] },
@@ -69,7 +69,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 57 — 역병의 정원: plague_herald introduced
   {
-    id: 57, chapter: 6, koreanName: '역병의 정원', gridCols: 4, startGold: 1280, dungeonHp: 5400,
+    id: 57, chapter: 6, koreanName: '역병의 정원', gridCols: 4, dungeonHp: 5400,
     waves: [
       { wave: 1,  clearReward: 330,  invaders: [{ type: 'undying_warrior', count: 3, spawnDelay: 1600 }, { type: 'void_invader', count: 3, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 370,  invaders: [{ type: 'mirror_knight', count: 3, spawnDelay: 1540 }, { type: 'scarecrow_mage', count: 3, spawnDelay: 1540 }] },
@@ -85,7 +85,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 58 — 거신의 문: void_colossus introduced
   {
-    id: 58, chapter: 6, koreanName: '거신의 문', gridCols: 4, startGold: 1300, dungeonHp: 5500,
+    id: 58, chapter: 6, koreanName: '거신의 문', gridCols: 4, dungeonHp: 5500,
     waves: [
       { wave: 1,  clearReward: 350,  invaders: [{ type: 'mirror_knight', count: 3, spawnDelay: 1600 }, { type: 'shadow_wraith', count: 2, spawnDelay: 1600 }, { type: 'scarecrow_mage', count: 2, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 390,  invaders: [{ type: 'plague_herald', count: 3, spawnDelay: 1540 }, { type: 'celestial_crusader', count: 2, spawnDelay: 1540 }, { type: 'void_invader', count: 2, spawnDelay: 1540 }] },
@@ -101,7 +101,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 59 — 파수꾼 요새: titan_sentinel introduced
   {
-    id: 59, chapter: 6, koreanName: '파수꾼 요새', gridCols: 4, startGold: 1320, dungeonHp: 5600,
+    id: 59, chapter: 6, koreanName: '파수꾼 요새', gridCols: 4, dungeonHp: 5600,
     waves: [
       { wave: 1,  clearReward: 365,  invaders: [{ type: 'plague_herald', count: 3, spawnDelay: 1600 }, { type: 'celestial_crusader', count: 2, spawnDelay: 1600 }, { type: 'void_invader', count: 2, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 410,  invaders: [{ type: 'shadow_wraith', count: 3, spawnDelay: 1540 }, { type: 'void_assassin_elite', count: 2, spawnDelay: 1540 }, { type: 'scarecrow_mage', count: 2, spawnDelay: 1540 }] },
@@ -117,7 +117,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 60 — 왕좌의 시련: full mix gauntlet
   {
-    id: 60, chapter: 6, koreanName: '왕좌의 시련', gridCols: 4, startGold: 1350, dungeonHp: 5700,
+    id: 60, chapter: 6, koreanName: '왕좌의 시련', gridCols: 4, dungeonHp: 5700,
     waves: [
       { wave: 1,  clearReward: 385,  invaders: [{ type: 'shadow_wraith', count: 3, spawnDelay: 1600 }, { type: 'void_assassin_elite', count: 2, spawnDelay: 1600 }, { type: 'scarecrow_mage', count: 2, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 430,  invaders: [{ type: 'celestial_crusader', count: 3, spawnDelay: 1540 }, { type: 'undying_warrior', count: 2, spawnDelay: 1540 }, { type: 'void_invader', count: 2, spawnDelay: 1540 }] },
@@ -133,7 +133,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 61 — 영원의 전당: 15-wave survival, titan_sentinel mini-boss
   {
-    id: 61, chapter: 6, koreanName: '영원의 전당', gridCols: 4, startGold: 1380, dungeonHp: 5800,
+    id: 61, chapter: 6, koreanName: '영원의 전당', gridCols: 4, dungeonHp: 5800,
     waves: [
       { wave: 1,  clearReward: 400,  invaders: [{ type: 'celestial_crusader', count: 3, spawnDelay: 1600 }, { type: 'undying_warrior', count: 2, spawnDelay: 1600 }, { type: 'void_invader', count: 2, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 445,  invaders: [{ type: 'void_assassin_elite', count: 3, spawnDelay: 1540 }, { type: 'mirror_knight', count: 2, spawnDelay: 1540 }, { type: 'scarecrow_mage', count: 2, spawnDelay: 1540 }] },
@@ -154,7 +154,7 @@ export const CHAPTER_6: StageConfig[] = [
   },
   // Stage 62 — 영원의 황제: FINAL BOSS (eternal_emperor)
   {
-    id: 62, chapter: 6, koreanName: '영원의 황제', gridCols: 4, startGold: 1400, dungeonHp: 6000,
+    id: 62, chapter: 6, koreanName: '영원의 황제', gridCols: 4, dungeonHp: 6000,
     waves: [
       { wave: 1,  clearReward: 420,  invaders: [{ type: 'void_assassin_elite', count: 3, spawnDelay: 1600 }, { type: 'mirror_knight', count: 2, spawnDelay: 1600 }, { type: 'scarecrow_mage', count: 2, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 465,  invaders: [{ type: 'undying_warrior', count: 3, spawnDelay: 1540 }, { type: 'plague_herald', count: 2, spawnDelay: 1540 }, { type: 'void_invader', count: 2, spawnDelay: 1540 }] },

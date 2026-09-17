@@ -9,7 +9,7 @@
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { getUnlockedSlots } from '../data/wisdom';
+import { getUnlockedSlotCount } from '../data/wisdom';
 import {
   applyBattleReturnSettlement,
   type BattleReturnResult,
@@ -182,7 +182,7 @@ export function consumeHomeRoomFeedback(scene: DungeonHomeScene): HomeRoomFeedba
   )) return null;
   const slotIdx = typeof raw.slotIdx === 'number' ? raw.slotIdx : Number(raw.slotIdx);
   if (!Number.isInteger(slotIdx)) return null;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlots(scene.gs.dmLevel)) return null;
+  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return null;
   if (!raw.title || !raw.body) return null;
   if (raw.kind === 'equipment' && (!raw.equipmentName || !raw.equipmentEmoji)) return null;
   return {
@@ -319,7 +319,7 @@ export function consumeFocusRoomSlotIdx(scene: DungeonHomeScene): number | null 
   scene.registry.remove('focusSourceLabel');
   const slotIdx = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isInteger(slotIdx)) return null;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlots(scene.gs.dmLevel)) return null;
+  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return null;
   return slotIdx;
 }
 
@@ -435,7 +435,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   const prevCrystal = scene.gs.soulCrystals;
   const prevGems    = scene.gs.gems;
   const prevDmLevel = scene.gs.dmLevel;
-  const prevSlots = getUnlockedSlots(prevDmLevel);
+  const prevSlots = getUnlockedSlotCount({ dmLevel: prevDmLevel, wisdomTree: scene.gs.wisdomTree });
 
   const settlement = scene.applyGameStateResult(
     applyBattleReturnSettlement(scene.gs, result),
@@ -445,7 +445,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
     previousDmLevel: prevDmLevel,
     nextDmLevel: scene.gs.dmLevel,
     previousSlots: prevSlots,
-    nextSlots: getUnlockedSlots(scene.gs.dmLevel),
+    nextSlots: getUnlockedSlotCount(scene.gs),
     questCompletionPending: !!settlement.defendUpdate?.questDone,
     materialsEarned: result.materialsEarned,
   };
@@ -521,7 +521,7 @@ export function revealUnlockedRoom(
 ): void {
   if (nextSlots <= previousSlots) return;
   const slotIdx = previousSlots;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlots(scene.gs.dmLevel)) return;
+  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return;
 
   scene.pendingRoomFeedback = {
     kind: 'unlock',

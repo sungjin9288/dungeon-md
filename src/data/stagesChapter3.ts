@@ -5,7 +5,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_3: StageConfig[] = [
   {
     id: 21, chapter: 3, koreanName: '해저 입구', gridCols: 4,
-    dungeonHp: 2000, startGold: 500,
+    dungeonHp: 2000,
     waterCells: [0],  // top-left water
     waves: [
       { wave: 1,  clearReward: 80,  invaders: [{ type: 'shadow_ninja', count: 7, spawnDelay: 1700 }] },
@@ -22,7 +22,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 22, chapter: 3, koreanName: '산호 동굴', gridCols: 4,
-    dungeonHp: 2200, startGold: 520,
+    dungeonHp: 2200,
     waterCells: [3],  // top-right water
     waves: [
       { wave: 1,  clearReward: 90,  invaders: [{ type: 'berserker', count: 7, spawnDelay: 1700 }] },
@@ -39,7 +39,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 23, chapter: 3, koreanName: '해저 전당', gridCols: 4,
-    dungeonHp: 2400, startGold: 550,
+    dungeonHp: 2400,
     waterCells: [0, 3],
     waves: [
       { wave: 1,  clearReward: 95,  invaders: [{ type: 'venom_dancer', count: 7, spawnDelay: 1700 }] },
@@ -56,7 +56,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 24, chapter: 3, koreanName: '독 소용돌이', gridCols: 4,
-    dungeonHp: 2600, startGold: 570,
+    dungeonHp: 2600,
     waterCells: [8, 11],
     waves: [
       { wave: 1,  clearReward: 100, invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1700 }] },
@@ -73,7 +73,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 25, chapter: 3, koreanName: '흑산호 궁전', gridCols: 4,
-    dungeonHp: 2800, startGold: 600,
+    dungeonHp: 2800,
     waterCells: [3, 8, 9],
     waves: [
       { wave: 1,  clearReward: 105, invaders: [{ type: 'shadow_ninja', count: 8, spawnDelay: 1700 }] },
@@ -90,7 +90,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 26, chapter: 3, koreanName: '용의 무덤', gridCols: 4,
-    dungeonHp: 3000, startGold: 620,
+    dungeonHp: 3000,
     waterCells: [0, 7, 10],
     waves: [
       { wave: 1,  clearReward: 110, invaders: [{ type: 'berserker', count: 8, spawnDelay: 1700 }] },
@@ -107,7 +107,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 27, chapter: 3, koreanName: '심해 회랑', gridCols: 4,
-    dungeonHp: 3200, startGold: 650,
+    dungeonHp: 3200,
     waterCells: [1, 9, 10],
     waves: [
       { wave: 1,  clearReward: 115, invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1700 }] },
@@ -124,7 +124,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 28, chapter: 3, koreanName: '독가시 미로', gridCols: 4,
-    dungeonHp: 3400, startGold: 680,
+    dungeonHp: 3400,
     waterCells: [2, 8, 9, 11],
     waves: [
       { wave: 1,  clearReward: 120, invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1700 }] },
@@ -141,7 +141,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 29, chapter: 3, koreanName: '용골 전장', gridCols: 4,
-    dungeonHp: 3600, startGold: 700,
+    dungeonHp: 3600,
     waterCells: [0, 3, 5, 9, 10],
     waves: [
       { wave: 1,  clearReward: 125, invaders: [{ type: 'shadow_ninja', count: 9, spawnDelay: 1700 }] },
@@ -158,7 +158,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 30, chapter: 3, koreanName: '해룡 요새', gridCols: 4,
-    dungeonHp: 3800, startGold: 720,
+    dungeonHp: 3800,
     waterCells: [3, 5, 8, 10, 11],
     waves: [
       { wave: 1,  clearReward: 130, invaders: [{ type: 'berserker', count: 9, spawnDelay: 1700 }] },
@@ -175,7 +175,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 31, chapter: 3, koreanName: '용왕의 전전실', gridCols: 4,
-    dungeonHp: 4000, startGold: 750,
+    dungeonHp: 4000,
     waterCells: [1, 4, 8, 9, 11],
     waves: [
       { wave: 1,  clearReward: 135, invaders: [{ type: 'venom_dancer', count: 9, spawnDelay: 1700 }] },
@@ -192,7 +192,7 @@ export const CHAPTER_3: StageConfig[] = [
   },
   {
     id: 32, chapter: 3, koreanName: '용왕 해저궁 (BOSS)', gridCols: 4,
-    dungeonHp: 4500, startGold: 800,
+    dungeonHp: 4500,
     waterCells: [0, 3, 5, 8, 10, 11],
     waves: [
       { wave: 1,  clearReward: 140, invaders: [{ type: 'scarecrow_mage', count: 9, spawnDelay: 1700 }] },

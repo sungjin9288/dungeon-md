@@ -9,7 +9,7 @@
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
-  getUnlockedSlots, ROOM_SLOT_TYPE_DEFS,
+  getUnlockedSlotCount, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot, type GameState } from '../data/wisdom';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { type RoomOperationalMetrics } from '../data/dungeonMetrics';
@@ -423,7 +423,7 @@ export function getNextRoomDetailAction(
   state: GameState,
   currentSlotIdx: number,
 ): RoomDetailNextActionEntry | null {
-  const unlockedSlots = getUnlockedSlots(state.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(state);
   const queue = getDungeonActionQueue(state, unlockedSlots);
   const index = queue.findIndex(action => action.slotIdx !== currentSlotIdx);
   if (index < 0) return null;

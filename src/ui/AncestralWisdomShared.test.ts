@@ -29,8 +29,8 @@ describe('AncestralWisdomShared', () => {
     const view = getWisdomBranchView(state, branch);
 
     expect(view.tier).toBe(2);
-    expect(view.currentEffect).toBe('시작 골드 +100');
-    expect(view.nextEffect).toBe('시작 골드 +150');
+    expect(view.currentEffect).toBe('던전 운영 수익 +20%');
+    expect(view.nextEffect).toBe('던전 운영 수익 +30%');
     expect(view.cost).toBe(20);
     expect(view.canUpgrade).toBe(false);
     expect(view.deficit).toBe(8);

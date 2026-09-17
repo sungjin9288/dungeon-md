@@ -8,7 +8,7 @@
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CASUAL } from '../constants/colors';
-import { getUnlockedSlots } from '../data/wisdom';
+import { getUnlockedSlotCount } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 
@@ -27,7 +27,7 @@ export function drawDungeonEntranceGate(
   y: number,
   accent: number,
 ): void {
-  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(scene.gs);
   const readiness = calculateDungeonMetrics(scene.gs, unlockedSlots).readiness;
   const statusLabel = readiness >= 80 ? '수비선 안정' : '침입 경로 경계';
   const statusColor = readiness >= 80 ? CASUAL.GREEN : accent;
@@ -76,7 +76,7 @@ export function drawDungeonHeartCore(
   y: number,
   _accent: number,
 ): void {
-  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(scene.gs);
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
   const readiness = dungeonMetrics.readiness;
   const accent = readiness >= 70 ? CASUAL.GOLD

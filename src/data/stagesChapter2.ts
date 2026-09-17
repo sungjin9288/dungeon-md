@@ -5,7 +5,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_2: StageConfig[] = [
   {
     id: 11, chapter: 2, koreanName: '안개 계곡 입구', gridCols: 4,
-    dungeonHp: 1200, startGold: 350,
+    dungeonHp: 1200,
     waves: [
       { wave: 1, clearReward: 60,  invaders: [{ type: 'trap_breaker', count: 7, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 80,  invaders: [{ type: 'high_priest', count: 7, spawnDelay: 1700 }] },
@@ -21,7 +21,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 12, chapter: 2, koreanName: '구미호 사당', gridCols: 4,
-    dungeonHp: 1400, startGold: 380,
+    dungeonHp: 1400,
     waves: [
       { wave: 1, clearReward: 70,  invaders: [{ type: 'high_priest', count: 7, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 90,  invaders: [{ type: 'berserker', count: 7, spawnDelay: 1700 }] },
@@ -37,7 +37,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 13, chapter: 2, koreanName: '백호 산성', gridCols: 4,
-    dungeonHp: 1500, startGold: 400,
+    dungeonHp: 1500,
     waves: [
       { wave: 1, clearReward: 75,  invaders: [{ type: 'berserker', count: 7, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 95,  invaders: [{ type: 'shadow_ninja', count: 7, spawnDelay: 1700 }] },
@@ -53,7 +53,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 14, chapter: 2, koreanName: '해신 포구', gridCols: 4,
-    dungeonHp: 1600, startGold: 420,
+    dungeonHp: 1600,
     waves: [
       { wave: 1, clearReward: 80,  invaders: [{ type: 'shadow_ninja', count: 7, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 100, invaders: [{ type: 'trap_breaker', count: 7, spawnDelay: 1700 }] },
@@ -69,7 +69,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 15, chapter: 2, koreanName: '철면 요새', gridCols: 4,
-    dungeonHp: 1700, startGold: 450,
+    dungeonHp: 1700,
     waves: [
       { wave: 1, clearReward: 90,  invaders: [{ type: 'trap_breaker', count: 8, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 110, invaders: [{ type: 'high_priest', count: 8, spawnDelay: 1700 }] },
@@ -86,7 +86,7 @@ export const CHAPTER_2: StageConfig[] = [
   // Stages 16–20 follow the same escalation pattern
   {
     id: 16, chapter: 2, koreanName: '저주받은 숲', gridCols: 4,
-    dungeonHp: 1800, startGold: 480,
+    dungeonHp: 1800,
     waves: [
       { wave: 1, clearReward: 95,  invaders: [{ type: 'high_priest', count: 8, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 115, invaders: [{ type: 'berserker', count: 8, spawnDelay: 1700 }] },
@@ -102,7 +102,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 17, chapter: 2, koreanName: '구미호 신전', gridCols: 4,
-    dungeonHp: 1900, startGold: 500,
+    dungeonHp: 1900,
     waves: [
       { wave: 1, clearReward: 100, invaders: [{ type: 'berserker', count: 8, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 120, invaders: [{ type: 'shadow_ninja', count: 8, spawnDelay: 1700 }] },
@@ -118,7 +118,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 18, chapter: 2, koreanName: '여우불 계곡', gridCols: 4,
-    dungeonHp: 2000, startGold: 520,
+    dungeonHp: 2000,
     waves: [
       { wave: 1, clearReward: 105, invaders: [{ type: 'shadow_ninja', count: 8, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 125, invaders: [{ type: 'trap_breaker', count: 8, spawnDelay: 1700 }] },
@@ -134,7 +134,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 19, chapter: 2, koreanName: '저승 관문', gridCols: 4,
-    dungeonHp: 2200, startGold: 550,
+    dungeonHp: 2200,
     waves: [
       { wave: 1, clearReward: 110, invaders: [{ type: 'trap_breaker', count: 9, spawnDelay: 1700 }] },
       { wave: 2, clearReward: 130, invaders: [{ type: 'high_priest', count: 9, spawnDelay: 1700 }] },
@@ -150,7 +150,7 @@ export const CHAPTER_2: StageConfig[] = [
   },
   {
     id: 20, chapter: 2, koreanName: '구미호 여왕의 궁전', gridCols: 4,
-    dungeonHp: 2500, startGold: 600,
+    dungeonHp: 2500,
     waves: [
       { wave: 1,  clearReward: 120, invaders: [{ type: 'high_priest', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 145, invaders: [{ type: 'berserker', count: 9, spawnDelay: 1700 }] },

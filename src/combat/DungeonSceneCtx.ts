@@ -299,7 +299,6 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     get dungeonHp() { return ds.dungeonHp; },
     get maxHp() { return ds.maxHp; },
     get gold() { return ds.gold; },
-    get startGold() { return ds.startGold; },
     get gems() { return ds.gems; },
     get wave() { return ds.wave; },
     get maxWave() { return ds.maxWave; },

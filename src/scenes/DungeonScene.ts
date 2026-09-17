@@ -160,8 +160,9 @@ export class DungeonScene extends Phaser.Scene {
   private baseSlots       = 12;  // overridden in create() from stage config
 
   // ── Player state ───────────────────────────────────────────────────────────
-  gold      = 500;
-  startGold = 500;
+  // Battle gold is loot: it starts at 0 and only kills / wave rewards add to
+  // it. The dungeon itself is designed at home; nothing is built mid-battle.
+  gold      = 0;
   gems      = 0;   // loaded from GameState in create() — revive spends REAL gems
   dungeonHp = 1000;
   maxHp     = 1000;
@@ -268,9 +269,7 @@ export class DungeonScene extends Phaser.Scene {
       : Math.floor((GRID_COLS * CELL_SIZE) / this.effectiveCols);  // keep same total width
     this.waterCells = setup.waterCells;
 
-    // Apply starting gold bonus (use stage startGold if higher)
-    this.gold             = Math.max(setup.stageStartGold, 300) + this.wisdomBonuses.startingGold;
-    this.startGold        = this.gold;
+    this.gold             = 0;
 
     // Apply dungeon HP bonus (+ 수호의 진영 decoration set bonus)
     const baseMaxHp       = setup.stageDungeonHp + this.wisdomBonuses.dungeonMaxHpBonus + this.wisdomBonuses.fortressHp;
@@ -296,7 +295,7 @@ export class DungeonScene extends Phaser.Scene {
     // Load unlockedStage from STAGE_CONFIGS so the monster picker shows correct options
     this.unlockedStage = STAGE_CONFIGS.find(s => s.stageNumber === setup.stageNumber)?.unlockedStage ?? setup.stageNumber;
 
-    logger.debug(`[WISDOM] startingGold: ${this.gold}, maxHp: ${this.maxHp}, slots: ${this.baseSlots + this.wisdomBonuses.extraSlots}`);
+    logger.debug(`[WISDOM] maxHp: ${this.maxHp}, slots: ${this.baseSlots}`);
 
     this.returnTo = this.registry.get('returnTo') as string | undefined;
     this.gems = gameState.gems ?? 0;
@@ -437,10 +436,9 @@ export class DungeonScene extends Phaser.Scene {
 
   private buildGrid(): void {
     const gc = this.effectiveCols;
-    const availableSlots = Math.min(
-      GRID_ROWS * gc,
-      this.baseSlots + this.wisdomBonuses.extraSlots,
-    );
+    // baseSlots already includes the wisdom-tree extra slots (see
+    // getUnlockedSlotCount); the battle grid mirrors the home board exactly.
+    const availableSlots = Math.min(GRID_ROWS * gc, this.baseSlots);
     this.rooms = buildDungeonGrid(this, {
       effectiveCols:     gc,
       effectiveCellSize: this.effectiveCellSize,

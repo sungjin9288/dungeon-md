@@ -16,7 +16,6 @@ function makeStage(count: number): StageConfig {
     chapter: 1,
     koreanName: '예측 시험',
     dungeonHp: 1000,
-    startGold: 300,
     waves: [{ wave: 1, invaders: [{ type: 'peasant', count, spawnDelay: 0 }] }],
   };
 }

@@ -12,7 +12,6 @@ import type { DungeonSlot, OwnedMonster } from './wisdom';
 
 const STORY_INVASION_STAGE_ID = 999;
 const STORY_INVASION_DUNGEON_HP = 800;
-const STORY_INVASION_START_GOLD = 400;
 const STORY_INVASION_WAVE_REWARD = 120;
 const STORY_INVASION_SPAWN_DELAY = 2200;
 const FORECAST_HEURISTIC_COPY = '결정론적 DPS·이동시간 휴리스틱입니다. 장비·스킬·지혜·장식·시너지·방 메커니즘은 제외됩니다.';
@@ -95,7 +94,6 @@ export function buildStoryInvasionTarget(invasion: InvasionConfig): StoryInvasio
       chapter: 1,
       koreanName: invasion.name,
       dungeonHp: STORY_INVASION_DUNGEON_HP,
-      startGold: STORY_INVASION_START_GOLD,
       waves,
     },
     diagnostics,

@@ -347,9 +347,9 @@ export function showWisdomToast(
 ): void {
   const b = wisdomBonuses;
   const lines: string[] = [];
-  if (b.startingGold   > 0) lines.push(`💰 시작 골드 +${b.startingGold}`);
+  if (b.idleIncomeMult > 1) lines.push(`💰 운영 수익 +${Math.round((b.idleIncomeMult - 1) * 100)}%`);
   if (b.dungeonMaxHpBonus > 0) lines.push(`🏰 던전 HP +${b.dungeonMaxHpBonus}`);
-  if (b.roomCostMult   < 1) lines.push(`🔨 방 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
+  if (b.roomCostMult   < 1) lines.push(`🔨 방 업그레이드 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
   if (b.waveRewardMult > 1) lines.push(`⚡ 웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);
   if (b.extraSlots     > 0) lines.push(`📜 추가 슬롯 +${b.extraSlots}`);
   if (b.crystalEarnMult > 1) lines.push(`💠 수정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);

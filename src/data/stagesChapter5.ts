@@ -3,7 +3,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_5: StageConfig[] = [
   // Stage 43 — Ch5 intro, CELESTIAL_SHIFT hazard
   {
-    id: 43, chapter: 5, koreanName: '천계의 변동', gridCols: 4, startGold: 950, dungeonHp: 4000,
+    id: 43, chapter: 5, koreanName: '천계의 변동', gridCols: 4, dungeonHp: 4000,
     waves: [
       { wave: 1,  clearReward: 250,  invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 275,  invaders: [{ type: 'soldier', count: 7, spawnDelay: 1630 }] },
@@ -19,7 +19,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 44 — MOUNTAIN_WIND hazard
   {
-    id: 44, chapter: 5, koreanName: '산신의 바람', gridCols: 4, startGold: 970, dungeonHp: 4100,
+    id: 44, chapter: 5, koreanName: '산신의 바람', gridCols: 4, dungeonHp: 4100,
     waves: [
       { wave: 1,  clearReward: 260,  invaders: [{ type: 'soldier', count: 7, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 290,  invaders: [{ type: 'void_invader', count: 7, spawnDelay: 1630 }] },
@@ -35,7 +35,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 45 — dual hazards
   {
-    id: 45, chapter: 5, koreanName: '이중 위협', gridCols: 4, startGold: 990, dungeonHp: 4200,
+    id: 45, chapter: 5, koreanName: '이중 위협', gridCols: 4, dungeonHp: 4200,
     waves: [
       { wave: 1,  clearReward: 270,  invaders: [{ type: 'void_invader', count: 7, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 300,  invaders: [{ type: 'venom_dancer', count: 7, spawnDelay: 1630 }] },
@@ -51,7 +51,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 46 — void_invader introduced
   {
-    id: 46, chapter: 5, koreanName: '공허의 침입자', gridCols: 4, startGold: 1010, dungeonHp: 4300,
+    id: 46, chapter: 5, koreanName: '공허의 침입자', gridCols: 4, dungeonHp: 4300,
     waves: [
       { wave: 1,  clearReward: 280,  invaders: [{ type: 'venom_dancer', count: 7, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 315,  invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1630 }] },
@@ -67,7 +67,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 47 — undying_warrior introduced
   {
-    id: 47, chapter: 5, koreanName: '불사의 전사', gridCols: 4, startGold: 1030, dungeonHp: 4400,
+    id: 47, chapter: 5, koreanName: '불사의 전사', gridCols: 4, dungeonHp: 4400,
     waves: [
       { wave: 1,  clearReward: 295,  invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 330,  invaders: [{ type: 'soldier', count: 8, spawnDelay: 1630 }] },
@@ -83,7 +83,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 48 — SPIRIT_BLESSING hazard added
   {
-    id: 48, chapter: 5, koreanName: '정령의 가호', gridCols: 4, startGold: 1050, dungeonHp: 4500,
+    id: 48, chapter: 5, koreanName: '정령의 가호', gridCols: 4, dungeonHp: 4500,
     waves: [
       { wave: 1,  clearReward: 310,  invaders: [{ type: 'soldier', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 345,  invaders: [{ type: 'void_invader', count: 8, spawnDelay: 1630 }] },
@@ -99,7 +99,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 49 — all hazards active
   {
-    id: 49, chapter: 5, koreanName: '총체적 위기', gridCols: 4, startGold: 1070, dungeonHp: 4600,
+    id: 49, chapter: 5, koreanName: '총체적 위기', gridCols: 4, dungeonHp: 4600,
     waves: [
       { wave: 1,  clearReward: 325,  invaders: [{ type: 'void_invader', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 360,  invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1630 }] },
@@ -115,7 +115,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 50 — all types ultimate gauntlet
   {
-    id: 50, chapter: 5, koreanName: '최후의 관문', gridCols: 4, startGold: 1100, dungeonHp: 4800,
+    id: 50, chapter: 5, koreanName: '최후의 관문', gridCols: 4, dungeonHp: 4800,
     waves: [
       { wave: 1,  clearReward: 340,  invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 380,  invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1630 }] },
@@ -131,7 +131,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 51 — 15-wave survival
   {
-    id: 51, chapter: 5, koreanName: '생존의 시험', gridCols: 4, startGold: 1130, dungeonHp: 5000,
+    id: 51, chapter: 5, koreanName: '생존의 시험', gridCols: 4, dungeonHp: 5000,
     waves: [
       { wave: 1,  clearReward: 355,  invaders: [{ type: 'scarecrow_mage', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 390,  invaders: [{ type: 'soldier', count: 9, spawnDelay: 1630 }] },
@@ -152,7 +152,7 @@ export const CHAPTER_5: StageConfig[] = [
   },
   // Stage 52 — FINAL BOSS: 삼신 파괴자 (5-phase)
   {
-    id: 52, chapter: 5, koreanName: '삼신 파괴자', gridCols: 4, startGold: 1150, dungeonHp: 5000,
+    id: 52, chapter: 5, koreanName: '삼신 파괴자', gridCols: 4, dungeonHp: 5000,
     waves: [
       { wave: 1,  clearReward: 370,  invaders: [{ type: 'soldier', count: 9, spawnDelay: 1700 }] },
       { wave: 2,  clearReward: 405,  invaders: [{ type: 'void_invader', count: 9, spawnDelay: 1630 }] },

@@ -21,9 +21,9 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'goldHands',
     name: '황금의 손',
     icon: '💰',
-    effect: '시작 골드 +{value}',
+    effect: '던전 운영 수익 +{value}%',
     costPerTier: [5, 10, 20, 35, 50],
-    getValue: (tier) => tier * 50,
+    getValue: (tier) => tier * 10,
     position: { x: 195, y: 180 },
   },
   {
@@ -39,7 +39,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'masterCraft',
     name: '장인의 솜씨',
     icon: '🔨',
-    effect: '방 설치 비용 -{value}%',
+    effect: '방 업그레이드 비용 -{value}%',
     costPerTier: [5, 10, 20, 35, 50],
     getValue: (tier) => tier * 5,
     position: { x: 370, y: 422 },
@@ -491,7 +491,7 @@ export const SLOT_UNLOCK_LEVELS: [number, number][] = [
   [12, 7], [15, 8], [18, 9],
 ];
 
-/** Returns how many dungeon room slots are unlocked for a given DM level. */
+/** Returns how many dungeon room slots a DM level unlocks on its own. */
 export function getUnlockedSlots(dmLevel: number): number {
   let slots = 1;
   for (const [reqLevel, count] of SLOT_UNLOCK_LEVELS) {
@@ -500,12 +500,25 @@ export function getUnlockedSlots(dmLevel: number): number {
   return slots;
 }
 
+export const MAX_DUNGEON_SLOTS = 9;
+
+/**
+ * The home board's actual slot count: DM-level unlocks plus the wisdom-tree
+ * `선조의 지혜` branch, capped at the 3×3 board. Every surface that draws or
+ * validates home slots — and the battle grid, which mirrors the home board —
+ * must use this rather than `getUnlockedSlots` so the two never disagree.
+ */
+export function getUnlockedSlotCount(state: Readonly<Pick<GameState, 'dmLevel' | 'wisdomTree'>>): number {
+  const extra = BRANCH_DEFS[4].getValue(state.wisdomTree?.['ancestorsWisdom'] ?? 0);
+  return Math.min(MAX_DUNGEON_SLOTS, getUnlockedSlots(state.dmLevel ?? 1) + extra);
+}
+
 // ─── Bonus computation ────────────────────────────────────────────────────────
 
 export interface WisdomBonuses {
-  startingGold:       number;   // extra flat gold at stage start
+  idleIncomeMult:     number;   // multiplier on dungeon operating (idle) income (>= 1)
   dungeonMaxHpBonus:  number;   // extra flat HP
-  roomCostMult:       number;   // multiplier on room build cost (< 1 = cheaper)
+  roomCostMult:       number;   // multiplier on home room upgrade cost (< 1 = cheaper)
   waveRewardMult:     number;   // multiplier on wave gold reward
   extraSlots:         number;   // additional room slots unlocked
   crystalEarnMult:    number;   // multiplier on soul crystal drops
@@ -517,10 +530,12 @@ export interface WisdomBonuses {
   forgeBonusCrystal:     number;   // flat crystals added on each craft completion
 }
 
-export function getWisdomBonuses(state: GameState): WisdomBonuses {
-  const t = state.wisdomTree;
+export function getWisdomBonuses(state: Readonly<Pick<GameState, 'wisdomTree'>>): WisdomBonuses {
+  // Partial states (tests, imported saves mid-migration) may lack the tree;
+  // an absent tree simply means no branch has been raised.
+  const t: Record<string, number> = state.wisdomTree ?? {};
   return {
-    startingGold:      BRANCH_DEFS[0].getValue(t['goldHands']         ?? 0),
+    idleIncomeMult:    1 + BRANCH_DEFS[0].getValue(t['goldHands']     ?? 0) / 100,
     dungeonMaxHpBonus: BRANCH_DEFS[1].getValue(t['ironWalls']          ?? 0),
     roomCostMult:      1 - BRANCH_DEFS[2].getValue(t['masterCraft']    ?? 0) / 100,
     waveRewardMult:    1 + BRANCH_DEFS[3].getValue(t['swiftVictory']   ?? 0) / 100,

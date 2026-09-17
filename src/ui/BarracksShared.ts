@@ -10,7 +10,7 @@ import {
 } from '../data/barracks';
 import {
   getRoomSlotCapacity,
-  getUnlockedSlots,
+  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   type GameState,
   type DungeonSlot,
@@ -244,7 +244,7 @@ export function getMonsterRoomPlan(gs: GameState, monster: OwnedMonster): Monste
 
   const def = resolveOwnedMonsterProfile(monster.id);
   const preferredType = getPreferredRoomType(def?.type);
-  const unlockedSlots = getUnlockedSlots(gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(gs);
   const slots = gs.dungeonSlots ?? [];
   const viableRooms = slots
     .slice(0, unlockedSlots)

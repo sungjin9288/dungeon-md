@@ -75,7 +75,7 @@ export class UIScene extends Phaser.Scene {
     const row = getBattleHudSecondRowLayout();
 
     // Sync initial values from registry (set by DungeonScene before UIScene launches)
-    this.gold   = this.registry.get('gold')  ?? 500;
+    this.gold   = this.registry.get('gold')  ?? 0;
     this.gems   = this.registry.get('gems')  ?? 0;
     this.hp     = this.registry.get('hp')    ?? 1000;
     this.maxHp  = this.registry.get('hp')    ?? 1000;

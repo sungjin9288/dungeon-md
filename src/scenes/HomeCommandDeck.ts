@@ -10,7 +10,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
-  getUnlockedSlots,
+  getUnlockedSlotCount,
   type OwnedMonster,
 } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
@@ -64,7 +64,7 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   const deck = scene.add.container(0, 0).setDepth(4);
   scene.commandDeckContainer = deck;
 
-  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(scene.gs);
   const visibleSlots = (scene.gs.dungeonSlots ?? []).slice(0, unlockedSlots);
   const builtRooms = visibleSlots.filter(slot => !!slot?.roomType).length;
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
@@ -265,7 +265,7 @@ function drawHomeDirectiveCard(
 // ─── openFirstDungeonSlot ────────────────────────────────────────────────────
 
 function openFirstDungeonSlot(scene: DungeonHomeScene, preferredSlotIdx: number): void {
-  const unlockedSlots = getUnlockedSlots(scene.gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(scene.gs);
   const idx = Phaser.Math.Clamp(preferredSlotIdx, 0, Math.max(0, unlockedSlots - 1));
   scene.selectRoomForPlacement(idx);
 }

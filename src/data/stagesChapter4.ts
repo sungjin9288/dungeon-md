@@ -3,7 +3,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_4: StageConfig[] = [
   // Stage 33 — ch4 intro
   {
-    id: 33, chapter: 4, koreanName: '환상의 문', gridCols: 4, startGold: 700, dungeonHp: 2500,
+    id: 33, chapter: 4, koreanName: '환상의 문', gridCols: 4, dungeonHp: 2500,
     waves: [
       { wave: 1,  clearReward: 160,  invaders: [{ type: 'soldier', count: 7, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 185,  invaders: [{ type: 'venom_dancer', count: 7, spawnDelay: 1600 }] },
@@ -19,7 +19,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 34 — three-legged crow intro
   {
-    id: 34, chapter: 4, koreanName: '삼족오의 춤', gridCols: 4, startGold: 720, dungeonHp: 2600,
+    id: 34, chapter: 4, koreanName: '삼족오의 춤', gridCols: 4, dungeonHp: 2600,
     waves: [
       { wave: 1,  clearReward: 170,  invaders: [{ type: 'venom_dancer', count: 7, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 195,  invaders: [{ type: 'void_assassin', count: 7, spawnDelay: 1600 }] },
@@ -35,7 +35,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 35 — scarecrow mage groups
   {
-    id: 35, chapter: 4, koreanName: '허수아비 무리', gridCols: 4, startGold: 740, dungeonHp: 2700,
+    id: 35, chapter: 4, koreanName: '허수아비 무리', gridCols: 4, dungeonHp: 2700,
     waves: [
       { wave: 1,  clearReward: 180,  invaders: [{ type: 'void_assassin', count: 7, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 205,  invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1600 }] },
@@ -51,7 +51,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 36 — spirit altar + great serpent intro
   {
-    id: 36, chapter: 4, koreanName: '구렁이의 영역', gridCols: 4, startGold: 760, dungeonHp: 2800,
+    id: 36, chapter: 4, koreanName: '구렁이의 영역', gridCols: 4, dungeonHp: 2800,
     waves: [
       { wave: 1,  clearReward: 190,  invaders: [{ type: 'scarecrow_mage', count: 7, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 215,  invaders: [{ type: 'soldier', count: 7, spawnDelay: 1600 }] },
@@ -67,7 +67,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 37 — undying knight + high priest combos
   {
-    id: 37, chapter: 4, koreanName: '불사의 기사', gridCols: 4, startGold: 780, dungeonHp: 2900,
+    id: 37, chapter: 4, koreanName: '불사의 기사', gridCols: 4, dungeonHp: 2900,
     waves: [
       { wave: 1,  clearReward: 200,  invaders: [{ type: 'soldier', count: 8, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 225,  invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1600 }] },
@@ -83,7 +83,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 38 — moon rabbit + dragons lair intro
   {
-    id: 38, chapter: 4, koreanName: '용의 소굴', gridCols: 4, startGold: 800, dungeonHp: 3000,
+    id: 38, chapter: 4, koreanName: '용의 소굴', gridCols: 4, dungeonHp: 3000,
     waves: [
       { wave: 1,  clearReward: 210,  invaders: [{ type: 'venom_dancer', count: 8, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 235,  invaders: [{ type: 'void_assassin', count: 8, spawnDelay: 1600 }] },
@@ -99,7 +99,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 39 — venom dancer wide trail
   {
-    id: 39, chapter: 4, koreanName: '독무의 행렬', gridCols: 4, startGold: 820, dungeonHp: 3100,
+    id: 39, chapter: 4, koreanName: '독무의 행렬', gridCols: 4, dungeonHp: 3100,
     waves: [
       { wave: 1,  clearReward: 220,  invaders: [{ type: 'void_assassin', count: 8, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 245,  invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1600 }] },
@@ -115,7 +115,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 40 — elite all-types mix
   {
-    id: 40, chapter: 4, koreanName: '정예 혼성부대', gridCols: 4, startGold: 840, dungeonHp: 3200,
+    id: 40, chapter: 4, koreanName: '정예 혼성부대', gridCols: 4, dungeonHp: 3200,
     waves: [
       { wave: 1,  clearReward: 230,  invaders: [{ type: 'scarecrow_mage', count: 8, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 260,  invaders: [{ type: 'soldier', count: 8, spawnDelay: 1600 }] },
@@ -131,7 +131,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 41 — survival (no gold vein, pure placement test)
   {
-    id: 41, chapter: 4, koreanName: '황금 없는 시련', gridCols: 4, startGold: 860, dungeonHp: 3300,
+    id: 41, chapter: 4, koreanName: '황금 없는 시련', gridCols: 4, dungeonHp: 3300,
     waves: [
       { wave: 1,  clearReward: 240,  invaders: [{ type: 'soldier', count: 9, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 270,  invaders: [{ type: 'venom_dancer', count: 9, spawnDelay: 1600 }] },
@@ -147,7 +147,7 @@ export const CHAPTER_4: StageConfig[] = [
   },
   // Stage 42 — BOSS: 저승왕 사자
   {
-    id: 42, chapter: 4, koreanName: '저승왕 사자', gridCols: 4, startGold: 900, dungeonHp: 3500,
+    id: 42, chapter: 4, koreanName: '저승왕 사자', gridCols: 4, dungeonHp: 3500,
     waves: [
       { wave: 1,  clearReward: 250,  invaders: [{ type: 'venom_dancer', count: 9, spawnDelay: 1600 }] },
       { wave: 2,  clearReward: 280,  invaders: [{ type: 'void_assassin', count: 9, spawnDelay: 1600 }] },

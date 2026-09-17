@@ -562,7 +562,7 @@ function confirmReset(ctx: ResultFlowContext, failOv: Phaser.GameObjects.Contain
 export function resetStage(ctx: ResultFlowContext): void {
   ctx.setWave(0);
   ctx.setDungeonHp(ctx.maxHp);
-  ctx.setGold(ctx.startGold);
+  ctx.setGold(0);
   ctx.activeInvaders.length = 0;
   ctx.setWaveEndChecked(false);
   enableWaveButton(ctx);

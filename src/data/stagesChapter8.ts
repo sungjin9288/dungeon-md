@@ -3,7 +3,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_8: StageConfig[] = [
   // Stage 73 — 공허의 관문: void_soldier 등장
   {
-    id: 73, chapter: 8, koreanName: '공허의 관문', gridCols: 4, startGold: 1700, dungeonHp: 8500,
+    id: 73, chapter: 8, koreanName: '공허의 관문', gridCols: 4, dungeonHp: 8500,
     waves: [
       { wave: 1,  clearReward: 600,  invaders: [{ type: 'void_soldier',    count: 3, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 660,  invaders: [{ type: 'void_soldier',    count: 4, spawnDelay: 1400 }, { type: 'celestial_knight', count: 3, spawnDelay: 1400 }] },
@@ -19,7 +19,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 74 — 심연의 전사들: abyss_berserker 등장
   {
-    id: 74, chapter: 8, koreanName: '심연의 전사들', gridCols: 4, startGold: 1730, dungeonHp: 8700,
+    id: 74, chapter: 8, koreanName: '심연의 전사들', gridCols: 4, dungeonHp: 8700,
     waves: [
       { wave: 1,  clearReward: 620,  invaders: [{ type: 'abyss_berserker', count: 2, spawnDelay: 1300 }, { type: 'void_soldier',    count: 3, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 685,  invaders: [{ type: 'abyss_berserker', count: 3, spawnDelay: 1300 }, { type: 'void_soldier',    count: 4, spawnDelay: 1400 }] },
@@ -35,7 +35,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 75 — 원초의 기운: 복합 배치
   {
-    id: 75, chapter: 8, koreanName: '원초의 기운', gridCols: 4, startGold: 1760, dungeonHp: 8900,
+    id: 75, chapter: 8, koreanName: '원초의 기운', gridCols: 4, dungeonHp: 8900,
     waves: [
       { wave: 1,  clearReward: 640,  invaders: [{ type: 'void_soldier',    count: 5, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 3, spawnDelay: 1300 }] },
       { wave: 2,  clearReward: 710,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
@@ -51,7 +51,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 76 — 허공의 성채: 고강도 혼합
   {
-    id: 76, chapter: 8, koreanName: '허공의 성채', gridCols: 4, startGold: 1790, dungeonHp: 9100,
+    id: 76, chapter: 8, koreanName: '허공의 성채', gridCols: 4, dungeonHp: 9100,
     waves: [
       { wave: 1,  clearReward: 660,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 730,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
@@ -67,7 +67,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 77 — 원초의 수문장: primordial_guard 등장
   {
-    id: 77, chapter: 8, koreanName: '원초의 수문장', gridCols: 4, startGold: 1830, dungeonHp: 9400,
+    id: 77, chapter: 8, koreanName: '원초의 수문장', gridCols: 4, dungeonHp: 9400,
     waves: [
       { wave: 1,  clearReward: 680,  invaders: [{ type: 'primordial_guard', count: 1, spawnDelay: 2600 }, { type: 'void_soldier',    count: 5, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 755,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'primordial_guard', count: 1, spawnDelay: 2600 }] },
@@ -85,7 +85,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 78 — 공허 군단: 전 Ch8 일반 유닛 혼합
   {
-    id: 78, chapter: 8, koreanName: '공허 군단', gridCols: 4, startGold: 1870, dungeonHp: 9700,
+    id: 78, chapter: 8, koreanName: '공허 군단', gridCols: 4, dungeonHp: 9700,
     waves: [
       { wave: 1,  clearReward: 700,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }, { type: 'abyss_berserker', count: 4, spawnDelay: 1300 }] },
       { wave: 2,  clearReward: 775,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
@@ -103,7 +103,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 79 — 원초의 분노: 15웨이브 생존
   {
-    id: 79, chapter: 8, koreanName: '원초의 분노', gridCols: 4, startGold: 1920, dungeonHp: 10200,
+    id: 79, chapter: 8, koreanName: '원초의 분노', gridCols: 4, dungeonHp: 10200,
     waves: [
       { wave: 1,  clearReward: 720,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 800,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
@@ -124,7 +124,7 @@ export const CHAPTER_8: StageConfig[] = [
   },
   // Stage 80 — 원초신의 강림: 최종 보스 (primordial_titan)
   {
-    id: 80, chapter: 8, koreanName: '원초신의 강림', gridCols: 4, startGold: 2000, dungeonHp: 11000,
+    id: 80, chapter: 8, koreanName: '원초신의 강림', gridCols: 4, dungeonHp: 11000,
     waves: [
       { wave: 1,  clearReward: 740,  invaders: [{ type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 820,  invaders: [{ type: 'abyss_berserker', count: 5, spawnDelay: 1300 }, { type: 'void_soldier',    count: 6, spawnDelay: 1400 }] },

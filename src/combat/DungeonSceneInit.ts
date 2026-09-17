@@ -11,7 +11,7 @@
 import Phaser from 'phaser';
 import { type WaveSpec } from '../data/stages';
 import { ALL_STAGES } from '../data/allStages';
-import { loadGameState, getUnlockedSlots, type WisdomBonuses } from '../data/wisdom';
+import { loadGameState, getUnlockedSlotCount, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import { rollEndlessModifier } from '../data/endlessModifiers';
@@ -27,7 +27,6 @@ export interface StageSetup {
   effectiveCols:   number;
   waterCells:      Set<number>;
   stageDungeonHp:  number;
-  stageStartGold:  number;
   baseSlots:       number;
   isEndless:       boolean;
   endlessHighScore: number;
@@ -53,10 +52,10 @@ export function resolveStageSetup(
 ): StageSetup {
   const stageCfg = registry.get('stageConfig') as {
     stageNumber?: number; slots?: number; endless?: boolean;
-    waves?: WaveSpec[]; chapter?: number; dungeonHp?: number; startGold?: number;
+    waves?: WaveSpec[]; chapter?: number; dungeonHp?: number;
   } | undefined;
 
-  const baseSlots = stageCfg?.slots ?? getUnlockedSlots(gameState.dmLevel);
+  const baseSlots = stageCfg?.slots ?? getUnlockedSlotCount(gameState);
   const isEndless = stageCfg?.endless ?? false;
   const endlessHighScore = isEndless ? (gameState.endlessHighScore ?? 0) : 0;
 
@@ -88,7 +87,6 @@ export function resolveStageSetup(
   let effectiveCols:  number;
   let waterCells:     Set<number>;
   let stageDungeonHp: number;
-  let stageStartGold: number;
   let stageNumber:    number;
 
   const hasInlineWaves = Array.isArray((stageCfg as { waves?: unknown })?.waves);
@@ -98,7 +96,6 @@ export function resolveStageSetup(
     effectiveCols  = GRID_COLS;
     waterCells     = new Set<number>();
     stageDungeonHp = stageCfg.dungeonHp ?? 1000;
-    stageStartGold = stageCfg.startGold ?? 300;
     stageNumber    = 0;   // inline invasion — no stage number
   } else {
     stageNumber    = stageCfg?.stageNumber ?? 1;
@@ -108,7 +105,6 @@ export function resolveStageSetup(
     effectiveCols  = stageDef.gridCols ?? GRID_COLS;
     waterCells     = new Set<number>(stageDef.waterCells ?? []);
     stageDungeonHp = stageDef.dungeonHp;
-    stageStartGold = stageDef.startGold;
   }
 
   // ── Daily dungeon override ────────────────────────────────────────────────────
@@ -129,7 +125,7 @@ export function resolveStageSetup(
 
   return {
     waveConfigs, stageChapter, effectiveCols, waterCells,
-    stageDungeonHp, stageStartGold, baseSlots, isEndless,
+    stageDungeonHp, baseSlots, isEndless,
     endlessHighScore, stageNumber, dailyMode, weeklyBossMode,
   };
 }

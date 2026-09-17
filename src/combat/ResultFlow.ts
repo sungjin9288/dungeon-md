@@ -22,7 +22,6 @@ export interface ResultFlowContext {
   dungeonHp: number;
   maxHp: number;
   gold: number;
-  startGold: number;
   gems: number;
   wave: number;
   maxWave: number;

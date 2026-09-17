@@ -10,7 +10,7 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS, COLORS } from '../constants/colors';
 import {
-  getUnlockedSlots,
+  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   SLOT_UNLOCK_LEVELS,
   type DungeonSlot,
@@ -52,7 +52,7 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
   const c = scene.add.container(0, 0).setDepth(3);
   scene.dungeonContainer = c;
 
-  const unlockedCount = getUnlockedSlots(scene.gs.dmLevel);
+  const unlockedCount = getUnlockedSlotCount(scene.gs);
   logger.debug(`[SLOTS] DM Lv.${scene.gs.dmLevel}: ${unlockedCount} slots unlocked`);
 
   // Phase D: regionBottom expanded to use freed vertical space.

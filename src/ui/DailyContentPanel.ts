@@ -190,7 +190,6 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
     scene.registry.set('stageConfig', {
       waves: bossWave,
       dungeonHp: 3000,
-      startGold: 500,
       chapter: 1,
     });
     scene.registry.set('returnTo', 'DungeonHomeScene');

@@ -5,7 +5,7 @@
 import {
   getPrestigeDmgMult,
   getRoomSlotCapacity,
-  getUnlockedSlots,
+  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot,
   type GameState,
@@ -229,7 +229,7 @@ export function getMonsterDefenseScore(gs: GameState, monsterId: string): { base
 }
 
 export function getDefenseRooms(gs: GameState): DefenseRoomSummary[] {
-  const unlockedSlots = getUnlockedSlots(gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(gs);
   const slots = gs.dungeonSlots ?? [];
   const rooms: DefenseRoomSummary[] = [];
 
@@ -273,7 +273,7 @@ export function getDefenseRooms(gs: GameState): DefenseRoomSummary[] {
 }
 
 export function getDefenseTotals(gs: GameState, rooms: readonly DefenseRoomSummary[]): DefenseTotals {
-  const unlockedSlots = getUnlockedSlots(gs.dmLevel);
+  const unlockedSlots = getUnlockedSlotCount(gs);
   return {
     unlockedSlots,
     builtRooms: rooms.filter(room => !!room.slot.roomType).length,

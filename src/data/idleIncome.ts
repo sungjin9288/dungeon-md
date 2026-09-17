@@ -13,7 +13,7 @@
  * and testable.
  */
 
-import type { GameState, DungeonSlot } from './wisdom';
+import { getWisdomBonuses, type GameState, type DungeonSlot } from './wisdom';
 import { facilityProductionOverMs } from './production';
 import { computeDecorationBonuses } from './decorations';
 
@@ -60,7 +60,7 @@ function isBuilt(slot: DungeonSlot | undefined | null): slot is DungeonSlot {
  * built rooms + their levels + deployed guardians, scaled by DM level.
  * Returns 0 when nothing is built yet.
  */
-export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots' | 'dmLevel'>>): number {
+export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots' | 'dmLevel' | 'wisdomTree'>>): number {
   const built = (state.dungeonSlots ?? []).filter(isBuilt);
   if (built.length === 0) return 0;
 
@@ -78,7 +78,10 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
     guardians * IDLE_PER_GUARDIAN;
 
   const dmScale = 1 + Math.max(0, (state.dmLevel ?? 1)) * IDLE_DM_BONUS;
-  return raw * dmScale;
+  // 지혜의 나무 `황금의 손` — the tree's only economy branch now that battles
+  // no longer hand out starting gold.
+  const wisdomScale = getWisdomBonuses(state).idleIncomeMult;
+  return raw * dmScale * wisdomScale;
 }
 
 /**

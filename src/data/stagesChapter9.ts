@@ -11,7 +11,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_9: StageConfig[] = [
   // Stage 81 — 공허의 잔향: abyss_reaver 등장
   {
-    id: 81, chapter: 9, koreanName: '공허의 잔향', gridCols: 4, startGold: 2050, dungeonHp: 11500,
+    id: 81, chapter: 9, koreanName: '공허의 잔향', gridCols: 4, dungeonHp: 11500,
     waves: [
       { wave: 1,  clearReward: 760,  invaders: [{ type: 'abyss_reaver',   count: 2, spawnDelay: 1300 }, { type: 'void_soldier',   count: 4, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 835,  invaders: [{ type: 'void_soldier',   count: 5, spawnDelay: 1400 }, { type: 'abyss_reaver',   count: 3, spawnDelay: 1300 }] },
@@ -27,7 +27,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 82 — 심연의 약탈: abyss_reaver 중심 압박
   {
-    id: 82, chapter: 9, koreanName: '심연의 약탈', gridCols: 4, startGold: 2080, dungeonHp: 11700,
+    id: 82, chapter: 9, koreanName: '심연의 약탈', gridCols: 4, dungeonHp: 11700,
     waves: [
       { wave: 1,  clearReward: 785,  invaders: [{ type: 'abyss_reaver',   count: 3, spawnDelay: 1300 }, { type: 'void_soldier',   count: 4, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 862,  invaders: [{ type: 'abyss_berserker', count: 4, spawnDelay: 1300 }, { type: 'abyss_reaver',  count: 3, spawnDelay: 1300 }] },
@@ -43,7 +43,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 83 — 무너진 성소: 천계 잔존 + 심연
   {
-    id: 83, chapter: 9, koreanName: '무너진 성소', gridCols: 4, startGold: 2110, dungeonHp: 11900,
+    id: 83, chapter: 9, koreanName: '무너진 성소', gridCols: 4, dungeonHp: 11900,
     waves: [
       { wave: 1,  clearReward: 810,  invaders: [{ type: 'radiant_seraph', count: 4, spawnDelay: 1300 }, { type: 'abyss_reaver',  count: 3, spawnDelay: 1300 }] },
       { wave: 2,  clearReward: 890,  invaders: [{ type: 'divine_archer',  count: 5, spawnDelay: 1200 }, { type: 'abyss_reaver',  count: 3, spawnDelay: 1300 }] },
@@ -59,7 +59,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 84 — 빛바랜 천계: 원거리 밀집
   {
-    id: 84, chapter: 9, koreanName: '빛바랜 천계', gridCols: 4, startGold: 2150, dungeonHp: 12200,
+    id: 84, chapter: 9, koreanName: '빛바랜 천계', gridCols: 4, dungeonHp: 12200,
     waves: [
       { wave: 1,  clearReward: 835,  invaders: [{ type: 'divine_archer',  count: 5, spawnDelay: 1200 }, { type: 'abyss_reaver',  count: 3, spawnDelay: 1300 }] },
       { wave: 2,  clearReward: 918,  invaders: [{ type: 'radiant_seraph', count: 5, spawnDelay: 1300 }, { type: 'abyss_reaver',  count: 4, spawnDelay: 1300 }] },
@@ -75,7 +75,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 85 — 원초의 잔병: primordial_guard 복귀
   {
-    id: 85, chapter: 9, koreanName: '원초의 잔병', gridCols: 4, startGold: 2200, dungeonHp: 12500,
+    id: 85, chapter: 9, koreanName: '원초의 잔병', gridCols: 4, dungeonHp: 12500,
     waves: [
       { wave: 1,  clearReward: 865,  invaders: [{ type: 'primordial_guard', count: 1, spawnDelay: 2600 }, { type: 'abyss_reaver',  count: 4, spawnDelay: 1300 }] },
       { wave: 2,  clearReward: 950,  invaders: [{ type: 'abyss_reaver',   count: 4, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
@@ -91,7 +91,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 86 — 공허의 심장부: 고강도 혼합
   {
-    id: 86, chapter: 9, koreanName: '공허의 심장부', gridCols: 4, startGold: 2250, dungeonHp: 12800,
+    id: 86, chapter: 9, koreanName: '공허의 심장부', gridCols: 4, dungeonHp: 12800,
     waves: [
       { wave: 1,  clearReward: 895,  invaders: [{ type: 'abyss_reaver',   count: 5, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
       { wave: 2,  clearReward: 982,  invaders: [{ type: 'primordial_guard', count: 2, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
@@ -107,7 +107,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 87 — 깨어난 원초신: primordial_titan 미니보스
   {
-    id: 87, chapter: 9, koreanName: '깨어난 원초신', gridCols: 4, startGold: 2300, dungeonHp: 13200,
+    id: 87, chapter: 9, koreanName: '깨어난 원초신', gridCols: 4, dungeonHp: 13200,
     waves: [
       { wave: 1,  clearReward: 925,  invaders: [{ type: 'abyss_reaver',   count: 5, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
       { wave: 2,  clearReward: 1015, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 6, spawnDelay: 1300 }] },
@@ -125,7 +125,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 88 — 균열의 군세: 12웨이브 압박
   {
-    id: 88, chapter: 9, koreanName: '균열의 군세', gridCols: 4, startGold: 2360, dungeonHp: 13600,
+    id: 88, chapter: 9, koreanName: '균열의 군세', gridCols: 4, dungeonHp: 13600,
     waves: [
       { wave: 1,  clearReward: 960,  invaders: [{ type: 'abyss_reaver',   count: 6, spawnDelay: 1300 }, { type: 'primordial_guard', count: 2, spawnDelay: 2600 }] },
       { wave: 2,  clearReward: 1052, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 7, spawnDelay: 1300 }] },
@@ -143,7 +143,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 89 — 종말의 전조: 14웨이브 생존
   {
-    id: 89, chapter: 9, koreanName: '종말의 전조', gridCols: 4, startGold: 2430, dungeonHp: 14200,
+    id: 89, chapter: 9, koreanName: '종말의 전조', gridCols: 4, dungeonHp: 14200,
     waves: [
       { wave: 1,  clearReward: 1000, invaders: [{ type: 'abyss_reaver',   count: 6, spawnDelay: 1300 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
       { wave: 2,  clearReward: 1095, invaders: [{ type: 'primordial_guard', count: 3, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }] },
@@ -163,7 +163,7 @@ export const CHAPTER_9: StageConfig[] = [
   },
   // Stage 90 — 공허 군주의 강림: 최종 보스 (void_sovereign)
   {
-    id: 90, chapter: 9, koreanName: '공허 군주의 강림', gridCols: 4, startGold: 2500, dungeonHp: 15000,
+    id: 90, chapter: 9, koreanName: '공허 군주의 강림', gridCols: 4, dungeonHp: 15000,
     waves: [
       { wave: 1,  clearReward: 1050, invaders: [{ type: 'abyss_reaver',   count: 7, spawnDelay: 1300 }, { type: 'primordial_guard', count: 3, spawnDelay: 2600 }] },
       { wave: 2,  clearReward: 1150, invaders: [{ type: 'primordial_guard', count: 4, spawnDelay: 2600 }, { type: 'abyss_berserker', count: 8, spawnDelay: 1300 }] },

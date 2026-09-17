@@ -2,6 +2,7 @@ import { TRAP_DEFS } from './traps';
 import {
   getMaxRoomLevel,
   getRoomSlotCapacity,
+  getWisdomBonuses,
   type DungeonSlot,
   type GameState,
   type RoomSlotType,
@@ -165,7 +166,8 @@ export function upgradeRoomSlot(
     return { ok: false, state, reason: 'room_level_cap_reached' };
   }
 
-  const cost = getRoomUpgradeCost(slot.roomLevel);
+  // `장인의 솜씨` discounts the only build-side gold sink the home has.
+  const cost = Math.round(getRoomUpgradeCost(slot.roomLevel) * getWisdomBonuses(state).roomCostMult);
   if ((state.homeGold ?? 0) < cost) return { ok: false, state, reason: 'insufficient_gold' };
 
   const nextLevel = slot.roomLevel + 1;

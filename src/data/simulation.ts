@@ -70,8 +70,11 @@ export function calcDungeonDps(
       // Level multiplier from owned-monster record (10% per level above 1)
       const om = ownedMonsters.find(m => m.id === mId);
       const levelMult = om ? 1 + (om.level - 1) * 0.10 : 1;
+      // Room level is the home dungeon's main damage lever; mirror
+      // CombatResolver.resolveAttack's 1.4^(level-1) so the forecast tracks it.
+      const roomMult = Math.pow(1.4, Math.max(0, (slot.roomLevel ?? 1) - 1));
 
-      dps += (def.baseDamage * levelMult) / (def.attackCooldown / 1000);
+      dps += (def.baseDamage * levelMult * roomMult) / (def.attackCooldown / 1000);
     }
   }
 

@@ -94,10 +94,9 @@ describe('campaign economy-curve guard', () => {
     }
   });
 
-  it('every stage has positive startGold and dungeonHp', () => {
+  it('every stage has positive dungeonHp', () => {
     for (const chapter of CHAPTERS) {
       for (const stage of chapter) {
-        expect(stage.startGold, `stage ${stage.id} startGold`).toBeGreaterThan(0);
         expect(stage.dungeonHp, `stage ${stage.id} dungeonHp`).toBeGreaterThan(0);
       }
     }

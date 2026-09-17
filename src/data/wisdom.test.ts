@@ -332,7 +332,7 @@ describe('getWisdomBonuses', () => {
   it('returns zero bonuses for fresh state', () => {
     const state = loadGameState();
     const bonuses = getWisdomBonuses(state);
-    expect(bonuses.startingGold).toBe(0);
+    expect(bonuses.idleIncomeMult).toBe(1);
     expect(bonuses.dungeonMaxHpBonus).toBe(0);
     expect(bonuses.roomCostMult).toBe(1);
     expect(bonuses.waveRewardMult).toBe(1);
@@ -344,11 +344,11 @@ describe('getWisdomBonuses', () => {
     expect(bonuses.fortressHp).toBe(0);
   });
 
-  it('applies goldHands tier 3 → startingGold 150', () => {
+  it('applies goldHands tier 3 → operating income ×1.3', () => {
     const state = loadGameState();
     state.wisdomTree['goldHands'] = 3;
     const bonuses = getWisdomBonuses(state);
-    expect(bonuses.startingGold).toBe(150); // 3 * 50
+    expect(bonuses.idleIncomeMult).toBeCloseTo(1.3); // 1 + 3 * 10%
   });
 
   it('applies ironWalls tier 5 → +100 dungeon HP', () => {
@@ -464,7 +464,7 @@ describe('getWisdomBonuses', () => {
     state.wisdomTree['ancestorsWisdom'] = 3;
     state.wisdomTree['dungeonFortress'] = 2;
     const b = getWisdomBonuses(state);
-    expect(b.startingGold).toBe(100); // 2 * 50
+    expect(b.idleIncomeMult).toBeCloseTo(1.2); // 1 + 2 * 10%
     expect(b.extraSlots).toBe(3);
     expect(b.fortressHp).toBe(100); // 2 * 50
   });
@@ -589,9 +589,9 @@ describe('getPrestigeDmgMult', () => {
 describe('BRANCH_DEFS — per-branch getValue formula', () => {
   const get = (id: string) => BRANCH_DEFS.find(b => b.id === id)!;
 
-  it('goldHands.getValue scales by 50 per tier (tier 3 → 150)', () => {
-    expect(get('goldHands').getValue(3)).toBe(150);
-    expect(get('goldHands').getValue(5)).toBe(250);
+  it('goldHands.getValue scales by 10% per tier (tier 3 → 30)', () => {
+    expect(get('goldHands').getValue(3)).toBe(30);
+    expect(get('goldHands').getValue(5)).toBe(50);
   });
 
   it('ironWalls.getValue scales by 20 per tier (tier 5 → 100)', () => {

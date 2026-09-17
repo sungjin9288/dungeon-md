@@ -24,7 +24,7 @@ import { StageRewardOverlay }    from './scenes/StageRewardOverlay';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants/layout';
 import { applyCasualBackground } from './ui/AmbientBackground';
 import { getReducedMotion } from './utils/reducedMotion';
-import { getUnlockedSlots, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
+import { getUnlockedSlotCount, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
 import { calculateRoomMetrics } from './data/dungeonMetrics';
 import { getDungeonActionQueue, getRoomActionRecommendation } from './data/roomActionRecommendations';
 import { installNativeSafeAreaFallback } from './constants/safeArea';
@@ -299,7 +299,10 @@ function serializeHomeScene(scene: DungeonHomeScene): RuntimeRecord {
   const raw = scene as unknown as RuntimeRecord;
   const gs = asRecord(raw['gs']);
   const slots = Array.isArray(gs['dungeonSlots']) ? gs['dungeonSlots'] : [];
-  const unlockedSlots = getUnlockedSlots(asNumber(gs['dmLevel'], 1));
+  const unlockedSlots = getUnlockedSlotCount({
+    dmLevel:    asNumber(gs['dmLevel'], 1),
+    wisdomTree: asRecord(gs['wisdomTree']) as Record<string, number>,
+  });
   const slotCount = Math.max(slots.length, unlockedSlots);
   const actionQueue = getDungeonActionQueue(gs as unknown as GameState, unlockedSlots);
   const roomDetailState = asRecord(raw['roomDetailState']);

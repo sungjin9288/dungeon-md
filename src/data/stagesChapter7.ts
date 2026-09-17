@@ -3,7 +3,7 @@ import type { StageConfig } from './stagesChapter1';
 export const CHAPTER_7: StageConfig[] = [
   // Stage 63 — 신성한 관문: celestial_knight 등장
   {
-    id: 63, chapter: 7, koreanName: '신성한 관문', gridCols: 4, startGold: 1450, dungeonHp: 6500,
+    id: 63, chapter: 7, koreanName: '신성한 관문', gridCols: 4, dungeonHp: 6500,
     waves: [
       { wave: 1,  clearReward: 440,  invaders: [{ type: 'celestial_knight', count: 3, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 490,  invaders: [{ type: 'celestial_knight', count: 4, spawnDelay: 1400 }, { type: 'mirror_knight', count: 3, spawnDelay: 1400 }] },
@@ -19,7 +19,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 64 — 천상의 궁수대: divine_archer 등장
   {
-    id: 64, chapter: 7, koreanName: '천상의 궁수대', gridCols: 4, startGold: 1470, dungeonHp: 6700,
+    id: 64, chapter: 7, koreanName: '천상의 궁수대', gridCols: 4, dungeonHp: 6700,
     waves: [
       { wave: 1,  clearReward: 455,  invaders: [{ type: 'divine_archer',    count: 3, spawnDelay: 1200 }] },
       { wave: 2,  clearReward: 505,  invaders: [{ type: 'divine_archer',    count: 4, spawnDelay: 1200 }, { type: 'celestial_knight', count: 3, spawnDelay: 1400 }] },
@@ -35,7 +35,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 65 — 천계 요새: 복합 배치
   {
-    id: 65, chapter: 7, koreanName: '천계 요새', gridCols: 4, startGold: 1490, dungeonHp: 6900,
+    id: 65, chapter: 7, koreanName: '천계 요새', gridCols: 4, dungeonHp: 6900,
     waves: [
       { wave: 1,  clearReward: 470,  invaders: [{ type: 'celestial_knight', count: 4, spawnDelay: 1400 }, { type: 'divine_archer',    count: 3, spawnDelay: 1200 }] },
       { wave: 2,  clearReward: 520,  invaders: [{ type: 'radiant_seraph',   count: 4, spawnDelay: 1300 }, { type: 'celestial_knight', count: 4, spawnDelay: 1400 }] },
@@ -51,7 +51,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 66 — 장군의 진영: heaven_general 등장
   {
-    id: 66, chapter: 7, koreanName: '장군의 진영', gridCols: 4, startGold: 1510, dungeonHp: 7000,
+    id: 66, chapter: 7, koreanName: '장군의 진영', gridCols: 4, dungeonHp: 7000,
     waves: [
       { wave: 1,  clearReward: 485,  invaders: [{ type: 'heaven_general',   count: 1, spawnDelay: 2000 }, { type: 'celestial_knight', count: 4, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 540,  invaders: [{ type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'heaven_general',   count: 1, spawnDelay: 2000 }] },
@@ -67,7 +67,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 67 — 신성한 무기고: 복합 혼합
   {
-    id: 67, chapter: 7, koreanName: '신성한 무기고', gridCols: 4, startGold: 1530, dungeonHp: 7100,
+    id: 67, chapter: 7, koreanName: '신성한 무기고', gridCols: 4, dungeonHp: 7100,
     waves: [
       { wave: 1,  clearReward: 500,  invaders: [{ type: 'heaven_general',   count: 2, spawnDelay: 2000 }, { type: 'celestial_knight', count: 4, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 555,  invaders: [{ type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'radiant_seraph',   count: 4, spawnDelay: 1300 }] },
@@ -83,7 +83,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 68 — 창공의 탑: sky_titan 등장
   {
-    id: 68, chapter: 7, koreanName: '창공의 탑', gridCols: 4, startGold: 1550, dungeonHp: 7200,
+    id: 68, chapter: 7, koreanName: '창공의 탑', gridCols: 4, dungeonHp: 7200,
     waves: [
       { wave: 1,  clearReward: 520,  invaders: [{ type: 'sky_titan',        count: 1, spawnDelay: 2400 }, { type: 'celestial_knight', count: 4, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 575,  invaders: [{ type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'sky_titan',        count: 1, spawnDelay: 2400 }] },
@@ -99,7 +99,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 69 — 광휘의 성전: 전면 혼합
   {
-    id: 69, chapter: 7, koreanName: '광휘의 성전', gridCols: 4, startGold: 1570, dungeonHp: 7300,
+    id: 69, chapter: 7, koreanName: '광휘의 성전', gridCols: 4, dungeonHp: 7300,
     waves: [
       { wave: 1,  clearReward: 535,  invaders: [{ type: 'celestial_knight', count: 5, spawnDelay: 1400 }, { type: 'divine_archer',    count: 4, spawnDelay: 1200 }] },
       { wave: 2,  clearReward: 595,  invaders: [{ type: 'radiant_seraph',   count: 5, spawnDelay: 1300 }, { type: 'heaven_general',   count: 2, spawnDelay: 2000 }] },
@@ -117,7 +117,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 70 — 천룡의 보금자리: celestial_dragon 미니보스
   {
-    id: 70, chapter: 7, koreanName: '천룡의 보금자리', gridCols: 4, startGold: 1580, dungeonHp: 7400,
+    id: 70, chapter: 7, koreanName: '천룡의 보금자리', gridCols: 4, dungeonHp: 7400,
     waves: [
       { wave: 1,  clearReward: 550,  invaders: [{ type: 'celestial_knight', count: 5, spawnDelay: 1400 }, { type: 'divine_archer',    count: 4, spawnDelay: 1200 }] },
       { wave: 2,  clearReward: 610,  invaders: [{ type: 'heaven_general',   count: 3, spawnDelay: 2000 }, { type: 'radiant_seraph',   count: 5, spawnDelay: 1300 }] },
@@ -133,7 +133,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 71 — 신계 최후의 방어선: 15웨이브 생존
   {
-    id: 71, chapter: 7, koreanName: '신계 최후의 방어선', gridCols: 4, startGold: 1610, dungeonHp: 7600,
+    id: 71, chapter: 7, koreanName: '신계 최후의 방어선', gridCols: 4, dungeonHp: 7600,
     waves: [
       { wave: 1,  clearReward: 560,  invaders: [{ type: 'celestial_knight', count: 5, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 620,  invaders: [{ type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'radiant_seraph',   count: 4, spawnDelay: 1300 }] },
@@ -154,7 +154,7 @@ export const CHAPTER_7: StageConfig[] = [
   },
   // Stage 72 — 신황제의 옥좌: 최종 보스 (god_emperor)
   {
-    id: 72, chapter: 7, koreanName: '신황제의 옥좌', gridCols: 4, startGold: 1650, dungeonHp: 8000,
+    id: 72, chapter: 7, koreanName: '신황제의 옥좌', gridCols: 4, dungeonHp: 8000,
     waves: [
       { wave: 1,  clearReward: 580,  invaders: [{ type: 'celestial_knight', count: 5, spawnDelay: 1400 }] },
       { wave: 2,  clearReward: 640,  invaders: [{ type: 'divine_archer',    count: 5, spawnDelay: 1200 }, { type: 'radiant_seraph',   count: 4, spawnDelay: 1300 }] },

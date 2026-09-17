@@ -86,12 +86,6 @@ describe('StageConfig — structural integrity', () => {
     }
   });
 
-  it('every stage has startGold > 0', () => {
-    for (const s of ALL_STAGES) {
-      expect(s.startGold, `stage ${s.id} startGold`).toBeGreaterThan(0);
-    }
-  });
-
   it('every stage has at least one wave', () => {
     for (const s of ALL_STAGES) {
       expect(s.waves.length, `stage ${s.id} waves`).toBeGreaterThan(0);
@@ -218,12 +212,6 @@ describe('chapter-level constraints', () => {
     const ch1AvgHp = CHAPTER_1.reduce((s, x) => s + x.dungeonHp, 0) / CHAPTER_1.length;
     const ch8AvgHp = CHAPTER_8.reduce((s, x) => s + x.dungeonHp, 0) / CHAPTER_8.length;
     expect(ch8AvgHp).toBeGreaterThan(ch1AvgHp);
-  });
-
-  it('startGold increases from Ch1 to Ch8', () => {
-    const ch1AvgGold = CHAPTER_1.reduce((s, x) => s + x.startGold, 0) / CHAPTER_1.length;
-    const ch8AvgGold = CHAPTER_8.reduce((s, x) => s + x.startGold, 0) / CHAPTER_8.length;
-    expect(ch8AvgGold).toBeGreaterThan(ch1AvgGold);
   });
 
   it('stage 10 (final Ch1) has a boss wave with isBoss=true', () => {
@@ -548,12 +536,6 @@ describe('CHAPTER_8 — per-stage wave counts', () => {
     const maxHp = Math.max(...CHAPTER_8.map(st => st.dungeonHp));
     expect(s(80).dungeonHp).toBe(maxHp);
     expect(s(80).dungeonHp).toBe(11000);
-  });
-
-  it('stage 80 has the highest startGold in Ch8 (= 2000)', () => {
-    const maxGold = Math.max(...CHAPTER_8.map(st => st.startGold));
-    expect(s(80).startGold).toBe(maxGold);
-    expect(s(80).startGold).toBe(2000);
   });
 
   it('stage 73 (first Ch8 stage) has no primordial_guard invaders', () => {

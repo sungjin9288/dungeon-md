@@ -12,14 +12,13 @@ export interface StageConfig {
   koreanName?: string;
   waves: WaveSpec[];
   dungeonHp: number;
-  startGold: number;
   gridCols?: number;   // Ch2 uses 4 columns (default 3 for Ch1)
   waterCells?: number[];   // flat indices of water-blocked cells (row*cols + col)
 }
 
 export const CHAPTER_1: StageConfig[] = [
   {
-    id: 1, chapter: 1, koreanName: '버려진 던전', dungeonHp: 1000, startGold: 300,
+    id: 1, chapter: 1, koreanName: '버려진 던전', dungeonHp: 1000,
     waves: [
       // Wave 1 — 농민병사 ×5
       { wave: 1, clearReward: 50,
@@ -55,7 +54,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 2: 동굴 입구 ──────────────────────────────────────────────────────
   {
-    id: 2, chapter: 1, koreanName: '동굴 입구', dungeonHp: 1050, startGold: 320,
+    id: 2, chapter: 1, koreanName: '동굴 입구', dungeonHp: 1050,
     waves: [
       { wave: 1, clearReward: 55,
         invaders: [{ type: 'peasant', count: 6, spawnDelay: 1800 }] },
@@ -81,7 +80,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 3: 지하 통로 ──────────────────────────────────────────────────────
   {
-    id: 3, chapter: 1, koreanName: '지하 통로', dungeonHp: 1100, startGold: 340,
+    id: 3, chapter: 1, koreanName: '지하 통로', dungeonHp: 1100,
     waves: [
       { wave: 1, clearReward: 60,
         invaders: [{ type: 'peasant', count: 7, spawnDelay: 1800 }] },
@@ -107,7 +106,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 4: 도깨비 시장 ────────────────────────────────────────────────────
   {
-    id: 4, chapter: 1, koreanName: '도깨비 시장', dungeonHp: 1200, startGold: 360,
+    id: 4, chapter: 1, koreanName: '도깨비 시장', dungeonHp: 1200,
     waves: [
       { wave: 1, clearReward: 65,
         invaders: [{ type: 'peasant', count: 7, spawnDelay: 1800 }] },
@@ -133,7 +132,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 5: 불의 시련 ──────────────────────────────────────────────────────
   {
-    id: 5, chapter: 1, koreanName: '불의 시련', dungeonHp: 1300, startGold: 380,
+    id: 5, chapter: 1, koreanName: '불의 시련', dungeonHp: 1300,
     waves: [
       { wave: 1, clearReward: 70,
         invaders: [{ type: 'peasant', count: 6, spawnDelay: 1700 }] },
@@ -159,7 +158,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 6: 얼음 감옥 ──────────────────────────────────────────────────────
   {
-    id: 6, chapter: 1, koreanName: '얼음 감옥', dungeonHp: 1350, startGold: 400,
+    id: 6, chapter: 1, koreanName: '얼음 감옥', dungeonHp: 1350,
     waves: [
       { wave: 1, clearReward: 75,
         invaders: [{ type: 'peasant', count: 8, spawnDelay: 1700 }] },
@@ -185,7 +184,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 7: 독의 늪 ───────────────────────────────────────────────────────
   {
-    id: 7, chapter: 1, koreanName: '독의 늪', dungeonHp: 1450, startGold: 420,
+    id: 7, chapter: 1, koreanName: '독의 늪', dungeonHp: 1450,
     waves: [
       { wave: 1, clearReward: 80,
         invaders: [{ type: 'shaman', count: 4, spawnDelay: 1700 }, { type: 'peasant', count: 5, spawnDelay: 1700 }] },
@@ -211,7 +210,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 8: 무기고 ────────────────────────────────────────────────────────
   {
-    id: 8, chapter: 1, koreanName: '무기고', dungeonHp: 1550, startGold: 450,
+    id: 8, chapter: 1, koreanName: '무기고', dungeonHp: 1550,
     waves: [
       { wave: 1, clearReward: 85,
         invaders: [{ type: 'peasant', count: 7, spawnDelay: 1600 }] },
@@ -237,7 +236,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 9: 왕의 방 ───────────────────────────────────────────────────────
   {
-    id: 9, chapter: 1, koreanName: '왕의 방', dungeonHp: 1700, startGold: 480,
+    id: 9, chapter: 1, koreanName: '왕의 방', dungeonHp: 1700,
     waves: [
       { wave: 1, clearReward: 90,
         invaders: [{ type: 'peasant', count: 8, spawnDelay: 1600 }] },
@@ -263,7 +262,7 @@ export const CHAPTER_1: StageConfig[] = [
   },
   // ── Stage 10: 최종 결전 ─────────────────────────────────────────────────────
   {
-    id: 10, chapter: 1, koreanName: '최종 결전', dungeonHp: 1800, startGold: 500,
+    id: 10, chapter: 1, koreanName: '최종 결전', dungeonHp: 1800,
     waves: [
       { wave: 1, clearReward: 95,
         invaders: [{ type: 'peasant', count: 8, spawnDelay: 1600 }] },
