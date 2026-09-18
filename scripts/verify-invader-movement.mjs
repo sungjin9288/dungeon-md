@@ -66,6 +66,48 @@ try {
     window.advanceTime(2500);
   }, STAGE);
 
+  // Order matters: invariant B samples an untouched battle. Invariant A pauses an
+  // invader and leaves it paused, which distorts the waves that follow — running A
+  // first made B observe maxLocks 1 (no overlap) and fail its own exercise check.
+  // ── Invariant B: locks hold, and nothing is stranded once they clear ───────
+  const sweep = await page.evaluate(() => {
+    const ds = window.__phaserGame.scene.getScene('DungeonScene');
+    const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
+    // Sample at 1x with a short step: a 1000ms stun lasts ~333ms of pumped time
+    // at 3x, so a coarse sweep walks straight past the overlap it is meant to
+    // observe (the first run of this harness reported maxLocks 1 for that reason).
+    ds.setSpeed(1);
+    const seen = { samples: 0, maxLocks: 0, lockedMoving: 0, freeStopped: 0, waves: 0 };
+    for (let wave = 0; wave < 3; wave++) {
+      if (!ds.waveActive) {
+        ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
+        ds.startWave(); pump(800);
+      }
+      seen.waves++;
+      for (let i = 0; i < 40; i++) {
+        pump(250);
+        for (const inv of (ds.activeInvaders ?? []).filter(x => x.active)) {
+          seen.samples++;
+          const locks = [inv.isStunned, inv.isRooted, inv.isFrozen, inv.isCharmed].filter(Boolean).length;
+          seen.maxLocks = Math.max(seen.maxLocks, locks);
+          const paused = inv.pathTween ? inv.pathTween.isPaused() : false;
+          const speed  = inv.pathTween ? inv.pathTween.timeScale : 1;
+          if (locks > 0 && !paused && speed > 0) seen.lockedMoving++;
+          if (locks === 0 && paused) seen.freeStopped++;
+        }
+        if (ds.dungeonHp <= 0) break;
+      }
+      if (ds.dungeonHp <= 0) break;
+    }
+    return { ...seen, wave: ds.wave, dungeonHp: Math.round(ds.dungeonHp) };
+  });
+  audit.checks.push({ id: 'locks-hold-and-release', ...sweep });
+  if (sweep.samples < 20) audit.failures.push({ id: 'locks-hold-and-release', reason: `only ${sweep.samples} invader samples — battle never got going` });
+  if (sweep.maxLocks < 2) audit.failures.push({ id: 'locks-hold-and-release', reason: 'no overlapping crowd control observed; the invariant was not exercised' });
+  if (sweep.lockedMoving > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.lockedMoving} samples moved while locked` });
+  if (sweep.freeStopped > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.freeStopped} samples stayed stopped with no lock` });
+  if (errors.length) audit.failures.push({ id: 'console', errors });
+
   // ── Invariant A: a pause with no lock flag survives speed changes ──────────
   const pauseCheck = await page.evaluate(() => {
     const ds = window.__phaserGame.scene.getScene('DungeonScene');
@@ -92,41 +134,6 @@ try {
       audit.failures.push({ id: 'speed-composition', reason: `slow × boost = ${pauseCheck.afterBoost.timeScale}, expected ${pauseCheck.composed}` });
     }
   }
-
-  // ── Invariant B: locks hold, and nothing is stranded once they clear ───────
-  const sweep = await page.evaluate(() => {
-    const ds = window.__phaserGame.scene.getScene('DungeonScene');
-    const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
-    const seen = { samples: 0, maxLocks: 0, lockedMoving: 0, freeStopped: 0, waves: 0 };
-    for (let wave = 0; wave < 3; wave++) {
-      if (!ds.waveActive) {
-        ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
-        ds.startWave(); pump(800);
-      }
-      seen.waves++;
-      for (let i = 0; i < 12; i++) {
-        pump(700);
-        for (const inv of (ds.activeInvaders ?? []).filter(x => x.active)) {
-          seen.samples++;
-          const locks = [inv.isStunned, inv.isRooted, inv.isFrozen, inv.isCharmed].filter(Boolean).length;
-          seen.maxLocks = Math.max(seen.maxLocks, locks);
-          const paused = inv.pathTween ? inv.pathTween.isPaused() : false;
-          const speed  = inv.pathTween ? inv.pathTween.timeScale : 1;
-          if (locks > 0 && !paused && speed > 0) seen.lockedMoving++;
-          if (locks === 0 && paused) seen.freeStopped++;
-        }
-        if (ds.dungeonHp <= 0) break;
-      }
-      if (ds.dungeonHp <= 0) break;
-    }
-    return { ...seen, wave: ds.wave, dungeonHp: Math.round(ds.dungeonHp) };
-  });
-  audit.checks.push({ id: 'locks-hold-and-release', ...sweep });
-  if (sweep.samples < 20) audit.failures.push({ id: 'locks-hold-and-release', reason: `only ${sweep.samples} invader samples — battle never got going` });
-  if (sweep.maxLocks < 2) audit.failures.push({ id: 'locks-hold-and-release', reason: 'no overlapping crowd control observed; the invariant was not exercised' });
-  if (sweep.lockedMoving > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.lockedMoving} samples moved while locked` });
-  if (sweep.freeStopped > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.freeStopped} samples stayed stopped with no lock` });
-  if (errors.length) audit.failures.push({ id: 'console', errors });
 
   process.stdout.write(
     `movement: slow→paused ${pauseCheck.afterSlow?.paused} · boost→paused ${pauseCheck.afterBoost?.paused} · ` +
