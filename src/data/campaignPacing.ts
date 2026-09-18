@@ -166,6 +166,20 @@ export function expectedGuardianLevel(stageNumber: number): number {
   return level;
 }
 
+/** Skill points a guardian has earned at `level`: one per five levels (barracks addXp). */
+export const GUARDIAN_SP_PER_LEVELS = 5;
+
+/**
+ * The skills a levelled guardian would have spent its points on. `guardianAtkMult`
+ * reads exactly one node — the combat tree's tier-1 강타 (A1, +15%, costs 1 SP) —
+ * and every monster's tree opens with it, so the first point always lands there.
+ * Levelling the model's roster without spending its points repeated the Lv.1
+ * mistake one layer down: the XP was counted, the reward it buys was not.
+ */
+export function expectedSpentSkills(level: number): Record<string, number> {
+  return Math.floor(level / GUARDIAN_SP_PER_LEVELS) >= 1 ? { A1: 1 } : {};
+}
+
 /**
  * The trap a player would have in every room by this DM level: the strongest
  * tier-1 trap unlocked so far. Tier 1 is bought straight from the placement
@@ -291,7 +305,12 @@ function buildHome(
     guardianLevel,
     roster: placed as MonsterId[],
     dungeonSlots,
-    ownedMonsters: placed.map(id => ({ ...defaultOwnedMonster(id), level: guardianLevel })),
+    ownedMonsters: placed.map(id => ({
+      ...defaultOwnedMonster(id),
+      level: guardianLevel,
+      skillPoints: Math.max(0, Math.floor(guardianLevel / GUARDIAN_SP_PER_LEVELS) - Object.keys(expectedSpentSkills(guardianLevel)).length),
+      spentSkills: expectedSpentSkills(guardianLevel),
+    })),
   };
 }
 

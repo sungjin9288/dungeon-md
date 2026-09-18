@@ -20,8 +20,11 @@ import {
   campaignPacingTable,
   expectedDmLevel,
   expectedHome,
+  expectedGuardianLevel,
   expectedRoster,
   expectedRosterSize,
+  expectedSpentSkills,
+  GUARDIAN_SP_PER_LEVELS,
   leanHome,
   requiredDps,
   simulateHome,
@@ -64,6 +67,22 @@ describe('pacing model — shape', () => {
       expect(lean.roomLevel, `stage ${stage.id}`).toBeLessThanOrEqual(full.roomLevel);
     }
     expect(expectedDmLevel(1)).toBeGreaterThan(leanHome(1).dmLevel);
+  });
+
+  it('a levelled guardian has spent the skill point its level earned', () => {
+    expect(expectedSpentSkills(GUARDIAN_SP_PER_LEVELS - 1)).toEqual({});
+    expect(expectedSpentSkills(GUARDIAN_SP_PER_LEVELS)).toEqual({ A1: 1 });
+
+    // The first stage whose model roster has reached the first skill point must
+    // carry it into the home the guard fights with — levelling the roster and
+    // then throwing its reward away is the Lv.1 mistake one layer down.
+    const stage = ALL_STAGES.find(s => expectedGuardianLevel(s.id) >= GUARDIAN_SP_PER_LEVELS);
+    expect(stage, 'no stage reaches the first skill point').toBeDefined();
+    for (const monster of leanHome(stage!.id).ownedMonsters) {
+      expect(monster.spentSkills, `stage ${stage!.id} ${monster.id}`).toEqual({ A1: 1 });
+    }
+    // Stage 1 has killed nothing yet, so it keeps the bare starter board.
+    for (const monster of starterHome().ownedMonsters) expect(monster.spentSkills).toEqual({});
   });
 
   it('every stage demands a finite, positive DPS', () => {
