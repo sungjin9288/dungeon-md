@@ -35,3 +35,17 @@ describe('resting path speed', () => {
     expect(restingPathSpeed({ slowMult: -2, boostMult: 1 })).toBe(0);
   });
 });
+
+describe('captain aura composes with slow (regression)', () => {
+  it('a slowed invader inside the aura keeps the slow, and keeps it after leaving', () => {
+    // Before: the aura wrote pathTween.timeScale = 1.3 directly, erasing the
+    // slow, then reset to 1 on leaving — the slow was lost for the rest of its
+    // duration. Now both are modifiers.
+    const slowed = { slowMult: 0.6, boostMult: 1 };
+    expect(restingPathSpeed(slowed)).toBeCloseTo(0.6);
+    const inAura = { ...slowed, boostMult: 1.3 };
+    expect(restingPathSpeed(inAura)).toBeCloseTo(0.78);
+    const leftAura = { ...inAura, boostMult: 1 };
+    expect(restingPathSpeed(leftAura)).toBeCloseTo(0.6);
+  });
+});

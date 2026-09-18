@@ -158,6 +158,9 @@ export function runTigersPounce(ctx: RoomMechanicsContext, now: number): void {
 
 // ─── runMercenaryAuras ──────────────────────────────────────────────────────
 
+/** Captain aura speed-up applied to nearby invaders. */
+export const MERCENARY_AURA_BOOST = 1.3;
+
 export function runMercenaryAuras(ctx: RoomMechanicsContext, _now: number): void {
   if (!ctx.waveActive) return;
   const captains = ctx.activeInvaders.filter(
@@ -165,14 +168,16 @@ export function runMercenaryAuras(ctx: RoomMechanicsContext, _now: number): void
   );
   if (captains.length === 0) return;
 
+  // The aura is a speed *modifier*, not a raw timeScale write: setting the tween
+  // directly used to overwrite an active slow (and then reset it to 1 on leaving
+  // the aura, losing the slow for good). boostMult composes with slowMult instead.
   ctx.activeInvaders.forEach(inv => {
     if (!inv.active || inv.def.type === 'mercenary_captain') return;
     const nearCaptain = captains.some(c => Math.hypot(c.x - inv.x, c.y - inv.y) < 200);
-    if (nearCaptain && inv.pathTween && inv.pathTween.timeScale < 1.3) {
-      inv.pathTween.timeScale = 1.3;
-    } else if (!nearCaptain && inv.pathTween && inv.pathTween.timeScale === 1.3) {
-      inv.pathTween.timeScale = 1;
-    }
+    const boost = nearCaptain ? MERCENARY_AURA_BOOST : 1;
+    if (inv.boostMult === boost) return;
+    inv.boostMult = boost;
+    inv.resumePathIfFree();
   });
 }
 
