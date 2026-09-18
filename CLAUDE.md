@@ -132,6 +132,9 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   진행)가 1~80을 여유 1.3×로, veteran(강한 로스터)이 Ch9를 클리어해야 한다.
   시뮬은 사거리/행 커버리지는 보지만 방의 단일 표적 처리량은 못 보므로 초반
   절대 난이도는 `scripts/verify-campaign-pacing.mjs`(실전 organic 주행)가 진실원.
+  **organic 결과는 확률적이다** — 스폰 순서·패시브 발동·웨이브 사건이 매번 구른다.
+  한계 스테이지(특히 20 lean, 26% HP 승으로 기록된 뒤 반복 패배)는 1회 주행으로
+  판정하지 말 것. `PACING_REPEATS=n`으로 반복해 승률과 HP% 분포를 본다.
 
 ### 침입 예보 · 명성 (2026-09-18, Phase 2)
 
