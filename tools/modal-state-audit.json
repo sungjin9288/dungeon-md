@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-17T17:04:45.581Z",
+  "generatedAt": "2026-09-18T00:03:27.327Z",
   "base": "http://127.0.0.1:8084",
-  "scope": "28 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
+  "scope": "31 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
   "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
   "sourceHashes": {
     "scripts/lib/web-audit.mjs": "055dec27ccc9bdd98ddd55bc01994b7f5e066dd67327f95fbba2881d33055553",
-    "scripts/verify-modal-states.mjs": "72cb2e00a58716554d2fad07100dce4b49eb76fe926aa95d4997a0d0171cec9b"
+    "scripts/verify-modal-states.mjs": "6672423f31dc8d699c408f1a32129029c878c9b3b8de0e494b32f367b0c5e13a"
   },
   "results": [
     {
@@ -35,7 +35,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
-      "sha256": "f1d16308753eaf603f9fc27d45c7528a8068758c8a13ae175f54f38cf38c1edb"
+      "sha256": "98a2336c277537cf93fe97ba9721c4e8c276556c91e147c45d11795467b9ae3d"
     },
     {
       "id": "shop-purchase-confirm",
@@ -63,7 +63,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
-      "sha256": "748ef1469e9b3ba6be6fff7a11988ceeab830dfc274533c863df25a2fc1435ce"
+      "sha256": "c7f1fcbf4d993b39cdd78b6a25b0053a1366eb411368c0837d8394ecf4e4ff96"
     },
     {
       "id": "codex-monster-detail",
@@ -177,7 +177,107 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-home-lineage-goal-chip-390x844.png",
-      "sha256": "2027664cabe756393d078357a99f35a22284eea16c4c520987c8031490bc9bf8"
+      "sha256": "9cf8069c47944c3751daab979b2ad125d3df4951517c1c43ccbdcc4ba3fb82be"
+    },
+    {
+      "id": "home-todo-badges",
+      "scene": "DungeonHomeScene",
+      "expect": "홈 헤더 ⛏ 근무 2 칩 + 육성/제작 칩 카운트 배지",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 22,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 1,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "materials",
+        "trapStock",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-todo-badges-390x844.png",
+      "sha256": "c5e66dc3637778fc30bdc28a9063e6ac6350291c1242ae1d1766d69962956bd4"
+    },
+    {
+      "id": "home-header-full",
+      "scene": "DungeonHomeScene",
+      "expect": "헤더에 명성(▲)+📌 긴 이름+⛏ 근무가 동시에 있어도 폭 안에 들어감",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "notoriety",
+        "lineageGoal",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-header-full-390x844.png",
+      "sha256": "b365a914505762cc1b3ad09b4c6ee09dd0d66ea8f99bb3802f696ad6431b94db"
+    },
+    {
+      "id": "home-staffing-route",
+      "scene": "DungeonHomeScene",
+      "expect": "근무 칩 → 생산 구역 진입",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 45,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-staffing-route-390x844.png",
+      "sha256": "65331454955c5c9589dc44ace1b431e64143c50beda46feaa2d42b8fb14e7834"
     },
     {
       "id": "wisdom-branch-confirm",
@@ -262,7 +362,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
-      "sha256": "0d4e156694cc8f7edb2a735f72bc25c64679a0e6281adc858d18281d6462ed63"
+      "sha256": "ff10b61f24974ae399310cb20032ec73756e4085583c4c2e7cdd4292a1d92e8f"
     },
     {
       "id": "production-facility-order",
@@ -494,7 +594,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-summon-shard-redeem-390x844.png",
-      "sha256": "5ed05670bc838c85f4c36a10aa4cb4424e4e2ba8a07e649426dcf6e12a7e34fc"
+      "sha256": "9f0d3166fd390a960a83190fb0f2f881a529ca7b5c24e91f2168bc67a5488fd0"
     },
     {
       "id": "barracks-manage",
@@ -586,7 +686,7 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-barracks-bond-action-390x844.png",
-      "sha256": "3f32066baa106d83ecb989a8ff6b12cb55471f762708281e1ace364acf36d5aa"
+      "sha256": "2d0b54de99edfef80ebb853fe527922631920a8a07d2db13659a60191ec54f6e"
     },
     {
       "id": "forge-disassemble-tab",
@@ -707,7 +807,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-home-forecast-tray-390x844.png",
-      "sha256": "43a05a9eec97033a5665413c63f042c97639f16cb7386b402609132f5fac3405"
+      "sha256": "7f35b36024439aee896961f95c46606bd8e0c62d806360a43febe1fb18517ed8"
     },
     {
       "id": "home-forecast-tray-raise",
@@ -737,7 +837,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-home-forecast-tray-raise-390x844.png",
-      "sha256": "7662dfd8a1dd36b6c40eb1932d128654c5cb32b309fdbbc12bba3c451bfaebfc"
+      "sha256": "c840f448df189239df093e26356e97f57864c07c083a0db1e10e26b361c7ee03"
     },
     {
       "id": "shop-purchase-result",
@@ -767,7 +867,7 @@
       "saveNeutral": true,
       "errors": [],
       "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
-      "sha256": "f0e344687daca82f8a962b34f44842391cd3d1246c7f1c3bd70bc6b637213692"
+      "sha256": "04770db57b19229d4f4bd2dd5a5a9d523bc2117ce01490b510b69bab3388cf1f"
     },
     {
       "id": "wisdom-upgrade-result",
@@ -828,16 +928,16 @@
       "saveNeutral": false,
       "errors": [],
       "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
-      "sha256": "7c116cd8b8627624df627d8b8033d0725064142d7b97674f169e7313b0f9c1a7"
+      "sha256": "dcc801e15f54d620d8452b51649a752f14361f06f641f10ad2a6ecfbd9bb0495"
     }
   ],
   "failures": [],
   "summary": {
-    "cases": 28,
+    "cases": 31,
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 96,
+    "overlapCandidates": 99,
     "errors": 0,
     "hardFailures": 0
   }
