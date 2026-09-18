@@ -69,6 +69,52 @@ try {
   // Order matters: invariant B samples an untouched battle. Invariant A pauses an
   // invader and leaves it paused, which distorts the waves that follow — running A
   // first made B observe maxLocks 1 (no overlap) and fail its own exercise check.
+  // ── Invariant B1: overlapping locks, applied deterministically ────────────
+  // Waiting for guardian passives to overlap by chance made this flaky (one run
+  // saw maxLocks 2, the next maxLocks 1 and "not exercised"). Apply both locks
+  // directly so the rule is always tested.
+  const overlap = await page.evaluate(() => {
+    const ds = window.__phaserGame.scene.getScene('DungeonScene');
+    ds.setSpeed(1);
+    ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
+    if (!ds.waveActive) ds.startWave();
+    window.advanceTime(2000);
+    const inv = (ds.activeInvaders ?? []).find(i => i.active && !i.isUnstoppable);
+    if (!inv) return { ok: false, reason: 'no CC-able invader spawned' };
+    // Two ordering/robustness traps, both of which made earlier versions of this
+    // check pass without testing anything:
+    //   - charm breaks on damage, and guardians shoot the target → use root
+    //   - applyRoot refuses while the target is already stunned → root FIRST
+    //   - the target died inside the sample window → give it hp to survive it
+    inv.hp = Math.max(inv.hp, 100000);
+    inv.applyRoot(4000);      // PINNING_SHOT — the long hold, survives damage
+    inv.applyStun(1000);      // shock — expires first
+    const locked = { stunned: inv.isStunned, rooted: inv.isRooted, paused: inv.pathTween.isPaused() };
+    window.advanceTime(1600);  // stun expired, root still running
+    const afterStun = { stunned: inv.isStunned, rooted: inv.isRooted, paused: inv.pathTween.isPaused(), alive: inv.active && !inv.isDead };
+    window.advanceTime(3000);  // root expired too
+    const afterBoth = { stunned: inv.isStunned, rooted: inv.isRooted, paused: inv.pathTween.isPaused(), alive: inv.active && !inv.isDead };
+    return { ok: true, locked, afterStun, afterBoth };
+  });
+  audit.checks.push({ id: 'overlapping-locks-hold', ...overlap });
+  if (!overlap.ok) audit.failures.push({ id: 'overlapping-locks-hold', reason: overlap.reason });
+  else {
+    if (!overlap.locked.rooted || !overlap.locked.stunned) {
+      audit.failures.push({ id: 'overlapping-locks-hold', reason: `both locks must apply (rooted ${overlap.locked.rooted}, stunned ${overlap.locked.stunned})` });
+    }
+    if (!overlap.locked.paused) audit.failures.push({ id: 'overlapping-locks-hold', reason: 'stun+root did not hold the invader' });
+    // The rule is only tested if the long lock is still running at the sample:
+    // fail loudly rather than pass vacuously when it is not.
+    if (overlap.afterStun.alive && !overlap.afterStun.rooted) {
+      audit.failures.push({ id: 'overlapping-locks-hold', reason: 'root cleared before the sample — the overlap rule was not exercised' });
+    } else if (overlap.afterStun.alive && !overlap.afterStun.paused) {
+      audit.failures.push({ id: 'overlapping-locks-hold', reason: 'the stun expiring released an invader that was still rooted' });
+    }
+    if (overlap.afterBoth.alive && overlap.afterBoth.paused) {
+      audit.failures.push({ id: 'overlapping-locks-hold', reason: 'invader stayed stopped after every lock cleared' });
+    }
+  }
+
   // ── Invariant B: locks hold, and nothing is stranded once they clear ───────
   const sweep = await page.evaluate(() => {
     const ds = window.__phaserGame.scene.getScene('DungeonScene');
@@ -103,7 +149,9 @@ try {
   });
   audit.checks.push({ id: 'locks-hold-and-release', ...sweep });
   if (sweep.samples < 20) audit.failures.push({ id: 'locks-hold-and-release', reason: `only ${sweep.samples} invader samples — battle never got going` });
-  if (sweep.maxLocks < 2) audit.failures.push({ id: 'locks-hold-and-release', reason: 'no overlapping crowd control observed; the invariant was not exercised' });
+  // Overlap here is opportunistic (passives roll); B1 is the deterministic guard,
+  // so a run without overlap is reported, not failed.
+  if (sweep.maxLocks < 2) audit.checks.push({ id: 'sweep-note', note: 'no overlapping CC observed this run — B1 covers the rule' });
   if (sweep.lockedMoving > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.lockedMoving} samples moved while locked` });
   if (sweep.freeStopped > 0) audit.failures.push({ id: 'locks-hold-and-release', reason: `${sweep.freeStopped} samples stayed stopped with no lock` });
   if (errors.length) audit.failures.push({ id: 'console', errors });
@@ -115,8 +163,11 @@ try {
     ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
     ds.startWave();
     window.advanceTime(2000);
-    const inv = (ds.activeInvaders ?? []).find(i => i.active);
-    if (!inv) return { ok: false, reason: 'no invader spawned' };
+    // UNSTOPPABLE invaders ignore slows (applySlow early-returns), so picking one
+    // makes the composition check assert against a no-op — it did, and reported
+    // a false failure. Pick someone who can actually be slowed.
+    const inv = (ds.activeInvaders ?? []).find(i => i.active && !i.isUnstoppable && !i.isSlowed);
+    if (!inv) return { ok: false, reason: 'no slowable invader spawned' };
     inv.pathTween.pause();                    // stands in for taunt / venom / revive
     inv.applySlow(0.6, 1500);
     const afterSlow = { paused: inv.pathTween.isPaused(), timeScale: inv.pathTween.timeScale };

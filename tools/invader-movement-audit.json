@@ -1,18 +1,43 @@
 {
-  "generatedAt": "2026-09-18T02:25:33.721Z",
-  "base": "http://127.0.0.1:8084",
+  "generatedAt": "2026-09-18T06:25:55.184Z",
+  "base": "http://127.0.0.1:8083",
   "stage": 20,
   "scope": "Movement-lock invariants during a real battle with a tier-3 trap room. Not a balance or endurance run.",
   "checks": [
     {
+      "id": "overlapping-locks-hold",
+      "ok": true,
+      "locked": {
+        "stunned": true,
+        "rooted": true,
+        "paused": true
+      },
+      "afterStun": {
+        "stunned": false,
+        "rooted": true,
+        "paused": true,
+        "alive": true
+      },
+      "afterBoth": {
+        "stunned": false,
+        "rooted": false,
+        "paused": false,
+        "alive": true
+      }
+    },
+    {
       "id": "locks-hold-and-release",
-      "samples": 125,
-      "maxLocks": 2,
+      "samples": 209,
+      "maxLocks": 1,
       "lockedMoving": 0,
       "freeStopped": 0,
       "waves": 3,
-      "wave": 2,
+      "wave": 1,
       "dungeonHp": 2500
+    },
+    {
+      "id": "sweep-note",
+      "note": "no overlapping CC observed this run — B1 covers the rule"
     },
     {
       "id": "speed-change-never-resumes",
@@ -30,7 +55,7 @@
   ],
   "failures": [],
   "summary": {
-    "checks": 2,
+    "checks": 4,
     "hardFailures": 0
   }
 }

@@ -12,6 +12,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../constants/colors';
 import { logger } from '../utils/logger';
 import type { Invader } from './Invader';
+import { isMovementLocked } from './movementLock';
 
 // ─── Stun visual ──────────────────────────────────────────────────────────────
 
@@ -178,11 +179,12 @@ export function triggerVenomBurst(invader: Invader): void {
   drawVenomStacks(invader);
   // Paralyzed
   if (invader.pathTween && !invader.isUnstoppable) {
+    invader.isParalyzed = true;
     invader.pathTween.pause();
     invader.scene.time.delayedCall(2000, () => {
       if (!invader.active || invader.isDead) return;
-      if (!invader.isStunned && !invader.isRooted && !invader.isFrozen && !invader.isCharmed)
-        invader.pathTween?.resume();
+      invader.isParalyzed = false;
+      invader.resumePathIfFree();
     });
   }
   // 100 burst damage
@@ -430,12 +432,16 @@ export function die(invader: Invader): void {
   invader.isDead = true;
   const wasfrozen = invader.isFrozen;
 
-  // Un-pause path so cleanup can proceed
-  if (invader.isStunned || invader.isRooted || invader.isFrozen || invader.isCharmed) {
+  // Un-pause path so cleanup can proceed. Taunt and venom paralysis count too:
+  // they hold the tween as well, and an invader that died while only taunted
+  // used to reach cleanup still paused.
+  if (isMovementLocked(invader)) {
     invader.isStunned = false;
     invader.isRooted  = false;
     invader.isFrozen  = false;
     invader.isCharmed = false;
+    invader.isTaunted = false;
+    invader.isParalyzed = false;
     invader.pathTween.timeScale = 1;
     invader.pathTween.resume();
     clearStunVisual(invader);

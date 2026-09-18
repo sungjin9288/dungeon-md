@@ -49,3 +49,14 @@ describe('captain aura composes with slow (regression)', () => {
     expect(restingPathSpeed(leftAura)).toBeCloseTo(0.6);
   });
 });
+
+describe('taunt and paralysis are locks too', () => {
+  it('holds while a taunt or venom paralysis is active', () => {
+    expect(isMovementLocked({ ...free, isTaunted: true })).toBe(true);
+    expect(isMovementLocked({ ...free, isParalyzed: true })).toBe(true);
+    // A stun expiring mid-taunt must not hand movement back: taunt pauses the
+    // tween with no timer of its own, so an early resume cut it short.
+    expect(isMovementLocked({ ...free, isStunned: false, isTaunted: true })).toBe(true);
+    expect(isMovementLocked({ ...free, isTaunted: false, isParalyzed: false })).toBe(false);
+  });
+});

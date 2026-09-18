@@ -15,6 +15,10 @@ export interface MovementLockFlags {
   readonly isRooted:  boolean;
   readonly isFrozen:  boolean;
   readonly isCharmed: boolean;
+  /** TAUNTING_ROAR holds the invader in place. */
+  readonly isTaunted?: boolean;
+  /** Venom-burst paralysis (InvaderVisuals.triggerVenomBurst). */
+  readonly isParalyzed?: boolean;
 }
 
 export interface PathSpeedModifiers {
@@ -26,7 +30,8 @@ export interface PathSpeedModifiers {
 
 /** Whether any crowd-control effect still holds the invader in place. */
 export function isMovementLocked(flags: MovementLockFlags): boolean {
-  return flags.isStunned || flags.isRooted || flags.isFrozen || flags.isCharmed;
+  return flags.isStunned || flags.isRooted || flags.isFrozen || flags.isCharmed
+    || Boolean(flags.isTaunted) || Boolean(flags.isParalyzed);
 }
 
 /** The path speed an unlocked invader should walk at, composing every modifier. */
