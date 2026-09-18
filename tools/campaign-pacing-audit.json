@@ -1,98 +1,17 @@
 {
-  "generatedAt": "2026-09-18T04:54:00.449Z",
+  "generatedAt": "2026-09-18T06:52:57.328Z",
   "base": "http://127.0.0.1:8084",
   "scope": "Campaign stages fought organically by the pacing model's starter / lean / expected homes. Calibrates campaignPacing.test.ts (headless sim) against real combat. Not a full campaign endurance run.",
   "method": "Home seeded in-page from src/data/campaignPacing.ts, DungeonScene started with { stageNumber }, waves driven through window.advanceTime at 3x. Outcome = dungeon HP after the last wave.",
   "sourceHashes": {
-    "src/data/campaignPacing.ts": "a58e250d0048f2a79c555ee7a7c83dc68707b4ac92411b9360734780e0a7cd24",
+    "src/data/campaignPacing.ts": "fabcb85f752fa3f4c05235456d78801e025c877d96b2c682a32611534167cee3",
     "src/data/simulation.ts": "55af7315d621817f55fd4abec4b35e278e334f1a4fb9096812842637c2895c14",
     "src/combat/DungeonLayout.ts": "a3309c7499934f520f4d86efec6790eb68c6a6fca3a3b66b8685f0ab30135676",
-    "src/objects/Invader.ts": "1e013ae3dee6e7e0e8c2ae45d7597f63c8fb4194837abce8b7f6140ada6721ee",
+    "src/objects/Invader.ts": "81491162ee1342af9b56a4ac4c0a4ff054b0b2545c54b06892ddc8ac04e36e61",
     "src/combat/CombatResolver.ts": "57aac097ff3cb33045dff2a3e58f81c65ccf108ea963b2e5f921baa6e329e76a",
     "scripts/verify-campaign-pacing.mjs": "ecc8a46799f1cb6dbd83713703e415253c06d2716e6628cf494ef91a3f75f3c0"
   },
   "runs": [
-    {
-      "stageNumber": 1,
-      "kind": "starter",
-      "attempt": 1,
-      "seeded": {
-        "dmLevel": 1,
-        "slotCount": 3,
-        "roomLevel": 1,
-        "roster": [
-          "dokkaebi_warrior",
-          "village_archer",
-          "dokkaebi_junior"
-        ],
-        "sim": {
-          "winPct": 87,
-          "finalHp": 1300,
-          "startHp": 1500,
-          "totalDps": 19.2,
-          "worstWave": 6
-        }
-      },
-      "battle": {
-        "wave": 6,
-        "maxWave": 6,
-        "dungeonHp": 950,
-        "maxHp": 1500,
-        "builtRooms": 3,
-        "armedRooms": 3,
-        "gold": 680,
-        "stalls": 2,
-        "timeline": [
-          {
-            "wave": 1,
-            "hp": 1500,
-            "settled": true,
-            "stalled": false,
-            "slices": 3
-          },
-          {
-            "wave": 2,
-            "hp": 1450,
-            "settled": true,
-            "stalled": false,
-            "slices": 8
-          },
-          {
-            "wave": 3,
-            "hp": 1350,
-            "settled": true,
-            "stalled": true,
-            "slices": 15
-          },
-          {
-            "wave": 4,
-            "hp": 1300,
-            "settled": true,
-            "stalled": false,
-            "slices": 21
-          },
-          {
-            "wave": 5,
-            "hp": 1200,
-            "settled": true,
-            "stalled": false,
-            "slices": 26
-          },
-          {
-            "wave": 6,
-            "hp": 950,
-            "settled": true,
-            "stalled": true,
-            "slices": 37
-          }
-        ]
-      },
-      "outcome": "win",
-      "hpPct": 63,
-      "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-1-starter.png",
-      "sha256": "6309e574bbde8275c024b0e96605bc1653dec624b596e57b2f0419ff05dd87e8"
-    },
     {
       "stageNumber": 5,
       "kind": "lean",
@@ -111,7 +30,117 @@
           "winPct": 100,
           "finalHp": 1800,
           "startHp": 1800,
-          "totalDps": 66.6,
+          "totalDps": 71.1,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 50,
+        "maxHp": 1800,
+        "builtRooms": 5,
+        "armedRooms": 4,
+        "gold": 2370,
+        "stalls": 1,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 3
+          },
+          {
+            "wave": 2,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 7
+          },
+          {
+            "wave": 3,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 11
+          },
+          {
+            "wave": 4,
+            "hp": 1700,
+            "settled": true,
+            "stalled": false,
+            "slices": 19
+          },
+          {
+            "wave": 5,
+            "hp": 1700,
+            "settled": true,
+            "stalled": false,
+            "slices": 25
+          },
+          {
+            "wave": 6,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 34
+          },
+          {
+            "wave": 7,
+            "hp": 1250,
+            "settled": true,
+            "stalled": false,
+            "slices": 42
+          },
+          {
+            "wave": 8,
+            "hp": 850,
+            "settled": true,
+            "stalled": false,
+            "slices": 51
+          },
+          {
+            "wave": 9,
+            "hp": 650,
+            "settled": true,
+            "stalled": false,
+            "slices": 59
+          },
+          {
+            "wave": 10,
+            "hp": 50,
+            "settled": true,
+            "stalled": true,
+            "slices": 70
+          }
+        ]
+      },
+      "outcome": "win",
+      "hpPct": 3,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-5-lean-1.png",
+      "sha256": "2ae37cd565c29b19cb34ef3ad70a7168c451a5995f21801f732af795e91753a2"
+    },
+    {
+      "stageNumber": 5,
+      "kind": "lean",
+      "attempt": 2,
+      "seeded": {
+        "dmLevel": 4,
+        "slotCount": 5,
+        "roomLevel": 1,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior",
+          "one_tail_fox"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 1800,
+          "startHp": 1800,
+          "totalDps": 71.1,
           "worstWave": 0
         }
       },
@@ -122,7 +151,7 @@
         "maxHp": 1800,
         "builtRooms": 5,
         "armedRooms": 4,
-        "gold": 2265,
+        "gold": 2280,
         "stalls": 0,
         "timeline": [
           {
@@ -144,46 +173,46 @@
             "hp": 1800,
             "settled": true,
             "stalled": false,
-            "slices": 12
+            "slices": 11
           },
           {
             "wave": 4,
             "hp": 1600,
             "settled": true,
             "stalled": false,
-            "slices": 20
+            "slices": 19
           },
           {
             "wave": 5,
             "hp": 1450,
             "settled": true,
             "stalled": false,
-            "slices": 26
+            "slices": 25
           },
           {
             "wave": 6,
-            "hp": 1250,
+            "hp": 1200,
             "settled": true,
             "stalled": false,
-            "slices": 34
+            "slices": 33
           },
           {
             "wave": 7,
-            "hp": 900,
+            "hp": 850,
             "settled": true,
             "stalled": false,
-            "slices": 42
+            "slices": 41
           },
           {
             "wave": 8,
-            "hp": 550,
+            "hp": 500,
             "settled": true,
             "stalled": false,
-            "slices": 50
+            "slices": 49
           },
           {
             "wave": 9,
-            "hp": 250,
+            "hp": 300,
             "settled": true,
             "stalled": false,
             "slices": 58
@@ -193,132 +222,353 @@
             "hp": 0,
             "settled": true,
             "stalled": false,
-            "slices": 66
+            "slices": 67
           }
         ]
       },
       "outcome": "loss",
       "hpPct": 0,
       "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-5-lean.png",
-      "sha256": "b5e7250357b880f62476ab1f96237c86b4ad39e16b6f876831327bd4f65f6d19"
+      "screenshot": "tools/screenshots/campaign-pacing-5-lean-2.png",
+      "sha256": "e8b97305b7a06702a02cfb0c08ea58b8cc10a892bc0b47d1f702308fd72d490b"
     },
     {
-      "stageNumber": 10,
+      "stageNumber": 6,
       "kind": "lean",
       "attempt": 1,
       "seeded": {
-        "dmLevel": 5,
-        "slotCount": 6,
-        "roomLevel": 2,
+        "dmLevel": 4,
+        "slotCount": 5,
+        "roomLevel": 1,
         "roster": [
           "dokkaebi_warrior",
           "village_archer",
           "dokkaebi_junior",
           "one_tail_fox",
-          "fire_dokkaebi",
-          "ice_dokkaebi"
+          "fire_dokkaebi"
         ],
         "sim": {
           "winPct": 100,
-          "finalHp": 2400,
-          "startHp": 2400,
-          "totalDps": 106.7,
+          "finalHp": 1900,
+          "startHp": 1900,
+          "totalDps": 75,
           "worstWave": 0
         }
       },
       "battle": {
         "wave": 10,
         "maxWave": 10,
-        "dungeonHp": 2400,
-        "maxHp": 2400,
-        "builtRooms": 6,
-        "armedRooms": 6,
-        "gold": 4840,
+        "dungeonHp": 0,
+        "maxHp": 1900,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2460,
         "stalls": 0,
         "timeline": [
           {
             "wave": 1,
-            "hp": 2400,
+            "hp": 1900,
             "settled": true,
             "stalled": false,
             "slices": 4
           },
           {
             "wave": 2,
-            "hp": 2400,
+            "hp": 1900,
             "settled": true,
             "stalled": false,
             "slices": 8
           },
           {
             "wave": 3,
-            "hp": 2400,
+            "hp": 1800,
             "settled": true,
             "stalled": false,
-            "slices": 13
+            "slices": 16
           },
           {
             "wave": 4,
-            "hp": 2400,
+            "hp": 1650,
             "settled": true,
             "stalled": false,
-            "slices": 17
+            "slices": 23
           },
           {
             "wave": 5,
-            "hp": 2400,
-            "settled": true,
-            "stalled": false,
-            "slices": 20
-          },
-          {
-            "wave": 6,
-            "hp": 2400,
-            "settled": true,
-            "stalled": false,
-            "slices": 26
-          },
-          {
-            "wave": 7,
-            "hp": 2400,
+            "hp": 1450,
             "settled": true,
             "stalled": false,
             "slices": 31
           },
           {
-            "wave": 8,
-            "hp": 2400,
-            "settled": true,
-            "stalled": false,
-            "slices": 35
-          },
-          {
-            "wave": 9,
-            "hp": 2400,
+            "wave": 6,
+            "hp": 1100,
             "settled": true,
             "stalled": false,
             "slices": 40
           },
           {
-            "wave": 10,
-            "hp": 2400,
+            "wave": 7,
+            "hp": 900,
             "settled": true,
             "stalled": false,
             "slices": 48
+          },
+          {
+            "wave": 8,
+            "hp": 550,
+            "settled": true,
+            "stalled": false,
+            "slices": 56
+          },
+          {
+            "wave": 9,
+            "hp": 100,
+            "settled": true,
+            "stalled": false,
+            "slices": 65
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 72
           }
         ]
       },
-      "outcome": "win",
-      "hpPct": 100,
+      "outcome": "loss",
+      "hpPct": 0,
       "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-10-lean.png",
-      "sha256": "43bb57fb489c4316cf52ae717c9da4d944b7c06af42c6ff8acc385a4e5317b5f"
+      "screenshot": "tools/screenshots/campaign-pacing-6-lean-1.png",
+      "sha256": "2aa162442e7875afc1b5d7cd6737cfca466dba17fc6ee729f2c11c8adaa7da14"
+    },
+    {
+      "stageNumber": 6,
+      "kind": "lean",
+      "attempt": 2,
+      "seeded": {
+        "dmLevel": 4,
+        "slotCount": 5,
+        "roomLevel": 1,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior",
+          "one_tail_fox",
+          "fire_dokkaebi"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 1900,
+          "startHp": 1900,
+          "totalDps": 75,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 1900,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2500,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 4,
+            "hp": 1600,
+            "settled": true,
+            "stalled": false,
+            "slices": 22
+          },
+          {
+            "wave": 5,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 30
+          },
+          {
+            "wave": 6,
+            "hp": 1150,
+            "settled": true,
+            "stalled": false,
+            "slices": 39
+          },
+          {
+            "wave": 7,
+            "hp": 950,
+            "settled": true,
+            "stalled": false,
+            "slices": 48
+          },
+          {
+            "wave": 8,
+            "hp": 450,
+            "settled": true,
+            "stalled": false,
+            "slices": 56
+          },
+          {
+            "wave": 9,
+            "hp": 250,
+            "settled": true,
+            "stalled": false,
+            "slices": 64
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 71
+          }
+        ]
+      },
+      "outcome": "loss",
+      "hpPct": 0,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-6-lean-2.png",
+      "sha256": "28804acc04818c9f41d044747afaaaf0fc2ff288fd9769a1d5ff45e4f84f88ba"
+    },
+    {
+      "stageNumber": 7,
+      "kind": "lean",
+      "attempt": 2,
+      "seeded": {
+        "dmLevel": 4,
+        "slotCount": 5,
+        "roomLevel": 1,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior",
+          "one_tail_fox",
+          "fire_dokkaebi"
+        ],
+        "sim": {
+          "winPct": 100,
+          "finalHp": 2000,
+          "startHp": 2000,
+          "totalDps": 76.4,
+          "worstWave": 0
+        }
+      },
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2000,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2690,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 15
+          },
+          {
+            "wave": 4,
+            "hp": 1650,
+            "settled": true,
+            "stalled": false,
+            "slices": 23
+          },
+          {
+            "wave": 5,
+            "hp": 1550,
+            "settled": true,
+            "stalled": false,
+            "slices": 32
+          },
+          {
+            "wave": 6,
+            "hp": 1550,
+            "settled": true,
+            "stalled": false,
+            "slices": 41
+          },
+          {
+            "wave": 7,
+            "hp": 1100,
+            "settled": true,
+            "stalled": false,
+            "slices": 50
+          },
+          {
+            "wave": 8,
+            "hp": 500,
+            "settled": true,
+            "stalled": false,
+            "slices": 59
+          },
+          {
+            "wave": 9,
+            "hp": 50,
+            "settled": true,
+            "stalled": false,
+            "slices": 68
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 74
+          }
+        ]
+      },
+      "outcome": "loss",
+      "hpPct": 0,
+      "errors": [],
+      "screenshot": "tools/screenshots/campaign-pacing-7-lean-2.png",
+      "sha256": "f718b84d9b646955b68f5794daf5b9f8363bd0deeb015ff5a93adb2d59bdf2bb"
     }
   ],
   "failures": [
     {
-      "run": "5:lean",
+      "run": "5:lean#2",
       "reason": "battle ended loss",
       "battle": {
         "wave": 10,
@@ -327,7 +577,7 @@
         "maxHp": 1800,
         "builtRooms": 5,
         "armedRooms": 4,
-        "gold": 2265,
+        "gold": 2280,
         "stalls": 0,
         "timeline": [
           {
@@ -349,46 +599,46 @@
             "hp": 1800,
             "settled": true,
             "stalled": false,
-            "slices": 12
+            "slices": 11
           },
           {
             "wave": 4,
             "hp": 1600,
             "settled": true,
             "stalled": false,
-            "slices": 20
+            "slices": 19
           },
           {
             "wave": 5,
             "hp": 1450,
             "settled": true,
             "stalled": false,
-            "slices": 26
+            "slices": 25
           },
           {
             "wave": 6,
-            "hp": 1250,
+            "hp": 1200,
             "settled": true,
             "stalled": false,
-            "slices": 34
+            "slices": 33
           },
           {
             "wave": 7,
-            "hp": 900,
+            "hp": 850,
             "settled": true,
             "stalled": false,
-            "slices": 42
+            "slices": 41
           },
           {
             "wave": 8,
-            "hp": 550,
+            "hp": 500,
             "settled": true,
             "stalled": false,
-            "slices": 50
+            "slices": 49
           },
           {
             "wave": 9,
-            "hp": 250,
+            "hp": 300,
             "settled": true,
             "stalled": false,
             "slices": 58
@@ -398,43 +648,303 @@
             "hp": 0,
             "settled": true,
             "stalled": false,
-            "slices": 66
+            "slices": 67
           }
         ]
       }
     },
     {
-      "run": "20:lean",
-      "reason": "Error: page.evaluate: Target page, context or browser has been closed"
+      "run": "6:lean#1",
+      "reason": "battle ended loss",
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 1900,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2460,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 4,
+            "hp": 1650,
+            "settled": true,
+            "stalled": false,
+            "slices": 23
+          },
+          {
+            "wave": 5,
+            "hp": 1450,
+            "settled": true,
+            "stalled": false,
+            "slices": 31
+          },
+          {
+            "wave": 6,
+            "hp": 1100,
+            "settled": true,
+            "stalled": false,
+            "slices": 40
+          },
+          {
+            "wave": 7,
+            "hp": 900,
+            "settled": true,
+            "stalled": false,
+            "slices": 48
+          },
+          {
+            "wave": 8,
+            "hp": 550,
+            "settled": true,
+            "stalled": false,
+            "slices": 56
+          },
+          {
+            "wave": 9,
+            "hp": 100,
+            "settled": true,
+            "stalled": false,
+            "slices": 65
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 72
+          }
+        ]
+      }
+    },
+    {
+      "run": "6:lean#2",
+      "reason": "battle ended loss",
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 1900,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2500,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 1900,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 1800,
+            "settled": true,
+            "stalled": false,
+            "slices": 16
+          },
+          {
+            "wave": 4,
+            "hp": 1600,
+            "settled": true,
+            "stalled": false,
+            "slices": 22
+          },
+          {
+            "wave": 5,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 30
+          },
+          {
+            "wave": 6,
+            "hp": 1150,
+            "settled": true,
+            "stalled": false,
+            "slices": 39
+          },
+          {
+            "wave": 7,
+            "hp": 950,
+            "settled": true,
+            "stalled": false,
+            "slices": 48
+          },
+          {
+            "wave": 8,
+            "hp": 450,
+            "settled": true,
+            "stalled": false,
+            "slices": 56
+          },
+          {
+            "wave": 9,
+            "hp": 250,
+            "settled": true,
+            "stalled": false,
+            "slices": 64
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 71
+          }
+        ]
+      }
+    },
+    {
+      "run": "7:lean#1",
+      "reason": "Error: page.evaluate: Execution context was destroyed, most likely because of a navigation."
+    },
+    {
+      "run": "7:lean#2",
+      "reason": "battle ended loss",
+      "battle": {
+        "wave": 10,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2000,
+        "builtRooms": 5,
+        "armedRooms": 5,
+        "gold": 2690,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 2000,
+            "settled": true,
+            "stalled": false,
+            "slices": 15
+          },
+          {
+            "wave": 4,
+            "hp": 1650,
+            "settled": true,
+            "stalled": false,
+            "slices": 23
+          },
+          {
+            "wave": 5,
+            "hp": 1550,
+            "settled": true,
+            "stalled": false,
+            "slices": 32
+          },
+          {
+            "wave": 6,
+            "hp": 1550,
+            "settled": true,
+            "stalled": false,
+            "slices": 41
+          },
+          {
+            "wave": 7,
+            "hp": 1100,
+            "settled": true,
+            "stalled": false,
+            "slices": 50
+          },
+          {
+            "wave": 8,
+            "hp": 500,
+            "settled": true,
+            "stalled": false,
+            "slices": 59
+          },
+          {
+            "wave": 9,
+            "hp": 50,
+            "settled": true,
+            "stalled": false,
+            "slices": 68
+          },
+          {
+            "wave": 10,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 74
+          }
+        ]
+      }
     }
   ],
   "summary": {
-    "runs": 3,
-    "wins": 2,
-    "repeats": 1,
+    "runs": 5,
+    "wins": 1,
+    "repeats": 2,
     "byStage": {
-      "1:starter": {
-        "attempts": 1,
+      "5:lean": {
+        "attempts": 2,
         "wins": 1,
         "hpPct": [
-          63
+          0,
+          3
         ]
       },
-      "5:lean": {
+      "6:lean": {
+        "attempts": 2,
+        "wins": 0,
+        "hpPct": [
+          0,
+          0
+        ]
+      },
+      "7:lean": {
         "attempts": 1,
         "wins": 0,
         "hpPct": [
           0
         ]
-      },
-      "10:lean": {
-        "attempts": 1,
-        "wins": 1,
-        "hpPct": [
-          100
-        ]
       }
     },
-    "hardFailures": 2
+    "hardFailures": 5
   }
 }
