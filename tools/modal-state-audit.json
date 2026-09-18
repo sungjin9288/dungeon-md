@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-18T02:46:36.630Z",
-  "base": "http://127.0.0.1:8084",
+  "generatedAt": "2026-09-18T05:04:30.328Z",
+  "base": "http://127.0.0.1:8083",
   "scope": "32 nested modal/selection/result states, one step past each surface's initial state. Shares the surface harness geometry module. Not a full gameplay or campaign E2E.",
   "geometryMethod": "scripts/lib/web-audit.mjs — world bounds transformed by the camera matrix and cumulative container scroll factors, measured against one 390x844 logical frame. Overlap candidates and 10/11px text are review candidates, not automatic failures.",
   "layoutNote": "Phaser.Scale.FIT with a fixed 390x844 logical canvas: other viewports rescale rather than reflow, so width 390 is representative for layout defects.",
@@ -9,6 +9,244 @@
     "scripts/verify-modal-states.mjs": "a727388c736616f6087686d19bea1d178a3b70cae1024257c63406f77b59cb0b"
   },
   "results": [
+    {
+      "id": "shop-skin-preview",
+      "scene": "ShopScene",
+      "expect": "외형 검수대 미리보기",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 77,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 15,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-skin-preview-390x844.png",
+      "sha256": "7fbdacaac7596127d3f073027f2c472a1d225bbdb54a08cc0267bf4a292a45f0"
+    },
+    {
+      "id": "shop-purchase-confirm",
+      "scene": "ShopScene",
+      "expect": "구매 확인",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 71,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-purchase-confirm-390x844.png",
+      "sha256": "64244f1b6587f096ce89706f83836117dccc21caa256760b22b162e866777ec9"
+    },
+    {
+      "id": "codex-monster-detail",
+      "scene": "CodexScene",
+      "expect": "수호자 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 58,
+      "visibleTextAfter": 90,
+      "inputsAfter": 29,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 10,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-monster-detail-390x844.png",
+      "sha256": "31ad1effb46bc01a46d99e59244aecdfbc49742d7202fc5a230eda1e2f7ff9f5"
+    },
+    {
+      "id": "codex-invader-tab",
+      "scene": "CodexScene",
+      "expect": "침략자 기록",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 58,
+      "visibleTextAfter": 45,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-invader-tab-390x844.png",
+      "sha256": "eda3f2cd09e7ffc159f490fda30d476169c41177b5b6454872c9836b1c93a6f9"
+    },
+    {
+      "id": "codex-lineage-pin",
+      "scene": "CodexScene",
+      "expect": "수호자 상세 계보 스트립 · 목표 핀 토글 후 토스트",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "CodexScene"
+      ],
+      "visibleTextBefore": 58,
+      "visibleTextAfter": 91,
+      "inputsAfter": 29,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 11,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-codex-lineage-pin-390x844.png",
+      "sha256": "5d926c87176886b0a7d405901f74c6877d07303467598b116418f3bb24d04f8a"
+    },
+    {
+      "id": "home-lineage-goal-chip",
+      "scene": "DungeonHomeScene",
+      "expect": "홈 지시 헤더에 📌 여우 전사 목표 칩 (방 작업이 카드를 차지해도 보임)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 43,
+      "visibleTextAfter": 43,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 1,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "lineageGoal"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-lineage-goal-chip-390x844.png",
+      "sha256": "9cf8069c47944c3751daab979b2ad125d3df4951517c1c43ccbdcc4ba3fb82be"
+    },
+    {
+      "id": "home-todo-badges",
+      "scene": "DungeonHomeScene",
+      "expect": "홈 헤더 ⛏ 근무 2 칩 + 육성/제작 칩 카운트 배지",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 22,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 1,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "materials",
+        "trapStock",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-todo-badges-390x844.png",
+      "sha256": "c5e66dc3637778fc30bdc28a9063e6ac6350291c1242ae1d1766d69962956bd4"
+    },
+    {
+      "id": "home-header-full",
+      "scene": "DungeonHomeScene",
+      "expect": "헤더에 명성(▲)+📌 긴 이름+⛏ 근무가 동시에 있어도 폭 안에 들어감",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "notoriety",
+        "lineageGoal",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-header-full-390x844.png",
+      "sha256": "b365a914505762cc1b3ad09b4c6ee09dd0d66ea8f99bb3802f696ad6431b94db"
+    },
     {
       "id": "home-placement-trap-strip",
       "scene": "DungeonHomeScene",
@@ -41,15 +279,698 @@
       "errors": [],
       "screenshot": "tools/screenshots/modal-home-placement-trap-strip-390x844.png",
       "sha256": "8aa2d7877887ab12d1e8f61010d2e130be1a5a69df12d17f2a7a78c0961fe3d6"
+    },
+    {
+      "id": "home-staffing-route",
+      "scene": "DungeonHomeScene",
+      "expect": "근무 칩 → 생산 구역 진입",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 45,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-staffing-route-390x844.png",
+      "sha256": "65331454955c5c9589dc44ace1b431e64143c50beda46feaa2d42b8fb14e7834"
+    },
+    {
+      "id": "wisdom-branch-confirm",
+      "scene": "AncestralWisdomScene",
+      "expect": "가지 강화 확인",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AncestralWisdomScene"
+      ],
+      "visibleTextBefore": 40,
+      "visibleTextAfter": 40,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-wisdom-branch-confirm-390x844.png",
+      "sha256": "e1fdee1193352f9b1eae547bc0b8efbc2eb6352045dd590693f72dddd2ddf8ad"
+    },
+    {
+      "id": "achievement-record",
+      "scene": "AchievementScene",
+      "expect": "업적 기록 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AchievementScene"
+      ],
+      "visibleTextBefore": 46,
+      "visibleTextAfter": 46,
+      "inputsAfter": 13,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-achievement-record-390x844.png",
+      "sha256": "f4d82438311d2cda5aba01e5d669a51cd425eaa0633af31fc89328886babd37f"
+    },
+    {
+      "id": "abyss-floor-order",
+      "scene": "AbyssScene",
+      "expect": "심연 층 지시",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonScene",
+        "UIScene"
+      ],
+      "visibleTextBefore": 41,
+      "visibleTextAfter": 38,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-abyss-floor-order-390x844.png",
+      "sha256": "e0418552bc9572ac909820b4e47d13402270c5cb8fc80ec3e349f416c2584f97"
+    },
+    {
+      "id": "production-facility-order",
+      "scene": "ProductionScene",
+      "expect": "생산 지시",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-facility-order-390x844.png",
+      "sha256": "d6eb3b52f16aef15a5cfc122f5bc2304634f43ce1831c7a29d0703eac532a4ed"
+    },
+    {
+      "id": "production-staff-picker",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 피커 (적성 표시 · 해제/닫기)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 67,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 10,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-picker-390x844.png",
+      "sha256": "5ef4be4fcfa25ae2255084201592045075817b23e192e8a13e0c10e96c62df6d"
+    },
+    {
+      "id": "production-staff-assigned",
+      "scene": "ProductionScene",
+      "expect": "근무 배정 후 명령판 (산출 ×1.5 영수증)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ProductionScene"
+      ],
+      "visibleTextBefore": 45,
+      "visibleTextAfter": 45,
+      "inputsAfter": 7,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "productionFacilities"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-production-staff-assigned-390x844.png",
+      "sha256": "9a816c451aaa9387bc85cca93cd9514c004943ebd6c7c2f9e5cd583e84f60160"
+    },
+    {
+      "id": "decoration-relic-select",
+      "scene": "DecorationScene",
+      "expect": "유물 선택",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DecorationScene"
+      ],
+      "visibleTextBefore": 54,
+      "visibleTextAfter": 54,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-decoration-relic-select-390x844.png",
+      "sha256": "7d74afba398a159a42357e86cab0976efbafb336ea82714b28dffc018ef96f4c"
+    },
+    {
+      "id": "fusion-material-picker",
+      "scene": "FusionScene",
+      "expect": "재료 선택 피커",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "FusionScene"
+      ],
+      "visibleTextBefore": 28,
+      "visibleTextAfter": 45,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 4,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-fusion-material-picker-390x844.png",
+      "sha256": "336f87e80d95b4a11f72dbe05866b0f81f60107762dcd91e0361da3042d63d3b"
+    },
+    {
+      "id": "fusion-absorb-tab",
+      "scene": "FusionScene",
+      "expect": "흡수 탭",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "FusionScene"
+      ],
+      "visibleTextBefore": 28,
+      "visibleTextAfter": 31,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-fusion-absorb-tab-390x844.png",
+      "sha256": "9cb4c8ed41dc78cd120cb96ce5828df63392503be1daeab2133d716c888b8929"
+    },
+    {
+      "id": "summon-rate-detail",
+      "scene": "SummonScene",
+      "expect": "확률 상세",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "SummonScene"
+      ],
+      "visibleTextBefore": 55,
+      "visibleTextAfter": 76,
+      "inputsAfter": 10,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 7,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-summon-rate-detail-390x844.png",
+      "sha256": "4b823f717868e42962c5d0c2887bff3cd73863bfdc30d4fd9fca6de59bad682c"
+    },
+    {
+      "id": "summon-shard-redeem",
+      "scene": "SummonScene",
+      "expect": "계약 기록 탭의 부족 조각 스트립에서 교환 → 토스트 · 20/100로 갱신",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "SummonScene"
+      ],
+      "visibleTextBefore": 55,
+      "visibleTextAfter": 23,
+      "inputsAfter": 6,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "tribeShards"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-summon-shard-redeem-390x844.png",
+      "sha256": "fb2d2cbe345b59bc45c3bba40e95c8f1414edcfdd203b592a6364dfd90510fee"
+    },
+    {
+      "id": "barracks-manage",
+      "scene": "BarracksScene",
+      "expect": "수호자 관리",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 43,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-manage-390x844.png",
+      "sha256": "171d5cff4c043f9776a0cb7cae1bae548083914dd396364a4e3606eb7a7d004c"
+    },
+    {
+      "id": "barracks-bond-tab",
+      "scene": "BarracksScene",
+      "expect": "수호자 상세 교감 탭 (친밀도 바 · 간식/대화/합동 훈련)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 62,
+      "inputsAfter": 14,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "monsterAffinity",
+        "materials",
+        "homeGold"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-bond-tab-390x844.png",
+      "sha256": "dfaa21b318e1225b2482e9f8b4e1c646f0a4575c50b31dcbc75e2cd5910a489c"
+    },
+    {
+      "id": "barracks-bond-action",
+      "scene": "BarracksScene",
+      "expect": "간식 후 교감 52 · 우정 도달 · 이야기 해금 · 토스트",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "BarracksScene"
+      ],
+      "visibleTextBefore": 31,
+      "visibleTextAfter": 63,
+      "inputsAfter": 14,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "monsterAffinity",
+        "materials",
+        "homeGold"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-barracks-bond-action-390x844.png",
+      "sha256": "3f32066baa106d83ecb989a8ff6b12cb55471f762708281e1ace364acf36d5aa"
+    },
+    {
+      "id": "forge-disassemble-tab",
+      "scene": "ForgeScene",
+      "expect": "분해 탭",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ForgeScene"
+      ],
+      "visibleTextBefore": 36,
+      "visibleTextAfter": 26,
+      "inputsAfter": 8,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-forge-disassemble-tab-390x844.png",
+      "sha256": "538f2fe9abf8a4a68a443981780cf4413458d53d44004f27d39b76e028804160"
+    },
+    {
+      "id": "forge-trap-tab",
+      "scene": "ForgeScene",
+      "expect": "함정 탭 (재고·숙련·제작/강화 행 3개 + 페이지)",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ForgeScene"
+      ],
+      "visibleTextBefore": 36,
+      "visibleTextAfter": 48,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "materials",
+        "trapStock",
+        "trapMastery"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-forge-trap-tab-390x844.png",
+      "sha256": "38c059cb9f40265699f9551d1a3a9e0a3c2c28d372613cd4cc13002b7fcc2696"
+    },
+    {
+      "id": "forge-trap-fuse-result",
+      "scene": "ForgeScene",
+      "expect": "2티어 융합(독가시 벽, 3페이지 첫 행) 후 토스트 · 재고 갱신",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ForgeScene"
+      ],
+      "visibleTextBefore": 36,
+      "visibleTextAfter": 50,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "dmLevel",
+        "materials",
+        "trapStock"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-forge-trap-fuse-result-390x844.png",
+      "sha256": "7305cabe152799bed3aa4d0ec4adfd6bc66156bcb9676570590fcd70e50d63c5"
+    },
+    {
+      "id": "home-forecast-tray",
+      "scene": "DungeonHomeScene",
+      "expect": "오늘의 손님 카드 3장",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 42,
+      "visibleTextAfter": 61,
+      "inputsAfter": 20,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": null,
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-forecast-tray-390x844.png",
+      "sha256": "7f35b36024439aee896961f95c46606bd8e0c62d806360a43febe1fb18517ed8"
+    },
+    {
+      "id": "home-forecast-tray-raise",
+      "scene": "DungeonHomeScene",
+      "expect": "간판 올리기 버튼이 있는 손님 트레이",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonHomeScene"
+      ],
+      "visibleTextBefore": 42,
+      "visibleTextAfter": 62,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "notoriety"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-home-forecast-tray-raise-390x844.png",
+      "sha256": "c840f448df189239df093e26356e97f57864c07c083a0db1e10e26b361c7ee03"
+    },
+    {
+      "id": "shop-purchase-result",
+      "scene": "ShopScene",
+      "expect": "구매 확정 후 영수증",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "ShopScene"
+      ],
+      "visibleTextBefore": 63,
+      "visibleTextAfter": 71,
+      "inputsAfter": 21,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 8,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "gems"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-shop-purchase-result-390x844.png",
+      "sha256": "b9e96e935f28a59482d44915878b8d4603ed31ddd8bf6088c16a5820a0f8fca6"
+    },
+    {
+      "id": "wisdom-upgrade-result",
+      "scene": "AncestralWisdomScene",
+      "expect": "가지 강화 확정 후 기록",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "AncestralWisdomScene"
+      ],
+      "visibleTextBefore": 40,
+      "visibleTextAfter": 49,
+      "inputsAfter": 12,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 2,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "soulCrystals"
+      ],
+      "saveNeutral": true,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-wisdom-upgrade-result-390x844.png",
+      "sha256": "718d407f74389ae1c41f94056a0280d059ff32b342b403b737566db3edad46d2"
+    },
+    {
+      "id": "abyss-sweep-result",
+      "scene": "AbyssScene",
+      "expect": "심연 소탕 영수증",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "activeScenes": [
+        "DungeonScene",
+        "UIScene"
+      ],
+      "visibleTextBefore": 41,
+      "visibleTextAfter": 38,
+      "inputsAfter": 15,
+      "fixedOverflow": 0,
+      "scrollBoundaryPartials": 0,
+      "undersizedTargets": 0,
+      "textBelow10": 0,
+      "renderedTextBelow10": 0,
+      "overlapCandidates": 0,
+      "overflowDetail": [],
+      "undersizedDetail": [],
+      "seeded": [
+        "abyss"
+      ],
+      "saveNeutral": false,
+      "errors": [],
+      "screenshot": "tools/screenshots/modal-abyss-sweep-result-390x844.png",
+      "sha256": "6043537ab4f6c57e39f1bd4fc3a955d493fd81359b1db601ae01eef9803b29dd"
     }
   ],
   "failures": [],
   "summary": {
-    "cases": 1,
+    "cases": 32,
     "fixedOverflow": 0,
     "undersizedTargets": 0,
     "textBelow10": 0,
-    "overlapCandidates": 7,
+    "overlapCandidates": 106,
     "errors": 0,
     "hardFailures": 0
   }
