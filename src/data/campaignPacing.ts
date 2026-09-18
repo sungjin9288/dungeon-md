@@ -18,7 +18,7 @@
 // this much. Pure: no scene, save or RNG access.
 
 import { ALL_STAGES } from './allStages';
-import { defaultOwnedMonster, STARTER_ROSTER } from './barracks';
+import { defaultOwnedMonster, STARTER_ROSTER, xpToNextLevel } from './barracks';
 import { INVADER_DEFS } from './invaders';
 import { STAGE_CLEAR_DM_XP, xpForDmLevel } from './invasionTransactions';
 import { MONSTER_DEFS } from './monsterRegistry';
@@ -45,6 +45,8 @@ export interface ExpectedHome {
   readonly dmLevel: number;
   readonly slotCount: number;
   readonly roomLevel: number;
+  /** Roster level from cumulative kill XP (see expectedGuardianLevel). */
+  readonly guardianLevel: number;
   readonly roster: readonly MonsterId[];
   readonly dungeonSlots: DungeonSlot[];
   readonly ownedMonsters: OwnedMonster[];
@@ -121,6 +123,46 @@ export function stageLootPotential(stage: StageConfig): number {
     + (wave.clearReward ?? 0)
     + wave.invaders.reduce((kills, group) => kills + group.count * (INVADER_DEFS[group.type]?.reward ?? 0), 0)
   ), 0);
+}
+
+/**
+ * Every kill grants XP to the WHOLE roster (KillHandler: 5 per invader, 100 per
+ * boss), so a player who cleared stages 1..N-1 once arrives with levelled
+ * guardians. The model used to hand them Lv.1 monsters, which understated real
+ * damage by `guardianAtkMult` — measurably so: stage 20 lost 0/4 (lean) and
+ * 0/3 (expected) organically while the sim called it 80–100%.
+ */
+export const KILL_XP_PER_INVADER = 5;
+export const KILL_XP_PER_BOSS = 100;
+
+export function stageKillXp(stage: StageConfig): number {
+  return stage.waves.reduce((sum, wave) => sum + wave.invaders.reduce((kills, group) => {
+    const def = INVADER_DEFS[group.type];
+    return kills + group.count * (def?.isBoss ? KILL_XP_PER_BOSS : KILL_XP_PER_INVADER);
+  }, 0), 0);
+}
+
+/** Roster XP earned by clearing every stage below `stageNumber` once. */
+export function cumulativeKillXpByStage(stageNumber: number): number {
+  let xp = 0;
+  for (const stage of ALL_STAGES) {
+    if (stage.id >= stageNumber) break;
+    xp += stageKillXp(stage);
+  }
+  return xp;
+}
+
+/** The level that much XP buys, using the barracks curve (100 × 1.18^(lv-1)). */
+export function expectedGuardianLevel(stageNumber: number): number {
+  let remaining = cumulativeKillXpByStage(stageNumber);
+  let level = 1;
+  while (level < 50) {
+    const needed = xpToNextLevel(level);
+    if (remaining < needed) break;
+    remaining -= needed;
+    level += 1;
+  }
+  return level;
 }
 
 function questGoldByStage(stageNumber: number): number {
@@ -217,14 +259,16 @@ function buildHome(
     };
   });
   const placed = dungeonSlots.flatMap(slot => slot.monsterIds).filter((id): id is string => Boolean(id));
+  const guardianLevel = expectedGuardianLevel(stageNumber);
   return {
     stageNumber,
     dmLevel,
     slotCount,
     roomLevel,
+    guardianLevel,
     roster: placed as MonsterId[],
     dungeonSlots,
-    ownedMonsters: placed.map(id => defaultOwnedMonster(id)),
+    ownedMonsters: placed.map(id => ({ ...defaultOwnedMonster(id), level: guardianLevel })),
   };
 }
 
