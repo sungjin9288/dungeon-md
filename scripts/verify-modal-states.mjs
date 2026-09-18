@@ -49,6 +49,11 @@ const CASES = [
     steps: [], expect: '홈 헤더 ⛏ 근무 2 칩 + 육성/제작 칩 카운트 배지',
   },
   {
+    id: 'home-header-full', scene: 'DungeonHomeScene',
+    seed: { dmLevel: 20, notoriety: 500, lineageGoal: 'flame_dokkaebi_king', productionFacilities: { mine: 1, treasury: 1, weavery: 1 }, homeGold: 900 },
+    steps: [], expect: '헤더에 명성(▲)+📌 긴 이름+⛏ 근무가 동시에 있어도 폭 안에 들어감',
+  },
+  {
     id: 'home-staffing-route', scene: 'DungeonHomeScene',
     seed: { dmLevel: 20, productionFacilities: { mine: 1 }, homeGold: 900 },
     steps: [{ name: 'home-staffing-chip' }], expect: '근무 칩 → 생산 구역 진입',

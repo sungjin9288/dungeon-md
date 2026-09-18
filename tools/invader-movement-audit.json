@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-09-18T02:25:33.721Z",
+  "base": "http://127.0.0.1:8084",
+  "stage": 20,
+  "scope": "Movement-lock invariants during a real battle with a tier-3 trap room. Not a balance or endurance run.",
+  "checks": [
+    {
+      "id": "locks-hold-and-release",
+      "samples": 125,
+      "maxLocks": 2,
+      "lockedMoving": 0,
+      "freeStopped": 0,
+      "waves": 3,
+      "wave": 2,
+      "dungeonHp": 2500
+    },
+    {
+      "id": "speed-change-never-resumes",
+      "ok": true,
+      "afterSlow": {
+        "paused": true,
+        "timeScale": 0.6
+      },
+      "afterBoost": {
+        "paused": true,
+        "timeScale": 0.78
+      },
+      "composed": 0.78
+    }
+  ],
+  "failures": [],
+  "summary": {
+    "checks": 2,
+    "hardFailures": 0
+  }
+}

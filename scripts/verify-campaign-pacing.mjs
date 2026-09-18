@@ -32,9 +32,15 @@ const viewport = { width: 390, height: 844 };
 const DEFAULT_RUNS = '1:starter,2:lean,5:lean,10:lean,20:lean,32:lean,42:lean,52:lean,62:lean,72:lean,80:lean,90:veteran';
 // Slices per run (each ≈2.5s of battle at 3×). 15-wave veteran stages need more: PACING_BUDGET=160.
 const PACING_BUDGET = Number(process.env.PACING_BUDGET ?? 70);
-const RUNS = (process.env.PACING_RUNS ?? DEFAULT_RUNS).split(',').map(entry => {
+// Battles are NOT deterministic (spawn order, procs, wave events all roll), and
+// the marginal stages sit close enough to the line that one sample says little —
+// stage 20 lean was recorded as a win at 26% HP and has since lost repeatedly.
+// PACING_REPEATS=n fights each spec n times and reports a win rate.
+const PACING_REPEATS = Math.max(1, Number(process.env.PACING_REPEATS ?? 1));
+const RUNS = (process.env.PACING_RUNS ?? DEFAULT_RUNS).split(',').flatMap(entry => {
   const [stage, kind] = entry.split(':');
-  return { stageNumber: Number(stage), kind: kind ?? 'lean' };
+  const spec = { stageNumber: Number(stage), kind: kind ?? 'lean' };
+  return Array.from({ length: PACING_REPEATS }, (_, attempt) => ({ ...spec, attempt: attempt + 1 }));
 });
 
 const audit = {
@@ -148,7 +154,7 @@ async function fightStage(page) {
 
 try {
   for (const run of RUNS) {
-    const label = `${run.stageNumber}:${run.kind}`;
+    const label = PACING_REPEATS > 1 ? `${run.stageNumber}:${run.kind}#${run.attempt}` : `${run.stageNumber}:${run.kind}`;
     const { context, page, errors } = await openScene('StageSelectScene', viewport);
     try {
       const seeded = await seedHome(page, run);
@@ -157,7 +163,7 @@ try {
       const outcome = battle.dungeonHp > 0 && battle.wave >= battle.maxWave ? 'win' : battle.dungeonHp <= 0 ? 'loss' : 'unsettled';
       const hpPct = Math.round((battle.dungeonHp / battle.maxHp) * 100);
 
-      const screenshot = `tools/screenshots/campaign-pacing-${run.stageNumber}-${run.kind}.png`;
+      const screenshot = `tools/screenshots/campaign-pacing-${run.stageNumber}-${run.kind}${PACING_REPEATS > 1 ? `-${run.attempt}` : ''}.png`;
       await page.screenshot({ path: resolve(root, screenshot) });
       const record = { ...run, seeded, battle, outcome, hpPct, errors, screenshot, sha256: sha(await readFile(resolve(root, screenshot))) };
       audit.runs.push(record);
@@ -174,7 +180,28 @@ try {
   }
 } finally {
   await browser.close();
-  audit.summary = { runs: audit.runs.length, wins: audit.runs.filter(run => run.outcome === 'win').length, hardFailures: audit.failures.length };
+  // Per-spec win rate: a single run of a marginal stage is not evidence either way.
+  const byStage = {};
+  for (const run of audit.runs) {
+    const key = `${run.stageNumber}:${run.kind}`;
+    const entry = byStage[key] ?? (byStage[key] = { attempts: 0, wins: 0, hpPct: [] });
+    entry.attempts++;
+    if (run.outcome === 'win') entry.wins++;
+    entry.hpPct.push(run.hpPct);
+  }
+  for (const entry of Object.values(byStage)) entry.hpPct.sort((a, b) => a - b);
+  audit.summary = {
+    runs: audit.runs.length,
+    wins: audit.runs.filter(run => run.outcome === 'win').length,
+    repeats: PACING_REPEATS,
+    byStage,
+    hardFailures: audit.failures.length,
+  };
+  if (PACING_REPEATS > 1) {
+    for (const [key, entry] of Object.entries(byStage)) {
+      process.stdout.write(`${key}: ${entry.wins}/${entry.attempts} wins · hp% ${entry.hpPct.join(',')}\n`);
+    }
+  }
   await writeFile(resolve(root, 'tools/campaign-pacing-audit.json'), `${JSON.stringify(audit, null, 2)}\n`);
 }
 process.stdout.write(`${JSON.stringify(audit.summary)}\n`);

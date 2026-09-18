@@ -62,7 +62,11 @@
 ## 4. 검증 (배선 슬라이스에서)
 
 1. 22장 규격 검사 스크립트(캔버스·알파·용량) — `scripts/export-character-art.mjs`를 본떠 `scripts/export-trap-art.mjs`로 추가.
-2. 배치 트레이·공방 함정 탭이 PNG를 쓰고 없으면 이모지 폴백 — 모달 하니스 `forge-trap-tab`·`home-placement` 케이스 통과.
+2. 공방 함정 탭이 PNG를 쓰고 없으면 이모지 폴백 — 모달 하니스 `forge-trap-tab`·
+   `forge-trap-fuse-result` 통과. **배치 트레이 함정 스트립에는 아직 하니스 케이스가
+   없다**(지금은 수동 프리뷰 검증만 있음). 배선 슬라이스에서 홈 방 카드 존에 이름을
+   붙이고(`home-room-card-<idx>` 등) 트레이 케이스를 추가할 것 — 이름 있는 존이 없어
+   현재 하니스가 트레이를 열지 못한다.
 3. `npx tsc --noEmit`, `npx vitest run`, `npm run build`.
 
 ## 5. 금지
