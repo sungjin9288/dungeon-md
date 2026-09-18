@@ -252,6 +252,13 @@ function buildHome(
   slotCount: number,
   roomLevel: number,
   roster: readonly MonsterId[],
+  /**
+   * Day-one boards get no traps. The starter home is the floor — the board the
+   * game hands a brand-new player — and its whole wealth is the 200 starting
+   * gold, so buying three traps with it would quietly soften the stage-1 guard.
+   * Lean and expected homes have cleared stages and sit on real surplus.
+   */
+  { traps = true }: { traps?: boolean } = {},
 ): ExpectedHome {
   const capacity = getRoomSlotCapacity(roomLevel, 'combat').monsters;
   // Spread guardians one per room before doubling up: every armed room covers
@@ -262,7 +269,7 @@ function buildHome(
     const seat = Math.floor(index / slotCount);
     if (seat < capacity) perSlot[slot][seat] = id;
   });
-  const trapId = expectedTrapId(dmLevel);
+  const trapId = traps ? expectedTrapId(dmLevel) : undefined;
   const dungeonSlots: DungeonSlot[] = perSlot.map(monsterIds => {
     return {
       roomType: 'combat',
@@ -332,7 +339,7 @@ export function leanHome(stageNumber: number): ExpectedHome {
 
 /** The very first home: the DM-1 board (three level-1 guardian rooms) with the starter roster, nothing else. */
 export function starterHome(): ExpectedHome {
-  return buildHome(1, 1, getUnlockedSlots(1), 1, STARTER_ROSTER);
+  return buildHome(1, 1, getUnlockedSlots(1), 1, STARTER_ROSTER, { traps: false });
 }
 
 // ─── Evaluation ───────────────────────────────────────────────────────────────
