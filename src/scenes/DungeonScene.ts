@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from '../combat/BattleSpeed';
 import { Room } from '../objects/Room';
 import { Invader } from '../objects/Invader';
 import { audioManager } from '../audio/AudioManager';
@@ -279,6 +280,11 @@ export class DungeonScene extends Phaser.Scene {
     this.spawnQueue      = [];
     this.waveEndChecked  = false;
     this.waveHasSpawned  = false;
+    // Phaser reuses the scene instance, and the clocks are NOT class fields that
+    // re-initialise. A battle that ended inside the boss slow-mo dip (the final
+    // boss dies and the stage clears within 160ms) would otherwise start the
+    // next battle at 0.15×.
+    applyBattleSpeed(this, this.speedMult);
     this.killsThisRun    = 0;
     this.goldEarnedThisRun = 0;
     this.endlessRecordBroken = false;
@@ -543,8 +549,7 @@ export class DungeonScene extends Phaser.Scene {
 
   /** @internal */ setSpeed(mult: 1 | 2 | 3): void {
     this.speedMult = mult;
-    this.time.timeScale = mult;
-    this.tweens.timeScale = mult;
+    applyBattleSpeed(this, mult);
   }
 
   updateLowHpVignette(): void {
@@ -673,13 +678,7 @@ export class DungeonScene extends Phaser.Scene {
   // ─── battlePaused ─────────────────────────────────────────────────────────────
 
   /** @internal */ handleBattlePauseChange(paused: boolean): void {
-    if (paused) {
-      this.time.timeScale = 0;
-      this.tweens.timeScale = 0;
-    } else {
-      this.time.timeScale = this.speedMult;
-      this.tweens.timeScale = this.speedMult;
-    }
+    applyBattleSpeed(this, paused ? BATTLE_PAUSED_SCALE : this.speedMult);
   }
 
   // ─── Endless Mode ─────────────────────────────────────────────────────────

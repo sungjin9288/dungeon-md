@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from './BattleSpeed';
 import { BOSS_SLOWMO_MS, BOSS_SLOWMO_SCALE, playBossKillReaction } from './ImpactVfx';
 
 function fakeScene(active = true) {
@@ -45,5 +46,15 @@ describe('boss kill slow-mo', () => {
     playBossKillReaction(scene, 2);
     vi.advanceTimersByTime(BOSS_SLOWMO_MS + 1);
     expect(scene.time.timeScale).toBe(BOSS_SLOWMO_SCALE);
+  });
+});
+
+describe('applyBattleSpeed', () => {
+  it('moves both clocks together so timers and motion never drift apart', () => {
+    const scene = { time: { timeScale: 1 }, tweens: { timeScale: 1 } };
+    applyBattleSpeed(scene, 3);
+    expect(scene).toEqual({ time: { timeScale: 3 }, tweens: { timeScale: 3 } });
+    applyBattleSpeed(scene, BATTLE_PAUSED_SCALE);
+    expect(scene).toEqual({ time: { timeScale: 0 }, tweens: { timeScale: 0 } });
   });
 });

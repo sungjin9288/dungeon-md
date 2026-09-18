@@ -281,7 +281,15 @@ organic 하니스는 `page.evaluate` 안에서 동기 루프로 시간을 밀기
 슬라이스마다 `await yieldToTimers()`로 이벤트 루프를 양보한다 — 이게 없으면 하니스가
 0.15배에 갇혀 예산을 스폰 대기에만 쓴다(90 veteran 미정산의 실제 원인).
 
-가드: `bossSlowMo.test.ts`(복원 대상·중첩·씬 종료).
+**배속의 단일 진실원은 `combat/BattleSpeed.ts applyBattleSpeed(scene, scale)`**이다.
+Phaser는 `scene.time`(타이머·쿨다운)과 `scene.tweens`(이동·연출) 시계가 분리돼 있어
+한쪽만 바꾸면 3배속 전투에서 침입자만 1배속으로 기어간다. `setSpeed`·일시정지·
+**전투 재진입 리셋**·보스 슬로모 복원 네 곳이 전부 이 함수를 쓴다. 재진입 리셋이
+필요한 이유: Phaser가 씬 인스턴스를 재사용하는데 시계는 클래스 필드가 아니라
+재초기화되지 않는다 — 최종 보스를 잡고 160ms 안에 스테이지가 끝나면 **다음 전투가
+0.15배로 시작**했다.
+
+가드: `bossSlowMo.test.ts`(복원 대상·중첩·씬 종료·양 시계 동시 이동).
 
 ### 전투 로직 위치 (src/combat/ 분산)
 | 모듈 | 역할 |

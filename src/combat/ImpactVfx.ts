@@ -4,6 +4,7 @@
 // kill reactions — as opposed to the small per-hit effects in VisualEffects.ts.
 
 import Phaser from 'phaser';
+import { applyBattleSpeed } from './BattleSpeed';
 import { Invader } from '../objects/Invader';
 import { audioManager } from '../audio/AudioManager';
 import { COLORS } from '../constants/colors';
@@ -225,12 +226,10 @@ export const BOSS_SLOWMO_MS = 160;
 export function playBossKillReaction(scene: Phaser.Scene, baseScale = 1): void {
   // Brief slow-motion hit pause — 160ms at 0.15× speed.
   const token = ++bossSlowMoToken;
-  scene.time.timeScale   = BOSS_SLOWMO_SCALE;
-  scene.tweens.timeScale = BOSS_SLOWMO_SCALE;
+  applyBattleSpeed(scene, BOSS_SLOWMO_SCALE);
   window.setTimeout(() => {
     if (!scene.scene.isActive() || token !== bossSlowMoToken) return;
-    scene.time.timeScale   = baseScale;
-    scene.tweens.timeScale = baseScale;
+    applyBattleSpeed(scene, baseScale);
   }, BOSS_SLOWMO_MS);
 
   // Full-screen white flash
