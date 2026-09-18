@@ -42,7 +42,12 @@ export interface PlacementTrayCtx {
 }
 
 const TAB_BAR_H = 64;
-const TRAY_H    = 238;
+// Grown from 238 so every control clears the 44px touch minimum: the header
+// row and tabs were 22–30px tall, which the modal harness flags as hard
+// failures. Visuals stay compact; the interactive zones are the 44px ones.
+const TRAY_H    = 272;
+/** Minimum touch target (modal harness treats anything smaller as a failure). */
+const TOUCH_MIN = 44;
 const TRAY_Y    = CANVAS_HEIGHT - TAB_BAR_H - TRAY_H;
 const PANEL_BG     = 0x12100a;
 const PANEL_BG_TOP = 0x1c1810;
@@ -180,7 +185,7 @@ function render(): void {
   const tFilled = (slot?.trapIds ?? []).filter(Boolean).length;
   // One-tap recommend button (left)
   {
-    const bw = 92, bx = 18, by = TRAY_Y + 31;
+    const bw = 92, bx = 18, by = TRAY_Y + 34;
     const bg = scene.add.graphics().setDepth(121);
     bg.fillStyle(0x3a2e5a, 0.95);
     bg.fillRoundedRect(bx, by, bw, 22, 6);
@@ -190,11 +195,11 @@ function render(): void {
     c.add(scene.add.text(bx + bw / 2, by + 11, '✨ 추천 배치', {
       fontFamily: 'sans-serif', fontSize: '11px', color: '#e8dcff', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(122));
-    const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+    const z = scene.add.zone(bx + bw / 2, by + 11, bw, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
     z.on('pointerdown', () => applyRecommendedLoadout());
     c.add(z);
   }
-  c.add(scene.add.text(118, TRAY_Y + 36, `Lv.${lv} 👊${mFilled}/${cap.monsters} 🕸${tFilled}/${cap.traps}`, {
+  c.add(scene.add.text(118, TRAY_Y + 39, `Lv.${lv} 👊${mFilled}/${cap.monsters} 🕸${tFilled}/${cap.traps}`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: '#c8b890',
   }).setDepth(122));
   const damaged = !!slot && slot.hp < slot.maxHp;
@@ -202,7 +207,7 @@ function render(): void {
     // Damaged/broken room → repair takes priority over upgrade
     const cost = getRoomRepairCost(slot!);
     const afford = (gs.homeGold ?? 0) >= cost;
-    const bw = 104, bx = CANVAS_WIDTH - 22 - bw, by = TRAY_Y + 31;
+    const bw = 104, bx = CANVAS_WIDTH - 22 - bw, by = TRAY_Y + 34;
     const bg = scene.add.graphics().setDepth(121);
     bg.fillStyle(afford ? 0x6e2e2e : 0x2a2418, 0.95);
     bg.fillRoundedRect(bx, by, bw, 22, 6);
@@ -213,7 +218,7 @@ function render(): void {
       fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#ffd8c8' : '#7a6f58', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(122));
     if (afford) {
-      const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+      const z = scene.add.zone(bx + bw / 2, by + 11, bw, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
       z.on('pointerdown', () => {
         const r = repairRoomSlot(ctxRef!.getGameState(), activeSlot);
         if (r.ok) commit(r.state);
@@ -240,7 +245,7 @@ function render(): void {
         fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#f0e6c8' : '#7a6f58', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(122));
       if (afford) {
-        const z = scene.add.zone(bx + bw / 2, by + 11, bw, 22).setInteractive({ useHandCursor: true }).setDepth(124);
+        const z = scene.add.zone(bx + bw / 2, by + 11, bw, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
         z.on('pointerdown', () => {
           const r = upgradeRoomSlot(ctxRef!.getGameState(), activeSlot);
           if (r.ok) commit(r.state);
@@ -256,7 +261,7 @@ function render(): void {
     { id: 'monster', label: '몬스터' },
     { id: 'trap', label: '함정' },
   ];
-  const tabW = 108, tabGap = 6, tabY = TRAY_Y + 62;
+  const tabW = 108, tabGap = 6, tabY = TRAY_Y + 84;
   let tx = (CANVAS_WIDTH - (tabs.length * tabW + (tabs.length - 1) * tabGap)) / 2;
   for (const t of tabs) {
     const on = t.id === activeTab;
@@ -271,7 +276,11 @@ function render(): void {
       color: on ? '#f0e6c8' : '#9a8a6a', fontStyle: on ? 'bold' : 'normal',
     }).setOrigin(0.5).setDepth(122));
     const tID = t.id;
-    const z = scene.add.zone(tx + tabW / 2, tabY + 15, tabW, 30).setInteractive({ useHandCursor: true }).setDepth(123);
+    // Named: '함정' also appears in the room title (방 #1 · 함정실), so a label
+    // click is ambiguous and silently lands on the wrong control.
+    const z = scene.add.zone(tx + tabW / 2, tabY + 15, tabW, TOUCH_MIN)
+      .setName(`placement-tab-${t.id}`)
+      .setInteractive({ useHandCursor: true }).setDepth(123);
     z.on('pointerdown', () => { activeTab = tID; render(); });
     c.add(z);
     tx += tabW + tabGap;
@@ -301,7 +310,7 @@ function renderTypeStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     const z = chipBase(inner, x, 0, cardW, h, on, COLORS.JADE);
     addText(inner, x + cardW / 2, h / 2 - 14, def.emoji, '24px', '#ffffff', false, 0.5);
     addText(inner, x + cardW / 2, h - 30, def.koreanName, '11px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
-    addText(inner, x + cardW / 2, h - 14, family?.name ?? '', '9px', on ? '#9fe1cb' : '#8f8468', false, 0.5);
+    addText(inner, x + cardW / 2, h - 14, family?.name ?? '', '10px', on ? '#9fe1cb' : '#8f8468', false, 0.5);
     z.on('pointerdown', () => {
       const ensured = ensureDungeonSlot(ctxRef!.getGameState(), activeSlot);
       const r = setRoomSlotBuilding(ensured.state, activeSlot, type);
@@ -363,7 +372,7 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     const accent = locked ? 0x555044 : on ? COLORS.JADE : trap.tier === 1 ? 0xc8921a : trap.tier === 2 ? 0x8ac7ff : 0xd48cff;
     const z = chipBase(inner, x, 0, itemW, h, on, accent);
     addText(inner, x + itemW / 2, 20, trap.emoji, '22px', '#ffffff', false, 0.5).setAlpha(locked ? 0.35 : 1);
-    addText(inner, x + 6, 4, `T${trap.tier}`, '9px', locked ? '#6a6052' : '#c8b890', true);
+    addText(inner, x + 6, 5, `T${trap.tier}`, '10px', locked ? '#6a6052' : '#c8b890', true);
     addText(inner, x + itemW / 2, h - 30, trap.name, '11px', locked ? '#6a6052' : '#f0e6c8', false, 0.5);
     const priceLabel = trap.tier === 1 ? `${trap.cost}💰` : stock > 0 ? `재고 ${stock}` : '재고 없음';
     addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : priceLabel,
@@ -472,7 +481,9 @@ function addTextButton(
   const t = s.add.text(x, y, label, {
     fontFamily: 'sans-serif', fontSize: '13px', color, fontStyle: 'bold',
   }).setDepth(122);
-  const z = s.add.zone(x + t.width / 2, y + 8, Math.max(t.width, 30) + 14, 28).setInteractive({ useHandCursor: true }).setDepth(124);
+  // Zone is the touch target, not the glyph: 13px labels would otherwise leave
+  // a 28px-tall tap area, under the 44px minimum the harness enforces.
+  const z = s.add.zone(x + t.width / 2, y + 8, Math.max(t.width, TOUCH_MIN) + 14, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
   z.on('pointerdown', onTap);
   c.add(t); c.add(z);
 }

@@ -518,7 +518,8 @@ export function drawRouteJunction(
   if (isBuilt || isBroken) {
     const marker = scene.add.text(x, y, String(routeOrder), {
       fontFamily: 'monospace',
-      fontSize: '8px',
+      // 10px is the floor the modal harness enforces; a digit still fits the 26px disc.
+      fontSize: '10px',
       color: isBroken ? '#ffb0a0' : '#ffe080',
       fontStyle: 'bold',
     }).setOrigin(0.5).setAlpha(0.66);

@@ -120,7 +120,10 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     if (isUnlocked) {
       const _sx = sx, _sy = sy, _idx = idx;
       const focusAffordance = scene.addRoomOpenAffordance(c, _sx, _sy, _idx);
+      // Named so the modal harness can open the placement tray; without a name it
+      // had no way in, leaving the trap strip (tier badges, stock counts) uncovered.
       const zone = scene.add.zone(sx + cellW / 2, sy + cellH / 2, cellW, cellH)
+        .setName(`home-room-card-${_idx}`)
         .setDepth(10).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => focusAffordance.setHover(true));
       zone.on('pointerout', () => focusAffordance.setHover(false));
