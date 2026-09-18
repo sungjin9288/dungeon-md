@@ -80,6 +80,9 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   public  hasBerserkerRage = false;   // BERSERKER_RAGE
   public  isUnstoppable    = false;   // UNSTOPPABLE: immune to all CC
   /** Active slow factor (1 = none) — kept so an unrelated effect ending restores it. */
+  /** Held by TAUNTING_ROAR / venom paralysis — pauses with no timer of their own. */
+  public  isTaunted        = false;
+  public  isParalyzed      = false;
   public  slowMult         = 1;
   /** Active rally/captain boost factor (1 = none). */
   public  boostMult        = 1;
@@ -426,10 +429,12 @@ export class Invader extends Phaser.GameObjects.PathFollower {
 
   applyTaunt(durationMs: number): void {
     if (this.isDead || this.isUnstoppable) return;
+    this.isTaunted = true;
     this.pathTween.pause();
     this.setTint(0xff4444);
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
+      this.isTaunted = false;
       this.resumePathIfFree();
       this.clearTint();
     });
