@@ -116,7 +116,13 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 - 슬롯 수의 단일 진실원은 `getUnlockedSlotCount(state)`(DM 레벨 + 지혜 `선조의
   지혜`, 9 캡). 홈 보드·전투 그리드·추천·직렬화 전부 이 함수를 쓴다. 스테이지
   설정에 슬롯 수를 넣지 말 것.
-- 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). 전투 피해는 `1.4^(lv-1)`이며
+- 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). DM 게이트는 `getMaxRoomLevel`:
+  **Lv2는 DM3**, Lv3 DM10, Lv4 DM15, Lv5 DM20. Lv2가 DM5에 있던 동안 스테이지
+  5~7 lean은 organic 1/5 승이었다 — 그 구간에서 방어가 자랄 길이 수호자 레벨뿐인데
+  웨이브는 8명 → 13명으로 커지고, 골드는 8,775가 쌓였는데 보드 전체 Lv2 값 750을
+  쓸 수가 없었다. DM3은 슬롯을 하나도 주지 않는 죽은 레벨이었다(`SLOT_UNLOCK_LEVELS`
+  0,0,0,2,4,…). 게이트를 열자 **6/6 승·HP 83~90%**. **수치가 아니라 게이트를 의심할 것.**
+  전투 피해는 `1.4^(lv-1)`이며
   방의 첫 몬스터에만 적용, 나머지 몬스터는 기본 피해(`runExtraMonsterAttacks`).
   몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. **수호자 육성**은
   `guardianAtkMult(level, spentSkills)`(barracks.ts, `1.03^(lv-1)` × 강타 1.15)로
