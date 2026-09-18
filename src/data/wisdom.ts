@@ -204,12 +204,21 @@ export function getRoomSlotCapacity(
 /** Hard cap on a home room's level; `getMaxRoomLevel` gates the climb by DM level. */
 export const MAX_ROOM_LEVEL = 5;
 
-/** Maximum room level allowed for a given DM level. */
+/**
+ * Maximum room level allowed for a given DM level.
+ *
+ * Level 2 opens at DM 3, not DM 5. DM 3 unlocks no slot of its own
+ * (SLOT_UNLOCK_LEVELS jumps 0,0,0,2,4,…), and between stages 5 and 7 a lean
+ * player has no growth lever at all while wave size climbs 8 → 13 invaders —
+ * gold piles up unspent (~8,700 by stage 5, against 750 to raise the whole
+ * board) because the one build-side sink is gated shut. Opening it here turns
+ * a dead DM level into the chapter's answer to its own difficulty ramp.
+ */
 export function getMaxRoomLevel(dmLevel: number): number {
   if (dmLevel >= 20) return 5;
   if (dmLevel >= 15) return 4;
   if (dmLevel >= 10) return 3;
-  if (dmLevel >= 5)  return 2;
+  if (dmLevel >= 3)  return 2;
   return 1;
 }
 
