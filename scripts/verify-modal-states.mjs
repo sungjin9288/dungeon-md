@@ -54,6 +54,11 @@ const CASES = [
     steps: [], expect: '헤더에 명성(▲)+📌 긴 이름+⛏ 근무가 동시에 있어도 폭 안에 들어감',
   },
   {
+    id: 'home-placement-trap-strip', scene: 'DungeonHomeScene',
+    seed: { dmLevel: 20, homeGold: 900, trapStock: { thorn_wall: 2 }, dungeonSlots: [{ roomType: 'trap', building: 'trap', monsterIds: [undefined], trapIds: [undefined, undefined], roomLevel: 2, hp: 200, maxHp: 200 }] },
+    steps: [{ name: 'home-room-card-0' }, { name: 'placement-tab-trap' }], expect: '배치 트레이 함정 스트립 (T1 골드 · T2 재고 2 · 잠금 표기)',
+  },
+  {
     id: 'home-staffing-route', scene: 'DungeonHomeScene',
     seed: { dmLevel: 20, productionFacilities: { mine: 1 }, homeGold: 900 },
     steps: [{ name: 'home-staffing-chip' }], expect: '근무 칩 → 생산 구역 진입',

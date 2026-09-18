@@ -18,8 +18,9 @@
 // this much. Pure: no scene, save or RNG access.
 
 import { ALL_STAGES } from './allStages';
-import { defaultOwnedMonster, STARTER_ROSTER } from './barracks';
+import { defaultOwnedMonster, STARTER_ROSTER, xpToNextLevel } from './barracks';
 import { INVADER_DEFS } from './invaders';
+import { TRAP_DEFS, trapEffectiveDps } from './traps';
 import { STAGE_CLEAR_DM_XP, xpForDmLevel } from './invasionTransactions';
 import { MONSTER_DEFS } from './monsterRegistry';
 import type { MonsterDef, MonsterId } from './monstersTypes';
@@ -45,6 +46,8 @@ export interface ExpectedHome {
   readonly dmLevel: number;
   readonly slotCount: number;
   readonly roomLevel: number;
+  /** Roster level from cumulative kill XP (see expectedGuardianLevel). */
+  readonly guardianLevel: number;
   readonly roster: readonly MonsterId[];
   readonly dungeonSlots: DungeonSlot[];
   readonly ownedMonsters: OwnedMonster[];
@@ -123,6 +126,60 @@ export function stageLootPotential(stage: StageConfig): number {
   ), 0);
 }
 
+/**
+ * Every kill grants XP to the WHOLE roster (KillHandler: 5 per invader, 100 per
+ * boss), so a player who cleared stages 1..N-1 once arrives with levelled
+ * guardians. The model used to hand them Lv.1 monsters, which understated real
+ * damage by `guardianAtkMult` — measurably so: stage 20 lost 0/4 (lean) and
+ * 0/3 (expected) organically while the sim called it 80–100%.
+ */
+export const KILL_XP_PER_INVADER = 5;
+export const KILL_XP_PER_BOSS = 100;
+
+export function stageKillXp(stage: StageConfig): number {
+  return stage.waves.reduce((sum, wave) => sum + wave.invaders.reduce((kills, group) => {
+    const def = INVADER_DEFS[group.type];
+    return kills + group.count * (def?.isBoss ? KILL_XP_PER_BOSS : KILL_XP_PER_INVADER);
+  }, 0), 0);
+}
+
+/** Roster XP earned by clearing every stage below `stageNumber` once. */
+export function cumulativeKillXpByStage(stageNumber: number): number {
+  let xp = 0;
+  for (const stage of ALL_STAGES) {
+    if (stage.id >= stageNumber) break;
+    xp += stageKillXp(stage);
+  }
+  return xp;
+}
+
+/** The level that much XP buys, using the barracks curve (100 × 1.18^(lv-1)). */
+export function expectedGuardianLevel(stageNumber: number): number {
+  let remaining = cumulativeKillXpByStage(stageNumber);
+  let level = 1;
+  while (level < 50) {
+    const needed = xpToNextLevel(level);
+    if (remaining < needed) break;
+    remaining -= needed;
+    level += 1;
+  }
+  return level;
+}
+
+/**
+ * The trap a player would have in every room by this DM level: the strongest
+ * tier-1 trap unlocked so far. Tier 1 is bought straight from the placement
+ * tray for gold, and the gold is not the constraint — at stage 20 the model's
+ * budget is ~95,000 while room level is capped at 2 by the DM gate, so nine
+ * traps (~1,000) are rounding error. Leaving rooms trapless modelled a player
+ * who ignores the game's own placement recommendation.
+ */
+export function expectedTrapId(dmLevel: number): string | undefined {
+  return TRAP_DEFS
+    .filter(trap => trap.tier === 1 && trap.unlockLv <= dmLevel)
+    .sort((a, b) => trapEffectiveDps(b.id) - trapEffectiveDps(a.id) || a.cost - b.cost)[0]?.id;
+}
+
 function questGoldByStage(stageNumber: number): number {
   const dmLevel = expectedDmLevel(stageNumber);
   let sum = 0;
@@ -195,6 +252,13 @@ function buildHome(
   slotCount: number,
   roomLevel: number,
   roster: readonly MonsterId[],
+  /**
+   * Day-one boards get no traps. The starter home is the floor — the board the
+   * game hands a brand-new player — and its whole wealth is the 200 starting
+   * gold, so buying three traps with it would quietly soften the stage-1 guard.
+   * Lean and expected homes have cleared stages and sit on real surplus.
+   */
+  { traps = true }: { traps?: boolean } = {},
 ): ExpectedHome {
   const capacity = getRoomSlotCapacity(roomLevel, 'combat').monsters;
   // Spread guardians one per room before doubling up: every armed room covers
@@ -205,26 +269,29 @@ function buildHome(
     const seat = Math.floor(index / slotCount);
     if (seat < capacity) perSlot[slot][seat] = id;
   });
+  const trapId = traps ? expectedTrapId(dmLevel) : undefined;
   const dungeonSlots: DungeonSlot[] = perSlot.map(monsterIds => {
     return {
       roomType: 'combat',
       building: 'guardian',
       monsterIds,
-      trapIds: [undefined],
+      trapIds: [trapId],
       roomLevel,
       hp: 200,
       maxHp: 200,
     };
   });
   const placed = dungeonSlots.flatMap(slot => slot.monsterIds).filter((id): id is string => Boolean(id));
+  const guardianLevel = expectedGuardianLevel(stageNumber);
   return {
     stageNumber,
     dmLevel,
     slotCount,
     roomLevel,
+    guardianLevel,
     roster: placed as MonsterId[],
     dungeonSlots,
-    ownedMonsters: placed.map(id => defaultOwnedMonster(id)),
+    ownedMonsters: placed.map(id => ({ ...defaultOwnedMonster(id), level: guardianLevel })),
   };
 }
 
@@ -272,7 +339,7 @@ export function leanHome(stageNumber: number): ExpectedHome {
 
 /** The very first home: the DM-1 board (three level-1 guardian rooms) with the starter roster, nothing else. */
 export function starterHome(): ExpectedHome {
-  return buildHome(1, 1, getUnlockedSlots(1), 1, STARTER_ROSTER);
+  return buildHome(1, 1, getUnlockedSlots(1), 1, STARTER_ROSTER, { traps: false });
 }
 
 // ─── Evaluation ───────────────────────────────────────────────────────────────
