@@ -177,7 +177,7 @@ export function runMercenaryAuras(ctx: RoomMechanicsContext, _now: number): void
     const boost = nearCaptain ? MERCENARY_AURA_BOOST : 1;
     if (inv.boostMult === boost) return;
     inv.boostMult = boost;
-    inv.resumePathIfFree();
+    inv.syncPathSpeed();
   });
 }
 

@@ -270,6 +270,17 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.pathTween.resume();
   }
 
+  /**
+   * Speed-only update. Slow / rally / captain-aura changes must NEVER un-pause:
+   * taunt, venom paralysis and the revive animation hold the tween without a
+   * lock flag, and resuming here would cut them short (measured: it cost the
+   * defence a whole stage-20 run).
+   */
+  syncPathSpeed(): void {
+    if (!this.pathTween || this.isDead || isMovementLocked(this)) return;
+    this.pathTween.timeScale = restingPathSpeed(this);
+  }
+
   applyStun(durationMs: number): void {
     if (this.isDead || this.isStunned || this.isUnstoppable) return;
     this.isStunned = true;
@@ -428,7 +439,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     if (this.isDead || this.isSlowed || this.isUnstoppable) return;
     this.isSlowed = true;
     this.slowMult = mult;
-    if (this.pathTween && !isMovementLocked(this)) this.pathTween.timeScale = restingPathSpeed(this);
+    this.syncPathSpeed();
     // Visual: cyan pulsing ring to indicate slow
     if (!this.slowGfx) {
       this.slowGfx = this.scene.add.graphics().setDepth(this.depth + 1);
@@ -439,7 +450,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
       this.slowMult = 1;
       this.slowGfx?.destroy();
       this.slowGfx = undefined;
-      this.resumePathIfFree();
+      this.syncPathSpeed();
     });
   }
 
@@ -448,11 +459,11 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   applySpeedBoost(mult: number, durationMs: number): void {
     if (this.isDead || this.isStunned || this.isFrozen) return;
     this.boostMult = mult;
-    if (this.pathTween && !isMovementLocked(this)) this.pathTween.timeScale = restingPathSpeed(this);
+    this.syncPathSpeed();
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
       this.boostMult = 1;
-      this.resumePathIfFree();
+      this.syncPathSpeed();
     });
   }
 

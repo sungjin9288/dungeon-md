@@ -302,6 +302,11 @@ Phaser는 `scene.time`(타이머·쿨다운)과 `scene.tweens`(이동·연출) �
 2. `restingPathSpeed`(둔화 × 가속) — 무관한 효과가 끝날 때 `timeScale = 1`로
    되돌리면 살아 있는 둔화가 지워졌다. 이제 남은 수정자를 합성해 복원한다.
 
+**속도 변경은 절대 일시정지를 풀지 않는다.** 도발·독 마비·부활 연출은 잠금 플래그
+없이 트윈을 멈추므로, 둔화/가속/아우라가 `resume()`을 부르면 그 정지가 조기에
+끊긴다(실측: 20 lean이 26% 승 → 0% 패로 뒤집혔다). 그래서 통로가 둘이다 —
+`syncPathSpeed()`는 `timeScale`만, `resumePathIfFree()`는 군중 제어 만료에서만.
+
 `Invader.resumePathIfFree()`가 이 둘을 적용하는 단일 통로이고, 모든 만료 콜백이
 여기로 들어온다(사망·부활·독 폭발 경로는 원래부터 완전한 조건이었다). 용병 대장
 아우라(`runMercenaryAuras`)도 `pathTween.timeScale`을 직접 쓰지 않고 `boostMult`를
