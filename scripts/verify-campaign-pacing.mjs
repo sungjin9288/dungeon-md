@@ -50,7 +50,11 @@ const audit = {
   sourceHashes: {}, runs: [], failures: [],
 };
 await mkdir(shots, { recursive: true });
-for (const path of ['src/data/campaignPacing.ts', 'src/data/simulation.ts', 'src/combat/DungeonLayout.ts', 'scripts/verify-campaign-pacing.mjs']) {
+// Hashed at the start and re-checked at the end: editing src/ while a run is in
+// flight makes the dev server hot-reload the page mid-battle, so the numbers
+// describe a mixture of two builds. That has silently corrupted runs here.
+const HASHED_SOURCES = ['src/data/campaignPacing.ts', 'src/data/simulation.ts', 'src/combat/DungeonLayout.ts', 'src/objects/Invader.ts', 'src/combat/CombatResolver.ts', 'scripts/verify-campaign-pacing.mjs'];
+for (const path of HASHED_SOURCES) {
   audit.sourceHashes[path] = sha(await readFile(resolve(root, path)));
 }
 
@@ -190,6 +194,13 @@ try {
     entry.hpPct.push(run.hpPct);
   }
   for (const entry of Object.values(byStage)) entry.hpPct.sort((a, b) => a - b);
+  // Any source edited while the run was in flight invalidates the numbers.
+  for (const path of HASHED_SOURCES) {
+    const after = sha(await readFile(resolve(root, path)));
+    if (after !== audit.sourceHashes[path]) {
+      audit.failures.push({ reason: `source changed mid-run: ${path} — the dev server hot-reloaded and these results mix two builds` });
+    }
+  }
   audit.summary = {
     runs: audit.runs.length,
     wins: audit.runs.filter(run => run.outcome === 'win').length,
