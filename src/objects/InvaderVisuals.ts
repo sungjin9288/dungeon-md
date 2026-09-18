@@ -412,7 +412,11 @@ export function die(invader: Invader): void {
           duration: 400, ease: 'Back.Out',
           onComplete: () => {
             invader.setScale(1);
-            if (!invader.isDead && invader.active) invader.pathTween.resume();
+            // Revive clears its own stun/root (and removes those timers), but a
+            // freeze or charm may still be running with its timer intact — let
+            // the shared rule decide, so the invader does not walk out of a
+            // freeze it is still under. See objects/movementLock.ts.
+            if (!invader.isDead && invader.active) invader.resumePathIfFree();
           },
         });
       },
