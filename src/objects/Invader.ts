@@ -18,6 +18,7 @@ import {
   die as invaderDie,
   invaderPreUpdate,
 } from './InvaderVisuals';
+import { isMovementLocked, restingPathSpeed } from './movementLock';
 
 // ─── Burn stack ───────────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ export interface BurnStack {
 
 // ─── Invader ──────────────────────────────────────────────────────────────────
 
+// Movement-lock rules live in movementLock.ts (pure, tested).
 export class Invader extends Phaser.GameObjects.PathFollower {
   public  hp:     number;
   public readonly maxHp: number;
@@ -77,6 +79,10 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   public  isTrapImmune     = false;   // TRAP_IMMUNITY
   public  hasBerserkerRage = false;   // BERSERKER_RAGE
   public  isUnstoppable    = false;   // UNSTOPPABLE: immune to all CC
+  /** Active slow factor (1 = none) — kept so an unrelated effect ending restores it. */
+  public  slowMult         = 1;
+  /** Active rally/captain boost factor (1 = none). */
+  public  boostMult        = 1;
   public  isSlowed         = false;
   /** @internal */ slowGfx?:        Phaser.GameObjects.Graphics;
   public  hexed            = false;   // WAR_HEX: +25% damage received
@@ -251,6 +257,19 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     return count;
   }
 
+  /**
+   * Hand movement back only when every crowd-control effect has expired, and at
+   * the speed the *remaining* modifiers call for. Overlapping effects are normal
+   * with tier-2/3 traps, so each expiry funnels through here rather than
+   * guessing which other effects are still running. See movementLock.ts.
+   */
+  resumePathIfFree(): void {
+    if (!this.pathTween || this.isDead) return;
+    if (isMovementLocked(this)) return;
+    this.pathTween.timeScale = restingPathSpeed(this);
+    this.pathTween.resume();
+  }
+
   applyStun(durationMs: number): void {
     if (this.isDead || this.isStunned || this.isUnstoppable) return;
     this.isStunned = true;
@@ -266,7 +285,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.stunTimer = this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
       this.isStunned = false;
-      this.pathTween.resume();
+      this.resumePathIfFree();
       clearStunVisual(this);
     });
   }
@@ -295,7 +314,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.rootTimer = this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
       this.isRooted = false;
-      if (!this.isStunned) this.pathTween.resume();
+      this.resumePathIfFree();
       clearRootVisual(this);
     });
   }
@@ -324,7 +343,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
       this.frozenGfx?.destroy();
       this.frozenGfx = undefined;
       this.clearTint();
-      if (!this.isStunned && !this.isRooted) this.pathTween.resume();
+      this.resumePathIfFree();
     });
   }
 
@@ -353,9 +372,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.isCharmed = false;
     this.charmedTimer?.remove();
     this.charmedTimer = undefined;
-    if (this.pathTween && !this.isFrozen && !this.isStunned && !this.isRooted) {
-      this.pathTween.timeScale = 1;
-    }
+    this.resumePathIfFree();
     this.clearTint();
     this.charmedGfx?.destroy();
     this.charmedGfx = undefined;
@@ -402,9 +419,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.setTint(0xff4444);
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
-      if (!this.isStunned && !this.isRooted && !this.isFrozen && !this.isCharmed) {
-        this.pathTween.resume();
-      }
+      this.resumePathIfFree();
       this.clearTint();
     });
   }
@@ -412,7 +427,8 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   applySlow(mult: number, durationMs: number): void {
     if (this.isDead || this.isSlowed || this.isUnstoppable) return;
     this.isSlowed = true;
-    if (this.pathTween) this.pathTween.timeScale = mult;
+    this.slowMult = mult;
+    if (this.pathTween && !isMovementLocked(this)) this.pathTween.timeScale = restingPathSpeed(this);
     // Visual: cyan pulsing ring to indicate slow
     if (!this.slowGfx) {
       this.slowGfx = this.scene.add.graphics().setDepth(this.depth + 1);
@@ -420,11 +436,10 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
       this.isSlowed = false;
+      this.slowMult = 1;
       this.slowGfx?.destroy();
       this.slowGfx = undefined;
-      if (this.pathTween && !this.isFrozen && !this.isStunned && !this.isRooted) {
-        this.pathTween.timeScale = 1;
-      }
+      this.resumePathIfFree();
     });
   }
 
@@ -432,12 +447,12 @@ export class Invader extends Phaser.GameObjects.PathFollower {
 
   applySpeedBoost(mult: number, durationMs: number): void {
     if (this.isDead || this.isStunned || this.isFrozen) return;
-    if (this.pathTween) this.pathTween.timeScale = mult;
+    this.boostMult = mult;
+    if (this.pathTween && !isMovementLocked(this)) this.pathTween.timeScale = restingPathSpeed(this);
     this.scene.time.delayedCall(durationMs, () => {
       if (this.isDead || !this.active) return;
-      if (this.pathTween && !this.isSlowed && !this.isFrozen && !this.isStunned) {
-        this.pathTween.timeScale = 1;
-      }
+      this.boostMult = 1;
+      this.resumePathIfFree();
     });
   }
 
