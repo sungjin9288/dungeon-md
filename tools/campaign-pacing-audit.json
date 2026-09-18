@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-17T23:42:04.062Z",
-  "base": "http://127.0.0.1:8084",
+  "generatedAt": "2026-09-18T01:24:15.057Z",
+  "base": "http://127.0.0.1:8083",
   "scope": "Campaign stages fought organically by the pacing model's starter / lean / expected homes. Calibrates campaignPacing.test.ts (headless sim) against real combat. Not a full campaign endurance run.",
   "method": "Home seeded in-page from src/data/campaignPacing.ts, DungeonScene started with { stageNumber }, waves driven through window.advanceTime at 3x. Outcome = dungeon HP after the last wave.",
   "sourceHashes": {
@@ -11,183 +11,328 @@
   },
   "runs": [
     {
-      "stageNumber": 90,
-      "kind": "veteran",
+      "stageNumber": 20,
+      "kind": "lean",
       "seeded": {
-        "dmLevel": 52,
+        "dmLevel": 8,
         "slotCount": 9,
-        "roomLevel": 5,
+        "roomLevel": 2,
         "roster": [
-          "void_monarch",
-          "abyssal_warden",
-          "empyrean_sovereign",
-          "solar_eclipse_warrior",
-          "eternal_colossus",
-          "chaos_reaver",
-          "black_dragon_assassin",
-          "red_dragon_warrior",
-          "soul_reaver",
-          "starlight_knight",
-          "black_dragon_dokkaebi",
-          "galaxy_warrior",
-          "soul_devourer",
-          "void_archon",
-          "banya_guardian",
-          "dragon_avatar",
-          "god_realm_general",
-          "null_sorcerer",
-          "thunder_mask_warrior",
-          "dokkaebi_general",
-          "oblivion_devourer",
-          "void_harbinger",
-          "mask_berserker",
-          "celestial_sage",
-          "abyss_titan",
-          "solar_warrior",
-          "fire_dokkaebi_king",
-          "rift_stalker",
-          "celestial_guardian",
-          "gumiho_demon",
-          "primordial_devourer",
-          "primordial_shaman",
-          "twilight_dragon"
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior",
+          "one_tail_fox",
+          "fire_dokkaebi",
+          "ice_dokkaebi",
+          "thunder_dokkaebi",
+          "gumiho_guardian",
+          "skeleton_knight"
         ],
         "sim": {
-          "winPct": 100,
-          "finalHp": 15000,
-          "startHp": 15000,
-          "totalDps": 3491.4,
-          "worstWave": 0
+          "winPct": 80,
+          "finalHp": 2000,
+          "startHp": 2500,
+          "totalDps": 81.5,
+          "worstWave": 10
         }
       },
       "battle": {
-        "wave": 15,
-        "maxWave": 15,
-        "dungeonHp": 15000,
-        "maxHp": 15000,
+        "wave": 7,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2500,
         "builtRooms": 9,
         "armedRooms": 9,
-        "gold": 133558,
-        "stalls": 1,
+        "gold": 3160,
+        "stalls": 0,
         "timeline": [
           {
             "wave": 1,
-            "hp": 15000,
+            "hp": 2500,
             "settled": true,
             "stalled": false,
-            "slices": 2
+            "slices": 4
           },
           {
             "wave": 2,
-            "hp": 15000,
+            "hp": 2240,
             "settled": true,
             "stalled": false,
-            "slices": 5
+            "slices": 8
           },
           {
             "wave": 3,
-            "hp": 15000,
+            "hp": 2240,
             "settled": true,
             "stalled": false,
-            "slices": 7
+            "slices": 12
           },
           {
             "wave": 4,
-            "hp": 15000,
+            "hp": 1430,
             "settled": true,
             "stalled": false,
-            "slices": 11
+            "slices": 18
           },
           {
             "wave": 5,
-            "hp": 15000,
+            "hp": 1430,
             "settled": true,
             "stalled": false,
-            "slices": 13
+            "slices": 24
           },
           {
             "wave": 6,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 16
-          },
-          {
-            "wave": 7,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 20
-          },
-          {
-            "wave": 8,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 23
-          },
-          {
-            "wave": 9,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 26
-          },
-          {
-            "wave": 10,
-            "hp": 15000,
+            "hp": 290,
             "settled": true,
             "stalled": false,
             "slices": 31
           },
           {
-            "wave": 11,
-            "hp": 15000,
+            "wave": 7,
+            "hp": 0,
             "settled": true,
             "stalled": false,
-            "slices": 34
-          },
-          {
-            "wave": 12,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 39
-          },
-          {
-            "wave": 13,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 44
-          },
-          {
-            "wave": 14,
-            "hp": 15000,
-            "settled": true,
-            "stalled": false,
-            "slices": 48
-          },
-          {
-            "wave": 15,
-            "hp": 15000,
-            "settled": true,
-            "stalled": true,
-            "slices": 54
+            "slices": 35
           }
         ]
       },
-      "outcome": "win",
-      "hpPct": 100,
+      "outcome": "loss",
+      "hpPct": 0,
+      "errors": [
+        {
+          "type": "console",
+          "text": "The AudioContext encountered an error from the audio device or the WebAudio renderer."
+        }
+      ],
+      "screenshot": "tools/screenshots/campaign-pacing-20-lean.png",
+      "sha256": "5362f96a4b2b3a648100bb130116055cc9875b19d9a6ca693ba03d70b2e98da7"
+    },
+    {
+      "stageNumber": 20,
+      "kind": "lean",
+      "seeded": {
+        "dmLevel": 8,
+        "slotCount": 9,
+        "roomLevel": 2,
+        "roster": [
+          "dokkaebi_warrior",
+          "village_archer",
+          "dokkaebi_junior",
+          "one_tail_fox",
+          "fire_dokkaebi",
+          "ice_dokkaebi",
+          "thunder_dokkaebi",
+          "gumiho_guardian",
+          "skeleton_knight"
+        ],
+        "sim": {
+          "winPct": 80,
+          "finalHp": 2000,
+          "startHp": 2500,
+          "totalDps": 81.5,
+          "worstWave": 10
+        }
+      },
+      "battle": {
+        "wave": 6,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2500,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 2655,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 2500,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 2240,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 2120,
+            "settled": true,
+            "stalled": false,
+            "slices": 12
+          },
+          {
+            "wave": 4,
+            "hp": 1330,
+            "settled": true,
+            "stalled": false,
+            "slices": 19
+          },
+          {
+            "wave": 5,
+            "hp": 890,
+            "settled": true,
+            "stalled": false,
+            "slices": 26
+          },
+          {
+            "wave": 6,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 33
+          }
+        ]
+      },
+      "outcome": "loss",
+      "hpPct": 0,
       "errors": [],
-      "screenshot": "tools/screenshots/campaign-pacing-90-veteran.png",
-      "sha256": "ea81d7bc2159f72755c873a5ee4d105a591e7272adf03b2d1c9eade971392781"
+      "screenshot": "tools/screenshots/campaign-pacing-20-lean.png",
+      "sha256": "9f976cd176e6af2dc608659e8b36584a468d03e56242313639a9a7654627f241"
     }
   ],
-  "failures": [],
+  "failures": [
+    {
+      "run": "20:lean",
+      "reason": "battle ended loss",
+      "battle": {
+        "wave": 7,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2500,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 3160,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 2500,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 2240,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 2240,
+            "settled": true,
+            "stalled": false,
+            "slices": 12
+          },
+          {
+            "wave": 4,
+            "hp": 1430,
+            "settled": true,
+            "stalled": false,
+            "slices": 18
+          },
+          {
+            "wave": 5,
+            "hp": 1430,
+            "settled": true,
+            "stalled": false,
+            "slices": 24
+          },
+          {
+            "wave": 6,
+            "hp": 290,
+            "settled": true,
+            "stalled": false,
+            "slices": 31
+          },
+          {
+            "wave": 7,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 35
+          }
+        ]
+      }
+    },
+    {
+      "run": "20:lean",
+      "reason": "console errors",
+      "errors": [
+        {
+          "type": "console",
+          "text": "The AudioContext encountered an error from the audio device or the WebAudio renderer."
+        }
+      ]
+    },
+    {
+      "run": "20:lean",
+      "reason": "battle ended loss",
+      "battle": {
+        "wave": 6,
+        "maxWave": 10,
+        "dungeonHp": 0,
+        "maxHp": 2500,
+        "builtRooms": 9,
+        "armedRooms": 9,
+        "gold": 2655,
+        "stalls": 0,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 2500,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 2,
+            "hp": 2240,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 3,
+            "hp": 2120,
+            "settled": true,
+            "stalled": false,
+            "slices": 12
+          },
+          {
+            "wave": 4,
+            "hp": 1330,
+            "settled": true,
+            "stalled": false,
+            "slices": 19
+          },
+          {
+            "wave": 5,
+            "hp": 890,
+            "settled": true,
+            "stalled": false,
+            "slices": 26
+          },
+          {
+            "wave": 6,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 33
+          }
+        ]
+      }
+    }
+  ],
   "summary": {
-    "runs": 1,
-    "wins": 1,
-    "hardFailures": 0
+    "runs": 2,
+    "wins": 0,
+    "hardFailures": 3
   }
 }
