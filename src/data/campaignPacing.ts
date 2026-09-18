@@ -20,6 +20,7 @@
 import { ALL_STAGES } from './allStages';
 import { defaultOwnedMonster, STARTER_ROSTER, xpToNextLevel } from './barracks';
 import { INVADER_DEFS } from './invaders';
+import { TRAP_DEFS, trapEffectiveDps } from './traps';
 import { STAGE_CLEAR_DM_XP, xpForDmLevel } from './invasionTransactions';
 import { MONSTER_DEFS } from './monsterRegistry';
 import type { MonsterDef, MonsterId } from './monstersTypes';
@@ -165,6 +166,20 @@ export function expectedGuardianLevel(stageNumber: number): number {
   return level;
 }
 
+/**
+ * The trap a player would have in every room by this DM level: the strongest
+ * tier-1 trap unlocked so far. Tier 1 is bought straight from the placement
+ * tray for gold, and the gold is not the constraint — at stage 20 the model's
+ * budget is ~95,000 while room level is capped at 2 by the DM gate, so nine
+ * traps (~1,000) are rounding error. Leaving rooms trapless modelled a player
+ * who ignores the game's own placement recommendation.
+ */
+export function expectedTrapId(dmLevel: number): string | undefined {
+  return TRAP_DEFS
+    .filter(trap => trap.tier === 1 && trap.unlockLv <= dmLevel)
+    .sort((a, b) => trapEffectiveDps(b.id) - trapEffectiveDps(a.id) || a.cost - b.cost)[0]?.id;
+}
+
 function questGoldByStage(stageNumber: number): number {
   const dmLevel = expectedDmLevel(stageNumber);
   let sum = 0;
@@ -247,12 +262,13 @@ function buildHome(
     const seat = Math.floor(index / slotCount);
     if (seat < capacity) perSlot[slot][seat] = id;
   });
+  const trapId = expectedTrapId(dmLevel);
   const dungeonSlots: DungeonSlot[] = perSlot.map(monsterIds => {
     return {
       roomType: 'combat',
       building: 'guardian',
       monsterIds,
-      trapIds: [undefined],
+      trapIds: [trapId],
       roomLevel,
       hp: 200,
       maxHp: 200,
