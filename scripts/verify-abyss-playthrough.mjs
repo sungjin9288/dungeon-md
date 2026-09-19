@@ -95,7 +95,13 @@ async function fightFloor(page) {
       if (ds.wave >= ds.maxWave && !ds.waveActive) break;
       if (!ds.waveActive) { ds.startWave(); pump(1000); }
       let settled = false;
-      for (let i = 0; i < 10; i++) {
+      // The budget is set by the slowest thing that can still be walking: the
+      // invasion path is 1,310px and the deepest bosses move at speed 18-20, so
+      // their follow tween runs 65-73s of game time — 22-25s of stepped frames
+      // at the 3x battle speed set above. Ten 2.5s slices left no margin at all
+      // and a floor-60 run ended with the boss still in transit, which read as
+      // the unarmed dungeon "surviving" the floor.
+      for (let i = 0; i < 24; i++) {
         pump(2500);
         settled = !ds.waveActive && (ds.spawnQueue ?? []).length === 0
           && (ds.activeInvaders ?? []).filter(invader => invader.active).length === 0;

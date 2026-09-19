@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-19T12:02:12.547Z",
+  "generatedAt": "2026-09-19T12:29:10.946Z",
   "base": "http://127.0.0.1:8083",
-  "floor": 10,
+  "floor": 60,
   "scope": "Abyss floor organic play-through: real wave combat through the production wave loop, then the real result-flow button settling the floor. Not a campaign or endless endurance run.",
   "method": "Playwright context with reducedMotion: reduce so result buttons take their direct onPress path (tween onComplete does not fire under eval). Combat advances through window.advanceTime, the app's own fixed-step driver.",
   "sourceHashes": {
@@ -9,7 +9,7 @@
     "src/combat/StageClearFlow.ts": "e636f84fafeb00f148243d405d4c3835622047566d690e1f1d3fe2835254f8ca",
     "src/combat/ResultPanel.ts": "eed5179ea4e3e09d2f922ee89cf53401413d3b2a874446ab49d5ab71563bb3df",
     "src/combat/WaveLifecycle.ts": "0b3609db370fd61d82184c06ae8d7bc05f4eb00d58ac41e6c3bcc70463876b6d",
-    "scripts/verify-abyss-playthrough.mjs": "66ad21a9719ddaf1376a2b21f55faab3065887455b04c714297460a4b87667a0"
+    "scripts/verify-abyss-playthrough.mjs": "17e05d27c3c728c4d06d5f8932ceb85627b5e4bb450f87c2e734755116a61907"
   },
   "runs": [
     {
@@ -21,23 +21,23 @@
       "battle": {
         "wave": 3,
         "maxWave": 3,
-        "dungeonHp": 2222,
-        "maxHp": 2222,
+        "dungeonHp": 7493,
+        "maxHp": 7493,
         "armedRooms": 9,
         "timeline": [
           {
             "wave": 1,
-            "hp": 2222,
+            "hp": 7493,
             "settled": true
           },
           {
             "wave": 2,
-            "hp": 2222,
+            "hp": 7493,
             "settled": true
           },
           {
             "wave": 3,
-            "hp": 2222,
+            "hp": 7493,
             "settled": true
           }
         ]
@@ -54,14 +54,14 @@
           "AbyssScene"
         ],
         "abyss": {
-          "highestFloor": 10,
+          "highestFloor": 60,
           "keys": 12,
           "lastRefill": "2026-09-19"
         },
         "receipt": {
           "tone": "success",
-          "title": "10층 정복 완료 · 최심 9→10",
-          "detail": "일반 광석 +2 · 약초 +3 · 철 조각 +2 · 보스 정수 +2 · 각성석 +1 · 골드 +120"
+          "title": "60층 정복 완료 · 최심 59→60",
+          "detail": "영혼 파편 +5 · 어둠 천 +5 · 도깨비 파편 +5 · 마법 가루 +5 · 보스 정수 +3 · 각성석 +2 · 골드 +570"
         },
         "residue": {
           "abyssPendingFloor": null,
@@ -71,7 +71,7 @@
       },
       "errors": [],
       "screenshot": "tools/screenshots/abyss-playthrough-win.png",
-      "sha256": "ce441e429c3a495ab955a4ab32d31d347cca693768b076d847ce643170edf8d6"
+      "sha256": "cc7640831b9f822680bee13daa057f21df55227cf5ba7be45f37cf30fe1c0d74"
     },
     {
       "mode": "loss",
@@ -83,23 +83,23 @@
         "wave": 3,
         "maxWave": 3,
         "dungeonHp": 0,
-        "maxHp": 2222,
+        "maxHp": 7493,
         "armedRooms": 0,
         "timeline": [
           {
             "wave": 1,
-            "hp": 1272,
+            "hp": 4768,
             "settled": true
           },
           {
             "wave": 2,
-            "hp": 422,
+            "hp": 2263,
+            "settled": true
+          },
+          {
+            "wave": 3,
+            "hp": 378,
             "settled": false
-          },
-          {
-            "wave": 2,
-            "hp": 372,
-            "settled": true
           },
           {
             "wave": 3,
@@ -120,13 +120,13 @@
           "AbyssScene"
         ],
         "abyss": {
-          "highestFloor": 9,
+          "highestFloor": 59,
           "keys": 12,
           "lastRefill": "2026-09-19"
         },
         "receipt": {
           "tone": "warning",
-          "title": "10층 원정 실패 · 최심 9층 유지",
+          "title": "60층 원정 실패 · 최심 59층 유지",
           "detail": "심연 정복 보상 없음 · 같은 층에 다시 도전할 수 있습니다"
         },
         "residue": {
@@ -137,7 +137,7 @@
       },
       "errors": [],
       "screenshot": "tools/screenshots/abyss-playthrough-loss.png",
-      "sha256": "fb10baeb6a7b249757100ab4eca30d772abd76209d11fa97a03aee6da5c624d9"
+      "sha256": "5b4898c258225e6f55d9546ad4c72fd95436f20e85617ddf166e740bcfc60e83"
     }
   ],
   "failures": [],
