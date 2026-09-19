@@ -13,6 +13,7 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import {
   ABYSS_KEY_MAX,
   ABYSS_MAX_FLOOR,
+  abyssFloorDungeonHp,
   buildAbyssFloorWaves,
   canSweepAbyss,
   getAbyssFloorConfig,
@@ -624,6 +625,7 @@ export class AbyssScene extends Phaser.Scene {
     this.registry.set('stageConfig', {
       stageNumber: 0,
       waves: buildAbyssFloorWaves(floor),
+      dungeonHp: abyssFloorDungeonHp(floor),
     });
     this.scene.start('DungeonScene');
   }

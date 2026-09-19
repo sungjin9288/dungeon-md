@@ -1,8 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { MATERIAL_DEFS } from './fusion';
+import { INVADER_DEFS } from './invaders';
 import {
   ABYSS_MAX_FLOOR,
   ABYSS_KEY_MAX,
+  ABYSS_TIER_SPAN,
+  abyssTier,
+  abyssFloorCoreDamage,
+  abyssFloorDungeonHp,
+  abyssFloorWaveHp,
+  buildAbyssFloorWaves,
   DEFAULT_ABYSS_STATE,
   isAbyssBossFloor,
   abyssBand,
@@ -58,6 +65,89 @@ describe('getAbyssFloorConfig', () => {
   it('clamps out-of-range floors', () => {
     expect(getAbyssFloorConfig(0).floor).toBe(1);
     expect(getAbyssFloorConfig(999).floor).toBe(ABYSS_MAX_FLOOR);
+  });
+});
+
+describe('floor difficulty actually scales with depth', () => {
+  const floors = Array.from({ length: ABYSS_MAX_FLOOR }, (_, i) => i + 1);
+
+  it('every invader the tier ladders name exists', () => {
+    for (const floor of floors) {
+      for (const wave of buildAbyssFloorWaves(floor)) {
+        for (const group of wave.invaders) {
+          expect(INVADER_DEFS[group.type], `floor ${floor} "${group.type}"`).toBeDefined();
+        }
+      }
+    }
+  });
+
+  it('no two floors in a row are the same fight', () => {
+    // The old builder saturated its spawn-count cap at floor 20, so floors
+    // 26-45 were one encounter repeated twenty times and 46-60 another fifteen.
+    const signature = (floor: number) => JSON.stringify(buildAbyssFloorWaves(floor));
+    let repeats = 0;
+    for (let floor = 2; floor <= ABYSS_MAX_FLOOR; floor++) {
+      if (signature(floor) === signature(floor - 1)) repeats++;
+    }
+    expect(repeats, 'floors identical to the floor above them').toBe(0);
+  });
+
+  it('each tier fields a heavier fight than the tier above it', () => {
+    const starts = floors
+      .filter(floor => (floor - 1) % ABYSS_TIER_SPAN === 0)
+      .map(floor => ({ floor, hp: abyssFloorWaveHp(floor) }));
+    expect(starts.length).toBeGreaterThan(1);
+    for (let i = 1; i < starts.length; i++) {
+      expect(starts[i].hp, `tier start ${starts[i].floor} vs ${starts[i - 1].floor}`)
+        .toBeGreaterThan(starts[i - 1].hp);
+    }
+    // The deepest floor must be the hardest: band 3 used to field berserkers
+    // (180hp) where band 2 fielded knights (350hp), so 46-60 was *easier* than 26-45.
+    expect(abyssFloorWaveHp(ABYSS_MAX_FLOOR)).toBe(Math.max(...floors.map(abyssFloorWaveHp)));
+  });
+
+  it('never gets lighter as you descend within a tier', () => {
+    for (const floor of floors) {
+      if ((floor - 1) % ABYSS_TIER_SPAN === 0) continue;  // a new tier may open softer
+      expect(abyssFloorWaveHp(floor), `floor ${floor}`).toBeGreaterThanOrEqual(abyssFloorWaveHp(floor - 1));
+    }
+  });
+
+  it('every boss floor is a wall, not a discount', () => {
+    // Boss floors used to swap the big third wave for one 600hp golem, which
+    // made them *easier* than the floor above.
+    for (const floor of floors.filter(isAbyssBossFloor)) {
+      expect(abyssFloorWaveHp(floor), `boss floor ${floor}`)
+        .toBeGreaterThan(abyssFloorWaveHp(floor - 1) * 1.3);
+    }
+  });
+
+  it('core health tracks the floor it is fought on', () => {
+    // All sixty floors used to inherit DungeonScene's 1,000 because the abyss
+    // stageConfig carried no dungeonHp.
+    const ratio = (floor: number) => abyssFloorDungeonHp(floor) / abyssFloorCoreDamage(floor);
+    for (const floor of floors) {
+      expect(ratio(floor), `floor ${floor} forgiveness`).toBeCloseTo(ratio(1), 2);
+    }
+    expect(abyssFloorDungeonHp(ABYSS_MAX_FLOOR)).toBeGreaterThan(abyssFloorDungeonHp(1) * 3);
+  });
+
+  it('recommended power is read off the floor, not invented', () => {
+    // The old curve claimed 406,632 at floor 60 for waves lighter than floor 26's.
+    const perHp = (floor: number) => getAbyssFloorConfig(floor).recommendedPower / abyssFloorWaveHp(floor);
+    for (const floor of floors) {
+      expect(perHp(floor), `floor ${floor}`).toBeCloseTo(perHp(1), 3);
+    }
+  });
+
+  it('tier spans ten floors and ends on a boss', () => {
+    expect(abyssTier(1)).toBe(0);
+    expect(abyssTier(ABYSS_TIER_SPAN)).toBe(0);
+    expect(abyssTier(ABYSS_TIER_SPAN + 1)).toBe(1);
+    expect(abyssTier(ABYSS_MAX_FLOOR)).toBe(ABYSS_MAX_FLOOR / ABYSS_TIER_SPAN - 1);
+    for (let tier = 0; tier * ABYSS_TIER_SPAN < ABYSS_MAX_FLOOR; tier++) {
+      expect(isAbyssBossFloor((tier + 1) * ABYSS_TIER_SPAN)).toBe(true);
+    }
   });
 });
 

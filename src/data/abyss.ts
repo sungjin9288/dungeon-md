@@ -13,7 +13,7 @@
  */
 
 import type { WaveSpec } from './stagesChapter1';
-import type { InvaderType } from './invaders';
+import { INVADER_DEFS, type InvaderType } from './invaders';
 
 export interface AbyssState {
   /** Highest floor cleared (0 = none cleared yet; floor 1 always enterable). */
@@ -71,12 +71,31 @@ export function abyssBand(floor: number): number {
 
 const BAND_LABELS = ['상층부 동굴', '중층부 폐허', '심층부 균열', '최심부 나락'] as const;
 
+/** Floor 1's numbers, which every deeper floor is expressed as a multiple of. */
+export const ABYSS_FLOOR_1_RECOMMENDED_POWER = 40;
+export const ABYSS_FLOOR_1_DUNGEON_HP = 1000;
+
+/**
+ * The dungeon core's health on a floor. Floor 1 grants 1,000 against 1,350
+ * points of incoming core damage; that ratio — how much of a floor you may leak
+ * and still clear — is held constant with depth. It used to be *literally*
+ * constant: `stageConfig` carried no `dungeonHp`, so all sixty floors fell back
+ * to DungeonScene's 1,000 while the floors' damage grew past 6,000.
+ */
+export function abyssFloorDungeonHp(floor: number): number {
+  const ratio = abyssFloorCoreDamage(floor) / abyssFloorCoreDamage(1);
+  return Math.round(ABYSS_FLOOR_1_DUNGEON_HP * ratio);
+}
+
 export function getAbyssFloorConfig(floor: number): AbyssFloorConfig {
   const f = Math.max(1, Math.min(ABYSS_MAX_FLOOR, Math.floor(floor)));
   const isBoss = isAbyssBossFloor(f);
-  // Power curve: gentle early, steeper deep; bosses spike ~1.6x.
-  const base = Math.round(40 * Math.pow(1.16, f - 1));
-  const recommendedPower = isBoss ? Math.round(base * 1.6) : base;
+  // Read off the floor's own waves rather than an invented exponential. The old
+  // curve was 40 x 1.16^(f-1) — 406,632 at floor 60 — while that floor's waves
+  // were lighter than floor 26's. The player was shown that number as 권장 전투력.
+  const recommendedPower = Math.round(
+    ABYSS_FLOOR_1_RECOMMENDED_POWER * abyssFloorWaveHp(f) / abyssFloorWaveHp(1),
+  );
   return {
     floor: f,
     isBoss,
@@ -247,34 +266,64 @@ export function nextAbyssFloor(state: AbyssState): number {
 // the shared battle scene via stageConfig.waves (the player's placed dungeon
 // auto-deploys to defend, same as invasion battles).
 
-// Primary invader by band (0..3) + the tougher boss-floor unit.
-const ABYSS_PRIMARY: InvaderType[] = ['peasant', 'soldier', 'knight', 'berserker'];
-const ABYSS_BOSS: InvaderType[] = ['knight', 'iron_golem', 'iron_golem', 'iron_golem'];
+// ─── Combat tiers ────────────────────────────────────────────────────────────
+// Combat tier is NOT the loot band. `abyssBand` (4 bands) picks the material
+// pool and the theme name; the fight advances one tier every ten floors, so
+// each boss floor closes a tier. Keeping them separate is what the old code
+// got wrong: it drove the fight off the 4 loot bands, so floors 26-45 were one
+// single encounter repeated twenty times and 46-60 another fifteen — and band
+// 3's berserker (180hp) was *weaker* than band 2's knight (350hp), making the
+// deepest floors easier than the middle ones.
+export const ABYSS_TIER_SPAN = 10;
+
+/** Combat tier 0..5 — one per ten floors, so floor 10·20·…·60 close a tier. */
+export function abyssTier(floor: number): number {
+  const f = Math.max(1, Math.min(ABYSS_MAX_FLOOR, Math.floor(floor)));
+  return Math.min(5, Math.floor((f - 1) / ABYSS_TIER_SPAN));
+}
+
+// Monotone by HP: 60 → 150 → 350 → 400 → 650 → 950.
+const ABYSS_PRIMARY: InvaderType[] = [
+  'peasant', 'soldier', 'knight', 'undying_warrior', 'celestial_knight', 'abyss_berserker',
+];
+// The tier's second unit, always lighter than its primary.
+const ABYSS_SUPPORT: InvaderType[] = [
+  'shaman', 'berserker', 'venom_dancer', 'undying_knight', 'divine_archer', 'void_soldier',
+];
+// Real bosses, each roughly half its floor's health so the boss floor is a wall
+// (the guard in abyss.test.ts holds it above 1.3x the floor before it).
+const ABYSS_BOSS: InvaderType[] = [
+  'fox_queen', 'dragon_king', 'eternal_emperor', 'god_emperor', 'primordial_titan', 'void_sovereign',
+];
 
 export function buildAbyssFloorWaves(floor: number): WaveSpec[] {
   const f = Math.max(1, Math.min(ABYSS_MAX_FLOOR, Math.floor(floor)));
-  const band = abyssBand(f);
-  const primary = ABYSS_PRIMARY[band];
-  const support: InvaderType = band >= 2 ? 'shaman' : 'shaman';
-  const count = Math.min(4 + Math.floor(f / 2), 14);
+  const tier = abyssTier(f);
+  const primary = ABYSS_PRIMARY[tier];
+  const support = ABYSS_SUPPORT[tier];
+  // Within a tier the crowd grows; the jump between tiers is carried by the
+  // unit, not the count, because the spawn count is capped by what a 390px
+  // board can hold. The old builder saturated this cap at floor 20 and then
+  // had nothing left to scale with.
+  const count = Math.min(4 + (f - 1) % ABYSS_TIER_SPAN, 14);
   const delay = Math.max(700, 1700 - f * 14);
   const reward = Math.round((30 + f * 8));
 
   const waves: WaveSpec[] = [
     { clearReward: reward, invaders: [
       { type: primary, count, spawnDelay: delay },
-      { type: support, count: 2 + band, spawnDelay: delay },
+      { type: support, count: 2 + tier, spawnDelay: delay },
     ] },
     { clearReward: reward, invaders: [
       { type: primary, count: count + 2, spawnDelay: delay },
-      { type: ABYSS_PRIMARY[Math.max(0, band - 1)], count: 3, spawnDelay: delay },
+      { type: ABYSS_PRIMARY[Math.max(0, tier - 1)], count: 3, spawnDelay: delay },
     ] },
   ];
 
   if (isAbyssBossFloor(f)) {
     waves.push({ clearReward: reward * 3, invaders: [
-      { type: ABYSS_BOSS[band], count: 1, spawnDelay: 0, isBoss: true },
-      { type: primary, count: 4, spawnDelay: delay },
+      { type: ABYSS_BOSS[tier], count: 1, spawnDelay: 0, isBoss: true },
+      { type: primary, count, spawnDelay: delay },
     ] });
   } else {
     waves.push({ clearReward: reward, invaders: [
@@ -282,4 +331,16 @@ export function buildAbyssFloorWaves(floor: number): WaveSpec[] {
     ] });
   }
   return waves;
+}
+
+/** Health a floor's waves can take off the dungeon core if nothing is stopped. */
+export function abyssFloorCoreDamage(floor: number): number {
+  return buildAbyssFloorWaves(floor).reduce((sum, wave) => sum + wave.invaders.reduce(
+    (acc, group) => acc + group.count * (INVADER_DEFS[group.type]?.damage ?? 0), 0), 0);
+}
+
+/** Total invader health a floor fields. */
+export function abyssFloorWaveHp(floor: number): number {
+  return buildAbyssFloorWaves(floor).reduce((sum, wave) => sum + wave.invaders.reduce(
+    (acc, group) => acc + group.count * (INVADER_DEFS[group.type]?.hp ?? 0), 0), 0);
 }

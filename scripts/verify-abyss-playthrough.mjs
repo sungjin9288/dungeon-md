@@ -60,20 +60,20 @@ const openScene = createSceneOpener({ browser, base });
  * unbuilt dungeon is what actually lets invaders reach the core.
  */
 async function seedDefence(page, { armed }) {
-  return page.evaluate(async ({ armed, roster }) => {
+  return page.evaluate(async ({ armed, roster, floorBelow }) => {
     const wisdom = await import('/src/data/wisdom.ts');
     const barracks = await import('/src/data/barracks.ts');
     const state = wisdom.loadGameState();
     state.dmLevel = 40;
     state.gold = 999999;
     state.ownedMonsters = roster.map(id => ({ ...barracks.defaultOwnedMonster(id), level: 40 }));
-    state.abyss = { ...state.abyss, highestFloor: 0, keys: 12 };
+    state.abyss = { ...state.abyss, highestFloor: floorBelow, keys: 12 };
     state.dungeonSlots = armed
       ? roster.map(id => ({ roomType: 'combat', monsterIds: [id], trapIds: [], roomLevel: 5, hp: 400, maxHp: 400 }))
       : [];
     wisdom.saveGameState(state);
     return { slots: state.dungeonSlots.length, armed: state.dungeonSlots.filter(slot => slot.monsterIds.length).length };
-  }, { armed, roster: ROSTER });
+  }, { armed, roster: ROSTER, floorBelow: FLOOR - 1 });
 }
 
 /** Drive every wave of the current battle to its end. */
@@ -221,7 +221,11 @@ try {
       audit.runs.push(record);
 
       const residueClear = Object.values(settled.residue).every(value => value === null);
-      const expectedFloor = mode === 'win' ? FLOOR : 0;
+      // A floor only counts as cleared when it is the *next* one
+      // (clearAbyssFloor: firstClear = floor === highestFloor + 1), so the run
+      // is seeded one floor below FLOOR. Asserting 0 here only ever worked for
+      // floor 1 and made every deeper floor a guaranteed false failure.
+      const expectedFloor = mode === 'win' ? FLOOR : FLOOR - 1;
       if (outcome !== mode) audit.failures.push({ mode, reason: `expected ${mode}, battle ended ${outcome}`, battle });
       if (!settled.activeScenes.includes('AbyssScene')) audit.failures.push({ mode, reason: 'did not return to AbyssScene', settled });
       if (settled.abyss.highestFloor !== expectedFloor) audit.failures.push({ mode, reason: `highestFloor ${settled.abyss.highestFloor} != ${expectedFloor}`, settled });
