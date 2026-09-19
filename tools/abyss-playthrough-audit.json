@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-19T12:29:10.946Z",
+  "generatedAt": "2026-09-19T12:57:23.619Z",
   "base": "http://127.0.0.1:8083",
-  "floor": 60,
+  "floor": 31,
   "scope": "Abyss floor organic play-through: real wave combat through the production wave loop, then the real result-flow button settling the floor. Not a campaign or endless endurance run.",
   "method": "Playwright context with reducedMotion: reduce so result buttons take their direct onPress path (tween onComplete does not fire under eval). Combat advances through window.advanceTime, the app's own fixed-step driver.",
   "sourceHashes": {
@@ -21,23 +21,23 @@
       "battle": {
         "wave": 3,
         "maxWave": 3,
-        "dungeonHp": 7493,
-        "maxHp": 7493,
+        "dungeonHp": 2385,
+        "maxHp": 2385,
         "armedRooms": 9,
         "timeline": [
           {
             "wave": 1,
-            "hp": 7493,
+            "hp": 2385,
             "settled": true
           },
           {
             "wave": 2,
-            "hp": 7493,
+            "hp": 2385,
             "settled": true
           },
           {
             "wave": 3,
-            "hp": 7493,
+            "hp": 2385,
             "settled": true
           }
         ]
@@ -54,14 +54,14 @@
           "AbyssScene"
         ],
         "abyss": {
-          "highestFloor": 60,
+          "highestFloor": 31,
           "keys": 12,
           "lastRefill": "2026-09-19"
         },
         "receipt": {
           "tone": "success",
-          "title": "60층 정복 완료 · 최심 59→60",
-          "detail": "영혼 파편 +5 · 어둠 천 +5 · 도깨비 파편 +5 · 마법 가루 +5 · 보스 정수 +3 · 각성석 +2 · 골드 +570"
+          "title": "31층 정복 완료 · 최심 30→31",
+          "detail": "마법 가루 +5 · 어둠 천 +2 · 얼음 결정 +2 · 골드 +309"
         },
         "residue": {
           "abyssPendingFloor": null,
@@ -71,7 +71,7 @@
       },
       "errors": [],
       "screenshot": "tools/screenshots/abyss-playthrough-win.png",
-      "sha256": "cc7640831b9f822680bee13daa057f21df55227cf5ba7be45f37cf30fe1c0d74"
+      "sha256": "a8d680244f65b0c7ebfb04982d2f4089deda7f95c9ba6d8565b638a80793598e"
     },
     {
       "mode": "loss",
@@ -80,29 +80,19 @@
         "armed": 0
       },
       "battle": {
-        "wave": 3,
+        "wave": 2,
         "maxWave": 3,
         "dungeonHp": 0,
-        "maxHp": 7493,
+        "maxHp": 2385,
         "armedRooms": 0,
         "timeline": [
           {
             "wave": 1,
-            "hp": 4768,
+            "hp": 1025,
             "settled": true
           },
           {
             "wave": 2,
-            "hp": 2263,
-            "settled": true
-          },
-          {
-            "wave": 3,
-            "hp": 378,
-            "settled": false
-          },
-          {
-            "wave": 3,
             "hp": 0,
             "settled": true
           }
@@ -120,13 +110,13 @@
           "AbyssScene"
         ],
         "abyss": {
-          "highestFloor": 59,
+          "highestFloor": 30,
           "keys": 12,
           "lastRefill": "2026-09-19"
         },
         "receipt": {
           "tone": "warning",
-          "title": "60층 원정 실패 · 최심 59층 유지",
+          "title": "31층 원정 실패 · 최심 30층 유지",
           "detail": "심연 정복 보상 없음 · 같은 층에 다시 도전할 수 있습니다"
         },
         "residue": {
@@ -137,7 +127,7 @@
       },
       "errors": [],
       "screenshot": "tools/screenshots/abyss-playthrough-loss.png",
-      "sha256": "5b4898c258225e6f55d9546ad4c72fd95436f20e85617ddf166e740bcfc60e83"
+      "sha256": "96bfb71e3e472291a637f0d625952c089a48f986f67fb1d158cd48e48d61a65a"
     }
   ],
   "failures": [],
