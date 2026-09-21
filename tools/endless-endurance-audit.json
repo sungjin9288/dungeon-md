@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-09-20T22:57:16.298Z",
+  "base": "http://127.0.0.1:8083",
+  "waveCap": 40,
+  "forcedModifier": null,
+  "scope": "Endless endurance organic run: real wave combat through the production wave loop, the rolled run modifier held against the pure spawn queue, and the result scene read back. Not a layout audit (verify-endless-result.mjs owns that).",
+  "method": "Playwright with reducedMotion: reduce so result buttons take their direct onPress path. Combat advances through window.advanceTime, the app's own fixed-step driver, at the 3x battle speed the mode ships with.",
+  "sourceHashes": {
+    "src/data/endlessWave.ts": "e1bdef0180bde30fe5aef588f766ce1e65439c0e7f6e20de81843d5dfb0f0f0b",
+    "src/data/endlessModifiers.ts": "1baad24a27ee4cb9b3707400bdc1759a61a9025064a1217fad39644fb18af44a",
+    "src/combat/WaveStart.ts": "6f53e189f340ad9ade3d3bb0650f2905af0243da05b4350afa8723834816007f",
+    "src/combat/DungeonSceneInit.ts": "bb444fa5e4beae2ecd1180fa7167fbd5626ecc890540c4c2e8827fab90841dfa",
+    "src/scenes/EndlessResultScene.ts": "18c363eb4b9343cb35a3b57b65ec1c3556adbff7c7c6ab04aba646fe8e241984",
+    "scripts/verify-endless-endurance.mjs": "693dd4b341b8e761f85c72f36dd55a48dbd716bafe7d1e9529d6a035b48abb74"
+  },
+  "runs": [],
+  "failures": [
+    {
+      "reason": "Error: page.evaluate: Execution context was destroyed, most likely because of a navigation."
+    }
+  ],
+  "summary": {
+    "runs": 0,
+    "hardFailures": 1
+  }
+}
