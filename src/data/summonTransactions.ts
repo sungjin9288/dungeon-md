@@ -1,6 +1,6 @@
 import { type SeasonBanner } from './banners';
 import { defaultOwnedMonster } from './barracks';
-import { MONSTER_DEFS, type MonsterId } from './monsters';
+import { type MonsterId } from './monsters';
 import { applyQuestObjectiveUpdate, tickSubQuestProgress } from './quests';
 import {
   RARITIES,
@@ -91,22 +91,28 @@ function applyBannerBoostWithRng(
   return pickRandom(pool, rng);
 }
 
-function getHighestClearedStage(state: GameState): number {
-  return (state.stageProgress ?? []).reduce(
-    (max: number, progress: { bestStars?: number }, idx: number) =>
-      (progress?.bestStars ?? 0) > 0 ? idx + 1 : max,
-    0,
-  );
-}
-
-function getSummonPool(state: GameState, rarity: SummonRarity): MonsterId[] {
-  const base = RARITY_POOLS[rarity];
-  const highestCleared = getHighestClearedStage(state);
-  if (highestCleared <= 0) return base;
-  return base.filter(id => {
-    const monster = MONSTER_DEFS[id as keyof typeof MONSTER_DEFS];
-    return !monster || (monster.unlockStage ?? 1) <= highestCleared;
-  });
+/**
+ * The catalogue a summon draws from — `RARITY_POOLS` as written, gated by
+ * RARITY and nothing else.
+ *
+ * This used to also filter by `unlockStage <= highestClearedStage`, which
+ * collapsed the gacha the moment a player cleared anything: the pool went from
+ * 114 monsters at zero clears to 1 at one clear (uncommon/rare/epic/legendary
+ * all empty), and an empty pool aborts the whole pull with 'empty_summon_pool'.
+ * Worse, the pity ceiling forces epic (normal) or legendary (special) while the
+ * gate emptied epic until stage 24 and legendary until stage 43 — and the
+ * failure path returns the ORIGINAL state, so the ceiling counter never
+ * cleared and the summon button stayed permanently dead. Those two systems
+ * cannot both be intended, which is what proved the gate was not.
+ *
+ * `unlockStage` means "when this monster appears in the story" (see
+ * CHARACTER_B1_SPEC.md) and is the pacing model's roster lever
+ * (`campaignPacing.expectedRoster`). Reusing it here double-gated acquisition
+ * against data that was never tuned for it. Summoning ahead of the story is
+ * what a gacha is for; rarity is the gate.
+ */
+function getSummonPool(_state: GameState, rarity: SummonRarity): MonsterId[] {
+  return RARITY_POOLS[rarity];
 }
 
 export function applySummonPull(

@@ -55,3 +55,18 @@ describe('redeeming tribe shards', () => {
     expect(s.ownedMonsters).toHaveLength(1);
   });
 });
+
+describe('progress never shrinks what shards can redeem', () => {
+  // Same blind spot as summonTransactions.test.ts: every fixture here pinned
+  // stageProgress to [], the one value where the old unlockStage gate was inert.
+  it('a tribe stays redeemable at every progress depth', () => {
+    for (const depth of [0, 1, 5, 23, 42, 80]) {
+      const progress = Array.from({ length: depth }, () => ({ unlocked: true, bestStars: 3 }));
+      const options = redeemableTribeMonsters(
+        state({ ownedMonsters: [], stageProgress: progress as never }),
+        'dokkaebi',
+      );
+      expect(options.length, `depth ${depth}`).toBeGreaterThan(0);
+    }
+  });
+});

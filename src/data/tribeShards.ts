@@ -31,25 +31,20 @@ export function getTribeShards(state: Readonly<Pick<GameState, 'tribeShards'>>, 
   return state.tribeShards?.[tribe] ?? 0;
 }
 
-function highestClearedStage(state: Readonly<Pick<GameState, 'stageProgress'>>): number {
-  return (state.stageProgress ?? []).reduce(
-    (max: number, progress: { bestStars?: number }, idx: number) => ((progress?.bestStars ?? 0) > 0 ? idx + 1 : max),
-    0,
-  );
-}
-
 /** Summonable guardians of `tribe` the player does not own yet, gated like the summon pools. */
 export function redeemableTribeMonsters(
-  state: Readonly<Pick<GameState, 'ownedMonsters' | 'stageProgress'>>,
+  state: Readonly<Pick<GameState, 'ownedMonsters'>>,
   tribe: string,
 ): MonsterId[] {
   const owned = new Set((state.ownedMonsters ?? []).map(monster => monster.id));
-  const cleared = highestClearedStage(state);
   const summonable = new Set<MonsterId>(Object.values(RARITY_POOLS).flat() as MonsterId[]);
+  // Redemption draws from the same catalogue a summon does, for the same reason
+  // the summon pool is no longer stage-gated (see getSummonPool): the gate
+  // emptied on progress, so a player holding 100 shards was told the tribe was
+  // complete when it was not.
   return (Object.keys(MONSTER_DEFS) as MonsterId[]).filter(id => {
     const def = MONSTER_DEFS[id];
-    if (def.tribe !== tribe || owned.has(id) || !summonable.has(id)) return false;
-    return cleared <= 0 || (def.unlockStage ?? 1) <= cleared;
+    return def.tribe === tribe && !owned.has(id) && summonable.has(id);
   });
 }
 

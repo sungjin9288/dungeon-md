@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SEASON_BANNERS } from './banners';
 import { defaultOwnedMonster } from './barracks';
+import { RARITIES, RARITY_POOLS } from './summonPools';
 import { applySummonPull } from './summonTransactions';
 import type { GameState } from './wisdom';
 
@@ -227,6 +228,55 @@ describe('summonTransactions — applySummonPull', () => {
       expect(soulResult.required).toBe(50);
       expect(soulResult.available).toBe(49);
       expect(soulResult.state).toBe(noSoul);
+    }
+  });
+});
+
+/** stageProgress entries marking stages 1..n cleared — the shape every other fixture omits. */
+function cleared(n: number): Array<{ unlocked: boolean; bestStars: number }> {
+  return Array.from({ length: n }, () => ({ unlocked: true, bestStars: 3 }));
+}
+
+describe('progress never shrinks what a summon can draw', () => {
+  // Every fixture in this file pinned stageProgress to [], which was the one
+  // value where the old unlockStage gate was inert (it had an explicit
+  // `highestCleared <= 0` escape hatch). So eleven tests ran green while
+  // clearing stage 1 took the live pool from 114 monsters to 1 and the pity
+  // ceiling bricked the summon button outright.
+  const ALWAYS_COMMON = () => 0.999;
+
+  it('pulls succeed at every progress depth, not just a fresh save', () => {
+    for (const depth of [0, 1, 2, 5, 23, 42, 80]) {
+      const state = makeState({ gems: 100_000, stageProgress: cleared(depth) as never });
+      const result = applySummonPull(state, 'normal', 1, { rng: ALWAYS_COMMON, today: '2026-01-01', timestamp: 0 });
+      expect(result.ok, `depth ${depth}: ${result.ok ? '' : result.reason}`).toBe(true);
+    }
+  });
+
+  it('the pity ceiling can always be paid — its forced rarity is never empty', () => {
+    // normal forces epic, special forces legendary. The gate emptied epic until
+    // stage 24 and legendary until stage 43, and the failure path returned the
+    // original state, so the counter stayed at the ceiling forever.
+    for (const [type, guaranteed] of [['normal', 50], ['special', 80]] as const) {
+      for (const depth of [0, 1, 10, 23, 42]) {
+        const state = makeState({
+          gems: 100_000,
+          stageProgress: cleared(depth) as never,
+          summonPity: {
+            normal: { count: type === 'normal' ? guaranteed - 1 : 0, guaranteed: 50 },
+            special: { count: type === 'special' ? guaranteed - 1 : 0, guaranteed: 80 },
+          },
+        });
+        const result = applySummonPull(state, type, 1, { rng: ALWAYS_COMMON, today: '2026-01-01', timestamp: 0 });
+        expect(result.ok, `${type} ceiling at depth ${depth}: ${result.ok ? '' : result.reason}`).toBe(true);
+        if (result.ok) expect(result.state.summonPity?.[type].count).toBe(0);
+      }
+    }
+  });
+
+  it('every rarity keeps a non-empty catalogue', () => {
+    for (const rarity of RARITIES) {
+      expect(RARITY_POOLS[rarity].length, `${rarity} pool`).toBeGreaterThan(0);
     }
   });
 });
