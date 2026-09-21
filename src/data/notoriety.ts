@@ -79,15 +79,22 @@ const T9: InvaderType[] = [...T8, 'titan_sentinel', 'heaven_general', 'sky_titan
 const T10: InvaderType[] = [...T9, 'abyss_berserker', 'abyss_reaver'];
 
 export const NOTORIETY_BANDS: readonly NotorietyBand[] = [
+  // The 보스 ladder must not fall as the tier rises. It used to: tier 5 fielded
+  // void_assassin_elite (350 hp, the same as tier 1's knight) after tier 4's
+  // fox_queen (1,600), and tier 8 fielded titan_sentinel (1,500) after tier 7's
+  // death_emissary (3,000). Measured over 300 seeds, the elite finale WAVE was
+  // 53% lighter at tier 5 than tier 4 and 37% lighter at tier 8 than tier 7 —
+  // so raising 명성, which the player does by explicit approval, made the elite
+  // card EASIER at two rungs. notorietyBands.test.ts now guards monotonicity.
   { tier: 1,  pool: T1,  bosses: ['knight'],                                                              lootMult: 1.0,  dungeonHp: 1500 },
   { tier: 2,  pool: T2,  bosses: ['knight'],                                                              lootMult: 1.15, dungeonHp: 1700 },
   { tier: 3,  pool: T3,  bosses: ['iron_golem'],                                                          lootMult: 1.3,  dungeonHp: 1900 },
   { tier: 4,  pool: T4,  bosses: ['fox_queen'],                                                           lootMult: 1.5,  dungeonHp: 2200 },
-  { tier: 5,  pool: T5,  bosses: ['void_assassin_elite'],                                                 lootMult: 1.75, dungeonHp: 2500 },
+  { tier: 5,  pool: T5,  bosses: ['abyss_reaver'],                                                         lootMult: 1.75, dungeonHp: 2500 },
   { tier: 6,  pool: T6,  bosses: ['dragon_king'],                                                         lootMult: 2.0,  dungeonHp: 2900 },
   { tier: 7,  pool: T7,  bosses: ['death_emissary'],                                                      lootMult: 2.4,  dungeonHp: 3300 },
-  { tier: 8,  pool: T8,  bosses: ['titan_sentinel'],                                                      lootMult: 2.9,  dungeonHp: 3800 },
-  { tier: 9,  pool: T9,  bosses: ['celestial_dragon'],                                                    lootMult: 3.5,  dungeonHp: 4400 },
+  { tier: 8,  pool: T8,  bosses: ['celestial_dragon'],                                                    lootMult: 2.9,  dungeonHp: 3800 },
+  { tier: 9,  pool: T9,  bosses: ['three_god_destroyer'],                                                 lootMult: 3.5,  dungeonHp: 4400 },
   { tier: 10, pool: T10, bosses: ['eternal_emperor', 'three_god_destroyer', 'god_emperor', 'primordial_titan', 'void_sovereign'], lootMult: 4.5, dungeonHp: 5000 },
 ];
 

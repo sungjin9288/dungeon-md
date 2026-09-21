@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { TOTAL_STAGES } from './stageProgress';
 import {
   BRANCH_DEFS,
   ROOM_SLOT_TYPE_DEFS,
@@ -208,7 +209,7 @@ describe('loadGameState / saveGameState', () => {
 // ─── StageProgress migration ─────────────────────────────────────────────────
 
 describe('stageProgress migration', () => {
-  it('pads short stageProgress arrays up to 62+ stages', () => {
+  it('pads short stageProgress arrays to the full stage count', () => {
     const shortSave = {
       dmLevel: 1,
       homeGold: 200,
@@ -219,7 +220,10 @@ describe('stageProgress migration', () => {
     };
     localStorage.setItem(GAME_STATE_KEY, JSON.stringify(shortSave));
     const state = loadGameState();
-    expect(state.stageProgress.length).toBeGreaterThanOrEqual(62);
+    // Was `>= 62`, a bound left over from before chapters 7-9 existed: a
+    // regression that padded to 62 and stopped would have passed. The two
+    // sibling cases above already pin the exact count; this one now does too.
+    expect(state.stageProgress).toHaveLength(TOTAL_STAGES);
     // First two entries preserved
     expect(state.stageProgress[0]).toEqual({ unlocked: true, bestStars: 3 });
     expect(state.stageProgress[1]).toEqual({ unlocked: true, bestStars: 2 });
