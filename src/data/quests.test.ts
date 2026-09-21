@@ -16,6 +16,7 @@ import {
   grantQuestSkins,
   prepareSubQuestLogViewState,
   startQuest,
+  nextObjectiveProgress,
   tickSubQuestProgress,
 } from './quests';
 
@@ -912,3 +913,39 @@ describe('grantQuestSkins — skin grants', () => {
     expect(skins).not.toContain('eternal_crow');
   });
 });
+
+describe('complete_stage progress is a position, not a running total', () => {
+  // StageClearFlow ticks this with the cleared stage NUMBER as the amount. The
+  // generic add-up path turned that into a sum, so a "스테이지 11 클리어"
+  // objective completed after clearing 1+2+3+4+5 = 15, and replaying stage 1
+  // eleven times finished it without leaving the tutorial.
+  it('clearing early stages never adds up to a later target', () => {
+    let progress = 0;
+    for (const stage of [1, 2, 3, 4, 5]) {
+      progress = nextObjectiveProgress('complete_stage', progress, stage, 11);
+    }
+    expect(progress).toBe(5);
+    expect(progress).toBeLessThan(11);
+  });
+
+  it('replaying one stage cannot grind out a target', () => {
+    let progress = 0;
+    for (let i = 0; i < 20; i++) progress = nextObjectiveProgress('complete_stage', progress, 1, 11);
+    expect(progress).toBe(1);
+  });
+
+  it('clearing the target stage satisfies it immediately', () => {
+    expect(nextObjectiveProgress('complete_stage', 0, 73, 73)).toBe(73);
+    expect(nextObjectiveProgress('complete_stage', 10, 11, 11)).toBe(11);
+  });
+
+  it('progress never falls back when a cleared stage is replayed', () => {
+    expect(nextObjectiveProgress('complete_stage', 40, 3, 73)).toBe(40);
+  });
+
+  it('counting objectives still accumulate', () => {
+    let progress = 0;
+    for (let i = 0; i < 5; i++) progress = nextObjectiveProgress('defend_invasion', progress, 3, 100);
+    expect(progress).toBe(15);
+  });
+})

@@ -91,6 +91,34 @@ export interface ObjectiveUpdate {
   questDone: boolean;
 }
 
+/**
+ * Objective types whose `amount` is a POSITION, not a count.
+ *
+ * `complete_stage` ticks with the cleared stage NUMBER as its amount
+ * (StageClearFlow: "Pass stageNum as amount so complete_stage objectives like
+ * target=73 are satisfied immediately on clearing that specific stage"). The
+ * generic path adds amounts up, which turned that into a running SUM: a
+ * "스테이지 11 클리어" objective was satisfied by clearing 1+2+3+4+5 = 15, and
+ * replaying stage 1 eleven times finished it without ever leaving the tutorial.
+ * Progress for these is the high-water mark instead.
+ *
+ * `reach_dm_level` has the same shape but is already handled by comparing
+ * against `gs.dmLevel` directly (see syncAutoMetObjectives), so it never went
+ * through this path.
+ */
+const POSITIONAL_OBJECTIVES: ReadonlySet<ObjectiveType> = new Set(['complete_stage']);
+
+/** Progress an objective from `current` by `amount`, honouring positional types. */
+export function nextObjectiveProgress(
+  type: ObjectiveType,
+  current: number,
+  amount: number,
+  target: number,
+): number {
+  const raw = POSITIONAL_OBJECTIVES.has(type) ? Math.max(current, amount) : current + amount;
+  return Math.min(raw, target);
+}
+
 export function applyQuestObjectiveUpdate(
   gs:     GameState,
   type:   ObjectiveType,
@@ -107,7 +135,7 @@ export function applyQuestObjectiveUpdate(
     const cur  = prog.objectives[obj.id] ?? 0;
     if (cur >= obj.target) continue;
 
-    const next = Math.min(cur + amount, obj.target);
+    const next = nextObjectiveProgress(obj.type, cur, amount, obj.target);
     const nextObjectives = { ...prog.objectives, [obj.id]: next };
     const nextProgress = { ...prog, objectives: nextObjectives };
     const nextGs = {
@@ -388,7 +416,7 @@ export function tickSubQuestProgress(
     if (!sq || sq.objective.type !== type) continue;
     const prev = prevProg[sqId] ?? 0;
     if (prev >= sq.objective.target) continue;
-    newProg[sqId] = Math.min(prev + amount, sq.objective.target);
+    newProg[sqId] = nextObjectiveProgress(sq.objective.type, prev, amount, sq.objective.target);
   }
   return { ...gs, activeSubQuestIds: activeIds, subQuestProgress: newProg };
 }
