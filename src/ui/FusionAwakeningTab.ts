@@ -1,7 +1,7 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
-import { type OwnedMonster } from '../data/barracks';
+import { type OwnedMonster, AWAKENED_ATK_MULT } from '../data/barracks';
 import { applyFusionAwakening } from '../data/fusionTransactions';
 import {
   AWAKENED_PASSIVES,
@@ -143,11 +143,11 @@ export function buildAwakeningTab(
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   c.add(ctx.scene.add.text(panelX + 30, previewY + 48,
-    target ? `동일 ID ${affectedCount}체 모두 ATK stack +3` : '대상을 선택하면 적용 범위를 계산합니다', {
+    target ? awakeningDeliveredEffect(affectedCount) : '대상을 선택하면 적용 범위를 계산합니다', {
       fontFamily: 'sans-serif', fontSize: '14px', color: '#aeb8ed', fontStyle: 'bold',
     }).setOrigin(0, 0.5));
   c.add(ctx.scene.add.text(panelX + 30, previewY + 78,
-    passive ? `고유 passive · ${passive.desc}` : '해당 계보의 고유 passive 정보 없음', {
+    passive ? `계보 전승(구현 예정) · ${passive.desc}` : '해당 계보의 전승 정보 없음', {
       fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
       wordWrap: { width: panelW - 60 },
     }).setOrigin(0, 0.5));
@@ -178,12 +178,28 @@ export function buildAwakeningTab(
       showConfirmDialog(
         ctx,
         `${getMonsterDisplayName(target.id)}의 서약을 완성합니다`,
-        `각성석 1개 소모 · 동일 ID ${affectedCount}체 ATK stack +3\n${passive?.desc ?? '고유 passive 정보 없음'}`,
+        `각성석 1개 소모 · ${awakeningDeliveredEffect(affectedCount)}`,
         '각성',
         () => executeAwakening(ctx, state, target),
       );
     });
   c.add([action.bg, action.text, action.zone]);
+}
+
+/**
+ * What awakening actually gives you, stated once and reused by the preview, the
+ * confirm dialog and the success panel.
+ *
+ * `AWAKENED_PASSIVES` describes 30 bespoke mechanics (piercing attacks,
+ * permanent auras, room immunity, execute-on-crit) that combat does not
+ * implement — `monsterAwakened` has no reference under src/combat at all. Those
+ * entries are a design backlog; printing one under the price read as a promise
+ * of something the player would not receive, which is why the purchase surfaces
+ * no longer do it.
+ */
+function awakeningDeliveredEffect(affectedCount: number): string {
+  const bonus = Math.round((AWAKENED_ATK_MULT - 1) * 100);
+  return `동일 ID ${affectedCount}체 모두 ATK stack +3 · 각성 ATK +${bonus}%`;
 }
 
 function executeAwakening(
@@ -207,7 +223,7 @@ function executeAwakening(
   showFusionAnimation(ctx, '각성', () => {
     showFusionResultPanel(ctx, {
       tabId: '각성', title: `${getMonsterDisplayName(monster.id)} 각성 완료`,
-      detail: `동일 ID ${result.affectedCount}체 모두 ATK stack +3\n고유 passive가 해방되었습니다.`,
+      detail: awakeningDeliveredEffect(result.affectedCount),
     });
   });
 }

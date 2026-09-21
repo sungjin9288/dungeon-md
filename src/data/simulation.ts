@@ -61,9 +61,12 @@ export function calcDungeonDps(
   slots: DungeonSlot[],
   ownedMonsters: OwnedMonster[],
   monsterAffinity: Readonly<Record<string, number>> | undefined = undefined,
+  monsterAwakened: Readonly<Record<string, boolean>> | undefined = undefined,
 ): number {
   let dps = 0;
-  const raising = buildGuardianAtkMultMap(ownedMonsters, monsterAffinity);
+  // Same map combat builds (DungeonScene). CLAUDE.md pins this: the forecast and
+  // the fight must read one lever, so 흡수 stacks and 각성 land in both.
+  const raising = buildGuardianAtkMultMap(ownedMonsters, monsterAffinity, monsterAwakened);
 
   for (const slot of slots) {
     if (!slot || slot.hp <= 0) continue;

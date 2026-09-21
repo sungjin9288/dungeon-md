@@ -1,3 +1,4 @@
+import { bondAtkMult } from './bond';
 import { describe, it, expect } from 'vitest';
 import {
   xpToNextLevel,
@@ -12,7 +13,11 @@ import {
   defaultOwnedMonster,
   STARTER_ROSTER,
   type OwnedMonster,
-  type SkillNode, guardianAtkMult, buildGuardianAtkMultMap } from './barracks';
+  type SkillNode, guardianAtkMult, buildGuardianAtkMultMap,
+  AWAKENED_ATK_MULT,
+  ABSORPTION_ATK_GROWTH,
+  ABSORPTION_STACK_MAX,
+} from './barracks';
 import { BLUEPRINT_DEFS } from './fusion';
 
 // ─── xpToNextLevel ────────────────────────────────────────────────────────────
@@ -700,3 +705,46 @@ describe('guardianAtkMult — the raising multiplier combat and the forecast sha
     expect(buildGuardianAtkMultMap(undefined).size).toBe(0);
   });
 });
+
+describe('흡수 스택과 각성이 실제 전투 수치에 들어간다', () => {
+  // Both were write-only fields. `monsterAwakened` had zero references under
+  // src/combat and the only thing applyFusionAwakening mutated
+  // (absorptionStacks) was read exactly once, by the fusion UI that displays it
+  // as "ATK stack". So a player spent an awakening stone and a 100-point 교감
+  // grind for a boolean that filtered the monster out of its own picker.
+  const base = () => guardianAtkMult(10, {}, 0);
+
+  it('흡수 스택이 ATK를 올린다', () => {
+    expect(guardianAtkMult(10, {}, 0, { absorptionStacks: 1 })).toBeGreaterThan(base());
+    expect(guardianAtkMult(10, {}, 0, { absorptionStacks: 10 }))
+      .toBeCloseTo(base() * Math.pow(ABSORPTION_ATK_GROWTH, 10), 6);
+  });
+
+  it('스택은 상한에서 멈추고 음수에 무너지지 않는다', () => {
+    const capped = guardianAtkMult(10, {}, 0, { absorptionStacks: ABSORPTION_STACK_MAX });
+    expect(guardianAtkMult(10, {}, 0, { absorptionStacks: 99 })).toBeCloseTo(capped, 6);
+    expect(guardianAtkMult(10, {}, 0, { absorptionStacks: -5 })).toBeCloseTo(base(), 6);
+  });
+
+  it('각성이 ATK를 올린다', () => {
+    expect(guardianAtkMult(10, {}, 0, { awakened: true })).toBeCloseTo(base() * AWAKENED_ATK_MULT, 6);
+  });
+
+  it('레벨·강타·교감·흡수·각성이 서로를 덮지 않고 곱해진다', () => {
+    const all = guardianAtkMult(10, { A1: 1 }, 100, { absorptionStacks: 4, awakened: true });
+    const expected = guardianAtkMult(10, {}, 0)
+      * 1.15
+      * bondAtkMult(100)
+      * Math.pow(ABSORPTION_ATK_GROWTH, 4)
+      * AWAKENED_ATK_MULT;
+    expect(all).toBeCloseTo(expected, 6);
+  });
+
+  it('맵 빌더가 두 필드를 모두 실어 나른다 — 전투와 시뮬이 같은 레버를 본다', () => {
+    const owned = [{ ...defaultOwnedMonster('dokkaebi_warrior'), level: 10, absorptionStacks: 6 }];
+    const plain = buildGuardianAtkMultMap(owned, {}, {});
+    const awake = buildGuardianAtkMultMap(owned, {}, { dokkaebi_warrior: true });
+    expect(plain.get('dokkaebi_warrior')).toBeCloseTo(base() * Math.pow(ABSORPTION_ATK_GROWTH, 6), 6);
+    expect(awake.get('dokkaebi_warrior')).toBeCloseTo(plain.get('dokkaebi_warrior')! * AWAKENED_ATK_MULT, 6);
+  });
+})

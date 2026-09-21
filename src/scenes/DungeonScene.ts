@@ -248,7 +248,7 @@ export class DungeonScene extends Phaser.Scene {
 
     // Build monster → equipment stats / raising multiplier lookups
     this.equipmentMap = buildEquipmentMap(gameState);
-    this.guardianAtkMult = buildGuardianAtkMultMap(gameState.ownedMonsters, gameState.monsterAffinity);
+    this.guardianAtkMult = buildGuardianAtkMultMap(gameState.ownedMonsters, gameState.monsterAffinity, gameState.monsterAwakened);
 
     // Resolve stage config, wave list, daily/weekly overrides
     const setup           = resolveStageSetup(this.registry, gameState);

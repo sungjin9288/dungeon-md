@@ -49,10 +49,50 @@ export const GUARDIAN_LEVEL_ATK_GROWTH = 1.03;
  * the forecast simulation both apply this, so the barracks ATK figure is the
  * number that actually fights.
  */
-export function guardianAtkMult(level: number, spentSkills: Readonly<Record<string, number>> | undefined, affinity = 0): number {
+/**
+ * Awakening's payload. 각성 is gated behind 교감 affinity 100 — the top bond
+ * tier, itself +15% — and costs an awakening stone on top, so it sits one step
+ * above that ladder.
+ *
+ * Until this existed, awakening delivered NOTHING: `monsterAwakened` had zero
+ * references under src/combat, and the only field `applyFusionAwakening`
+ * mutated (absorptionStacks) had no reader outside the fusion UI. The player
+ * paid a stone and a 100-point grind for a boolean that filtered the monster
+ * out of its own picker.
+ *
+ * The 30 entries in `AWAKENED_PASSIVES` promise bespoke mechanics (piercing
+ * attacks, permanent auras, room immunity, execute-on-crit). Those are a design
+ * backlog, not something this multiplier stands in for — see
+ * docs/design/AGENT_HANDOFF.md. What this guarantees is that awakening is not a
+ * paid no-op.
+ */
+export const AWAKENED_ATK_MULT = 1.25;
+
+/** Per-stack ATK growth from 흡수 — deliberately the same step a level buys. */
+export const ABSORPTION_ATK_GROWTH = GUARDIAN_LEVEL_ATK_GROWTH;
+export const ABSORPTION_STACK_MAX = 10;
+
+export interface GuardianRaising {
+  /** 흡수 stacks 0–10; the fusion UI already calls these "ATK stack". */
+  readonly absorptionStacks?: number;
+  /** 각성 (fusion awakening) — GameState.monsterAwakened[monsterId]. */
+  readonly awakened?: boolean;
+}
+
+export function guardianAtkMult(
+  level: number,
+  spentSkills: Readonly<Record<string, number>> | undefined,
+  affinity = 0,
+  raising: GuardianRaising = {},
+): number {
   let mult = Math.pow(GUARDIAN_LEVEL_ATK_GROWTH, Math.max(1, level) - 1);
   // Combat tree A1 강타: +15%
   if ((spentSkills?.['A1'] ?? 0) >= 1) mult *= 1.15;
+  // 흡수 stacks: the same +3% step a level buys, capped at 10.
+  const stacks = Math.max(0, Math.min(ABSORPTION_STACK_MAX, Math.floor(raising.absorptionStacks ?? 0)));
+  mult *= Math.pow(ABSORPTION_ATK_GROWTH, stacks);
+  // 각성: the tier above 교감 일심.
+  if (raising.awakened) mult *= AWAKENED_ATK_MULT;
   // 교감 tiers (bond.ts): +3/6/10/15% at 25/50/75/100.
   return mult * bondAtkMult(affinity);
 }
@@ -61,9 +101,15 @@ export function guardianAtkMult(level: number, spentSkills: Readonly<Record<stri
 export function buildGuardianAtkMultMap(
   ownedMonsters: readonly OwnedMonster[] | undefined,
   monsterAffinity: Readonly<Record<string, number>> | undefined = undefined,
+  monsterAwakened: Readonly<Record<string, boolean>> | undefined = undefined,
 ): Map<string, number> {
   const map = new Map<string, number>();
-  for (const monster of ownedMonsters ?? []) map.set(monster.id, guardianAtkMult(monster.level, monster.spentSkills, monsterAffinity?.[monster.id] ?? 0));
+  for (const monster of ownedMonsters ?? []) {
+    map.set(monster.id, guardianAtkMult(monster.level, monster.spentSkills, monsterAffinity?.[monster.id] ?? 0, {
+      absorptionStacks: monster.absorptionStacks,
+      awakened: monsterAwakened?.[monster.id] ?? false,
+    }));
+  }
   return map;
 }
 
