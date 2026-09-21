@@ -4,7 +4,9 @@ import { CASUAL } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_Y } from '../constants/layout';
 import { startPrepCountdown } from './WaveLifecycle';
 import type { RoomData } from '../data/rooms';
-import { loadGameState, type WisdomBonuses } from '../data/wisdom';
+import { loadGameState, type WisdomBonuses, saveGameState } from '../data/wisdom';
+import { applyDailyChallengeTick, waveDailyChallengeTicks } from '../data/daily';
+import { MONSTER_DEFS } from '../data/monsters';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import { logger } from '../utils/logger';
 import { showResultPanel } from './ResultPanel';
@@ -91,6 +93,42 @@ export interface ResultFlowContext {
 
 // ── showWaveClear ─────────────────────────────────────────────────────────────
 
+/**
+ * Credit the daily challenges a cleared wave satisfies.
+ *
+ * Only `skill_use` was ever ticked (DungeonScene.activateSkill). The other four
+ * objective types had no production call site at all, so 50 of the 59 challenge
+ * templates could never be completed and the panel advertised them anyway:
+ *   tribe_only 24 · kill_count 11 · wave_clear 10 · no_damage 5 · skill_use 9
+ *
+ * Everything is credited once per wave rather than per kill — a load/save per
+ * kill would run hundreds of times a wave.
+ */
+function tickWaveDailyChallenges(ctx: ResultFlowContext): void {
+  const tribes = new Set<string>();
+  for (const row of ctx.roomGrid) {
+    for (const data of row) {
+      for (const monsterId of data?.monsterSlots ?? []) {
+        const tribe = monsterId ? MONSTER_DEFS[monsterId as keyof typeof MONSTER_DEFS]?.tribe : undefined;
+        if (tribe) tribes.add(tribe);
+      }
+    }
+  }
+
+  let gs = loadGameState();
+  let changed = false;
+  for (const tick of waveDailyChallengeTicks({
+    kills: ctx.killsThisWave,
+    breakthroughs: ctx.breakthruCount,
+    tribesOnBoard: [...tribes],
+  })) {
+    const result = applyDailyChallengeTick(gs, tick.type, tick.amount, tick.filter);
+    gs = result.state;
+    changed = changed || result.changed;
+  }
+  if (changed) saveGameState(gs);
+}
+
 export function showWaveClear(ctx: ResultFlowContext): void {
   const waveCfgReward = ctx.waveConfigs[ctx.wave - 1]?.clearReward;
   const fallback = 50 + ctx.wave * 10 + (ctx.stageChapter - 1) * 40;
@@ -99,6 +137,8 @@ export function showWaveClear(ctx: ResultFlowContext): void {
   ctx.setGold(ctx.gold + reward);
   ctx.showFloatText(CANVAS_WIDTH / 2, GRID_Y + 30, `+${reward} 골드`, '#ffc63a');
   audioManager.playSfx('wave_clear');
+
+  tickWaveDailyChallenges(ctx);
 
   const stars = ctx.dungeonHp / ctx.maxHp > 0.8 ? 3
               : ctx.dungeonHp / ctx.maxHp > 0.4 ? 2 : 1;

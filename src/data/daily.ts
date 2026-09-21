@@ -394,6 +394,42 @@ export function prepareDailyChallengeViewState(
  * Increment progress for all today's daily challenges of a given objective type.
  * Returns a transaction result; caller must saveGameState when changed is true.
  */
+export interface ClearedWaveFacts {
+  /** Invaders killed during this wave. */
+  readonly kills: number;
+  /** Invaders that reached the core this wave; 0 means it went untouched. */
+  readonly breakthroughs: number;
+  /** Distinct tribes among the guardians deployed on the board. */
+  readonly tribesOnBoard: readonly string[];
+}
+
+export interface DailyChallengeTick {
+  readonly type: DailyChallenge['objective']['type'];
+  readonly amount: number;
+  readonly filter?: string;
+}
+
+/**
+ * Which daily challenges a cleared wave credits.
+ *
+ * Kept pure and separate from ResultFlow (which is Phaser-coupled) so the
+ * decision is testable — the same split spawnDefResolve.ts and
+ * waveEventMults.ts use. It exists because only `skill_use` ever had a
+ * production call site: the other four objective types were never ticked
+ * anywhere, leaving 50 of 59 templates impossible to finish while the panel
+ * advertised them (tribe_only 24 · kill_count 11 · wave_clear 10 · no_damage 5).
+ */
+export function waveDailyChallengeTicks(facts: ClearedWaveFacts): DailyChallengeTick[] {
+  const ticks: DailyChallengeTick[] = [{ type: 'wave_clear', amount: 1 }];
+  if (facts.kills > 0) ticks.push({ type: 'kill_count', amount: facts.kills });
+  if (facts.breakthroughs === 0) ticks.push({ type: 'no_damage', amount: 1 });
+  // "이 종족만으로" only counts when the board really is that one tribe.
+  if (facts.tribesOnBoard.length === 1) {
+    ticks.push({ type: 'tribe_only', amount: 1, filter: facts.tribesOnBoard[0] });
+  }
+  return ticks;
+}
+
 export function applyDailyChallengeTick(
   gs: GameState,
   type: DailyChallenge['objective']['type'],

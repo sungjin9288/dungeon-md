@@ -11,6 +11,7 @@ import {
   getThisWeekMonday,
   type DailyDungeon,
   WEEKLY_BOSS_POOL,
+  waveDailyChallengeTicks,
 } from './daily';
 import type { GameState } from './wisdom';
 
@@ -759,3 +760,70 @@ describe('getDailyDungeon — wave invader grouping & clearReward formulas', () 
     expect(p2).toBe(Math.min(2, ch.objective.target));
   });
 });
+
+describe('모든 일일 도전 목표 타입이 실제로 진행된다', () => {
+  // Only `skill_use` had a production call site (DungeonScene.activateSkill).
+  // The other four types were never ticked anywhere, so 50 of the 59 templates
+  // could never be completed while the panel kept advertising them:
+  //   tribe_only 24 · kill_count 11 · wave_clear 10 · no_damage 5 · skill_use 9
+  // Shape tests could not see this — they only read the template table.
+  const TYPES = ['kill_count', 'no_damage', 'skill_use', 'tribe_only', 'wave_clear'] as const;
+
+  function freshState(): GameState {
+    return makeGs({ dailyChallenges: {}, gems: 0 });
+  }
+
+  it('클리어한 웨이브가 네 타입을 모두 크레딧한다', () => {
+    // This is the assertion that would have caught the defect: the tick
+    // function always worked, what was missing was anything CALLING it.
+    const ticks = waveDailyChallengeTicks({ kills: 12, breakthroughs: 0, tribesOnBoard: ['dokkaebi'] });
+    const types = ticks.map(tick => tick.type);
+    expect(types).toContain('wave_clear');
+    expect(types).toContain('kill_count');
+    expect(types).toContain('no_damage');
+    expect(types).toContain('tribe_only');
+    expect(ticks.find(tick => tick.type === 'kill_count')?.amount).toBe(12);
+    expect(ticks.find(tick => tick.type === 'tribe_only')?.filter).toBe('dokkaebi');
+  });
+
+  it('무피해는 돌파가 0일 때만, 종족 한정은 보드가 한 종족일 때만', () => {
+    const leaked = waveDailyChallengeTicks({ kills: 3, breakthroughs: 2, tribesOnBoard: ['dokkaebi'] });
+    expect(leaked.map(tick => tick.type)).not.toContain('no_damage');
+
+    const mixed = waveDailyChallengeTicks({ kills: 3, breakthroughs: 0, tribesOnBoard: ['dokkaebi', 'gumiho'] });
+    expect(mixed.map(tick => tick.type)).not.toContain('tribe_only');
+
+    const empty = waveDailyChallengeTicks({ kills: 0, breakthroughs: 0, tribesOnBoard: [] });
+    expect(empty.map(tick => tick.type)).not.toContain('kill_count');
+    expect(empty.map(tick => tick.type)).toContain('wave_clear');
+  });
+
+  it('각 타입이 진행도를 올릴 수 있다', () => {
+    for (const type of TYPES) {
+      const challenges = getDailyChallenges();
+      const target = challenges.find(ch => ch.objective.type === type);
+      if (!target) continue;   // not in today's roll
+      const filter = (target.objective as { filter?: string }).filter;
+      const before = freshState();
+      const after = applyDailyChallengeTick(before, type, 1, filter);
+      expect(after.state.dailyChallenges[target.id]?.progress ?? 0, `${type} progress`)
+        .toBeGreaterThan(before.dailyChallenges[target.id]?.progress ?? 0);
+    }
+  });
+
+  it('템플릿 풀의 모든 타입이 알려진 타입이다', () => {
+    const known = new Set<string>(TYPES);
+    for (const ch of getDailyChallenges()) {
+      expect(known.has(ch.objective.type), `unknown objective type "${ch.objective.type}"`).toBe(true);
+    }
+  });
+
+  it('필터가 다르면 진행하지 않는다 — tribe_only가 아무 웨이브에나 붙지 않는다', () => {
+    const challenges = getDailyChallenges();
+    const tribal = challenges.find(ch => ch.objective.type === 'tribe_only'
+      && (ch.objective as { filter?: string }).filter);
+    if (!tribal) return;
+    const wrong = applyDailyChallengeTick(freshState(), 'tribe_only', 1, '__no_such_tribe__');
+    expect(wrong.state.dailyChallenges[tribal.id]?.progress ?? 0).toBe(0);
+  });
+})
