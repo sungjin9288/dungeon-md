@@ -20,7 +20,8 @@ import { showDailyContentHub } from './DailyContentPanel';
 import { INVADER_DEFS } from '../data/invaders';
 import { getTodayString } from '../data/daily';
 import { isBattleCard, type ForecastCard, type ForecastKind } from '../data/forecast';
-import { isForecastCardTaken, takeForecastCard } from '../data/forecastTransactions';
+import { isForecastCardTaken, takeForecastCard, merchantPayout } from '../data/forecastTransactions';
+import { type GameState } from '../data/wisdom';
 import {
   canRaiseNotorietyTier,
   getNotorietyTier,
@@ -37,9 +38,13 @@ const KIND_ACCENT: Readonly<Record<ForecastKind, number>> = {
   treasure: CASUAL.PURPLE, weekly_boss: CASUAL.PURPLE, daily_rule: CASUAL.BLUE,
 };
 
-function rewardSummary(card: ForecastCard): string {
+function rewardSummary(card: ForecastCard, gs: GameState): string {
   const parts: string[] = [];
-  if (card.reward.gold) parts.push(`골드 ${card.reward.gold}`);
+  // The merchant's take depends on what the player is holding, so read the
+  // payout function rather than the card's own constant — those two used to
+  // disagree by 3x on an empty material stock.
+  if (card.kind === 'merchant') parts.push(`골드 ${merchantPayout(gs, card.bandTier).gold}`);
+  else if (card.reward.gold) parts.push(`골드 ${card.reward.gold}`);
   if (card.reward.gems) parts.push(`보석 ${card.reward.gems}`);
   if (card.reward.soulCrystals) parts.push(`수정 ${card.reward.soulCrystals}`);
   if (card.daily) parts.push(`수정 ${card.daily.rewards.crystals}`);
@@ -164,7 +169,7 @@ export function showForecastTray(scene: DungeonHomeScene): void {
     container.add(scene.add.text(rowX + 48, y + 38, guestSummary(card), {
       fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, wordWrap: { width: rowW - 150 },
     }).setOrigin(0, 0.5));
-    container.add(scene.add.text(rowX + 48, y + 60, taken ? '오늘 처리 완료' : rewardSummary(card), {
+    container.add(scene.add.text(rowX + 48, y + 60, taken ? '오늘 처리 완료' : rewardSummary(card, gs), {
       fontFamily: 'sans-serif', fontSize: '10px', color: taken ? CASUAL_CSS.GREEN : CASUAL_CSS.GOLD, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
 

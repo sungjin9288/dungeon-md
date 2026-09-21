@@ -23,6 +23,32 @@ import type { GameState } from './wisdom';
 export const MERCHANT_BUYS: Readonly<Record<string, number>> = { common_ore: 6, herb: 6, old_cloth: 8, magic_dust: 12 };
 export const MERCHANT_BASE_GOLD = 50;
 
+/**
+ * What the merchant card pays RIGHT NOW, for this save.
+ *
+ * `merchantCard` used to advertise a flat `150 × lootMult` while this path paid
+ * `(50 + 재료값) × lootMult`, computed independently — the card's own
+ * `reward.gold` was never read by any payout. With an empty material stock (the
+ * normal state right after crafting) the card showed exactly 3× what it paid:
+ * 150 against 50 at tier 1, 675 against 225 at tier 10. The tray now renders
+ * this function, so the number on the card is the number the player receives.
+ */
+export function merchantPayout(
+  state: Readonly<Pick<GameState, 'materials'>>,
+  bandTier: number,
+): { readonly gold: number; readonly soldMaterials: Readonly<Record<string, number>> } {
+  const band = getNotorietyBand(bandTier);
+  const sold: Record<string, number> = {};
+  let gold = MERCHANT_BASE_GOLD;
+  for (const [id, price] of Object.entries(MERCHANT_BUYS)) {
+    const qty = state.materials?.[id] ?? 0;
+    if (qty <= 0) continue;
+    gold += qty * price;
+    sold[id] = qty;
+  }
+  return { gold: Math.round(gold * band.lootMult), soldMaterials: sold };
+}
+
 export type ForecastFailureReason = 'card_not_found' | 'card_already_taken' | 'card_not_battle' | 'card_not_taken';
 
 export type ForecastTakeResult =
@@ -102,16 +128,10 @@ export function takeForecastCard(state: GameState, cardId: string): ForecastTake
   if (isForecastCardTaken(state, cardId)) return { ok: false, state, reason: 'card_already_taken' };
 
   if (card.kind === 'merchant') {
-    const band = getNotorietyBand(card.bandTier);
+    const payout = merchantPayout(state, card.bandTier);
     const materials = { ...(state.materials ?? {}) };
-    let gold = MERCHANT_BASE_GOLD;
-    for (const [id, price] of Object.entries(MERCHANT_BUYS)) {
-      const qty = materials[id] ?? 0;
-      if (qty <= 0) continue;
-      gold += qty * price;
-      delete materials[id];
-    }
-    const goldEarned = Math.round(gold * band.lootMult);
+    for (const id of Object.keys(payout.soldMaterials)) delete materials[id];
+    const goldEarned = payout.gold;
     const next = markTaken({
       ...state,
       materials,

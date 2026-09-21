@@ -3,6 +3,7 @@ import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
 import { ALL_STAGES } from '../data/allStages';
+import { stageLootPotential } from '../data/campaignPacing';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton, type InfoRowOptions } from '../ui/GameUiPrimitives';
 
 const CHAPTER_NAMES: Record<number, string> = {
@@ -26,8 +27,14 @@ export class StageRewardOverlay extends Phaser.Scene {
     const ch = cfg.chapter ?? 1;
     const stageDef = ALL_STAGES.find(s => s.id === cfg.stageNumber);
     const waveCount = stageDef?.waves.length ?? 10;
+    // Loot = wave clear rewards PLUS every invader's bounty; KillHandler credits
+    // `inv.def.reward` on each kill. Summing clearReward alone (and adding a
+    // phantom +200) understated the payout by 4.9% at stage 1 and 74.0% at
+    // stage 90 — and it mis-ranked stages against each other, which is what
+    // this card is for. `stageLootPotential` is the repo's own formula for
+    // exactly this and is what the pacing model budgets with.
     const estimatedGold = stageDef
-      ? stageDef.waves.reduce((sum, w) => sum + (w.clearReward ?? 80), 0) + 200
+      ? stageLootPotential(stageDef)
       : (() => { let g = 0; for (let w = 1; w <= waveCount; w++) g += 50 + w * 10 + (ch - 1) * 40; return g; })();
     const estimatedGems = cfg.bossWave ? 5 : 2;
     const isBoss = cfg.bossWave ?? false;

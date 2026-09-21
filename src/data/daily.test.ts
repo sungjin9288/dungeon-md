@@ -10,6 +10,7 @@ import {
   getTodayString,
   getThisWeekMonday,
   type DailyDungeon,
+  WEEKLY_BOSS_POOL,
 } from './daily';
 import type { GameState } from './wisdom';
 
@@ -635,17 +636,29 @@ describe('getWeeklyBoss — rotation', () => {
 describe('getWeeklyBoss — totalHp and pool bounds', () => {
   const boss = getWeeklyBoss();
 
-  it('totalHp is at least 40000 (minimum pool entry)', () => {
-    expect(boss.totalHp).toBeGreaterThanOrEqual(40_000);
+  // These bounds used to be hardcoded (40,000 and 180,000) and read only
+  // THIS week's boss, so they were a calendar time bomb: a ninth pool entry
+  // (공허 군주, 220,000 hp) was added without touching them, and
+  // getWeeklyBoss picks POOL[week % 9] — so on every 9th week the suite failed
+  // regardless of any code change. The companion assertion `weekIndex % 8 <= 7`
+  // was a tautology left from when the pool had eight entries.
+  //
+  // Derive the bounds from the pool and cover every index, so the suite says
+  // the same thing in every week of the year.
+  const poolHps = WEEKLY_BOSS_POOL.map(entry => entry.hp);
+
+  it('totalHp sits inside the pool it is drawn from', () => {
+    expect(boss.totalHp).toBeGreaterThanOrEqual(Math.min(...poolHps));
+    expect(boss.totalHp).toBeLessThanOrEqual(Math.max(...poolHps));
   });
 
-  it('totalHp is at most 180000 (maximum pool entry)', () => {
-    expect(boss.totalHp).toBeLessThanOrEqual(180_000);
-  });
-
-  it('weekIndex % 8 is in range [0, 7] (pool has 8 entries)', () => {
-    expect(boss.weekIndex % 8).toBeGreaterThanOrEqual(0);
-    expect(boss.weekIndex % 8).toBeLessThanOrEqual(7);
+  it('every pool entry is reachable and in range, not just this week\'s', () => {
+    expect(poolHps.length).toBeGreaterThan(0);
+    for (const hp of poolHps) {
+      expect(Number.isInteger(hp)).toBe(true);
+      expect(hp).toBeGreaterThanOrEqual(10_000);
+    }
+    expect(WEEKLY_BOSS_POOL[boss.weekIndex % WEEKLY_BOSS_POOL.length].hp).toBe(boss.totalHp);
   });
 
   it('skinShards is exactly 5', () => {

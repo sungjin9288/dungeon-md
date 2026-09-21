@@ -7,8 +7,7 @@ import {
   MERCHANT_BASE_GOLD,
   MERCHANT_BUYS,
   settleForecastBattle,
-  takeForecastCard,
-} from './forecastTransactions';
+  takeForecastCard, merchantPayout } from './forecastTransactions';
 import { NOTORIETY_GAIN } from './notoriety';
 import { loadGameState, type GameState } from './wisdom';
 
@@ -148,5 +147,49 @@ describe('settleForecastBattle', () => {
     expect(settled.state.weeklyBossResetDate).toBe(day.weeklyBossResetDate);
     expect(settled.state.blueprints ?? []).not.toContain('bp_boss_amulet');
     expect(settled.notorietyDelta).toBe(NOTORIETY_GAIN.weekly_boss);
+  });
+});
+
+describe('상인 카드는 실제로 줄 금액을 말한다', () => {
+  // The card advertised a flat 150 x lootMult while the payout path computed
+  // (50 + material value) x lootMult independently — `card.reward.gold` was
+  // never read by any payout, so on an empty material stock the card showed
+  // exactly 3x what it gave. The existing merchant test compares goldEarned
+  // only against its own formula, and runs at notorietyTier 1 where lootMult
+  // is 1.0, so neither the quote nor the multiplier path was ever exercised.
+  function merchantDay(materials: Record<string, number>, tier: number): GameState | null {
+    for (let d = 1; d <= 28; d++) {
+      const date = `2026-10-${String(d).padStart(2, '0')}`;
+      const candidate = beginForecastDay(
+        state({ materials, homeGold: 0, notorietyTier: tier }), date, pinned(date),
+      ).state;
+      if (candidate.forecast.cards[2].kind === 'merchant') return candidate;
+    }
+    return null;
+  }
+
+  it('표시 금액이 지급 금액과 같다 — 빈 재고와 채운 재고 모두', () => {
+    for (const materials of [{}, { common_ore: 10, herb: 4, magic_dust: 3 }] as Record<string, number>[]) {
+      const day = merchantDay(materials, 1);
+      expect(day, JSON.stringify(materials)).not.toBeNull();
+      if (!day) continue;
+      const card = day.forecast.cards[2];
+      const quoted = merchantPayout(day, card.bandTier).gold;
+      const took = takeForecastCard(day, card.id);
+      expect(took.ok).toBe(true);
+      if (!took.ok) continue;
+      expect(quoted, `stock ${JSON.stringify(materials)}`).toBe(took.goldEarned);
+    }
+  });
+
+  it('재고가 많을수록 표시 금액이 오른다', () => {
+    const poor = state({ materials: {} });
+    const rich = state({ materials: { common_ore: 10, herb: 4, magic_dust: 3 } });
+    expect(merchantPayout(rich, 1).gold).toBeGreaterThan(merchantPayout(poor, 1).gold);
+  });
+
+  it('명성 배수가 실제로 곱해진다 — 티어 1에서만 재면 항등원이라 보이지 않는다', () => {
+    const s = state({ materials: {} });
+    expect(merchantPayout(s, 10).gold).toBeGreaterThan(merchantPayout(s, 1).gold);
   });
 });
