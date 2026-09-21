@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { defaultOwnedMonster } from './barracks';
 import {
   calculateDungeonMetrics,
   calculateRoomLoadoutStatus,
@@ -218,3 +219,44 @@ describe('dungeonMetrics', () => {
     });
   });
 });
+
+describe('전력이 모든 육성 채널을 본다', () => {
+  // The power readout is what a player judges readiness by, and
+  // reinforcementRecommendations feeds its delta straight into the growth
+  // ranking. It used to call getMonsterAtk with affinity defaulted to 0 — so
+  // 교감 was invisible everywhere except the monster-detail header — and once
+  // 흡수 stacks and 각성 joined guardianAtkMult they were invisible too.
+  const room = (monsterId: string) => ({
+    roomType: 'combat' as const, monsterIds: [monsterId], trapIds: [],
+    roomLevel: 1, hp: 200, maxHp: 200,
+  });
+
+  function powerWith(extra: Partial<GameState>, monster: Partial<{ absorptionStacks: number }> = {}) {
+    const owned = { ...defaultOwnedMonster('dokkaebi_warrior'), level: 20, ...monster };
+    const state = { ownedMonsters: [owned], ...extra } as unknown as GameState;
+    return calculateRoomMetrics(state, room('dokkaebi_warrior')).monsterPower;
+  }
+
+  const base = powerWith({});
+
+  it('교감이 전력을 올린다', () => {
+    expect(powerWith({ monsterAffinity: { dokkaebi_warrior: 100 } })).toBeGreaterThan(base);
+  });
+
+  it('흡수 스택이 전력을 올린다', () => {
+    expect(powerWith({}, { absorptionStacks: 10 })).toBeGreaterThan(base);
+  });
+
+  it('각성이 전력을 올린다', () => {
+    expect(powerWith({ monsterAwakened: { dokkaebi_warrior: true } })).toBeGreaterThan(base);
+  });
+
+  it('셋이 함께 적용되면 각각보다 크다', () => {
+    const all = powerWith(
+      { monsterAffinity: { dokkaebi_warrior: 100 }, monsterAwakened: { dokkaebi_warrior: true } },
+      { absorptionStacks: 10 },
+    );
+    expect(all).toBeGreaterThan(powerWith({ monsterAffinity: { dokkaebi_warrior: 100 } }));
+    expect(all).toBeGreaterThan(powerWith({}, { absorptionStacks: 10 }));
+  });
+})

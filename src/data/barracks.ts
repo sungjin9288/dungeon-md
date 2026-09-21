@@ -117,6 +117,32 @@ export function getMonsterAtk(baseAtk: number, level: number, spentSkills: Recor
   return Math.round(baseAtk * guardianAtkMult(level, spentSkills, affinity));
 }
 
+/**
+ * ATK for an owned monster with EVERY raising channel applied — the same set
+ * combat reads through `buildGuardianAtkMultMap`.
+ *
+ * `getMonsterAtk` takes loose primitives and defaults affinity to 0, so most
+ * callers silently dropped 교감; after 흡수 stacks and 각성 joined
+ * `guardianAtkMult`, they dropped those too. Three growth systems the game
+ * sells were invisible in every ATK and 전력 readout except the monster-detail
+ * header, which was the one call site that bothered to pass affinity.
+ */
+export function getOwnedMonsterAtk(
+  baseAtk: number,
+  monster: Pick<OwnedMonster, 'id' | 'level' | 'spentSkills' | 'absorptionStacks'>,
+  raising: {
+    readonly monsterAffinity?: Readonly<Record<string, number>>;
+    readonly monsterAwakened?: Readonly<Record<string, boolean>>;
+  } = {},
+): number {
+  return Math.round(baseAtk * guardianAtkMult(
+    monster.level,
+    monster.spentSkills,
+    raising.monsterAffinity?.[monster.id] ?? 0,
+    { absorptionStacks: monster.absorptionStacks, awakened: raising.monsterAwakened?.[monster.id] ?? false },
+  ));
+}
+
 // ─── Skill Trees ──────────────────────────────────────────────────────────────
 
 export interface SkillNode {
