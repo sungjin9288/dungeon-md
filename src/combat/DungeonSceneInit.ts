@@ -9,6 +9,7 @@
 //                          by combat multipliers.
 
 import Phaser from 'phaser';
+import { logger } from '../utils/logger';
 import { type WaveSpec } from '../data/stages';
 import { ALL_STAGES } from '../data/allStages';
 import { highestClearedStage } from '../data/stageProgress';
@@ -47,6 +48,9 @@ export interface StageSetup {
 //   3. Daily dungeon override — `dailyMode` overrides the wave list.
 //
 // Registry side-effects: consumes (nulls) dailyMode and weeklyBossMode entries.
+
+/** Last-resort core for an inline battle whose config forgot to set one. */
+export const INLINE_FALLBACK_DUNGEON_HP = 1000;
 
 export function resolveStageSetup(
   registry:  Phaser.Data.DataManager,
@@ -99,7 +103,20 @@ export function resolveStageSetup(
     stageChapter   = stageCfg.chapter ?? 1;
     effectiveCols  = GRID_COLS;
     waterCells     = new Set<number>();
-    stageDungeonHp = stageCfg.dungeonHp ?? 1000;
+    // A silent `?? 1000` here is how this codebase shipped the same defect three
+    // times: a mode that forgets `dungeonHp` inherits a number meant for
+    // something else and nobody notices. The abyss ran all sixty floors on
+    // DungeonScene's default, endless ran every wave on Chapter 1 Stage 1's
+    // core, and all ten story invasions shared one constant while their own
+    // pressure grew 64x. Keep the fallback — an inline battle must still start
+    // — but say so, so the fourth instance is visible the first time it runs.
+    if (stageCfg.dungeonHp === undefined) {
+      logger.warn(
+        `[STAGE] inline battle "${stageCfg.chapter ?? '?'}" carries no dungeonHp; `
+        + `falling back to ${INLINE_FALLBACK_DUNGEON_HP}. Derive one from the mode's own waves.`,
+      );
+    }
+    stageDungeonHp = stageCfg.dungeonHp ?? INLINE_FALLBACK_DUNGEON_HP;
     stageNumber    = 0;   // inline invasion — no stage number
   } else if (isEndless) {
     // Endless enters as { endless: true, stageNumber: 0 } and builds its waves
