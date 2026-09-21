@@ -432,8 +432,6 @@ export interface BlueprintDef {
   name:        string;
   type:        'weapon' | 'armor' | 'accessory';
   rarity:      number;
-  statDesc:    string;
-  stats:       Record<string, number>;
   materials:   Record<string, number>;
   resultId:    string;
   resultEmoji: string;
@@ -442,175 +440,127 @@ export interface BlueprintDef {
 export const BLUEPRINT_DEFS: Record<string, BlueprintDef> = {
   bp_dokkaebi_club: {
     id: 'bp_dokkaebi_club', name: '도깨비 방망이', type: 'weapon', rarity: 1,
-    statDesc: 'ATK +20% · 기절 +0.5초',
-    stats: { atkBonus: 0.20, stunDuration: 0.5 },
     materials: { dok_fragment: 3, iron_shard: 2 },
     resultId: 'eq_dokkaebi_club', resultEmoji: '🪓',
   },
   bp_iron_armor: {
     id: 'bp_iron_armor', name: '철 갑옷', type: 'armor', rarity: 1,
-    statDesc: '방 HP +100 · 골드 +10%',
-    stats: { roomHPBonus: 100, goldBonus: 0.10 },
     materials: { iron_shard: 4, old_cloth: 2 },
     resultId: 'eq_iron_armor', resultEmoji: '🥋',
   },
   bp_fox_robe: {
     id: 'bp_fox_robe', name: '구미호 로브', type: 'armor', rarity: 2,
-    statDesc: '스킬 쿨다운 -20%',
-    stats: { skillCDReduction: 0.20 },
     materials: { fox_fur: 2, shadow_cloth: 3 },
     resultId: 'eq_fox_robe', resultEmoji: '🥻',
   },
   bp_frost_lance: {
     id: 'bp_frost_lance', name: '빙하 창', type: 'weapon', rarity: 2,
-    statDesc: 'ATK +10% · 동결 +15%',
-    stats: { atkBonus: 0.10, freezeChance: 0.15 },
     materials: { ice_crystal: 3, iron_shard: 3 },
     resultId: 'eq_frost_lance', resultEmoji: '🔱',
   },
   bp_soul_ring: {
     id: 'bp_soul_ring', name: '영혼 반지', type: 'accessory', rarity: 2,
-    statDesc: '스킬 쿨다운 -15% · 수정 +15%',
-    stats: { skillCDReduction: 0.15, scEarnBonus: 0.15 },
     materials: { soul_fragment: 4, herb: 2 },
     resultId: 'eq_soul_ring', resultEmoji: '💍',
   },
   bp_shadow_blade: {
     id: 'bp_shadow_blade', name: '그림자 칼날', type: 'weapon', rarity: 2,
-    statDesc: 'ATK +25%',
-    stats: { atkBonus: 0.25 },
     materials: { shadow_cloth: 4, iron_shard: 2 },
     resultId: 'eq_shadow_blade', resultEmoji: '🗡️',
   },
   bp_herb_potion: {
     id: 'bp_herb_potion', name: '약초 포션', type: 'accessory', rarity: 1,
-    statDesc: '방 HP +50 · 수정 +10%',
-    stats: { roomHPBonus: 50, scEarnBonus: 0.10 },
     materials: { herb: 4, old_cloth: 2 },
     resultId: 'eq_herb_potion', resultEmoji: '🧪',
   },
   bp_ice_shield: {
     id: 'bp_ice_shield', name: '얼음 방패', type: 'armor', rarity: 2,
-    statDesc: '방 HP +150 · 동결 +10%',
-    stats: { roomHPBonus: 150, freezeChance: 0.10 },
     materials: { ice_crystal: 4, iron_shard: 2 },
     resultId: 'eq_ice_shield', resultEmoji: '🛡️',
   },
   // ─── Rarity 3 (Epic) ───────────────────────────────────────────────────────
   bp_dragon_fang: {
     id: 'bp_dragon_fang', name: '용아검', type: 'weapon', rarity: 3,
-    statDesc: 'ATK +40% · 보스 추가 피해 +25%',
-    stats: { atkMultiplier: 0.40, bossDmgBonus: 0.25 },
     materials: { dok_fragment: 8, iron_shard: 6, soul_fragment: 4 },
     resultId: 'eq_dragon_fang', resultEmoji: '🗡️',
   },
   bp_spirit_robe: {
     id: 'bp_spirit_robe', name: '영혼 법의', type: 'armor', rarity: 3,
-    statDesc: '방 HP +300 · 피해 감소 +15%',
-    stats: { roomHPBonus: 300, dmgReduction: 0.15 },
     materials: { soul_fragment: 8, shadow_cloth: 5, old_cloth: 3 },
     resultId: 'eq_spirit_robe', resultEmoji: '👘',
   },
   bp_moonstone_pendant: {
     id: 'bp_moonstone_pendant', name: '월석 목걸이', type: 'accessory', rarity: 3,
-    statDesc: '공속 +20% · 스킬 쿨다운 -15%',
-    stats: { atkSpeedBonus: 0.20, cdReduction: 0.15 },
     materials: { ice_crystal: 6, fox_fur: 4, herb: 3 },
     resultId: 'eq_moonstone_pendant', resultEmoji: '📿',
   },
   // ─── Rarity 4 (Legendary) ──────────────────────────────────────────────────
   bp_heavenly_blade: {
     id: 'bp_heavenly_blade', name: '천상의 검', type: 'weapon', rarity: 4,
-    statDesc: 'ATK +60% · 5번째 공격 전체 적 피해',
-    stats: { atkMultiplier: 0.60, aoeEvery: 5 },
     materials: { dok_fragment: 15, iron_shard: 10, soul_fragment: 8, ice_crystal: 5 },
     resultId: 'eq_heavenly_blade', resultEmoji: '⚔️',
   },
   bp_guardian_crown: {
     id: 'bp_guardian_crown', name: '수호자의 왕관', type: 'accessory', rarity: 4,
-    statDesc: '인접 방 ATK +25% · 방 HP +200',
-    stats: { adjacentAtkBonus: 0.25, roomHPBonus: 200 },
     materials: { dok_fragment: 12, fox_fur: 8, soul_fragment: 6, shadow_cloth: 5 },
     resultId: 'eq_guardian_crown', resultEmoji: '👑',
   },
   // ─── 주간 보스 전용 레시피 ─────────────────────────────────────────────────
   bp_boss_amulet: {
     id: 'bp_boss_amulet', name: '보스 부적', type: 'accessory', rarity: 3,
-    statDesc: '보스 추가 피해 +40% · 스킬 쿨다운 -20%',
-    stats: { bossDmgBonus: 0.40, skillCDReduction: 0.20 },
     materials: { boss_essence: 2, soul_fragment: 5, dok_fragment: 4 },
     resultId: 'eq_boss_amulet', resultEmoji: '🔮',
   },
   // ─── Chapter 7 ────────────────────────────────────────────────────────────
   bp_celestial_lance: {
     id: 'bp_celestial_lance', name: '천상의 창', type: 'weapon', rarity: 3,
-    statDesc: 'ATK +45% · 성스러운 피해 +20%',
-    stats: { atkMultiplier: 0.45, holyDmgBonus: 0.20 },
     materials: { soul_fragment: 8, ice_crystal: 6, magic_dust: 3 },
     resultId: 'eq_celestial_lance', resultEmoji: '🔱',
   },
   bp_divine_aegis: {
     id: 'bp_divine_aegis', name: '신성 방패', type: 'armor', rarity: 4,
-    statDesc: '방 HP +500 · 피해 감소 +25% · 천상족 ATK +20%',
-    stats: { roomHPBonus: 500, dmgReduction: 0.25, celestialAtkBonus: 0.20 },
     materials: { boss_essence: 3, soul_fragment: 10, ice_crystal: 8, dok_fragment: 5 },
     resultId: 'eq_divine_aegis', resultEmoji: '🛡️',
   },
   bp_arcane_core: {
     id: 'bp_arcane_core', name: '마법 핵심', type: 'weapon', rarity: 3,
-    statDesc: 'ATK +30% · 마법 가루 3개 소모',
-    stats: { atkMultiplier: 0.30, magicBoost: 1 },
     materials: { magic_dust: 3, common_ore: 4, soul_fragment: 3 },
     resultId: 'eq_arcane_core', resultEmoji: '💫',
   },
   bp_ore_plate: {
     id: 'bp_ore_plate', name: '광석 흉갑', type: 'armor', rarity: 2,
-    statDesc: '방 HP +200 · 피해 감소 +10%',
-    stats: { roomHPBonus: 200, dmgReduction: 0.10 },
     materials: { common_ore: 5, iron_shard: 3 },
     resultId: 'eq_ore_plate', resultEmoji: '🪖',
   },
   // ─── Chapter 8 ────────────────────────────────────────────────────────────
   bp_void_blade: {
     id: 'bp_void_blade', name: '허공의 칼날', type: 'weapon', rarity: 4,
-    statDesc: 'ATK +60% · 스킬 쿨다운 -25%',
-    stats: { atkMultiplier: 0.60, skillCDReduction: 0.25 },
     materials: { boss_essence: 4, magic_dust: 5, soul_fragment: 8 },
     resultId: 'eq_void_blade', resultEmoji: '🌑',
   },
   bp_abyss_mail: {
     id: 'bp_abyss_mail', name: '심연의 갑옷', type: 'armor', rarity: 4,
-    statDesc: '방 HP +800 · 피해 감소 +30%',
-    stats: { roomHPBonus: 800, dmgReduction: 0.30 },
     materials: { boss_essence: 5, magic_dust: 4, dok_fragment: 6, soul_fragment: 8 },
     resultId: 'eq_abyss_mail', resultEmoji: '🟣',
   },
   bp_primordial_gem: {
     id: 'bp_primordial_gem', name: '원초의 보석', type: 'accessory', rarity: 5,
-    statDesc: '전체 ATK +80% · 영혼 결정체 수급 +30%',
-    stats: { atkMultiplier: 0.80, scEarnBonus: 0.30 },
     materials: { boss_essence: 8, magic_dust: 8, soul_fragment: 12, ice_crystal: 6 },
     resultId: 'eq_primordial_gem', resultEmoji: '💜',
   },
   // ─── Batch: 3 more legendary blueprints (end-game gear, existing materials) ──
   bp_ember_reaver: {
     id: 'bp_ember_reaver', name: '잿불 사신낫', type: 'weapon', rarity: 4,
-    statDesc: 'ATK +50% · 처형 확률 15%',
-    stats: { atkMultiplier: 0.50, executeChance: 0.15 },
     materials: { boss_essence: 3, dok_fragment: 14, iron_shard: 9 },
     resultId: 'eq_ember_reaver', resultEmoji: '🔥',
   },
   bp_aegis_bulwark: {
     id: 'bp_aegis_bulwark', name: '이지스 성벽', type: 'armor', rarity: 4,
-    statDesc: '방 HP +400 · 골드 +20%',
-    stats: { roomHPBonus: 400, goldBonus: 0.20 },
     materials: { boss_essence: 2, iron_shard: 14, old_cloth: 9 },
     resultId: 'eq_aegis_bulwark', resultEmoji: '🏰',
   },
   bp_chrono_charm: {
     id: 'bp_chrono_charm', name: '시간의 부적', type: 'accessory', rarity: 4,
-    statDesc: '스킬 쿨다운 -30% · 영혼 결정체 +25%',
-    stats: { skillCDReduction: 0.30, scEarnBonus: 0.25 },
     materials: { soul_fragment: 12, magic_dust: 7, ice_crystal: 6 },
     resultId: 'eq_chrono_charm', resultEmoji: '⏳',
   },

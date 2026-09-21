@@ -34,6 +34,7 @@ import {
   summarizeBlueprintEffects,
   type ForgeContext,
   type RoomEquipmentFeedback,
+  blueprintEffectText,
 } from '../ui/ForgeShared';
 import { drawEffectChips, drawForgeRecommendationPreview } from '../ui/ForgeWorkbench';
 import { buildCraftTab, buildDismantleTab } from '../ui/ForgeTabs';
@@ -605,7 +606,7 @@ export class ForgeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '14px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
       fontStyle: 'bold',
     }));
-    ov.add(this.add.text(cx - pw / 2 + 82, top + 80, bp.statDesc, {
+    ov.add(this.add.text(cx - pw / 2 + 82, top + 80, blueprintEffectText(bp), {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
     }));
     drawEffectChips(this, ov, summarizeBlueprintEffects(bp), cx - pw / 2 + 82, top + 94, accent, 190);

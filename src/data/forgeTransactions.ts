@@ -1,4 +1,5 @@
 import type { BlueprintDef } from './fusion';
+import { getEquipmentStats } from './barracks';
 import { getWisdomBonuses, type GameState } from './wisdom';
 
 export type CraftedEquipment = GameState['craftedEquipment'][number];
@@ -53,7 +54,10 @@ function createCraftedEquipment(blueprint: BlueprintDef): CraftedEquipment {
     type: blueprint.type,
     rarity: blueprint.rarity,
     emoji: blueprint.resultEmoji,
-    stats: { ...blueprint.stats },
+    // Same table combat reads (barracks.getEquipmentStats); the blueprint's
+    // own parallel `stats` field is gone — it advertised effects the equipment
+    // did not deliver on 19 of 24 blueprints.
+    stats: { ...getEquipmentStats(blueprint.resultId) } as Record<string, number>,
   };
 }
 

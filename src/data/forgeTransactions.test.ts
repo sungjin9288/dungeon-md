@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getEquipmentStats } from './barracks';
 import { BLUEPRINT_DEFS } from './fusion';
 import {
   applyCraftBlueprint,
@@ -47,7 +48,7 @@ describe('forgeTransactions — craft', () => {
         type: bp.type,
         rarity: bp.rarity,
         emoji: bp.resultEmoji,
-        stats: bp.stats,
+        stats: { ...getEquipmentStats(bp.resultId) },
       },
     ]);
     expect(result.state.ownedEquipment).toEqual([bp.resultId]);
@@ -106,7 +107,7 @@ describe('forgeTransactions — dismantle', () => {
     type: bp.type,
     rarity: bp.rarity,
     emoji: bp.resultEmoji,
-    stats: { ...bp.stats },
+    stats: { ...getEquipmentStats(bp.resultId) },
   };
 
   it('calculates 50 percent material returns with floor rounding', () => {

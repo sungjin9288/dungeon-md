@@ -14,6 +14,7 @@ import {
   getForgeRarityStars,
   truncateLabel,
   summarizeBlueprintEffects,
+  blueprintEffectText,
 } from './ForgeShared';
 import { drawEffectChips, drawForgeRecommendationPreview } from './ForgeWorkbench';
 import { drawEquipmentSigil, drawForgeCrest } from './ForgeSkin';
@@ -348,7 +349,7 @@ function showCraftCompleteCard(
     fontStyle: 'bold',
   }).setOrigin(0.5));
 
-  c.add(scene.add.text(cx, top + 164, bp.statDesc, {
+  c.add(scene.add.text(cx, top + 164, blueprintEffectText(bp), {
     fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
   }).setOrigin(0.5));
 

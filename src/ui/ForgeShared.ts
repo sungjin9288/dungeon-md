@@ -6,7 +6,7 @@ import {
   type BlueprintDef,
 } from '../data/fusion';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
-import { EQUIPMENT_DEFS, type OwnedMonster } from '../data/barracks';
+import { getEquipmentStats, EQUIPMENT_DEFS, type OwnedMonster } from '../data/barracks';
 import {
   getMonsterDefForOwned, findMonsterRoom, findOpenMonsterRoom,
   type ForgeMaterialProjection, type ForgeMonsterDef,
@@ -169,6 +169,7 @@ export function summarizeStatEffects(
     if (key === 'skillCDReduction' || key === 'cdReduction') return `쿨타임 -${Math.round(value * 100)}%`;
     if (key === 'scEarnBonus')  return `수정 +${Math.round(value * 100)}%`;
     if (key === 'goldBonus')    return `골드 +${Math.round(value * 100)}%`;
+    if (key === 'goldMult')     return `골드 +${Math.round(value * 100)}%`;
     if (key === 'crystalMult')  return `수정 +${Math.round(value * 100)}%`;
     if (key === 'dmgReduction') return `피해 -${Math.round(value * 100)}%`;
     if (key === 'atkSpeedBonus') return `공속 +${Math.round(value * 100)}%`;
@@ -185,8 +186,28 @@ export function summarizeStatEffects(
   return labels.length > 0 ? labels.slice(0, 3) : [fallback];
 }
 
+/**
+ * What crafting this blueprint actually gives you.
+ *
+ * `BlueprintDef` used to carry its own `stats` / `statDesc` pair, rendered here
+ * while combat read `EQUIPMENT_STATS[resultId]` — two tables in disjoint key
+ * namespaces (atkBonus/roomHPBonus/skillCDReduction vs atkMult/roomHpBonus/
+ * skillCdMult) that were never reconciled. 19 of the 24 blueprints showed the
+ * player something other than what they got: 구미호 로브 advertised its only
+ * effect as 쿨타임 -20% and delivered 방 HP +120 · 발동 +3%, and 신성 방패
+ * promised 피해 -25% · 천상 ATK +20% on top of its room HP, neither of which
+ * exists as an equipment field at all.
+ *
+ * The advertising namespace is gone; this reads the equipment itself, so the
+ * forge cannot drift from combat again.
+ */
 export function summarizeBlueprintEffects(bp: BlueprintDef): string[] {
-  return summarizeStatEffects(bp.stats, bp.statDesc);
+  return summarizeStatEffects(getEquipmentStats(bp.resultId) as Record<string, number>, '기본 장비');
+}
+
+/** One-line version of the same thing, for the prose row above the chips. */
+export function blueprintEffectText(bp: BlueprintDef): string {
+  return summarizeBlueprintEffects(bp).join(' · ');
 }
 
 export function summarizeEquipmentEffects(eq: CraftedEquipment): string[] {
