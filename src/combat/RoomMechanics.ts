@@ -37,6 +37,8 @@ export interface RoomMechanicsContext {
   readonly guardianAtkMult?: ReadonlyMap<string, number>;
   /** Wave-event ATK multiplier (rally / ancient_blessing / …), same value CombatResolver applies. */
   readonly waveAtkMult?: number;
+  /** Aggregate tribe-synergy ATK multiplier, same value CombatResolver applies. */
+  readonly synergyAtkMult?: number;
   readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
@@ -449,9 +451,11 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
           * Math.pow(1.4, data.level - 1)
           * data.roomTypeDmgMult
           * (ctx.guardianAtkMult?.get(mId) ?? 1)
-          // CombatResolver applies this to the primary guardian; the extra
-          // guardians in the same room fight the same wave under the same event.
-          * (ctx.waveAtkMult ?? 1);
+          // CombatResolver applies these to the primary guardian; the extra
+          // guardians in the same room fight the same wave under the same event
+          // and stand in the same board's synergies.
+          * (ctx.waveAtkMult ?? 1)
+          * (ctx.synergyAtkMult ?? 1);
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
         dmg *= comboMultiplier(target.comboCount(now));

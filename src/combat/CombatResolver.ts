@@ -56,6 +56,8 @@ export interface CombatResolverContext {
   /** monsterId → raising multiplier (level growth · 강타); see barracks.guardianAtkMult. */
   readonly guardianAtkMult?:   ReadonlyMap<string, number>;
   readonly waveAtkMult:        number;
+  /** Aggregate tribe-synergy ATK multiplier (synergy.getSynergyAtkMult). */
+  readonly synergyAtkMult?:    number;
   readonly wisdomBonuses:      { monsterAtkMult: number };
   readonly prestigeDmgMult:    number;
   readonly speedMult:          number;
@@ -144,6 +146,7 @@ export function resolveAttack(
     * Math.pow(1.4, data.level - 1)
     * data.roomTypeDmgMult
     * ctx.waveAtkMult
+    * (ctx.synergyAtkMult ?? 1)
     * ctx.wisdomBonuses.monsterAtkMult
     * ctx.prestigeDmgMult;
 

@@ -93,13 +93,24 @@ export class SynergyManager {
 
     this.activeSynergies     = calcTribeSynergies(tribeCounts);
     this.activeElementCombos = calcElementCombos(elementGrid, effectiveCols);
-    getSynergyAtkMult(this.activeSynergies); // populates per-synergy atkMult cache
-    getSynergySpdMult(this.activeSynergies); // populates per-synergy spdMult cache
-
     this.updateDisplay();
   }
 
   // ── ATK / SPD multipliers (for external combat queries) ────────────────────
+  //
+  // getAtkMult feeds the damage chain in CombatResolver / runExtraMonsterAttacks.
+  // Both of these used to be called here and their return values thrown away,
+  // under a comment claiming they "populate a cache" that does not exist — so
+  // all 31 tribe atkMult tiers (celestial ×8 +75%, dragon ×8 +65%, …) were
+  // dead, and getAtkMult/getSpdMult had no caller anywhere in src.
+  //
+  // getSpdMult is still unwired ON PURPOSE: `spdMult` packs three different
+  // meanings into one field — invader movement (gumiho 0.90 "침략자 속도 -10%",
+  // sea 0.85), guardian attack speed (mask 1.15 "ATK/SPD +15%") and guardian
+  // cooldown (moonlight 1.20 "쿨다운 -20%", where >1 means faster). Multiplying
+  // them together produces a number that means nothing, so wiring it would ship
+  // a wrong effect rather than a missing one. Splitting the field is a data
+  // change across nine tribes and needs a design call first.
 
   getAtkMult(): number {
     return getSynergyAtkMult(this.activeSynergies);
