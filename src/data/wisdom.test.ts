@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { wisdomBranchInertReason } from '../ui/AncestralWisdomShared';
 import { TOTAL_STAGES } from './stageProgress';
 import {
   BRANCH_DEFS,
@@ -24,6 +25,7 @@ import {
   importGameState,
   startPrestige,
   type GameState,
+  getUnlockedSlotCount,
 } from './wisdom';
 import { defaultOwnedMonster } from './barracks';
 
@@ -771,3 +773,42 @@ describe('startPrestige', () => {
     expect(next.lastAttendanceClaim).toBe('2026-06-20');
   });
 });
+
+describe('효과 없는 지혜 노드는 그 사실을 말한다', () => {
+  // 선조의 지혜 costs 5+15+25+40+60 = 145 crystals and adds `tier` slots, but
+  // the live count is min(9, getUnlockedSlots(dmLevel) + tier) and the DM curve
+  // alone reaches 9 at DM 8. startPrestige does NOT reset dmLevel, so past DM 8
+  // every tier buys exactly zero slots for the rest of the game and every
+  // prestige after it.
+  const node = BRANCH_DEFS.find(branch => branch.id === 'ancestorsWisdom')!;
+
+  it('DM 8부터 어떤 티어도 슬롯을 늘리지 않는다', () => {
+    for (const dmLevel of [8, 12, 20, 40]) {
+      const base = getUnlockedSlots(dmLevel);
+      for (const tier of [1, 3, 5]) {
+        const withNode = getUnlockedSlotCount({ dmLevel, wisdomTree: { ancestorsWisdom: tier } } as never);
+        expect(withNode, `dm ${dmLevel} tier ${tier}`).toBe(base);
+      }
+    }
+  });
+
+  it('그 구간에서 뷰가 무효 사유를 내놓는다', () => {
+    const inert = wisdomBranchInertReason({ dmLevel: 12 } as never, node);
+    expect(inert).not.toBeNull();
+    expect(inert).toContain('최대');
+  });
+
+  it('아직 효과가 있는 구간에서는 무효 사유가 없다', () => {
+    expect(wisdomBranchInertReason({ dmLevel: 3 } as never, node)).toBeNull();
+    for (const tier of [1, 3]) {
+      expect(getUnlockedSlotCount({ dmLevel: 3, wisdomTree: { ancestorsWisdom: tier } } as never))
+        .toBeGreaterThan(getUnlockedSlots(3));
+    }
+  });
+
+  it('다른 노드는 무효 판정 대상이 아니다', () => {
+    for (const branch of BRANCH_DEFS.filter(b => b.id !== 'ancestorsWisdom')) {
+      expect(wisdomBranchInertReason({ dmLevel: 40 } as never, branch), branch.id).toBeNull();
+    }
+  });
+})

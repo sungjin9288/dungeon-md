@@ -306,7 +306,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     this.add.text(PANEL_X + 18, DETAIL_Y + 96, this.nextEffectLabel(view), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: view.nextEffect ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+      color: view.inertReason ? DUNGEON_UI_CSS.EMBER : view.nextEffect ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
     this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 96, this.costConsequenceLabel(view), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
@@ -632,6 +632,10 @@ export class AncestralWisdomScene extends Phaser.Scene {
   private nextEffectLabel(view: WisdomBranchView): string {
     if (!view.validTier) return '다음 효과를 계산할 수 없습니다';
     if (view.isMaxed) return '모든 잠재력이 해방되었습니다';
+    // A tier that provably buys nothing right now must say so before the player
+    // pays for it — 선조의 지혜 costs 145 crystals in total and grants zero
+    // slots from DM 8 onward, permanently and across every prestige.
+    if (view.inertReason) return view.inertReason;
     return `다음 · ${view.nextEffect}`;
   }
 

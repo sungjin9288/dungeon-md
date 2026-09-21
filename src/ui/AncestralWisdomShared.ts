@@ -2,8 +2,7 @@ import {
   BRANCH_DEFS,
   MAX_WISDOM_TIER,
   type BranchDef,
-  type GameState,
-} from '../data/wisdom';
+  type GameState, getUnlockedSlots, MAX_DUNGEON_SLOTS } from '../data/wisdom';
 
 export type WisdomLineageId = 'foundation' | 'conquest' | 'guardian' | 'abyss';
 
@@ -30,6 +29,8 @@ export interface WisdomBranchView {
   readonly deficit: number;
   readonly currentEffect: string;
   readonly nextEffect: string | null;
+  /** Set when another tier would provably change nothing right now. */
+  readonly inertReason: string | null;
 }
 
 export interface WisdomSummary {
@@ -55,6 +56,29 @@ export function getWisdomLineageBranches(lineageId: WisdomLineageId): BranchDef[
     .filter((branch): branch is BranchDef => branch !== undefined);
 }
 
+/**
+ * Why buying another tier of this node would change nothing right now.
+ *
+ * 선조의 지혜 grants extra room slots, but the live count is
+ * `min(MAX_DUNGEON_SLOTS, getUnlockedSlots(dmLevel) + tier)` and the DM curve
+ * alone reaches the 9-slot cap at DM 8. Prestige does NOT reset dmLevel
+ * (startPrestige spreads it through), so past DM 8 every tier of a node that
+ * costs 145 crystals in total buys exactly zero slots, for the rest of the
+ * game and every prestige after it.
+ *
+ * Raising the cap would break the 3x3 home board, resetting dmLevel on prestige
+ * is a progression redesign, and lowering the DM slot curve would invalidate the
+ * measured campaign pacing table — so the node is not repriced here. What it
+ * must not do is keep selling itself as if it did something.
+ */
+export function wisdomBranchInertReason(state: GameState, branch: BranchDef): string | null {
+  if (branch.id !== 'ancestorsWisdom') return null;
+  const fromDmLevel = getUnlockedSlots(state.dmLevel ?? 1);
+  return fromDmLevel >= MAX_DUNGEON_SLOTS
+    ? `DM ${state.dmLevel ?? 1} 기준 방 슬롯이 이미 최대(${MAX_DUNGEON_SLOTS})입니다 — 지금은 늘지 않습니다`
+    : null;
+}
+
 export function getWisdomBranchView(state: GameState, branch: BranchDef): WisdomBranchView {
   const rawTier = state.wisdomTree?.[branch.id] ?? 0;
   const validTier = Number.isInteger(rawTier) && rawTier >= 0 && rawTier <= MAX_WISDOM_TIER;
@@ -78,6 +102,7 @@ export function getWisdomBranchView(state: GameState, branch: BranchDef): Wisdom
     deficit: cost === null ? 0 : Math.max(0, cost - crystals),
     currentEffect,
     nextEffect,
+    inertReason: wisdomBranchInertReason(state, branch),
   };
 }
 
