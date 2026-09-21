@@ -5,13 +5,39 @@
  * both preview and launch operate on the same validated combat target.
  */
 import { INVADER_DEFS, type InvaderType } from './invaders';
+import { ALL_STAGES } from './allStages';
 import type { InvasionConfig } from './quests';
 import { simulateDungeon, type SimResult, type SimulationDiagnostic } from './simulation';
 import type { StageConfig } from './stages';
 import type { DungeonSlot, OwnedMonster } from './wisdom';
 
 const STORY_INVASION_STAGE_ID = 999;
-const STORY_INVASION_DUNGEON_HP = 800;
+/**
+ * The core a story invasion is fought on, for the chapter it belongs to.
+ *
+ * All ten invasions used to share one constant (800). Measured through this
+ * very builder, their pressure is not constant at all: INV-001 fields 180
+ * invader HP and 150 potential core damage, INV-009 fields 69,400 and 9,630 —
+ * 386x the health and 64x the damage, against the same 800. The last invasion
+ * could take the core out twelve times over.
+ *
+ * This is the third instance of one shape: a mode that never sets its own
+ * `dungeonHp` and silently inherits someone else's (the abyss took
+ * DungeonScene's default 1,000 for all sixty floors; endless took Chapter 1
+ * Stage 1's 1,500). Here it takes the campaign core of its own chapter, running
+ * max so the curve's chapter-boundary dips cannot shrink it — the same rule
+ * `endlessDungeonHp` uses.
+ *
+ * Anchoring on INV-001's own forgiveness instead (core = 5.3x its threat) was
+ * the obvious alternative and is wrong: it would put INV-009 at 51,360, well
+ * past the campaign's own finale at 11,500.
+ */
+export function storyInvasionDungeonHp(chapter: number): number {
+  const upTo = Math.max(1, Math.floor(chapter));
+  return ALL_STAGES
+    .filter(stage => stage.chapter <= upTo)
+    .reduce((best, stage) => Math.max(best, stage.dungeonHp), 0) || 1500;
+}
 const STORY_INVASION_WAVE_REWARD = 120;
 const STORY_INVASION_SPAWN_DELAY = 2200;
 const FORECAST_HEURISTIC_COPY = '결정론적 DPS·이동시간 휴리스틱입니다. 장비·스킬·지혜·장식·시너지·방 메커니즘은 제외됩니다.';
@@ -66,7 +92,7 @@ export function resolveStoryInvaderType(type: string): InvaderType | undefined {
  * A bad enemy type prevents a partial target from escaping this data boundary;
  * callers receive the deterministic diagnostics instead of an altered wave.
  */
-export function buildStoryInvasionTarget(invasion: InvasionConfig): StoryInvasionTarget {
+export function buildStoryInvasionTarget(invasion: InvasionConfig, chapter = 1): StoryInvasionTarget {
   const diagnostics: StoryInvasionDiagnostic[] = [];
   const waves = invasion.waves.map(wave => ({
     wave: wave.waveNumber,
@@ -91,9 +117,9 @@ export function buildStoryInvasionTarget(invasion: InvasionConfig): StoryInvasio
   return {
     stage: {
       id: STORY_INVASION_STAGE_ID,
-      chapter: 1,
+      chapter,
       koreanName: invasion.name,
-      dungeonHp: STORY_INVASION_DUNGEON_HP,
+      dungeonHp: storyInvasionDungeonHp(chapter),
       waves,
     },
     diagnostics,

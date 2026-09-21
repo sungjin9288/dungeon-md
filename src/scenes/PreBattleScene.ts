@@ -14,6 +14,7 @@ import {
 } from '../constants/colors';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { buildStoryInvasionTarget, type StoryInvasionTarget } from '../data/battleForecast';
+import { getQuest } from '../data/quests';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
   ENEMY_NAME,
@@ -34,7 +35,10 @@ export class PreBattleScene extends Phaser.Scene {
     const cfg     = this.registry.get('invasionConfig') as InvasionConfig | undefined;
     const questId = this.registry.get('questId')        as string        | undefined;
     const gs      = loadGameState();
-    const invasionTarget = cfg ? buildStoryInvasionTarget(cfg) : null;
+    // The invasion's chapter decides its core (storyInvasionDungeonHp); without
+    // it every story invasion from chapter 1 to 8 fought on the same 800 HP.
+    const invasionChapter = questId ? getQuest(questId)?.chapter ?? 1 : 1;
+    const invasionTarget = cfg ? buildStoryInvasionTarget(cfg, invasionChapter) : null;
 
     // ─ Dungeon ambient ──────────────────────────────────────────────────────
     applyCasualBackground(this);

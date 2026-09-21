@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { INVADER_DEFS } from './invaders';
 import {
   buildBattleForecast,
   buildStoryInvasionTarget,
   resolveStoryInvaderType,
-  type StoryInvasionTarget,
-} from './battleForecast';
+  type StoryInvasionTarget, storyInvasionDungeonHp } from './battleForecast';
 import { MAIN_QUESTS, type InvasionConfig } from './quests';
 import { simulateDungeon } from './simulation';
 import type { StageConfig } from './stages';
@@ -137,3 +137,63 @@ describe('battle forecast', () => {
     expect(`${forecast.heuristicCopy} ${forecast.marginCopy}`).not.toMatch(/확률|생존율|정확한 전투/);
   });
 });
+
+describe('스토리 침입이 자기 코어를 갖는다', () => {
+  // All ten invasions shipped on one constant (800) while their own pressure
+  // grew 386x in invader HP and 64x in core damage from INV-001 to INV-009 —
+  // the last one could destroy the core twelve times over. Third instance of
+  // the same shape: a mode that never sets dungeonHp inherits someone else's
+  // (abyss took DungeonScene's 1,000; endless took Chapter 1 Stage 1's 1,500).
+  const invasions = MAIN_QUESTS
+    .filter(quest => quest.invasionOnComplete)
+    .map(quest => ({ quest, invasion: quest.invasionOnComplete! }));
+
+  const coreDamage = (chapter: number, invasion: typeof invasions[number]['invasion']) => {
+    const target = buildStoryInvasionTarget(invasion, chapter);
+    if (!target.stage) return 0;
+    return target.stage.waves.reduce((sum, wave) => sum + wave.invaders.reduce(
+      (acc, group) => acc + group.count * (INVADER_DEFS[group.type]?.hp !== undefined
+        ? INVADER_DEFS[group.type].damage : 0), 0), 0);
+  };
+
+  it('모든 침입이 생성된다', () => {
+    expect(invasions.length).toBeGreaterThan(0);
+    for (const { quest, invasion } of invasions) {
+      const target = buildStoryInvasionTarget(invasion, quest.chapter);
+      expect(target.stage, `${quest.id} ${invasion.id}`).not.toBeNull();
+      expect(target.diagnostics, `${quest.id} diagnostics`).toEqual([]);
+    }
+  });
+
+  it('코어가 챕터를 따라 줄지 않는다', () => {
+    let prev = 0;
+    for (let chapter = 1; chapter <= 9; chapter++) {
+      const hp = storyInvasionDungeonHp(chapter);
+      expect(hp, `chapter ${chapter}`).toBeGreaterThanOrEqual(prev);
+      prev = hp;
+    }
+  });
+
+  it('침입이 코어 하나로 감당 못 할 만큼 무겁지 않다', () => {
+    // 800 flat put INV-009 at 12x the core. Every invasion must now leave the
+    // player at least a fighting chance — its full leak cannot exceed the core
+    // by more than a small factor.
+    for (const { quest, invasion } of invasions) {
+      // Read the core off the BUILT stage, not the helper — the defect was the
+      // wiring, so a guard that calls the helper directly cannot see it.
+      const target = buildStoryInvasionTarget(invasion, quest.chapter);
+      const hp = target.stage?.dungeonHp ?? 0;
+      const damage = coreDamage(quest.chapter, invasion);
+      if (damage === 0) continue;
+      expect(hp / damage, `${quest.id} forgiveness (core ${hp} vs ${damage})`).toBeGreaterThan(0.5);
+    }
+  });
+
+  it('생성된 스테이지가 자기 챕터를 들고 간다', () => {
+    for (const { quest, invasion } of invasions) {
+      const target = buildStoryInvasionTarget(invasion, quest.chapter);
+      expect(target.stage?.chapter, `${quest.id}`).toBe(quest.chapter);
+      expect(target.stage?.dungeonHp).toBe(storyInvasionDungeonHp(quest.chapter));
+    }
+  });
+})
