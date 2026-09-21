@@ -109,9 +109,14 @@ export function buildEndlessSpawnQueue(
     queue.push({ def: makeScaledDef('soldier', { hp: Math.round(INVADER_DEFS['soldier'].hp * hpMult * 1.5) }), delay: 2000 });
   }
 
-  // Wave 20: mini-boss knight
+  // Wave 20: mini-boss knight.
+  // The factor was 0.5, which put the "mini-boss" at 1,507 hp inside a wave
+  // whose ordinary filler reaches 5,168 — 3.4x weaker than the rank and file it
+  // was meant to headline. Every other milestone in this file uses 1.5-2.5x.
+  // knight's base (350) is below the pool's iron_golem (600), so the factor has
+  // to clear 600/350 = 1.71 for the entry to read as a step up at all.
   if (w === 20) {
-    queue.push({ def: makeScaledDef('knight', { hp: Math.round(INVADER_DEFS['knight'].hp * hpMult * 0.5), isMiniBoss: true }), delay: 0 });
+    queue.push({ def: makeScaledDef('knight', { hp: Math.round(INVADER_DEFS['knight'].hp * hpMult * 2), isMiniBoss: true }), delay: 0 });
   }
 
   // Wave 25: iron golem champion (2× HP, mini-boss flag)
@@ -119,9 +124,12 @@ export function buildEndlessSpawnQueue(
     queue.push({ def: makeScaledDef('iron_golem', { hp: Math.round(INVADER_DEFS['iron_golem'].hp * hpMult * 2), isMiniBoss: true }), delay: 0 });
   }
 
-  // Wave 30: two elite void assassins
+  // Wave 30: two elite void assassins.
+  // Same defect as wave 20: 0.75 left each "elite" at 4,815 against filler at
+  // 16,050. void_assassin's base (240) is well under the pool's iron_golem
+  // (600), so the factor has to clear 600/240 = 2.5.
   if (w === 30) {
-    const eliteDef = makeScaledDef('void_assassin', { hp: Math.round(INVADER_DEFS['void_assassin'].hp * hpMult * 0.75), isMiniBoss: true });
+    const eliteDef = makeScaledDef('void_assassin', { hp: Math.round(INVADER_DEFS['void_assassin'].hp * hpMult * 3), isMiniBoss: true });
     queue.push({ def: eliteDef, delay: 0 });
     queue.push({ def: eliteDef, delay: 1200 });
   }

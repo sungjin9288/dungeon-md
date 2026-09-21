@@ -384,11 +384,14 @@ describe('buildEndlessSpawnQueue — pool tier thresholds', () => {
     expect(soldier!.def.reward).toBe(expected);
   });
 
-  it('wave 20 mini-boss knight HP = round(350 × 1.12^19 × 0.5) = 1507', () => {
+  it('wave 20 mini-boss knight HP = round(350 × 1.12^19 × 2)', () => {
+    // Was 0.5, which pinned the mini-boss at 1,507 against filler reaching
+    // 5,168 in the same wave. knight's base (350) sits under the pool's
+    // iron_golem (600), so the factor must clear 1.71 to be a step up at all.
     const q = buildEndlessSpawnQueue(20);
     const boss = q.find(e => e.def.type === 'knight' && e.def.isMiniBoss);
     expect(boss).toBeDefined();
-    const expected = Math.round(INVADER_DEFS['knight'].hp * Math.pow(1.12, 19) * 0.5);
+    const expected = Math.round(INVADER_DEFS['knight'].hp * Math.pow(1.12, 19) * 2);
     expect(boss!.def.hp).toBe(expected);
   });
 });
@@ -650,5 +653,34 @@ describe('endlessDungeonHp — the mode sets its own core', () => {
     expect(endlessDungeonHp(0)).toBe(STAGE_1_HP);
     expect(endlessDungeonHp(-5)).toBe(STAGE_1_HP);
     expect(endlessDungeonHp(9999)).toBe(ALL_STAGES[ALL_STAGES.length - 1].dungeonHp);
+  });
+})
+
+describe('마일스톤은 벽이어야 한다', () => {
+  // wave 20's knight shipped at 0.5x and wave 30's void assassins at 0.75x,
+  // which put both "mini-bosses" several times weaker than the ordinary filler
+  // standing beside them in the same wave. Same invariant the abyss needed:
+  // a boss entry that is a discount is worse than no boss entry.
+  const MILESTONES = [10, 20, 25, 30, 40, 50, 60, 70, 80, 90];
+
+  it('마일스톤 개체가 같은 웨이브의 일반 개체보다 약하지 않다', () => {
+    for (const wave of MILESTONES) {
+      const queue = buildEndlessSpawnQueue(wave, null);
+      const special = queue.filter(entry => (entry.def as { isMiniBoss?: boolean; isBoss?: boolean }).isMiniBoss
+        || (entry.def as { isBoss?: boolean }).isBoss);
+      if (!special.length) continue;   // wave 10 fields an elite, not a flagged mini-boss
+      const fillerMax = Math.max(...queue
+        .filter(entry => !special.includes(entry))
+        .map(entry => entry.def.hp));
+      const specialMax = Math.max(...special.map(entry => entry.def.hp));
+      expect(specialMax, `wave ${wave} milestone vs its own filler`).toBeGreaterThanOrEqual(fillerMax);
+    }
+  });
+
+  it('마일스톤 웨이브가 직전 웨이브보다 무겁다', () => {
+    for (const wave of MILESTONES) {
+      const total = (w: number) => buildEndlessSpawnQueue(w, null).reduce((sum, entry) => sum + entry.def.hp, 0);
+      expect(total(wave), `wave ${wave} vs ${wave - 1}`).toBeGreaterThan(total(wave - 1));
+    }
   });
 })
