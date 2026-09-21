@@ -35,6 +35,8 @@ export interface RoomMechanicsContext {
   /** Per-trap-type mastery from the save (trapId → +0..+5). */
   /** monsterId → raising multiplier (level growth · 강타). */
   readonly guardianAtkMult?: ReadonlyMap<string, number>;
+  /** Wave-event ATK multiplier (rally / ancient_blessing / …), same value CombatResolver applies. */
+  readonly waveAtkMult?: number;
   readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
@@ -446,7 +448,10 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
         let dmg = (mDef.baseDamage > 0 ? mDef.baseDamage : ROOM_DEFS[data.type].attackDamage)
           * Math.pow(1.4, data.level - 1)
           * data.roomTypeDmgMult
-          * (ctx.guardianAtkMult?.get(mId) ?? 1);
+          * (ctx.guardianAtkMult?.get(mId) ?? 1)
+          // CombatResolver applies this to the primary guardian; the extra
+          // guardians in the same room fight the same wave under the same event.
+          * (ctx.waveAtkMult ?? 1);
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
         dmg *= comboMultiplier(target.comboCount(now));

@@ -19,6 +19,7 @@ import {
 } from '../constants/colors';
 import { logger } from '../utils/logger';
 import { addFramedPanel, addPrimaryActionButton, GAME_UI } from '../ui/GameUiPrimitives';
+import { WAVE_EVENT_HEAL, waveEventMults } from './waveEventMults';
 import { getReducedMotion } from '../utils/reducedMotion';
 
 const OVERLAY_PANEL_FILL = DUNGEON_UI.STONE;
@@ -44,6 +45,7 @@ export interface WaveEventContext {
   waveAtkMult: number;
   waveSpdMult: number;
   waveFogOverlay: Phaser.GameObjects.Graphics | undefined;
+  pendingWaveMults: { gold: number; hp: number; atk: number; spd: number } | undefined;
   dungeonHp: number;
 
   // callbacks
@@ -167,66 +169,34 @@ export function showWaveEvent(
 // ─── applyWaveEvent ────────────────────────────────────────────────────────
 
 export function applyWaveEvent(ctx: WaveEventContext, evt: WaveEventDef): void {
-  switch (evt.type) {
-    case 'merchant':
-      ctx.waveGoldMult = 1.5;
-      break;
-    case 'supply': {
-      const moonHealUp = ctx.synergyHasMoonlightHealUp ? 1.20 : 1;
-      ctx.dungeonHp = Math.min(ctx.maxHp, ctx.dungeonHp + Math.ceil(ctx.maxHp * 0.15 * moonHealUp));
-      ctx.setRegistryHp(ctx.dungeonHp);
-      break;
-    }
-    case 'curse':
-      ctx.waveHpMult   = 1.3;
-      ctx.waveGoldMult = 2.0;
-      break;
-    case 'rally':
-      ctx.waveAtkMult = 1.25;
-      break;
-    case 'fog':
-      ctx.waveSpdMult = 0.85;
-      // Visual fog overlay
-      ctx.waveFogOverlay = ctx.scene.add.graphics().setDepth(15).setAlpha(0.3);
-      ctx.waveFogOverlay.fillStyle(0x556677, 0.25);
-      ctx.waveFogOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      break;
-    case 'void_storm':
-      ctx.waveSpdMult  = 1.25;
-      ctx.waveGoldMult = 1.8;
-      break;
-    case 'ancient_blessing': {
-      ctx.waveAtkMult = 1.20;
-      const moonHealUp = ctx.synergyHasMoonlightHealUp ? 1.20 : 1;
-      ctx.dungeonHp = Math.min(ctx.maxHp, ctx.dungeonHp + Math.ceil(ctx.maxHp * 0.10 * moonHealUp));
-      ctx.setRegistryHp(ctx.dungeonHp);
-      break;
-    }
-    case 'crimson_curse':
-      ctx.waveHpMult   = 1.5;
-      ctx.waveGoldMult = 3.0;
-      break;
-    case 'gold_vein':
-      ctx.waveGoldMult = 2.5;
-      break;
-    case 'raiders':
-      ctx.waveSpdMult  = 1.3;
-      ctx.waveHpMult   = 1.2;
-      ctx.waveGoldMult = 2.2;
-      break;
-    case 'guardian_rite':
-      ctx.waveAtkMult = 1.4;
-      break;
-    case 'unsealing':
-      ctx.waveHpMult   = 1.6;
-      ctx.waveAtkMult  = 1.3;
-      ctx.waveGoldMult = 2.5;
-      break;
-    case 'time_warp':
-      ctx.waveSpdMult = 0.7;
-      ctx.waveAtkMult = 1.15;
-      break;
+  applyWaveEventEffects(ctx, evt);
+  // The card is shown ~1.8s before startWave, which resets the live values.
+  // Hand the roll forward so startWave restores it instead of neutralising it.
+  ctx.pendingWaveMults = {
+    gold: ctx.waveGoldMult, hp: ctx.waveHpMult, atk: ctx.waveAtkMult, spd: ctx.waveSpdMult,
+  };
+}
+
+function applyWaveEventEffects(ctx: WaveEventContext, evt: WaveEventDef): void {
+  const mults = waveEventMults(evt.type);
+  ctx.waveGoldMult = mults.gold;
+  ctx.waveHpMult   = mults.hp;
+  ctx.waveAtkMult  = mults.atk;
+  ctx.waveSpdMult  = mults.spd;
+
+  const healFrac = WAVE_EVENT_HEAL[evt.type] ?? 0;
+  if (healFrac > 0) {
+    const moonHealUp = ctx.synergyHasMoonlightHealUp ? 1.20 : 1;
+    ctx.dungeonHp = Math.min(ctx.maxHp, ctx.dungeonHp + Math.ceil(ctx.maxHp * healFrac * moonHealUp));
+    ctx.setRegistryHp(ctx.dungeonHp);
   }
+
+  if (evt.type === 'fog') {
+    ctx.waveFogOverlay = ctx.scene.add.graphics().setDepth(15).setAlpha(0.3);
+    ctx.waveFogOverlay.fillStyle(0x556677, 0.25);
+    ctx.waveFogOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  }
+
   logger.debug(`[EVENT] ${evt.name} applied: gold×${ctx.waveGoldMult} hp×${ctx.waveHpMult} atk×${ctx.waveAtkMult} spd×${ctx.waveSpdMult}`);
 }
 

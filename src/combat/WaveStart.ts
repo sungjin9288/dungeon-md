@@ -56,6 +56,8 @@ export interface WaveStartContext {
   get waveHpMult():         number;    set waveHpMult(v: number);
   get waveAtkMult():        number;    set waveAtkMult(v: number);
   get waveSpdMult():        number;    set waveSpdMult(v: number);
+  get pendingWaveMults():   { gold: number; hp: number; atk: number; spd: number } | undefined;
+  set pendingWaveMults(v:   { gold: number; hp: number; atk: number; spd: number } | undefined);
   get waveFogOverlay():     Phaser.GameObjects.Graphics | undefined;
   set waveFogOverlay(v:     Phaser.GameObjects.Graphics | undefined);
   get spawnQueue():         Array<{ def: InvaderDef; delay: number }>;
@@ -142,11 +144,17 @@ export function startWave(ctx: WaveStartContext): void {
       stroke: '#000000', strokeThickness: 2 },
   ).setOrigin(1, 0).setDepth(92).setAlpha(0.85);
 
-  // ── Wave event multipliers reset ─────────────────────────────────────────────
-  ctx.waveGoldMult = 1;
-  ctx.waveHpMult   = 1;
-  ctx.waveAtkMult  = 1;
-  ctx.waveSpdMult  = 1;
+  // ── Wave event multipliers ───────────────────────────────────────────────────
+  // Restore what the event card rolled for THIS wave, else neutral. Hardcoding
+  // 1 here silently killed 11 of the 13 wave events: applyWaveEvent fires when
+  // the card is shown and startWave runs ~1.8s later, so curse/fog/merchant/
+  // void_storm never reached a spawn or a reward.
+  const pending = ctx.pendingWaveMults;
+  ctx.waveGoldMult = pending?.gold ?? 1;
+  ctx.waveHpMult   = pending?.hp   ?? 1;
+  ctx.waveAtkMult  = pending?.atk  ?? 1;
+  ctx.waveSpdMult  = pending?.spd  ?? 1;
+  ctx.pendingWaveMults = undefined;
   if (ctx.waveFogOverlay) { ctx.waveFogOverlay.destroy(); ctx.waveFogOverlay = undefined; }
 
   if (ctx.stageChapter >= 3) ctx.updateArmoryBonuses();

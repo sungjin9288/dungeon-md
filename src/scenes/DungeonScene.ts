@@ -190,6 +190,15 @@ export class DungeonScene extends Phaser.Scene {
   waveHpMult   = 1;    // invader HP multiplier (curse)
   waveAtkMult  = 1;    // monster ATK multiplier (rally)
   waveSpdMult  = 1;    // invader speed multiplier (fog)
+  /**
+   * Multipliers a wave event rolled for the wave that is about to start.
+   * `applyWaveEvent` runs when the event card appears, which is ~1.8s BEFORE
+   * `startWave`, so startWave's reset used to wipe every one of them before a
+   * single invader spawned or a single reward was paid. startWave now restores
+   * from here instead of hardcoding 1, which keeps the reset safe on the call
+   * paths that reach startWave without an event (ResultPanel auto-advance).
+   */
+  pendingWaveMults: { gold: number; hp: number; atk: number; spd: number } | undefined = undefined;
   waveFogOverlay?: Phaser.GameObjects.Graphics;
 
   // ── Dungeon slot traps ──────────────────────────────────────────────────────
