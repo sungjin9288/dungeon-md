@@ -131,6 +131,23 @@ const CHAPTER_GATE_UNLOCKS: Record<number, number> = {
   71: 72,
 };
 
+/**
+ * The highest campaign stage the player has actually cleared (0 = none).
+ *
+ * Stage numbers are 1-based and entries are index-aligned, so the answer is the
+ * last starred index plus one. Two private copies of this walk used to live in
+ * summonTransactions and tribeShards, both gating acquisition on it; they are
+ * gone, and any new caller should use this one.
+ */
+export function highestClearedStage(
+  state: Readonly<{ stageProgress?: ReadonlyArray<{ bestStars?: number } | undefined> }>,
+): number {
+  return (state.stageProgress ?? []).reduce(
+    (max: number, entry, index) => ((entry?.bestStars ?? 0) > 0 ? index + 1 : max),
+    0,
+  );
+}
+
 export function loadProgress(): StageProgress[] {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) {

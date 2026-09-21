@@ -1,3 +1,4 @@
+import { ALL_STAGES } from './allStages';
 import { INVADER_DEFS } from './invaders';
 import type { InvaderType, InvaderDef } from './invaders';
 import type { EndlessModifier } from './endlessModifiers';
@@ -34,6 +35,35 @@ function buildPool(w: number): InvaderType[] {
   if (w >= 60) pool.push(...T7);
   if (w >= 70) pool.push(...T8);
   return pool;
+}
+
+/**
+ * The dungeon core an endless run fights on, for a player whose deepest cleared
+ * campaign stage is `highestCleared`.
+ *
+ * Endless enters as `{ endless: true, stageNumber: 0 }` with no inline waves,
+ * and `stageNumber` 0 matches no entry in ALL_STAGES (ids are 1..90). The
+ * resolver's `?? ALL_STAGES[0]` fallback therefore handed every endless run
+ * Chapter 1 Stage 1's tutorial core — 1,500 HP, measured in
+ * verify-endless-endurance.mjs — however deep the run went and however strong
+ * the board was. The mode simply never set its own, exactly the way the abyss
+ * inherited DungeonScene's default 1,000 for all sixty floors.
+ *
+ * An endless run is fought at the player's campaign standing, so it takes the
+ * best core the campaign has handed them so far — derived from real progress,
+ * and it keeps climbing rather than sitting at a tutorial value forever.
+ *
+ * The running max matters: the campaign's own curve DROPS at three chapter
+ * boundaries (stage 10 → 11 is 2,400 → 1,200, and again at 21 and 33) because
+ * each chapter restarts against a weaker enemy set. Reading the raw stage value
+ * would mean clearing stage 11 SHRANK your endless core, which is the same
+ * progress-makes-it-worse reversal this function exists to remove.
+ */
+export function endlessDungeonHp(highestCleared: number): number {
+  const standing = Math.max(1, Math.min(ALL_STAGES.length, Math.floor(highestCleared)));
+  return ALL_STAGES
+    .filter(entry => entry.id <= standing)
+    .reduce((best, entry) => Math.max(best, entry.dungeonHp), 0);
 }
 
 export function buildEndlessSpawnQueue(

@@ -1,5 +1,6 @@
+import { ALL_STAGES } from './allStages';
 import { describe, it, expect } from 'vitest';
-import { buildEndlessSpawnQueue } from './endlessWave';
+import { buildEndlessSpawnQueue, endlessDungeonHp } from './endlessWave';
 import { INVADER_DEFS, type InvaderType } from './invaders';
 
 // ─── buildEndlessSpawnQueue — basic structure ─────────────────────────────────
@@ -603,3 +604,51 @@ describe('buildEndlessSpawnQueue — additional length pins & HP formulas', () =
     }
   });
 });
+
+describe('endlessDungeonHp — the mode sets its own core', () => {
+  // Endless enters as { endless: true, stageNumber: 0 }; id 0 matches nothing in
+  // ALL_STAGES, so the resolver's `?? ALL_STAGES[0]` fallback gave every run
+  // Chapter 1 Stage 1's tutorial core regardless of depth or board strength.
+  const STAGE_1_HP = ALL_STAGES[0].dungeonHp;
+
+  it('grows with campaign standing instead of sitting at the tutorial value', () => {
+    const shallow = endlessDungeonHp(10);
+    const deep = endlessDungeonHp(80);
+    expect(deep).toBeGreaterThan(shallow);
+    expect(deep).toBeGreaterThan(STAGE_1_HP * 2);
+  });
+
+  it('never falls back to stage 1 for a player who has cleared anything', () => {
+    for (const standing of [10, 20, 40, 60, 80]) {
+      const best = ALL_STAGES
+        .filter(stage => stage.id <= standing)
+        .reduce((max, stage) => Math.max(max, stage.dungeonHp), 0);
+      expect(endlessDungeonHp(standing), `standing ${standing}`).toBe(best);
+      expect(endlessDungeonHp(standing)).toBeGreaterThan(STAGE_1_HP);
+    }
+  });
+
+  it('a chapter boundary never shrinks the core', () => {
+    // The campaign curve itself drops at stages 11, 21 and 33; reading it raw
+    // would mean clearing stage 11 took the endless core from 2,400 to 1,200.
+    for (const boundary of [11, 21, 33, 43, 53, 63, 73, 81]) {
+      expect(endlessDungeonHp(boundary), `boundary ${boundary}`)
+        .toBeGreaterThanOrEqual(endlessDungeonHp(boundary - 1));
+    }
+  });
+
+  it('is monotone in standing', () => {
+    let prev = 0;
+    for (let standing = 1; standing <= ALL_STAGES.length; standing++) {
+      const hp = endlessDungeonHp(standing);
+      expect(hp, `standing ${standing}`).toBeGreaterThanOrEqual(prev);
+      prev = hp;
+    }
+  });
+
+  it('clamps rather than throwing on out-of-range standings', () => {
+    expect(endlessDungeonHp(0)).toBe(STAGE_1_HP);
+    expect(endlessDungeonHp(-5)).toBe(STAGE_1_HP);
+    expect(endlessDungeonHp(9999)).toBe(ALL_STAGES[ALL_STAGES.length - 1].dungeonHp);
+  });
+})

@@ -11,10 +11,12 @@
 import Phaser from 'phaser';
 import { type WaveSpec } from '../data/stages';
 import { ALL_STAGES } from '../data/allStages';
+import { highestClearedStage } from '../data/stageProgress';
 import { loadGameState, getUnlockedSlotCount, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import { rollEndlessModifier } from '../data/endlessModifiers';
+import { endlessDungeonHp } from '../data/endlessWave';
 import { GRID_COLS } from '../constants/layout';
 
 // ─── StageSetup ───────────────────────────────────────────────────────────────
@@ -99,6 +101,26 @@ export function resolveStageSetup(
     waterCells     = new Set<number>();
     stageDungeonHp = stageCfg.dungeonHp ?? 1000;
     stageNumber    = 0;   // inline invasion — no stage number
+  } else if (isEndless) {
+    // Endless enters as { endless: true, stageNumber: 0 } and builds its waves
+    // per wave in WaveStart, so it has neither inline waves nor a stage id.
+    // It used to fall through the branch below, where `find(s => s.id === 0)`
+    // misses and `?? ALL_STAGES[0]` handed every endless run Chapter 1 Stage
+    // 1's tutorial core — 1,500 HP, measured, no matter how deep the run went
+    // or how strong the board was. Same shape as the abyss defect: the mode
+    // never set dungeonHp, so it inherited someone else's.
+    //
+    // An endless run fights at the player's campaign standing, so it takes the
+    // core of the deepest stage they have cleared. That is derived from real
+    // progress rather than invented, and it keeps growing the way the campaign
+    // curve does (stage 10: 2,400 → stage 80: 11,000).
+    const standing = Math.max(1, Math.min(ALL_STAGES.length, highestClearedStage(gameState)));
+    stageNumber    = 0;
+    waveConfigs    = [];
+    stageChapter   = ALL_STAGES.find(s => s.id === standing)?.chapter ?? 1;
+    effectiveCols  = GRID_COLS;
+    waterCells     = new Set<number>();
+    stageDungeonHp = endlessDungeonHp(standing);
   } else {
     stageNumber    = stageCfg?.stageNumber ?? 1;
     const stageDef = ALL_STAGES.find(s => s.id === stageNumber) ?? ALL_STAGES[0];
