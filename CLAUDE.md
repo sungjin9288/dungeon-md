@@ -273,7 +273,9 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 (`idleIncome.ts computeIdleReward`). 각 수입원은 모든 배수 적용 후 한 번 내림한다.
 방치 패널의 분당 수익은 보물고를 포함한 총액이며, 생산 구역의 현재·다음 단계 표시는
 수령과 같은 `facilityIncomeRatePerHour`를 사용한다. 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
-곱하고 재료에는 곱하지 않는다. 방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
+곱하고 재료에는 곱하지 않는다. 5분 미만 부재(`IDLE_PANEL_MIN_MS`)는 Home 진입 시 같은 `collectIdleIncome`으로 조용히 정산하고
+토스트만 띄운다(저장 실패 시 다음 진입에서 재정산). 회수 모달은 그 이상 부재에서만 뜬다.
+방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
 UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광맥`은 **수익 방**
 (`IDLE_PER_GOLD_ROOM` 12/분)이며 전투 중 골드 생산은 없다(`runGoldVeins` 삭제 —
 전투 골드는 전리품뿐).
@@ -531,6 +533,14 @@ Home 재시작은 해당 씬이 종료되면 취소하고, 정상 실행 후에�
 | 침략 배틀 | `{ waves: [...], ... }` (inline) | `'DungeonHomeScene'` | DungeonHomeScene |
 
 침략 클리어는 `stageProgress` 기록 안 함 (stageNumber 없음).
+
+Home은 `battleResult`를 **한 번만** 정산한다: `'battle-result'`/`'forecast-return'` 계약이
+`battleResult`·`returnTo`를 소비한다(남아 있으면 Home 재진입마다 재지급 — 2026-09-28 회귀 수정).
+승리 귀환은 요약 → DM 레벨업 → 메인 퀘스트 팝업 순서다. 요약이 떠 있는 동안
+`battleReturnPresenting`이 퀘스트 정산을 막는다(`presentBattleReturnWin`). 퀘스트 팝업은 Home을
+재시작하므로 편집 레이어(상세 100·피커 110·트레이 120) 위 `MAIN_QUEST_RESULT_DEPTH`(130)에 뜬다.
+배치 트레이 커밋도 방 상세와 같은 `refreshHomeDynamicPanels`(보드·지시 덱·퀘스트 정산)를 쓴다.
+전투 카메라 연출은 DPR 줌의 배수로만 움직인다(`playBossCameraPunch`) — 절대 줌은 화면을 1/DPR로 줄인다.
 
 ---
 
