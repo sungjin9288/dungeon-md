@@ -527,6 +527,7 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     updateLowHpVignette:()    => ds.updateLowHpVignette(),
     setHpRegistry:      (v)   => ds.registry.set('hp', v),
     setGoldRegistry:    (v)   => ds.registry.set('gold', v),
+    setRemainingInvadersRegistry: (n) => ds.registry.set('remainingInvaders', n),
   };
 }
 

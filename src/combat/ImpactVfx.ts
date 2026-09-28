@@ -137,10 +137,8 @@ export function showBossWarning(
     cam.shake(700, 0.014);
   });
 
-  // 1000ms: Camera zoom-in
-  scene.time.delayedCall(1000, () => {
-    cam.zoomTo(1.06, 1500, 'Sine.easeInOut');
-  });
+  // 1000ms → 2700ms: camera punch-in and restore
+  playBossCameraPunch(scene, cam);
 
   // Camera boss-color flash
   const r = (bossColorNum >> 16) & 0xff;
@@ -156,9 +154,8 @@ export function showBossWarning(
     });
   });
 
-  // 2700ms: Zoom restore + overlay fade
+  // 2700ms: overlay fade (the camera punch restores itself)
   scene.time.delayedCall(2700, () => {
-    cam.zoomTo(1.0, 500, 'Sine.easeOut');
     scene.tweens.add({
       targets: overlay, alpha: 0, duration: 600,
       onComplete: () => overlay.destroy(),
@@ -167,6 +164,23 @@ export function showBossWarning(
 
   logger.debug(`[BOSS] ${bossName} appears! HP: ${bossHp}`);
   buildBossHpBar(bossHp);
+}
+
+/** Peak boss-entrance zoom, relative to the camera's base (DPR) zoom. */
+export const BOSS_PUNCH_ZOOM = 1.06;
+
+interface PunchCamera { readonly zoom: number; zoomTo(zoom: number, duration: number, ease: string): unknown }
+interface PunchClock { readonly time: { delayedCall(delay: number, callback: () => void): unknown } }
+
+/**
+ * Scene cameras run at the DPR zoom (main.ts applyDprCamera), so the punch is a
+ * multiple of the zoom at call time. Absolute targets left the rest of the
+ * battle and its result panel at 1/DPR size.
+ */
+export function playBossCameraPunch(scene: PunchClock, cam: PunchCamera): void {
+  const baseZoom = cam.zoom;
+  scene.time.delayedCall(1000, () => cam.zoomTo(baseZoom * BOSS_PUNCH_ZOOM, 1500, 'Sine.easeInOut'));
+  scene.time.delayedCall(2700, () => cam.zoomTo(baseZoom, 500, 'Sine.easeOut'));
 }
 
 // ── Tiger Pounce slash line ─────────────────────────────────────────────────

@@ -126,7 +126,8 @@ export class Room extends Phaser.GameObjects.Container {
     this.drawCandle();
     this.add(this.candleGfx);
 
-    this.emptyLabel = scene.add.text(0, 26, '방 추가', {
+    // Battle cannot build (Option B): an unbuilt cell is the Home "빈 터", not an action.
+    this.emptyLabel = scene.add.text(0, 26, '빈 터', {
       fontFamily: "Georgia, serif", fontSize: '11px', color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',
     }).setOrigin(0.5, 0);

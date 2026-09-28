@@ -13,6 +13,7 @@ import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, GRID_Y } from '../constants/layout';
 import { showGoldFloat } from './VisualEffects';
 import { playDungeonHpHitReaction } from './ImpactVfx';
+import { remainingInvaderCount } from './waveSpawnAccounting';
 import { logger } from '../utils/logger';
 import { resolveMonsterTypeId } from '../data/monsters';
 
@@ -40,6 +41,7 @@ export interface BattleEventContext {
   updateLowHpVignette(): void;
   setHpRegistry(v: number): void;
   setGoldRegistry(v: number): void;
+  setRemainingInvadersRegistry(n: number): void;
 }
 
 // ─── invaderReachedEnd ────────────────────────────────────────────────────────
@@ -50,6 +52,7 @@ export function handleInvaderReachedEnd(ctx: BattleEventContext, inv: Invader): 
 
   ctx.dungeonHp = Math.max(0, ctx.dungeonHp - actualDamage);
   ctx.setHpRegistry(ctx.dungeonHp);
+  ctx.setRemainingInvadersRegistry(remainingInvaderCount(ctx.activeInvaders, inv));
   ctx.activeInvaders = ctx.activeInvaders.filter(i => i !== inv);
 
   ctx.breakthruCount = ctx.breakthruCount + 1;

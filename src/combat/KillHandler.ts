@@ -29,6 +29,7 @@ import {
   spawnDeathParticles,
 } from './ImpactVfx';
 import { logger } from '../utils/logger';
+import { remainingInvaderCount } from './waveSpawnAccounting';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   ctx.killsThisWave++;
   ctx.goldEarnedThisRun += goldReward;
   ctx.killCounterText?.setText(`💀 ${ctx.killsThisWave} / ${ctx.waveInvaderTotal || '?'}`);
-  ctx.setRemainingInvadersRegistry(ctx.activeInvaders.filter(i => i.active).length);
+  ctx.setRemainingInvadersRegistry(remainingInvaderCount(ctx.activeInvaders, inv));
 
   // ── Kill combo ──────────────────────────────────────────────────────────────
   const now = scene.time.now;
