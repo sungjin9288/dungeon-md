@@ -165,6 +165,8 @@ export class DungeonHomeScene extends Phaser.Scene {
   // Currency text refs for live animation
   /** @internal */ currencyTexts: Phaser.GameObjects.Text[] = [];
   private topBarRefs: TopBarRefs | null = null;
+  /** Quest strip objects; rebuilt on every persist so progress never goes stale. */
+  private questBannerParts: Phaser.GameObjects.GameObject[] = [];
 
   // Theme
   /** @internal */ theme!: DungeonTheme;
@@ -176,6 +178,17 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.gs = nextState;
     this.refreshCurrencyTexts();
     this.refreshTopBarProgress();
+    this.refreshQuestBanner();
+  }
+
+  private refreshQuestBanner(): void {
+    // Runs during create() too (battle-return settlement persists there);
+    // only a shut-down or destroyed scene must not draw.
+    const status = this.sys?.settings?.status;
+    if (status === undefined || status >= Phaser.Scenes.SHUTDOWN || !this.theme) return;
+    this.questBannerParts.forEach(part => part.destroy());
+    this.questBannerParts = buildQuestBanner(this, this.gs, this.theme, TOP_H,
+      () => openQuestLog(this, this.questLogState, this.gs));
   }
 
   private markRoomChanged(slotIdx: number): void {
@@ -261,8 +274,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.topBarRefs = topBarRefs;
     this.currencyTexts = topBarRefs.currencyTexts;
 
-    buildQuestBanner(this, this.gs, this.theme, TOP_H,
-      () => openQuestLog(this, this.questLogState, this.gs));
+    this.questBannerParts = [];  // instance reuse: the old scene's objects are gone
+    this.refreshQuestBanner();
     this.buildDungeonGrid();
     this.buildCommandDeck();
     buildStatsBar(this, this.gs, this.theme, BOT_Y);

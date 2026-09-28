@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyBattleReturnSettlement } from './invasionTransactions';
 import { applyInvaderKillProgress, applyQuestObjectiveProgress } from './progressionTransactions';
-import { settleCompletedHomeMainQuest } from './questLifecycleTransactions';
+import { initializeHomeQuestState, settleCompletedHomeMainQuest } from './questLifecycleTransactions';
 import { getPendingQuestInvasion, startQuest } from './quests';
 import { loadGameState, type GameState } from './wisdom';
 
@@ -121,5 +121,23 @@ describe('quest invasions are re-offered until the defend target is met (§35)',
     expect(getPendingQuestInvasion(at('MQ-037', 0))).not.toBeNull();
     expect(getPendingQuestInvasion(at('MQ-037', 1))).not.toBeNull();
     expect(getPendingQuestInvasion(at('MQ-037', 2))).toBeNull();
+  });
+});
+
+describe('Home init re-reads derived objectives for existing saves (§35)', () => {
+  it('shows cleared stages on an already-active complete_stage quest', () => {
+    const cleared = clearedThrough(10);
+    const legacy: GameState = {
+      ...loadGameState(), stageProgress: cleared, activeMainQuestId: 'MQ-011',
+      questProgress: { 'MQ-011': { objectives: { O1: 0 }, completed: false } },
+    };
+    const init = initializeHomeQuestState(legacy);
+    expect(init.state.questProgress['MQ-011'].objectives.O1).toBe(10);
+    expect(init.changed).toBe(true);
+  });
+
+  it('starts progress for an active quest with no progress entry', () => {
+    const legacy: GameState = { ...loadGameState(), stageProgress: clearedThrough(10), activeMainQuestId: 'MQ-011', questProgress: {} };
+    expect(initializeHomeQuestState(legacy).state.questProgress['MQ-011'].objectives.O1).toBe(10);
   });
 });

@@ -101,6 +101,13 @@ export function initializeHomeQuestState(
     }
   }
 
+  // Saves whose quest was active before a rule change (or lacks a progress
+  // entry) show stale objectives; re-read what the state already proves (§35).
+  if (nextState.activeMainQuestId && !nextState.questProgress?.[nextState.activeMainQuestId]) {
+    nextState = startQuest(nextState, nextState.activeMainQuestId);
+  }
+  nextState = syncDerivedQuestObjectives(nextState);
+
   const beforeSubQuests = snapshotSubQuests(nextState);
   const assignedState = assignSubQuests(nextState);
   const afterSubQuests = snapshotSubQuests(assignedState);

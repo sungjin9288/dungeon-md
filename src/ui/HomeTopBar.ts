@@ -328,21 +328,24 @@ export function buildQuestBanner(
   _theme: DungeonTheme,
   topH: number,
   onTap?: () => void,
-): void {
+): Phaser.GameObjects.GameObject[] {
   const quest = getQuest(gs.activeMainQuestId);
-  if (!quest) return;
+  if (!quest) return [];
 
   const bY = topH;
   const bH = 22;
   const bg = scene.add.graphics().setDepth(4);
+  const parts: Phaser.GameObjects.GameObject[] = [bg];
   // Secondary quest line: no card treatment.
   bg.fillStyle(HOME_HUD.stoneRaised, 0.98);
   bg.fillRect(0, bY, CANVAS_WIDTH, bH);
   bg.fillStyle(HOME_HUD.edge, 0.56);
   bg.fillRect(0, bY + bH - 1, CANVAS_WIDTH, 1);
 
-  const obj  = quest.objectives[0];
   const prog = gs.questProgress?.[quest.id];
+  // The first objective still open: showing objectives[0] kept a finished
+  // "build 3 rooms" on screen while the quest waited on its invasion.
+  const obj  = quest.objectives.find(o => (prog?.objectives?.[o.id] ?? 0) < o.target) ?? quest.objectives[0];
   const cur  = prog?.objectives?.[obj?.id] ?? 0;
   const tgt  = obj?.target ?? 1;
   const pct  = Math.min(cur / tgt, 1);
@@ -364,19 +367,20 @@ export function buildQuestBanner(
   const label = scene.add.text(barX + barW + 6, bY + 11, `임무 · ${objDesc}  `, {
     fontFamily: 'sans-serif', fontSize: '11px', color: HOME_HUD.parchment, fontStyle: 'bold',
   }).setOrigin(0, 0.5).setDepth(5);
-  scene.add.text(label.x + label.width, bY + 11, `${cur}/${tgt}`, {
+  parts.push(label, scene.add.text(label.x + label.width, bY + 11, `${cur}/${tgt}`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: '#d8b869', fontStyle: 'bold',
-  }).setOrigin(0, 0.5).setDepth(5);
+  }).setOrigin(0, 0.5).setDepth(5));
 
   // Tap hint arrow (right edge)
   if (onTap) {
-    scene.add.text(CANVAS_WIDTH - 8, bY + 11, '›', {
+    parts.push(scene.add.text(CANVAS_WIDTH - 8, bY + 11, '›', {
       fontFamily: 'sans-serif', fontSize: '12px', color: HOME_HUD.muted, fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setDepth(5);
-    scene.add.zone(0, bY + bH / 2, CANVAS_WIDTH, 44)
+    }).setOrigin(1, 0.5).setDepth(5));
+    parts.push(scene.add.zone(0, bY + bH / 2, CANVAS_WIDTH, 44)
       .setOrigin(0, 0.5).setInteractive({ useHandCursor: true }).setDepth(6)
-      .on('pointerdown', onTap);
+      .on('pointerdown', onTap));
   }
+  return parts;
 }
 
 // ─── Stats bar ────────────────────────────────────────────────────────────────
