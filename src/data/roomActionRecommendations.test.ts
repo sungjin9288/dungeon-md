@@ -222,4 +222,20 @@ describe('roomActionRecommendations', () => {
       [2, 'design'],
     ]);
   });
+
+  // Every breakthrough takes 5% of max HP from all rooms and nothing heals them,
+  // but repair was recommended only at 0: after a lost stage Home read
+  // "준비 53% · 수호자 배치" for a room left at 5%.
+  it('recommends repair before loadout once durability falls below half', () => {
+    const worn = getRoomActionRecommendation(makeState({
+      dungeonSlots: [makeSlot('combat', { hp: 11, maxHp: 220 })],
+    }), 0);
+    expect(worn.kind).toBe('repair');
+    expect(worn.statValue).toBe('5%');
+    expect(worn.body).toContain('내구도 5%');
+    const scratched = getRoomActionRecommendation(makeState({
+      dungeonSlots: [makeSlot('combat', { hp: 176, maxHp: 220 })],
+    }), 0);
+    expect(scratched.kind).not.toBe('repair');
+  });
 });

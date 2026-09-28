@@ -10,6 +10,7 @@ import {
   type GameState,
 } from './wisdom';
 import { resolveOwnedMonsterProfile } from './monsters';
+import { getRoomRepairCost } from './roomSlotTransactions';
 
 export type RoomActionKind =
   | 'design'
@@ -33,6 +34,8 @@ export interface RoomActionRecommendation {
 }
 
 const ROOM_READY_THRESHOLD = 78;
+/** Durability below this (percent) puts repair ahead of every loadout action. */
+export const REPAIR_RECOMMEND_PCT = 50;
 const ACTION_PRIORITY: Record<RoomActionKind, number> = {
   repair: 0,
   'assign-monster': 1,
@@ -67,17 +70,23 @@ export function getRoomActionRecommendation(
     };
   }
 
-  if (slot.hp <= 0) {
+  // Breakthroughs wear every room and nothing heals them between battles, so a
+  // badly worn room is repaired before its loadout grows.
+  const durabilityPct = slot.maxHp > 0 ? Math.floor((slot.hp / slot.maxHp) * 100) : 0;
+  if (slot.hp <= 0 || durabilityPct < REPAIR_RECOMMEND_PCT) {
+    const broken = slot.hp <= 0;
     return {
       kind: 'repair',
       slotIdx,
       icon: '!',
       label: '수리',
-      title: '파손 방 복구',
-      body: `${roomLabel} 내구도 0 · 수리 필요`,
+      title: broken ? '파손 방 복구' : '손상 방 수리',
+      body: broken
+        ? `${roomLabel} 내구도 0 · 수리 필요`
+        : `${roomLabel} 내구도 ${durabilityPct}% · 수리 ${getRoomRepairCost(slot)}골드`,
       ctaLabel: `${roomLabel} 수리`,
       statLabel: '내구',
-      statValue: '0%',
+      statValue: `${broken ? 0 : durabilityPct}%`,
       accent: 0xff5544,
     };
   }
