@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDailyDungeon, getWeeklyBoss } from './daily';
-import { FORECAST_CARDS_PER_DAY, buildBandWaves, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
+import { FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
 import { INVADER_DEFS } from './invaders';
 import { getNotorietyBand, NOTORIETY_BANDS } from './notoriety';
 import { seededRand } from './daily';
@@ -27,11 +27,18 @@ describe('issueForecastCards', () => {
     expect(JSON.stringify(other)).not.toBe(JSON.stringify(a));
   });
 
-  it('Monday\'s third card is always the weekly boss', () => {
-    const cards = issueForecastCards(input('2026-09-14', 4, true));
+  it('Monday\'s third card is the weekly boss from the gate tier up', () => {
+    const cards = issueForecastCards(input('2026-09-14', WEEKLY_BOSS_MIN_TIER, true));
     expect(cards[2].kind).toBe('weekly_boss');
     expect(cards[2].weeklyBoss).toBeDefined();
     expect(isBattleCard(cards[2])).toBe(true);
+  });
+
+  it('below the gate tier Monday draws a regular special card instead of the 40k+ HP boss', () => {
+    for (let tier = 1; tier < WEEKLY_BOSS_MIN_TIER; tier++) {
+      const cards = issueForecastCards(input('2026-09-14', tier, true));
+      expect(cards[2].kind, `tier ${tier}`).not.toBe('weekly_boss');
+    }
   });
 
   it('every battle card carries known invaders and a positive HP pool; merchants carry none', () => {

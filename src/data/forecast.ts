@@ -161,6 +161,13 @@ function dailyRuleCard(id: string, band: NotorietyBand, daily: DailyDungeon): Fo
   };
 }
 
+/**
+ * The weekly boss is a fixed 40k–220k HP rotation, far above any band's own
+ * boss; offering it at tier 1 put an unwinnable card on a new player's Monday.
+ * Below this tier Monday draws from the regular special pool.
+ */
+export const WEEKLY_BOSS_MIN_TIER = 5;
+
 function weeklyBossCard(id: string, band: NotorietyBand, boss: WeeklyBoss): ForecastCard {
   const waves: WaveSpec[] = [{
     wave: 1, clearReward: boss.rewards.skinShards * 100,
@@ -196,7 +203,7 @@ export function issueForecastCards(input: ForecastIssueInput): ForecastCard[] {
     : raidCard(idOf(1), getNotorietyBand(band.tier + 1), 'raid', rand);
 
   let third: ForecastCard;
-  if (input.isMonday) {
+  if (input.isMonday && input.tier >= WEEKLY_BOSS_MIN_TIER) {
     third = weeklyBossCard(idOf(2), band, input.weeklyBoss);
   } else {
     const total = FORECAST_SPECIAL_WEIGHTS.reduce((sum, [, weight]) => sum + weight, 0);

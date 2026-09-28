@@ -181,7 +181,8 @@ export function settleForecastBattle(
       soulCrystals:    (next.soulCrystals ?? 0) + (card.reward.soulCrystals ?? 0),
       materials,
     };
-  } else {
+  } else if (card.kind !== 'weekly_boss') {
+    // The weekly boss is a stretch challenge: losing it costs no name.
     const before = next.notoriety ?? 0;
     next = applyNotorietyDefeat(next);
     notorietyDelta = (next.notoriety ?? 0) - before;

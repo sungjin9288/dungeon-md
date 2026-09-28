@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDailyDungeon, getWeeklyBoss } from './daily';
-import type { ForecastIssueInput } from './forecast';
+import { WEEKLY_BOSS_MIN_TIER, type ForecastIssueInput } from './forecast';
 import {
   beginForecastDay,
   isForecastExhausted,
@@ -138,7 +138,7 @@ describe('settleForecastBattle', () => {
   });
 
   it('a Monday weekly-boss card adds the name only — the battle scene pays the weekly reward', () => {
-    const day = beginForecastDay(state(), '2026-09-14', pinned('2026-09-14', true)).state;
+    const day = beginForecastDay(state({ notorietyTier: WEEKLY_BOSS_MIN_TIER }), '2026-09-14', pinned('2026-09-14', true)).state;
     const boss = day.forecast.cards[2];
     expect(boss.kind).toBe('weekly_boss');
     const took = takeForecastCard(day, boss.id);
@@ -147,6 +147,16 @@ describe('settleForecastBattle', () => {
     expect(settled.state.weeklyBossResetDate).toBe(day.weeklyBossResetDate);
     expect(settled.state.blueprints ?? []).not.toContain('bp_boss_amulet');
     expect(settled.notorietyDelta).toBe(NOTORIETY_GAIN.weekly_boss);
+  });
+
+  it('losing the weekly boss costs no notoriety (stretch challenge)', () => {
+    const day = beginForecastDay(state({ notorietyTier: WEEKLY_BOSS_MIN_TIER, notoriety: 500 }), '2026-09-14', pinned('2026-09-14', true)).state;
+    const boss = day.forecast.cards[2];
+    const took = takeForecastCard(day, boss.id);
+    if (!took.ok) throw new Error('take failed');
+    const settled = settleForecastBattle(took.state, boss.id, { won: false, goldEarned: 30, dmXP: 30 });
+    expect(settled.notorietyDelta).toBe(0);
+    expect(settled.state.notoriety).toBe(500);
   });
 });
 
