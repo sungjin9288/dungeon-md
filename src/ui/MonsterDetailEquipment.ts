@@ -78,13 +78,15 @@ export function buildEquipmentSlot(
     }).setOrigin(0, 0.5));
 
   const storageY = y + 74;
+  // Room for the shared-unlock note under the tiles (§35).
+  const STORAGE_H = 104;
   const storage = scene.add.graphics();
   storage.fillStyle(DUNGEON_UI.SOOT, 0.98);
-  storage.fillRoundedRect(x, storageY, w, 94, 7);
+  storage.fillRoundedRect(x, storageY, w, STORAGE_H, 7);
   storage.fillStyle(DUNGEON_UI.BRASS, 0.1);
-  storage.fillRect(x + 1, storageY + 1, 4, 92);
+  storage.fillRect(x + 1, storageY + 1, 4, STORAGE_H - 2);
   storage.lineStyle(1.5, DUNGEON_UI.IRON, 0.92);
-  storage.strokeRoundedRect(x, storageY, w, 94, 7);
+  storage.strokeRoundedRect(x, storageY, w, STORAGE_H, 7);
   ov.add(storage);
 
   ov.add(scene.add.text(x + 12, storageY + 15, '장비 보관함 ' + inventory.length, {
@@ -120,7 +122,7 @@ export function buildEquipmentSlot(
   if (inventory.length > 0) {
     // Equipment is an unlock, not a stack: one item can be worn by any number
     // of guardians at once. Nothing on screen said so (§35).
-    ov.add(scene.add.text(x + 12, storageY + 87, '해금한 장비는 여러 수호자가 함께 장착할 수 있습니다', {
+    ov.add(scene.add.text(x + 12, storageY + 92, '해금한 장비는 여러 수호자가 함께 장착할 수 있습니다', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       color: DUNGEON_UI_CSS.MUTED,

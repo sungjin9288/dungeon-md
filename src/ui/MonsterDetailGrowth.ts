@@ -173,24 +173,37 @@ export function buildGrowthCommandPanel(
     fontStyle: 'bold',
     color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0, 0.5));
-  ov.add(scene.add.text(x + 102, y + 32, directive.body, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: DUNGEON_UI_CSS.MUTED,
-    wordWrap: { width: 132, useAdvancedWrap: true },
-    maxLines: 1,
-  }).setOrigin(0, 0.5));
-
   addGrowthPill(scene, ov, x + w - 86, y + 6,  74, 'SP',   String(m.skillPoints ?? 0), (m.skillPoints ?? 0) > 0 ? 0x9b71d1 : DUNGEON_UI.EDGE);
   addGrowthPill(scene, ov, x + w - 86, y + 27, 74, '장비', eq ? '장착' : '미장착', eq ? DUNGEON_UI.BRASS : DUNGEON_UI.EDGE);
 
-  const skillSlotLabel = `${equippedSkills.length}/2 스킬`;
-  ov.add(scene.add.text(x + w - 96, y + 39, skillSlotLabel, {
+  const skillSlotLabel = scene.add.text(x + w - 96, y + 39, `${equippedSkills.length}/2 스킬`, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     fontStyle: 'bold',
     color: equippedSkills.length >= 2 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
-  }).setOrigin(1, 0.5));
+  }).setOrigin(1, 0.5);
+  ov.add(skillSlotLabel);
+
+  // The body ran under the right-aligned skill count and was cut mid-word
+  // (§28 P1): end it with an ellipsis before the count instead.
+  const body = scene.add.text(x + 102, y + 32, directive.body, {
+    fontFamily: 'sans-serif',
+    fontSize: '10px',
+    color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5);
+  fitTextToWidth(body, skillSlotLabel.x - skillSlotLabel.width - 8 - body.x);
+  ov.add(body);
+}
+
+/** Trim a one-line text with an ellipsis until it fits `maxW` logical px. */
+function fitTextToWidth(text: Phaser.GameObjects.Text, maxW: number): void {
+  const full = text.text;
+  if (text.width <= maxW) return;
+  let chars = full.length;
+  while (chars > 1 && text.width > maxW) {
+    chars -= 1;
+    text.setText(`${full.slice(0, chars).trimEnd()}…`);
+  }
 }
 
 function addGrowthPill(
