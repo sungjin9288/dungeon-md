@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyBattleReturnSettlement } from './invasionTransactions';
 import { applyInvaderKillProgress, applyQuestObjectiveProgress } from './progressionTransactions';
 import { settleCompletedHomeMainQuest } from './questLifecycleTransactions';
-import { startQuest } from './quests';
+import { getPendingQuestInvasion, startQuest } from './quests';
 import { loadGameState, type GameState } from './wisdom';
 
 // §34: main-quest objectives that did not measure what they say.
@@ -106,5 +106,20 @@ describe('lifetime gold counts every income (§35)', () => {
     const state = withQuest({ dmLevel: 5, totalGoldEarned: 0 }, 'MQ-010');
     const earned: GameState = { ...state, totalGoldEarned: 1200 };
     expect(settleCompletedHomeMainQuest(earned).completion?.completedQuest.id).toBe('MQ-010');
+  });
+});
+
+describe('quest invasions are re-offered until the defend target is met (§35)', () => {
+  const at = (questId: string, defended: number): GameState => {
+    const state = withQuest({}, questId);
+    const prog = state.questProgress[questId];
+    const defId = Object.keys(prog.objectives).find(id => id === 'O1') ?? 'O1';
+    return { ...state, questProgress: { ...state.questProgress, [questId]: { ...prog, objectives: { ...prog.objectives, [defId]: defended } } } };
+  };
+
+  it('keeps offering MQ-037 invasion after the first of two wins', () => {
+    expect(getPendingQuestInvasion(at('MQ-037', 0))).not.toBeNull();
+    expect(getPendingQuestInvasion(at('MQ-037', 1))).not.toBeNull();
+    expect(getPendingQuestInvasion(at('MQ-037', 2))).toBeNull();
   });
 });

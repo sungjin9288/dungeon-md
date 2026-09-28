@@ -15,7 +15,7 @@ export type {
 } from './questData';
 export { MAIN_QUESTS } from './questData';
 
-import type { Objective, ObjectiveType, MainQuest, Reward } from './questData';
+import type { InvasionConfig, Objective, ObjectiveType, MainQuest, Reward } from './questData';
 import { MAIN_QUESTS } from './questData';
 import { SKIN_DATA } from '../data/monsters';
 
@@ -80,6 +80,20 @@ export function syncDerivedQuestObjectives(gs: GameState): GameState {
   }
   if (objectives === prog.objectives) return gs;
   return { ...gs, questProgress: { ...gs.questProgress, [questId]: { ...prog, objectives } } };
+}
+
+/**
+ * The active quest's story invasion while its defend objective is unmet.
+ * It used to be offered only at progress 0, so multi-defense quests
+ * (MQ-037: 2, MQ-041: 5) lost the banner after the first win (§35).
+ */
+export function getPendingQuestInvasion(gs: Readonly<GameState>): InvasionConfig | null {
+  const quest = getQuest(gs.activeMainQuestId);
+  if (!quest?.invasionOnComplete) return null;
+  const defObj = quest.objectives.find(o => o.type === 'defend_invasion');
+  if (!defObj) return null;
+  const current = gs.questProgress?.[quest.id]?.objectives[defObj.id] ?? 0;
+  return current < defObj.target ? quest.invasionOnComplete : null;
 }
 
 export function startQuest(gs: GameState, questId: string): GameState {

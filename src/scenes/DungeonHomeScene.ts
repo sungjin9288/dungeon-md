@@ -14,6 +14,8 @@ import {
 } from '../data/questLifecycleTransactions';
 import { audioManager } from '../audio/AudioManager';
 import { TutorialOverlay } from '../ui/TutorialOverlay';
+import { showForecastTray } from '../ui/ForecastTray';
+import { FORECAST_ROUTE } from '../data/questRoutes';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
   openQuestLog,
@@ -226,7 +228,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.roomDetailState = createRoomDetailState();
     this.questLogState = {
       questLogOpen: false,
-      navigate: sceneKey => this.navigateFromHome(sceneKey),
+      navigate: sceneKey => (sceneKey === FORECAST_ROUTE ? showForecastTray(this) : this.navigateFromHome(sceneKey)),
       persist: next => this.persistGameState(next),
     };
     this.invasionState = createInvasionUIState();

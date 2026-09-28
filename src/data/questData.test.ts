@@ -444,12 +444,20 @@ describe('MAIN_QUESTS — reward pins, objective counts & collect_gold escalatio
     expect(get('MQ-007').reward.unlocks).toContain('forge');
   });
 
-  it('exactly 5 quests have 3 objectives (MQ-032, MQ-036, MQ-040, MQ-042, EQ-005)', () => {
+  // MQ-027 and MQ-032 gained the defend objective their story invasion needs (§35).
+  it('exactly 5 quests have 3 objectives (MQ-027, MQ-036, MQ-040, MQ-042, EQ-005)', () => {
     const threeObj = MAIN_QUESTS.filter(q => q.objectives.length === 3);
     expect(threeObj).toHaveLength(5);
     const ids = threeObj.map(q => q.id);
-    expect(ids).toContain('MQ-032');
+    expect(ids).toContain('MQ-027');
     expect(ids).toContain('EQ-005');
+    expect(MAIN_QUESTS.find(q => q.id === 'MQ-032')?.objectives).toHaveLength(4);
+  });
+
+  it('every quest with a story invasion can trigger it (has a defend objective)', () => {
+    for (const q of MAIN_QUESTS.filter(quest => quest.invasionOnComplete)) {
+      expect(q.objectives.some(o => o.type === 'defend_invasion'), q.id).toBe(true);
+    }
   });
 
   it('collect_gold targets escalate: MQ-010(1000) < MQ-018(5000) < MQ-023(10000) < MQ-043(100000) < EQ-005(1000000)', () => {
@@ -469,11 +477,11 @@ describe('MAIN_QUESTS — reward pins, objective counts & collect_gold escalatio
     expect(ids).toContain('MQ-027');
   });
 
-  it('MQ-032 is the only Ch7 quest with 3 objectives', () => {
+  it('MQ-032 is the only Ch7 quest with more than 2 objectives', () => {
     const ch7 = MAIN_QUESTS.filter(q => q.chapter === 7);
-    const threeObj = ch7.filter(q => q.objectives.length === 3);
-    expect(threeObj).toHaveLength(1);
-    expect(threeObj[0].id).toBe('MQ-032');
+    const many = ch7.filter(q => q.objectives.length > 2);
+    expect(many).toHaveLength(1);
+    expect(many[0].id).toBe('MQ-032');
   });
 });
 

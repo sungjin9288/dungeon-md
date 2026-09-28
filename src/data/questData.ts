@@ -202,6 +202,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     description: '이 던전이 살아남으려면 탑이 필요하다.\n탑 3개를 건설하여 방어 체계를 갖춰라.',
     objectives: [
       { id: 'O1', type: 'build_room', target: 3, current: 0, description: '탑 3개 건설' },
+      { id: 'O2', type: 'defend_invasion', target: 1, current: 0, description: '광전사 돌격대 격퇴' },
     ],
     invasionOnComplete: {
       id: 'INV-004', name: '광전사 돌격대', isStoryInvasion: true,
@@ -245,6 +246,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     description: '얼쑤! 새로운 동료들이 필요하지 않겠나?\n소환을 5번 해서 전력을 보강해라!',
     objectives: [
       { id: 'O1', type: 'summon', target: 5, current: 0, description: '소환 5회 실행' },
+      { id: 'O2', type: 'defend_invasion', target: 1, current: 0, description: '저승 원정대 격퇴' },
     ],
     invasionOnComplete: {
       id: 'INV-005', name: '저승 원정대', isStoryInvasion: true,
@@ -400,6 +402,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     objectives: [
       { id: 'O1', type: 'summon',         target: 5, current: 0, description: '소환 5회 실행' },
       { id: 'O2', type: 'assign_monster', target: 3, current: 0, description: '몬스터 3마리 배치' },
+      { id: 'O3', type: 'defend_invasion', target: 1, current: 0, description: '공허의 척후대 격퇴' },
     ],
     invasionOnComplete: {
       id: 'INV-006', name: '공허의 척후대', isStoryInvasion: true,
@@ -469,6 +472,7 @@ export const MAIN_QUESTS: MainQuest[] = [
       { id: 'O1', type: 'build_room',   target: 1, current: 0, description: '천상 신전 건설' },
       { id: 'O2', type: 'summon',       target: 5, current: 0, description: '소환 5회 실행' },
       { id: 'O3', type: 'upgrade_room', target: 3, current: 0, description: '방 업그레이드 3회' },
+      { id: 'O4', type: 'defend_invasion', target: 1, current: 0, description: '천상계 척후대 격퇴' },
     ],
     invasionOnComplete: {
       id: 'INV-007', name: '천상계 척후대', isStoryInvasion: true,

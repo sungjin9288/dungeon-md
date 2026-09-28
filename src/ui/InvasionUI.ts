@@ -6,7 +6,7 @@
 
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
-import { getQuest, type InvasionConfig } from '../data/quests';
+import { getPendingQuestInvasion, getQuest, type InvasionConfig } from '../data/quests';
 import type { GameState } from '../data/wisdom';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { SLOT_H } from './RoomSlotRenderer';
@@ -42,15 +42,10 @@ export function checkForInvasion(
   gridRows: number,
   slotPadY: number,
 ): void {
-  const quest = getQuest(gs.activeMainQuestId);
-  if (!quest?.invasionOnComplete) return;
-  const defObj = quest.objectives.find(o => o.type === 'defend_invasion');
-  if (!defObj) return;
-  const prog    = gs.questProgress[quest.id];
-  const current = prog?.objectives[defObj.id] ?? 0;
-  if (current > 0) return; // already fought
+  const invasion = getPendingQuestInvasion(gs);
+  if (!invasion) return;
 
-  state.invasionConfig = quest.invasionOnComplete;
+  state.invasionConfig = invasion;
   state.cachedGs = gs;
   showZoneAPulse(scene, gridStartY, gridRows, slotPadY);
   scene.time.delayedCall(1500, () => showInvasionBanner(scene, state, () => goToPreBattle(scene, gs, state)));
