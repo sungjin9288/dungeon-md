@@ -69,7 +69,7 @@ describe('Home syncs reach_dm_level before settling', () => {
   // settlement (quest/sub-quest reward) must still complete it at Home.
   it('completes when the DM level was reached without a battle settlement', () => {
     const state = withQuest({ dmLevel: 2, dungeonSlots: [], roomsBuilt: ['a', 'b'] }, 'MQ-004');
-    expect(state.questProgress['MQ-004'].objectives.O2).toBe(0);
+    expect(state.questProgress['MQ-004'].objectives.O2).toBe(2);
     const leveled: GameState = { ...state, dmLevel: 3 };
     const home = settleCompletedHomeMainQuest(leveled);
     expect(home.completion?.completedQuest.id).toBe('MQ-004');
@@ -78,5 +78,33 @@ describe('Home syncs reach_dm_level before settling', () => {
   it('does not complete while the level is still short', () => {
     const state = withQuest({ dmLevel: 2, dungeonSlots: [], roomsBuilt: ['a', 'b'] }, 'MQ-004');
     expect(settleCompletedHomeMainQuest(state).completion).toBeNull();
+  });
+});
+
+describe('upgrade_room cannot deadlock once every room is maxed (§35)', () => {
+  const maxedSlots = (n: number, level: number) => Array.from({ length: n }, () => ({
+    roomType: 'combat' as const, roomLevel: level, hp: 100, maxHp: 100, monsterIds: [], trapIds: [],
+  }));
+
+  it('auto-meets upgrade_room when no unlocked room can be upgraded any further', () => {
+    const state = withQuest({ dmLevel: 20, dungeonSlots: maxedSlots(9, 5) as never }, 'MQ-036');
+    const quest = state.questProgress['MQ-036'].objectives;
+    expect(Object.values(quest)).toContain(4);
+  });
+
+  it('keeps upgrade_room open while any room is below the cap', () => {
+    const slots = maxedSlots(9, 5);
+    slots[3] = { ...slots[3], roomLevel: 4 };
+    const state = withQuest({ dmLevel: 20, dungeonSlots: slots as never }, 'MQ-036');
+    expect(Object.values(state.questProgress['MQ-036'].objectives)).not.toContain(4);
+  });
+});
+
+describe('lifetime gold counts every income (§35)', () => {
+  it('Home re-syncs collect_gold from totalGoldEarned', () => {
+    // MQ-010: DM5 + 1,000 gold; lifetime reached through idle income, not loot.
+    const state = withQuest({ dmLevel: 5, totalGoldEarned: 0 }, 'MQ-010');
+    const earned: GameState = { ...state, totalGoldEarned: 1200 };
+    expect(settleCompletedHomeMainQuest(earned).completion?.completedQuest.id).toBe('MQ-010');
   });
 });

@@ -32,6 +32,7 @@ function applyLoot(state: GameState, loot: AbyssLoot): GameState {
     materials,
     awakeningStones: (state.awakeningStones ?? 0) + loot.awakeningStones,
     homeGold: (state.homeGold ?? 0) + loot.gold,
+    totalGoldEarned: (state.totalGoldEarned ?? 0) + loot.gold,
   };
 }
 

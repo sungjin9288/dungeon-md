@@ -195,7 +195,8 @@ describe('applyQuestObjectiveUpdate', () => {
     expect(thirdGs.questProgress['MQ-004'].objectives['O1']).toBe(2);
     expect(thirdGs.questProgress['MQ-004'].objectives['O2']).toBe(3);
     expect(gs.questProgress['MQ-004'].objectives['O1']).toBe(0);
-    expect(gs.questProgress['MQ-004'].objectives['O2']).toBe(0);
+    // reach_dm_level is positional: seeded with the current level (§35).
+    expect(gs.questProgress['MQ-004'].objectives['O2']).toBe(1);
   });
 });
 
@@ -714,12 +715,14 @@ describe('EQ chain — applyQuestObjectiveUpdate with fuse_monsters', () => {
   });
 
   it('fuse_monsters does not affect reach_dm_level objective', () => {
-    // Increment by 1 — O1 (fuse_monsters) advances, but O2 (reach_dm_level) stays 0
+    // Increment by 1 — O1 (fuse_monsters) advances, but O2 (reach_dm_level) stays at the seeded level
+    const before = gs.questProgress['EQ-002'].objectives['O2'];
     const [nextGs, result] = applyQuestObjectiveUpdate(gs, 'fuse_monsters', 1);
     expect(result).not.toBeNull();
     // questDone is false because O2 (reach_dm_level) is still pending
     expect(result!.questDone).toBe(false);
-    expect(nextGs.questProgress['EQ-002'].objectives['O2']).toBe(0);
+    expect(nextGs.questProgress['EQ-002'].objectives['O2']).toBe(before);
+    expect(before).toBe(gs.dmLevel);
   });
 
   it('quest is done only after both objectives are met', () => {

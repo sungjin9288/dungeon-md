@@ -1,9 +1,9 @@
 import {
-  applyQuestObjectiveUpdate,
   assignSubQuests,
   completeAndAdvance,
   isActiveQuestObjectiveComplete,
   startQuest,
+  syncDerivedQuestObjectives,
   type MainQuest,
 } from './quests';
 import { applyMainQuestCompletionRewards } from './questRewardTransactions';
@@ -121,9 +121,9 @@ export function initializeHomeQuestState(
 }
 
 export function advanceCompletedMainQuest(state: GameState): MainQuestAdvanceResult {
-  // A DM level gained outside a battle settlement (quest or sub-quest reward)
-  // has not ticked reach_dm_level yet; sync it before judging completion.
-  const [synced] = applyQuestObjectiveUpdate(state, 'reach_dm_level', state.dmLevel ?? 1);
+  // A DM level, lifetime gold or clear gained outside a battle settlement
+  // (quest/sub-quest reward, idle income) has not ticked yet; sync first.
+  const synced = syncDerivedQuestObjectives(state);
   // completeAndAdvance() completes unconditionally — only settle when the
   // active quest's objectives are actually all met (e.g. home settle path).
   if (!isActiveQuestObjectiveComplete(synced)) {

@@ -67,6 +67,7 @@ export function claimDailyAttendance(state: GameState, today: string): Attendanc
     state: {
       ...state,
       homeGold:            (state.homeGold ?? 0) + (reward.gold ?? 0),
+      totalGoldEarned:     (state.totalGoldEarned ?? 0) + (reward.gold ?? 0),
       gems:                (state.gems ?? 0) + (reward.gems ?? 0),
       soulCrystals:        (state.soulCrystals ?? 0) + (reward.soulCrystals ?? 0),
       attendanceDay:       totalDays + 1,

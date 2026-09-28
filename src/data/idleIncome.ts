@@ -248,6 +248,7 @@ export function settleIdleAcrossChange(
   return {
     ...next,
     homeGold: (next.homeGold ?? 0) + reward.gold,
+    totalGoldEarned: (next.totalGoldEarned ?? 0) + reward.gold,
     materials,
     lastIdleCollect: settled.lastIdleCollect,
     idleRemainder: settled.idleRemainder,
@@ -272,6 +273,7 @@ export function collectIdleIncome(
     state: {
       ...state,
       homeGold: state.homeGold + reward.gold,
+      totalGoldEarned: (state.totalGoldEarned ?? 0) + reward.gold,
       materials,
       lastIdleCollect: Math.max(state.lastIdleCollect ?? 0, now),
       idleRemainder: remainder,

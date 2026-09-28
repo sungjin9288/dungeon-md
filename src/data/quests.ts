@@ -1,6 +1,6 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
 
-import type { GameState } from './wisdom';
+import { getUnlockedSlotCount, MAX_ROOM_LEVEL, type GameState } from './wisdom';
 import { logger } from '../utils/logger';
 
 // Re-export all types and data from questData for backwards compatibility
@@ -15,7 +15,7 @@ export type {
 } from './questData';
 export { MAIN_QUESTS } from './questData';
 
-import type { ObjectiveType, MainQuest, Reward } from './questData';
+import type { Objective, ObjectiveType, MainQuest, Reward } from './questData';
 import { MAIN_QUESTS } from './questData';
 import { SKIN_DATA } from '../data/monsters';
 
@@ -23,6 +23,63 @@ import { SKIN_DATA } from '../data/monsters';
 
 export function getQuest(id: string): MainQuest | undefined {
   return MAIN_QUESTS.find(q => q.id === id);
+}
+
+/** Highest campaign stage cleared (1-based), 0 when none. */
+function highestClearedStage(gs: Readonly<GameState>): number {
+  return (gs.stageProgress ?? []).reduce((hi, e, i) => ((e?.bestStars ?? 0) > 0 ? i + 1 : hi), 0);
+}
+
+/**
+ * Nothing left to upgrade: every unlocked slot is built and at MAX_ROOM_LEVEL.
+ * Upgrades cannot be undone, so an upgrade_room quest started after that point
+ * could never be finished (MQ-036/040 deadlock, §35).
+ */
+function noRoomLeftToUpgrade(gs: Readonly<GameState>): boolean {
+  const unlocked = getUnlockedSlotCount(gs);
+  const slots = gs.dungeonSlots ?? [];
+  for (let i = 0; i < unlocked; i++) {
+    const slot = slots[i];
+    if (!slot?.roomType || (slot.roomLevel ?? 1) < MAX_ROOM_LEVEL) return false;
+  }
+  return unlocked > 0;
+}
+
+/**
+ * Progress an objective can read straight from the state. `startQuest` seeds
+ * with it and Home re-syncs with it before judging completion, so a DM level,
+ * lifetime gold or clear gained outside a battle settlement still counts.
+ * Counted objectives (summon, feed, fuse, defend) derive nothing.
+ */
+function derivedObjectiveValue(gs: Readonly<GameState>, o: Readonly<Objective>): number {
+  switch (o.type) {
+    case 'reach_dm_level': return gs.dmLevel ?? 1;
+    case 'collect_gold':   return gs.totalGoldEarned ?? 0;
+    case 'complete_stage': return highestClearedStage(gs);
+    case 'upgrade_room':   return noRoomLeftToUpgrade(gs) ? o.target : 0;
+    case 'assign_monster':
+      return (gs.dungeonSlots ?? []).reduce((n, s) => n + (s?.monsterIds?.filter(Boolean).length ?? 0), 0);
+    case 'build_room':
+      return Math.max((gs.dungeonSlots ?? []).filter(s => s != null).length, gs.roomsBuilt?.length ?? 0);
+    default: return 0;
+  }
+}
+
+/** Re-read state-derived objectives of the active main quest (never lowers progress). */
+export function syncDerivedQuestObjectives(gs: GameState): GameState {
+  const questId = gs.activeMainQuestId;
+  const quest = getQuest(questId);
+  const prog = gs.questProgress?.[questId];
+  if (!quest || !prog || prog.completed) return gs;
+  let objectives = prog.objectives;
+  for (const o of quest.objectives) {
+    const cur = objectives[o.id] ?? 0;
+    if (cur >= o.target) continue;
+    const derived = Math.min(derivedObjectiveValue(gs, o), o.target);
+    if (derived > cur) objectives = { ...objectives, [o.id]: derived };
+  }
+  if (objectives === prog.objectives) return gs;
+  return { ...gs, questProgress: { ...gs.questProgress, [questId]: { ...prog, objectives } } };
 }
 
 export function startQuest(gs: GameState, questId: string): GameState {
@@ -34,46 +91,14 @@ export function startQuest(gs: GameState, questId: string): GameState {
     ? { ...existingProg.objectives }
     : Object.fromEntries(quest.objectives.map(o => [o.id, 0]));
 
-  // Auto-satisfy objectives already met by current game state
+  // Work done before this quest became active still counts (e.g. the tutorial
+  // places a monster while MQ-001 is active, so MQ-002 starts satisfied).
   quest.objectives.forEach(o => {
     const cur = objectives[o.id] ?? 0;
-    if (o.type === 'reach_dm_level' && gs.dmLevel >= o.target && cur < o.target) {
-      objectives[o.id] = o.target;
-      logger.debug(`[OBJECTIVE] reach_dm_level: ${o.target}/${o.target} (auto-met at Lv.${gs.dmLevel})`);
-    }
-    if (o.type === 'collect_gold' && (gs.totalGoldEarned ?? 0) >= o.target && cur < o.target) {
-      objectives[o.id] = o.target;
-      logger.debug(`[OBJECTIVE] collect_gold: ${o.target}/${o.target} (auto-met)`);
-    }
-    // State-derived objectives: work done BEFORE this quest became active
-    // still counts (e.g. the tutorial places a monster while MQ-001 is active,
-    // then MQ-002 "place a monster" starts already satisfied).
-    if (o.type === 'assign_monster') {
-      const placed = (gs.dungeonSlots ?? []).reduce(
-        (n, s) => n + (s?.monsterIds?.filter(Boolean).length ?? 0), 0,
-      );
-      if (placed > cur) {
-        objectives[o.id] = Math.min(placed, o.target);
-        logger.debug(`[OBJECTIVE] assign_monster: ${objectives[o.id]}/${o.target} (auto-met from placements)`);
-      }
-    }
-    if (o.type === 'complete_stage') {
-      // Stages cleared while an earlier quest was active still count.
-      const cleared = (gs.stageProgress ?? []).reduce((hi, e, i) => ((e?.bestStars ?? 0) > 0 ? i + 1 : hi), 0);
-      if (cleared > cur) {
-        objectives[o.id] = Math.min(cleared, o.target);
-        logger.debug(`[OBJECTIVE] complete_stage: ${objectives[o.id]}/${o.target} (auto-met from cleared stages)`);
-      }
-    }
-    if (o.type === 'build_room') {
-      const built = Math.max(
-        (gs.dungeonSlots ?? []).filter(s => s != null).length,
-        gs.roomsBuilt?.length ?? 0,
-      );
-      if (built > cur) {
-        objectives[o.id] = Math.min(built, o.target);
-        logger.debug(`[OBJECTIVE] build_room: ${objectives[o.id]}/${o.target} (auto-met from existing rooms)`);
-      }
+    const derived = derivedObjectiveValue(gs, o);
+    if (derived > cur) {
+      objectives[o.id] = Math.min(derived, o.target);
+      logger.debug(`[OBJECTIVE] ${o.type}: ${objectives[o.id]}/${o.target} (auto-met from state)`);
     }
   });
 
@@ -205,6 +230,7 @@ export function completeAndAdvance(
   const partialGs: GameState = {
     ...gs,
     homeGold: newGold, gems: newGems, soulCrystals: newSC,
+    totalGoldEarned: (gs.totalGoldEarned ?? 0) + (r.gold ?? 0),
     dmXP: newDmXP, dmLevel: newDmLevel,
     unlockedFeatures: newFeatures,
     questProgress:    { ...gs.questProgress, [questId]: { ...prog, completed: true, completedAt: Date.now() } },
@@ -463,6 +489,7 @@ export function claimSubQuest(gs: GameState, sqId: string): [GameState, SubQuest
   const partialGs: GameState = {
     ...gs,
     homeGold:             newGold,
+    totalGoldEarned:      (gs.totalGoldEarned ?? 0) + (sq.reward.gold ?? 0),
     gems:                 newGems,
     soulCrystals:         newSC,
     dmXP:                 newDmXP,
