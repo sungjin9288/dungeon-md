@@ -528,9 +528,10 @@ describe('EQ epilogue chain — sequential links and reward spot-checks', () => 
     expect(r.unlocks).toContain('master_aura_skin');
   });
 
-  it('MQ-001 reward includes monsters field with "dokkaebi_warrior"', () => {
-    const r = get('MQ-001').reward;
-    expect(r.monsters).toBeDefined();
-    expect(r.monsters).toContain('dokkaebi_warrior');
+  // MQ-001 once listed dokkaebi_warrior as a reward monster. Nothing grants
+  // reward monsters and the starter roster already owns it, so the completion
+  // popup promised a monster that never arrived. Rewards list only paid fields.
+  it('MQ-001 reward lists only the gold and DM XP it pays', () => {
+    expect(get('MQ-001').reward).toEqual({ gold: 100, dmXP: 50 });
   });
 });

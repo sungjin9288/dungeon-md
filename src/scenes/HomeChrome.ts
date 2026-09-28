@@ -271,7 +271,9 @@ export function selectRoomForPlacement(scene: DungeonHomeScene, slotIdx: number)
     scene,
     getGameState: () => scene.gs,
     persist: (state) => scene.persistGameState(state),
-    rebuildSlots: () => scene.rebuildDungeonSlots(),
+    // Same refresh as the room-detail path: board, command deck and pending
+    // main-quest settlement all follow a tray commit.
+    rebuildSlots: () => scene.refreshHomeDynamicPanels(),
     openDetail: (idx) => {
       scene.selectedRoomIdx = null;
       scene.rebuildDungeonSlots();

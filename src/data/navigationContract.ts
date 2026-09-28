@@ -149,8 +149,12 @@ export const NAVIGATION_CONTEXT_OPERATIONS: Readonly<Record<
     consume: ['preBattleEditReturn'],
     preserve: [],
   },
+  /**
+   * Home settles a returned battle once. `battleResult` must go with `returnTo`:
+   * left in the registry, every later Home create re-paid the win.
+   */
   'battle-result': {
-    consume: ['returnTo'],
+    consume: ['battleResult', 'returnTo'],
     preserve: [],
   },
   /**

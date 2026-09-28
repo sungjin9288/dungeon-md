@@ -6,54 +6,94 @@ import { getReducedMotion } from '../utils/reducedMotion';
 
 // ─── Tutorial step definitions ────────────────────────────────────────────────
 
+export interface TutorialRect { x: number; y: number; w: number; h: number }
+
+/** Live Home geometry a step points at; resolved when the step is shown. */
+export type TutorialAnchor = 'room-row' | 'first-room' | 'command-deck' | 'invasion-tab';
+export type TutorialAnchors = Partial<Record<TutorialAnchor, TutorialRect>>;
+
 export interface TutorialStep {
   stage:     number;                               // tutorialStage value (1..4)
   title:     string;
   body:      string;
-  highlight: { x: number; y: number; w: number; h: number } | null;  // region to cut out
+  /** Home element to highlight; the authored rect/arrow are the fallback. */
+  anchor?:   TutorialAnchor;
+  highlight: TutorialRect | null;                  // region to cut out
   arrowFrom: { x: number; y: number };             // arrow tail
   arrowTo:   { x: number; y: number };             // arrow tip (near highlight)
   btnLabel:  string;
 }
+
+/** Tooltip card geometry shared by `show()` and `resolveTutorialStep()`. */
+export const TUTORIAL_CARD = {
+  w: 320,
+  h: 190,
+  /** Keep the plaque clear of the highlighted architecture and global navigation. */
+  cardY: (highlight: TutorialRect | null): number =>
+    highlight && highlight.y < CANVAS_HEIGHT / 2 ? 550 : 210,
+} as const;
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     stage:     1,
     title:     '첫 수호실을 건설하세요',
     body:      '빛나는 빈 터를 눌러 방을 건설하세요.\n방은 침입 경로를 끊는 핵심 시설입니다.',
-    highlight: { x: 10, y: 90, w: 370, h: 350 },   // upper dungeon cutaway
-    arrowFrom: { x: 195, y: 660 },
-    arrowTo:   { x: 195, y: 580 },
+    anchor:    'room-row',
+    highlight: { x: 8, y: 132, w: 374, h: 131 },
+    arrowFrom: { x: 195, y: 545 },
+    arrowTo:   { x: 195, y: 269 },
     btnLabel:  '알겠어요!',
   },
   {
     stage:     2,
     title:     '수호자를 배치하세요',
     body:      '방을 누르면 배치 트레이가 열립니다.\n보유 몬스터를 직접 고르거나\n추천 배치로 수비선을 빠르게 완성하세요.',
-    highlight: { x: 8, y: 88, w: 122, h: 116 },      // first dungeon room (tap to open tray)
-    arrowFrom: { x: 200, y: 320 },
-    arrowTo:   { x: 72, y: 210 },
+    anchor:    'first-room',
+    highlight: { x: 8, y: 132, w: 120, h: 131 },
+    arrowFrom: { x: 195, y: 545 },
+    arrowTo:   { x: 68, y: 269 },
     btnLabel:  '확인!',
   },
   {
     stage:     3,
     title:     '침입을 방어하세요',
-    body:      '퀘스트 패널에서 침략대를\n확인하고 방어 버튼을 누르면\n전투가 시작됩니다.\n방과 몬스터가 자동으로 싸워요.',
-    highlight: { x: 10, y: 560, w: 370, h: 120 },    // quest / battle area
-    arrowFrom: { x: 195, y: 420 },
-    arrowTo:   { x: 195, y: 565 },
+    body:      '할 일은 다음 수비 지시가 알려줍니다.\n침략대가 오면 상단 경보의 방어 준비로\n전투를 시작하세요.\n방과 몬스터가 자동으로 싸워요.',
+    anchor:    'command-deck',
+    highlight: { x: 8, y: 602, w: 374, h: 142 },
+    arrowFrom: { x: 195, y: 405 },
+    arrowTo:   { x: 195, y: 596 },
     btnLabel:  '도전!',
   },
   {
     stage:     4,
     title:     '다음 침공을 준비하세요',
     body:      '군단을 성장시키고 공방 장비를 갖춘 뒤\n침공 탭에서 다음 전투를 선택하세요.\n강한 수비선이 더 깊은 던전을 엽니다.',
-    highlight: { x: 292, y: 770, w: 98, h: 74 },     // invasion bottom nav tab
-    arrowFrom: { x: 195, y: 660 },
-    arrowTo:   { x: 351, y: 773 },
+    anchor:    'invasion-tab',
+    highlight: { x: 292.5, y: 780, w: 97.5, h: 64 },
+    arrowFrom: { x: 300, y: 405 },
+    arrowTo:   { x: 341, y: 774 },
     btnLabel:  '준비 완료',
   },
 ];
+
+/**
+ * Point a step at the live Home element. The arrow runs from the card edge
+ * facing the target to the target edge facing the card.
+ */
+export function resolveTutorialStep(step: TutorialStep, anchors: TutorialAnchors): TutorialStep {
+  const rect = step.anchor ? anchors[step.anchor] : undefined;
+  if (!rect) return step;
+  const cardY = TUTORIAL_CARD.cardY(rect);
+  const targetX = rect.x + rect.w / 2;
+  const cardBelow = cardY > rect.y;
+  const fromX = Math.min(Math.max(targetX, (CANVAS_WIDTH - TUTORIAL_CARD.w) / 2 + 24), (CANVAS_WIDTH + TUTORIAL_CARD.w) / 2 - 24);
+  return {
+    ...step,
+    highlight: { ...rect },
+    arrowFrom: { x: fromX, y: cardBelow ? cardY - 5 : cardY + TUTORIAL_CARD.h + 5 },
+    arrowTo:   { x: targetX, y: cardBelow ? rect.y + rect.h + 6 : rect.y - 6 },
+  };
+}
 
 export const TUTORIAL_DONE = TUTORIAL_DONE_STAGE;
 
@@ -130,11 +170,10 @@ export class TutorialOverlay {
     ctr.add(arrow);
 
     // ── Tooltip card ──────────────────────────────────────────────────────
-    const cardW = 320;
-    const cardH = 190;
+    const cardW = TUTORIAL_CARD.w;
+    const cardH = TUTORIAL_CARD.h;
     const cardX = (CANVAS_WIDTH - cardW) / 2;
-    // Keep the plaque clear of the highlighted architecture and global navigation.
-    const cardY = step.highlight && step.highlight.y < CANVAS_HEIGHT / 2 ? 550 : 210;
+    const cardY = TUTORIAL_CARD.cardY(step.highlight);
 
     const cardBg = s.add.graphics();
     cardBg.fillStyle(0x070908, 0.98);

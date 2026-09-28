@@ -103,6 +103,9 @@ try {
       check(`${route}: one successful write`, after.writes, 1);
       check(`${route}: memory equals saved`, after.live, s);
       await capture('success');
+      // Home entry silently settles an in-session absence; pin the clock to the
+      // saved claim so the reload proves persistence alone.
+      await page.clock.setFixedTime(new Date(s.lastIdleCollect));
       await page.reload({ waitUntil: 'networkidle' });
       await page.waitForFunction(() => window.__phaserGame?.scene.isActive('DungeonHomeScene'));
       const loaded = (await snapshot()).saved;

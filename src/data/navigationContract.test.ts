@@ -77,10 +77,11 @@ describe('navigationContract — transient context hand-offs', () => {
     expect(NAVIGATION_CONTEXT_OPERATIONS['prebattle-resume']).toEqual({
       consume: ['preBattleEditReturn'], preserve: [],
     });
-    expect(NAVIGATION_CONTEXT_OPERATIONS['battle-result']).toEqual({ consume: ['returnTo'], preserve: [] });
+    expect(NAVIGATION_CONTEXT_OPERATIONS['battle-result']).toEqual({ consume: ['battleResult', 'returnTo'], preserve: [] });
     expect(applyNavigationContextOperation(focusContext, 'utility-back')).toEqual(focusContext);
     expect(applyNavigationContextOperation(focusContext, 'prebattle-resume')).not.toHaveProperty('preBattleEditReturn');
     expect(applyNavigationContextOperation(focusContext, 'battle-result')).not.toHaveProperty('returnTo');
+    expect(applyNavigationContextOperation({ ...focusContext, battleResult: true }, 'battle-result')).not.toHaveProperty('battleResult');
   });
 
   it('drops every field the abyss climb hand-off owns on return', () => {

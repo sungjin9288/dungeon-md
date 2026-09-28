@@ -8,7 +8,7 @@
  */
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { getUnlockedSlotCount } from '../data/wisdom';
 import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import { beginForecastDay, settleForecastBattle } from '../data/forecastTransactions';
@@ -24,14 +24,17 @@ import {
   type HomeMainQuestCompletionResult,
 } from '../data/questLifecycleTransactions';
 import { settleTutorialStageAdvance } from '../data/tutorialTransactions';
-import { TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE } from '../ui/TutorialOverlay';
+import {
+  TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE, resolveTutorialStep,
+  type TutorialAnchors, type TutorialRect,
+} from '../ui/TutorialOverlay';
 import { getReducedMotion } from '../utils/reducedMotion';
 import {
   showQuestCompleteOverlay,
   showGameCompleteOverlay,
 } from '../ui/QuestLogPanel';
 import {
-  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, idleCapHours,
+  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, shouldShowIdlePanel, idleCapHours,
   type IdleReward,
 } from '../data/idleIncome';
 import { MATERIAL_DEFS } from '../data/fusion';
@@ -68,7 +71,25 @@ export function maybeShowIdleIncome(scene: DungeonHomeScene): void {
   }
   const reward = computeIdleReward(scene.gs, now);
   if (!hasIdlePayout(reward)) return;   // nothing meaningful accrued yet — keep accruing
+  if (!shouldShowIdlePanel(reward)) {
+    autoCollectIdleIncome(scene, now);
+    return;
+  }
   scene.time.delayedCall(550, () => showIdleIncomePanel(scene, reward));
+}
+
+/** Short in-session absence: claim without the blocking panel, announce with a toast. */
+function autoCollectIdleIncome(scene: DungeonHomeScene, now: number): void {
+  const { state, reward } = collectIdleIncome(scene.gs, now);
+  try {
+    scene.persistGameState(state);
+  } catch (error: unknown) {
+    // Unsaved income stays on the clock; the next Home entry settles it.
+    logger.warn('[IDLE] silent claim save failed; income keeps accruing', error);
+    return;
+  }
+  const label = reward.gold > 0 ? `운영 수익 +${reward.gold.toLocaleString('ko-KR')} 황금` : '생산 재료 적립';
+  showToast(scene, label, { color: '#d8b869' });
 }
 
 // ─── formatIdleDuration ──────────────────────────────────────────────────────
@@ -381,10 +402,12 @@ export function initQuests(scene: DungeonHomeScene): void {
  * checkBattleReturn; this covers every other path and re-checks for a
  * newly started invasion quest so the chain keeps flowing at home.
  */
-export function settlePendingQuestCompletion(scene: DungeonHomeScene): void {
-  if (scene.questSettlePending) return;
+export function settlePendingQuestCompletion(scene: DungeonHomeScene): boolean {
+  // A won battle's summary (and DM level-up) comes first; the quest popup's
+  // Home restart would otherwise discard it unseen. The return chain releases it.
+  if (scene.questSettlePending || scene.battleReturnPresenting) return false;
   const done = advanceCompletedQuest(scene);
-  if (!done) return;
+  if (!done) return false;
   scene.questSettlePending = true;
   scene.time.delayedCall(350, () => {
     scene.questSettlePending = false;
@@ -398,6 +421,7 @@ export function settlePendingQuestCompletion(scene: DungeonHomeScene): void {
     // drain the chain so back-to-back completions settle without user input.
     settlePendingQuestCompletion(scene);
   });
+  return true;
 }
 
 // ─── advanceCompletedQuest ────────────────────────────────────────────────────
@@ -488,6 +512,8 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
     questCompletionPending: !!settlement.defendUpdate?.questDone,
     materialsEarned: result.materialsEarned,
   };
+  // Hold quest settlement (initQuests runs right after this) behind the summary.
+  if (result.won) scene.battleReturnPresenting = true;
   if (settlement.changed) scene.refreshHomeDynamicPanels();
 
   // Animate changed currency displays
@@ -510,35 +536,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   });
 
   if (result.won) {
-    const update = settlement.defendUpdate;
-    const afterReturn = () => {
-      if (didLevelUp) {
-        const slotUnlocked = battleReturnGrowth.nextSlots > battleReturnGrowth.previousSlots;
-        scene.time.delayedCall(200, () => showDmLevelUpOverlay(scene, battleReturnGrowth, {
-          primaryLabel: slotUnlocked ? '새 방 설계' : '확인',
-          onDismiss: slotUnlocked
-            ? () => revealUnlockedRoom(
-                scene,
-                battleReturnGrowth.previousSlots,
-                battleReturnGrowth.nextSlots,
-              )
-            : undefined,
-        }));
-      } else if (update?.questDone) {
-        const done = advanceCompletedQuest(scene);
-        if (done) handleQuestComplete(scene, done);
-      }
-    };
-    if (update?.questDone && !didLevelUp) {
-      const done = advanceCompletedQuest(scene);
-      scene.time.delayedCall(400, () => {
-        showBattleReturnOverlay(scene, result, () => {
-          if (done) handleQuestComplete(scene, done);
-        }, battleReturnGrowth, result.callout);
-      });
-    } else {
-      scene.time.delayedCall(400, () => showBattleReturnOverlay(scene, result, afterReturn, battleReturnGrowth, result.callout));
-    }
+    presentBattleReturnWin(scene, result, battleReturnGrowth, didLevelUp);
   } else {
     scene.time.delayedCall(400, () => showBattleDefeatOverlay(
       scene,
@@ -549,6 +547,39 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
       result.callout,
     ));
   }
+}
+
+// ─── presentBattleReturnWin ───────────────────────────────────────────────────
+
+type BattleReturnGrowth = Parameters<typeof showDmLevelUpOverlay>[1];
+
+/**
+ * Victory summary → DM level-up (if any) → pending main-quest popup, in that
+ * order. `scene.battleReturnPresenting` must already hold quest settlement.
+ */
+export function presentBattleReturnWin(
+  scene: DungeonHomeScene,
+  result: BattleReturnResult,
+  growth: BattleReturnGrowth,
+  didLevelUp: boolean,
+): void {
+  const release = (): boolean => {
+    scene.battleReturnPresenting = false;
+    return settlePendingQuestCompletion(scene);
+  };
+  const afterReturn = () => {
+    if (!didLevelUp) { release(); return; }
+    const slotUnlocked = growth.nextSlots > growth.previousSlots;
+    scene.time.delayedCall(200, () => showDmLevelUpOverlay(scene, growth, {
+      primaryLabel: slotUnlocked ? '새 방 설계' : '확인',
+      onDismiss: () => {
+        // The quest popup restarts Home, which shows the new empty slot anyway.
+        const questShown = release();
+        if (slotUnlocked && !questShown) revealUnlockedRoom(scene, growth.previousSlots, growth.nextSlots);
+      },
+    }));
+  };
+  scene.time.delayedCall(400, () => showBattleReturnOverlay(scene, result, afterReturn, growth, result.callout));
 }
 
 // ─── revealUnlockedRoom ───────────────────────────────────────────────────────
@@ -603,12 +634,36 @@ export function maybeShowTutorial(scene: DungeonHomeScene): void {
         );
         if (result.nextStage !== null) {
           const nextStep = TUTORIAL_STEPS.find(s => s.stage === result.nextStage);
-          if (nextStep && scene.tutorialOverlay) scene.tutorialOverlay.show(nextStep);
+          if (nextStep && scene.tutorialOverlay) {
+            scene.tutorialOverlay.show(resolveTutorialStep(nextStep, collectTutorialAnchors(scene)));
+          }
         } else {
           scene.tutorialOverlay = null;
         }
       });
     }
-    scene.tutorialOverlay.show(step);
+    scene.tutorialOverlay.show(resolveTutorialStep(step, collectTutorialAnchors(scene)));
   });
+}
+
+/** Live Home geometry for tutorial highlights (room cards carry a pill 8px above the cell). */
+export function collectTutorialAnchors(scene: DungeonHomeScene): TutorialAnchors {
+  const PILL = 8;
+  const cells = [...(scene.boardLayout?.cellsByIdx.values() ?? [])];
+  const withPill = (r: TutorialRect): TutorialRect => ({ x: r.x, y: r.y - PILL, w: r.w, h: r.h + PILL });
+  const first = cells.find(cell => cell.slotIdx === 0)?.rect;
+  const topRow = cells.filter(cell => cell.isUnlocked && cell.floor === 0).map(cell => cell.rect);
+  const union = topRow.length
+    ? topRow.reduce((a, r) => {
+        const x = Math.min(a.x, r.x), y = Math.min(a.y, r.y);
+        return { x, y, w: Math.max(a.x + a.w, r.x + r.w) - x, h: Math.max(a.y + a.h, r.y + r.h) - y };
+      })
+    : undefined;
+  const tabW = CANVAS_WIDTH / 4;
+  return {
+    ...(first ? { 'first-room': withPill(first) } : {}),
+    ...(union ? { 'room-row': withPill(union) } : {}),
+    ...(scene.commandDeckRect ? { 'command-deck': scene.commandDeckRect } : {}),
+    'invasion-tab': { x: tabW * 3, y: ROOT_NAV_Y, w: tabW, h: CANVAS_HEIGHT - ROOT_NAV_Y },
+  };
 }

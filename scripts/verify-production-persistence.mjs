@@ -117,6 +117,9 @@ try {
   await retry('clear', () => staff('treasury'), 'production-staff-clear', (s, b, paid) => { check('staff cleared', s.facilityStaff, {}); check('removal pays previous gold', s.homeGold - b.homeGold, paid.gold); });
   await retry('collect', async () => {}, 'production-collect', (s, b, paid) => check('collection pays gold and ore once', [s.homeGold - b.homeGold, s.materials.common_ore - b.materials.common_ore], [paid.gold, paid.ore]), true);
   await capture('complete'); const final = (await snapshot()).saved;
+  // Home entry silently settles an in-session absence; pin the clock to the
+  // saved claim so the reload proves persistence alone.
+  await page.clock.setFixedTime(new Date(final.lastIdleCollect));
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__phaserGame?.scene.isActive('DungeonHomeScene'));
   check('state survives reload', await page.evaluate(() => {
@@ -148,6 +151,7 @@ try {
     check(`claim ${i}: fractions remain bounded`, Object.values(state.idleRemainder.materials).every(v => v >= 0 && v < 1) && state.idleRemainder.productionGold >= 0 && state.idleRemainder.productionGold < 1, true);
     if (i === 2) {
       await capture('fraction-before-reload');
+      await page.clock.setFixedTime(new Date(state.lastIdleCollect));
       await page.reload({ waitUntil: 'networkidle' });
       await page.waitForFunction(() => window.__phaserGame?.scene.isActive('DungeonHomeScene'));
       check('fraction survives full reload', await page.evaluate(() => JSON.parse(localStorage.getItem('dungeonGameState')).idleRemainder), state.idleRemainder);

@@ -66,9 +66,10 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   const availableDeckH = statsTopY - minDeckY - 10;
   const deckH = Math.min(142, availableDeckH);
   const deckY = Math.max(minDeckY, statsTopY - deckH - 10);
-  if (deckH < 132) return;
+  if (deckH < 132) { scene.commandDeckRect = null; return; }
   const deck = scene.add.container(0, 0).setDepth(4);
   scene.commandDeckContainer = deck;
+  scene.commandDeckRect = { x: deckX, y: deckY, w: deckW, h: deckH };
 
   const unlockedSlots = getUnlockedSlotCount(scene.gs);
   const visibleSlots = (scene.gs.dungeonSlots ?? []).slice(0, unlockedSlots);

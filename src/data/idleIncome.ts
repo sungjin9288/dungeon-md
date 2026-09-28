@@ -76,6 +76,17 @@ export function hasIdlePayout(reward: IdleReward): boolean {
   return reward.gold > 0 || Object.keys(reward.materials).length > 0;
 }
 
+/**
+ * Absences shorter than this are in-session Home re-entries (quest confirm,
+ * returning from 군단/공방/battle). They settle silently instead of opening the
+ * blocking recovery panel; the payout is the same `collectIdleIncome`.
+ */
+export const IDLE_PANEL_MIN_MS = 5 * 60_000;
+
+export function shouldShowIdlePanel(reward: IdleReward): boolean {
+  return reward.elapsedMs >= IDLE_PANEL_MIN_MS;
+}
+
 function definedCount(ids: readonly (string | undefined | null)[] | undefined): number {
   return (ids ?? []).filter(Boolean).length;
 }

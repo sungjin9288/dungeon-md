@@ -34,8 +34,15 @@ const COSMIC_MUTED = CASUAL_CSS.INK_SOFT;
 
 // ─── Quest complete overlay ─────────────────────────────────────────────────
 
+/**
+ * Main-quest result overlays dismiss by restarting Home, so they must sit above
+ * every Home edit layer that can trigger a settlement: room detail (100),
+ * room pickers (110) and the placement tray (120).
+ */
+export const MAIN_QUEST_RESULT_DEPTH = 130;
+
 export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
-  const c = scene.add.container(0, 0).setDepth(80);
+  const c = scene.add.container(0, 0).setDepth(MAIN_QUEST_RESULT_DEPTH);
 
   // Dim
   const dim = scene.add.graphics();
@@ -126,7 +133,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
 // ─── Game-complete overlay (MQ-044 only) ────────────────────────────────────
 
 export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
-  const c = scene.add.container(0, 0).setDepth(80);
+  const c = scene.add.container(0, 0).setDepth(MAIN_QUEST_RESULT_DEPTH);
 
   // Dim
   const dim = scene.add.graphics();
@@ -267,9 +274,6 @@ function buildQuestRewardRows(
   }
   if (quest.reward.dmXP) {
     rows.push({ icon: '✨', label: 'DM XP', value: `+${quest.reward.dmXP.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
-  }
-  if (quest.reward.monsters?.length) {
-    rows.push({ icon: '👹', label: '몬스터', value: quest.reward.monsters[0], valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   quest.reward.unlocks?.forEach(unlock => {
     rows.push({ icon: '🔓', label: '해금', value: unlock, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });

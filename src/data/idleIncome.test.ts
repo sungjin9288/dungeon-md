@@ -17,6 +17,8 @@ import {
   IDLE_PER_GUARDIAN,
   IDLE_PER_GOLD_ROOM,
   IDLE_DM_BONUS,
+  IDLE_PANEL_MIN_MS,
+  shouldShowIdlePanel,
 } from './idleIncome';
 
 function slot(roomType: string | undefined, roomLevel = 1, monsterIds: (string | undefined)[] = []): DungeonSlot {
@@ -222,5 +224,19 @@ describe('credited income rates', () => {
     expect(reward.materials.common_ore).toBe(Math.floor(productionRatePerHour(onlyFacilities, FACILITY_DEFS.mine)));
     expect(productionRatePerHour(state, FACILITY_DEFS.mine, 0)).toBe(0);
     expect(productionRatePerHour(state, FACILITY_DEFS.mine, 4)).toBeCloseTo(9.2);
+  });
+});
+
+// In-session Home re-entries (quest confirm, returning from 군단/공방) used to pop
+// the blocking recovery panel for a few gold. Short absences settle silently.
+describe('shouldShowIdlePanel', () => {
+  const reward = (elapsedMs: number) => ({ gold: 3, materials: {}, elapsedMs, creditedMs: elapsedMs, capped: false, ratePerMin: 4.2 });
+  it('keeps the recovery panel for a real absence', () => {
+    expect(shouldShowIdlePanel(reward(IDLE_PANEL_MIN_MS))).toBe(true);
+    expect(shouldShowIdlePanel(reward(3 * 3_600_000))).toBe(true);
+  });
+  it('settles in-session re-entries without the panel', () => {
+    expect(shouldShowIdlePanel(reward(15_000))).toBe(false);
+    expect(shouldShowIdlePanel(reward(IDLE_PANEL_MIN_MS - 1))).toBe(false);
   });
 });

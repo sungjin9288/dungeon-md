@@ -22,7 +22,6 @@ export interface Reward {
   soulCrystals?: number;
   dmXP:          number;
   items?:        string[];
-  monsters?:     string[];
   unlocks?:      string[];
 }
 
@@ -61,7 +60,7 @@ export const MAIN_QUESTS: MainQuest[] = [
     objectives: [
       { id: 'O1', type: 'build_room', target: 1, current: 0, description: '방 1개 건설' },
     ],
-    reward: { gold: 100, dmXP: 50, monsters: ['dokkaebi_warrior'] },
+    reward: { gold: 100, dmXP: 50 },
     nextQuestId: 'MQ-002',
   },
   {

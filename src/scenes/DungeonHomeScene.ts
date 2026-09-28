@@ -143,6 +143,7 @@ export class DungeonHomeScene extends Phaser.Scene {
   /** @internal */ dungeonContainer: Phaser.GameObjects.Container | null = null;
   /** @internal */ dungeonBlueprintContainer: Phaser.GameObjects.Container | null = null;
   /** @internal */ commandDeckContainer: Phaser.GameObjects.Container | null = null;
+  /** @internal */ commandDeckRect: { x: number; y: number; w: number; h: number } | null = null;
   /** @internal */ boardLayout!: DungeonBoardLayout;
   /** @internal */ recentlyChangedRoomIdx: number | null = null;
   /** @internal */ selectedRoomIdx: number | null = null;
@@ -154,6 +155,7 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   // Guards duplicate quest-complete overlays when multiple refreshes land in one frame
   /** @internal */ questSettlePending = false;
+  /** @internal */ battleReturnPresenting = false;
 
   // Invasion state (extracted to InvasionUI.ts)
   /** @internal */ invasionState: InvasionUIState = createInvasionUIState();
@@ -229,8 +231,13 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.dungeonContainer = null;
     this.dungeonBlueprintContainer = null;
     this.commandDeckContainer = null;
+    this.commandDeckRect = null;
     this.recentlyChangedRoomIdx = null;
     this.selectedRoomIdx = null;
+    // Phaser reuses the instance: a restart inside a pending settle window must
+    // not leave quest settlement blocked for the next Home visit.
+    this.questSettlePending = false;
+    this.battleReturnPresenting = false;
     closePlacementTray();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       closePlacementTray();
