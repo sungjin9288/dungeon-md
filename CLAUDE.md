@@ -43,7 +43,7 @@ BootScene → DungeonHomeScene
   (컷씬은 부팅이 아니라 스테이지 진입 시 STAGE_CINEMATICS 기준으로 재생)
 
 DungeonHomeScene          홈 허브. 퀘스트·침략 확인, 설정 오버레이, 세이브 관리
-  → StageSelectScene      챕터별 스테이지 선택 (80개, 8챕터)
+  → StageSelectScene      챕터별 스테이지 선택 (90개, 9챕터)
   → PreBattleScene        덱 편성 → DungeonScene
   → SummonScene           소환 (일반/특수/영혼/우정)
   → ShopScene             상점
@@ -75,9 +75,10 @@ EndlessResultScene        엔드리스 결과
 - **`getUnlockedSlots(dmLevel)`** — DM레벨 → 방 슬롯 수
 
 ### `src/scenes/StageSelectScene.ts`
-- **`STAGE_CONFIGS[80]`** — stageNumber 1–80, slots, chapter, bossWave (Ch1–Ch8)
+- **`STAGE_CONFIGS[90]`** — stageNumber 1–90, slots, chapter, bossWave (Ch1–Ch9)
 - **`loadProgress() / saveProgress() / recordClear()`** — localStorage 키 `dungeonStageProgress`
 - `StageProgress` = `StageProgressEntry` (wisdom.ts 타입 재사용)
+- 스크롤 하단에는 `ROOT_NAV_HEIGHT`만큼 여백을 두어 생산·심연·장식 버튼이 고정 메뉴에 가리지 않게 한다.
 
 ### `src/data/quests.ts`
 - `completeAndAdvance()` — 퀘스트 완료·보상·다음 퀘스트 시작
@@ -94,6 +95,56 @@ EndlessResultScene        엔드리스 결과
 
 각 절이 그 시스템의 단일 진실원이다. 배틀은 `DungeonScene.ts` + `src/combat/`,
 홈·메타는 `src/data/*Transactions.ts`(순수) → 씬 순서로 배선한다.
+
+### 제작 장비 효과 (2026-09-22)
+- 현재 장비 능력치는 `barracks.ts:getEquipmentStats`가 권위다. 제작 snapshot은 표시 권위가 아니다.
+- 피해 감소 4종은 장착 방의 주/추가 수호자 중 최대값만 적용하며 코어는 제외한다.
+  구조 HP와 영속 슬롯 내구도 모두 현재 배치 기준이다. 상세는 결함 스윕 인계 §11.
+- 용아검/보스 부적의 보스 기본피해 +25/+40%는 미니·주간 보스를 포함하며 피격 대상별이다.
+- 월석 목걸이 기본공속 +20%는 간격 /1.2, 기존 스킬 쿨다운 -20%와 독립이며
+  주/추가 슬롯·공격 링에 시너지와 함께 적용한다.
+- 천상의 검은 피해를 주는 기본공격 5회마다 전체 적에 기본 피해 50%를 추가한다.
+  착용자별 카운터는 방 교체 시 유지, 웨이브 시작 시 초기화한다. 대체 광역 기본공격도 1회다.
+- 천상의 창은 기본공격에 마법 추가피해 +20%, 마법 핵심은 마법형 기본피해 +20%다.
+  추가타는 대상별 면역·방어를 적용하며 상태이상·연쇄 재발동이 없다.
+- 수호자의 왕관은 상하좌우 인접 방 ATK +25%, 신성 방패는 배치된 천상족 전체 ATK +20%다.
+  주/추가 슬롯의 살아 있는 방 장착자가 제공하며 같은 오라는 최대값, 다른 오라는 곱한다.
+- §3-2 누락 효과 12건 구현 완료. 상세·검증 제한은 결함 스윕 인계 §12.
+  §3-3·§3-4는 후속 완료다. 기존 방향 안의 세부 설계 판단은 담당자에게 위임됐다.
+
+### 웨이브 준비 타이머 수명 (2026-09-22)
+- `startWave`와 `enableWaveButton`은 이전 준비 타이머를 취소한다. 방어선 확인·즉시 시작
+  후 예약된 tick이 새 웨이브의 스폰/종료 플래그를 다시 초기화해서는 안 된다.
+- 준비 교체·정상 완료·씬 shutdown은 해당 타이머, 임시 표시, 상태 문구와 listener를 정리한다.
+  `DungeonScene.create`는 파괴된 countdownBar 참조를 초기화한다. 저장 형식·보상은 유지한다.
+- 수정 전 실제 결과 버튼에서 늦은 플래그 초기화와 음수 준비 시간을 재현했다.
+  검증 범위와 장기 주행 미실행 제한은 결함 스윕 인계 §16.
+
+### 무한 모드 마일스톤 HP 하한 (2026-09-22)
+- `buildEndlessSpawnQueue`는 직전 생성 큐 HP가 전달되면 마일스톤 총 HP를 그 합계의
+  1.12배(올림) 이상으로 만든다. 부족분만 마일스톤 전용 개체 중 HP가 가장 큰 개체에 더한다.
+- `WaveStart`가 dispatch 전에 큐 HP를 기록하고 다음 웨이브에 넘긴다. 일반 웨이브도
+  기록을 갱신하며 새 DungeonScene 실행에서 0으로 초기화한다. 저장 필드는 추가하지 않는다.
+- 보장 기준은 도전 변수 적용 후·웨이브 이벤트 적용 전 생성 HP다. 적 종류/수/속도/보상은 같다.
+  직전 기록 없는 독립 조회는 기존 무작위 큐를 반환한다. DPS·전술적 난이도·승률 보장이 아니다.
+- 검증과 이전 간헐 실패의 해결 근거는 결함 스윕 인계 §15.
+
+### 선조의 지혜 (2026-09-22)
+- 9칸 보드에 들어가는 지혜 슬롯은 기존대로 해금하고, 초과 슬롯당 던전 최대 HP +20을 준다.
+  `getAncestorsWisdomEffect`가 DM 레벨·기존 투자 등급에서 매번 계산한다. DM8 이상 5등급은 +100 HP.
+- `getWisdomBonuses.extraSlots`는 실제 추가 슬롯 수, `dungeonMaxHpBonus`는 강인한 성벽과
+  초과 슬롯 HP의 합이다. 기존 전투 초기화에서 요새 HP와 더한 뒤 장식 배율을 적용한다.
+- 기존 투자에도 적용하며 새 저장 필드·일회성 지급·환불은 없다. DM/보드/비용/프레스티지 유지 규칙은 같다.
+- 구매 화면은 현재·다음의 실제 슬롯/HP를 표시한다. 확인 중 DM이 바뀌어 표시 효과가 달라지면
+  기존 등급·비용·잔액 확인에 더해 거래를 거절한다. 상세 검증은 결함 스윕 인계 §14.
+
+### 방 전력과 성장 추천 (2026-09-22)
+- `dungeonMetrics.ts`의 전력은 배치·장비·방 유형·내구도의 비교 점수다. DPS/승률이 아니다.
+- 레벨 보너스는 기존 기본 점수 × (`getRoomLevelDamageMult(level)` − 1)이며,
+  `rooms.ts`의 `1.4^(level−1)` 곡선을 주/추가 슬롯 전투와 공유한다.
+- 성장·장비 미리보기와 추천은 실제 배치 방의 같은 점수 차이를 사용한다.
+  준비도 %·전리품·비용·보상·별도 PreBattle DEF 공식은 이 변경으로 바꾸지 않는다.
+- 구현·검증 근거와 기존 난수 테스트 제한은 결함 스윕 인계 §13.
 
 ### 씬 시작
 ```typescript
@@ -218,12 +269,32 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 
 ### 운영 수익 · 몬스터 근무 (2026-09-18, Phase 3 / P1 ③④)
 
-**운영수익 = (방 수익 + 보물고) × 명성 배수 × 장식 세트 배수** (`idleIncome.ts
-computeIdleReward`). 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
+**운영 골드 = (방·수호자 수익 × 장식 골드 배수 + 보물고 × 장식 생산 배수) × 명성 배수**
+(`idleIncome.ts computeIdleReward`). 각 수입원은 모든 배수 적용 후 한 번 내림한다.
+방치 패널의 분당 수익은 보물고를 포함한 총액이며, 생산 구역의 현재·다음 단계 표시는
+수령과 같은 `facilityIncomeRatePerHour`를 사용한다. 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
 곱하고 재료에는 곱하지 않는다. 방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
 UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광맥`은 **수익 방**
 (`IDLE_PER_GOLD_ROOM` 12/분)이며 전투 중 골드 생산은 없다(`runGoldVeins` 삭제 —
 전투 골드는 전리품뿐).
+
+홈 방치 보상 수령은 저장 성공 후 메모리·통화 표시를 갱신한다. 저장 실패 시
+창과 수령 버튼을 유지해 재시도하며, 닫힌 창/종료된 씬의 지연 콜백은 무시한다.
+생산 구역의 수령·건설/강화·근무 배정/해제도 저장 성공 후 상태를 반영한다.
+실패하면 원래 상태를 유지하고 명령판에 재시도 안내를 표시한다.
+반복 수령의 소수 진행분은 선택 필드 `idleRemainder`에 운영 골드·보물고 골드·재료별로
+보존한다. 기존 저장의 누락값은 0이며 보유 자산에는 정수만 지급한다. 적립 상한은
+새 경과 시간에 적용하고, 환생은 골드 진행분만 초기화한다. 시계가 역행해도 마지막
+수령 시각을 뒤로 옮기지 않는다. 생산 구역의 건설·강화·근무 배정/이동/해제는
+명시적인 timestamp를 받아 변경 전 상태로 미수령 구간을 먼저 정산하고, 변경과 함께
+한 번에 저장한다. 구매 가능 여부는 정산 전 보유 골드로 판단한다. 성공 안내에는
+실제 지급이 있을 때 `적립분 수령`을 덧붙인다. `assignMonsterToRoomSlot`도 timestamp를
+받으며 모든 수호자 방 배치 전에 기존 수익을 정산한다. 방 배치 해제·방 설계/건물 전환·
+강화도 이전 단가로 먼저 정산한다. 추천 일괄 배치는 명령 전체에 같은 timestamp를 쓴다.
+강화 가능 여부는 정산 전 보유 골드 기준이며 미설계 방은 강화할 수 없다.
+배치 트레이·몬스터 선택 창·추천 배치와
+방 상세 설계/강화에서 저장 실패 시 안내 후 성공 연출을 중단한다. 장식·성장·지혜·명성에
+의한 단가 변경은 아직 이 정산 경계에 포함되지 않는다.
 
 **근무**(`productionTransactions.ts assignFacilityStaff/clearFacilityStaff`,
 `GameState.facilityStaff: facilityId → monsterId`): 생산 시설마다 수호자 1체. 산출
@@ -234,6 +305,9 @@ UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광
 (`collectAssignedMonsterIds`)도 근무자를 제외한다. UI: 생산 구역 명령판의 '근무
 수호자' 줄(`production-staff`) → `ProductionStaffPicker`(칩 `production-staff-<id>`),
 배치 트레이 몬스터 칩은 '근무 중' 표기.
+근무자는 방에서 빠져도 수호자 1체분의 운영 수익을 유지한다(DM·지혜·장식·명성
+배수 동일). 시설 근무의 대가는 방어 참여이며, 경제 성장에 따라 운영 수익 손실만
+커지는 비대칭은 제거했다(2026-09-21, 결함 스윕 §2-1).
 
 - 가드: `facilityStaff.test.ts`(배타성 양방향·추천 제외), `production.test.ts`(적성
   배율), `idleIncome.test.ts`(명성 배수·수익 방·상한). 모달 하니스
@@ -427,9 +501,25 @@ HP에서 파생한다 — 구 곡선은 `40 × 1.16^(층−1)`이라 60층에 **
 | 키 | 파일 | 내용 |
 |----|------|------|
 | `dungeonGameState` | wisdom.ts | 전체 게임 상태 (골드·XP·퀘스트·몬스터 등) |
-| `dungeonStageProgress` | StageSelectScene.ts | 80개 스테이지 별/HP% |
+| `dungeonStageProgress` | stageProgress.ts | 90개 스테이지 해금/별/HP% |
 
 둘은 독립적. `StageClearFlow.showChapterClear()`에서 둘 다 업데이트.
+
+세이브 내보내기는 `format: dungeon-guardian-save`, `version: 1`의 Base64 JSON으로
+`gameState`와 `campaignProgress`를 함께 담는다. 가져오기는 두 저장소를 교체한다.
+기존 flat GameState 코드도 읽으며, 그 코드의 `stageProgress`(없으면 기본값)를
+캠페인에 복원한다. 백업에 없는 과거 기록을 추정하거나 대상 기기 기록과 합치지 않는다.
+알 수 없는 버전/잘못된 진행도는 쓰기 전에 거절한다. 캠페인 저장 후 게임 상태 저장이
+실패하면 캠페인을 원래 바이트/키 부재 상태로 되돌린다. 브라우저 강제 종료에 대한
+두 키의 원자적 저장까지 보장하는 구조는 아니다. 새 백업은 이 버전 이상에서 복원한다.
+
+`ImportExportModal`은 확인 중 클립보드 요청을 한 번만 허용한다. 취소/배경 닫기,
+설정창 파괴 또는 씬 shutdown 뒤 도착한 응답·오류는 무시한다. 성공 후 800ms
+Home 재시작은 해당 씬이 종료되면 취소하고, 정상 실행 후에도 listener를 해제한다.
+
+환생 확정도 `saveGameStateWithCampaign`으로 게임 상태와 캠페인 진행도를 함께
+초기화한다. 세이브 복원과 같은 rollback 경로를 사용하며, 저장 실패 시 완료 callback을
+실행하지 않고 재시도 안내를 표시한다. 영구 성장 유지/회차 초기화 규칙은 `startPrestige`에 있다.
 
 ---
 
@@ -489,3 +579,14 @@ Capacitor가 생성한 중첩 `.gitignore`가 제외하므로 커밋되지 않�
 (`assets/ASSET_GUIDE.md`, `assets/backgrounds/README.md`)는 문서화 대상 폴더
 옆에 두되, `vite.config.ts`의 `strip-bundled-docs` 플러그인이 빌드 산출물에서
 `.md`를 제거한다. `public/`에 새 기여자 문서를 추가할 때는 `.md`로 두면 된다.
+
+
+### 종족 시너지 속도 계약 (2026-09-22)
+
+`synergy.ts`는 적 이동(`invaderMoveMult`), 수호자 기본공격 속도
+(`guardianAttackSpeedMult`), 수호자 기본공격·액티브 쿨다운
+(`guardianCooldownMult`)을 구분한다. 기본공격 간격은 cooldown 배수 / attack-speed
+배수로 합성하며 적 이동 배수는 섞지 않는다. 주/추가 슬롯 공격과 방 공격 링,
+팝업/HUD 액티브 사용 경로에 반영된다. 최고 티어 하나만 적용하며 하위 티어 효과를
+누적하지 않는다. 수호자 없는 방·함정과 주기형 패시브는 대상이 아니다.
+사용자 결정·검증·남은 범위: `docs/design/CODEX_HANDOFF_DEFECT_SWEEP.md` §10.

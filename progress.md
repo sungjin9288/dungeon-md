@@ -691,3 +691,277 @@ Original prompt: 좋아 다음 스텝 이어서 진행하자
   ran. Alternate whole-app viewports, physical-device accessibility/text scaling,
   native packaging/store readiness, and shared-transaction malformed-tier
   hardening remain outside this web-only slice.
+
+## 2026-09-22 — Wave preparation timer lifecycle
+
+- Reproduced actual immediate-next-wave CTA leaving an old countdown alive:
+  one late waveHasSpawned reset and prepTimer -1. Old callback could prevent
+  wave-clear detection after the last spawn. Preserved before receipts.
+- Cancel owned prep timers/UI/listeners on wave start, button enable, replacement,
+  completion and shutdown. Reset destroyed countdownBar on scene create;
+  extended browser fixture first failed on that stale reference, then passed.
+- Added six focused timer tests and twelve live Phaser checks. Final full suite:
+  134 files / 3192 tests; TypeScript/Vite build passed (existing chunk advisory).
+  Evidence: output/playwright/wave-prep/final-status/ and sibling test/build logs.
+- Fixtures use actual CTA input plus fixed-step/scene-clock advancement and
+  synthetic wave completion. Full endurance not rerun; prior three recoveries
+  cannot all be attributed to this bug. Preserve historical endurance receipt.
+- Next: current-runtime continuous endurance, with explicit scrutiny of the old
+  harness forced-close path. No commit/push/deploy. graphify binary unavailable.
+
+## 2026-09-22 — Continuous Endless combat after prep fix
+
+- Replaced the endurance harness forced-close recovery with a hard stall failure;
+  death is required by default, and wave-cap/budget/stall/death are distinct.
+  Added queue-history/milestone floors, exact combat/result counters, persisted
+  crystals/best score and result CREATE/re-entry duplicate-payout checks.
+- Final run-02: golden, DM40, nine Lv40 guardians in Lv5 rooms, 3x via real HUD
+  input. Wave20 core death, 51 slices, zero stalls/errors/failures. Milestones10/20
+  and modifier probes1/5/12 pass. Result142kills/23938gold/6crystals, saved best20.
+- Initial run-01 reached21 but fixture overrides left stale HUD labels; preserved
+  it separately and fixed fixture HUD/speed wiring before final run-02.
+- Cap, budget and injected wave-end failure each exit1 as expected. Restored the
+  exact runtime bytes; all291 final receipt source hashes match current files.
+  Full134files/3192tests pass; no final runtime/build changes, so build not rerun.
+- Evidence: output/playwright/endless-continuation/. Historical receipt preserved.
+  This seeded continuous-combat result is not all-modifier balance, long wall-clock
+  memory or native-device validation. No commit/push/deploy. No mandatory defect
+  work remains in the current handoff scope; further product work needs a concrete
+  next target rather than repeated identical endurance runs.
+
+## 2026-09-22 — Production bundle integration smoke
+
+- Added scripts/verify-production-smoke.mjs using existing web-audit input and
+  inventory helpers. No browser /src imports; seed once so reload tests real saves.
+- Fresh build served locally through preview: final 47 checks, zero failures and
+  browser/network errors. All ten served JS/CSS hashes match dist. Development
+  scene query ignored. Actual root-nav clicks, Wisdom purchase 145→140 and full
+  reload persistence pass; actual Endless/start/confirm clicks spawn wave1.
+- DM8 empty-board fixture: purchased +20 reaches core HP1520. Nine other hubs
+  pass direct scene activation/render checks (not actual navigation coverage).
+- Full134files/3192tests and build pass; existing Phaser chunk advisory remains.
+  Final screenshots for home, purchase, stage entry and combat visually inspected.
+  Standard web-game client ran once; black canvas export excluded from evidence.
+- Final receipt: output/playwright/production-smoke/2026-09-22T05-09-40.859Z/.
+  Initial43-check receipt preserved separately. Runtime unchanged; owned preview
+  stopped. This is local production smoke, not deployment/native acceptance.
+  No commit/push/deploy. graphify unavailable. Current defect scope completed.
+
+## 2026-09-22 — Campaign progress in save transfers
+
+- Found export/import omitted the separate campaign storage, losing progression on
+  fresh devices or retaining another save's cleared stages. Added version1 backup
+  envelope with both stores; old flat codes use their embedded/default progress.
+- Validate campaign entries/version before writes. Roll back the first campaign
+  write on game-state storage failure, preserving original raw bytes or absence.
+  This is synchronous exception recovery, not crash-atomic multi-key storage.
+- Added12 regression tests. Initial7 failures included2 happy-dom spy-leak harness
+  errors; replaced with isolated globals. Reverting only transfer functions now
+  yields6 expected failures. Exact fixed source restored and hash recorded.
+- Focused112 tests, full135files/3204tests and production build pass. Production
+  settings UI9 checks pass with isolated clipboard: export, cancel, import,
+  resources, campaign replacement, StageSelect read, reload, invalid-code safety.
+- Confirm/stage-restored/error screenshots visually inspected. Standard client
+  ran once; known black canvas export excluded. graphify AST update passed with
+  four parser partial-extraction warnings; see graphify.log.
+- Receipt: output/playwright/save-transfer/2026-09-22T06-59-26.991Z/.
+  No real clipboard/user-save/native/commit/push/deploy changes. Old evidence kept.
+
+## 2026-09-22 — Save import asynchronous ownership
+
+- Fixed duplicate clipboard reads and late writes after cancel, backdrop close,
+  parent destruction or scene shutdown. Pending read has visible status and stays
+  cancellable. Successful-import restart timer is cancelled on scene shutdown.
+- Added10 UI ownership tests;22 focused tests including transfer pass. Original
+  module produces8 failures both before fix and in explicit revert check; exact
+  fixed bytes restored. Existing save-transfer browser harness now passes26 checks
+  with deferred/rejected clipboard responses and real confirm/cancel input.
+- Production screenshots inspected for pending/cancel and successful restoration.
+  First full test run had1 existing Endless calculation timeout (3213 passed);
+  after browser completion, unchanged5s limit with maxWorkers2 passed all3214
+  tests/136files. Both logs retained. Build passed with existing chunk advisory.
+- Evidence: output/playwright/save-import-lifecycle/. No actual user clipboard or
+  save touched, no native verification, commit/push/deploy. Prior receipts kept.
+- Standard client ran once; black canvas export inspected and excluded. graphify
+  AST update completed with the existing four parser warnings. Owned preview stopped.
+
+## 2026-09-22 — Prestige campaign reset persistence
+
+- Actual prestige confirm saved only GameState, leaving all cleared campaign stages
+  in the second store. Shared saveGameStateWithCampaign now serves import and prestige,
+  with the existing rollback behavior. Storage failure shows retry feedback and does
+  not invoke completion. Pure reset/keep rules and backup format unchanged.
+- Added5 persistence tests; original module fails3 and fixed source passes. Preserved
+  original3 UI tests after catching their accidental replacement during diff review;
+  new tests moved to prestigePersistence.test.ts. Final focused118 and full137files/
+  3219tests pass; earlier3216 count is preliminary. Build and final typecheck pass.
+- Production17 checks: actual prestige/cancel, both injected storage failures, retry,
+  reset StageSelect and reload. Prestige2→3, gold9000→200, only stage1 unlocked and
+  all stars0; DM/roster/wisdom/crystals/gems/Endless best retained. Browser errors0.
+- Screens visually inspected. Standard client ran once; black canvas export excluded.
+  Final evidence: output/playwright/prestige-progress/final/ and sibling final logs.
+  Isolated fixtures only; no user-save/native/commit/push/deploy changes.
+- Final graphify AST update completed with the existing four parser warnings;
+  the owned preview server was stopped.
+
+## 2026-09-22 — Home idle claim retry after storage failure
+
+- Fixed live-state advancement before persistence and the one-shot claim button
+  becoming unusable on storage failure. Home saves before assigning state; the
+  panel stays open with visible retry feedback. Closed-panel/inactive-scene
+  callbacks cannot commit a claim. Prestige reset rules and income math unchanged.
+- Added4 tests using actual Home persistence and idle handler; first3 tests failed
+  before runtime changes. Focused24 tests and full138files/3223tests passed. Build
+  passed after correcting test-only ES2020 Array.at and Mock type errors.
+- Production real clicks: failure/retry/repeat/reload passed14 checks each under
+  normal and reduced motion, errors0. Gold200→300, ore5→7, one successful write,
+  permanent currency/prestige retained. Failure/success screenshots inspected.
+- Evidence: output/playwright/idle-claim/verified-reduced/ and verified-motion/;
+  tests-final.log, focused-final-tests.log, build-final.log. Earlier final-reduced/
+  used the old bundle after the failed build and is not final evidence. Initial
+  frozen-clock harness stalled tweens; preserved that failure and used real time.
+- Standard client executed once; black export inspected/excluded. graphify AST
+  update completed with the existing four parser warnings. No user save/native/
+  commit/push/deploy. Follow-up candidate: reproduce ProductionScene's separate
+  collect/build save failures; this Home fix does not certify those handlers.
+- Final recorded hashes match; syntax/diff checks passed. Owned preview stopped.
+
+## 2026-09-22 — Production entry and persistence recovery
+
+- Shared the four ProductionScene save sites behind save-before-assign handling.
+  Failure retains the original state and renders a retry receipt; build, upgrade,
+  collect, assignment and unassignment keep existing math/cooldown rules.
+- Added6 actual scene-handler tests. All6 failed on the original code; focused56
+  and full139files/3229tests passed. Final production build passed with existing
+  Phaser chunk advisory. No test thresholds or assertions relaxed.
+- Actual entry uncovered StageSelect's bottom production button beneath the fixed
+  Barracks navigation. Added ROOT_NAV_HEIGHT scroll clearance. Pointer route now
+  passes from Home through eight drags and the fully exposed production button.
+- Production browser tests: normal and reduced motion each51 checks, errors0.
+  Storage failure/retry across six commands, rapid double-clicks, reload, exact
+  costs150/270 and payout100gold/4ore passed. Fixture accrual is injected, not a
+  real one-hour wait. Room-to-facility removal is unit-tested; browser uses a free
+  guardian and validates facility transfer/unassignment. Screens inspected.
+- Evidence: output/playwright/production-persistence/verified-reduced/ and
+  verified-motion/, sibling before/focused/tests-final/build-final logs. Initial
+  reduced/ is the preserved entry failure, not final evidence. Standard client ran;
+  black export inspected/excluded in favor of page captures. Recorded hashes match.
+- graphify AST update completed with the four existing parser warnings. Syntax/diff
+  checks passed; owned preview stopped. No user save/native/commit/push/deploy.
+
+## 2026-09-22 — Preserve fractional idle output between claims
+
+- Fixed frequent claims discarding slower production: optional idleRemainder
+  carries operation gold, treasury gold and material fractions. Shared settlement
+  serves preview and claim, with integers only in spendable assets. Legacy saves
+  default to zero; backup/reload preserve progress, prestige clears gold fractions
+  only. Collection never moves its timestamp backwards. No historical recovery.
+- First9 new tests failed before the runtime fix. Final14 regression tests and
+  related focused167 passed; full140files/3243tests and build passed. Initial
+  build's narrow test-variable inference error was fixed with explicit GameState.
+- Extended existing production harness: both motion settings pass70 checks/error0,
+  including the prior51 plus six ten-minute claims and reload after claim2.
+  Final100gold/2ore/1cloth confirmed. Fractional elapsed windows are injected;
+  after the fractional reload only, scene return uses direct activation. Screens
+  inspected; standard client black export inspected/excluded.
+- Evidence: output/playwright/idle-remainder/final-reduced/, final-motion/ and
+  sibling before-tests/focused-final-tests/tests-final/build-final logs. Earlier
+  verified-reduced/ saw the old bundle after a failed build and is excluded.
+- Graph updated with four existing parser warnings; recorded hashes/syntax/diff
+  checks pass. No user save/native/commit/push/deploy. Follow-up: settle the whole
+  unclaimed interval at old rates before facility upgrades/staff changes; current
+  interval revaluation remains unchanged by this fractional-output fix.
+- Owned preview server stopped after verification.
+
+
+## 2026-09-28 — Settle the previous rate before production commands
+
+- Production build/upgrade and staffing assignment/transfer/removal now take an
+  explicit timestamp, validate the action, settle old-state income, then return
+  the combined immutable change. ProductionScene persists it once before applying
+  memory/UI state. Actual payouts add a short receipt. Spendable-gold eligibility,
+  fractional progress, caps, prices and multipliers remain unchanged.
+- New8 regression cases:7 failed before implementation; focused6files/73tests pass.
+  Full141files/3251tests pass (37.62s), npm run build passed before browser launch.
+- Existing production harness now seeds an old one-hour interval before each
+  command and checks independent fixture-rate arithmetic, one-write retry, carry,
+  reload, double clicks and six ten-minute claims. Both motion modes:96 checks,
+  zero errors/failures. Success PNGs inspected and recorded source/build hashes
+  match current files. Evidence: output/playwright/production-settlement/.
+- Standard web-game client ran; black export and empty activeScenes excluded as
+  visual proof. Real page captures cover the changed UI. Graphify AST updated
+  with the four known parser warnings. No user save/native/commit/push/deploy.
+- Next: room placement via assignMonsterToRoomSlot can remove facility staffing
+  without settling first; check that reverse path and persistence. Other room,
+  decoration, DM/wisdom/notoriety rate mutations remain outside this slice.
+- Owned preview server stopped after verification.
+
+
+## 2026-09-28 — Working guardian return to room
+
+- assignMonsterToRoomSlot now requires a timestamp. When the guardian is on
+  shift, it settles the old state before removing staffing and placing the unit.
+  Ordinary non-worker placement behavior and quest counting remain unchanged.
+- Placement tray commit, monster picker and recommended placement catch failed
+  persistence, show a retry toast and retain the current interaction. Home's
+  existing save-before-memory order stays authoritative.
+- New5 data tests (4 failed before the fix) and a real Home callback failure/retry
+  test pass; related room/staff/editor tests pass. Production build passed.
+- Browser verification complete (see final evidence below). Initial fixture's unrelated quest rewards
+  polluted reload comparison; fixed to pending MQ-003. Generic label selection
+  hit an underlying control beneath the masked detail view; use the observed
+  directive position instead. One headed run navigated externally and is excluded.
+  Final isolated headless verification passed.
+
+- Final headless/reduced-motion run:27 checks, zero errors/failures across tray and
+  picker pointer paths, old-rate payout, storage retry and reload. Capture evidence:
+  output/playwright/room-staff-settlement/reduced-headless/. Source/build/harness
+  hashes match; failure and success PNGs inspected. Normal motion not tested.
+- Full npm test -- --maxWorkers=2 passed143files/3257tests (102.25s); build passed.
+  Logs preserved in the same parent output directory. Standard client Home state
+  verified; black canvas export excluded in favor of actual page screenshots.
+- Graphify AST refreshed after final script edits (four known parser warnings).
+  Syntax/diff checks pass. Owned preview stopped. Next: ordinary placement/removal
+  and room building/upgrades that change operating rates, then other rate modifiers.
+
+
+## 2026-09-28 — Room operating income boundaries
+
+- Continued the documented room slice: all guardian placement/removal and room
+  design/building conversion/upgrades settle old-state income before mutation.
+  Explicit timestamps reach all callers; recommended batch loadout uses one clock.
+  Upgrade affordability is checked before payout; prices and rates are unchanged.
+- Added storage-failure handling to detail design/upgrade callbacks so successful
+  effects do not follow a failed save. Existing tray save guard is reused.
+- Found an undesigned-room upgrade action during browser QA; blocked it in both
+  UI and transaction validation. New10 data tests; original income8 had7 red tests,
+  and the undesigned Lv.1 upgrade was also reproduced red. Updated two existing
+  upgrade fixtures to represent built rooms without relaxing assertions.
+- Focused6 files/74 tests and full144 files/3267 tests pass; build passes with the
+  existing Phaser chunk advisory. Final browser54 checks/errors0 covers real
+  assignment/removal/build/upgrade inputs, failed-save invariants, single retry
+  write, old-rate payout, reload preservation, and no undesigned upgrade action.
+- Final evidence: output/playwright/room-income-settlement/verified/ and parent
+  logs. The final/ directory is intermediate before the undesigned upgrade guard,
+  excluded from final proof. Inspected build failure/success and upgrade success
+  PNGs; all7 recorded hashes match. Standard client Home state checked; its black
+  export was inspected/excluded. Reduced-motion/headless only, synthetic clock
+  and storage faults. Native and ordinary motion remain unverified here.
+- Graphify AST update complete (existing4 parser warnings); syntax/diff pass.
+  Owned preview stopped. User saves untouched; no commit/push/deploy.
+- Product priority recommendation given to user: close core progress/save/reward
+  defects, inspect Home→placement→growth→combat as a playable flow, then finalize
+  screen design before adding more content. No redesign has been applied here.
+
+## 2026-09-28 — User-requested commit/push checkpoint
+
+- User explicitly requested committing and pushing the accumulated work.
+- On main: progression/save 1704005, combat/equipment cbd50f2, idle economy/rooms
+  539e2f5, repository graphify conventions ebe568d. Shared room transaction hunks
+  were split in the index without replacing working files.
+- Rechecked the combined code:144 files/3267 tests pass (28.73s), production build
+  passes with existing Phaser chunk advisory. Validation logs remain in
+  /tmp/dungeon-precommit-tests.log and /tmp/dungeon-precommit-build.log.
+- Documentation and the section2 QA harness are included in the following record
+  commit. Personal .codex/hooks.json and ignored browser artifacts remain local.
+- No Git remote is configured. Requested the destination URL; push pending.

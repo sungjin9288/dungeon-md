@@ -1445,6 +1445,15 @@ physical-device accessibility/text scaling, Android/iOS packaging, and store rel
 
 # Ancestral Wisdom Chamber Design Contract
 
+### 2026-09-22 선조의 지혜 효용 보완
+
+슬롯 상한 초과분은 1칸당 던전 최대 HP +20으로 적용한다. 이 노드의 표시 권위는
+`getAncestorsWisdomEffect`이며, 실제 DM 레벨 기준 슬롯/HP를 현재·다음 효과에 함께
+표시한다. 다음 효과와 비용은 별도 줄에 배치한다. 확인 dialog는 효과도 snapshot에
+포함해 DM 성장으로 내용이 달라진 거래를 거절한다. 기존 배치·보드·비용·저장 형식은
+유지한다. 아래 W0~W5는 당시 기록이며 최신 구현·검증은 결함 스윕 인계 §14를 따른다.
+
+
 > Scope: `AncestralWisdomScene` at the 390×844 logical canvas. The twelve
 > branch definitions, five-tier ceiling, tier costs, effect formulas, upgrade
 > transaction, computed bonuses, save schema, and previous-scene return remain
@@ -2378,3 +2387,20 @@ live 70ms shared-button press tween for rapid and cross-input checks.
 
 Unverified by this web-only slice: whole-app 360×800 and 430×932 regression,
 physical-device accessibility/text scaling, Android/iOS packaging, and store release.
+
+
+## Defect sweep presentation follow-up — 2026-09-21
+
+사용자 요청 `CODEX_HANDOFF_DEFECT_SWEEP.md` §2 범위의 변경이다. 생산 구역의 레일,
+시설 타일, 현재/다음 단계는 실제 수령과 같은 근무·장식·명성 배수를 반영한다.
+방치 보상은 보물고를 포함한 총 골드/분을 표시한다. 레벨업 모달은 지혜를 포함한
+정산 전후 슬롯을 표시하고, 천계의 혈통은 지급을 유지한 채 스테이지 클리어로
+설명을 정정한다. 침입 권장 DEF는 실제 스폰 HP에서 파생하며 전체 전력 공식의
+재정의(§3-3)는 포함하지 않는다. 스킨 전체 수집은 현재 카탈로그 크기를 따른다.
+
+`WEB_AUDIT_HEADLESS=1 node scripts/verify-defect-sweep.mjs`: 390×844의 7개 경우 통과,
+해당 화면의 viewport overflow 및 console/runtime errors 0. 생산/방치/슬롯/후반 DEF
+PNG를 직접 확인했다. 근거는 `output/playwright/defect-sweep/audit.json`의 source/PNG
+SHA-256 및 같은 폴더의 캡처다. 무효화 검사, 경제 영향, 전체 테스트/빌드 결과와
+범위 제한은 `CODEX_HANDOFF_DEFECT_SWEEP.md` §8을 따른다. 과거 surface evidence와
+네이티브·운영·organic 검증을 이번 결과로 대체하지 않는다.

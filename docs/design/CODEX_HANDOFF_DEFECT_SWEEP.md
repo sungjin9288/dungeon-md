@@ -87,7 +87,10 @@ WEB_AUDIT_HEADLESS=1 node scripts/verify-modal-states.mjs         # 모달/터�
 
 ---
 
-## 2. 남은 결함 (수정 대상, 심각도 순)
+## 2. 후속 결함 — 2026-09-21 로컬 수정·검증 완료 (원래 심각도 순)
+
+> **현재 상태:** 2-1~2-7 수정·검증 완료. 재계산, 사용자 결정, 검증·반증과 남은 범위는 §8 참조.
+> 아래 항목은 수정 전 원인 기록이다. §3-1은 후속 승인·구현 완료(§10), §3-2는 12건 구현 완료(§11·§12), §3-3은 방 전력 성장 곡선 수정 완료(§13), §3-4는 초과 슬롯 HP 전환으로 수정 완료(§14)다.
 
 전부 2차 심사에서 **REAL_DEFECT · MAJOR · confidence high**로 확정된 건이다. 다만
 §1.1대로 **착수 전 직접 재확인**한다.
@@ -159,12 +162,16 @@ WEB_AUDIT_HEADLESS=1 node scripts/verify-modal-states.mjs         # 모달/터�
 
 ---
 
-## 3. 설계 판단이 필요해 보류한 것 (사용자 결정 먼저)
+## 3. 설계 판단 항목 (3-1~3-4 구현 완료)
 
-**임의로 진행하지 말 것.** 넷 다 "명백히 이상하지만 고치는 방법이 여러 갈래이고
-각 갈래의 대가가 다른" 경우다.
+**2026-09-22 위임 갱신:** 사용자가 §3의 사전 결정 조건을 너무 엄격하게 적용하지
+말고 개발을 이어가도록 요청했다. 기존 방향 안의 세부 수치·범위·검증은 담당자가
+판단해 진행한다. 진행 구조·보상 경제 등 중요한 방향 변경만 사용자 판단을 구한다.
+아래 원인 기록은 유지하며 완료 계약은 §10~§12를 따른다.
 
 ### 3-1. 종족 시너지 `spdMult`가 한 필드에 세 의미를 담고 있다
+
+> 2026-09-22 설명 기준 분리·구현을 사용자 승인 후 완료했다. 아래는 원인 기록이며 최신 계약·검증은 §10 참조.
 
 `src/data/synergy.ts`. 설명을 보면:
 
@@ -185,9 +192,36 @@ WEB_AUDIT_HEADLESS=1 node scripts/verify-modal-states.mjs         # 모달/터�
 
 `9bdf4b8`에서 청사진 광고 네임스페이스를 삭제해 **없는 효과를 광고하는 것은 멈췄다.**
 남은 질문은 이 12종을 구현할지다: 피해 감소 · 보스 추가 피해 · 성스러운 피해 · 광역 ·
-인접 ATK · 천상 ATK · 공속 · 마법 부스트 등. 새 전투 메커니즘 12개라 별도 기능 단위다.
+인접 ATK · 천상 ATK · 공속 · 마법 부스트 등. 별도 기능 단위다.
+
+**2026-09-22 사전 대조 (구현 결정 대기):** `9bdf4b8` 직전 청사진의 삭제된
+`stats`와 현재 `EQUIPMENT_STATS`를 대조했다. 기존 기록의 “12종”은 정확히는
+**11개 장비에 걸친 누락 12건 / 효과 유형 8가지**다.
+
+| 효과 유형 | 누락 건수 | 과거 데이터 |
+|---|---:|---|
+| 방 피해 감소 | 4 | 영혼 법의 15%, 신성 방패 25%, 광석 흉갑 10%, 심연 갑옷 30% |
+| 보스 추가 피해 | 2 | 용아검 25%, 보스 부적 40% |
+| 기본공격 속도 | 1 | 월석 목걸이 +20% |
+| 주기 광역 공격 | 1 | 천상의 검 매 5번째 공격; 피해량·면역·추가 발동 규칙 미정 |
+| 인접 방 ATK | 1 | 수호자의 왕관 +25%; 인접·중첩 범위 미정 |
+| 성스러운 피해 | 1 | 천상의 창 +20%; 피해 속성과 면역 관계 미정 |
+| 천상족 ATK | 1 | 신성 방패 +20%; 착용자/주변/전체 범위 미정 |
+| 마법 강화 | 1 | 마법 핵심 `magicBoost: 1`; 배율인지 기능 플래그인지 근거 없음 |
+
+**사용자에게 제시한 권고 범위:** 우선 앞의 3유형·7건을 구현한다. 피해 감소는
+장착 방에 적용하고 같은 방의 최대값만 사용하며 코어는 제외한다. 보스 피해는
+장착자의 기본공격에 적용하고 미니·주간 보스를 포함한다. 공격속도는 장착자의
+기본공격 간격을 1.2로 나누며 기존 시너지와 합성한다. 주/추가 슬롯, 표시·실제
+동작, 회귀·브라우저·연결 무효화 검증을 함께 다룬다. 기존 능력치·제작 비용은
+유지한다(월석 목걸이의 현재 스킬 쿨다운 -20%도 유지). 나머지 5건은 설계 확정
+전 보류한다. **이후 사용자 “전부 진행” 요청으로 앞의 7건을 구현했다. 나머지 5건의
+구체 규칙은 당시 선택 질문으로 제시했다. 이후 사용자의 판단 위임에 따라 5건도
+구현했다. 최신 계약·검증은 §12 참조.**
 
 ### 3-3. 전력 지표의 방 레벨 항이 선형인데 전투는 지수다
+
+> 2026-09-22 비교 전력 의미를 유지하고 레벨 성장 곡선을 수정했다. 아래는 원인 기록이며 최신 계약·검증은 §13 참조.
 
 `src/data/dungeonMetrics.ts`의 `levelBonus = (roomBasePower + typeBonus) × (roomLevel−1) × 0.1`
 vs 전투의 `1.4^(level−1)`. Lv5에서 표시 +40% / 실제 +284%.
@@ -200,6 +234,8 @@ vs 전투의 `1.4^(level−1)`. Lv5에서 표시 +40% / 실제 +284%.
 고정한다. 전력이 *피해 예측치*냐 *준비도 휴리스틱*이냐의 결정이 먼저다.
 
 ### 3-4. 선조의 지혜(145 크리스탈)가 DM8부터 영구히 0슬롯
+
+> 2026-09-22 초과 슬롯을 HP로 전환해 효용을 보완했다. 아래는 원인 기록이며 최신 계약·검증은 §14 참조.
 
 측정: DM5에서 티어1/3/5가 +1/+3/+3, DM7에서 +1/+1/+1, **DM8부터 전부 0**. 그리고
 `startPrestige`가 `stageProgress`·`dungeonSlots`는 리셋하지만 **`dmLevel`은 리셋하지
@@ -234,7 +270,10 @@ tier-2 pairs, four tier-3 triples"* 로 **티어 N = N종**을 고정하고, 콤
 
 ---
 
-## 5. 미완 검증 하나
+## 5. 무한 코어 사망 검증 — 2026-09-22 완료
+
+**현재 상태:** 아래 미검증 경로를 후속 실행했고 네 어서션 모두 통과했다.
+실행 조건·보정 3회·근거는 §9에 기록했다. 아래는 최초 인계 시점의 배경과 재현 명령이다.
 
 `scripts/verify-endless-endurance.mjs`의 **코어 사망 경로 어서션 4건이 아직 실행된 적이
 없다**: 결과 씬 개방 / `endlessResult` 레지스트리 존재 / 결과 웨이브 == 실제 주행 웨이브 /
@@ -288,3 +327,921 @@ edb916b fix: 웨이브 이벤트가 자기 웨이브에 도달 못 함 (13종 �
 
 기준: tsc 통과 · vitest **3,031 pass** · `npm run build` 통과 · 워크트리 깨끗 ·
 `main`과 `dungeon-phaser-p2` 동일 커밋.
+
+## 8. §2 후속 수정 기록 — 2026-09-21
+
+작업 기준: `main@6e4e905`의 current worktree. 기존 `.gitignore`, `AGENTS.md`,
+`.claudeignore`, `.codex/` 변경을 보존했다. 아래 결과는 로컬 수정·검증이며
+commit/stage/push/배포는 하지 않았다. §3 네 항목과 §4 기각 건은 변경하지 않았다.
+
+### 재확인과 구현
+
+| 항목 | 확인한 원인과 최종 변경 |
+|---|---|
+| 2-1 | 손익분기 DM 44.444 / 21.296 / 17.593 / 11.718을 재계산했다. DM30·지혜5·풍요3·심연3·명성10에서 잃던 운영 골드 1,012.0275/h, 보물고 추가 이득 675.625/h, 순손실 336.4025/h. 재료 4종도 적성·Lv5·생산 +15%의 추가분을 `MERCHANT_BUYS`로 환산하면 각각 34.5골드/h. 구조 수정으로 **근무자도 수호자 운영 수익을 유지**하고 같은 DM·지혜·장식·명성 배수를 받는다. 시설 산출/가격/상한, 방어·근무 배타성은 유지한다. 정상 건설된 시설의 근무자만 세며 방·시설 간 중복도 더하지 않는다. |
+| 2-2·2-3 | `facilityIncomeRatePerHour`가 근무·생산 장식·골드 전용 명성 배수를 적용한다. 지급과 생산 화면의 레일/타일/현재/다음 단계가 이 계산을 공유한다. 방치 `ratePerMin`은 운영+보물고 총 골드이며 패널도 `총 … 황금/분`으로 표시한다. 지급은 수입원별 최종 내림, 재료는 종류별 내림이다. |
+| 2-4 | 실제 결함 위치는 `HomeResultOverlays.ts`. 이미 `HomeLifecycle`에 있는 **정산 전후** `BattleReturnGrowthContext`를 전달한다. 지혜 포함 9슬롯 캡과 다중 레벨업을 반영하며 별도 슬롯 공식을 만들지 않았다. |
+| 2-5 | 사용자 결정: **지급 유지·라벨 수정**. 천계의 혈통 총 가격 200 / 최대 +5는 기본 배수에서 40회 클리어 회수; 결정 공명 120 / 기본 보상 +5는 24회다. 웨이브 지급 변경의 경제 확대를 피하고 지혜 노드·전투 토스트를 스테이지 클리어로 정정했다. `crystalPerWave` 필드명은 호환성을 위해 유지하고 주석을 바로잡았다. |
+| 2-6 | 미등재 점수는 문서의 0이 아니라 **24 fallback**이었다. 그래도 천상 기사 5체의 표시 66이 방패기사 5체 77보다 낮아 역전이 재현됐다. 점수표를 제거하고 `buildStoryInvasionTarget`의 실제 스폰 HP에서 파생한다. 첫 농민병 기준 14점과 기존 웨이브 가중/0.55 배율을 유지한다. 마지막 `INV-009`는 957 → 12,223. 전체 방어력 공식이나 §3-3 성장 점수는 변경하지 않았다. |
+| 2-7 | `skin_all` 목표와 설명을 `SKIN_DATA.length`(현재 17)에서 파생했다. 이미 해금된 업적은 다시 지급하지 않는 기존 규칙을 유지한다. |
+
+**정수 처리 영향:** 보물고는 예전의 `floor(floor(생산량) × 명성)` 대신 모든 배수를
+적용한 뒤 한 번 내린다. 따라서 명성 10티어에서는 이전보다 수령당 최대 3골드가
+늘 수 있다. 총 분당 원시 수치 × 인정 시간과 지급 총액의 차이는 두 수입원의
+내림 때문에 2골드 미만이다. 화면은 분당 한 자리 소수로 반올림한다.
+
+### 검증과 반증
+
+- `npx tsc --noEmit`: 통과.
+- `npx vitest run`: **127 파일 / 3,065 테스트 통과**.
+- `npm run build`: 통과. 기존 Vite 500kB chunk advisory는 남아 있다.
+- `git diff --check`: 통과.
+- `WEB_AUDIT_HEADLESS=1 node scripts/verify-defect-sweep.mjs`: 생산 현재/다음 단계,
+  방치 총액/분당, 슬롯 캡·부분 해금·다중 레벨업, 후반 침입 권장 DEF, 지혜 토스트를
+  **7개 경우 모두 통과**. fresh browser save와 390×844 화면으로 확인했다.
+  생산/방치/슬롯/후반 DEF 캡처를 직접 검수했다.
+- 브라우저 근거: `output/playwright/defect-sweep/audit.json` 및 같은 폴더의 PNG,
+  `checks.json`과 typecheck/vitest/build 로그. JSON에 소스/캡처 SHA-256 기록.
+- **수정 무효화 검사:** 자기 변경만 임시 변경 후 `finally`에서 원문 복원했다.
+  §2-1 20건, §2-2 1건, §2-3 수령 계산 2건, §2-5 노드 1건, §2-6 10건,
+  §2-7 1건의 assertion 실패를 확인했다. 브라우저에서도 §2-3의 예전 씬 배선,
+  §2-4의 DM-only 슬롯 공식(캡/다중 레벨업), §2-5의 예전 토스트를 되살린 네 경우
+  모두 assertion이 실패했다. 근거: `output/playwright/defect-sweep-mutations/`.
+- 하니스 초기 실패는 레벨업 오버레이의 생성/등장 전에 클릭한 것이었다. 실제 생성과
+  표시 완료를 기다리도록 수정했다. 소스 무효화 중에는 다른 브라우저 하니스를
+  병행하지 않았으며, 최종 통과는 복원된 소스에서 확인했다.
+- `graphify` 실행 파일 부재로 query/update는 검증 불가. 코드·Git 이력으로 조사했다.
+
+**남은 범위:** §3은 사용자 결정 전 미착수. §5 무한 코어 사망 organic 장기 주행은
+이번 §2 요청 범위 밖으로 미실행이며 기존 미검증 상태를 유지한다. 권장 DEF는 실제
+웨이브 HP에 근거한 준비도 휴리스틱이며 organic 승률이나 §3-3 전력 정의 검증을
+대체하지 않는다. 네이티브·운영 저장 데이터·외부 배포는 이번 검증에 포함하지 않았다.
+
+
+## 9. §5 코어 사망 경로 후속 검증 — 2026-09-22
+
+사용자의 다음 스텝 진행 요청에 따라 §5를 단독 실행했다. §3 설계 4건은 사용자
+결정 전 미착수 상태를 유지한다. 이번 후속에서 게임 런타임은 변경하지 않았으며,
+장기 실행을 관찰할 수 있도록 `verify-endless-endurance.mjs`에 진행 로그만 추가했다.
+§8의 §5 미실행 표기는 2026-09-21 당시 상태이며, 이 기록이 최신 검증 결과다.
+
+```bash
+ENDLESS_WAVE_CAP=40 ENDLESS_BUDGET=220 WEB_AUDIT_HEADLESS=1 \
+  node scripts/verify-endless-endurance.mjs
+```
+
+- `main@6e4e905` 위 §2 수정이 있는 worktree에서 실행. 소요 **1,595.1초(26분 35초)**,
+  exit 0, `runs: 1`, `hardFailures: 0`. 브라우저 console/runtime 오류 없음.
+- 기존 9개 Lv5 방·Lv40 수호자·DM40 fixture와 최고 기록 0에서 시작했다.
+  강제 지정 없이 `golden` 변수가 선택됐다(HP ×1.2, 개체 수 ×1.1, 속도 ×1.05,
+  보상 ×1.8). **17웨이브에서 코어 HP 0/1,500**, 해당 웨이브 70/220 slices로 종료했다.
+- 사망 경로 네 어서션 모두 실행·통과: `EndlessResultScene` 개방,
+  `endlessResult` 존재, 결과 웨이브와 주행 웨이브 **17 일치**, `isNewRecord: true`
+  (`previousBest: 0`). 결과는 114처치·19,304골드·3결정이다.
+- 1·5·12웨이브 probe의 개체 수 6·7·8이 예상과 일치했고 스케일 불일치나
+  baseline 하락은 없었다. 결과 PNG를 직접 열어 17웨이브·신기록·보상 표시를 확인했다.
+- **검증 한계:** 2·4·6웨이브에서 빈 스폰 큐/생존 적 0인데 웨이브가 닫히지 않아
+  기존 하니스의 `checkWaveEnd` 호출 및 종료 보정이 총 3회 적용됐다. 7~17웨이브에는
+  이 보정이 없었다. 따라서 완전 무개입 플레이나 모든 변수의 밸런스 검증으로
+  일반화하지 않는다. 결과 웨이브와 결과 레지스트리를 직접 주입하지는 않았다.
+- `node --check scripts/verify-endless-endurance.mjs`: 통과.
+  `npm test`: **127 파일 / 3,065 테스트 통과**. 이번 후속은 런타임 변경이 없어
+  build는 재실행하지 않았다(§8의 통과 결과 유지).
+- 감사 데이터의 6개 소스 SHA-256을 현재 파일과 대조해 모두 일치함을 확인했다.
+
+근거:
+
+- `tools/endless-endurance-audit.json`
+  (SHA-256 `3fb174f0570a3f9e28e7b6d73e21af0b43102ccccb2aef1a226bc7a7c02f73fa`).
+- `tools/screenshots/endless-endurance.png`: 실제 결과 화면.
+- `output/playwright/endless-endurance-followup/`: `run.log`, `exit.json`,
+  `death-path-verification.json`, `vitest.log`. 기존 감사 파일과 PNG는
+  `before-endless-endurance-audit.json`, `before-endless-endurance.png`로 보존했다.
+
+모두 로컬 검증이다. 기존 dirty 변경은 보존했으며 stage/commit/push/배포는 하지 않았다.
+
+
+## 10. §3-1 시너지 속도 의미 분리 — 2026-09-22
+
+사용자가 설명 기준 분리·구현 권고에 대해 “좋아 이어서 개발 작업 진행하자”로
+진행을 승인했다. §3-1만 구현했으며 §3-2 장비 효과, §3-3 전력 정의,
+§3-4 선조의 지혜는 별도 결정 전 미착수다. 이전 §8·§9의 §3 미착수 기록은 당시 상태다.
+
+### 적용 계약
+
+- 구미호 4체·해신 4체: `invaderMoveMult` 0.90 / 0.85. 침략자 스폰 정의의
+  이동 속도에 웨이브·일일 변수와 곱한 뒤 기존 규칙대로 정수 반올림한다.
+  동시에 활성화되면 ×0.765이며, 보스·추가 소환도 같은 spawn 경로를 사용한다.
+  일시적인 상태이상 타이머가 아니라 기본 이동 속도에 적용하는 보너스다.
+- 탈 4체: `guardianAttackSpeedMult` 1.15. 전원 기본공격 간격을 1.15로 나눈다.
+- 달빛 2/4체: `guardianCooldownMult` 0.90 / 0.80. 전원 기본공격 간격과
+  액티브 스킬 재사용 시간을 10% / 20% 줄인다. 탈과 달빛 4체가 함께 활성화되면
+  기본공격 간격은 `기존 간격 × 0.8 ÷ 1.15`다. 적 둔화는 이 계산에 섞이지 않는다.
+- 기본공격은 주 슬롯·추가 슬롯 양쪽에 적용한다. 액티브는 방 팝업·HUD 타기팅
+  양쪽에 장비 `skillCdMult`와 함께 적용한다. 기존 전투 배속 계산은 유지한다.
+  팝업 준비 시간, HUD ready-at/진행 링, 방 공격 링은 실제 적용 간격을 사용한다.
+- 최고 티어 하나만 적용하는 기존 규칙을 유지한다. 따라서 6/8체에 명시되지 않은
+  하위 속도 효과를 누적하지 않는다. 수호자 없는 방·함정의 공격 간격과 주기형
+  패시브 타이머는 변경하지 않았다. 시너지 설명에 적용 대상을 명시하고 긴 설명은
+  모바일 화면 안에서 줄바꿈하도록 했다.
+- 정적 시너지 카탈로그와 전투 계산 변경이다. 저장 데이터 migration이나 가격 변경은 없다.
+
+### 검증
+
+- `npx tsc --noEmit`: 통과.
+- `npx vitest run src/data/synergy.test.ts src/combat/roomMechanics.test.ts src/combat/spawnPipeline.test.ts`:
+  **3 파일 / 131 테스트 통과**. 독립 축 합성, 9부족 36티어 선택, 추가 슬롯 타이밍,
+  주간 보스 HP 계약과 이동 속도 합성을 검증했다.
+- `npm test`: **127 파일 / 3,111 테스트 통과**.
+- `npm run build`: 통과. 기존 500kB 초과 chunk advisory는 남아 있다.
+- `WEB_AUDIT_HEADLESS=1 node scripts/verify-synergy-timing.mjs`: **7개 live Phaser fixture 통과**.
+  무시너지, 구미호+달빛, 해신, 탈+달빛, 달빛 2체, 구미호+해신, 달빛 6체를 확인했다.
+  실제 spawn adapter와 이동 tween 시간, 공격 직전/직후 경계, 추가 슬롯, 빈 방 제외,
+  씬이 전달하는 공격 링 간격, 1/3배속 스킬 팝업·HUD 입력 경로와 실제 쿨다운을 검사했다.
+  툴팁 화면 경계도 검사했으며 무시너지·구미호+달빛 캡처를 직접 검수했다.
+- 예시: 궁수 기본 간격 1,333ms → 탈+달빛에서 약 927.304ms. 강타 기본 8초에
+  장비 ×0.75와 달빛 ×0.8 적용 시 1배속 4.8초 / 3배속 1.6초로 두 사용 경로와 HUD가 일치했다.
+- **연결 무효화 검사:** `SynergyManager`의 이동·공격 간격·스킬 쿨다운 getter를
+  각각 일시적으로 중립값 1로 바꿨다. 실제 이동 55≠47, 공격 경계 미발생,
+  스킬 6,000≠5,400ms로 해당 브라우저 검사가 각각 실패했다. 매회 원문 복원 후
+  최종 13개 소스 SHA-256이 정상 통과 audit과 모두 일치함을 확인했다.
+- `git diff --check` 및 하니스 `node --check`: 통과.
+- `graphify` 실행 파일 부재로 update는 검증 불가. 전역 설치는 하지 않았다.
+
+근거: `scripts/verify-synergy-timing.mjs`,
+`output/playwright/synergy-timing/`의 `audit.json`, `checks.json`, `run.log`, PNG,
+`vitest.log`, `build.log`; 실패 탐지·복원 근거는
+`output/playwright/synergy-timing-mutations/checks.json`과 각 하위 폴더의 audit/log다.
+
+**범위와 한계:** 전투 배선·타이밍·표시의 로컬 회귀 검증이다. 미적용이던 보너스가
+활성화되므로 해당 편성의 전투력과 스킬 사용 빈도가 높아진다. 캠페인 전체 승률·경제
+재조정이나 native 검증은 하지 않았다. §5 장기 주행은 이번 시너지 변경 전의 근거이며
+새 버전의 장기 밸런스 검증으로 재사용하지 않는다. 기존 dirty 변경을 보존했고
+stage/commit/push/배포는 하지 않았다.
+
+
+## 11. 장비 누락 효과 — 2026-09-22, 첫 7/12 구현 시점 기록
+
+> 당시 범위·검증을 보존한 기록이다. 잔여 5건은 후속 구현했으며 최신 상태는 §12를 따른다.
+
+### 범위와 결정
+
+사용자의 “좋아 이어서 전부 진행해보자”를 §3-2 장비 12건 진행 요청으로 해석했다.
+이미 제시한 7건의 수치·범위는 구현했다. 과거 데이터만으로 결정할 수 없는 나머지
+5건은 최초의 “§3은 사용자 결정 없이 착수하지 않는다” 조건에 따라 구체안을 제시한
+상태다. **§3-2 전체 완료가 아니며 §3-3 전력 정의·§3-4 슬롯 설계는 미착수다.**
+
+### 구현 계약
+
+- 영혼 법의/신성 방패/광석 흉갑/심연 갑옷은 현재 장착자가 있는 방의 피해를
+  15/25/10/30% 줄인다. 주·추가 슬롯 중 최대값만 사용한다. 구조 HP 피해는
+  소수점을 유지하며 돌파·반사로 인한 영속 슬롯 내구도는 감소 적용 후 한 번 ceil한다.
+  코어 HP는 보호하지 않는다. 전투 배치에서 제외되거나 교체된 장착자의 기존 방에
+  효과가 남지 않도록 현재 배치 IDs를 읽는다. 저장된 원래 배치는 바꾸지 않는다.
+- 심판·삼신 독 홍수는 공통 `Room.damageRoomHp`로 전달한다. 구조 HP의 데이터와
+  표시를 함께 갱신하며 회복도 동일하게 동기화한다. 영속 내구도와 전투 구조 HP는
+  기존 별도 체계를 유지한다.
+- 용아검/보스 부적은 장착자의 기본공격에 보스·미니보스 피해 +25/+40%를 준다.
+  주간 보스의 기존 isBoss 플래그도 포함한다. 기본공격 대체인 유령 화살·회오리는
+  각 피격 대상별로 적용해 같은 광역의 일반 적에게 보스 보너스가 번지지 않는다.
+  별도 액티브·주기 패시브·연쇄 추가타에는 새 보스 보너스를 붙이지 않는다.
+- 월석 목걸이는 기본공격 간격을 1.2로 나눈다. 기존 스킬 쿨다운 -20%는 유지한다.
+  주·추가 슬롯 및 공격 링에 적용하며 기존 시너지·배속 계산과 합성한다.
+- 추가 슬롯에서 기존 장비 ATK가 빠지던 경로도 연결했다. 장비 ID/비용/기존 수치는
+  유지한다. 전력·제작 추천 점수의 재정의(§3-3)는 포함하지 않는다.
+- 제작 확인·보관함·막사 상세는 현재 `getEquipmentStats`를 공통 라벨로 표시한다.
+  과거 제작 snapshot에도 신규 효과가 표시되며 저장 migration은 필요하지 않다.
+  칩 폭은 실제 텍스트 너비로 계산한다.
+- 독립 코드 검토에서 수호자 교체가 `monsterSlot`만 바꾸고 `monsterSlots[0]`을
+  남기는 문제를 확인했다. 양쪽 첫 슬롯을 동기화하고 추가 슬롯을 보존했다.
+
+### 잔여 5건 — 제안만, 런타임 미구현
+
+한 번의 선택 질문으로 다음 안을 제시했다. 응답 전 구현하지 않는다.
+
+1. 천상의 검: 기본공격 5회마다 살아 있는 적 전체에 해당 기본 피해 50% 추가;
+   재발동/상태이상 없이 기존 면역 적용.
+2. 수호자의 왕관: 상하좌우 인접 방 수호자 ATK +25%; 같은 효과 중첩 없음.
+3. 천상의 창: 기본공격에 마법 속성 추가 피해 +20%; 기존 마법 면역 적용.
+4. 신성 방패: 배치된 천상족 전체 ATK +20%; 같은 효과 중첩 없음.
+5. 마법 핵심: 마법형 수호자 기본공격 피해 +20%로 명확화.
+   과거 `magicBoost: 1`을 근거 없이 +100%로 해석하지 않는다.
+
+### 검증 근거
+
+- `npx tsc --noEmit`: 통과. 이후 최종 `npm run build`의 tsc도 통과.
+- `npx vitest run`: **130 파일 / 3,137 테스트 통과**.
+- `npm run build`: 통과. 기존 500kB chunk advisory 유지.
+- `WEB_AUDIT_HEADLESS=1 node scripts/verify-equipment-effects.mjs`:
+  **52 검사 통과**, browser errors 0. 실제 저장→장비 map, 주/추가 슬롯 보스 피해,
+  1/3배속 기본공격 경계·링, 유령 화살/회오리의 대상별 보너스, 방어구 4종,
+  중첩·회복·심판 HP, 영속 내구도, 배치 제외, 코어 제외, 교체 후 효과 이동,
+  제작 확인·과거 보관함·막사 설명을 검증했다. 공방 4개 캡처를 직접 확인했다.
+- 최종 audit의 **21개 소스 SHA-256 일치**, 연결 무효화 5건 탐지·복원.
+- `git diff --check`, `node --check scripts/verify-equipment-effects.mjs`: 통과.
+
+실행 결과는 `output/playwright/equipment-effects/`의 audit, run/build/vitest 로그와
+PNG에 저장한다. `scripts/verify-equipment-effects.mjs`는 고립된 저장 상태와 실제
+Phaser scene/adapters를 사용한다. 캠페인 승률·경제 밸런스·native 검증이 아니다.
+
+연결 무효화는 `output/playwright/equipment-mutations/mutate.py`로 보스 기본공격,
+주 슬롯 공속, 방 구조 피해 감소, 추가 슬롯 장비 map, 교체 첫 슬롯 동기화 5곳을
+각각 제거했다. 모두 실제 브라우저 assertion 실패를 탐지했고 원문을 복원했다.
+각 실패·원문 SHA-256은 같은 폴더 `checks.json`과 하위 audit/log에 기록했다.
+초기 하니스의 Math.random 고정은 Phaser texture UUID를 중복시켰으므로 제거했다.
+이것은 하니스 오류이며 제품 코드의 난수/renderer를 변경하지 않았다.
+
+기존 dirty 변경을 보존했다. Git stage/commit/push 및 배포는 수행하지 않았다.
+`graphify` 실행 파일이 없어 graph update는 실행하지 못했다.
+
+
+## 12. 장비 누락 효과 12/12 구현 — 2026-09-22 후속
+
+### 위임과 구현 계약
+
+사용자가 “§3은 사용자 결정 없이 착수하지 않는다 이 조건을 너무 타이트하게
+보지는 말자”라고 요청했다. 앞서 제시한 5건의 세부 규칙을 담당자가 확정해 구현했다.
+§3-2의 11개 장비에 걸친 누락 효과 12건을 모두 연결했다. 비용·장비 ID·기존 기본
+능력치와 저장 형식은 유지하며 신규 효과도 과거 제작 snapshot 대신 현재 정의를 읽는다.
+
+| 장비 | 확정한 동작 |
+|---|---|
+| 천상의 검 | 피해를 주는 기본공격 매 5회마다 살아 있는 적 전체에 기본 피해 50% 추가. 카운터는 착용자별이며 교체 시 유지, 웨이브 시작 시 초기화한다. |
+| 수호자의 왕관 | 상하좌우 인접 방 수호자 ATK +25%. 자기 방·대각선 제외, 같은 효과는 최대값만 적용한다. |
+| 천상의 창 | 기본공격에 마법 속성 추가 피해 +20%. 마법 면역을 적용한다. |
+| 신성 방패 | 살아 있는 배치 방의 장착자가 천상족 수호자 전체에 ATK +20%. 같은 효과는 최대값만 적용한다. |
+| 마법 핵심 | 마법형 수호자의 기본 피해 +20%. 모호했던 과거 magicBoost: 1을 +100%로 해석하지 않는다. |
+
+- 주·추가 슬롯 모두 적용하며 오라는 현재 배치와 방 HP를 읽는다. 다른 종류의
+  오라는 곱하고 동일 오라는 중첩하지 않는다. 파괴·교체 시 이전 방 효과가 남지 않는다.
+- 장비 추가타는 각 대상의 면역·철갑·함정 방어를 적용한다. 대상별 용의 둥지 보스
+  배율·빙결 함정 배율이 다른 적에게 번지지 않는다. 추가 상태이상·연쇄 재발동은 없다.
+- 유령 화살·회오리 같은 대체 기본공격은 1회로 세며 성스러운 추가 피해는 각 대상에
+  적용한다. 처치가 live 배열을 변경해도 다음 대상을 건너뛰지 않는다.
+- 추가 슬롯의 마법 기본공격도 영구·시간제 마법 면역을 반영한다. 천상 관통의 기존
+  기본공격 규칙과 장비 추가타의 마법 면역 규칙을 구분한다.
+- 제작 확인·완료·보관함에서 세 번째 효과가 잘리지 않도록 줄바꿈과 영역을 조정했다.
+  왕관·신성 방패 제작 확인/완료 및 보관함 캡처를 직접 확인했다.
+
+### 검증과 제한
+
+- 최종 `npx tsc --noEmit`, `npm run build`, `git diff --check`: 통과.
+  기존 500kB chunk advisory는 유지한다.
+- 관련 11파일 **125 tests 통과**. 전체 suite는 **131파일 통과·1파일 실패,
+  3,160 tests 통과·1 test 실패**였다. 이후 시간제 면역 보완은 관련 검사와 실제
+  브라우저 검사 및 최종 build로 검증했다. 전체 suite 성공으로 보고하지 않는다.
+- 실패는 변경하지 않은 `endlessWave.test.ts:683`의 마일스톤 난이도 비교다.
+  해당 실행에서 10웨이브 HP 3,313이 9웨이브 3,764보다 작았다. 장비 효과를 참조하지
+  않는 기존 생성 코드에서 seed 9로 3,342 < 3,394를 재현했다. 생성 코드·침략자
+  데이터·해당 테스트는 HEAD와 동일하다. 이 기존 난수 기반 난이도 계약 문제는
+  미해결로 남겼으며 assertion이나 생성 밸런스를 변경하지 않았다.
+- `scripts/verify-equipment-specials.mjs`: 실제 Phaser 전투 **41검사 통과**.
+  주/추가 슬롯, 면역, 중첩, 방 파괴, 대체 기본공격, 대상별 보스 배율, 웨이브 초기화 포함.
+- `scripts/verify-equipment-effects.mjs`: 기존 효과와 화면을 합쳐 **59검사 통과**.
+  두 브라우저 실행 모두 browser errors 0이며 독립 fixture를 사용했다.
+- 신규 기본공격 연결·오라·마법 강화·성스러운 피해·웨이브 카운터 초기화를 각각
+  제거한 5건 모두 assertion 실패를 탐지했다. 원문 SHA-256 복원을 확인했다.
+- audit의 모든 소스 해시를 현재 파일과 대조했다. 근거는
+  `output/playwright/equipment-specials/`의 audit·verification·전체/관련 tests·build 로그,
+  `equipment-complete/`의 audit·화면, `equipment-special-mutations/`의 반증 receipt다.
+  실제 캠페인 승률·장기 경제 밸런스·native 검증으로 일반화하지 않는다.
+
+당시 다음 순서는 §3-3 전력 지표와 성장 추천의 의미 정합성이었으며 후속 결과는 §13에 기록했다. §3-4는 진행 구조에 영향을
+주는 대안을 먼저 비교한다. 둘 다 이번 구현에는 포함하지 않았다. 기존 dirty 변경을
+보존했으며 stage/commit/push/배포는 수행하지 않았다. graphify 실행 파일이 없어
+해당 graph update는 미실행이다.
+
+
+## 13. 방 전력 성장 곡선 정합성 — 2026-09-22
+
+§3 세부 판단 위임과 후속 진행 요청에 따라 §3-3을 수정했다. 방 전력은 **배치·장비·
+방 유형·내구도를 합산한 비교 점수**로 유지한다. DPS·승률 예측으로 재정의하지 않는다.
+기존 구성요소와 가중치, 내구도 할인, 슬롯 충족률인 준비도 %, 전리품 점수는 유지하고
+레벨 계수만 선형 `1 + (level−1) × 0.1`에서 `1.4^(level−1)`로 변경했다.
+
+- `rooms.ts:getRoomLevelDamageMult`를 방 전력·주 슬롯 기본공격·추가 슬롯 기본공격·
+  기존 범위 공격이 공유한다. 유효한 Lv1~5 전투 피해는 바뀌지 않는다.
+- 같은 배치의 전력은 Lv1~5에서 43 / 60 / 84 / 118 / 165다. 이전 Lv5는 60이었다.
+  Lv4→5 강화 예상 +47은 실제 변경 후 던전 합계 차이와 일치한다.
+- 실제 배치에 대한 성장·장비 미리보기는 기존 `projectRoomReinforcement`를 통해
+  같은 계산을 사용한다. 같은 Lv1 도깨비의 Lv2 성장 기여는 Lv1 방 +1, Lv5 방 +4이며
+  같은 조건의 성장 추천에서 Lv5 방 수호자가 앞선다. 원본 저장 상태는 변경하지 않는다.
+- 이 점수의 레벨 계수는 구성요소 전체의 비교 가중치다. 개별 함정·장비 HP·경제 효과가
+  실제 전투에서 모두 같은 배율로 커진다는 뜻은 아니다. 별도 PreBattle DEF 공식,
+  수호자 ATK 합계, 시뮬레이션, 장비별 특수효과 평가를 일괄 통합하지 않았다.
+  보상·강화 비용·저장 형식·성장 추천의 행동 우선 가중치는 변경하지 않았다.
+
+검증:
+- 수정 전 새 회귀 검사에서 5건 실패로 낮게 계산되는 레벨 효과를 재현했다.
+- 관련 7파일 139 tests 통과. `npm test`: **133파일 / 3,173 tests 통과**.
+- `npm run build`: TypeScript 검사와 번들 통과. 기존 500kB chunk advisory 유지.
+- `node scripts/verify-room-power.mjs`: **16검사 통과**, browser errors 0.
+  격리 저장 fixture의 점수 합계·성장 순서·막사 전력 88→92 표시를 확인했고,
+  실제 Phaser 주/추가 슬롯의 Lv1~5 피해 20/28/39/55/77을 각각 확인했다.
+  390×844 막사 캡처를 직접 열어 추천 방 #2와 전력 표시를 검수했다.
+- `git diff --check`, `node --check scripts/verify-room-power.mjs` 통과.
+  audit 7개 소스 SHA-256 일치. 근거: `output/playwright/room-power/`.
+
+이전 §12의 무한 모드 난수 기반 마일스톤 비교 실패는 이번 실행에서는 발생하지
+않았지만 원인을 수정한 것은 아니다. 기존 재현 기록과 미해결 상태를 유지한다.
+캠페인 승률·장기 경제·native 검증은 이번 범위에 포함하지 않는다. graphify 실행
+파일이 없어 graph update는 미실행이다. 기존 dirty 변경을 보존했고 commit/push/
+배포는 하지 않았다. 당시 다음 설계 항목인 §3-4는 후속 완료했다(§14).
+
+
+## 14. 선조의 지혜 초과 슬롯 효용 — 2026-09-22
+
+후속 진행 요청과 §3 세부 판단 위임에 따라, 보드·DM 성장·프레스티지를 바꾸지 않는
+대안을 구현했다. **9칸에 들어가는 지혜 슬롯은 해금하고 초과 슬롯당 던전 최대 HP
++20을 적용한다.** 수치는 기존 강인한 성벽의 등급당 +20과 맞췄다. 기존 총 비용
+145와 등급 1~5는 그대로다. 기존 투자와 이후 투자 모두 같은 계산을 사용한다.
+
+| DM / 투자 등급 | 실제 추가 슬롯 | 전환 HP |
+|---|---:|---:|
+| DM1 / 5 | 5 | 0 |
+| DM5 / 5 | 3 | 40 |
+| DM7 / 3 | 1 | 40 |
+| DM8 이상 / 5 | 0 | 100 |
+
+`getAncestorsWisdomEffect`가 현재 DM 레벨·투자 등급에서 효과를 계산한다.
+DM 성장으로 기본 슬롯이 늘면 그만큼 투자 효과가 HP로 전환된다. 저장 필드를
+추가하거나 수정·환불·일회성 보상을 지급하지 않는다. 프레스티지는 기존대로
+DM과 지혜 투자를 유지하므로 HP 효과도 유지된다.
+
+`getWisdomBonuses.extraSlots`는 실제 추가 슬롯 수이며, 전환 HP는 강인한 성벽과
+합쳐 `dungeonMaxHpBonus`로 전달한다. 전투 초기화는 기존대로 요새 HP까지 합한 뒤
+장식 배율을 적용한다. 전투 시작 안내도 실제 슬롯·합산 HP를 표시한다.
+
+화면의 현재·다음 효과를 실제 슬롯/HP로 표시하고 비용과 다음 효과를 별도 줄로
+배치했다. 기존 무효 경고는 제거했다. 구매 확인 snapshot에 표시 효과를 포함해
+확인 중 DM이 올라 슬롯/HP 효과가 바뀌면 수정 차감 없이 재확인하게 한다.
+
+검증:
+- 관련 3파일 **110 tests 통과**: DM1/5/7/8/12/40 × 등급0~5, 부분·전체 상한,
+  기존 투자·가호 합산·저장/불러오기·프레스티지·145 비용·효과 변경 시 거래 거절.
+- `npm test`: **133파일 / 3,182 tests 통과**.
+- `npx tsc --noEmit`, `npm run build`: 통과. 기존 500kB chunk advisory 유지.
+- `node scripts/verify-wisdom-overflow.mjs`: **15검사 통과**, browser errors 0.
+  실제 화면 handler로 DM8의 5단계 구매(145→0)를 수행했고 scene 재진입,
+  혼합 슬롯/HP 표시, 확인 중 DM 변경 거절을 확인했다. 실제 전투의 최대 HP가
+  1,850→1,950으로 +100 증가했고 프레스티지 후에도 1,950이었다.
+  이 fixture는 강인한 성벽 +100·요새 +250·장식 HP 0%를 사용했다.
+- 390×844의 구매 전·혼합 효과·확인 modal·최고 등급 캡처를 직접 검수했다.
+  `git diff --check`, 하니스 syntax 검사 통과. audit 소스 SHA-256 6개 일치.
+- 초기 브라우저 하니스는 기존 250ms 거래 cooldown보다 빨리 눌러 실패했다.
+  입력 간격을 350ms로 조정했다. 빈 초기 던전에 배치 방이 있다고 가정한 대기도
+  실제 scene/grid 초기화 기준으로 수정했다. 게임 거래 보호나 배치 규칙은 바꾸지 않았다.
+
+근거는 `output/playwright/wisdom-overflow/`의 audit·tests·build·browser 로그와 PNG다.
+이번 작업은 기능·저장·화면 연결 검증이며 장기 캠페인 난이도·경제·native 검증은 아니다.
+§2와 §3 네 항목의 구현은 완료했다. 별도 미해결은 §12의 무한 모드 난수 기반
+마일스톤 HP 비교다. 이번 전체 검사에서는 통과했지만 원인을 수정한 것은 아니다.
+기존 dirty 변경 보존, stage/commit/push/배포 없음. graphify 실행 파일 부재로
+해당 graph update는 미실행이다.
+
+
+## 15. 무한 모드 마일스톤 HP 역전 수정 — 2026-09-22
+
+§12에서 확인한 난수 기반 실패를 수정했다. 원인은 일반 적의 무작위 HP 합계가
+마일스톤의 추가 적 HP보다 크게 변동하는 것이다. 테스트만 seed 고정으로 통과시키지
+않고 실제 실행에서 직전 큐 HP를 전달하도록 변경했다.
+
+- `buildEndlessSpawnQueue`는 직전 HP가 주어진 마일스톤에서 총 HP를 직전 합계의
+  **1.12배 올림 이상**으로 보충한다. 기존 웨이브 HP 성장률과 같은 12%를 사용한다.
+  부족분은 마일스톤 전용 개체 중 HP가 가장 큰 한 개체에만 더한다. 이미 충분한
+  큐와 일반 웨이브는 변경하지 않는다. 공유된 개체 정의는 복제해 이중 보충을 피한다.
+- 적 종류·수·속도·보상·등장 간격은 유지한다. HP 상승만으로 보상을 더 지급하지 않는다.
+  기존 seed 9의 직전 3,394 / 마일스톤 3,342는 보충 후 마일스톤 3,802가 된다.
+- `WaveStart` → `DungeonSceneCtx` → generator로 직전 합계를 전달하고, dispatch로
+  큐가 소모되기 전에 새 합계를 기록한다. 일반 웨이브도 기록을 갱신하며 새 실행의
+  `DungeonScene.create`에서 0으로 초기화한다. 저장 schema는 변경하지 않는다.
+- 적용 기준은 도전 변수 반영 후·웨이브 이벤트 반영 전의 **생성 큐 HP**다.
+  웨이브 이벤트, 속도, 특수 능력을 포함한 전술 난이도·DPS·승률을 보장하지 않는다.
+  직전 HP 없는 독립 generator 호출은 기존 무작위 생성과 호환된다.
+
+검증:
+- 관련 2파일 **95 tests 통과**. 재현 seed 9의 정확한 수치, 일반 웨이브 불변,
+  충분한 HP인 마일스톤 불변, 공유 개체 분리, 강한 직전 조합/약한 다음 조합 검증.
+- 기본 조건 + 도전 변수 17종 × 고정 seed 32개 × 140웨이브 = **80,640개 큐**를
+  연속 생성해 모든 마일스톤의 하한을 검사했다. 기존 비결정적 비교를 이 연속 실행
+  검사로 교체했으며 assertion은 직전 초과에서 최소 12% 증가로 강화했다.
+- `npm test`: **133파일 / 3,186 tests 통과**.
+- `npx tsc --noEmit`, `npm run build`: 통과. 기존 500kB chunk advisory 유지.
+- `node scripts/verify-endless-milestones.mjs`: **11검사 통과**, browser errors 0.
+  실제 Phaser의 직전 큐 기록/전달, 보충 합계, 실제 스폰 HP·보상, 일반 웨이브 갱신,
+  웨이브 상한 거절, 새 실행 초기화를 확인했다. 부족분 경로는 직전 HP 1,000,000을
+  주입한 격리 fixture로 1,120,000을 확인했다. organic 장기 주행 검증은 아니다.
+- 첫 하니스의 loop 정지/재시작 처리가 scene 재시작을 막아 초기화 대기가 timeout했다.
+  한 번의 동기 evaluate 안에서는 loop 정지가 필요 없으므로 이를 제거했다.
+  제품의 scene 초기화는 그대로 두고 정상 loop에서 재시작을 검증했다.
+- `git diff --check`, 하니스 syntax 검사 통과. audit 소스 SHA-256 7개 일치.
+  근거: `output/playwright/endless-milestones/`의 audit·focused/full tests·build·browser 로그.
+
+§12~§14의 간헐 실패 미해결 표시는 당시 상태이며 이 후속으로 해결했다. 앞선 §9
+endurance 결과는 그 당시 코드·fixture의 기록으로 유지한다. 이번 변경 후 organic
+장기 난이도·native 검증은 하지 않았다. 기존 dirty 변경 보존, commit/push/배포 없음.
+graphify 실행 파일 부재로 graph update는 미실행이다.
+
+
+## 16. 이전 준비 타이머의 새 웨이브 침범 수정 — 2026-09-22
+
+장기 검증을 준비하며 §9의 빈 웨이브 종료 보정을 조사했다. 기존 하니스뿐 아니라
+실제 결과 화면의 ‘다음 침입 즉시 시작’도 prepActive/prepTimer만 바꾸고 예약된
+준비 tick을 남겼다. 이 tick은 새 전투 중 `enableWaveButton`을 호출하여
+`waveHasSpawned=false`로 되돌리고 진행 중 버튼을 다시 활성화했다. 마지막 스폰 후
+초기화되면 적이 모두 사라져도 `checkWaveEnd`가 반환하여 다음 단계로 진행하지 못한다.
+
+변경:
+- `WaveLifecycle`에서 씬별 준비 타이머의 취소 함수를 관리한다. 새 웨이브 시작,
+  방어선 확인, 새 준비로 교체, 정상 완료, 씬 shutdown에서 예약 tick·링·숫자·미리보기·
+  상태 문구·shutdown listener를 정리한다. 취소된 tick은 뒤늦게 호출되어도 반환한다.
+- `WaveStart`는 웨이브 진입 가드 통과 후 준비 타이머를 취소하고 기존 전투 초기화를
+  수행한다. `enableWaveButton` 역시 타이머를 취소한다. 정상 10초 준비 규칙은 유지한다.
+- 씬 재진입 검사에서 파괴된 준비 바를 다시 사용하는 결함도 재현했다.
+  `DungeonScene.create`에서 countdownBar 참조를 초기화해 실제 표시 객체를 새로 만든다.
+- 저장 schema·보상·성장·전투 수치는 변경하지 않는다. 이전 dirty 변경은 보존했다.
+
+검증:
+- 수정 전 `scripts/verify-wave-prep.mjs`의 실제 결과 버튼 입력에서 **늦은 스폰 플래그
+  초기화 1회**, **prepTimer -1**을 확인했다. `before/`에 코드 사본·audit·화면을 보존했다.
+  확장 검사에서는 재진입한 준비 바의 scene이 유효하지 않아 실패했고 `extended-before/`에
+  기록했다. 수정 후 같은 검사는 통과한다.
+- `npx vitest run src/combat/wavePrep.test.ts src/combat/waveLifecycle.test.ts`: **7 tests 통과**.
+  정상 10초 완료·취소 후 플래그 보존·방어선 확인·준비 교체·shutdown·씬별 분리 포함.
+- 최종 `npm test`: **134파일 / 3,192 tests 통과**.
+- 최종 `npm run build`: TypeScript와 Vite 통과. 기존 500kB chunk advisory 유지.
+  초기 테스트 mock의 UI 메서드 누락과 테스트 helper의 Graphics 타입 오류는 수정했다.
+- `WAVE_PREP_OUTPUT=output/playwright/wave-prep/final-status node scripts/verify-wave-prep.mjs`:
+  **12검사 통과**, browser errors 0. 두 결과 버튼, 늦은 플래그/상태 문구 변경 방지,
+  자연 카운트다운, 준비 중 재시작, listener 정리, 유효한 바 재생성을 확인했다.
+  두 번째 웨이브는 적/큐를 비운 fixture에서 `checkWaveEnd`와 실제 Phaser clock으로
+  결과 처리되는 것을 확인했다. waveActive를 강제로 false로 바꿔 통과시키지 않았다.
+- 즉시 시작 회귀는 앱의 `advanceTime`, 나머지 타이머 경계는 실제 Phaser scene clock을
+  직접 진행했다. 완료 웨이브와 빈 전장을 주입한 **격리 fixture 검증**이다.
+  장기 연속 전투·난이도·native 검증으로 확대하지 않는다.
+- 최종 결과/다음 전투 캡처를 직접 검수했다. 표준 web-game client의 Home 상태 수집도
+  실행했으나 기존 WebGL canvas export가 검은 이미지여서 시각 근거에서 제외한다.
+  화면 근거는 Playwright page screenshot이다. audit 소스 해시 5개와 현재 파일 일치,
+  하니스 문법 검사·`git diff --check` 통과.
+
+근거: `output/playwright/wave-prep/`의 before·extended-before·final-status audit/PNG,
+focused-tests.log·tests.log·build.log·최종 browser 로그. 기존 §9 endurance receipt는
+덮어쓰지 않았다. 이번에는 재현된 진행 정지 결함을 먼저 수정했으며 수정 후 장기 주행은
+미실행이다. 과거 세 번의 종료 보정이 모두 이 원인이었다고 단정하지 않는다.
+다음 단계는 최신 런타임의 장기 전투 재실행이며, 기존 하니스에 남은 강제 종료 보정이
+발생하면 완전 무개입 통과로 해석하지 말고 원인을 재현해야 한다.
+commit/push/배포 없음. graphify 실행 파일 부재로 graph update 미실행.
+
+## 17. 최신 런타임의 무한 모드 연속 전투 검증 — 2026-09-22
+
+§16 다음 단계인 연속 전투를 완료했다. 게임 런타임의 최종 변경은 없으며 하니스와
+검증 기록만 갱신했다. fixture는 DM40·Lv40 수호자 9명·Lv5 전투실 9개(방 HP400),
+장비/함정 없음, 코어 HP1,500, `golden` 도전 변수, 실제 속도 버튼으로 선택한 3배속이다.
+한 번에 Chromium 하나만 실행했고 실제 WebGL 렌더링/앱 `advanceTime`을 사용했다.
+이 환경은 ANGLE Metal / Apple M5였으며 최종 주행 wall time은 약121초다.
+
+하니스 개선:
+- 빈 전투가 끝나지 않으면 상태를 기록하고 실패한다. 이전의 `checkWaveEnd` 재호출과
+  `waveActive=false` 강제 보정을 제거했다. 적 제거·코어 HP 변경으로 진행하지 않는다.
+- 웨이브 상한 초과 1회를 막고, wave-cap / slice budget / stalled / death를 구분한다.
+  코어 사망을 기본 필수로 하여 미완주를 성공 처리하지 않는다. 제한된 smoke만
+  `ENDLESS_REQUIRE_DEATH=0`으로 분리할 수 있으며 미완주 사실은 receipt에 남는다.
+- 매 웨이브 큐가 소모되기 전 HP 합계를 읽어 실제 기록/다음 전달을 비교하고,
+  마일스톤 하한을 검사한다. probe의 count 확인은 난수를 추가 소비하지 않는다.
+- 실제 killsThisRun과 goldEarnedThisRun을 결과 payload와 비교하고 수정 보상 산식,
+  저장된 최고 기록/영혼 수정, 결과 씬 재진입 후 중복 지급 여부를 검사한다.
+- 출력은 실행별 새 디렉터리이며 기존 receipt가 있으면 덮어쓰지 않는다.
+  소스·공유 하니스·lockfile 291개 해시를 실행 전후 대조한다.
+
+최종 실행:
+```sh
+ENDLESS_OUTPUT=output/playwright/endless-continuation/run-02 \
+ENDLESS_WAVE_CAP=40 ENDLESS_BUDGET=220 ENDLESS_MODIFIER=golden \
+WEB_AUDIT_HEADLESS=0 node scripts/verify-endless-endurance.mjs
+```
+
+- **20웨이브 코어 사망**, 51/220 slices, stalls **0**, hardFailures **0**, browser errors **0**.
+  완료된 1~19웨이브는 전투 종료 로직으로 정산됐다. 하니스는 완료 화면을 닫고 다음
+  웨이브를 시작하므로 수동 플레이 또는 입력 무개입 검증으로 표현하지 않는다.
+- 10웨이브: 직전 HP4,159 → 하한4,659 / 실제7,206.
+  20웨이브: 직전15,412 → 하한17,262 / 실제26,046. 기록·전달 모두 일치했다.
+- 1·5·12웨이브 스폰 probe: 적 수6/7/8, 개체별 HP 배율 일치.
+- 결과: **142처치 / 23,938골드 / 영혼 수정6 / 신기록20**.
+  저장된 soulCrystals=6, endlessHighScore=20. 결과 씬 CREATE 완료를 기다려 다시
+  읽었으며 동일한 지급/기록을 유지했다. 10웨이브와 결과 화면 PNG를 직접 확인했다.
+- 최초 run-01도 21웨이브 사망·stalls0·정산 검사를 통과했다. 그러나 하니스가 변수와
+  속도를 직접 바꿔 HUD의 초기 표시와 어긋났다. 고정 변수 주입 뒤 HUD 재생성,
+  실제 속도 버튼 클릭으로 하니스를 수정하고 run-02를 최종 근거로 삼았다.
+  run-01의 당시 하니스 사본·receipt는 보존하며 화면 정합성 근거로 재사용하지 않는다.
+
+실패 검출 확인:
+- cap-negative: 2웨이브 상한에서 생존 종료 → `wave-cap`, exit1, 사망 경로 미도달 검출.
+- budget-negative: 2 slices에서 종료 → `budget`, exit1, 사망 경로 미도달 검출.
+- stall-negative: WaveLifecycle의 정상 종료를 임시로 차단 → 1웨이브에서
+  `stalled`, settled=false, exit1. 보정 없이 실패했다. 이 fault는 검증용이며
+  finally에서 원문 바이트를 복원했다. 이후 run-02의 **291개 해시 모두 일치**를 확인했다.
+- `npm test`: **134파일 / 3,192 tests 통과**. 하니스 syntax·`git diff --check` 통과.
+  런타임/의존성/build 설정 최종 변경이 없어 production build는 재실행하지 않았다.
+  §16의 build 통과는 당시 기록으로 유지한다.
+- 표준 web-game client로 최종 Home 상태 수집을 실행했다. 시각 근거는 위 실제 전투/
+  결과의 Playwright page screenshot이다. `tools/endless-endurance-audit.json`의 과거
+  receipt와 그 screenshot hash도 유지됨을 확인했다.
+
+근거는 `output/playwright/endless-continuation/`의 run-02 audit/PNG/state, 각 negative
+receipt와 negative-checks.json, source-check.json, tests.log다. `check-negative-runs.py`는
+fault 주입/복원 절차와 실행 결과를 재현하는 기록이다. 출력 경로가 이미 있으면 새 이름을
+사용한다. §9의 세 번의 보정이 모두 같은 원인이었다고 소급 단정하지 않는다.
+
+이 fixture의 전투→사망→저장→결과 재진입 흐름을 검증했다. 전 도전 변수의 승률·경제
+밸런스, 수십 분 이상 wall-clock 메모리 지속성, native 실기기 검증은 포함하지 않는다.
+§2·§3와 후속 결함 수정 및 이번 연속 전투 범위 완료. 기존 dirty 상태 보존,
+commit/push/배포 없음. graphify 실행 파일 부재로 graph update 미실행.
+
+## 18. Production 번들 통합 smoke — 2026-09-22 완료
+
+§17 이후 새 결함을 가정하지 않고, 최근 런타임 변경을 포함한 실제 production 번들의
+로딩·화면 이동·저장·전투 진입을 검증했다. `scripts/verify-production-smoke.mjs`는
+기존 `scripts/lib/web-audit.mjs`의 좌표/입력/상태 수집을 재사용한다. 브라우저에서
+`/src` 모듈을 import하지 않으며, 출력 경로가 이미 사용됐으면 덮어쓰지 않는다.
+
+실행:
+1. `npm run build` — 통과. 기존 Phaser 1,478.57 kB chunk advisory만 유지.
+2. `npm run preview -- --host 127.0.0.1 --strictPort` — 로컬 8084.
+3. `node scripts/verify-production-smoke.mjs` — 최종 **47검사 / 실패0 / 오류0**.
+4. `npm test` — **134파일 / 3,192 tests 통과**.
+5. `node --check scripts/verify-production-smoke.mjs`, `git diff --check` — 통과.
+
+검증 범위:
+- 격리된 Chromium 390×844/DPR2/WebGL. DM8·영혼 수정145·빈 방·10스테이지 클리어
+  저장 fixture를 최초 한 번만 주입한다. reload에서는 실제 구매 저장값을 그대로 읽는다.
+- production에서 개발용 `?scene=ForgeScene`이 무시되고 Home으로 시작한다.
+- 실제 하단 입력으로 Home→Barracks→Forge→StageSelect→Home 이동.
+- Summon/Shop/Fusion/Codex/Achievement/Abyss/Production/Decoration/Wisdom은 직접
+  scene activation 후 텍스트·입력 렌더링 확인. 이 9개는 사용자 진입 경로 증명이 아니다.
+- 실제 Wisdom 탭/노드/승인 입력으로 ancestorsWisdom 0→1, 수정145→140 저장.
+  전체 reload 후 유지. StageSelect 카메라를 이동한 뒤 실제 무한 던전 버튼을 클릭하고
+  방어 개시와 미리보기 확인 버튼을 눌러 첫 웨이브 진입. 고정 시간 진행을 사용한다.
+- `isEndless=true`, wave1, 실제 침입자2명, core HP1520(기본1500+구매20) 확인.
+- JS/CSS 응답10개 SHA-256이 로컬 dist 파일과 일치. 개발 모듈 요청0,
+  HTTP/요청 실패/console/page error0. index·하니스·공유 helper·PNG 해시도 기록한다.
+
+최종 근거: `output/playwright/production-smoke/2026-09-22T05-09-40.859Z/audit.json`와
+PNG, 상위 `build.log`/`tests.log`. `2026-09-22T05-08-44.004Z/`는 43검사 예비 실행이며
+최종 근거와 구분한다. 최종 홈·구매 후·무한 진입·전투 캡처를 시각 확인했다.
+표준 web-game client도 production에서 1회 실행했다. 알려진 검은 canvas export는
+시각 근거에서 제외하고 Playwright page screenshot을 사용한다.
+
+게임 런타임 변경 없음. 이 smoke는 seeded 첫 웨이브 통합 검증으로 native 실기기,
+배포, 전체 캠페인/밸런스 검증을 뜻하지 않는다. 이번 owned preview는 종료했다.
+§2·§3 및 후속 검증 완료. 기존 dirty 상태 보존, commit/push/배포 없음.
+graphify 실행 파일 부재로 graph update 미실행.
+
+## 19. 세이브 백업의 캠페인 진행도 누락 — 2026-09-22 수정 완료
+
+§18 이후 저장 복원 경로를 확인했다. `StageSelectScene`은 `dungeonStageProgress`를
+읽지만 `exportGameState`/`importGameState`는 `dungeonGameState`만 처리했다.
+새 기기로 복원하면 캠페인이 초기화되고, 진행도가 있는 기기로 복원하면 대상 기기의
+별점/해금이 남아 서로 다른 저장 상태가 섞인다. 기존 테스트는 게임 상태만 확인했다.
+
+수정:
+- Base64 내부를 `format: dungeon-guardian-save`, `version: 1`, `gameState`,
+  `campaignProgress`로 구성. 두 저장소 값을 각각 보존한다. 기존 게임 저장 schema는 유지.
+- 기존 flat 코드도 지원. 별도 캠페인 백업이 없는 옛 코드에서는 내장 stageProgress를
+  사용하고, 없으면 초기 진행도다. 백업에 없는 기록을 복구하거나 목적지 기록과 합치지 않는다.
+- 미지원 버전, 잘못된 진행도 항목을 저장 전에 거절. 캠페인을 먼저 저장하고 게임 상태
+  쓰기가 실패하면 캠페인의 기존 raw 값/키 부재를 복원한다. 강제 종료·복구 쓰기까지
+  불가능한 저장소 장애에서 두 키의 원자성을 보장하는 transaction 도입은 아니다.
+- `stageProgress.ts`의 키 상수를 공유해 저장 위치를 중복 정의하지 않는다.
+
+검증:
+- 신규 `saveTransfer.test.ts` 12검사: 새 기기 round-trip, 기존 목적지 교체,
+  legacy padding/기록 없음, 손상/미지원 입력, 각 저장소 쓰기 실패와 rollback.
+- 최초 검사 7실패 중 2개는 happy-dom localStorage spy의 다음 테스트 오염이었다.
+  격리된 global stub/cleanup으로 바로잡았다. 최종 검사를 원래 export/import 함수에
+  적용하면 **6실패/6통과, exit1**. 이후 수정 원문을 복원하고 SHA-256 일치 확인.
+  `reverted-tests.log`와 `reverted-check.json`이 최종 반증 근거다.
+- `npx vitest run src/data/saveTransfer.test.ts src/data/wisdom.test.ts src/data/legacySaveMigration.test.ts`
+  **3파일/112 tests 통과**. `npm test` **135파일/3,204 tests 통과**.
+- `npm run build` 통과(기존 Phaser chunk advisory). `node --check scripts/verify-save-transfer.mjs`,
+  `git diff --check` 통과.
+- `node scripts/verify-save-transfer.mjs`: 로컬 production preview에서 **9검사/실패0/오류0**.
+  실제 설정 버튼으로 export→다른 저장 fixture→cancel→confirm import→StageSelect→reload
+  →잘못된 코드 거절. DM8/골드12345/수정145, 1~10관문 3별·HP87%, 11관문 해금 복원.
+  StageSelect의 실제 progress 배열도 확인했다. 확인창·복원된 관문·거절 화면을 시각 확인했다.
+  clipboard API만 mock했으며 OS 클립보드나 사용자의 실제 저장은 변경하지 않았다.
+- 표준 web-game client production 1회 실행. 검은 canvas export는 확인 후 시각 근거에서 제외.
+  page screenshot을 사용한다. `graphify update .` 완료, Gradle3개/SynergyManager1개
+  parser 부분 추출 경고는 `graphify.log`에 기록. TypeScript/build 실패는 아니다.
+
+최종 근거 `output/playwright/save-transfer/2026-09-22T06-59-26.991Z/` 및 상위 로그.
+신규 백업은 수정된 앱에서 복원해야 한다. 기존 flat 코드 읽기는 유지된다.
+실제 OS 클립보드 권한/native 복원·앱 강제 종료 중 원자성은 검증하지 않았다.
+이전 production/endurance receipt는 당시 해시 기준으로 보존한다. commit/push/배포 없음.
+
+## 20. 세이브 복원 확인창의 늦은 응답·중복 요청 — 2026-09-22 수정 완료
+
+§19 저장 함수 수정 뒤 호출 UI를 확인했다. `showImportConfirm`은 confirm마다
+`clipboard.readText()`를 호출하고, 취소/배경 닫기/부모 설정창 파괴/씬 종료 뒤에도
+Promise 응답으로 저장을 덮어썼다. 늦은 거절도 이미 닫힌 화면에 toast를 만들었다.
+
+수정 범위는 `src/ui/ImportExportModal.ts`다. 창이 살아 있는지와 요청 진행 여부를
+확인해 한 번만 읽는다. 대기 중 '읽는 중…'을 표시하되 취소는 유지한다. destroy 시
+요청 결과를 무효화하고 부모/씬 listener를 해제한다. 성공 후 Home 재시작 예약도
+씬 shutdown 시 취소한다. 원래 800ms 대기와 저장 함수/백업 형식은 유지했다.
+
+검증:
+- 신규 `ImportExportModal.test.ts` **10 tests**: 확인 연타, 취소/배경/부모/씬 종료 후
+  응답, 늦은 거절, 권한 거절, clipboard API 부재, 성공 후 종료, 잘못된 데이터.
+  `saveTransfer.test.ts`를 포함한 집중 **22 tests 통과**.
+- 수정 전 **8실패/2통과**. 최종 테스트를 원래 모듈로 다시 실행해 같은 8실패를
+  확인했다. finally에서 수정 원문을 복원하고 SHA-256 일치를 기록했다.
+- 기존 `verify-save-transfer.mjs`를 확장해 production에서 **26검사/실패0/오류0**.
+  실제 확인/취소/배경 입력, 부모 destroy와 씬 전환 fixture, clipboard 지연/거절,
+  중복 확인을 검증한다. 닫힌 뒤 두 저장소가 그대로이며 씬 전환 뒤 Home으로
+  되돌아가지 않는다. 완료된 요청은 골드54321 fixture를 정상 복원한다.
+  '읽는 중…'/취소 표시와 복원 후 Home screenshot을 직접 확인했다.
+- 첫 `npm test`는 **3,213통과/1 timeout**. 기존 Endless 80,640 큐 계산 검사가
+  부하가 높은 실행 중 5초 제한을 넘겼다. 테스트 내용/제한은 변경하지 않았다.
+  브라우저를 종료하고 `npm test -- --maxWorkers=2` 실행:
+  **136파일/3,214 tests 통과**, 58.79초. 두 로그를 각각 보존한다.
+- `npm run build` 통과, 기존 Phaser chunk advisory 유지. syntax/diff 검사 통과.
+- 표준 web-game client 1회 실행. 검은 canvas export는 열어 확인 후 제외하고
+  page screenshot을 시각 근거로 사용했다. `graphify update .` 완료(기존 네 파일
+  parser 부분 추출 경고 유지). 이번에 시작한 preview 서버는 종료했다.
+
+근거 `output/playwright/save-import-lifecycle/run-01/audit.json`과 PNG,
+상위 `before-tests.log`, `focused-tests.log`, `reverted-tests.log`, `reverted-check.json`,
+`tests.log`, `tests-limited-workers.log`, `build.log`.
+격리된 브라우저 저장과 mock clipboard를 썼으며 사용자 저장/OS clipboard 미접촉.
+실제 기기 권한이나 native 동작 검증으로 일반화하지 않는다. commit/push/배포 없음.
+
+## 21. 환생 후 남아 있는 캠페인 진행도 — 2026-09-22 수정 완료
+
+`startPrestige`는 GameState의 진행도를 초기화하지만, 실제 확정 버튼은 게임 상태만
+저장했다. StageSelect가 읽는 별도 `dungeonStageProgress`에는 이전 회차의 해금·별·
+HP가 남았다. 기존 UI 검사도 saveGameState 호출만 확인해 이 불일치를 보지 못했다.
+
+수정:
+- §19의 두 키 쓰기/실패 rollback을 `saveGameStateWithCampaign`으로 추출해 import와
+  환생 확정에서 재사용한다. 일반 saveGameState나 startPrestige의 순수 전이는 바꾸지 않는다.
+- 환생 확정은 새 state와 그 stageProgress를 함께 저장한다. 실패 시 완료 callback을
+  호출하지 않고 모달을 닫은 뒤 '환생 저장 실패. 다시 시도해주세요.'를 표시한다.
+  원래 완료 상태가 유지되므로 다시 열어 재시도할 수 있다.
+- 영구 성장 유지와 초기화 대상은 기존 startPrestige 규칙 그대로다. 기존 환생 완료
+  저장을 자동 수선하거나 사용자 저장을 migration하지 않는다.
+
+검증:
+- `prestigePersistence.test.ts` 신규5검사: 실제 confirm handler의 두 저장소 초기화,
+  영구 성장 보존·중복 확정 거절, 취소, 최신 완료 여부 재확인, 각 저장소 실패.
+  원래 모듈로 실행하면 **3실패/2통과**, 수정 후5통과. explicit revert의 원문 복원
+  해시는 `reverted-final-check.json`에 기록했다.
+- 기존 `PrestigeModal.test.ts`의 blocker·호출 순서·badge3검사는 보존하고 저장 함수
+  expectation만 갱신했다. 초기 작업 중 새 검사로 이 파일을 대체한 것을 diff review에서
+  바로잡아 별도 파일로 분리했다. 예비 tests.log(3216)는 최종 결과가 아니다.
+- `npx vitest run src/ui/PrestigeModal.test.ts src/ui/prestigePersistence.test.ts src/data/prestigeTransactions.test.ts src/data/saveTransfer.test.ts src/data/wisdom.test.ts`
+  **5파일/118 tests 통과**. `npm test -- --maxWorkers=2` **137파일/3,219 tests 통과**.
+- `npm run build` 통과(기존 Phaser chunk advisory), 최종 테스트 구성의 `npx tsc --noEmit`
+  통과. syntax와 `git diff --check` 통과.
+- `verify-prestige-progress.mjs`: production 실제 홈 환생 버튼→취소→각 저장소 예외
+  →다시 확정→StageSelect→reload **17검사/실패0/오류0**. 명성2→3, 골드9000→200,
+  90관문 완료→1관문만 해금/전체 별0. DM12·수정777·보석42·몬스터·지혜·무한 최고20 유지.
+- 저장 실패 메시지, 환생 Home, 초기화된 관문 화면을 시각 확인했다. 표준 web-game
+  client도1회 실행했으며 알려진 검은 canvas export를 제외하고 page screenshot을 사용한다.
+
+최종 근거 `output/playwright/prestige-progress/final/` 및 상위 `focused-final-tests.log`,
+`tests-final.log`, `reverted-final-tests.log`, `reverted-final-check.json`, `build.log`,
+`typecheck.log`. 예비 실행 receipt는 보존한다. fixture와 저장 예외 주입 검증이며,
+실제 사용자 저장/native/프로세스 강제 종료 중 두 키 원자성 검증은 아니다.
+graphify AST update 완료(기존 네 파일 parser 경고 유지), owned preview 종료.
+commit/push/배포 없음.
+
+## 22. 홈 방치 보상 저장 실패 후 재시도 — 2026-09-22 수정 완료
+
+환생 후 유지된 생산 시설의 수익을 확인하던 중, 홈 수령 버튼에서 저장 예외가
+발생하면 메모리의 골드·재료·수령 시각만 바뀌고 버튼의 once listener가 소진되어
+패널이 닫히지도 재시도되지도 않는 문제를 재현했다. 환생 초기화 정책과 수익 계산은
+기존 규칙을 유지한다.
+
+수정:
+- `DungeonHomeScene.persistGameState`는 새 상태를 저장한 뒤 scene.gs와 표시를 갱신한다.
+- 홈 수령은 저장 실패 시 상태·패널·버튼을 유지하고 모달 위에 재시도 안내를 표시한다.
+- 성공 시 패널을 닫으며, 파괴된 패널/종료된 씬의 남은 버튼 콜백은 무시한다.
+
+검증:
+- `homeIdlePersistence.test.ts`는 실제 Home persist 메서드와 수령 handler를 사용한다.
+  성공 후 중복 호출, 실패 시 메모리/저장 원문 보존과 재시도, 패널/씬 종료 후 콜백을
+  검증한다. 수정 전 최초3검사 모두 실패했고 최종4검사와 idleIncome20검사가 통과했다.
+- `npx vitest run src/scenes/homeIdlePersistence.test.ts src/data/idleIncome.test.ts`:
+  **2파일/24 tests 통과**. `npm run build` 통과(기존 Phaser chunk advisory).
+- `npm test -- --maxWorkers=2`: **138파일/3,223 tests 통과**(60.67초).
+- `verify-idle-claim.mjs`: 격리된 환생3/빈 방/광산1·보물고1 fixture에서 실제 수령 버튼을
+  클릭한다. 저장 실패→동일 버튼 재시도→추가 클릭→reload를 일반 애니메이션과
+  동작 줄이기에서 각각 **14검사 통과, 브라우저 오류0**. 골드200→300, 광석5→7,
+  저장1회이며 명성·수정·보석을 보존한다. 실패 안내/성공 Home PNG를 시각 확인했다.
+- 원래 번들의 `before-live-clock/`은 13검사 중7실패와 QuotaExceededError를 기록했다.
+  초기 `before/`는 하니스 Date.now 고정으로 tween이 정지한 실패다. 초기 build.log의
+  ES2020 Array.at/Mock type 오류를 테스트에서 수정했으며, 그 실패 뒤 이전 번들을
+  검사한 `final-reduced/`는 최종 근거가 아니다. 예비 결과도 보존했다.
+- 표준 web-game client도 실행했고 알려진 검은 canvas export를 열어 확인한 뒤 제외했다.
+  시각 근거는 정상 렌더링한 page screenshot이다.
+
+최종 브라우저 근거 `output/playwright/idle-claim/verified-reduced/`, `verified-motion/`.
+집중 검사와 build 근거는 같은 상위 경로의 `focused-final-tests.log`, `build-final.log`.
+전체 검사는 `tests-final.log`. graphify AST update 완료(기존 네 파일 parser 경고 유지).
+최종 receipt의 소스/하니스/dist index 해시 일치와 syntax/diff 검사를 확인하고,
+이번 작업에서 시작한 preview 서버를 종료했다.
+실제 사용자 저장/native 미접촉, commit/push/배포 없음. 생산 구역의 별도 수령·건설
+handler에 같은 실패가 있는지는 후속 재현 대상이며 이번 홈 수정의 검증 범위는 아니다.
+
+## 23. 생산 구역 진입과 저장 실패 복구 — 2026-09-22 수정 완료
+
+생산 구역의 수령·건설/강화·근무 배정/해제는 저장 전에 scene.gs를 교체했다.
+저장 예외가 발생하면 메모리만 바뀌고 성공/실패 표시가 갱신되지 않아, 재시도 시
+비용·단계·배치 기준이 실제 저장과 달라졌다. 6개 실패 회귀 검사로 확인했다.
+실제 진입 검증에서는 StageSelect 하단의 생산 버튼이 고정 군단 메뉴에 가려져
+중앙을 누르면 BarracksScene이 열리는 별도 결함도 재현했다.
+
+수정:
+- ProductionScene 내부의 네 저장 지점을 `persistGameState`로 공유한다. 저장 후
+  메모리를 반영하고, 실패 시 원래 상태로 다시 그리며 명령판에 재시도를 안내한다.
+- 기존 비용·수익·배정 규칙과 250ms 중복 입력 제한은 유지한다.
+- StageSelect의 스크롤 범위에 `ROOT_NAV_HEIGHT` 여백을 더해 최하단 생산·심연·장식
+  버튼이 고정 메뉴 위로 올라오도록 한다. 관문/메뉴 좌표와 전환 대상은 유지한다.
+
+검증:
+- `productionPersistence.test.ts` 신규6검사: 최초 건설/강화/수령/방에서 배정/시설 간
+  이동/해제의 실패 상태 보존→재시도→같은 시각 중복 호출. 실제 scene handler와
+  localStorage를 사용하고 렌더링만 mock한다. 수정 전6실패, 수정 후6통과.
+- `npx vitest run src/scenes/productionPersistence.test.ts src/data/productionTransactions.test.ts src/data/facilityStaff.test.ts src/data/idleIncome.test.ts`
+  **4파일/56 tests 통과**. `npm run build` 통과(기존 Phaser chunk advisory).
+- `npm test -- --maxWorkers=2`: **139파일/3,229 tests 통과**(16.80초).
+- `verify-production-persistence.mjs`: Home→침공→8회 실제 드래그→생산 버튼 진입,
+  버튼 전체가 고정 메뉴 위인지 확인, 6개 명령의 실패/재시도와 건설·강화·수령 연타,
+  reload를 일반/동작 줄이기 설정에서 각각 **51검사 통과, 브라우저 오류0**.
+  건설150·강화270을 한 번씩 차감, 수령100골드·광석4, 최종4680골드·광석9·광산Lv2.
+  근무 이동·해제와 수정777·보석42 보존도 확인했다. 수령 적립 시간1h는 fixture로
+  주입했으며 실제 1h 경과 시험은 아니다. 브라우저 근무 배정은 대기 수호자 기준이고
+  방에서 빠지는 전이는 unit 검사로 확인했다.
+- 초기 `reduced/`의 진입 timeout/군단 PNG를 보존했다. 최종 `verified-reduced/`,
+  `verified-motion/`의 진입/실패 안내/성공 화면을 직접 시각 확인했다.
+- 표준 web-game client 실행/검은 canvas export 열람 후 제외, page screenshot을 사용한다.
+  graphify AST 갱신 완료(기존 네 파일 parser 경고 유지). 기록된 소스/하니스/dist index
+  해시 일치, syntax/diff 검사 통과. 이번에 시작한 preview 서버는 종료했다.
+
+근거 `output/playwright/production-persistence/`의 두 verified 경로와
+`before-tests.log`, `focused-tests.log`, `tests-final.log`, `build-final.log`. 실제 사용자 저장/native
+미접촉, commit/push/배포 없음. 이전 receipt는 당시 코드의 검증 근거로 보존한다.
+
+## 24. 반복 수령으로 사라지는 생산 진행분 — 2026-09-22 수정 완료
+
+수령마다 골드·재료를 내림한 뒤 공통 시계를 초기화해, 광산Lv1/보물고Lv1에서
+10분마다 수령하면 1시간 뒤 골드96·광석0이 된다(한 번 수령하면100·2).
+직조실의 시간당1.5개 생산도 같은 문제다. 새9개 재현 검사가 원래 코드에서 실패했다.
+
+수정:
+- 선택 필드 `idleRemainder`로 운영 골드·보물고 골드·재료별 소수 진행분을 저장한다.
+  정수만 보유 자산에 지급하며, 같은 정산 함수를 미리보기와 수령에 사용한다.
+  생산 단가 계산은 공유하고, 기존 정수 반환 `facilityProductionOverMs` 계약도 유지한다.
+- 누락된 기존 저장은 진행분0으로 읽는다. 유효하지 않은 진행분은 사용하지 않으며,
+  반복 소수 연산의 부동소수 오차만 1e-9로 보정한다. 이미 유실된 과거 수익은 복원하지 않는다.
+- 적립 상한은 새 경과 시간에 적용한다. 새로고침/백업 복원은 진행분을 유지하고,
+  환생은 기존 자산 정책에 맞춰 골드 진행분만 초기화한다.
+- 과거 시각으로 수령해도 마지막 수령 시각을 되돌리지 않아 동일 구간 재지급을 막는다.
+
+검증:
+- `idleRemainder.test.ts`14검사: 1/10/20/30분 분할 수령과1회 수령 총량 일치,
+  수입원별 내림, 읽기 전용 미리보기, 저장/백업, 상한, 역행 시각, 환생,
+  잘못된 진행분, 보관된 진행분의 시설 강화 후 유지. 기존 관련 검사 포함
+  `npx vitest run src/data/idleRemainder.test.ts src/data/idleIncome.test.ts src/data/production.test.ts src/scenes/productionPersistence.test.ts src/scenes/homeIdlePersistence.test.ts src/data/saveTransfer.test.ts src/data/wisdom.test.ts`
+  **7파일/167 tests 통과**. `npm run build` 통과(기존 Phaser chunk advisory).
+- `npm test -- --maxWorkers=2`: **140파일/3,243 tests 통과**(19.61초).
+- 기존 `verify-production-persistence.mjs`에 10분×6 수령과 중간 reload를 추가했다.
+  일반·동작 줄이기 각각 **70검사 통과/오류0**, 골드100·광석2·천1과 소수 진행분의
+  범위(0 이상1 미만)를 확인했다. 최초 진입·실패 복구·연타51검사도 계속 통과한다. 적립 시간은
+  fixture 주입이며 실제60분 대기는 아니다. 진행분 reload 후 생산 씬 복귀는 직접
+  activation이며, 최초 Home→관문→생산 진입은 실제 pointer 경로다.
+- 최종 브라우저 근거 `output/playwright/idle-remainder/final-reduced/`, `final-motion/`.
+  진행 중/수령 완료 PNG를 직접 확인했다. 초기 build.log의 테스트 변수 타입 오류는
+  GameState 명시로 수정했고, 그 직후 이전 번들을 본 `verified-reduced/`는 최종 증거가 아니다.
+
+상위 `before-tests.log`, `focused-final-tests.log`, `build-final.log`에 검사 결과를 보존했다.
+전체 결과는 `tests-final.log`. 표준 client 실행/검은 export 열람 후 page capture를
+시각 근거로 사용했다. graphify AST 갱신(기존 네 parser 경고 유지), 최종 receipt 해시
+일치 및 syntax/diff 검사를 확인했다.
+이번 작업에서 시작한 preview 서버는 종료했다.
+기존 전체 미수령 구간을 현재 단가로 계산하는 방식은 유지한다. 강화·배정 변경 전에
+기존 단가로 구간을 확정하는 처리는 별도 후속 범위이며 이번 진행분 보존과 구분한다.
+사용자 저장/native 미접촉, commit/push/배포 없음.
+
+
+## §25 생산 변경 직전의 이전 단가 정산 — 2026-09-28
+
+§24의 후속 범위 완료. 생산 구역에서 시설을 건설·강화하거나 근무를 배정·이동·해제하면
+이전 미수령 시간 전체에 새 단가가 적용되던 문제를 수정했다.
+
+- `productionTransactions.ts`의 세 mutation에 필수 timestamp를 추가했다. 기존 대상·비용
+  검증을 통과한 뒤 `collectIdleIncome`으로 변경 전 상태를 정산하고 시설/근무 변경을 합친다.
+  정산과 명령 결과를 기존 ProductionScene 저장 함수가 한 번에 저장한다. 저장 실패 시
+  메모리·재화·시설·수령 시각은 모두 이전 상태이며, 재시도는 원래 구간을 한 번 지급한다.
+- 성공 결과의 `idleReward`로 실제 지급이 있을 때만 `적립분 수령`을 안내한다.
+  구매 가능 여부는 정산 전 보유 골드 기준이다. 소수 진행분·12/24시간 상한·비용·배수·
+  연타 차단 규칙은 유지한다. 최초 시각 초기화도 데이터 트랜잭션이 담당한다.
+- 예: 광산 Lv.1에서 1시간 뒤 강화하면 광석2를 지급하고, 다음 1시간은 Lv.2의4를
+  지급한다. 새로 건설한 시설은 건설 전 시간의 산출물을 지급하지 않는다.
+
+검증:
+- 신규 `productionSettlement.test.ts` 8검사 중 수정 전7실패로 재현했다. 건설/강화,
+  근무 배정→이동→해제, 근무자의 운영 수익, 0지급 구간의 소수 진행분, 적립 상한,
+  legacy 시각 초기화, 실패한 명령의 무변경을 확인했다.
+- `npm test -- --maxWorkers=2 src/data/productionSettlement.test.ts src/data/productionTransactions.test.ts src/data/production.test.ts src/data/facilityStaff.test.ts src/scenes/productionPersistence.test.ts src/data/idleRemainder.test.ts`
+  **6파일/73 tests 통과**. 저장 실패/재시도 scene 테스트도 자동 정산 결과를 검사한다.
+- `npm run build` **통과**. 기존 Phaser chunk advisory 유지. 빌드 성공을 확인한 뒤
+  production preview에서 브라우저 검증을 실행했다.
+- 기존 `verify-production-persistence.mjs`에 명령별 이전 1시간 fixture와 독립 산술 검사를
+  추가했다. 일반·동작 줄이기 각각 **96검사 통과/오류0**. 실제 Home→관문→생산 진입,
+  실패 복구, 건설/강화 연타, 배정/이동/해제, 저장 1회, 이전 단가의 골드·광석·소수 진행분,
+  전체 reload와 10분×6 수령을 확인했다. 적립 시간은 주입값이며 실제 시간 대기 시험은 아니다.
+  분할 수령 중 reload 후 생산 복귀는 직접 scene activation이다.
+- `npm test -- --maxWorkers=2`: **141파일/3,251 tests 통과**(37.62초).
+  로그: `output/playwright/production-settlement/tests-final.log`.
+- 브라우저 근거: 같은 경로의 `reduced/audit.json`, `motion/audit.json` 및 PNG.
+  강화·배정·이동·해제 성공 화면에서 안내 줄바꿈과 배율을 직접 확인했다. 기록된 코드/빌드
+  해시는 현재 파일과 일치한다. 표준 web-game client도 실행했으나 검은 export와 빈 activeScenes
+  결과는 시각 근거에서 제외하고 실제 page screenshot을 사용했다.
+- graphify AST 갱신 완료(기존 Gradle3·SynergyManager parser 경고 유지), syntax/diff 검사 통과.
+  이번 작업에서 시작한 preview 서버 종료. 사용자 저장/native 미접촉, commit/push/배포 없음.
+
+남은 경계: `assignMonsterToRoomSlot`의 방 배치로 근무를 해제하는 경로는 아직 정산하지 않는다.
+다음 후속 작업은 이 역방향 이동과 호출부의 저장 실패 처리를 확인하는 것이다. 방 건설/강화,
+장식, DM 성장, 지혜/명성 등의 단가 변경도 이번 생산 구역 트랜잭션 범위에는 포함되지 않는다.
+
+
+## §26 근무자의 방 복귀 정산과 저장 실패 복구 — 2026-09-28
+
+§25에서 남긴 역방향 이동을 처리했다. `assignMonsterToRoomSlot`은 필수 timestamp를 받고,
+목적지 검증 후 이동할 수호자가 근무 중이면 `collectIdleIncome`으로 변경 전 상태를 정산한다.
+그 결과에 근무 해제·방 배치·기존 퀘스트 진행을 합쳐 반환한다. 기존 저장 함수가 결과를
+한 번 저장한 뒤 메모리와 통화를 갱신한다. 일반 비근무자 배치의 정산 동작은 바꾸지 않았다.
+
+- 배치 트레이의 공통 commit, 몬스터 선택 창, 추천 몬스터 배치에 저장 예외 안내를 추가했다.
+  실패 시 `저장 실패 · 다시 시도해주세요`를 표시하고 창·배치·근무·재화·시각을 유지한다.
+  실패한 명령은 성공 피드백이나 닫기/재열기를 실행하지 않는다.
+- 기존 호출부와 테스트에 timestamp를 명시했다. 근무자의 운영 골드 기여, 생산 배수,
+  소수 진행분, 적립 상한, 보유 자산의 정수 지급, 기존 퀘스트 집계 규칙은 유지한다.
+- 신규 데이터5검사 중 수정 전4실패로 재현했다. 근무 전 단가/이후 단가, 방의 기존 수호자
+  교체, 소수 진행분, 적립 상한, 잘못된 목적지, 최초 시각, 중복 수익 방지를 확인했다.
+  실제 Home 저장 callback을 쓰는 추천 배치 실패→재시도1검사도 추가했다.
+  관련 room/staff/editor 포함 총 **64 tests 통과**(두 번의 집중 실행).
+- `npm test -- --maxWorkers=2`: **143파일/3,257 tests 통과**(102.25초).
+  로그 `output/playwright/room-staff-settlement/tests-final.log`, 빌드 로그는 같은 경로의 `build.log`.
+- `npm run build` 통과 후 production preview에서 검증했다. 기존 Phaser chunk advisory 유지.
+  `verify-room-staff-settlement.mjs`의 headless/동작 줄이기 실행에서 **27검사 통과/오류0**.
+  실제 Home 방 카드→배치 트레이, 상세→즉시 배치→몬스터 선택 창의 pointer 경로를 확인했다.
+  두 경로 모두 저장 실패 무변경, 재시도 저장1회, 이전 단가 지급, 근무 해제와 방 배치,
+  reload 후 자산·시각·소수 진행분 보존을 확인했다. 시간과 저장 오류는 격리 fixture 주입이다.
+- 최종 브라우저 근거: `output/playwright/room-staff-settlement/reduced-headless/audit.json`
+  및 PNG. 실패 안내와 성공 배치를 직접 열람했고 코드·빌드·하니스 해시가 일치한다.
+  초기 퀘스트 보상이 섞인 실행, 가려진 상세 버튼 대신 뒤쪽 홈을 누른 실행, 외부 페이지로
+  전환된 headed 실행은 최종 근거에서 제외했다. fixture는 미완료 MQ-003으로 고정했고
+  가려진 지시 버튼은 실제 화면의 관찰 좌표로 클릭한다. 일반 모션은 이번 실행에서 미검증.
+- 표준 web-game client 실행과 Home text state 확인. 검은 canvas export는 시각 근거에서
+  제외하고 위 page screenshot을 사용했다. graphify AST 갱신(기존 parser 경고4개 유지),
+  syntax/diff 검사 통과. 이번 preview 종료. 사용자 저장/native/commit/push/배포 없음.
+
+다음 범위: 일반 수호자 방 배치/해제와 방 건설·강화가 운영 단가를 변경하는 지점의 정산.
+장식·DM·지혜·명성 변경도 아직 별도 경계다. 이들을 이번 완료 범위로 일반화하지 않는다.
+
+## §27 일반 방 변경의 이전 단가 정산과 미설계 강화 차단 — 2026-09-28
+
+일반 수호자의 배치/해제, 방 설계/건물 전환, 방 강화가 운영 단가를 바꾸기 전에
+`collectIdleIncome`으로 이전 상태의 미수령 구간을 정산한다. 결과에 방 변경과 기존
+퀘스트 진행을 합쳐 한 번 저장한다. 모든 호출부에 timestamp를 명시했고 추천 일괄
+배치에는 하나의 시각을 사용한다. 강화 자격은 정산 전 보유 골드로 판단한다.
+기존 비용·배수·소수 진행분·적립 상한은 유지한다.
+
+- 상세의 설계/강화와 추천 설계에도 저장 예외 안내를 추가했다. 실패 시 성공 연출과
+  닫기/재열기를 중단한다. 배치 트레이는 기존 공통 저장 실패 처리를 재사용한다.
+- 브라우저에서 미설계 Lv.0 방에 `강화 1,200골드`가 표시되는 결함을 추가 발견했다.
+  트레이/상세에서 미설계 방의 강화 버튼을 숨기고 거래 함수도 `room_not_built`로
+  거절한다. 미설계 Lv.0/Lv.1 모두 비용·누적 수익·시각을 변경하지 않는다.
+- 신규 데이터10검사. 최초 수익8검사 중7개와 미설계 Lv.1 강화 검사는 수정 전 실패로
+  재현했다. 기존 강화 테스트2개의 미설계 fixture는 의도에 맞는 support 방으로 보완했다.
+  관련6파일 **74 tests 통과**. 가격·용량·레벨 제한 assertion은 유지했다.
+- `npm test -- --maxWorkers=2`: **144파일/3,267 tests 통과**(28.36초).
+  최종 검사 로그는 `output/playwright/room-income-settlement/tests-final.log`,
+  같은 상위 경로에 `tests-focused.log`, `build.log`, `graph.log`를 보존했다.
+- `npm run build` 통과(기존 Phaser chunk advisory 유지). Production preview의
+  headless/동작 줄이기 브라우저에서 **54검사 통과/오류0**. 실제 Home 방 카드에서
+  배치/해제/건설/강화 입력, 실패 무변경, 재시도 저장1회, 이전 단가 지급, reload 보존을
+  확인했다. 시각과 저장 오류는 격리 fixture 주입이며 일반 모션/native는 미검증이다.
+- 최종 브라우저 근거는 `output/playwright/room-income-settlement/verified/audit.json`
+  및 PNG. 건설 실패/성공과 강화 성공 화면을 직접 열람했고 기록된7개 해시가 일치한다.
+  `final/`의53검사는 미설계 강화 차단 전 중간 결과이므로 최종 근거에서 제외한다.
+- 표준 web-game client1회와 Home text state 확인. 검은 canvas export는 직접 열람 후
+  시각 근거에서 제외했다. graphify AST 갱신 완료(기존4개 parser 경고 유지), syntax/diff
+  검사 통과. 이번 preview 종료. 사용자 저장/native/commit/push/배포 없음.
+
+다음 우선순위는 Home→배치→성장→전투의 통합 플레이/UX 점검이다. 핵심 저장·진행·보상
+결함을 우선하고, 해당 흐름의 정보·행동·피드백을 확정한 뒤 시각 디자인을 다듬는다.
+기능 전부 또는 시각 디자인 전부의 완벽한 완료를 서로의 선행 조건으로 두지 않는다.
+장식·DM·지혜·명성 변경 시 단가 경계는 별도 미완료이며 이번 검증으로 일반화하지 않는다.
