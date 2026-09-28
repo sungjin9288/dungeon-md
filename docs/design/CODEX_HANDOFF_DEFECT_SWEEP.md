@@ -1415,3 +1415,11 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
   `QuestLogState.persist`로 홈을 거친다. 수정 후 1,134→1,139 유지.
 - 퀘스트 로그 깊이 65(침략 배너 60 위), 서브 퀘스트 수령 판정 44px.
 - 검증: idleRateBoundary(6)·questLogCommit(2), 전체 157파일/3,329 tests, build 통과.
+
+### §31 후속 — 홈 위 패널 직접 저장 일괄 점검 (`06ada51`)
+
+서브 퀘스트와 같은 구조(홈 위 패널이 저장소에 직접 쓰고 홈 메모리는 그대로)를 전수 확인했다. 출석 보상·도전 과제
+패널이 해당했고 `commitSceneState(scene, next)`(소유 씬의 `persistGameState` 우선)로 바꿨다. 장식·지혜·생산 씬은
+자기 사본을 함께 갱신하고, 공방·소환·상점·합성은 매번 새로 읽어 해당 없음. 군단은 상세 변경 후 목록·전투력·
+성장 지휘가 씬 시작 값을 보이던 표시 결함을 상세 닫기 시 재구성(스크롤 유지)으로 고쳤다.
+브라우저: 출석 수령 후 방 설계에도 보상 유지(1,100→1,114), 먹이 후 목록 EXP 즉시 반영. 158파일/3,331 tests.

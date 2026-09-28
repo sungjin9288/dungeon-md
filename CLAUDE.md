@@ -302,6 +302,7 @@ UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광
 입력이 실제로 바뀐 경우에만 동작하며, 지급분·수령 시각·잔여분을 변경 결과에 얹는다.
 퀘스트 로그의 저장은 `QuestLogState.persist`(홈의 `persistGameState`)를 거친다 — 저장소에 직접 쓰면
 홈의 메모리 사본이 다음 저장에서 수령한 서브 퀘스트 보상을 덮어썼다(2026-09-28 수정).
+홈 위에서 뜨는 다른 패널(출석·도전 과제)도 `commitSceneState(scene, next)`로 소유 씬의 저장을 거친다.
 
 **근무**(`productionTransactions.ts assignFacilityStaff/clearFacilityStaff`,
 `GameState.facilityStaff: facilityId → monsterId`): 생산 시설마다 수호자 1체. 산출
