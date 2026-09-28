@@ -1,5 +1,47 @@
 # Dungeon Phaser Design Continuation Handoff
 
+## Claude 작업 재개 지침 — 2026-09-28
+
+- 작업 경로: `/Users/sungjin/dev/personal/dungeon md/dungeon-phaser`.
+  원격 `https://github.com/sungjin9288/dungeon-md.git`, remote `origin`, branch `main`.
+  사용자가 해당 원격 연결과 누적 작업 push를 승인했다. 연결 시 원격은 빈 공개 저장소였다.
+- 코드 기준은 `539e2f5`, 누적 검증/인계 기록은 `cbfa1ae`까지다. Git 상태와 실제 코드를
+  먼저 대조한다. 원격 진행 여부는 `git ls-remote origin refs/heads/main`으로 확인한다.
+- `AGENTS.md` → 이 문서 → `docs/MONSTER_DUNGEON_DESIGN.md` →
+  `docs/design/DESIGN.md` → `CLAUDE.md`를 읽고, 결함 이력과 수용 범위는
+  `docs/design/CODEX_HANDOFF_DEFECT_SWEEP.md`의 최신 절까지 확인한다.
+  §2와 §3-1~3-4는 이미 처리됐다. 과거의 "§3 미착수" 문구로 다시 중단하지 않는다.
+
+**다음 목표:** Home→방 설계/배치→몬스터 성장/장비→전투 준비→전투→결과/홈 복귀를
+실제 플레이 경로로 점검하고, 이 흐름을 막는 기능·UX 결함을 작은 단위로 수정한다.
+390×844 기준 핵심 정보, 다음 행동, 비용·보상, 클릭 영역, 실패 안내와 복귀 동선을
+확인한다. 핵심 기능 안정화 후 화면 구조/조작 흐름을 확정하고 시각 디자인을 다듬는다.
+기능 전체 또는 디자인 전체를 먼저 완벽하게 끝내려는 방식으로 진행하지 않는다.
+
+**첫 작업 단위:** 격리된 신규 저장 fixture로 홈에서 전투 결과까지 실제 입력을 사용해
+한 사이클을 확인한다. 별도 성장 fixture로 성장/장비 비용·효과·장착·복귀를 확인하고,
+발견된 진행 차단/잘못된 안내부터 수정·회귀 검증한다. 이를 마친 뒤 디자인 수정의
+구체적인 화면과 우선순위를 기록한다. 신규 콘텐츠 확장이나 전면 재설계는 현재 목표가 아니다.
+
+**기존 계약과 남은 범위:**
+- 천계의 혈통은 지급을 유지하고 스테이지 클리어 라벨로 설명한다.
+- 방/생산 변경은 이전 단가 정산 후 변경과 함께 한 번 저장한다. 구매 자격은 정산 전
+  보유 골드 기준이며 저장 실패 시 메모리와 저장 데이터를 유지한다.
+- 장식·DM·지혜·명성의 단가 변경 경계는 미완료다. 통합 점검 중 관련 결함을 재현하면
+  별도 작은 수정으로 처리하고, 기존 방/생산 검증으로 완료 처리하지 않는다.
+- 과거 무한 모드 주행은 기록된 조건의 근거이며 장기 밸런스/전체 캠페인/native 완료가 아니다.
+
+**검증과 작업 경계:**
+- 최신 누적 코드: `npm test -- --maxWorkers=2` 144파일/3,267 tests, `npm run build` 통과.
+  브라우저는 `output/playwright/room-income-settlement/verified/`의54검사/오류0이 최신 방 변경 근거다.
+  해당 output은 Git 제외라 새 clone에는 없다. 필요 시 저장소의 `scripts/verify-*.mjs`로 재생성한다.
+- Chromium 하니스는 한 번에 하나씩 실행하고 종료 후 전체 테스트를 수행한다. 표준 client의
+  검은 canvas export는 시각 증거가 아니며 실제 page screenshot을 직접 확인한다.
+- 개인 `.codex/hooks.json`, 사용자 저장과 다른 작업을 보존한다. 도구 경로·설치는 실제 환경에서
+  확인한다. graphify가 있으면 저장소 지침대로 조회/AST 갱신하며 전역 설치를 임의로 하지 않는다.
+- 이번 commit/push 승인은 현재 누적 작업의 원격 보존 범위다. Claude의 새 개발 결과에 대한
+  commit/push·배포·native sync까지 자동으로 위임한 것으로 확장하지 않는다.
+
 ## 누적 작업 Git checkpoint — 2026-09-28
 
 사용자가 지금까지의 작업 commit/push를 명시 요청했다. `main`에서 진행도/세이브
