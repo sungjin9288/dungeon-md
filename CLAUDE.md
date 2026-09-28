@@ -174,7 +174,7 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   쓸 수가 없었다. DM3은 슬롯을 하나도 주지 않는 죽은 레벨이었다(`SLOT_UNLOCK_LEVELS`
   0,0,0,2,4,…). 게이트를 열자 **6/6 승·HP 83~90%**. **수치가 아니라 게이트를 의심할 것.**
   전투 피해는 `1.4^(lv-1)`이며
-  방의 첫 몬스터에만 적용, 나머지 몬스터는 기본 피해(`runExtraMonsterAttacks`).
+  방의 주 수호자와 추가 수호자(`runExtraMonsterAttacks`) 모두에 적용된다.
   몬스터가 없는 방도 `ROOM_DEFS`의 자체 공격으로 싸운다. **수호자 육성**은
   `guardianAtkMult(level, spentSkills)`(barracks.ts, `1.03^(lv-1)` × 강타 1.15)로
   전투(`guardianAtkMult` 맵, 첫/추가 몬스터 모두)와 `simulation.ts`에 같이 들어간다
