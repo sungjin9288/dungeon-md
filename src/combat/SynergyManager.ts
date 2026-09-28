@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { RoomData } from '../data/rooms';
 import {
-  calcTribeSynergies, calcElementCombos, getSynergyAtkMult, getSynergySpdMult,
+  calcTribeSynergies, calcElementCombos, getSynergyAtkMult, getSynergyInvaderMoveMult,
+  getSynergyGuardianCooldownMult, getSynergyGuardianAttackIntervalMult,
   type ActiveSynergy, type ActiveElementCombo,
 } from '../data/synergy';
 import { CANVAS_WIDTH } from '../constants/layout';
@@ -96,28 +97,21 @@ export class SynergyManager {
     this.updateDisplay();
   }
 
-  // ── ATK / SPD multipliers (for external combat queries) ────────────────────
-  //
-  // getAtkMult feeds the damage chain in CombatResolver / runExtraMonsterAttacks.
-  // Both of these used to be called here and their return values thrown away,
-  // under a comment claiming they "populate a cache" that does not exist — so
-  // all 31 tribe atkMult tiers (celestial ×8 +75%, dragon ×8 +65%, …) were
-  // dead, and getAtkMult/getSpdMult had no caller anywhere in src.
-  //
-  // getSpdMult is still unwired ON PURPOSE: `spdMult` packs three different
-  // meanings into one field — invader movement (gumiho 0.90 "침략자 속도 -10%",
-  // sea 0.85), guardian attack speed (mask 1.15 "ATK/SPD +15%") and guardian
-  // cooldown (moonlight 1.20 "쿨다운 -20%", where >1 means faster). Multiplying
-  // them together produces a number that means nothing, so wiring it would ship
-  // a wrong effect rather than a missing one. Splitting the field is a data
-  // change across nine tribes and needs a design call first.
-
+  // Each consumer reads only the axis it applies; no mixed SPD product.
   getAtkMult(): number {
     return getSynergyAtkMult(this.activeSynergies);
   }
 
-  getSpdMult(): number {
-    return getSynergySpdMult(this.activeSynergies);
+  getInvaderMoveMult(): number {
+    return getSynergyInvaderMoveMult(this.activeSynergies);
+  }
+
+  getGuardianCooldownMult(): number {
+    return getSynergyGuardianCooldownMult(this.activeSynergies);
+  }
+
+  getGuardianAttackIntervalMult(): number {
+    return getSynergyGuardianAttackIntervalMult(this.activeSynergies);
   }
 
   hasSpecial(special: string): boolean {
@@ -190,14 +184,15 @@ export class SynergyManager {
       this.tooltipZones.push(synZone);
       synZone.once('pointerdown', () => {
         const desc = syn.tier.desc;
-        const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
-        const tipY = yOff - 10;
+        const tipX = CANVAS_WIDTH - 8;
+        const tipY = yOff + PILL_H + 4;
         const tip = this.scene.add.text(tipX, tipY, desc, {
           fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
           color: CASUAL_CSS.INK,
           backgroundColor: CASUAL_CSS.CREAM,
           padding: { x: 8, y: 5 },
-        }).setOrigin(0.5, 1).setDepth(200);
+          wordWrap: { width: 264, useAdvancedWrap: true },
+        }).setOrigin(1, 0).setDepth(200);
         this.scene.tweens.add({
           targets: tip,
           alpha: { from: 1, to: 0 },

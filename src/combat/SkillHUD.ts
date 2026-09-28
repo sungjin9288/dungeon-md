@@ -37,6 +37,7 @@ export class SkillHUD {
   private slots: SkillSlot[] = [];
   private callbacks: SkillHUDCallbacks;
   private selectedSkillId: string | null = null;
+  private cooldownDurations = new Map<string, number>();
   private cooldowns = new Map<string, number>(); // skillId → ready-at (ms)
 
   constructor(scene: Phaser.Scene, equippedSkillIds: string[], callbacks: SkillHUDCallbacks) {
@@ -102,6 +103,7 @@ export class SkillHUD {
   /** Call after a skill is successfully used. Starts cooldown. */
   startCooldown(skillId: string, durationMs: number): void {
     this.cooldowns.set(skillId, this.scene.time.now + durationMs);
+    this.cooldownDurations.set(skillId, durationMs);
     this.selectedSkillId = null;
     this.updateHighlights();
     this.callbacks.onSkillCancelled();
@@ -114,7 +116,7 @@ export class SkillHUD {
       if (!slot.skill) continue;
       const readyAt = this.cooldowns.get(slot.skill.id) ?? 0;
       const remaining = Math.max(0, readyAt - now);
-      slot.updateCooldown(remaining, slot.skill.cooldown);
+      slot.updateCooldown(remaining, (this.cooldownDurations.get(slot.skill.id) ?? slot.skill.cooldown * 1000) / 1000);
     }
   }
 

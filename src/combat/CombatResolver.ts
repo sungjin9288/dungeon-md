@@ -9,11 +9,14 @@
 //                     next grid cell (charm-orb, spectral-bolt, etc. intercept
 //                     the normal damage path).
 
+import { applyEquipmentBasicEffects } from './EquipmentAttacks';
+import { equipmentAuraAttackMult } from '../data/equipmentAuras';
+import { equipmentMagicAttackMult, equipmentBossDamageMult } from '../data/equipmentCombat';
 import { comboMultiplier } from '../data/traps';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { Room } from '../objects/Room';
-import { ROOM_DEFS, getScrollAuraBonus, type RoomData } from '../data/rooms';
+import { ROOM_DEFS, getRoomLevelDamageMult, getScrollAuraBonus, type RoomData } from '../data/rooms';
 import {
   resolveMonsterAttackCooldown,
   type CombatMonsterDef,
@@ -53,11 +56,13 @@ export interface CombatResolverContext {
   readonly effectiveCols:      number;
   readonly effectiveCellSize:  number;
   readonly equipmentMap:       Map<string, EquipmentStats>;
+  readonly equipmentAttackCounts?: Map<string, number>;
   /** monsterId → raising multiplier (level growth · 강타); see barracks.guardianAtkMult. */
   readonly guardianAtkMult?:   ReadonlyMap<string, number>;
   readonly waveAtkMult:        number;
   /** Aggregate tribe-synergy ATK multiplier (synergy.getSynergyAtkMult). */
   readonly synergyAtkMult?:    number;
+  readonly synergyAttackIntervalMult?: number;
   readonly wisdomBonuses:      { monsterAtkMult: number };
   readonly prestigeDmgMult:    number;
   readonly speedMult:          number;
@@ -70,8 +75,8 @@ export interface CombatResolverContext {
   hasSynergy(id: string): boolean;
   applyWarHexToHighestHP(): void;
   triggerTauntingRoar(rx: number, ry: number): void;
-  triggerSpectralBolt(roomX: number, cellCenterY: number, row: number, dmg: number): void;
-  triggerWhirlwind(row: number, dmg: number, roomX: number, cellCenterY: number): void;
+  triggerSpectralBolt(roomX: number, cellCenterY: number, row: number, dmg: number, equipment?: EquipmentStats, onHit?: (target: Invader) => void): void;
+  triggerWhirlwind(row: number, dmg: number, roomX: number, cellCenterY: number, equipment?: EquipmentStats, onHit?: (target: Invader) => void): void;
   triggerChainLightning(source: Invader, chainDmg: number, maxChains: number): void;
 }
 
@@ -143,7 +148,7 @@ export function resolveAttack(
     ? mDef.baseDamage
     : ROOM_DEFS[data.type].attackDamage;
   let dmg = baseDmg
-    * Math.pow(1.4, data.level - 1)
+    * getRoomLevelDamageMult(data.level)
     * data.roomTypeDmgMult
     * ctx.waveAtkMult
     * (ctx.synergyAtkMult ?? 1)
@@ -156,6 +161,10 @@ export function resolveAttack(
   // ── Equipment bonus ─────────────────────────────────────────────────────────
   const eqStats = data.monsterSlot ? ctx.equipmentMap.get(data.monsterSlot) : undefined;
   if (eqStats?.atkMult) dmg *= (1 + eqStats.atkMult);
+  if (data.monsterSlot) {
+    dmg *= equipmentMagicAttackMult(eqStats, mDef?.type === 'magic');
+    dmg *= equipmentAuraAttackMult(ctx.roomGrid, ctx.equipmentMap, row, col, mDef?.tribe);
+  }
 
   // ── Scroll Library aura bonus (+15/25/40% to magic monsters) ────────────────
   const isMagicMonster = mDef?.type === 'magic';
@@ -315,6 +324,16 @@ export function resolveAttack(
     _showTrapRing(ctx.scene, roomX, cellCenterY);
   }
 
+  // Capture before target-specific armor/immunity so a proc rechecks each recipient.
+  const equipmentBaseDamage = dmg / (data.type === 'dragons_lair' && target.def.isBoss ? 2 : 1)
+    / (data.type === 'trap_corridor' && data.level >= 3 && target.isFrozen ? 2 : 1);
+  const equipmentOptions = { roomLevel: data.level,
+    pierceMagic: ctx.hasSynergy('CELESTIAL_PIERCE') && mDef?.tribe === 'celestial' };
+  const equipmentHolyHit = (inv: Invader) => applyEquipmentBasicEffects(eqStats, data.monsterSlot,
+    undefined, mDef, data.type, equipmentBaseDamage, inv, [], now, equipmentOptions);
+  const equipmentEffects = (applyHoly = true) => applyEquipmentBasicEffects(eqStats, data.monsterSlot,
+    ctx.equipmentAttackCounts, mDef, data.type, equipmentBaseDamage, target, ctx.activeInvaders, now, { ...equipmentOptions, applyHoly });
+
   // ── SIEGE_SHIELD: 50% dmg reduction from trap rooms (GHOST_ARROW ignores) ─────
   if (!isGhostArrow && target.hasSiegeShield && (data.type === 'trap' || data.type === 'trap_corridor')) {
     dmg *= 0.5;
@@ -344,7 +363,8 @@ export function resolveAttack(
 
   // ── SPECTRAL_BOLT: piercing bolt hits all in same row ─────────────────────────
   if (mDef?.passive === 'SPECTRAL_BOLT') {
-    ctx.triggerSpectralBolt(roomX, cellCenterY, row, Math.round(dmg));
+    ctx.triggerSpectralBolt(roomX, cellCenterY, row, Math.round(dmg), eqStats, equipmentHolyHit);
+    equipmentEffects(false);
     data.lastAttackTime = now;
     ctx.rooms[row][col].flashAttack();
     return true;
@@ -354,7 +374,8 @@ export function resolveAttack(
   if (mDef?.passive === 'WHIRLWIND_DANCE') {
     data.whirlwindHitCount++;
     if (data.whirlwindHitCount % 5 === 0) {
-      ctx.triggerWhirlwind(row, Math.round(dmg * 1.5), roomX, cellCenterY);
+      ctx.triggerWhirlwind(row, Math.round(dmg * 1.5), roomX, cellCenterY, eqStats, equipmentHolyHit);
+      equipmentEffects(false);
       data.lastAttackTime = now;
       ctx.rooms[row][col].flashAttack();
       return true;
@@ -386,7 +407,8 @@ export function resolveAttack(
   // Trap combo: each distinct affliction the target carries (2s window) adds +25%.
   const combo = target.comboCount(now);
   const comboMult = comboMultiplier(combo);
-  target.takeDamage(finalDmg * comboMult);
+  target.takeDamage(finalDmg * comboMult * equipmentBossDamageMult(eqStats, target.def));
+  equipmentEffects();
   // Teach the combo: announce only when it escalates, above the invader.
   if (target.noteComboAnnounce(combo)) {
     _showFloatText(ctx.scene, target.x, target.y - 26, `콤보 ×${comboMult.toFixed(2)}`, '#ffd36e');

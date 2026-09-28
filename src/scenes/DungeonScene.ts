@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from '../combat/BattleSpeed';
 import { Room } from '../objects/Room';
 import { Invader } from '../objects/Invader';
@@ -170,6 +171,7 @@ export class DungeonScene extends Phaser.Scene {
   isEndless        = false;
   endlessHighScore = 0;
   endlessRecordBroken = false;
+  endlessPreviousWaveHp = 0; // prior generated queue HP, before per-wave events
   killsThisRun     = 0;
   goldEarnedThisRun = 0;
   killComboCount   = 0;
@@ -207,6 +209,7 @@ export class DungeonScene extends Phaser.Scene {
   trapMastery: Readonly<Record<string, number>> = {};
   // Extra monster attack cooldowns: key = `${row}_${col}_${slotIdx}` → lastAttackTime ms
   extraMonsterCooldowns = new Map<string, number>();
+  equipmentAttackCounts = new Map<string, number>();
   /** Per-slot trap damage synergy multiplier (populated by recalcRoomTypeBonuses) */
   slotTrapSynergyMult  = new Map<number, number>();
 
@@ -286,6 +289,7 @@ export class DungeonScene extends Phaser.Scene {
     this.waveActive      = false;
     this.prepActive      = false;
     this.prepTimer       = 0;
+    this.countdownBar    = undefined;
     this.spawnQueue      = [];
     this.waveEndChecked  = false;
     this.waveHasSpawned  = false;
@@ -297,7 +301,9 @@ export class DungeonScene extends Phaser.Scene {
     this.killsThisRun    = 0;
     this.goldEarnedThisRun = 0;
     this.endlessRecordBroken = false;
+    this.endlessPreviousWaveHp = 0;
     this.skillCooldowns.clear();
+    this.equipmentAttackCounts.clear();
 
     logger.debug(`[WISDOM] maxHp: ${this.maxHp}, slots: ${this.baseSlots}`);
 
@@ -380,6 +386,7 @@ export class DungeonScene extends Phaser.Scene {
 
     // Clear cached data
     this.equipmentMap.clear();
+    this.equipmentAttackCounts.clear();
     this.guardianAtkMult.clear();
   }
 
@@ -411,9 +418,11 @@ export class DungeonScene extends Phaser.Scene {
     this.skillHUD?.update();
 
     // Update room attack cooldown rings
+    const synergyIntervalMult = this.synergyManager.getGuardianAttackIntervalMult();
     for (let r = 0; r < GRID_ROWS; r++)
       for (let c = 0; c < this.effectiveCols; c++)
-        this.rooms[r]?.[c]?.updateAttackCooldown(_time);
+        this.rooms[r]?.[c]?.updateAttackCooldown(_time, synergyIntervalMult
+          * equipmentAttackIntervalMult(this.equipmentMap.get(this.roomGrid[r]?.[c]?.monsterSlot ?? '')));
 
     // FPS display — only in development
     if (import.meta.env.DEV && this.fpsText) {
@@ -501,6 +510,7 @@ export class DungeonScene extends Phaser.Scene {
       skillCooldowns: this.skillCooldowns,
       equipmentMap:   this.equipmentMap,
       speedMult:      this.speedMult,
+      synergyCooldownMult: this.synergyManager.getGuardianCooldownMult(),
       getSkillPopup:  () => this.skillPopup,
       setSkillPopup:  (v) => { this.skillPopup = v; },
       activateSkill:  (id, r) => this.activateSkill(id, r),

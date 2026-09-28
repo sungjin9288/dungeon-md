@@ -2,6 +2,7 @@ import { ALL_STAGES } from './allStages';
 import { describe, it, expect } from 'vitest';
 import { buildEndlessSpawnQueue, endlessDungeonHp } from './endlessWave';
 import { INVADER_DEFS, type InvaderType } from './invaders';
+import { ENDLESS_MODIFIERS } from './endlessModifiers';
 
 // ─── buildEndlessSpawnQueue — basic structure ─────────────────────────────────
 
@@ -677,10 +678,75 @@ describe('마일스톤은 벽이어야 한다', () => {
     }
   });
 
-  it('마일스톤 웨이브가 직전 웨이브보다 무겁다', () => {
-    for (const wave of MILESTONES) {
-      const total = (w: number) => buildEndlessSpawnQueue(w, null).reduce((sum, entry) => sum + entry.def.hp, 0);
-      expect(total(wave), `wave ${wave} vs ${wave - 1}`).toBeGreaterThan(total(wave - 1));
+  it('모든 도전 변수와 고정 seed에서 마일스톤이 직전 실제 큐보다 무겁다', () => {
+    for (const modifier of [null, ...ENDLESS_MODIFIERS]) {
+      for (let seed = 1; seed <= 32; seed++) {
+        const rng = seededRandom(seed);
+        let previousWaveHp = 0;
+        for (let wave = 1; wave <= 140; wave++) {
+          const queue = buildEndlessSpawnQueue(wave, modifier, { previousWaveHp, rng });
+          const total = totalHp(queue);
+          if (MILESTONES.includes(wave) || (wave >= 100 && wave % 10 === 0)) {
+            expect(total, `${modifier?.id ?? 'base'} seed ${seed} wave ${wave}`)
+              .toBeGreaterThanOrEqual(Math.ceil(previousWaveHp * 1.12));
+          }
+          previousWaveHp = total;
+        }
+      }
     }
   });
-})
+});
+
+function seededRandom(seed: number): () => number {
+  let value = seed;
+  return () => {
+    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+    return value / 4294967296;
+  };
+}
+function totalHp(queue: ReturnType<typeof buildEndlessSpawnQueue>): number {
+  return queue.reduce((sum, entry) => sum + entry.def.hp, 0);
+}
+
+describe('무한 마일스톤 HP 하한', () => {
+  it('기존 seed 9의 3342 < 3394 역전을 보충한다', () => {
+    const rng = seededRandom(9);
+    const uncorrected = buildEndlessSpawnQueue(10, null, { rng });
+    const previous = buildEndlessSpawnQueue(9, null, { rng });
+    expect(totalHp(uncorrected)).toBe(3342);
+    expect(totalHp(previous)).toBe(3394);
+    const corrected = buildEndlessSpawnQueue(10, null, { rng: seededRandom(9), previousWaveHp: totalHp(previous) });
+    expect(totalHp(corrected)).toBe(3802);
+    expect(corrected.slice(1)).toEqual(uncorrected.slice(1));
+    expect(corrected[0]).toEqual({ ...uncorrected[0], def: { ...uncorrected[0].def, hp: uncorrected[0].def.hp + 460 } });
+  });
+
+  it('강한 직전 조합 뒤 약한 조합에서도 하한을 보장한다', () => {
+    for (const wave of [10, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]) {
+      let priorMax = 0;
+      // Sample 1000 fixed draws; pool order is not HP order.
+      for (let i = 0; i < 1000; i++) priorMax = Math.max(priorMax,
+        totalHp(buildEndlessSpawnQueue(wave - 1, null, { rng: () => i / 1000 })));
+      const corrected = buildEndlessSpawnQueue(wave, null, { rng: () => 0, previousWaveHp: priorMax });
+      expect(totalHp(corrected), `wave ${wave}`).toBeGreaterThanOrEqual(Math.ceil(priorMax * 1.12));
+      expect(corrected.every(entry => Number.isInteger(entry.def.hp) && entry.def.hp > 0)).toBe(true);
+    }
+  });
+
+  it('일반 웨이브와 이미 충분히 무거운 마일스톤은 바꾸지 않는다', () => {
+    for (const wave of [1, 9, 11, 24, 26, 99, 101]) {
+      expect(buildEndlessSpawnQueue(wave, null, { rng: seededRandom(7), previousWaveHp: 1e9 }))
+        .toEqual(buildEndlessSpawnQueue(wave, null, { rng: seededRandom(7) }));
+    }
+    expect(buildEndlessSpawnQueue(30, null, { rng: seededRandom(7), previousWaveHp: 1 }))
+      .toEqual(buildEndlessSpawnQueue(30, null, { rng: seededRandom(7) }));
+  });
+
+  it('공유 champion 정의를 복제해 한 개체에만 부족분을 더한다', () => {
+    const baseline = buildEndlessSpawnQueue(30, null, { rng: () => 0 });
+    const corrected = buildEndlessSpawnQueue(30, null, { rng: () => 0, previousWaveHp: 1e6 });
+    expect(totalHp(corrected)).toBe(1120000);
+    expect(corrected[1]).toEqual(baseline[1]);
+    expect(corrected[0].def).not.toBe(corrected[1].def);
+  });
+});

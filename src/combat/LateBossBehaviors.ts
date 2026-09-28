@@ -66,9 +66,9 @@ export function setupThreeGodDestroyer(ctx: BossContext, inv: Invader): void {
             delay: 20000, repeat: -1,
             callback: () => {
               if (!inv.active || inv.ch5BossPhase < 4) return;
-              for (const r of roomGrid)
-                for (const d of r)
-                  if (d) d.roomHp = Math.max(0, d.roomHp - 40);
+              for (let r = 0; r < roomGrid.length; r++)
+                for (let c = 0; c < roomGrid[r].length; c++)
+                  if (roomGrid[r][c]) ctx.rooms[r][c].damageRoomHp(40);
               const t = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20, '🐍 독 홍수!', {
                 fontFamily: 'Georgia, serif', fontSize: '16px', color: '#44cc00',
                 backgroundColor: '#001400', padding: { x: 10, y: 5 },
@@ -79,7 +79,7 @@ export function setupThreeGodDestroyer(ctx: BossContext, inv: Invader): void {
                   targets: t, alpha: 0, duration: 400, delay: 1200, onComplete: () => t.destroy(),
                 }),
               });
-              logger.debug('[THREE_GOD] phase 4 venom flood — all rooms −40 HP');
+              logger.debug('[THREE_GOD] phase 4 venom flood — all rooms 40 base damage before armor');
             },
           });
           break;

@@ -4,6 +4,11 @@
  * Each function receives a RoomMechanicsContext that provides read/write
  * access to scene state, plus any per-mechanic local state structures.
  */
+import { applyEquipmentBasicEffects } from './EquipmentAttacks';
+import { equipmentAuraAttackMult } from '../data/equipmentAuras';
+import { equipmentBonusDamage, equipmentMagicAttackMult } from '../data/equipmentCombat';
+import type { EquipmentStats } from '../data/barracks';
+import { equipmentAttackIntervalMult, equipmentBossDamageMult } from '../data/equipmentCombat';
 import { comboMultiplier } from '../data/traps';
 import type Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
@@ -11,6 +16,7 @@ import type { Room } from '../objects/Room';
 import type { RoomData } from '../data/rooms';
 import {
   ROOM_DEFS,
+  getRoomLevelDamageMult,
   getMedicineHealRate,
   getAltarKillsNeeded,
 } from '../data/rooms';
@@ -39,6 +45,10 @@ export interface RoomMechanicsContext {
   readonly waveAtkMult?: number;
   /** Aggregate tribe-synergy ATK multiplier, same value CombatResolver applies. */
   readonly synergyAtkMult?: number;
+  readonly synergyAttackIntervalMult?: number;
+  readonly equipmentMap?: ReadonlyMap<string, EquipmentStats>;
+  readonly equipmentAttackCounts?: Map<string, number>;
+  readonly hasCelestialPierce?: boolean;
   readonly trapMastery?: Readonly<Record<string, number>>;
   /** The Phaser scene instance (for add, tweens, time, cameras). */
   readonly scene: Phaser.Scene;
@@ -147,7 +157,7 @@ export function runTigersPounce(ctx: RoomMechanicsContext, now: number): void {
       // Trigger pounce
       const rdef = resolveMonsterDef(data.monsterSlot ?? undefined);
       if (!rdef) continue;
-      const dmg  = Math.round(rdef.baseDamage * 3 * Math.pow(1.4, data.level - 1));
+      const dmg  = Math.round(rdef.baseDamage * 3 * getRoomLevelDamageMult(data.level));
       target.takeDamage(dmg);
       state.ready = false;
       state.cooldownUntil = now + 5000 / ctx.speedMult;
@@ -431,7 +441,9 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
 
         const cdKey = `${row}_${col}_${si}`;
         const lastAt = ctx.extraMonsterCooldowns.get(cdKey) ?? 0;
-        const cd = resolveMonsterAttackCooldown(mId, data.type);
+        const eqStats = ctx.equipmentMap?.get(mId);
+        const cd = resolveMonsterAttackCooldown(mId, data.type) * (ctx.synergyAttackIntervalMult ?? 1)
+          * equipmentAttackIntervalMult(eqStats);
         if (now - lastAt < cd / ctx.speedMult) continue;
 
         // Find nearest target in row range
@@ -448,7 +460,7 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
 
         ctx.extraMonsterCooldowns.set(cdKey, now);
         let dmg = (mDef.baseDamage > 0 ? mDef.baseDamage : ROOM_DEFS[data.type].attackDamage)
-          * Math.pow(1.4, data.level - 1)
+          * getRoomLevelDamageMult(data.level)
           * data.roomTypeDmgMult
           * (ctx.guardianAtkMult?.get(mId) ?? 1)
           // CombatResolver applies these to the primary guardian; the extra
@@ -458,8 +470,19 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
           * (ctx.synergyAtkMult ?? 1);
         if (now < ctx.tauntBoostActiveUntil) dmg *= 1.3;
         if (ctx.hasDivineTerritory()) dmg *= 1.2;
-        dmg *= comboMultiplier(target.comboCount(now));
+        dmg *= (1 + (eqStats?.atkMult ?? 0)) * equipmentMagicAttackMult(eqStats, mDef.type === 'magic');
+        dmg *= equipmentAuraAttackMult(ctx.roomGrid, ctx.equipmentMap, row, col, mDef.tribe);
+        const equipmentBaseDamage = dmg;
+        dmg *= comboMultiplier(target.comboCount(now)) * equipmentBossDamageMult(eqStats, target.def);
+        // Timed magic immunity is not bypassed by CELESTIAL_PIERCE (same as primary).
+        if (mDef.type === 'magic' && now < target.magicImmuneUntil) continue;
+        const pierceMagic = ctx.hasCelestialPierce && mDef.tribe === 'celestial';
+        dmg = equipmentBonusDamage(dmg, target, now, mDef.type === 'magic' && !pierceMagic,
+          data.type === 'trap' || data.type === 'trap_corridor', mDef.passive === 'GHOST_ARROW');
+        if (dmg <= 0) continue;
         target.takeDamage(dmg);
+        applyEquipmentBasicEffects(eqStats, mId, ctx.equipmentAttackCounts, mDef, data.type,
+          equipmentBaseDamage, target, ctx.activeInvaders, now, { roomLevel: data.level, pierceMagic });
         ctx.flashRoom(row, col);
       }
     }

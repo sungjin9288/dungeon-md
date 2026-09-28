@@ -351,9 +351,10 @@ function showCraftCompleteCard(
 
   c.add(scene.add.text(cx, top + 164, blueprintEffectText(bp), {
     fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT,
+    wordWrap: { width: 270, useAdvancedWrap: true }, align: 'center',
   }).setOrigin(0.5));
 
-  drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 112, top + 183, accent, 224);
+  drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 137, top + 183, accent, 274);
 
   c.add(scene.add.text(cx, top + 210, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,

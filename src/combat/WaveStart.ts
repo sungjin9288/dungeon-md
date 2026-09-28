@@ -21,13 +21,16 @@ import {
   playEndlessRecordFlash,
 } from './ImpactVfx';
 import { logger } from '../utils/logger';
+import { cancelPrepCountdown } from './WaveLifecycle';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 export interface WaveStartContext {
+  readonly equipmentAttackCounts?: Map<string, number>;
   readonly scene:             Phaser.Scene;
   readonly maxWave:           number;
   readonly isEndless:         boolean;
+  endlessPreviousWaveHp: number;
   readonly endlessHighScore:  number;
   readonly stageChapter:      number;
   readonly maxHp:             number;
@@ -80,6 +83,8 @@ export interface WaveStartContext {
 
 export function startWave(ctx: WaveStartContext): void {
   if (ctx.wave >= ctx.maxWave) return;
+  cancelPrepCountdown(ctx.scene);
+  ctx.equipmentAttackCounts?.clear();
   ctx.wave++;
   ctx.waveActive = true;
   ctx.setWaveRegistry(ctx.wave);
@@ -197,7 +202,8 @@ export function startWave(ctx: WaveStartContext): void {
   // ── Spawn queue construction + dispatch ──────────────────────────────────────
   if (ctx.isEndless) {
     const modifier = getEndlessModifierById(ctx.scene.registry.get('endlessModifier') as string | null);
-    ctx.spawnQueue = buildEndlessSpawnQueue(ctx.wave, modifier);
+    ctx.spawnQueue = buildEndlessSpawnQueue(ctx.wave, modifier, { previousWaveHp: ctx.endlessPreviousWaveHp });
+    ctx.endlessPreviousWaveHp = ctx.spawnQueue.reduce((sum, entry) => sum + entry.def.hp, 0);
     ctx.showEndlessMilestoneToast();
     ctx.processSpawnQueue(0);
     logger.debug(`[ENDLESS WAVE ${ctx.wave}] spawning ${ctx.spawnQueue.length} invaders`);

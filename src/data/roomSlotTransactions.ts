@@ -11,6 +11,8 @@ import {
   type RoomSlotType,
 } from './wisdom';
 import { applyQuestObjectiveUpdate, tickSubQuestProgress } from './quests';
+import type { EquipmentStats } from './barracks';
+import { getRoomEquipmentDamageReduction, reduceRoomEquipmentDamage } from './equipmentDefense';
 
 export const ROOM_UPGRADE_COSTS = [150, 300, 600, 1200, 2400];
 export const ROOM_UPGRADE_HP = [300, 450, 650, 900, 1200];
@@ -59,12 +61,16 @@ export function normalizeDungeonSlot(slot: DungeonSlot): DungeonSlot {
 export function applyRoomSlotDamageSnapshot(
   slots: readonly RuntimeDungeonSlot[],
   fraction: number,
+  equipmentMap: ReadonlyMap<string, EquipmentStats> = new Map(),
 ): RuntimeDungeonSlot[] {
   return slots.map(slot => {
     if (!slot) return slot;
     return {
       ...slot,
-      hp: Math.max(0, slot.hp - Math.ceil(slot.maxHp * fraction)),
+      hp: Math.max(0, slot.hp - Math.ceil(reduceRoomEquipmentDamage(
+        slot.maxHp * fraction,
+        getRoomEquipmentDamageReduction(slot.monsterIds ?? [], equipmentMap),
+      ))),
     };
   });
 }

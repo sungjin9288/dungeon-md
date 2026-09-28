@@ -171,16 +171,17 @@ export function summarizeStatEffects(
     if (key === 'goldBonus')    return `골드 +${Math.round(value * 100)}%`;
     if (key === 'goldMult')     return `골드 +${Math.round(value * 100)}%`;
     if (key === 'crystalMult')  return `수정 +${Math.round(value * 100)}%`;
-    if (key === 'dmgReduction') return `피해 -${Math.round(value * 100)}%`;
-    if (key === 'atkSpeedBonus') return `공속 +${Math.round(value * 100)}%`;
-    if (key === 'bossDmgBonus') return `보스 +${Math.round(value * 100)}%`;
+    if (key === 'dmgReduction') return `방 피해 -${Math.round(value * 100)}%`;
+    if (key === 'atkSpeedBonus') return `기본공속 +${Math.round(value * 100)}%`;
+    if (key === 'bossDmgBonus') return `보스 기본피해 +${Math.round(value * 100)}%`;
     if (key === 'executeChance') return `처형 +${Math.round(value * 100)}%`;
     if (key === 'charmEvery')   return `${value}타 매혹`;
     if (key === 'procBonus')    return `발동 +${Math.round(value * 100)}%`;
     if (key === 'adjacentAtkBonus') return `인접 ATK +${Math.round(value * 100)}%`;
-    if (key === 'holyDmgBonus')     return `성스러운 +${Math.round(value * 100)}%`;
+    if (key === 'magicAtkBonus') return `마법 기본피해 +${Math.round(value * 100)}%`;
+    if (key === 'holyDmgBonus')     return `추가 마법피해 +${Math.round(value * 100)}%`;
     if (key === 'celestialAtkBonus') return `천상 ATK +${Math.round(value * 100)}%`;
-    if (key === 'aoeEvery') return `${value}타 광역`;
+    if (key === 'aoeEvery') return `${value}타 전체 50%`;
     return `${key} +${value}`;
   });
   return labels.length > 0 ? labels.slice(0, 3) : [fallback];
@@ -211,7 +212,7 @@ export function blueprintEffectText(bp: BlueprintDef): string {
 }
 
 export function summarizeEquipmentEffects(eq: CraftedEquipment): string[] {
-  return summarizeStatEffects(eq.stats, '기본 장비');
+  return summarizeStatEffects(getEquipmentStats(eq.id) as Record<string, number>, '기본 장비');
 }
 
 export function getForgeNeedLabel(def: ForgeMonsterDef | null): string {

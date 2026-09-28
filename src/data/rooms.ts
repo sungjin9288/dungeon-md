@@ -222,3 +222,8 @@ export const FAMILY_DEFAULT_ROOM: Record<RoomFamily, RoomType> = {
 };
 
 export const ROOM_FAMILY_ORDER: readonly RoomFamily[] = ['combat', 'trap', 'support', 'magic'];
+
+/** Shared room-level curve for combat damage and comparative room power. */
+export function getRoomLevelDamageMult(level: number): number {
+  return Math.pow(1.4, Math.max(0, level - 1));
+}

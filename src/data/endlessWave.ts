@@ -69,6 +69,7 @@ export function endlessDungeonHp(highestCleared: number): number {
 export function buildEndlessSpawnQueue(
   wave: number,
   modifier?: EndlessModifier | null,
+  options: { previousWaveHp?: number; rng?: () => number } = {},
 ): Array<{ def: InvaderDef; delay: number }> {
   const w     = wave;
   const queue: Array<{ def: InvaderDef; delay: number }> = [];
@@ -198,18 +199,36 @@ export function buildEndlessSpawnQueue(
     }
   }
 
+  const milestoneCount = queue.length;
+
   // ── Standard fillers ───────────────────────────────────────────────────────
   // Weight selection toward newer (harder) types as wave increases.
   // Bias index: newer types in pool get higher probability with higher waves.
   for (let i = 0; i < baseCount; i++) {
     // Pick an index biased toward the upper end of the pool
     const bias    = Math.min(1, (w - 1) / 90 + mElite); // 0→1 over 90 waves (+ run elite bias)
-    const raw     = Math.random();
+    const raw     = (options.rng ?? Math.random)();
     const biased  = Math.pow(raw, 1 - bias * 0.7); // skews toward higher indices
     const typeIdx = Math.floor(biased * pool.length);
     const type    = pool[Math.min(typeIdx, pool.length - 1)];
     queue.push({ def: makeScaledDef(type), delay: 1200 });
   }
 
+  // A weak random filler roll must not erase the milestone. Compare with the
+  // actual prior queue in this run, not a second random reconstruction of it.
+  // Put only the missing HP on the strongest event entry; counts, traits,
+  // rewards, delays and ordinary waves keep their existing rules.
+  if (milestoneCount > 0 && (options.previousWaveHp ?? 0) > 0) {
+    const floor = Math.ceil(options.previousWaveHp! * 1.12);
+    const total = queue.reduce((sum, entry) => sum + entry.def.hp, 0);
+    if (total < floor) {
+      let champion = 0;
+      for (let i = 1; i < milestoneCount; i++) {
+        if (queue[i].def.hp > queue[champion].def.hp) champion = i;
+      }
+      const entry = queue[champion];
+      entry.def = { ...entry.def, hp: entry.def.hp + floor - total };
+    }
+  }
   return queue;
 }

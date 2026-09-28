@@ -1,5 +1,6 @@
 import { getEquipmentStats, getMonsterAtk, type EquipmentStats, getOwnedMonsterAtk } from './barracks';
 import { resolveOwnedMonsterProfile } from './monsters';
+import { getRoomLevelDamageMult } from './rooms';
 import { TRAP_DEFS } from './traps';
 import { getRoomSlotCapacity, type DungeonSlot, type GameState } from './wisdom';
 
@@ -46,6 +47,10 @@ const TRAP_THREAT: Record<string, number> = {
   stun_trap: 30,
 };
 
+/** Comparative readiness score, not DPS or a win-probability prediction.
+ * Existing loadout/type weights are preserved; room growth follows combat's
+ * level curve so projections and growth rankings see the same progression.
+ */
 export function calculateRoomMetrics(
   state: GameState,
   slot: DungeonSlot | null | undefined,
@@ -77,7 +82,7 @@ export function calculateRoomMetrics(
   const supportBonus = slot.roomType === 'support' ? Math.round(roomBasePower * 0.10) : 0;
   const magicBonus = slot.roomType === 'magic' ? Math.round(guardianPower * 0.12) : 0;
   const typeBonus = combatBonus + supportBonus + magicBonus;
-  const levelBonus = Math.round((roomBasePower + typeBonus) * Math.max(0, slot.roomLevel - 1) * 0.1);
+  const levelBonus = Math.round((roomBasePower + typeBonus) * (getRoomLevelDamageMult(slot.roomLevel) - 1));
   const durabilityFactor = slot.maxHp > 0 ? clamp(slot.hp / slot.maxHp, 0, 1) : 0;
   const rawThreat = roomBasePower + typeBonus + levelBonus;
   const threatScore = Math.round(rawThreat * (0.6 + durabilityFactor * 0.4));

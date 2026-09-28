@@ -5,7 +5,10 @@ import {
   calcTribeSynergies,
   calcElementCombos,
   getSynergyAtkMult,
-  getSynergySpdMult,
+  getSynergyInvaderMoveMult,
+  getSynergyGuardianAttackSpeedMult,
+  getSynergyGuardianCooldownMult,
+  getSynergyGuardianAttackIntervalMult,
   type ActiveSynergy,
 } from './synergy';
 import type { TribeId, ElementId } from './monsters';
@@ -83,12 +86,12 @@ describe('TRIBE_SYNERGIES', () => {
     }
   });
 
-  it('spdMult effects are always positive (> 0) when present', () => {
-    // spdMult can be < 1 (slow enemies) or > 1 (boost ally speed / reduce cooldown)
+  it('invaderMoveMult effects are always positive (> 0) when present', () => {
+    // Movement is an enemy-only axis.
     for (const syn of TRIBE_SYNERGIES) {
       for (const tier of syn.tiers) {
-        if (tier.effect.spdMult !== undefined) {
-          expect(tier.effect.spdMult, `${syn.tribe}/${tier.count}`).toBeGreaterThan(0);
+        if (tier.effect.invaderMoveMult !== undefined) {
+          expect(tier.effect.invaderMoveMult, `${syn.tribe}/${tier.count}`).toBeGreaterThan(0);
         }
       }
     }
@@ -298,37 +301,37 @@ describe('getSynergyAtkMult', () => {
   });
 });
 
-// ─── getSynergySpdMult ────────────────────────────────────────────────────────
+// ─── getSynergyInvaderMoveMult ────────────────────────────────────────────────────────
 
-describe('getSynergySpdMult', () => {
+describe('getSynergyInvaderMoveMult', () => {
   it('returns 1.0 for empty synergy list', () => {
-    expect(getSynergySpdMult([])).toBe(1);
+    expect(getSynergyInvaderMoveMult([])).toBe(1);
   });
 
-  it('returns 1.0 when no synergy has spdMult', () => {
+  it('returns 1.0 when no synergy has invaderMoveMult', () => {
     const synergies: ActiveSynergy[] = [{
       tribe: 'dokkaebi',
       count: 2,
       tier: { count: 2, name: 'A', desc: '', effect: { atkMult: 1.10 } },
     }];
-    expect(getSynergySpdMult(synergies)).toBe(1);
+    expect(getSynergyInvaderMoveMult(synergies)).toBe(1);
   });
 
-  it('applies a single spdMult correctly', () => {
+  it('applies a single invaderMoveMult correctly', () => {
     const synergies: ActiveSynergy[] = [{
       tribe: 'gumiho',
       count: 4,
-      tier: { count: 4, name: 'B', desc: '', effect: { spdMult: 0.90 } },
+      tier: { count: 4, name: 'B', desc: '', effect: { invaderMoveMult: 0.90 } },
     }];
-    expect(getSynergySpdMult(synergies)).toBeCloseTo(0.90);
+    expect(getSynergyInvaderMoveMult(synergies)).toBeCloseTo(0.90);
   });
 
-  it('multiplies two spdMults together', () => {
+  it('multiplies two invaderMoveMults together', () => {
     const synergies: ActiveSynergy[] = [
-      { tribe: 'gumiho',     count: 4, tier: { count: 4, name: 'A', desc: '', effect: { spdMult: 0.90 } } },
-      { tribe: 'underworld', count: 4, tier: { count: 4, name: 'B', desc: '', effect: { spdMult: 0.85 } } },
+      { tribe: 'gumiho',     count: 4, tier: { count: 4, name: 'A', desc: '', effect: { invaderMoveMult: 0.90 } } },
+      { tribe: 'underworld', count: 4, tier: { count: 4, name: 'B', desc: '', effect: { invaderMoveMult: 0.85 } } },
     ];
-    expect(getSynergySpdMult(synergies)).toBeCloseTo(0.90 * 0.85);
+    expect(getSynergyInvaderMoveMult(synergies)).toBeCloseTo(0.90 * 0.85);
   });
 });
 
@@ -372,8 +375,8 @@ describe('TRIBE_SYNERGIES — per-tribe effect spot-checks', () => {
   it('gumiho tier-1 has no atkMult (charm-only)', () => {
     expect(get('gumiho').tiers[0].effect.atkMult).toBeUndefined();
   });
-  it('gumiho tier-2 has spdMult 0.90', () => {
-    expect(get('gumiho').tiers[1].effect.spdMult).toBeCloseTo(0.90);
+  it('gumiho tier-2 has invaderMoveMult 0.90', () => {
+    expect(get('gumiho').tiers[1].effect.invaderMoveMult).toBeCloseTo(0.90);
   });
   it('gumiho tier-3 atkMult is 1.30', () => {
     expect(get('gumiho').tiers[2].effect.atkMult).toBeCloseTo(1.30);
@@ -407,8 +410,8 @@ describe('TRIBE_SYNERGIES — per-tribe effect spot-checks', () => {
   });
 
   // ── sea ───────────────────────────────────────────────────────────────────
-  it('sea tier-2 spdMult is 0.85', () => {
-    expect(get('sea').tiers[1].effect.spdMult).toBeCloseTo(0.85);
+  it('sea tier-2 invaderMoveMult is 0.85', () => {
+    expect(get('sea').tiers[1].effect.invaderMoveMult).toBeCloseTo(0.85);
   });
   it('sea tier-3 atkMult is 1.35 and special is SEA_TSUNAMI', () => {
     const t3 = get('sea').tiers[2];
@@ -417,21 +420,21 @@ describe('TRIBE_SYNERGIES — per-tribe effect spot-checks', () => {
   });
 
   // ── mask ──────────────────────────────────────────────────────────────────
-  it('mask tier-2 has both atkMult 1.15 and spdMult 1.15', () => {
+  it('mask tier-2 has both atkMult 1.15 and guardianAttackSpeedMult 1.15', () => {
     const t2 = get('mask').tiers[1];
     expect(t2.effect.atkMult).toBeCloseTo(1.15);
-    expect(t2.effect.spdMult).toBeCloseTo(1.15);
+    expect(t2.effect.guardianAttackSpeedMult).toBeCloseTo(1.15);
   });
   it('mask tier-3 atkMult is 1.35', () => {
     expect(get('mask').tiers[2].effect.atkMult).toBeCloseTo(1.35);
   });
 
   // ── moonlight ─────────────────────────────────────────────────────────────
-  it('moonlight tier-1 spdMult is 1.10', () => {
-    expect(get('moonlight').tiers[0].effect.spdMult).toBeCloseTo(1.10);
+  it('moonlight tier-1 guardianCooldownMult is 0.90', () => {
+    expect(get('moonlight').tiers[0].effect.guardianCooldownMult).toBeCloseTo(0.90);
   });
-  it('moonlight tier-2 spdMult is 1.20', () => {
-    expect(get('moonlight').tiers[1].effect.spdMult).toBeCloseTo(1.20);
+  it('moonlight tier-2 guardianCooldownMult is 0.80', () => {
+    expect(get('moonlight').tiers[1].effect.guardianCooldownMult).toBeCloseTo(0.80);
   });
   it('moonlight tier-3 atkMult is 1.35', () => {
     expect(get('moonlight').tiers[2].effect.atkMult).toBeCloseTo(1.35);
@@ -479,6 +482,44 @@ describe('TRIBE_SYNERGIES — tier-3 always has atkMult or special', () => {
       }
       // The ×8 capstone holds the highest atkMult.
       expect(atk[3], `${syn.tribe} ×8 is the peak atkMult`).toBe(Math.max(...atk));
+    }
+  });
+});
+
+
+describe('independent synergy timing axes', () => {
+  const active = (pairs: Array<[TribeId, number]>) => calcTribeSynergies(new Map(pairs));
+
+  it('keeps slowdown separate from guardian cooldown and attack speed', () => {
+    const mixed = active([['gumiho', 4], ['moonlight', 4]]);
+    expect(getSynergyInvaderMoveMult(mixed)).toBeCloseTo(0.9);
+    expect(getSynergyGuardianCooldownMult(mixed)).toBeCloseTo(0.8);
+    expect(getSynergyGuardianAttackSpeedMult(mixed)).toBe(1);
+    expect(getSynergyGuardianAttackIntervalMult(mixed)).toBeCloseTo(0.8);
+  });
+
+  it('composes attack speed and cooldown reduction as different units', () => {
+    const mixed = active([['mask', 4], ['moonlight', 4]]);
+    expect(getSynergyInvaderMoveMult(mixed)).toBe(1);
+    expect(getSynergyGuardianAttackIntervalMult(mixed)).toBeCloseTo(0.8 / 1.15);
+    expect(getSynergyGuardianCooldownMult(mixed)).toBeCloseTo(0.8);
+  });
+
+  it('stacks only enemy movement effects together', () => {
+    const mixed = active([['gumiho', 4], ['sea', 4]]);
+    expect(getSynergyInvaderMoveMult(mixed)).toBeCloseTo(0.9 * 0.85);
+    expect(getSynergyGuardianAttackIntervalMult(mixed)).toBe(1);
+  });
+
+  it.each(TRIBE_SYNERGIES.flatMap(s => s.tiers.map(t => [s.tribe, t.count] as const)))
+  ('preserves highest-tier-only selection for %s ×%i', (tribe, count) => {
+    const selected = active([[tribe, count]]);
+    expect(selected).toHaveLength(1);
+    expect(selected[0].tier.count).toBe(count);
+    if (count >= 6) {
+      expect(getSynergyInvaderMoveMult(selected)).toBe(1);
+      expect(getSynergyGuardianAttackIntervalMult(selected)).toBe(1);
+      expect(getSynergyGuardianCooldownMult(selected)).toBe(1);
     }
   });
 });

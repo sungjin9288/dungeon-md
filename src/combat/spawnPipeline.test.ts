@@ -137,3 +137,22 @@ describe('resolveSpawnDef — weekly boss override', () => {
     expect(out.hp).toBe(50_000);
   });
 });
+
+
+describe('synergy movement reaches resolved spawn definitions', () => {
+  it.each([0.9, 0.85, 0.9 * 0.85])('composes %f with wave/daily speed without changing HP', synergyInvaderMoveMult => {
+    const def = INVADER_DEFS.soldier;
+    const out = resolveSpawnDef(def, { waveHpMult: 1.5, waveSpdMult: 1.2, dailySpeedMult: 1.3, synergyInvaderMoveMult });
+    expect(out.speed).toBe(Math.round(def.speed * 1.2 * 1.3 * synergyInvaderMoveMult));
+    expect(out.hp).toBe(Math.round(def.hp * 1.5));
+    expect(INVADER_DEFS.soldier.speed).toBe(55);
+  });
+
+  it('keeps the weekly boss HP contract while slowing its movement', () => {
+    const boss = makeWeeklyBoss();
+    const def = INVADER_DEFS.dragon_king;
+    const out = resolveSpawnDef(def, { ...NEUTRAL_MULTS, synergyInvaderMoveMult: 0.85 }, boss);
+    expect(out.hp).toBe(boss.totalHp);
+    expect(out.speed).toBe(Math.round(def.speed * 0.85));
+  });
+});

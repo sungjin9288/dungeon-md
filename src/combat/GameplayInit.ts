@@ -203,6 +203,8 @@ export function initSwapManager(ctx: GameplayInitContext): void {
       const temp      = data1.monsterSlot;
       data1.monsterSlot = data2.monsterSlot;
       data2.monsterSlot = temp;
+      data1.monsterSlots = [data1.monsterSlot, ...data1.monsterSlots.slice(1)];
+      data2.monsterSlots = [data2.monsterSlot, ...data2.monsterSlots.slice(1)];
       data1.attackCooldown = resolveMonsterAttackCooldown(data1.monsterSlot, data1.type);
       data2.attackCooldown = resolveMonsterAttackCooldown(data2.monsterSlot, data2.type);
 

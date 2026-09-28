@@ -12,6 +12,8 @@
 //   recalcRoomTypeBonuses — recompute room-type synergy multipliers after build
 
 import Phaser from 'phaser';
+import type { EquipmentStats } from '../data/barracks';
+import { equipmentBossDamageMult } from '../data/equipmentCombat';
 import { Invader } from '../objects/Invader';
 import type { RoomData } from '../data/rooms';
 import { getArmoryDmgBonus, getArmoryRadius } from '../data/rooms';
@@ -194,7 +196,7 @@ export function triggerChainLightning(ctx: RoomMechanicsContext, source: Invader
 
 // ─── triggerSpectralBolt ────────────────────────────────────────────────────
 
-export function triggerSpectralBolt(ctx: RoomMechanicsContext, fromX: number, _fromY: number, row: number, dmg: number): void {
+export function triggerSpectralBolt(ctx: RoomMechanicsContext, fromX: number, _fromY: number, row: number, dmg: number, equipment?: EquipmentStats, onHit?: (target: Invader) => void): void {
   const cs = ctx.effectiveCellSize;
   const rowY = GRID_Y + row * cs + cs / 2;
   let hits = 0;
@@ -209,9 +211,10 @@ export function triggerSpectralBolt(ctx: RoomMechanicsContext, fromX: number, _f
   });
 
   // Deal damage to all invaders in row
-  ctx.activeInvaders.forEach(inv => {
+  [...ctx.activeInvaders].forEach(inv => {
     if (!inv.active || Math.abs(inv.y - rowY) > cs * 0.7) return;
-    inv.takeDamage(dmg, true);
+    inv.takeDamage(dmg * equipmentBossDamageMult(equipment, inv.def), true);
+    onHit?.(inv);
     hits++;
     const flash = ctx.scene.add.graphics().setDepth(inv.depth + 2);
     flash.fillStyle(0xaaddff, 0.6);
@@ -224,13 +227,14 @@ export function triggerSpectralBolt(ctx: RoomMechanicsContext, fromX: number, _f
 
 // ─── triggerWhirlwind ───────────────────────────────────────────────────────
 
-export function triggerWhirlwind(ctx: RoomMechanicsContext, row: number, dmg: number, rx: number, ry: number): void {
+export function triggerWhirlwind(ctx: RoomMechanicsContext, row: number, dmg: number, rx: number, ry: number, equipment?: EquipmentStats, onHit?: (target: Invader) => void): void {
   const cs = ctx.effectiveCellSize;
   const rowY = GRID_Y + row * cs + cs / 2;
   let hits = 0;
-  ctx.activeInvaders.forEach(inv => {
+  [...ctx.activeInvaders].forEach(inv => {
     if (!inv.active || Math.abs(inv.y - rowY) > cs * 0.8) return;
-    inv.takeDamage(dmg);
+    inv.takeDamage(dmg * equipmentBossDamageMult(equipment, inv.def));
+    onHit?.(inv);
     hits++;
   });
   // Spinning vortex visual

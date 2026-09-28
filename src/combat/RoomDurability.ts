@@ -6,20 +6,31 @@
 //   saveRoomHpsToGameState() — persist current slot HPs to localStorage
 
 import { loadGameState, saveGameState, type DungeonSlot } from '../data/wisdom';
+import type { EquipmentStats } from '../data/barracks';
 import {
   applyRoomSlotDamageSnapshot,
   applyRoomSlotHpSnapshotToState,
 } from '../data/roomSlotTransactions';
 
 // ─── applyRoomSlotDamage ──────────────────────────────────────────────────────
-// Reduces every configured dungeon slot's HP by `ceil(maxHp * fraction)`,
+// Reduces every configured dungeon slot's HP by `ceil(maxHp * fraction * armorMult)`,
 // clamped to 0. Called on invader breakthrough / mirror reflect.
 
 export function applyRoomSlotDamage(
   slots:    DungeonSlot[],
   fraction: number,
+  equipmentMap: ReadonlyMap<string, EquipmentStats> = new Map(),
+  getActiveMonsterIds?: (slotIndex: number) => readonly (string | null | undefined)[],
 ): void {
-  const damagedSlots = applyRoomSlotDamageSnapshot(slots, fraction);
+  // Battle restrictions and swaps can differ from the saved loadout. Use live
+  // occupants for armor eligibility without overwriting persistent assignments.
+  const damageSlots = getActiveMonsterIds
+    ? slots.map((slot, i) => slot && {
+      ...slot,
+      monsterIds: getActiveMonsterIds(i).map(id => id ?? undefined),
+    })
+    : slots;
+  const damagedSlots = applyRoomSlotDamageSnapshot(damageSlots, fraction, equipmentMap);
   damagedSlots.forEach((slot, i) => {
     const target = slots[i] as DungeonSlot | null | undefined;
     if (!target || !slot) return;

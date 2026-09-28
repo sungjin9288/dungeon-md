@@ -1,7 +1,7 @@
 /**
  * Tribe synergy & element combo system.
  *
- * - Tribe synergy: 2/4/6 monsters of the same tribe → stacking bonuses
+ * - Tribe synergy: 2/4/6/8 monsters of the same tribe → highest qualifying tier
  * - Element combo: adjacent rooms with complementary elements → special effects
  */
 
@@ -11,7 +11,9 @@ import type { TribeId, ElementId } from './monsters';
 
 export interface SynergyEffect {
   atkMult?:  number;   // e.g. 1.10 = +10%
-  spdMult?:  number;   // attack speed multiplier
+  invaderMoveMult?: number;    // <1 slows invader movement
+  guardianAttackSpeedMult?: number; // >1 increases basic attacks per second
+  guardianCooldownMult?: number;    // <1 shortens basic/active-skill cooldowns
   goldMult?: number;   // gold drop multiplier
   special?:  string;   // special effect ID handled by DungeonScene
 }
@@ -50,7 +52,7 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
       { count: 2, name: '여우 유혹', desc: '매혹 확률 +5%',
         effect: { special: 'GUMIHO_CHARM_5' } },
       { count: 4, name: '여우 환술', desc: '매혹 확률 +15%, 침략자 속도 -10%',
-        effect: { spdMult: 0.90, special: 'GUMIHO_CHARM_15' } },
+        effect: { invaderMoveMult: 0.90, special: 'GUMIHO_CHARM_15' } },
       { count: 6, name: '구미호 각성', desc: 'ATK +30%, 환상 분신 소환',
         effect: { atkMult: 1.30, special: 'GUMIHO_CLONE' } },
       { count: 8, name: '구미호 천호', desc: '전설: ATK +55%, 환상 분신 유지',
@@ -102,7 +104,7 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
       { count: 2, name: '해류', desc: '밀어내기 효과 +20%',
         effect: { special: 'SEA_PUSH_20' } },
       { count: 4, name: '해신 파도', desc: '밀어내기 +40%, 침략자 속도 -15%',
-        effect: { spdMult: 0.85, special: 'SEA_PUSH_40' } },
+        effect: { invaderMoveMult: 0.85, special: 'SEA_PUSH_40' } },
       { count: 6, name: '해신 분노', desc: 'ATK +35%, 매 웨이브 쓰나미 AoE',
         effect: { atkMult: 1.35, special: 'SEA_TSUNAMI' } },
       { count: 8, name: '해제', desc: '전설: ATK +60%, 쓰나미 AoE 유지',
@@ -114,8 +116,8 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
     tiers: [
       { count: 2, name: '탈놀이', desc: '도발 지속시간 +0.5초',
         effect: { special: 'MASK_TAUNT_UP' } },
-      { count: 4, name: '신명', desc: 'ATK/SPD +15%, 도발 +1초',
-        effect: { atkMult: 1.15, spdMult: 1.15, special: 'MASK_TAUNT_LONG' } },
+      { count: 4, name: '신명', desc: 'ATK +15%, 전원 기본공격 속도 +15%, 도발 +1초',
+        effect: { atkMult: 1.15, guardianAttackSpeedMult: 1.15, special: 'MASK_TAUNT_LONG' } },
       { count: 6, name: '축제 광란', desc: '전원 ATK +35%, 적 혼란 효과',
         effect: { atkMult: 1.35, special: 'MASK_CONFUSION' } },
       { count: 8, name: '대탈굿', desc: '전설: 전원 ATK +55%, 적 혼란 유지',
@@ -125,10 +127,10 @@ export const TRIBE_SYNERGIES: TribeSynergy[] = [
   {
     tribe: 'moonlight',
     tiers: [
-      { count: 2, name: '달빛 은총', desc: '쿨다운 -10%',
-        effect: { spdMult: 1.10 } },
-      { count: 4, name: '달빛 축복', desc: '쿨다운 -20%, 치유 효과 +20%',
-        effect: { spdMult: 1.20, special: 'MOONLIGHT_HEAL_UP' } },
+      { count: 2, name: '달빛 은총', desc: '전원 기본공격·액티브 쿨다운 -10%',
+        effect: { guardianCooldownMult: 0.90 } },
+      { count: 4, name: '달빛 축복', desc: '전원 기본공격·액티브 쿨다운 -20%, 치유 효과 +20%',
+        effect: { guardianCooldownMult: 0.80, special: 'MOONLIGHT_HEAL_UP' } },
       { count: 6, name: '보름달 각성', desc: 'ATK +35%, 주기적 전체 치유',
         effect: { atkMult: 1.35, special: 'MOONLIGHT_MASS_HEAL' } },
       { count: 8, name: '월령 군주', desc: '전설: ATK +55%, 주기적 전체 치유 유지',
@@ -269,13 +271,20 @@ export function getSynergyAtkMult(synergies: ActiveSynergy[]): number {
   return mult;
 }
 
-/**
- * Aggregate SPD multiplier from all active synergies.
- */
-export function getSynergySpdMult(synergies: ActiveSynergy[]): number {
-  let mult = 1;
-  for (const s of synergies) {
-    mult *= s.tier.effect.spdMult ?? 1;
-  }
-  return mult;
+/** Independent axes: enemy movement must never alter guardian attack timing. */
+export function getSynergyInvaderMoveMult(synergies: ActiveSynergy[]): number {
+  return synergies.reduce((mult, s) => mult * (s.tier.effect.invaderMoveMult ?? 1), 1);
+}
+
+export function getSynergyGuardianAttackSpeedMult(synergies: ActiveSynergy[]): number {
+  return synergies.reduce((mult, s) => mult * (s.tier.effect.guardianAttackSpeedMult ?? 1), 1);
+}
+
+export function getSynergyGuardianCooldownMult(synergies: ActiveSynergy[]): number {
+  return synergies.reduce((mult, s) => mult * (s.tier.effect.guardianCooldownMult ?? 1), 1);
+}
+
+/** Attack speed +15% is interval /1.15; cooldown -20% is interval ×0.8. */
+export function getSynergyGuardianAttackIntervalMult(synergies: ActiveSynergy[]): number {
+  return getSynergyGuardianCooldownMult(synergies) / getSynergyGuardianAttackSpeedMult(synergies);
 }

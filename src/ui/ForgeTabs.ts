@@ -18,7 +18,6 @@ import {
   type ForgeContext,
 } from './ForgeShared';
 import {
-  drawEffectChips,
   buildWorkbenchPanel,
   buildForgeTargetRail,
 } from './ForgeWorkbench';
@@ -411,7 +410,10 @@ export function buildDismantleTab(
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: holder ? 'bold' : 'normal',
       color: holder ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
     }));
-    drawEffectChips(scene, c, effectLabels, x + 78, oy + 51, rarityHexVal, 184);
+    c.add(scene.add.text(x + 78, oy + 51, effectLabels.join(' · '), {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+      wordWrap: { width: 184, useAdvancedWrap: true }, lineSpacing: 1,
+    }));
     c.add(scene.add.text(x + 78, oy + 80, returnLine, {
       fontFamily: 'sans-serif', fontSize: '10px', color: returnTotal > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: 190, useAdvancedWrap: true }, maxLines: 1,

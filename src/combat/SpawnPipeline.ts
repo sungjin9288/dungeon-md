@@ -28,6 +28,7 @@ export interface SpawnPipelineContext {
   readonly waveHpMult:     number;
   readonly waveSpdMult:    number;
   readonly dailySpeedMult: number;
+  readonly synergyInvaderMoveMult: number;
   /** Active weekly boss config (weeklyBossMode), or null outside the mode. */
   readonly weeklyBoss:     WeeklyBoss | null;
   /** Behaviors already announced this run — for the once-per-trait callout. */

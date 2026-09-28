@@ -27,6 +27,7 @@ export interface RoomInputContext {
   readonly equipmentMap:  Map<string, EquipmentStats>;
   readonly skillCooldowns: Map<string, number>;
   readonly speedMult:     number;
+  readonly synergyCooldownMult: number;
   readonly nowMs:         number;
 
   get targetingSkillId(): string | null;    set targetingSkillId(v: string | null);
@@ -448,8 +449,8 @@ export function onRoomClick(ctx: RoomInputContext, room: Room): void {
         const eqCdMult = room.roomData.monsterSlot
           ? (ctx.equipmentMap.get(room.roomData.monsterSlot)?.skillCdMult ?? 1)
           : 1;
-        const cdMs = sk.cooldown * 1000 * eqCdMult;
-        ctx.skillCooldowns.set(`${room.row}_${room.col}_${skillId}`, ctx.nowMs + cdMs / ctx.speedMult);
+        const cdMs = sk.cooldown * 1000 * eqCdMult * ctx.synergyCooldownMult / ctx.speedMult;
+        ctx.skillCooldowns.set(`${room.row}_${room.col}_${skillId}`, ctx.nowMs + cdMs);
         ctx.showSkillCooldown(skillId, cdMs);
       }
       ctx.targetingSkillId = null;

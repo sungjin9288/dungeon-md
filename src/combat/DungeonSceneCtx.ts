@@ -55,6 +55,7 @@ export function buildRoomInputCtx(ds: DungeonScene): RoomInputContext {
     skillCooldowns:       ds.skillCooldowns,
     speedMult:            ds.speedMult,
     nowMs:                ds.time.now,
+    synergyCooldownMult:  ds.synergyManager.getGuardianCooldownMult(),
     get targetingSkillId()    { return ds.targetingSkillId; },
     set targetingSkillId(v)   { ds.targetingSkillId = v; },
     get skillPopup()          { return ds.skillPopup; },
@@ -106,6 +107,7 @@ export function buildActiveSkillContext(ds: DungeonScene, room: import('../objec
 
 export function buildWaveStartCtx(ds: DungeonScene): WaveStartContext {
   return {
+    equipmentAttackCounts: ds.equipmentAttackCounts,
     scene:             ds,
     maxWave:           ds.maxWave,
     isEndless:         ds.isEndless,
@@ -121,6 +123,8 @@ export function buildWaveStartCtx(ds: DungeonScene): WaveStartContext {
     set wave(v)                { ds.wave = v; },
     get waveActive()           { return ds.waveActive; },
     set waveActive(v)          { ds.waveActive = v; },
+    get endlessPreviousWaveHp() { return ds.endlessPreviousWaveHp; },
+    set endlessPreviousWaveHp(v) { ds.endlessPreviousWaveHp = v; },
     get endlessRecordBroken()  { return ds.endlessRecordBroken; },
     set endlessRecordBroken(v) { ds.endlessRecordBroken = v; },
     get waveEndChecked()       { return ds.waveEndChecked; },
@@ -182,6 +186,7 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
     waveHpMult:      ds.waveHpMult,
     waveSpdMult:     ds.waveSpdMult,
     dailySpeedMult:  ds.dailyMode?.modifiers.invaderSpeedMult ?? 1,
+    synergyInvaderMoveMult: ds.synergyManager.getInvaderMoveMult(),
     weeklyBoss:      ds.weeklyBossMode,
     seenTraits:      ds.seenTraitBehaviors,
     get waveActive()     { return ds.waveActive; },
@@ -208,6 +213,7 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
 
 export function buildCombatResolverCtx(ds: DungeonScene): CombatResolverContext {
   return {
+    equipmentAttackCounts: ds.equipmentAttackCounts,
     scene:             ds,
     rooms:             ds.rooms,
     roomGrid:          ds.roomGrid,
@@ -218,6 +224,7 @@ export function buildCombatResolverCtx(ds: DungeonScene): CombatResolverContext 
     guardianAtkMult:   ds.guardianAtkMult,
     waveAtkMult:       ds.waveAtkMult,
     synergyAtkMult:    ds.synergyManager.getAtkMult(),
+    synergyAttackIntervalMult: ds.synergyManager.getGuardianAttackIntervalMult(),
     wisdomBonuses:     ds.wisdomBonuses,
     prestigeDmgMult:   ds.prestigeDmgMult,
     speedMult:         ds.speedMult,
@@ -228,8 +235,8 @@ export function buildCombatResolverCtx(ds: DungeonScene): CombatResolverContext 
     hasSynergy:              (id)         => ds.synergyManager.hasSpecial(id),
     applyWarHexToHighestHP:  ()           => ds.applyWarHexToHighestHP(),
     triggerTauntingRoar:     (rx, ry)     => ds.triggerTauntingRoar(rx, ry),
-    triggerSpectralBolt:     (rx, cy, r, d) => _triggerSpectralBolt(buildRoomMechanicsCtx(ds), rx, cy, r, d),
-    triggerWhirlwind:        (r, d, rx, cy) => _triggerWhirlwind(buildRoomMechanicsCtx(ds), r, d, rx, cy),
+    triggerSpectralBolt:     (rx, cy, r, d, eq, hit) => _triggerSpectralBolt(buildRoomMechanicsCtx(ds), rx, cy, r, d, eq, hit),
+    triggerWhirlwind:        (r, d, rx, cy, eq, hit) => _triggerWhirlwind(buildRoomMechanicsCtx(ds), r, d, rx, cy, eq, hit),
     triggerChainLightning:   (src, cd, mc) => _triggerChainLightning(buildRoomMechanicsCtx(ds), src, cd, mc),
   };
 }
@@ -326,6 +333,8 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
 
 export function buildRoomMechanicsCtx(ds: DungeonScene): RoomMechanicsContext {
   return {
+    equipmentAttackCounts: ds.equipmentAttackCounts,
+    hasCelestialPierce: ds.synergyManager.hasSpecial('CELESTIAL_PIERCE'),
     scene: ds,
     roomGrid: ds.roomGrid,
     rooms: ds.rooms,
@@ -345,9 +354,11 @@ export function buildRoomMechanicsCtx(ds: DungeonScene): RoomMechanicsContext {
     guardianAtkMult:   ds.guardianAtkMult,
     waveAtkMult:       ds.waveAtkMult,
     synergyAtkMult:    ds.synergyManager.getAtkMult(),
+    synergyAttackIntervalMult: ds.synergyManager.getGuardianAttackIntervalMult(),
     slotTrapSynergyMult: ds.slotTrapSynergyMult,
     decorationTrapMult: 1 + (ds.decorationBonuses?.trapDmgPct ?? 0) / 100,
     extraMonsterCooldowns: ds.extraMonsterCooldowns,
+    equipmentMap: ds.equipmentMap,
     get tauntBoostActiveUntil() { return ds.tauntBoostActiveUntil; },
     get speedMult() { return ds.speedMult; },
     pounceReadyMap: ds.pounceReadyMap,
@@ -508,7 +519,10 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     get breakthruCount()         { return ds.breakthruCount; },
     set breakthruCount(v)        { ds.breakthruCount = v; },
     hasSynergy:         (id)  => ds.synergyManager.hasSpecial(id),
-    applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct),
+    applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct, ds.equipmentMap, index => {
+      const data = ds.roomGrid[Math.floor(index / 3)]?.[index % 3];
+      return data ? [data.monsterSlot, ...data.monsterSlots] : [];
+    }),
     triggerWaveFail:    ()    => ds.triggerWaveFail(),
     updateLowHpVignette:()    => ds.updateLowHpVignette(),
     setHpRegistry:      (v)   => ds.registry.set('hp', v),

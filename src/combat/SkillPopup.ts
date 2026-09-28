@@ -20,6 +20,7 @@ export interface SkillPopupContext {
   readonly skillCooldowns: Map<string, number>;
   readonly equipmentMap:   Map<string, EquipmentStats>;
   readonly speedMult:      number;
+  readonly synergyCooldownMult: number;
   getSkillPopup:  () => Phaser.GameObjects.Container | undefined;
   setSkillPopup:  (v: Phaser.GameObjects.Container | undefined) => void;
   activateSkill:  (skillId: string, room: Room) => void;
@@ -290,8 +291,12 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
       color: ready ? '#ffffff' : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
 
+    const eqCdMult = room.roomData?.monsterSlot
+      ? (equipmentMap.get(room.roomData.monsterSlot)?.skillCdMult ?? 1)
+      : 1;
+    const cdMs = sk.cooldown * 1000 * eqCdMult * ctx.synergyCooldownMult / speedMult;
     const cdLeft = ready
-      ? `준비 · ${sk.cooldown}s`
+      ? `준비 · ${Number((cdMs / 1000).toFixed(1))}s`
       : `${Math.ceil((readyAt - now) / 1000)}s 남음`;
     const statusBg = scene.add.graphics();
     statusBg.fillStyle(ready ? DUNGEON_UI.JADE : DUNGEON_UI.SOOT, ready ? 0.82 : 1);
@@ -314,10 +319,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
       zone.on('pointerout', () => drawCard(false));
       zone.on('pointerdown', () => {
         ctx.activateSkill(skillId, room);
-        const eqCdMult = room.roomData?.monsterSlot
-          ? (equipmentMap.get(room.roomData.monsterSlot)?.skillCdMult ?? 1)
-          : 1;
-        skillCooldowns.set(cdKey, scene.time.now + sk.cooldown * 1000 * eqCdMult / speedMult);
+        skillCooldowns.set(cdKey, scene.time.now + cdMs);
         popup.destroy();
         ctx.setSkillPopup(undefined);
       });

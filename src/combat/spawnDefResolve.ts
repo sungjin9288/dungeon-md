@@ -18,6 +18,7 @@ export interface SpawnDefMults {
   waveHpMult:     number;
   waveSpdMult:    number;
   dailySpeedMult: number;
+  synergyInvaderMoveMult?: number;
 }
 
 export function resolveSpawnDef(
@@ -25,9 +26,9 @@ export function resolveSpawnDef(
   mults: SpawnDefMults,
   weeklyBoss: WeeklyBoss | null = null,
 ): InvaderDef {
-  const { waveHpMult, waveSpdMult, dailySpeedMult } = mults;
-  const scaled = (waveHpMult !== 1 || waveSpdMult !== 1 || dailySpeedMult !== 1)
-    ? { ...def, hp: Math.round(def.hp * waveHpMult), speed: Math.round(def.speed * waveSpdMult * dailySpeedMult) }
+  const { waveHpMult, waveSpdMult, dailySpeedMult, synergyInvaderMoveMult = 1 } = mults;
+  const scaled = (waveHpMult !== 1 || waveSpdMult !== 1 || dailySpeedMult !== 1 || synergyInvaderMoveMult !== 1)
+    ? { ...def, hp: Math.round(def.hp * waveHpMult), speed: Math.round(def.speed * waveSpdMult * dailySpeedMult * synergyInvaderMoveMult) }
     : def;
 
   if (weeklyBoss && def.type === weeklyBoss.bossType) {

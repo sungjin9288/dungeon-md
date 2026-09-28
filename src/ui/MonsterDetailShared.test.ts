@@ -10,7 +10,7 @@ import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { OwnedMonster } from '../data/barracks';
 import type { GameState } from '../data/wisdom';
 import {
-  getEquipmentStars,
+  getEquipmentStars, getEquipmentDisplay,
   getEquipmentRarityColor,
   getRecommendedEquipmentId,
   shortenLabel,
@@ -145,17 +145,17 @@ describe('formatCraftedStatLine', () => {
   });
 
   it('formats a positive ATK bonus', () => {
-    expect(formatCraftedStatLine({ atkBonus: 15 })).toContain('ATK');
-    expect(formatCraftedStatLine({ atkBonus: 15 })).toContain('+15');
+    expect(formatCraftedStatLine({ atkMult: .15 })).toContain('ATK');
+    expect(formatCraftedStatLine({ atkMult: .15 })).toContain('+15');
   });
 
   it('formats a fractional bonus as percent', () => {
-    const line = formatCraftedStatLine({ skillCooldown: -0.1 });
+    const line = formatCraftedStatLine({ skillCdMult: .9 });
     expect(line).toContain('%');
   });
 
   it('joins multiple stats with separator', () => {
-    const line = formatCraftedStatLine({ atkBonus: 5, goldBonus: 10 });
+    const line = formatCraftedStatLine({ atkMult: .05, goldMult: .1 });
     expect(line).toContain(' · ');
   });
 });
@@ -215,4 +215,10 @@ describe('getFeedTrainingPreview', () => {
     expect(p.willLevelUp).toBe(true);
     expect(p.chip).toBe('Lv UP');
   });
+});
+
+
+it('monster equipment details use current combat stats instead of the crafting snapshot', () => {
+  const gs = makeGs({ craftedEquipment: [{ id: 'eq_dragon_fang', name: '용아검', emoji: '⚔', type: 'weapon', rarity: 3, stats: { atkMult: .4 } }] });
+  expect(getEquipmentDisplay(gs, 'eq_dragon_fang')?.desc).toBe('ATK +40% · 보스 기본피해 +25%');
 });

@@ -378,7 +378,7 @@ export function setupDeathEmissary(ctx: BossContext, inv: Invader): void {
   logger.debug('[DEATH_EMISSARY] setup complete — isDamageImmune=true, ghost adds every 20s');
 }
 
-function triggerJudgment(ctx: BossContext): void {
+export function triggerJudgment(ctx: BossContext): void {
   const { scene, roomGrid, rooms, effectiveCols } = ctx;
   const candidates: Array<[number, number]> = [];
   for (let r = 0; r < GRID_ROWS; r++)
@@ -388,14 +388,14 @@ function triggerJudgment(ctx: BossContext): void {
   const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
   const d = roomGrid[r][c]!;
   const dmg = Math.round(d.maxRoomHp * 0.5);
-  d.roomHp = Math.max(0, d.roomHp - dmg);
   const rm = rooms[r][c];
+  rm.damageRoomHp(dmg);
   scene.cameras.main.shake(500, 0.025);
   const t = scene.add.text(rm.x, rm.y, '☠️ 심판!', {
     fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: '#ff0000',
   }).setOrigin(0.5).setDepth(70);
   scene.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1200, onComplete: () => t.destroy() });
-  logger.debug(`[JUDGMENT] room [${r},${c}] −50% HP (−${dmg})`);
+  logger.debug(`[JUDGMENT] room [${r},${c}] base damage ${dmg} (50% max HP before armor)`);
 }
 
 // ─── showBossPhaseText (shared) ────────────────────────────────────────────

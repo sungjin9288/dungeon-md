@@ -83,12 +83,13 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
 
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < effectiveCols; col++) {
+      const room = rooms[row]?.[col];
+      if (room) room.equipmentMap = equipmentMap;
       const slotIndex = getHomeSlotIndex(row, col);
       if (slotIndex === null) continue;
 
       const slot = dungeonTrapSlots[slotIndex];
       const roomType = slot ? getSlotBuilding(slot) : null;
-      const room = rooms[row]?.[col];
       if (!slot || !roomType || !room || room.state !== 'empty') continue;
 
       room.occupyWith(roomType);

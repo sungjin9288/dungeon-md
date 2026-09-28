@@ -11,6 +11,7 @@
  * Asserting on the table (synergy.test.ts does) cannot see this; only the chain
  * can. This drives resolveAttack twice and compares the damage it deals.
  */
+import { getEquipmentStats } from '../data/barracks';
 import { describe, expect, it } from 'vitest';
 import { resolveAttack, type CombatResolverContext } from './CombatResolver';
 import type { RoomData } from '../data/rooms';
@@ -98,5 +99,28 @@ describe('damage chain multipliers reach the hit', () => {
 
   it('an absent synergy multiplier is neutral, not zero', () => {
     expect(damageDealt({ synergyAtkMult: undefined })).toBeCloseTo(baseline, 5);
+  });
+});
+
+
+describe('boss equipment reaches the primary basic attack', () => {
+  it.each([
+    ['eq_dragon_fang', {}, 140],
+    ['eq_dragon_fang', { isBoss: true }, 175],
+    ['eq_dragon_fang', { isMiniBoss: true }, 175],
+    ['eq_boss_amulet', {}, 100],
+    ['eq_boss_amulet', { isBoss: true }, 140],
+    ['eq_boss_amulet', { isMiniBoss: true }, 140],
+  ] as const)('%s against %j deals %d', (id, def, expected) => {
+    let dealt = 0;
+    const data = { ...room(), monsterSlot: 'village_archer' };
+    const target = {
+      def, active: true, hp: 10000, maxHp: 10000, x: 100, y: 100,
+      comboCount: () => 0, noteComboAnnounce: () => false,
+      takeDamage: (value: number) => { dealt += value; },
+    } as unknown as Invader;
+    resolveAttack(ctx({ equipmentMap: new Map([['village_archer', getEquipmentStats(id)]]) }),
+      0, 0, data, MONSTER, target, 100, 10000);
+    expect(dealt).toBeCloseTo(expected);
   });
 });

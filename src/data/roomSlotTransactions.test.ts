@@ -172,6 +172,19 @@ describe('roomSlotTransactions — slot shape', () => {
 });
 
 describe('roomSlotTransactions — durability snapshots', () => {
+  it('reduces persistent damage once with the strongest room armor and then rounds up', () => {
+    const armored = makeSlot({ hp: 100, maxHp: 100, monsterIds: ['primary', 'extra'] });
+    const empty = makeSlot({ hp: 100, maxHp: 100 });
+    const equipment = new Map([
+      ['primary', { dmgReduction: 0.15 }],
+      ['extra', { dmgReduction: 0.30 }],
+    ]);
+    const result = applyRoomSlotDamageSnapshot([armored, empty], 0.05, equipment);
+    expect(result.map(slot => slot?.hp)).toEqual([96, 95]);
+    expect(armored.hp).toBe(100);
+    expect(empty.hp).toBe(100);
+  });
+
   it('applies damage to a cloned slot snapshot without mutating runtime input', () => {
     const slot = makeSlot({ hp: 100, maxHp: 100 });
 

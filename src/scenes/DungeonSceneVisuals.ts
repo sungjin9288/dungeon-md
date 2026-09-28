@@ -5,6 +5,7 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonScene TYPE only to avoid a runtime circular dependency.
  */
+import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { loadGameState } from '../data/wisdom';
 import { staffedMonsterIds } from '../data/productionTransactions';
 import type { DungeonScene } from './DungeonScene';
@@ -162,7 +163,8 @@ export function runCombat(scene: DungeonScene, now: number): void {
     for (let col = 0; col < scene.effectiveCols; col++) {
       const data = scene.roomGrid[row][col];
       if (!data || !data.attackCooldown) continue;
-      if (now - data.lastAttackTime < data.attackCooldown) continue;
+      const intervalMult = data.monsterSlot ? (ctx.synergyAttackIntervalMult ?? 1) * equipmentAttackIntervalMult(ctx.equipmentMap.get(data.monsterSlot)) : 1;
+      if (now - data.lastAttackTime < data.attackCooldown * intervalMult) continue;
 
       const mDef        = resolveMonsterDef(data.monsterSlot ?? undefined);
       const range       = mDef ? mDef.range : 1;

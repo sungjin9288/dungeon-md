@@ -4,6 +4,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { INVADER_DEFS } from '../data/invaders';
+import { buildStoryInvasionTarget } from '../data/battleForecast';
+import { MAIN_QUESTS } from '../data/quests';
 import { loadGameState } from '../data/wisdom';
 import type { GameState, DungeonSlot } from '../data/wisdom';
 import type { InvasionConfig } from '../data/quests';
@@ -272,5 +275,26 @@ describe('getDefenseDirectiveDisplayChip', () => {
     const copy = getReadinessDirectiveCopy('battle-ready', { currentPower: 200, requiredPower: 100, readiness: 200 });
     const directive = buildDefenseDirective(copy, 200, 100);
     expect(getDefenseDirectiveDisplayChip(directive)).toBe(directive.chip);
+  });
+});
+
+describe('invasion pressure follows actual combat HP', () => {
+  const invasions = MAIN_QUESTS.flatMap(q => q.invasionOnComplete ? [q.invasionOnComplete] : []);
+  for (const invasion of invasions) {
+    it(`${invasion.id}: every spawned type contributes its actual HP`, () => {
+      const target = buildStoryInvasionTarget(invasion).stage!;
+      const weightedHp = target.waves.reduce((sum, w, i) => sum + (1 + i * 0.18)
+        * w.invaders.reduce((hp, e) => hp + INVADER_DEFS[e.type].hp * e.count, 0), 0);
+      // Keep the first peasant encounter's original UI scale, derive all others.
+      expect(estimateInvasionPressure(invasion)).toBe(Math.max(1, Math.round(weightedHp * 14 / INVADER_DEFS.peasant.hp * 0.55)));
+    });
+  }
+  it('a later registry type cannot collapse to an arbitrary fallback score', () => {
+    const config = (type: string): InvasionConfig => ({
+      id: type, name: type, isStoryInvasion: true,
+      waves: [{ waveNumber: 1, invaders: [{ type, count: 5 }] }],
+    });
+    expect(estimateInvasionPressure(config('celestial_knight'))).toBeGreaterThan(estimateInvasionPressure(config('shield_knight')));
+    expect(estimateInvasionPressure(config('shield_knight'))).toBe(estimateInvasionPressure(config('knight')));
   });
 });

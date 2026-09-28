@@ -1,26 +1,341 @@
 {
-  "generatedAt": "2026-09-20T22:57:16.298Z",
+  "generatedAt": "2026-09-21T14:57:26.872Z",
   "base": "http://127.0.0.1:8083",
   "waveCap": 40,
   "forcedModifier": null,
   "scope": "Endless endurance organic run: real wave combat through the production wave loop, the rolled run modifier held against the pure spawn queue, and the result scene read back. Not a layout audit (verify-endless-result.mjs owns that).",
   "method": "Playwright with reducedMotion: reduce so result buttons take their direct onPress path. Combat advances through window.advanceTime, the app's own fixed-step driver, at the 3x battle speed the mode ships with.",
   "sourceHashes": {
-    "src/data/endlessWave.ts": "e1bdef0180bde30fe5aef588f766ce1e65439c0e7f6e20de81843d5dfb0f0f0b",
+    "src/data/endlessWave.ts": "cde563a2ec6c6e972f8402dcfc5c65b03ff60fe626468b6754ebe7e295500003",
     "src/data/endlessModifiers.ts": "1baad24a27ee4cb9b3707400bdc1759a61a9025064a1217fad39644fb18af44a",
-    "src/combat/WaveStart.ts": "6f53e189f340ad9ade3d3bb0650f2905af0243da05b4350afa8723834816007f",
-    "src/combat/DungeonSceneInit.ts": "bb444fa5e4beae2ecd1180fa7167fbd5626ecc890540c4c2e8827fab90841dfa",
+    "src/combat/WaveStart.ts": "3130a5f97ff2d9bbf391c1f47283eebcf92576211bb43919881063de52cc0a9f",
+    "src/combat/DungeonSceneInit.ts": "b7e91e39ce66212ac4a811ed34861947561cacb72945db353f159652b37917af",
     "src/scenes/EndlessResultScene.ts": "18c363eb4b9343cb35a3b57b65ec1c3556adbff7c7c6ab04aba646fe8e241984",
-    "scripts/verify-endless-endurance.mjs": "693dd4b341b8e761f85c72f36dd55a48dbd716bafe7d1e9529d6a035b48abb74"
+    "scripts/verify-endless-endurance.mjs": "747d10d4dd3c878e80b2ce837bf59c1acb30845ad7feb1855f4dbb901a7303c2"
   },
-  "runs": [],
-  "failures": [
+  "runs": [
     {
-      "reason": "Error: page.evaluate: Execution context was destroyed, most likely because of a navigation."
+      "seeded": {
+        "slots": 9
+      },
+      "run": {
+        "modifierId": "golden",
+        "modifierResolved": {
+          "id": "golden",
+          "hpMult": 1.2,
+          "countMult": 1.1,
+          "speedMult": 1.05,
+          "rewardMult": 1.8
+        },
+        "wave": 17,
+        "dungeonHp": 0,
+        "maxHp": 1500,
+        "kills": null,
+        "slices": 70,
+        "stalls": 3,
+        "budget": 220,
+        "timeline": [
+          {
+            "wave": 1,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 1
+          },
+          {
+            "wave": 2,
+            "hp": 1500,
+            "settled": true,
+            "stalled": true,
+            "slices": 3
+          },
+          {
+            "wave": 3,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 4
+          },
+          {
+            "wave": 4,
+            "hp": 1500,
+            "settled": true,
+            "stalled": true,
+            "slices": 6
+          },
+          {
+            "wave": 5,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 8
+          },
+          {
+            "wave": 6,
+            "hp": 1500,
+            "settled": true,
+            "stalled": true,
+            "slices": 11
+          },
+          {
+            "wave": 7,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 14
+          },
+          {
+            "wave": 8,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 18
+          },
+          {
+            "wave": 9,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 22
+          },
+          {
+            "wave": 10,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 27
+          },
+          {
+            "wave": 11,
+            "hp": 1500,
+            "settled": true,
+            "stalled": false,
+            "slices": 31
+          },
+          {
+            "wave": 12,
+            "hp": 1350,
+            "settled": true,
+            "stalled": false,
+            "slices": 38
+          },
+          {
+            "wave": 13,
+            "hp": 1150,
+            "settled": true,
+            "stalled": false,
+            "slices": 44
+          },
+          {
+            "wave": 14,
+            "hp": 770,
+            "settled": true,
+            "stalled": false,
+            "slices": 49
+          },
+          {
+            "wave": 15,
+            "hp": 450,
+            "settled": true,
+            "stalled": false,
+            "slices": 57
+          },
+          {
+            "wave": 16,
+            "hp": 90,
+            "settled": true,
+            "stalled": false,
+            "slices": 65
+          },
+          {
+            "wave": 17,
+            "hp": 0,
+            "settled": true,
+            "stalled": false,
+            "slices": 70
+          }
+        ],
+        "probes": [
+          {
+            "wave": 1,
+            "mHp": 1.2,
+            "count": 6,
+            "expectedCount": 6,
+            "entries": [
+              {
+                "type": "peasant",
+                "hp": 72,
+                "expected": 72,
+                "baseline": 60
+              },
+              {
+                "type": "peasant",
+                "hp": 72,
+                "expected": 72,
+                "baseline": 60
+              },
+              {
+                "type": "shaman",
+                "hp": 144,
+                "expected": 144,
+                "baseline": 120
+              },
+              {
+                "type": "soldier",
+                "hp": 180,
+                "expected": 180,
+                "baseline": 150
+              },
+              {
+                "type": "shaman",
+                "hp": 144,
+                "expected": 144,
+                "baseline": 120
+              },
+              {
+                "type": "shaman",
+                "hp": 144,
+                "expected": 144,
+                "baseline": 120
+              }
+            ],
+            "mismatched": [],
+            "allAtBaseline": false
+          },
+          {
+            "wave": 5,
+            "mHp": 1.2,
+            "count": 7,
+            "expectedCount": 7,
+            "entries": [
+              {
+                "type": "soldier",
+                "hp": 283,
+                "expected": 283,
+                "baseline": 236
+              },
+              {
+                "type": "undying",
+                "hp": 566,
+                "expected": 566,
+                "baseline": 472
+              },
+              {
+                "type": "void",
+                "hp": 378,
+                "expected": 378,
+                "baseline": 315
+              },
+              {
+                "type": "undying",
+                "hp": 566,
+                "expected": 566,
+                "baseline": 472
+              },
+              {
+                "type": "soldier",
+                "hp": 283,
+                "expected": 283,
+                "baseline": 236
+              },
+              {
+                "type": "peasant",
+                "hp": 113,
+                "expected": 113,
+                "baseline": 94
+              },
+              {
+                "type": "peasant",
+                "hp": 113,
+                "expected": 113,
+                "baseline": 94
+              }
+            ],
+            "mismatched": [],
+            "allAtBaseline": false
+          },
+          {
+            "wave": 12,
+            "mHp": 1.2,
+            "count": 8,
+            "expectedCount": 8,
+            "entries": [
+              {
+                "type": "undying",
+                "hp": 1252,
+                "expected": 1252,
+                "baseline": 1044
+              },
+              {
+                "type": "undying",
+                "hp": 1252,
+                "expected": 1252,
+                "baseline": 1044
+              },
+              {
+                "type": "holy_paladin",
+                "hp": 918,
+                "expected": 918,
+                "baseline": 765
+              },
+              {
+                "type": "shaman",
+                "hp": 501,
+                "expected": 501,
+                "baseline": 417
+              },
+              {
+                "type": "shadow_ninja",
+                "hp": 417,
+                "expected": 417,
+                "baseline": 348
+              },
+              {
+                "type": "plague_rat",
+                "hp": 376,
+                "expected": 376,
+                "baseline": 313
+              },
+              {
+                "type": "trap_breaker",
+                "hp": 584,
+                "expected": 584,
+                "baseline": 487
+              },
+              {
+                "type": "iron_golem",
+                "hp": 2505,
+                "expected": 2505,
+                "baseline": 2087
+              }
+            ],
+            "mismatched": [],
+            "allAtBaseline": false
+          }
+        ]
+      },
+      "settled": {
+        "activeScenes": [
+          "EndlessResultScene"
+        ],
+        "endlessResult": {
+          "wave": 17,
+          "kills": 114,
+          "goldEarned": 19304,
+          "crystalsEarned": 3,
+          "isNewRecord": true,
+          "previousBest": 0
+        },
+        "endlessModifier": "golden"
+      },
+      "errors": [],
+      "screenshot": "tools/screenshots/endless-endurance.png",
+      "sha256": "4c629800f0685a920776c80559e20f430f957b09b9a7746f362130f94fcfb912"
     }
   ],
+  "failures": [],
   "summary": {
-    "runs": 0,
-    "hardFailures": 1
+    "runs": 1,
+    "hardFailures": 0
   }
 }

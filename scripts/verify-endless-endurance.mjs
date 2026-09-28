@@ -1,4 +1,4 @@
-// Endless endurance organic run: roll a modifier -> fight real waves until the
+// Endless endurance: seed a board -> fight real waves until the
 // core falls -> the result scene reports the run that actually happened.
 //
 // verify-endless-result.mjs covers the result SCREEN, but it injects a literal
@@ -17,17 +17,20 @@
 //   WEB_AUDIT_HEADLESS=1 node scripts/verify-endless-endurance.mjs
 //   ENDLESS_WAVE_CAP=40 ENDLESS_MODIFIER=glass_cannon node scripts/verify-endless-endurance.mjs
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { createSceneOpener } from './lib/web-audit.mjs';
+import { createSceneOpener, namedClick } from './lib/web-audit.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = process.env.PLAYWRIGHT_MODULE ?? '/Users/sungjin/.codex/node_modules/playwright/index.mjs';
 const { chromium } = await import(pathToFileURL(runtime).href);
 const base = process.env.WEB_AUDIT_URL ?? 'http://127.0.0.1:8083';
-const shots = resolve(root, 'tools/screenshots');
+const output = resolve(root, process.env.ENDLESS_OUTPUT ?? `output/playwright/endless-endurance/${new Date().toISOString().replaceAll(':', '-')}`);
+await mkdir(output, { recursive: true });
+// Refuse to overwrite a previous receipt, including one from a failed run.
+await writeFile(resolve(output, 'started.json'), JSON.stringify({ startedAt: new Date().toISOString() }), { flag: 'wx' });
 const sha = value => createHash('sha256').update(value).digest('hex');
 const viewport = { width: 390, height: 844 };
 
@@ -43,6 +46,10 @@ const FORCED_MODIFIER = process.env.ENDLESS_MODIFIER ?? null;
 const PROBE_WAVES = [1, 5, 12];
 // Total slices, matching verify-campaign-pacing.mjs's accounting (2.5s each).
 const BUDGET = Number(process.env.ENDLESS_BUDGET ?? 120);
+const REQUIRE_DEATH = process.env.ENDLESS_REQUIRE_DEATH !== '0';
+if (!Number.isInteger(WAVE_CAP) || WAVE_CAP < 1 || !Number.isInteger(BUDGET) || BUDGET < 1) {
+  throw new Error('ENDLESS_WAVE_CAP and ENDLESS_BUDGET must be positive integers');
+}
 
 const ROSTER = [
   'dokkaebi_warrior', 'fire_dokkaebi', 'dokkaebi_junior', 'gold_turtle', 'sage',
@@ -51,20 +58,19 @@ const ROSTER = [
 
 const audit = {
   generatedAt: new Date().toISOString(), base, waveCap: WAVE_CAP, forcedModifier: FORCED_MODIFIER,
-  scope: 'Endless endurance organic run: real wave combat through the production wave loop, the rolled run modifier held against the pure spawn queue, and the result scene read back. Not a layout audit (verify-endless-result.mjs owns that).',
+  scope: 'Seeded board, real continuous combat. Harness starts each wave and skips result overlays; never forces a wave to finish, removes enemies, or changes combat HP. Queue history, modifier, settlement and persisted reward checks. Not a balance or manual-play audit.',
   method: 'Playwright with reducedMotion: reduce so result buttons take their direct onPress path. Combat advances through window.advanceTime, the app\'s own fixed-step driver, at the 3x battle speed the mode ships with.',
   sourceHashes: {}, runs: [], failures: [],
 };
 for (const path of [
-  'src/data/endlessWave.ts', 'src/data/endlessModifiers.ts', 'src/combat/WaveStart.ts',
-  'src/combat/DungeonSceneInit.ts', 'src/scenes/EndlessResultScene.ts', 'scripts/verify-endless-endurance.mjs',
+  ...(await readdir(resolve(root, 'src'), { recursive: true })).filter(file => file.endsWith('.ts') && !/\.(test|spec)\.ts$/.test(file)).sort().map(file => `src/${file}`),
+  'scripts/verify-endless-endurance.mjs', 'scripts/lib/web-audit.mjs', 'package-lock.json',
 ]) {
   audit.sourceHashes[path] = sha(await readFile(resolve(root, path)));
 }
 
 const browser = await chromium.launch({ headless: process.env.WEB_AUDIT_HEADLESS === '1' });
 const openScene = createSceneOpener({ browser, base });
-await mkdir(shots, { recursive: true });
 
 /** Give the run a board strong enough to reach deep waves, and a clean record. */
 async function seedDefence(page) {
@@ -80,51 +86,54 @@ async function seedDefence(page) {
       roomType: 'combat', monsterIds: [id], trapIds: [], roomLevel: 5, hp: 400, maxHp: 400,
     }));
     wisdom.saveGameState(state);
-    return { slots: state.dungeonSlots.length };
+    return { slots: state.dungeonSlots.length, dmLevel: state.dmLevel, monsterLevel: 40, roomLevel: 5, roomHp: 400, roster, soulCrystals: state.soulCrystals ?? 0 };
   }, { roster: ROSTER });
 }
 
 /**
  * Fight the run. Budget is total, not per wave (a slow early wave must not eat
- * the slices a later one needs), and a wave that the production wave-end check
- * cannot close is force-closed the way verify-campaign-pacing.mjs closes it — a
- * board that kills everything instantly leaves `waveActive` true with nothing
- * alive and nothing queued, which otherwise burns the whole budget on one wave.
+ * the slices a later one needs). Empty active waves fail without recovery so
+ * a lifecycle regression cannot be hidden by the harness.
  */
-async function fightRun(page, { waveCap, budget, probeWaves, forcedModifier }) {
-  return page.evaluate(async ({ waveCap, budget, probeWaves, forcedModifier }) => {
+async function fightRun(page, { waveCap, budget, probeWaves }) {
+  return page.evaluate(async ({ waveCap, budget, probeWaves }) => {
     // Boss slow-mo restores itself on a wall-clock timer; a synchronous pump
     // loop starves it and the run sticks at 0.15x (see CLAUDE.md 보스 처치 슬로모).
     const yieldToTimers = () => new Promise(resolve => setTimeout(resolve, 0));
     const game = window.__phaserGame;
-    const endlessWave = await import('/src/data/endlessWave.ts');
     const endlessModifiers = await import('/src/data/endlessModifiers.ts');
     const { INVADER_DEFS } = await import('/src/data/invaders.ts');
     const ds = game.scene.getScene('DungeonScene');
     const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
 
-    if (forcedModifier) game.registry.set('endlessModifier', forcedModifier);
     const modifierId = game.registry.get('endlessModifier') ?? null;
     const modifier = endlessModifiers.getEndlessModifierById(modifierId);
 
-    ds.setSpeed(3);
+    if (ds.speedMult !== 3 || game.registry.get('battleSpeed') !== 3) throw new Error('3x speed did not reach combat through the HUD');
     const timeline = [];
     const probes = [];
+    const queueHistory = [];
     let slices = 0;
     let stalls = 0;
+    let stopReason = 'budget';
 
     while (slices < budget) {
-      if (ds.dungeonHp <= 0 || ds.wave > waveCap) break;
+      if (ds.dungeonHp <= 0) { stopReason = 'death'; break; }
+      if (!ds.waveActive && ds.wave >= waveCap) { stopReason = 'wave-cap'; break; }
       let queuedAtStart = null;
       if (!ds.waveActive) {
-        ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
+        ds.resultOverlay?.destroy(); ds.resultOverlay = undefined;
+        const previousHp = ds.endlessPreviousWaveHp;
         ds.startWave();
         // Snapshot before pumping: processSpawnQueue drains the queue as
         // invaders go out, so a queue read even one second later is short by
         // however many already spawned (measured: exactly 3, and the missing
         // ones were the high-HP milestone entries at the front).
-        if (probeWaves.includes(ds.wave)) queuedAtStart = (ds.spawnQueue ?? []).map(entry => ({ type: entry.def?.type, hp: entry.def?.hp }));
+        queuedAtStart = (ds.spawnQueue ?? []).map(entry => ({ type: entry.def?.type, hp: entry.def?.hp }));
+        const milestone = [10, 20, 25, 30, 40, 50, 60, 70, 80, 90].includes(ds.wave) || (ds.wave >= 100 && ds.wave % 10 === 0);
+        queueHistory.push({ wave: ds.wave, previousHp, totalHp: queuedAtStart.reduce((sum, entry) => sum + entry.hp, 0), storedHp: ds.endlessPreviousWaveHp, minimumHp: milestone ? Math.ceil(previousHp * 1.12) : null, count: queuedAtStart.length });
         pump(1000); await yieldToTimers();
+        if (ds.wave === 10) await window.captureEndlessWave?.(ds.wave);
       }
 
       const wave = ds.wave;
@@ -154,7 +163,7 @@ async function fightRun(page, { waveCap, budget, probeWaves, forcedModifier }) {
           wave,
           mHp,
           count: queued.length,
-          expectedCount: endlessWave.buildEndlessSpawnQueue(wave, modifier).length,
+          expectedCount: Math.min(Math.round(Math.min(5 + Math.floor(wave / 5), 20) * (modifier?.countMult ?? 1)), 24),
           entries,
           mismatched: entries.filter(entry => entry.expected === null || entry.hp !== entry.expected),
           allAtBaseline: mHp !== 1 && entries.length > 0 && entries.every(entry => entry.hp === entry.baseline),
@@ -166,15 +175,20 @@ async function fightRun(page, { waveCap, budget, probeWaves, forcedModifier }) {
       while (slices < budget) {
         pump(2500); slices++;
         await yieldToTimers();
+        if (slices % 10 === 0) await window.reportEndlessProgress?.({
+          wave: ds.wave, hp: Math.round(ds.dungeonHp), slices, budget,
+        });
         const alive = (ds.activeInvaders ?? []).filter(invader => invader.active).length;
         const queued = (ds.spawnQueue ?? []).length;
         settled = !ds.waveActive && queued === 0 && alive === 0;
         if (settled || ds.dungeonHp <= 0) break;
         idle = ds.waveActive && alive === 0 && queued === 0 ? idle + 1 : 0;
-        if (idle >= 2) { stalls++; ds.checkWaveEnd?.(); pump(500); if (ds.waveActive) ds.waveActive = false; break; }
+        if (idle >= 2) { stalls++; stopReason = 'stalled'; break; }
       }
-      timeline.push({ wave, hp: Math.round(ds.dungeonHp), settled: settled || idle >= 2, stalled: idle >= 2, slices });
-      if (ds.dungeonHp <= 0) break;
+      timeline.push({ wave, hp: Math.round(ds.dungeonHp), settled, stalled: idle >= 2, slices, waveHasSpawned: ds.waveHasSpawned, waveEndChecked: ds.waveEndChecked });
+      await window.reportEndlessProgress?.(timeline[timeline.length - 1]);
+      if (ds.dungeonHp <= 0) { stopReason = 'death'; break; }
+      if (stalls) break;
     }
     pump(2000);
 
@@ -182,21 +196,24 @@ async function fightRun(page, { waveCap, budget, probeWaves, forcedModifier }) {
       modifierId,
       modifierResolved: modifier ? { id: modifier.id, hpMult: modifier.hpMult ?? 1, countMult: modifier.countMult ?? 1, speedMult: modifier.speedMult ?? 1, rewardMult: modifier.rewardMult ?? 1 } : null,
       wave: ds.wave, dungeonHp: Math.round(ds.dungeonHp), maxHp: Math.round(ds.maxHp),
-      kills: ds.totalKills ?? null,
-      slices, stalls, budget,
-      timeline, probes,
+      kills: ds.killsThisRun, goldEarned: ds.goldEarnedThisRun, crystalEarnMult: ds.wisdomBonuses.crystalEarnMult,
+      slices, stalls, budget, stopReason,
+      timeline, probes, queueHistory,
     };
-  }, { waveCap, budget, probeWaves, forcedModifier });
+  }, { waveCap, budget, probeWaves });
 }
 
 /** What the result scene ended up holding, if the run reached it. */
 async function readResult(page) {
-  return page.evaluate(() => {
+  return page.evaluate(async () => {
     const game = window.__phaserGame;
+    const { loadGameState } = await import('/src/data/wisdom.ts');
+    const saved = loadGameState();
     return {
       activeScenes: game.scene.getScenes(true).map(entry => entry.scene.key),
       endlessResult: game.registry.get('endlessResult') ?? null,
       endlessModifier: game.registry.get('endlessModifier') ?? null,
+      saved: { endlessHighScore: saved.endlessHighScore, soulCrystals: saved.soulCrystals },
     };
   });
 }
@@ -204,6 +221,15 @@ async function readResult(page) {
 try {
   const { context, page, errors } = await openScene('DungeonHomeScene', viewport);
   try {
+    await page.exposeFunction('reportEndlessProgress', progress => {
+      process.stdout.write(`progress ${JSON.stringify({ at: new Date().toISOString(), ...progress })}\n`);
+    });
+    await page.exposeFunction('captureEndlessWave', wave => page.screenshot({ path: resolve(output, `wave-${wave}.png`) }));
+    audit.renderer = await page.evaluate(() => {
+      const gl = window.__phaserGame.renderer.gl;
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    });
     const seeded = await seedDefence(page);
     await page.evaluate(() => {
       const game = window.__phaserGame;
@@ -211,20 +237,52 @@ try {
       game.registry.set('returnTo', 'DungeonHomeScene');
       game.registry.set('stageConfig', { endless: true, stageNumber: 0 });
       game.scene.start('DungeonScene');
-      window.advanceTime(2000);
     });
+    await page.waitForFunction(() => window.__phaserGame.scene.isActive('DungeonScene') && window.__phaserGame.scene.getScene('DungeonScene').roomGrid.length > 0);
 
-    const run = await fightRun(page, { waveCap: WAVE_CAP, budget: BUDGET, probeWaves: PROBE_WAVES, forcedModifier: FORCED_MODIFIER });
+    if (FORCED_MODIFIER) {
+      await page.evaluate(async id => {
+        const { getEndlessModifierById } = await import('/src/data/endlessModifiers.ts');
+        if (!getEndlessModifierById(id)) throw new Error(`unknown forced modifier: ${id}`);
+        const game = window.__phaserGame;
+        game.registry.set('endlessModifier', id);
+        // Recreate the HUD so its cached chip matches the forced fixture.
+        const ui = game.scene.getScene('UIScene');
+        await new Promise(resolve => {
+          ui.events.once('create', () => resolve());
+          ui.scene.restart();
+        });
+      }, FORCED_MODIFIER);
+    }
+    for (let clicks = 0; clicks < 3; clicks++) {
+      if (await page.evaluate(() => window.__phaserGame.registry.get('battleSpeed') === 3)) break;
+      await namedClick(page, 'battleSpeedControl');
+    }
+
+    const run = await fightRun(page, { waveCap: WAVE_CAP, budget: BUDGET, probeWaves: PROBE_WAVES });
     const settled = await readResult(page);
 
-    const screenshot = 'tools/screenshots/endless-endurance.png';
-    await page.screenshot({ path: resolve(root, screenshot) });
-    audit.runs.push({ seeded, run, settled, errors, screenshot, sha256: sha(await readFile(resolve(root, screenshot))) });
+    const screenshot = resolve(output, 'endless-endurance.png');
+    await page.screenshot({ path: screenshot });
+    await writeFile(resolve(output, 'state.json'), await page.evaluate(() => window.render_game_to_text()));
+    audit.runs.push({ seeded, run, settled, errors, screenshot, sha256: sha(await readFile(screenshot)) });
 
     // ── Invariants ───────────────────────────────────────────────────────────
     if (run.wave <= 1) audit.failures.push({ reason: `run never advanced past wave ${run.wave}`, timeline: run.timeline });
     if (!run.modifierId) audit.failures.push({ reason: 'no endless modifier on the registry — DungeonSceneInit did not roll one' });
     if (!run.modifierResolved) audit.failures.push({ reason: `modifier id "${run.modifierId}" does not resolve`, modifierId: run.modifierId });
+    if (run.stalls) audit.failures.push({ reason: 'empty active wave stalled; no recovery attempted', timeline: run.timeline });
+    for (const entry of run.queueHistory) {
+      if (entry.storedHp !== entry.totalHp || (entry.minimumHp !== null && entry.totalHp < entry.minimumHp)) {
+        audit.failures.push({ reason: `wave ${entry.wave} queue history or milestone floor mismatch`, entry });
+      }
+    }
+    for (let i = 1; i < run.queueHistory.length; i++) {
+      if (run.queueHistory[i].previousHp !== run.queueHistory[i - 1].totalHp) audit.failures.push({ reason: 'previous-wave HP did not carry through the continuous run', entry: run.queueHistory[i] });
+    }
+    for (const wave of PROBE_WAVES.filter(wave => wave <= run.wave)) {
+      if (!run.probes.some(probe => probe.wave === wave)) audit.failures.push({ reason: `missing wave ${wave} modifier probe` });
+    }
     for (const probe of run.probes) {
       if (probe.count === 0) { audit.failures.push({ reason: `wave ${probe.wave} queued nothing`, probe }); continue; }
       if (probe.count !== probe.expectedCount) {
@@ -245,7 +303,8 @@ try {
     if (!died) {
       // The death path carries every assertion below. A capped run proves the
       // waves ran, not that the run settles — say so instead of passing quietly.
-      audit.notes = [...(audit.notes ?? []), `run hit the wave cap (${WAVE_CAP}) alive; result-flow assertions did not execute — raise ENDLESS_WAVE_CAP/ENDLESS_BUDGET to exercise them`];
+      audit.notes = [...(audit.notes ?? []), `run stopped at ${run.stopReason} alive; result-flow assertions did not execute`];
+      if (REQUIRE_DEATH) audit.failures.push({ reason: 'required core-death path was not reached' });
     } else {
       if (!settled.activeScenes.includes('EndlessResultScene')) {
         audit.failures.push({ reason: 'core fell but EndlessResultScene never opened', settled });
@@ -262,6 +321,17 @@ try {
         if (settled.endlessResult.isNewRecord !== true) {
           audit.failures.push({ reason: `run reached wave ${run.wave} from a 0 high score but isNewRecord=${settled.endlessResult.isNewRecord}`, settled });
         }
+        const crystals = Math.round((Math.floor(run.wave / 5) + (run.wave >= 20 ? 2 : 0) + (run.wave >= 50 ? 5 : 0) + (run.wave >= 100 ? 10 : 0)) * run.crystalEarnMult);
+        if (settled.endlessResult.kills !== run.kills || settled.endlessResult.goldEarned !== run.goldEarned) audit.failures.push({ reason: 'result kills/gold do not match combat', settled, run });
+        if (settled.endlessResult.crystalsEarned !== crystals || settled.saved.soulCrystals !== seeded.soulCrystals + crystals || settled.saved.endlessHighScore !== run.wave) audit.failures.push({ reason: 'persisted crystals or best score do not match the run', crystals, settled });
+        await page.evaluate(() => new Promise(resolve => {
+          const result = window.__phaserGame.scene.getScene('EndlessResultScene');
+          result.events.once('create', () => resolve());
+          result.scene.restart();
+        }));
+        const reopened = await readResult(page);
+        audit.runs[0].reopened = reopened;
+        if (JSON.stringify(reopened.saved) !== JSON.stringify(settled.saved)) audit.failures.push({ reason: 'result scene re-entry changed the reward', reopened, settled });
       }
     }
     if (errors.length) audit.failures.push({ reason: 'console errors', errors });
@@ -270,7 +340,7 @@ try {
     process.stdout.write(
       `endless: wave ${run.wave} hp ${run.dungeonHp}/${run.maxHp} | 변수 ${run.modifierId ?? 'none'}`
       + ` (hp×${run.modifierResolved?.hpMult ?? '?'} cnt×${run.modifierResolved?.countMult ?? '?'})`
-      + ` | probe ${probeLine} | ${run.slices}/${run.budget} slices, ${run.stalls} stalls | ${died ? 'core fell' : 'cap reached'}\n`,
+      + ` | probe ${probeLine} | ${run.slices}/${run.budget} slices, ${run.stalls} stalls | ${run.stopReason}\n`,
     );
   } catch (error) {
     audit.failures.push({ reason: String(error) });
@@ -278,8 +348,12 @@ try {
   } finally { await context.close(); }
 } finally {
   await browser.close();
-  audit.summary = { runs: audit.runs.length, hardFailures: audit.failures.length };
-  await writeFile(resolve(root, 'tools/endless-endurance-audit.json'), `${JSON.stringify(audit, null, 2)}\n`);
+  for (const [path, before] of Object.entries(audit.sourceHashes)) {
+    if (sha(await readFile(resolve(root, path))) !== before) audit.failures.push({ reason: `source changed during run: ${path}` });
+  }
+  audit.completedAt = new Date().toISOString();
+  audit.summary = { runs: audit.runs.length, hardFailures: audit.failures.length, completedDeathPath: audit.runs.some(({ run }) => run.stopReason === 'death'), requiredDeath: REQUIRE_DEATH, milestoneWaves: audit.runs.flatMap(({ run }) => run.queueHistory.filter(entry => entry.minimumHp !== null).map(entry => entry.wave)) };
+  await writeFile(resolve(output, 'audit.json'), `${JSON.stringify(audit, null, 2)}\n`);
   process.stdout.write(`${JSON.stringify(audit.summary)}\n`);
   for (const failure of audit.failures) process.stdout.write(`  !! ${failure.reason}\n`);
   if (audit.failures.length) process.exitCode = 1;

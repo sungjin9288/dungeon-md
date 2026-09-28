@@ -355,7 +355,7 @@ export function showWisdomToast(
   if (b.crystalEarnMult > 1) lines.push(`💠 수정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);
   if (b.monsterDmgMult < 1) lines.push(`🛡 몬스터 피해 -${Math.round((1 - b.monsterDmgMult) * 100)}%`);
   if (b.monsterAtkMult > 1) lines.push(`⚔️ 몬스터 공격 +${Math.round((b.monsterAtkMult - 1) * 100)}%`);
-  if (b.crystalPerWave > 0) lines.push(`💠 웨이브 수정 +${b.crystalPerWave}`);
+  if (b.crystalPerWave > 0) lines.push(`💠 스테이지 클리어 수정 +${b.crystalPerWave}`);
   if (b.fortressHp     > 0) lines.push(`🏯 요새 HP +${b.fortressHp}`);
   if (lines.length === 0) return;
 

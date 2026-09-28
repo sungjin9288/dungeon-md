@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ROOM_DEFS,
+  getRoomLevelDamageMult,
   getScrollAuraBonus,
   getMedicineHealRate,
   getArmoryDmgBonus,
@@ -354,5 +355,17 @@ describe('helper functions — home rooms climb to Lv5, tables hold their last v
   it('getDragonsLairCooldown keeps falling: Lv4=2500, Lv5=2000', () => {
     expect(getDragonsLairCooldown(4)).toBe(2500);
     expect(getDragonsLairCooldown(5)).toBe(2000);
+  });
+});
+
+
+describe('getRoomLevelDamageMult', () => {
+  it.each([[1, 1], [2, 1.4], [3, 1.96], [4, 2.744], [5, 3.8416]])(
+    'room level %i gives damage multiplier %f', (level, expected) => {
+      expect(getRoomLevelDamageMult(level)).toBeCloseTo(expected, 8);
+    },
+  );
+  it('unbuilt level zero does not reduce the base score', () => {
+    expect(getRoomLevelDamageMult(0)).toBe(1);
   });
 });

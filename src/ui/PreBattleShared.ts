@@ -11,6 +11,8 @@ import {
   type GameState,
   type RoomSlotType,
 } from '../data/wisdom';
+import { buildStoryInvasionTarget } from '../data/battleForecast';
+import { INVADER_DEFS } from '../data/invaders';
 import type { InvasionConfig } from '../data/quests';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
@@ -33,17 +35,6 @@ export const ENEMY_NAME: Record<string, string> = {
   // Chapter 8 invasion types
   void_soldier:     '공허 병사',   abyss_berserker:   '심연 광전사',
   primordial_guard: '원초 수문장', primordial_titan:  '원초신',
-};
-
-export const ENEMY_THREAT_SCORE: Record<string, number> = {
-  peasant_soldier:  14,
-  shield_knight:    28,
-  shadow_thief:     24,
-  field_medic:      22,
-  void_soldier:     34,
-  abyss_berserker:  46,
-  primordial_guard: 58,
-  primordial_titan: 110,
 };
 
 // Saturated accent palette (kept vivid on the bright casual bg).
@@ -330,15 +321,18 @@ export function getPowerRiskActionSlot(rooms: readonly DefenseRoomSummary[]): nu
 export function estimateInvasionPressure(cfg: InvasionConfig | undefined): number {
   if (!cfg) return 0;
 
-  const rawPressure = cfg.waves.reduce((total, wave, waveIndex) => {
-    const waveMultiplier = 1 + waveIndex * 0.18;
-    const wavePressure = wave.invaders.reduce((sum, invader) => {
-      return sum + invader.count * (ENEMY_THREAT_SCORE[invader.type] ?? 24);
-    }, 0);
-    return total + wavePressure * waveMultiplier;
-  }, 0);
+  const target = buildStoryInvasionTarget(cfg).stage;
+  if (!target) return 0; // Invalid targets are also rejected by battle entry.
 
-  return Math.max(1, Math.round(rawPressure * 0.55));
+  // Preserve the first encounter's display scale (peasant = 14) and the existing
+  // wave weights, but derive every enemy contribution from the spawned HP.
+  // This is a preparation heuristic, not a prediction of combat damage.
+  const weightedHp = target.waves.reduce((total, wave, waveIndex) => {
+    const waveHp = wave.invaders.reduce((sum, invader) =>
+      sum + invader.count * INVADER_DEFS[invader.type].hp, 0);
+    return total + waveHp * (1 + waveIndex * 0.18);
+  }, 0);
+  return Math.max(1, Math.round(weightedHp * 14 / INVADER_DEFS.peasant.hp * 0.55));
 }
 
 export function defenseDirectiveFill(severity: DefenseDirectiveSeverity): number {

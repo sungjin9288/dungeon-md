@@ -682,6 +682,14 @@ export const EQUIPMENT_DEFS: Equipment[] = [
 export interface EquipmentStats {
   atkMult?:       number;  // e.g. 0.20 = +20% ATK
   roomHpBonus?:   number;  // flat room HP bonus
+  dmgReduction?:  number;  // strongest equipment reduction in the occupied room
+  bossDmgBonus?:  number;  // wearer basic attacks vs bosses, including mini-bosses
+  atkSpeedBonus?: number;  // wearer basic attack rate; interval / (1 + bonus)
+  aoeEvery?:      number;  // every N damaging basics, all enemies at 50% basic damage
+  adjacentAtkBonus?: number; // strongest orthogonal neighboring-room aura
+  celestialAtkBonus?: number; // strongest board aura, celestial guardians only
+  holyDmgBonus?:  number;  // magic bonus hit from wearer basic damage
+  magicAtkBonus?: number; // magic-type wearer basic damage multiplier bonus
   stunBonus?:     number;  // extra stun duration (ms)
   freezeChance?:  number;  // 0-1
   charmEvery?:    number;  // charm every N attacks
@@ -715,19 +723,19 @@ export const EQUIPMENT_STATS: Record<string, EquipmentStats> = {
   eq_shadow_blade:  { atkMult: 0.30 },
   eq_herb_potion:   { roomHpBonus: 80 },
   eq_ice_shield:    { roomHpBonus: 150, freezeChance: 0.10 },
-  eq_dragon_fang:   { atkMult: 0.40 },
-  eq_spirit_robe:   { roomHpBonus: 300 },
-  eq_moonstone_pendant: { skillCdMult: 0.80 },
-  eq_heavenly_blade:    { atkMult: 0.60 },
-  eq_guardian_crown:    { roomHpBonus: 200, atkMult: 0.15 },
+  eq_dragon_fang:   { atkMult: 0.40, bossDmgBonus: 0.25 },
+  eq_spirit_robe:   { roomHpBonus: 300, dmgReduction: 0.15 },
+  eq_moonstone_pendant: { skillCdMult: 0.80, atkSpeedBonus: 0.20 },
+  eq_heavenly_blade:    { atkMult: 0.60, aoeEvery: 5 },
+  eq_guardian_crown:    { roomHpBonus: 200, atkMult: 0.15, adjacentAtkBonus: 0.25 },
   // Ch6 boss-weekly / Ch7 / Ch8 crafted items
-  eq_boss_amulet:      { skillCdMult: 0.80 },
-  eq_celestial_lance:  { atkMult: 0.45 },
-  eq_divine_aegis:     { roomHpBonus: 500 },
-  eq_arcane_core:      { atkMult: 0.30 },
-  eq_ore_plate:        { roomHpBonus: 200 },
+  eq_boss_amulet:      { skillCdMult: 0.80, bossDmgBonus: 0.40 },
+  eq_celestial_lance:  { atkMult: 0.45, holyDmgBonus: 0.20 },
+  eq_divine_aegis:     { roomHpBonus: 500, dmgReduction: 0.25, celestialAtkBonus: 0.20 },
+  eq_arcane_core:      { atkMult: 0.30, magicAtkBonus: 0.20 },
+  eq_ore_plate:        { roomHpBonus: 200, dmgReduction: 0.10 },
   eq_void_blade:       { atkMult: 0.60, skillCdMult: 0.75 },
-  eq_abyss_mail:       { roomHpBonus: 800 },
+  eq_abyss_mail:       { roomHpBonus: 800, dmgReduction: 0.30 },
   eq_primordial_gem:   { atkMult: 0.80, crystalMult: 0.30 },
   // New legendary blueprints
   eq_ember_reaver:     { atkMult: 0.50, executeChance: 0.15 },

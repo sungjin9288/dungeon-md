@@ -45,8 +45,8 @@ describe('dungeonMetrics', () => {
     expect(metrics.equipmentPower).toBe(0);
     expect(metrics.trapPower).toBe(20);
     expect(metrics.typeBonus).toBe(3);
-    expect(metrics.levelBonus).toBe(4);
-    expect(metrics.threatScore).toBe(47);
+    expect(metrics.levelBonus).toBe(17);
+    expect(metrics.threatScore).toBe(60);
     expect(metrics.readiness).toBe(70);
     expect(metrics.lootPotential).toBe(4);
   });
@@ -260,3 +260,33 @@ describe('전력이 모든 육성 채널을 본다', () => {
     expect(all).toBeGreaterThan(powerWith({}, { absorptionStacks: 10 }));
   });
 })
+
+
+describe('방 레벨의 전력 성장 곡선', () => {
+  it('Lv1 기준을 유지하고 Lv2~5를 전투와 같은 곡선으로 반영한다', () => {
+    const state = makeState();
+    const scores = [1, 2, 3, 4, 5].map(roomLevel =>
+      calculateRoomMetrics(state, makeSlot({ roomLevel })).threatScore);
+    expect(scores).toEqual([43, 60, 84, 118, 165]);
+    expect(scores[4] - scores[3]).toBeGreaterThan(scores[1] - scores[0]);
+  });
+
+  it('방 강화 예상 증가량은 실제 변경 후 합계 차이와 같다', () => {
+    const state = makeState();
+    const current = makeSlot({ roomLevel: 4 });
+    const next = makeSlot({ roomLevel: 5 });
+    const delta = calculateRoomMetricDelta(state, current, next);
+    const before = calculateDungeonMetrics({ ...state, dungeonSlots: [current] });
+    const after = calculateDungeonMetrics({ ...state, dungeonSlots: [next] });
+    expect(delta.threatDelta).toBe(47);
+    expect(after.threatScore - before.threatScore).toBe(delta.threatDelta);
+  });
+
+  it('고레벨의 내구도 할인과 빈 방의 0점을 유지한다', () => {
+    const state = makeState();
+    expect(calculateRoomMetrics(state, makeSlot({ roomLevel: 5, hp: 225 })).threatScore).toBe(132);
+    expect(calculateRoomMetrics(state, makeSlot({ roomLevel: 5, monsterIds: [], trapIds: [] })).threatScore).toBe(0);
+    expect(calculateRoomMetrics(state, undefined).threatScore).toBe(0);
+    expect(calculateRoomMetrics(state, makeSlot({ roomLevel: 0 })).threatScore).toBe(43);
+  });
+});

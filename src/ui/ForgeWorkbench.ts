@@ -317,18 +317,19 @@ export function drawEffectChips(
 ): void {
   let cursorX = x;
   labels.forEach((label, index) => {
-    const chipW = Math.min(84, Math.max(52, label.length * 7 + 14));
-    if (cursorX + chipW > x + maxWidth) return;
+    const text = scene.add.text(0, 0, label, {
+      fontFamily: 'sans-serif', fontSize: '10px',
+      color: index === 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.TEXT,
+    }).setOrigin(0.5);
+    const chipW = Math.max(52, Math.ceil(text.width) + 14);
+    if (cursorX + chipW > x + maxWidth) { text.destroy(); return; }
     const g = scene.add.graphics();
     g.fillStyle(DUNGEON_UI.VOID, 0.92);
     g.fillRoundedRect(cursorX, y, chipW, 20, 5);
     g.lineStyle(1, accent, index === 0 ? 0.58 : 0.3);
     g.strokeRoundedRect(cursorX, y, chipW, 20, 5);
     c.add(g);
-    c.add(scene.add.text(cursorX + chipW / 2, y + 10, label, {
-      fontFamily: 'sans-serif', fontSize: '10px',
-      color: index === 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.TEXT,
-    }).setOrigin(0.5));
+    c.add(text.setPosition(cursorX + chipW / 2, y + 10));
     cursorX += chipW + 5;
   });
 }

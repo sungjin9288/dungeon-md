@@ -4,6 +4,7 @@
  * and MonsterDetailPanel (the entry point). NO Phaser render logic here.
  */
 import type Phaser from 'phaser';
+import { summarizeStatEffects } from './ForgeShared';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { type GameState, type OwnedMonster, loadGameState } from '../data/wisdom';
 import {
@@ -13,7 +14,7 @@ import {
   type RarityId,
 } from '../data/monsters';
 import {
-  EQUIPMENT_DEFS,
+  EQUIPMENT_DEFS, getEquipmentStats,
   xpToNextLevel,
   type SkillTree,
 } from '../data/barracks';
@@ -274,7 +275,7 @@ export function getEquipmentDisplay(gs: GameState, equipmentId: string): Equipme
     name:    craftedDef.name,
     icon:    craftedDef.emoji,
     type:    craftedDef.type,
-    desc:    formatCraftedStatLine(craftedDef.stats),
+    desc:    formatCraftedStatLine(getEquipmentStats(craftedDef.id) as Record<string, number>),
     rarity:  craftedDef.rarity,
     crafted: true,
   };
@@ -328,21 +329,7 @@ export function shortenLabel(label: string, max: number): string {
 }
 
 export function formatCraftedStatLine(stats: Record<string, number>): string {
-  const labels: Record<string, string> = {
-    atkBonus:      'ATK',
-    stunDuration:  '기절',
-    roomHPBonus:   '방 HP',
-    goldBonus:     '골드',
-    skillCooldown: '스킬 쿨타임',
-  };
-  const parts = Object.entries(stats).map(([key, value]) => {
-    const label  = labels[key] ?? key;
-    const amount = Math.abs(value) > 0 && Math.abs(value) < 1
-      ? `${value > 0 ? '+' : ''}${Math.round(value * 100)}%`
-      : `${value > 0 ? '+' : ''}${value}`;
-    return `${label} ${amount}`;
-  });
-  return parts.length > 0 ? parts.join(' · ') : '제작 장비';
+  return summarizeStatEffects(stats, '제작 장비').join(' · ');
 }
 
 // ─── Pure helpers — skin rarity color ─────────────────────────────────────────

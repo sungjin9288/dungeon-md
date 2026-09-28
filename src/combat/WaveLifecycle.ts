@@ -205,7 +205,15 @@ export interface WavePrepContext {
 // ── enableWaveButton ──────────────────────────────────────────────────────────
 // Redraws the wave-start button and fires a golden pulse to attract attention.
 
+const prepCountdowns = new WeakMap<Phaser.Scene, () => void>();
+
+/** Stop the previous prep before its timer can reset the next wave's flags. */
+export function cancelPrepCountdown(scene: Phaser.Scene): void {
+  prepCountdowns.get(scene)?.();
+}
+
 export function enableWaveButton(ctx: WavePrepContext): void {
+  cancelPrepCountdown(ctx.scene);
   const bw = WAVE_BUTTON_W, bh = WAVE_BUTTON_H;
   const bx = CANVAS_WIDTH / 2 - bw / 2;
   const by = GRID_Y + GRID_ROWS * ctx.effectiveCellSize + 20;
@@ -249,6 +257,7 @@ export function enableWaveButton(ctx: WavePrepContext): void {
 
 export function startPrepCountdown(ctx: WavePrepContext): void {
   const scene = ctx.scene;
+  cancelPrepCountdown(scene);
   ctx.setPrepActive(true);
   ctx.setPrepTimer(10);
 
@@ -305,7 +314,24 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
   };
   _drawRing(10);
 
+  let timer: Phaser.Time.TimerEvent;
+  const cleanup = () => {
+    timer?.remove(false);
+    scene.events.off('shutdown', cleanup);
+    prepCountdowns.delete(scene);
+    ctx.setPrepActive(false);
+    ctx.setPrepTimer(0);
+    scene.registry.set('status', '');
+    ctx.countdownBar?.clear();
+    ringGfx.destroy();
+    cdNum.destroy();
+    previewT?.destroy();
+  };
+  prepCountdowns.set(scene, cleanup);
+  scene.events.once('shutdown', cleanup);
+
   const tick = () => {
+    if (prepCountdowns.get(scene) !== cleanup) return;
     ctx.setPrepTimer(ctx.prepTimer - 1);
     ctx.countdownBar!.clear();
     ctx.countdownBar!.fillStyle(COLORS.TORCH_GOLD, 0.8);
@@ -314,19 +340,12 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
     scene.registry.set('status', `다음 침략까지 ${ctx.prepTimer}초`);
 
     if (ctx.prepTimer <= 0) {
-      ctx.setPrepActive(false);
-      ctx.countdownBar!.clear();
-      ringGfx.destroy();
-      cdNum.destroy();
-      previewT?.destroy();
-      scene.registry.set('status', '');
-      ctx.setWaveEndChecked(false);
       enableWaveButton(ctx);
     } else {
       cdNum.setText(String(ctx.prepTimer));
       scene.tweens.add({ targets: cdNum, scaleX: { from: 1.3, to: 1 }, scaleY: { from: 1.3, to: 1 }, duration: 200, ease: 'Power2' });
-      scene.time.delayedCall(1000, tick);
+      timer = scene.time.delayedCall(1000, tick);
     }
   };
-  scene.time.delayedCall(1000, tick);
+  timer = scene.time.delayedCall(1000, tick);
 }

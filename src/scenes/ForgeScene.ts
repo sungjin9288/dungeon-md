@@ -582,7 +582,7 @@ export class ForgeScene extends Phaser.Scene {
     box.fillStyle(DUNGEON_UI.STONE, 1);
     box.fillRoundedRect(cx - pw / 2, top, pw, ph, 10);
     box.fillStyle(accent, 0.12);
-    box.fillRoundedRect(cx - pw / 2 + 12, top + 42, pw - 24, 72, 8);
+    box.fillRoundedRect(cx - pw / 2 + 12, top + 42, pw - 24, 98, 8);
     box.fillStyle(DUNGEON_UI.VOID, 0.76);
     box.fillRoundedRect(cx - pw / 2 + 18, materialY, pw - 36, materialH, 7);
     box.lineStyle(2, DUNGEON_UI.IRON, 1);
@@ -608,8 +608,9 @@ export class ForgeScene extends Phaser.Scene {
     }));
     ov.add(this.add.text(cx - pw / 2 + 82, top + 80, blueprintEffectText(bp), {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+      wordWrap: { width: 190, useAdvancedWrap: true },
     }));
-    drawEffectChips(this, ov, summarizeBlueprintEffects(bp), cx - pw / 2 + 82, top + 94, accent, 190);
+    drawEffectChips(this, ov, summarizeBlueprintEffects(bp), cx - 137, top + 114, accent, 274);
 
     if (recommendation) {
       drawForgeRecommendationPreview(

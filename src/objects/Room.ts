@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import type { EquipmentStats } from '../data/barracks';
+import { getRoomEquipmentDamageReduction, reduceRoomEquipmentDamage } from '../data/equipmentDefense';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -36,6 +38,7 @@ export class Room extends Phaser.GameObjects.Container {
   state: RoomState;
   isSelected = false;
   roomData: RoomData | null = null;
+  equipmentMap?: ReadonlyMap<string, EquipmentStats>;
   readonly row: number;
   readonly col: number;
 
@@ -242,7 +245,11 @@ export class Room extends Phaser.GameObjects.Container {
 
   damageRoomHp(amount: number): void {
     if (this.isDestroyed) return;
-    this.roomHpValue = Math.max(0, this.roomHpValue - amount);
+    const reduction = getRoomEquipmentDamageReduction(
+      [this.roomData?.monsterSlot, ...(this.roomData?.monsterSlots ?? [])], this.equipmentMap,
+    );
+    this.roomHpValue = Math.max(0, this.roomHpValue - reduceRoomEquipmentDamage(amount, reduction));
+    if (this.roomData) this.roomData.roomHp = this.roomHpValue;
     this.drawRoomHpBar();
     this._flashDamage();
     if (this.roomHpValue <= 0) this.collapseRoom();
@@ -255,6 +262,7 @@ export class Room extends Phaser.GameObjects.Container {
   healRoomHp(amount: number): void {
     if (this.isDestroyed) return;
     this.roomHpValue = Math.min(this.roomHpMax, this.roomHpValue + amount);
+    if (this.roomData) this.roomData.roomHp = this.roomHpValue;
     this.drawRoomHpBar();
   }
 
@@ -534,7 +542,7 @@ export class Room extends Phaser.GameObjects.Container {
   }
 
   /** Called from DungeonScene.update() during waves to draw a circular progress ring. */
-  updateAttackCooldown(now: number): void {
+  updateAttackCooldown(now: number, guardianIntervalMult = 1): void {
     const data = this.roomData;
     if (!data || !data.attackCooldown || this.state !== 'occupied') {
       this.cooldownRing?.setVisible(false);
@@ -545,7 +553,8 @@ export class Room extends Phaser.GameObjects.Container {
       this.add(this.cooldownRing);
     }
     this.cooldownRing.setVisible(true);
-    const pct = Math.min(1, (now - data.lastAttackTime) / data.attackCooldown);
+    const interval = data.attackCooldown * (data.monsterSlot ? guardianIntervalMult : 1);
+    const pct = Math.min(1, (now - data.lastAttackTime) / interval);
     const r   = 6;
     const cx  = this.cs / 2 - r - 3;   // bottom-right corner in container-local space
     const cy  = this.cs / 2 - r - 3;

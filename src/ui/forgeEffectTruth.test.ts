@@ -17,7 +17,7 @@
 import { describe, expect, it } from 'vitest';
 import { BLUEPRINT_DEFS } from '../data/fusion';
 import { EQUIPMENT_STATS, getEquipmentStats } from '../data/barracks';
-import { summarizeBlueprintEffects, summarizeStatEffects } from './ForgeShared';
+import { summarizeBlueprintEffects, summarizeStatEffects, summarizeEquipmentEffects } from './ForgeShared';
 
 const BLUEPRINTS = Object.values(BLUEPRINT_DEFS);
 
@@ -54,4 +54,10 @@ describe('forge display is the equipment, not a parallel table', () => {
       expect(summarizeBlueprintEffects(bp).length, `${bp.name}`).toBeGreaterThan(0);
     }
   });
+});
+
+
+it('old crafted snapshots display the same current effects combat reads', () => {
+  expect(summarizeEquipmentEffects({ id: 'eq_dragon_fang', name: '용아검', type: 'weapon', rarity: 3, emoji: '⚔', stats: { atkMult: .4 } }))
+    .toEqual(['ATK +40%', '보스 기본피해 +25%']);
 });
