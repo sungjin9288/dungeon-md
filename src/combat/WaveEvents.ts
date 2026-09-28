@@ -55,7 +55,25 @@ export interface WaveEventContext {
 
 // ─── tryShowWaveEvent ──────────────────────────────────────────────────────
 
+/**
+ * Name of the pre-wave overlays (wave event card, scout report). One at a time:
+ * a second tap on "침입 방어 개시" stacked briefings, re-rolled the wave event
+ * (whose multipliers apply on show) and could start the wave twice.
+ */
+export const WAVE_BRIEFING_NAME = 'wave-briefing';
+
+/** Full-screen dim that also swallows taps, so nothing under the briefing is pressed. */
+function addBlockingDim(scene: Phaser.Scene, ov: Phaser.GameObjects.Container, alpha: number): Phaser.GameObjects.Graphics {
+  const dim = scene.add.graphics();
+  dim.fillStyle(0x000000, alpha);
+  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
+  ov.add(dim);
+  return dim;
+}
+
 export function tryShowWaveEvent(ctx: WaveEventContext): void {
+  if (ctx.scene.children.getByName(WAVE_BRIEFING_NAME)) return;
   const nextWave = ctx.wave + 1;
   const evt = rollWaveEvent(nextWave, ctx.maxWave, ctx.stageNumber);
 
@@ -74,15 +92,11 @@ export function showWaveEvent(
   onDone: () => void,
 ): void {
   const { scene } = ctx;
-  const ov = scene.add.container(0, 0).setDepth(250);
+  const ov = scene.add.container(0, 0).setDepth(250).setName(WAVE_BRIEFING_NAME);
   const accent = cssToHex(evt.color);
 
-  // Dim
-  const dim = scene.add.graphics();
-  dim.fillStyle(0x000000, 0.66);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  const dim = addBlockingDim(scene, ov, 0.66);
   dim.setAlpha(0);
-  ov.add(dim);
   if (getReducedMotion()) dim.setAlpha(1);
   else scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
@@ -364,13 +378,9 @@ export function showWavePreview(ctx: WaveEventContext): void {
   }, 0);
   const threat = getThreatTier(getWaveThreatScore(enemyRows));
 
-  const ov = scene.add.container(0, 0).setDepth(300);
+  const ov = scene.add.container(0, 0).setDepth(300).setName(WAVE_BRIEFING_NAME);
 
-  // Dim
-  const dim = scene.add.graphics().setAlpha(0);
-  dim.fillStyle(0x000000, 0.68);
-  dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  ov.add(dim);
+  const dim = addBlockingDim(scene, ov, 0.68).setAlpha(0);
   if (getReducedMotion()) dim.setAlpha(1);
   else scene.tweens.add({ targets: dim, alpha: 1, duration: 200 });
 
