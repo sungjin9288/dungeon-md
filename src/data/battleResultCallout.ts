@@ -125,7 +125,8 @@ function overallCallout(
     body: copy.body,
     chip: copy.chip,
     statLabel: copy.statLabel,
-    statValue: won ? '준비 완료' : '편성 점검',
+    // Rendered above its label '준비': "준비 완료 / 준비" repeated itself.
+    statValue: won ? '완료' : '편성 점검',
     accent: copy.accent,
     severity: copy.severity,
   };

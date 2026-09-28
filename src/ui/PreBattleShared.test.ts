@@ -298,3 +298,16 @@ describe('invasion pressure follows actual combat HP', () => {
     expect(estimateInvasionPressure(config('shield_knight'))).toBe(estimateInvasionPressure(config('knight')));
   });
 });
+
+// Story quests still name legacy types (peasant_soldier…) that fight as their
+// aliases. PreBattle said "농민병사 ×3" while the scout report and the battle
+// showed "농민": the briefing must name what actually arrives.
+describe('enemyDisplayName', () => {
+  it('names the invader a story alias fights as', async () => {
+    const { enemyDisplayName } = await import('./PreBattleShared');
+    expect(['peasant_soldier', 'shield_knight', 'shadow_thief', 'field_medic'].map(enemyDisplayName))
+      .toEqual(['농민', '기사', '그림자 닌자', '무당']);
+    expect(enemyDisplayName('soldier')).toBe('병사');
+    expect(enemyDisplayName('unknown_type')).toBe('unknown_type');
+  });
+});

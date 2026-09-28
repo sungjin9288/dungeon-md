@@ -17,7 +17,7 @@ import { buildStoryInvasionTarget, type StoryInvasionTarget } from '../data/batt
 import { getQuest } from '../data/quests';
 import { openSimulationModal } from '../ui/SimulationModal';
 import {
-  ENEMY_NAME,
+  enemyDisplayName,
   ACCENT,
   TRIBE_KO,
   getMonsterDef,
@@ -117,9 +117,6 @@ export class PreBattleScene extends Phaser.Scene {
     this.add.text(56, iY + 40, `침공 작전 · ${questId || '연결된 퀘스트 없음'}`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
     }).setOrigin(0, 0.5);
-    this.add.text(CANVAS_WIDTH - 24, iY + 29, '철수 불가', {
-      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
-    }).setOrigin(1, 0.5);
 
     this.add.text(30, iY + 67, '선봉 전력', {
       fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
@@ -128,7 +125,7 @@ export class PreBattleScene extends Phaser.Scene {
     let ey = iY + 88;
     visibleInvaders.forEach(({ type, count }, index) => {
       this.drawEnemyMarker(36, ey + 1, index);
-      this.add.text(51, ey, `${ENEMY_NAME[type] ?? type}  ×${count}`, {
+      this.add.text(51, ey, `${enemyDisplayName(type)}  ×${count}`, {
         fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
       }).setOrigin(0, 0.5);
       ey += 21;

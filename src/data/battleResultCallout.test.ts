@@ -98,7 +98,7 @@ describe('battleResultCallout projector', () => {
       statLabel: copy.statLabel,
       accent: copy.accent,
       severity: copy.severity,
-      statValue: '준비 완료',
+      statValue: '완료',
     });
   });
 

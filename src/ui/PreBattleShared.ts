@@ -11,8 +11,8 @@ import {
   type GameState,
   type RoomSlotType,
 } from '../data/wisdom';
-import { buildStoryInvasionTarget } from '../data/battleForecast';
-import { INVADER_DEFS } from '../data/invaders';
+import { buildStoryInvasionTarget, STORY_INVADER_ALIASES } from '../data/battleForecast';
+import { INVADER_DEFS, type InvaderType } from '../data/invaders';
 import type { InvasionConfig } from '../data/quests';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
@@ -36,6 +36,12 @@ export const ENEMY_NAME: Record<string, string> = {
   void_soldier:     '공허 병사',   abyss_berserker:   '심연 광전사',
   primordial_guard: '원초 수문장', primordial_titan:  '원초신',
 };
+
+/** Name of the invader that actually fights: story aliases resolve first. */
+export function enemyDisplayName(type: string): string {
+  const fightsAs = STORY_INVADER_ALIASES[type] ?? type;
+  return INVADER_DEFS[fightsAs as InvaderType]?.koreanName ?? ENEMY_NAME[type] ?? type;
+}
 
 // Saturated accent palette (kept vivid on the bright casual bg).
 export const ACCENT = {

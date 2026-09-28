@@ -40,6 +40,9 @@ import {
 
 // ─── Context passed in from PreBattleScene ────────────────────────────────────
 
+
+/** Route nodes sit below the title row so the queue pips (drawn 4px above a node) clear it. */
+const RAIL_NODE_TOP = 25;
 export interface PreBattleDefenseContext {
   readonly gs: GameState;
   readonly cfg: InvasionConfig | undefined;
@@ -312,16 +315,20 @@ export function buildDefenseLoadout(
   const readyRatio = Math.max(0, Math.min(1, directive.readiness / 100));
   const readinessText = formatDefenseReadinessPercent(directive.readiness);
   const directiveChip = getDefenseDirectiveDisplayChip(directive);
-  dg.fillStyle(DUNGEON_UI.SOOT, 1);
-  dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
-  dg.lineStyle(1.5, readinessAccent, 0.9);
-  dg.strokeRoundedRect(CANVAS_WIDTH - 88, directiveY + 10, 50, 20, 6);
-  scene.add.text(CANVAS_WIDTH - 63, directiveY + 20, `${directiveChip} ${readinessText}`, {
+  // Size the chip to its text ("보강 100%+" overflowed a fixed 50px pill); right edge stays put.
+  const chipText = scene.add.text(0, directiveY + 20, `${directiveChip} ${readinessText}`, {
     fontFamily: 'monospace',
     fontSize: '10px',
     color: `#${readinessAccent.toString(16).padStart(6, '0')}`,
     fontStyle: 'bold',
   }).setOrigin(0.5);
+  const chipW = Math.max(50, Math.ceil(chipText.width) + 14);
+  const chipRight = CANVAS_WIDTH - 38;
+  chipText.setX(chipRight - chipW / 2).setDepth(1);
+  dg.fillStyle(DUNGEON_UI.SOOT, 1);
+  dg.fillRoundedRect(chipRight - chipW, directiveY + 10, chipW, 20, 6);
+  dg.lineStyle(1.5, readinessAccent, 0.9);
+  dg.strokeRoundedRect(chipRight - chipW, directiveY + 10, chipW, 20, 6);
   dg.fillStyle(DUNGEON_UI.IRON, 0.9);
   dg.fillRoundedRect(CANVAS_WIDTH - 88, directiveY + 34, 50, 4, 2);
   if (readyRatio > 0) {
@@ -363,20 +370,16 @@ export function buildDefenseLoadout(
   dg.fillRect(24, railY + 7, 2, 44);
   dg.lineStyle(1, DUNGEON_UI.IRON, 0.88);
   dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
-  scene.add.text(32, railY + 13, '침략 루트 작전판', {
+  // Direction lives in the title: end labels under the nodes collided with the
+  // active node's ring.
+  scene.add.text(32, railY + 10, '침략 루트 · 입구 → 던전 심장', {
     fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
   }).setOrigin(0, 0.5);
-  scene.add.text(CANVAS_WIDTH - 32, railY + 13, `권장 DEF ${directive.pressure || '-'}`, {
+  scene.add.text(CANVAS_WIDTH - 32, railY + 10, `권장 DEF ${directive.pressure || '-'}`, {
     fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }).setOrigin(1, 0.5);
-  scene.add.text(railX, railY + 52, '입구', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
-  }).setOrigin(0, 0.5);
-  scene.add.text(railX + 9 * cellW + 8 * cellGap, railY + 52, '던전 심장', {
-    fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
-  }).setOrigin(1, 0.5);
   dg.lineStyle(3, DUNGEON_UI.IRON, 0.72);
-  dg.lineBetween(railX + cellW / 2, railY + 34, railX + 8 * (cellW + cellGap) + cellW / 2, railY + 34);
+  dg.lineBetween(railX + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2, railX + 8 * (cellW + cellGap) + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2);
   for (let i = 0; i < 9; i++) {
     const slot = gs.dungeonSlots?.[i];
     const meta = getRoomTypeMeta(slot?.roomType);
@@ -387,7 +390,7 @@ export function buildDefenseLoadout(
     const room = roomByIndex.get(i);
     const isActionTarget = directive.actionSlotIdx === i && Boolean(directive.actionLabel);
     const cx = railX + i * (cellW + cellGap);
-    const cy = railY + 21;
+    const cy = railY + RAIL_NODE_TOP;
     dg.fillStyle(built ? style.bg : unlocked ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
     dg.fillRoundedRect(cx, cy, cellW, cellH, 6);
     if (built) {
@@ -574,7 +577,7 @@ export function buildDefenseLoadout(
     const room = roomByIndex.get(i);
     if (!unlocked) continue;
     const cx = railX + i * (cellW + cellGap);
-    const cy = railY + 21;
+    const cy = railY + RAIL_NODE_TOP;
     const routeHitZone = scene.add.zone(cx - 8, cy - 8, cellW + 16, cellH + 16)
       .setOrigin(0)
       .setInteractive({ useHandCursor: true });
@@ -693,7 +696,9 @@ export function buildDefenseLoadout(
     scene.add.text(cx + 42, cy + 30, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}`, {
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
     }).setOrigin(0, 0.5);
-    scene.add.text(cx + 42, cy + 45, `M${room.monsterIds.length}/${room.capacity.monsters} E${room.equipment.length} T${room.trapIds.length}/${room.capacity.traps}`, {
+    const trap = room.trapIds[0] ? getTrapDisplay(room.trapIds[0]) : null;
+    // The trap badge sat where the action pin ("1 배치") is drawn; the stats line carries it.
+    scene.add.text(cx + 42, cy + 45, `M${room.monsterIds.length}/${room.capacity.monsters} E${room.equipment.length} T${room.trapIds.length}/${room.capacity.traps}${trap ? ` ${trap.emoji}` : ''}`, {
       fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.BLUE,
     }).setOrigin(0, 0.5);
 
@@ -709,15 +714,6 @@ export function buildDefenseLoadout(
         fontStyle: 'bold',
       }).setOrigin(0.5);
     }
-
-    const trap = room.trapIds[0] ? getTrapDisplay(room.trapIds[0]) : null;
-    dg.fillStyle(DUNGEON_UI.SOOT, 0.88);
-    dg.fillRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
-    dg.lineStyle(1, trap ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, trap ? 0.7 : 0.62);
-    dg.strokeRoundedRect(cx + cardW - 47, cy + 13, 37, 16, 4);
-    scene.add.text(cx + cardW - 28.5, cy + 21, trap ? trap.emoji : 'T -', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: trap ? CASUAL_CSS.GREEN : CASUAL_CSS.BLUE,
-    }).setOrigin(0.5);
 
     dg.fillStyle(room.style.accent, 0.18);
     dg.fillRoundedRect(cx + cardW - 52, cy + 40, 42, 15, 4);

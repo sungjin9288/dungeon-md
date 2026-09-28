@@ -21,6 +21,7 @@ import {
   type InfoRowOptions,
 } from './GameUiPrimitives';
 import { addQuestSpeakerVisual } from './QuestSpeakerView';
+import { questUnlockLabel } from '../data/dmTitles';
 
 const QUEST_PANEL_FILL = CASUAL.PANEL;
 const QUEST_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -276,7 +277,9 @@ function buildQuestRewardRows(
     rows.push({ icon: '✨', label: 'DM XP', value: `+${quest.reward.dmXP.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   quest.reward.unlocks?.forEach(unlock => {
-    rows.push({ icon: '🔓', label: '해금', value: unlock, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    const value = questUnlockLabel(unlock);
+    if (!value) return;
+    rows.push({ icon: '🔓', label: '해금', value, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   });
   return rows;
 }
@@ -528,7 +531,8 @@ function drawMainQuestCard(
   if (quest.reward.gold)         rwds.push(`💰${quest.reward.gold}`);
   if (quest.reward.soulCrystals) rwds.push(`💠${quest.reward.soulCrystals}`);
   if (quest.reward.dmXP)         rwds.push(`✨${quest.reward.dmXP}XP`);
-  if (quest.reward.unlocks?.length) rwds.push(`🔓${quest.reward.unlocks[0]}`);
+  const shownUnlock = (quest.reward.unlocks ?? []).map(questUnlockLabel).find(Boolean);
+  if (shownUnlock) rwds.push(`🔓${shownUnlock}`);
   const reward = scene.add.text(innerX, contentY, `보상: ${rwds.join('  ')}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
     wordWrap: { width: innerWidth, useAdvancedWrap: true },

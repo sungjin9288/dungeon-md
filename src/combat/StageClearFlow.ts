@@ -24,6 +24,7 @@ import type { ResultFlowContext } from './ResultFlow';
 import { showGameComplete } from './GameCompleteFlow';
 import { projectBattleResultCallout } from '../data/battleResultCallout';
 import { addBattleCalloutRow } from '../ui/HomeResultOverlays';
+import { shortenLabel } from '../ui/MonsterDetailShared';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { getReducedMotion } from '../utils/reducedMotion';
 
@@ -236,7 +237,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       chipBg.lineStyle(1, DUNGEON_UI.EDGE, 0.75);
       chipBg.strokeRoundedRect(cx2, chipRowY, chipW, 32, 5);
       ov.add(chipBg);
-      const nameLine = def?.name ? def.name.slice(0, 4) : m.id.slice(0, 4);
+      // slice(0, 4) turned 도깨비 전사 into "도깨비", the name of another monster family.
+      const nameLine = shortenLabel(def?.name ?? m.id, 6);
       const chipT = scene.add.text(cx2 + chipW / 2, chipRowY + 7, `${nameLine}`, {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
       }).setOrigin(0.5, 0).setAlpha(0);

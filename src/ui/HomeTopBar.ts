@@ -11,19 +11,7 @@ import { showAudioSettings } from './AudioSettingsPanel';
 import { openQuestLog, type QuestLogState } from './QuestLogPanel';
 import { openPrestigeModal, buildPrestigeBadge } from './PrestigeModal';
 import { getReducedMotion } from '../utils/reducedMotion';
-
-// ─── DM Title data ────────────────────────────────────────────────────────────
-// Maps unlockedFeatures key → display label + color.
-// Add new entries here as chapters / events are released.
-
-const DM_TITLE_MAP: Record<string, { label: string; color: string }> = {
-  abyss_title:   { label: '원초의 심연 정복자', color: '#cc88ff' },
-  heaven_title:  { label: '신계 정복자',         color: '#aaddff' },
-  volcano_title: { label: '화염 산맥의 영웅',     color: '#ff9944' },
-};
-
-/** Priority order — first match wins (highest prestige first). */
-const DM_TITLE_PRIORITY = ['abyss_title', 'heaven_title', 'volcano_title'] as const;
+import { DM_TITLE_MAP, DM_TITLE_PRIORITY } from '../data/dmTitles';
 
 const HOME_HUD = {
   stone: 0x090b0a,
