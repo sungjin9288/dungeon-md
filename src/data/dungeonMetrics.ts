@@ -1,4 +1,4 @@
-import { getEquipmentStats, getMonsterAtk, type EquipmentStats, getOwnedMonsterAtk } from './barracks';
+import { getEquipmentStats, type EquipmentStats, getOwnedMonsterAtk } from './barracks';
 import { resolveOwnedMonsterProfile } from './monsters';
 import { getRoomLevelDamageMult } from './rooms';
 import { TRAP_DEFS } from './traps';
@@ -208,7 +208,7 @@ function calculateEquipmentPower(state: GameState, slot: DungeonSlot): number {
     if (!owned?.equipment) return sum;
     const def = resolveOwnedMonsterProfile(owned.id);
     if (!def) return sum;
-    const baseAtk = getMonsterAtk(def.baseDamage, owned.level, owned.spentSkills ?? {});
+    const baseAtk = getOwnedMonsterAtk(def.baseDamage, owned, state);
     return sum + calculateEquipmentImpactPower(baseAtk, getEquipmentStats(owned.equipment));
   }, 0);
 }

@@ -12,7 +12,7 @@ import {
   resolveOwnedMonsterProfile,
   type MonsterId,
 } from '../data/monsters';
-import { getMonsterAtk } from '../data/barracks';
+import { getOwnedMonsterBattleAtk } from '../data/barracks';
 import { showMonsterDetailPanel, showSkillShopPanel, type MonsterDetailTab } from '../ui/MonsterDetailPanel';
 
 import {
@@ -145,7 +145,7 @@ export class BarracksScene extends Phaser.Scene {
 
     const power = this.gs.ownedMonsters.reduce((s, m) => {
       const def = resolveOwnedMonsterProfile(m.id);
-      return def ? s + getMonsterAtk(def.baseDamage, m.level, m.spentSkills) : s;
+      return def ? s + getOwnedMonsterBattleAtk(def.baseDamage, m, this.gs) : s;
     }, 0);
 
     this.add.text(CANVAS_WIDTH / 2, 45, `총 전투력  ${power}`, {
@@ -377,8 +377,8 @@ export class BarracksScene extends Phaser.Scene {
         if (this.sortKey === 'rarity') return (b.rarity ?? 0) - (a.rarity ?? 0);
         const defA = resolveOwnedMonsterProfile(a.id);
         const defB = resolveOwnedMonsterProfile(b.id);
-        return getMonsterAtk(defB?.baseDamage ?? 0, b.level, b.spentSkills)
-             - getMonsterAtk(defA?.baseDamage ?? 0, a.level, a.spentSkills);
+        return getOwnedMonsterBattleAtk(defB?.baseDamage ?? 0, b, this.gs)
+             - getOwnedMonsterBattleAtk(defA?.baseDamage ?? 0, a, this.gs);
       });
 
     let focusCardY: number | null = null;

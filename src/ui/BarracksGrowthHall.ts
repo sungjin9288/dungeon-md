@@ -6,7 +6,7 @@ import type Phaser from 'phaser';
 import { COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
-import { xpToNextLevel, getMonsterAtk, type OwnedMonster } from '../data/barracks';
+import { xpToNextLevel, getOwnedMonsterBattleAtk, type OwnedMonster } from '../data/barracks';
 import {
   getPrimaryGrowthRecommendation,
   type GrowthRecommendation,
@@ -72,7 +72,7 @@ export function computeBarracksStats(
 
   validMonsters.forEach(monster => {
     const def = resolveOwnedMonsterProfile(monster.id)!;
-    const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills);
+    const atk = getOwnedMonsterBattleAtk(def.baseDamage, monster, gs);
     totalPower += atk;
     if (atk > strongestAtk) {
       strongest    = monster;
@@ -372,7 +372,7 @@ function drawTrainingFocusStage(
   }
 
   const def            = resolveOwnedMonsterProfile(monster.id);
-  const atk            = getMonsterAtk(def?.baseDamage ?? 10, monster.level, monster.spentSkills);
+  const atk            = getOwnedMonsterBattleAtk(def?.baseDamage ?? 10, monster, ctx.gs);
 
   drawMonsterBust(scene, ctx.gs, monster, x + w / 2, y + 58, 68, 12);
 

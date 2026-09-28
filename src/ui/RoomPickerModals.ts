@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import { showToast } from './Toast';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
-import { getMonsterAtk } from '../data/barracks';
+import { getOwnedMonsterBattleAtk } from '../data/barracks';
 import { assignMonsterToRoomSlot, installTrapInRoomSlot } from '../data/roomSlotTransactions';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
@@ -305,7 +305,7 @@ export function showMonsterPicker(
     const roomFitLabel = getMonsterRoomFitLabel(targetSlot, mDef.type);
     const rarity = getPickerMonsterRarityMeta(mDef.rarityTier);
     const equipmentIcon = getEquipmentIcon(gs, om.equipment);
-    const actualAtk = getMonsterAtk(mDef.baseDamage, om.level, om.spentSkills ?? {});
+    const actualAtk = getOwnedMonsterBattleAtk(mDef.baseDamage, om, gs);
     const statusLabel = isCurrent
       ? '현재 슬롯'
       : isAssignedInCurrentRoom

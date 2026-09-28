@@ -16,7 +16,7 @@ import { INVADER_DEFS, type InvaderType } from '../data/invaders';
 import type { InvasionConfig } from '../data/quests';
 import { getReadinessDirectiveCopy, type ReadinessDirectiveSeverity } from '../data/readinessDirectives';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
-import { EQUIPMENT_DEFS, getEquipmentStats, getMonsterAtk, type EquipmentStats } from '../data/barracks';
+import { EQUIPMENT_DEFS, getEquipmentStats, getOwnedMonsterAtk, type EquipmentStats } from '../data/barracks';
 import { TRAP_DEFS } from '../data/traps';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { CASUAL } from '../constants/colors';
@@ -213,7 +213,7 @@ export function getMonsterDefenseScore(gs: GameState, monsterId: string): { base
   const owned = getOwnedMonster(gs, monsterId);
   const def = getMonsterDef(monsterId);
   const base = def
-    ? getMonsterAtk(def.baseDamage, owned?.level ?? 1, owned?.spentSkills ?? {})
+    ? (owned ? getOwnedMonsterAtk(def.baseDamage, owned, gs) : def.baseDamage)
     : owned
       ? 40 + owned.level * 2
       : 0;

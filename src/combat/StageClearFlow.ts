@@ -13,7 +13,7 @@ import {
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { MATERIAL_DEFS } from '../data/fusion';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
-import { getMonsterAtk } from '../data/barracks';
+import { getOwnedMonsterBattleAtk } from '../data/barracks';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyClearRewards } from '../data/clearRewards';
 import { recordClear, STAGE_CONFIGS, stageClearTitle } from '../data/stageProgress';
@@ -229,7 +229,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     const chipStartX = cx + (cw - totalChipW) / 2;
     visibleChips.forEach((m, mi) => {
       const def = resolveOwnedMonsterProfile(m.id);
-      const atk = def ? getMonsterAtk(def.baseDamage, m.level, m.spentSkills) : 0;
+      const atk = def ? getOwnedMonsterBattleAtk(def.baseDamage, m, gs3) : 0;
       const cx2 = chipStartX + mi * (chipW + 4);
       const chipBg = scene.add.graphics().setAlpha(0);
       chipBg.fillStyle(DUNGEON_UI.SOOT, 1);

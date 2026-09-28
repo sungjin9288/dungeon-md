@@ -143,6 +143,22 @@ export function getOwnedMonsterAtk(
   ));
 }
 
+/**
+ * The ATK a player reads on a guardian: every raising channel plus the equipped
+ * item's `atkMult`, the same factor `CombatResolver`/`runExtraMonsterAttacks`
+ * multiply into each hit. Readouts that used raw `getMonsterAtk` stayed flat
+ * when a weapon was equipped, so the header never moved after 장착.
+ * Readouts that show equipment as its own line use `getOwnedMonsterAtk` instead.
+ */
+export function getOwnedMonsterBattleAtk(
+  baseAtk: number,
+  monster: Pick<OwnedMonster, 'id' | 'level' | 'spentSkills' | 'absorptionStacks' | 'equipment'>,
+  raising: Parameters<typeof getOwnedMonsterAtk>[2] = {},
+): number {
+  const atkMult = getEquipmentStats(monster.equipment ?? null).atkMult ?? 0;
+  return Math.round(getOwnedMonsterAtk(baseAtk, monster, raising) * Math.max(0, 1 + atkMult));
+}
+
 // ─── Skill Trees ──────────────────────────────────────────────────────────────
 
 export interface SkillNode {

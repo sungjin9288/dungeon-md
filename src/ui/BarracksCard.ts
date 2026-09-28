@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
-import { xpToNextLevel, getMonsterAtk, type OwnedMonster } from '../data/barracks';
+import { xpToNextLevel, getOwnedMonsterBattleAtk, type OwnedMonster } from '../data/barracks';
 import { addPanelShadow } from './PanelDepth';
 import { addMonsterPortrait } from './MonsterPortraitView';
 import { drawGrowthSigil, drawReinforcementSigil } from './BarracksSkin';
@@ -46,7 +46,7 @@ export function buildMonsterCard(
   const type = getMonsterTypeMeta(def.type);
   const xpNeeded = xpToNextLevel(monster.level);
   const xpPct = monster.level >= 50 ? 1 : Math.min(1, monster.xp / xpNeeded);
-  const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills);
+  const atk = getOwnedMonsterBattleAtk(def.baseDamage, monster, ctx.gs);
   const deployed = getDeployedMonsterIds(ctx.gs).has(monster.id);
   const equipment = getEquipmentDisplay(ctx.gs, monster.equipment ?? null);
   const roomPlan = getMonsterRoomPlan(ctx.gs, monster);

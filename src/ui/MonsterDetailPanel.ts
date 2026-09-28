@@ -14,7 +14,7 @@ import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { feedOwnedMonster, purchaseActiveSkillWithGold } from '../data/barracksTransactions';
 import {
   getSkillTree, ACTIVE_SKILLS,
-  xpToNextLevel, getMonsterAtk,
+  xpToNextLevel, getOwnedMonsterBattleAtk,
 } from '../data/barracks';
 import {
   addFramedPanel,
@@ -64,7 +64,7 @@ export function showMonsterDetailPanel(
   const collection = getDetailCollectionMeta(monster, def);
   const xpNeeded = xpToNextLevel(monster.level);
   const xpPct = monster.level >= 50 ? 1 : Math.min(1, monster.xp / xpNeeded);
-  const atk = getMonsterAtk(def.baseDamage, monster.level, monster.spentSkills, loadGameState().monsterAffinity?.[monster.id] ?? 0);
+  const atk = getOwnedMonsterBattleAtk(def.baseDamage, monster, loadGameState());
   const accent = def.accentColor ?? collection.color;
   const roomPlan = getMonsterRoomPlan(loadGameState(), monster);
 
