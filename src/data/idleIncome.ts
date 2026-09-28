@@ -83,8 +83,17 @@ export function hasIdlePayout(reward: IdleReward): boolean {
  */
 export const IDLE_PANEL_MIN_MS = 5 * 60_000;
 
-export function shouldShowIdlePanel(reward: IdleReward): boolean {
-  return reward.elapsedMs >= IDLE_PANEL_MIN_MS;
+/**
+ * After the first Home visit of a launch, elapsed time is mostly play inside the
+ * app (a battle, a stage run). Only a long gap still reads as an absence.
+ */
+export const IDLE_IN_SESSION_PANEL_MIN_MS = 60 * 60_000;
+
+export function shouldShowIdlePanel(
+  reward: IdleReward,
+  { firstVisit = true }: { readonly firstVisit?: boolean } = {},
+): boolean {
+  return reward.elapsedMs >= (firstVisit ? IDLE_PANEL_MIN_MS : IDLE_IN_SESSION_PANEL_MIN_MS);
 }
 
 function definedCount(ids: readonly (string | undefined | null)[] | undefined): number {

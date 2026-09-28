@@ -62,6 +62,9 @@ const GRID_START_Y = TOP_H + QUEST_BANNER_H + 10;
 
 // ─── maybeShowIdleIncome ──────────────────────────────────────────────────────
 
+/** First Home visit of this app launch; later visits are in-session returns. */
+let homeVisitedThisLaunch = false;
+
 export function maybeShowIdleIncome(scene: DungeonHomeScene): void {
   const now = Date.now();
   // First-ever visit: start the clock, no payout (avoid an epoch-sized reward).
@@ -70,8 +73,10 @@ export function maybeShowIdleIncome(scene: DungeonHomeScene): void {
     return;
   }
   const reward = computeIdleReward(scene.gs, now);
+  const firstVisit = !homeVisitedThisLaunch;
+  homeVisitedThisLaunch = true;
   if (!hasIdlePayout(reward)) return;   // nothing meaningful accrued yet — keep accruing
-  if (!shouldShowIdlePanel(reward)) {
+  if (!shouldShowIdlePanel(reward, { firstVisit })) {
     autoCollectIdleIncome(scene, now);
     return;
   }

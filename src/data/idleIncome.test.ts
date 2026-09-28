@@ -18,6 +18,7 @@ import {
   IDLE_PER_GOLD_ROOM,
   IDLE_DM_BONUS,
   IDLE_PANEL_MIN_MS,
+  IDLE_IN_SESSION_PANEL_MIN_MS,
   shouldShowIdlePanel,
 } from './idleIncome';
 
@@ -238,5 +239,20 @@ describe('shouldShowIdlePanel', () => {
   it('settles in-session re-entries without the panel', () => {
     expect(shouldShowIdlePanel(reward(15_000))).toBe(false);
     expect(shouldShowIdlePanel(reward(IDLE_PANEL_MIN_MS - 1))).toBe(false);
+  });
+});
+
+// A forecast battle took six minutes, and Home greeted the returning player with
+// "던전을 비운 6분" stacked over the defeat summary. Time spent playing inside
+// the app is not an absence; only the first Home visit of a launch uses 5 minutes.
+describe('shouldShowIdlePanel within a running session', () => {
+  const reward = (elapsedMs: number) => ({ gold: 43, materials: {}, elapsedMs, creditedMs: elapsedMs, capped: false, ratePerMin: 6.4 });
+  it('settles in-session returns silently until a long absence', () => {
+    expect(shouldShowIdlePanel(reward(6 * 60_000), { firstVisit: false })).toBe(false);
+    expect(shouldShowIdlePanel(reward(IDLE_IN_SESSION_PANEL_MIN_MS - 1), { firstVisit: false })).toBe(false);
+    expect(shouldShowIdlePanel(reward(IDLE_IN_SESSION_PANEL_MIN_MS), { firstVisit: false })).toBe(true);
+  });
+  it('keeps the 5-minute welcome-back panel for the first Home visit', () => {
+    expect(shouldShowIdlePanel(reward(6 * 60_000), { firstVisit: true })).toBe(true);
   });
 });

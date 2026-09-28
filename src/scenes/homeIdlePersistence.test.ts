@@ -132,4 +132,12 @@ describe('Home entry after a short absence', () => {
     const { delayedCall } = enter(3_600_000);
     expect(delayedCall).toHaveBeenCalledTimes(1);
   });
+
+  // Earlier tests in this block already made the first Home visit of the
+  // launch: a six-minute battle is an in-session return, not an absence.
+  it('settles a six-minute in-session return without the panel', () => {
+    const { delayedCall } = enter(6 * 60_000);
+    expect(delayedCall).not.toHaveBeenCalled();
+    expect(loadGameState().lastIdleCollect).toBe(Date.now());
+  });
 });
