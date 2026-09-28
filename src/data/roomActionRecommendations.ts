@@ -11,6 +11,7 @@ import {
 } from './wisdom';
 import { resolveOwnedMonsterProfile } from './monsters';
 import { getRoomRepairCost } from './roomSlotTransactions';
+import { getAffordableSummonType, type RecruitSummonType } from './summonPools';
 
 export type RoomActionKind =
   | 'design'
@@ -31,6 +32,8 @@ export interface RoomActionRecommendation {
   readonly statLabel: string;
   readonly statValue: string;
   readonly accent: number;
+  /** Set when the room needs a guardian that must be summoned first (none free). */
+  readonly recruit?: RecruitSummonType;
 }
 
 const ROOM_READY_THRESHOLD = 78;
@@ -112,18 +115,24 @@ export function getRoomActionRecommendation(
       };
     }
 
-    return {
-      kind: 'assign-monster',
-      slotIdx,
-      icon: '👹',
-      label: '배치',
-      title: '수호자 배치',
-      body: `${roomLabel} 빈 몬스터 슬롯 ${cap.monsters - monsterCount}개`,
-      ctaLabel: `${roomLabel} 배치`,
-      statLabel: 'M',
-      statValue: `${monsterCount}/${cap.monsters}`,
-      accent: 0xff8a45,
-    };
+    // No free guardian: the tray would have nothing to place. Point at the
+    // cheapest pull available, or skip to the next action this room can take.
+    const recruit = getAffordableSummonType(state);
+    if (recruit) {
+      return {
+        kind: 'assign-monster',
+        slotIdx,
+        icon: '🌀',
+        label: '모집',
+        title: '수호자 모집',
+        body: `${roomLabel} 빈 슬롯 ${cap.monsters - monsterCount}개 · 배치할 수호자 없음`,
+        ctaLabel: recruit === 'friendship' ? '무료 우정 소환' : '소환하러 가기',
+        statLabel: 'M',
+        statValue: `${monsterCount}/${cap.monsters}`,
+        accent: 0xff8a45,
+        recruit,
+      };
+    }
   }
 
   if (cap.traps > 0 && trapCount < cap.traps) {

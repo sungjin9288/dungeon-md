@@ -180,7 +180,7 @@ export const MAIN_QUESTS: MainQuest[] = [
       { id: 'O1', type: 'reach_dm_level', target: 5,    current: 0, description: '던전 마스터 Lv.5 달성' },
       { id: 'O2', type: 'collect_gold',   target: 1000, current: 0, description: '골드 1000 누적 획득' },
     ],
-    reward: { gold: 500, dmXP: 300, unlocks: ['research_lab'], gems: 10 },
+    reward: { gold: 500, dmXP: 300, unlocks: ['research_lab'], gems: 10, soulCrystals: 50 },
     nextQuestId: 'MQ-011',
   },
 

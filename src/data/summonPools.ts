@@ -1,4 +1,4 @@
-import type { SummonRarity } from './wisdom';
+import type { GameState, SummonRarity } from './wisdom';
 import type { MonsterId } from './monsters';
 
 // ─── Summon type definitions ──────────────────────────────────────────────────
@@ -52,6 +52,27 @@ export const SUMMON_TYPE_DEFS: readonly SummonTypeDef[] = [
 ];
 
 // ─── Rarity tables ────────────────────────────────────────────────────────────
+
+export type RecruitSummonType = 'friendship' | 'soul' | 'normal';
+
+function summonCost(type: SummonType): number {
+  return SUMMON_TYPE_DEFS.find(def => def.id === type)?.cost1 ?? Infinity;
+}
+
+/**
+ * Cheapest single pull the player can make right now, or null. Guidance uses it
+ * to send a player with empty guardian slots and no free guardian to 소환
+ * instead of to a placement tray with nothing to place.
+ */
+export function getAffordableSummonType(
+  state: Readonly<Pick<GameState, 'lastFriendSummon' | 'soulCrystals' | 'gems'>>,
+  today: string = new Date().toISOString().slice(0, 10),
+): RecruitSummonType | null {
+  if (state.lastFriendSummon !== today) return 'friendship';
+  if ((state.soulCrystals ?? 0) >= summonCost('soul')) return 'soul';
+  if ((state.gems ?? 0) >= summonCost('normal')) return 'normal';
+  return null;
+}
 
 export const RARITY_RATES: Record<SummonType, number[]> = {
   normal:     [50, 28, 16, 4.5, 1.5],  // C/U/R/E/L — 100종 풀 기준

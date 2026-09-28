@@ -63,15 +63,31 @@ describe('roomActionRecommendations', () => {
     expect(action.statValue).toBe('0/2');
   });
 
-  it('falls back to a generic monster placement action when no guardian is available', () => {
+  // With no free guardian the placement tray has nothing to place (2장 진입, §35):
+  // point at the cheapest summon, or move on when no pull is affordable.
+  it('sends an empty room to 소환 when no guardian is free and a pull is affordable', () => {
     const action = getRoomActionRecommendation(makeState({
       ownedMonsters: [makeMonster({ id: 'dokkaebi_warrior' })],
       dungeonSlots: [makeSlot('combat', { monsterIds: ['dokkaebi_warrior'] })],
     }), 0);
 
     expect(action.kind).toBe('assign-monster');
-    expect(action.label).toBe('배치');
-    expect(action.body).toContain('빈 몬스터 슬롯');
+    expect(action.label).toBe('모집');
+    expect(action.recruit).toBe('friendship');
+    expect(action.ctaLabel).toBe('무료 우정 소환');
+  });
+
+  it('skips the dead-end placement action when no guardian is free and nothing is affordable', () => {
+    const action = getRoomActionRecommendation(makeState({
+      lastFriendSummon: new Date().toISOString().slice(0, 10),
+      gems: 0,
+      soulCrystals: 0,
+      ownedMonsters: [makeMonster({ id: 'dokkaebi_warrior' })],
+      dungeonSlots: [makeSlot('combat', { monsterIds: ['dokkaebi_warrior'] })],
+    }), 0);
+
+    expect(action.kind).not.toBe('assign-monster');
+    expect(action.recruit).toBeUndefined();
   });
 
   it('surfaces the recommended trap when trap slots are open', () => {

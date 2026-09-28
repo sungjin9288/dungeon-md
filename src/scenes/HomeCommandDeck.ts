@@ -241,6 +241,8 @@ function getHomeDirective(
   if (action) {
     const onPress = canonical.destination === 'room-detail'
       ? () => scene.selectRoomForPlacement(action.slotIdx)
+      : canonical.destination === 'summon'
+        ? () => scene.navigateFromHome('SummonScene')
       : canonical.destination === 'forge'
         ? () => openFocusedForge(scene, action.slotIdx)
         : () => openFocusedMonsterGrowth(scene, action.slotIdx);

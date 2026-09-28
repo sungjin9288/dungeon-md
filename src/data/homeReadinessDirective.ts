@@ -9,7 +9,7 @@ import { getLineageNextStep, getLineageGoalPlan } from './lineage';
 import { getMonsterDisplayName, getMonsterEmoji } from './fusion';
 import type { GameState } from './wisdom';
 
-export type HomePrimaryDestination = 'room-detail' | 'forge' | 'barracks' | 'pre-battle' | 'codex';
+export type HomePrimaryDestination = 'room-detail' | 'forge' | 'barracks' | 'pre-battle' | 'codex' | 'summon';
 
 export interface HomeReadinessDirective {
   readonly destination: HomePrimaryDestination;
@@ -30,6 +30,7 @@ export function getHomeReadinessDestination(
   action: RoomActionRecommendation | null,
 ): HomePrimaryDestination {
   if (!action) return 'pre-battle';
+  if (action.recruit) return 'summon';
   if (action.kind !== 'growth') return 'room-detail';
   return action.statLabel === 'E' ? 'forge' : 'barracks';
 }
