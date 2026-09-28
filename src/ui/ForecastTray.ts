@@ -22,6 +22,7 @@ import { getTodayString } from '../data/daily';
 import { isBattleCard, type ForecastCard, type ForecastKind } from '../data/forecast';
 import { isForecastCardTaken, takeForecastCard, merchantPayout } from '../data/forecastTransactions';
 import { type GameState } from '../data/wisdom';
+import { settleIdleAcrossChange } from '../data/idleIncome';
 import {
   canRaiseNotorietyTier,
   getNotorietyTier,
@@ -124,7 +125,12 @@ export function showForecastTray(scene: DungeonHomeScene): void {
       fillColor: CASUAL.GOLD, hoverFillColor: CASUAL.GOLD, borderColor: CASUAL.GOLD_DK, hoverBorderColor: CASUAL.GOLD_DK,
       onPress: () => {
         audioManager.playSfx('button_click');
-        const result = scene.applyGameStateResult({ ...raiseNotorietyTier(scene.gs), changed: true });
+        const raised = raiseNotorietyTier(scene.gs);
+        // A higher tier raises the idle gold multiplier: settle the old rate first.
+        const result = scene.applyGameStateResult({
+          ...raised, changed: true,
+          state: raised.ok ? settleIdleAcrossChange(scene.gs, raised.state, Date.now()) : raised.state,
+        });
         if (!result.ok) return;
         showToast(scene, `명성 ${result.tier}단계 — 더 강하고 더 부유한 손님이 옵니다`, { color: '#ffd166' });
         close();

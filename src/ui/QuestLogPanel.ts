@@ -23,6 +23,7 @@ import {
 import { addQuestSpeakerVisual } from './QuestSpeakerView';
 import { questUnlockLabel } from '../data/dmTitles';
 import { questObjectiveDestination } from '../data/questRoutes';
+import { settleIdleAcrossChange } from '../data/idleIncome';
 
 const QUEST_PANEL_FILL = CASUAL.PANEL;
 const QUEST_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -292,6 +293,17 @@ export interface QuestLogState {
   questLogContainer?: Phaser.GameObjects.Container;
   /** Scene change for an objective's "바로 가기"; the route is hidden without it. */
   navigate?: (sceneKey: string) => void;
+  /** Owner's save (Home's persistGameState) so its in-memory state follows. */
+  persist?: (next: GameState) => void;
+}
+
+/**
+ * Save a quest-log change. Writing storage behind Home's back let Home's stale
+ * copy overwrite a claimed sub-quest reward on its next save (and reopen it).
+ */
+export function commitQuestLogState(state: QuestLogState, next: GameState): void {
+  if (state.persist) state.persist(next);
+  else saveGameState(next);
 }
 
 export function openQuestLog(
@@ -381,14 +393,14 @@ function buildQuestLogContainer(
 
   const subQuestView = prepareSubQuestLogViewState(gs);
   const workGs = subQuestView.state;
-  if (subQuestView.changed) saveGameState(workGs);
+  if (subQuestView.changed) commitQuestLogState(state, workGs);
 
   let y = 56;
   y = drawMainQuestCard(scene, c, y, workGs, state.navigate
     ? (sceneKey: string) => { closeQuestLog(state, scene); state.navigate?.(sceneKey); }
     : undefined);
   y = drawSubQuestSection(scene, c, y, subQuestView, state);
-  drawMiniQuestSection(scene, c, y, workGs);
+  drawMiniQuestSection(scene, c, y, workGs, state);
 
   // Tap the background to close (its full-screen hit area is set above).
   bg.on('pointerdown', () => closeQuestLog(state, scene));
@@ -708,10 +720,11 @@ function drawSubQuestSection(
       const btnX = CANVAS_WIDTH - PAD - 10 - btnW;
       const btnY = y + 38;
       const claim = (): void => {
-        const result = applySubQuestClaim(loadGameState(), sq.id);
+        const before = loadGameState();
+        const result = applySubQuestClaim(before, sq.id);
         if (!result.ok) return;
-        const newGs = result.state;
-        saveGameState(newGs);
+        const newGs = settleIdleAcrossChange(before, result.state, Date.now());
+        commitQuestLogState(state, newGs);
 
         // Brief "✨ 수령!" toast before rebuilding
         const toast = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '✨ 수령 완료!', {
@@ -763,6 +776,7 @@ function drawMiniQuestSection(
   c: Phaser.GameObjects.Container,
   y: number,
   gs: GameState,
+  state: QuestLogState,
 ): void {
   const PAD    = 12;
   const CARD_W = CANVAS_WIDTH - PAD * 2;
@@ -776,7 +790,7 @@ function drawMiniQuestSection(
   const dailyView = prepareDailyChallengeViewState(gs);
   const { challenges } = dailyView;
   const workGs = dailyView.state;
-  if (dailyView.changed) saveGameState(workGs);
+  if (dailyView.changed) commitQuestLogState(state, workGs);
   const CARD_H = 16 + challenges.length * 26 + 20;
 
   const frame = addFramedPanel(scene, {

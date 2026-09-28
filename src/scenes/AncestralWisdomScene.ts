@@ -34,6 +34,7 @@ import {
   type WisdomLineageId,
   type WisdomUpgradeSnapshot,
 } from '../ui/AncestralWisdomShared';
+import { settleIdleAcrossChange } from '../data/idleIncome';
 
 type ReceiptTone = 'success' | 'warning';
 
@@ -540,8 +541,10 @@ export class AncestralWisdomScene extends Phaser.Scene {
       return;
     }
 
-    saveGameState(result.state);
-    this.gameState = result.state;
+    // 황금의 손 raises the idle rate: pay the unclaimed window at the old rate first.
+    const next = settleIdleAcrossChange(before, result.state, Date.now());
+    saveGameState(next);
+    this.gameState = next;
     this.receipt = {
       title: `${branch.name} · 등급 ${result.previousTier}→${result.nextTier} 해방`,
       detail: `영혼 수정 ${formatHudResourceValue(before.soulCrystals)}→${formatHudResourceValue(result.state.soulCrystals)} · 정확히 ${result.cost} 소모`,

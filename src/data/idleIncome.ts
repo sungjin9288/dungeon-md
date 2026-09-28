@@ -218,6 +218,42 @@ function computeIdleSettlement(state: Readonly<GameState>, now: number): {
   };
 }
 
+/** Rate inputs outside rooms/production, which settle in their own transactions. */
+function idleRateInputsChanged(prev: Readonly<GameState>, next: Readonly<GameState>): boolean {
+  return (prev.dmLevel ?? 1) !== (next.dmLevel ?? 1)
+    || (prev.notorietyTier ?? 1) !== (next.notorietyTier ?? 1)
+    || JSON.stringify(prev.placedDecorations ?? []) !== JSON.stringify(next.placedDecorations ?? [])
+    || JSON.stringify(prev.wisdomTree ?? {}) !== JSON.stringify(next.wisdomTree ?? {});
+}
+
+/**
+ * Settle the unclaimed interval at `prev`'s rate across a change that turned
+ * `prev` into `next` (decoration placement, DM level, wisdom, notoriety tier).
+ * Without it the new rate applied retroactively to the whole unclaimed window.
+ * `next` must differ from `prev` only additively in gold/materials and leave
+ * the idle clock alone — the payout is added on top of its own deltas.
+ */
+export function settleIdleAcrossChange(
+  prev: Readonly<GameState>,
+  next: GameState,
+  now: number,
+): GameState {
+  if (!idleRateInputsChanged(prev, next)) return next;
+  if ((prev.lastIdleCollect ?? 0) <= 0 || now <= (prev.lastIdleCollect ?? 0)) return next;
+  const { state: settled, reward } = collectIdleIncome(prev, now);
+  const materials = { ...(next.materials ?? {}) };
+  for (const [id, qty] of Object.entries(reward.materials)) {
+    materials[id] = (materials[id] ?? 0) + qty;
+  }
+  return {
+    ...next,
+    homeGold: (next.homeGold ?? 0) + reward.gold,
+    materials,
+    lastIdleCollect: settled.lastIdleCollect,
+    idleRemainder: settled.idleRemainder,
+  };
+}
+
 /**
  * Collect idle income: returns a new state with the gold credited and the
  * clock advanced to `now` (never backwards). Incomplete output is retained even

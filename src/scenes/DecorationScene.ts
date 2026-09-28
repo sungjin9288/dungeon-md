@@ -9,6 +9,7 @@ import Phaser from 'phaser';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
+import { settleIdleAcrossChange } from '../data/idleIncome';
 import { MATERIAL_DEFS } from '../data/fusion';
 import {
   DECORATION_DEFS,
@@ -678,7 +679,8 @@ export class DecorationScene extends Phaser.Scene {
       return;
     }
 
-    this.gs = result.state;
+    // Placement changes the idle rate: pay the unclaimed window at the old rate first.
+    this.gs = settleIdleAcrossChange(this.gs, result.state, Date.now());
     saveGameState(this.gs);
     const def = DECORATION_DEFS[id];
     const count = (this.gs.placedDecorations ?? []).filter((item) => DECORATION_DEFS[item]?.setId === def.setId).length;
@@ -694,7 +696,7 @@ export class DecorationScene extends Phaser.Scene {
       return;
     }
 
-    this.gs = next;
+    this.gs = settleIdleAcrossChange(this.gs, next, Date.now());
     saveGameState(this.gs);
     const def = DECORATION_DEFS[id];
     const count = (this.gs.placedDecorations ?? []).filter((item) => DECORATION_DEFS[item]?.setId === def.setId).length;

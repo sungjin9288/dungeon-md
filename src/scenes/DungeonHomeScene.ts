@@ -224,7 +224,11 @@ export class DungeonHomeScene extends Phaser.Scene {
   create(): void {
     this.gs = loadGameState();
     this.roomDetailState = createRoomDetailState();
-    this.questLogState = { questLogOpen: false, navigate: sceneKey => this.navigateFromHome(sceneKey) };
+    this.questLogState = {
+      questLogOpen: false,
+      navigate: sceneKey => this.navigateFromHome(sceneKey),
+      persist: next => this.persistGameState(next),
+    };
     this.invasionState = createInvasionUIState();
     this.currencyTexts = [];
     this.topBarRefs = null;

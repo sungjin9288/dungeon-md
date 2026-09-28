@@ -84,7 +84,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
         goldEarned: ctx.gold,
         dmXP: STAGE_CLEAR_DM_XP,
         materialsEarned: { ...ctx.materialsEarnedThisRun },
-      }, { defendInvasion: false }).state;
+      }, { defendInvasion: false, now: Date.now() }).state;
   saveGameState(finalGs);
 
   // Sync to StageSelectScene's own progress key

@@ -5,6 +5,7 @@ import {
 } from './quests';
 import type { GameState, QuestProgress } from './wisdom';
 import type { BattleResultCallout } from './battleResultCallout';
+import { settleIdleAcrossChange } from './idleIncome';
 
 export interface BattleReturnResult {
   won:              boolean;
@@ -74,12 +75,14 @@ function battleSettlementChanged(source: GameState, next: GameState): boolean {
 export interface BattleSettlementOptions {
   /** Story invasions and forecast cards defend the home; campaign stages do not tick it. */
   readonly defendInvasion?: boolean;
+  /** Settlement time: a DM level-up first pays the unclaimed idle window at the old rate. */
+  readonly now?: number;
 }
 
 export function applyBattleReturnSettlement(
   state: GameState,
   result: BattleReturnResult,
-  { defendInvasion = true }: BattleSettlementOptions = {},
+  { defendInvasion = true, now }: BattleSettlementOptions = {},
 ): BattleReturnSettlement {
   let dmXP = (state.dmXP ?? 0) + result.dmXP;
   let dmLevel = state.dmLevel ?? 1;
@@ -115,9 +118,10 @@ export function applyBattleReturnSettlement(
   }
 
   const changed = battleSettlementChanged(state, nextState);
+  const settled = changed && now !== undefined ? settleIdleAcrossChange(state, nextState, now) : nextState;
 
   return {
-    state: changed ? nextState : state,
+    state: changed ? settled : state,
     changed,
     didLevelUp: dmLevel > (state.dmLevel ?? 1),
     defendUpdate,

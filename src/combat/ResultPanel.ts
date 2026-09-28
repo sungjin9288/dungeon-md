@@ -446,7 +446,7 @@ export function buildFailOptions(
       // story-invasion defense.
       const settled = applyBattleReturnSettlement(loadGameState(), {
         won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned,
-      }, { defendInvasion: false });
+      }, { defendInvasion: false, now: Date.now() });
       try {
         if (settled.changed) saveGameState(settled.state);
       } catch (error: unknown) {

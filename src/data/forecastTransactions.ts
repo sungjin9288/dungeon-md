@@ -156,9 +156,9 @@ export function settleForecastBattle(
   state: GameState,
   cardId: string,
   result: BattleReturnResult,
-  options: { readonly flawless?: boolean } = {},
+  options: { readonly flawless?: boolean; readonly now?: number } = {},
 ): ForecastSettlement {
-  const battle = applyBattleReturnSettlement(state, result);
+  const battle = applyBattleReturnSettlement(state, result, { now: options.now });
   const card = findCard(state, cardId);
   if (!card || !isForecastCardTaken(state, cardId)) {
     return { state: battle.state, changed: battle.changed, card: null, notorietyDelta: 0, battle };

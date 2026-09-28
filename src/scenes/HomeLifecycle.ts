@@ -34,7 +34,7 @@ import {
   showGameCompleteOverlay,
 } from '../ui/QuestLogPanel';
 import {
-  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, shouldShowIdlePanel, idleCapHours,
+  computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, shouldShowIdlePanel, idleCapHours, settleIdleAcrossChange,
   type IdleReward,
 } from '../data/idleIncome';
 import { MATERIAL_DEFS } from '../data/fusion';
@@ -434,7 +434,11 @@ export function settlePendingQuestCompletion(scene: DungeonHomeScene): boolean {
 export function advanceCompletedQuest(
   scene: DungeonHomeScene,
 ): HomeMainQuestCompletionResult | null {
-  const result = scene.applyGameStateResult(settleCompletedHomeMainQuest(scene.gs));
+  const settled = settleCompletedHomeMainQuest(scene.gs);
+  // Quest rewards can raise the DM level: pay the unclaimed window at the old rate first.
+  const result = scene.applyGameStateResult(settled.changed
+    ? { ...settled, state: settleIdleAcrossChange(scene.gs, settled.state, Date.now()) }
+    : settled);
   return result.completion ? result : null;
 }
 
@@ -495,6 +499,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
     ? (() => {
         const forecast = settleForecastBattle(scene.gs, forecastCardId, result, {
           flawless: result.won && (result.hpShare ?? 0) >= 0.999,
+          now: Date.now(),
         });
         scene.applyGameStateResult(forecast);
         if (forecast.card) {
@@ -507,7 +512,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
         }
         return forecast.battle;
       })()
-    : scene.applyGameStateResult(applyBattleReturnSettlement(scene.gs, result));
+    : scene.applyGameStateResult(applyBattleReturnSettlement(scene.gs, result, { now: Date.now() }));
   const didLevelUp = settlement.didLevelUp;
   const battleReturnGrowth = {
     previousDmLevel: prevDmLevel,
