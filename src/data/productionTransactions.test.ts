@@ -18,13 +18,13 @@ const buildCost = facilityUpgradeCost(mineDef, 0)!; // level 0 → 1 cost
 
 describe('buildOrUpgradeFacility', () => {
   it('rejects an unknown facility', () => {
-    expect(buildOrUpgradeFacility(makeGs(), 'no_such_facility'))
+    expect(buildOrUpgradeFacility(makeGs(), 'no_such_facility', 1000))
       .toEqual({ ok: false, reason: 'unknown' });
   });
 
   it('builds a facility (level 0 → 1): deducts gold, sets level', () => {
     const gs = makeGs({ homeGold: buildCost + 50, productionFacilities: {} });
-    const r = buildOrUpgradeFacility(gs, FAC_ID);
+    const r = buildOrUpgradeFacility(gs, FAC_ID, 1000);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.spent).toBe(buildCost);
@@ -38,13 +38,13 @@ describe('buildOrUpgradeFacility', () => {
 
   it('rejects when gold is insufficient', () => {
     const gs = makeGs({ homeGold: buildCost - 1, productionFacilities: {} });
-    expect(buildOrUpgradeFacility(gs, FAC_ID)).toEqual({ ok: false, reason: 'no_gold' });
+    expect(buildOrUpgradeFacility(gs, FAC_ID, 1000)).toEqual({ ok: false, reason: 'no_gold' });
   });
 
   it('upgrades an existing facility (level 1 → 2) at the scaled cost', () => {
     const upgradeCost = facilityUpgradeCost(mineDef, 1)!;
     const gs = makeGs({ homeGold: upgradeCost + 10, productionFacilities: { [FAC_ID]: 1 } });
-    const r = buildOrUpgradeFacility(gs, FAC_ID);
+    const r = buildOrUpgradeFacility(gs, FAC_ID, 1000);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.spent).toBe(upgradeCost);
@@ -57,6 +57,6 @@ describe('buildOrUpgradeFacility', () => {
       homeGold: 9_999_999,
       productionFacilities: { [FAC_ID]: mineDef.maxLevel },
     });
-    expect(buildOrUpgradeFacility(gs, FAC_ID)).toEqual({ ok: false, reason: 'maxed' });
+    expect(buildOrUpgradeFacility(gs, FAC_ID, 1000)).toEqual({ ok: false, reason: 'maxed' });
   });
 });

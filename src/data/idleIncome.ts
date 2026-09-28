@@ -14,7 +14,7 @@
  */
 
 import { getWisdomBonuses, type GameState, type DungeonSlot } from './wisdom';
-import { facilityProductionOverMs } from './production';
+import { FACILITY_DEFS, facilityIncomeRatePerHour, facilityStaffMult, facilityProductionAccruedOverMs, type FacilityDef, type ProductionMultipliers } from './production';
 import { computeDecorationBonuses } from './decorations';
 import { getNotorietyTier } from './notoriety';
 import { getSlotBuilding } from './roomBuildings';
@@ -23,7 +23,7 @@ import { getSlotBuilding } from './roomBuildings';
 export const IDLE_BASE_PER_MIN     = 1;     // a staffed dungeon ticks over at all
 export const IDLE_PER_ROOM         = 3;     // each built room
 export const IDLE_PER_LEVEL        = 2;     // each room level beyond 1
-export const IDLE_PER_GUARDIAN     = 1.5;   // each deployed guardian
+export const IDLE_PER_GUARDIAN     = 1.5;   // each guardian deployed or working at a built facility
 export const IDLE_DM_BONUS         = 0.04;  // ×(1 + dmLevel * this)
 export const IDLE_PER_GOLD_ROOM    = 12;    // a 황금 광맥 built at home is a revenue room (no battle income)
 /** A famous dungeon draws paying visitors: ×(1 + this × (tier − 1)) on gold (operation + treasury). */
@@ -46,6 +46,16 @@ export function notorietyIncomeMult(state: Readonly<Pick<GameState, 'notorietyTi
   return 1 + IDLE_NOTORIETY_BONUS * (getNotorietyTier(state) - 1);
 }
 
+export function productionIncomeMultipliers(state: Readonly<GameState>): ProductionMultipliers {
+  const deco = computeDecorationBonuses(state.placedDecorations);
+  return { production: 1 + deco.idleProductionPct / 100, gold: notorietyIncomeMult(state) };
+}
+
+/** Effective facility rate, including staffing, decoration and gold-only notoriety. */
+export function productionRatePerHour(state: Readonly<GameState>, def: FacilityDef, level = state.productionFacilities?.[def.id] ?? 0): number {
+  return facilityIncomeRatePerHour(def, level, facilityStaffMult(def.id, state.facilityStaff?.[def.id]), productionIncomeMultipliers(state));
+}
+
 export interface IdleReward {
   /** Total gold earned — dungeon operation + treasury facility (floored). */
   readonly gold: number;
@@ -57,7 +67,7 @@ export interface IdleReward {
   readonly creditedMs: number;
   /** Whether the elapsed time hit the accumulation cap. */
   readonly capped: boolean;
-  /** The dungeon's current operation gold-per-minute rate (excludes facilities and the name multiplier). */
+  /** Total gold per minute including treasury and all applicable multipliers; payout floors each source. */
   readonly ratePerMin: number;
 }
 
@@ -77,10 +87,10 @@ function isBuilt(slot: DungeonSlot | undefined | null): slot is DungeonSlot {
 
 /**
  * The dungeon's passive gold-per-minute, derived from its development:
- * built rooms + their levels + deployed guardians, scaled by DM level.
+ * built rooms + their levels + deployed/working guardians, scaled by DM level.
  * Returns 0 when nothing is built yet.
  */
-export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots' | 'dmLevel' | 'wisdomTree'>>): number {
+export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots' | 'dmLevel' | 'wisdomTree' | 'facilityStaff' | 'productionFacilities'>>): number {
   const built = (state.dungeonSlots ?? []).filter(isBuilt);
   if (built.length === 0) return 0;
 
@@ -92,6 +102,14 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
     guardians += definedCount(slot.monsterIds);
     if (getSlotBuilding(slot) === 'gold') goldRooms++;
   }
+
+  // Working guardians retain their operating contribution, with the same growth
+  // multipliers as room guardians. Staffing still removes their combat defense.
+  const deployed = new Set(built.flatMap(slot => slot.monsterIds ?? []).filter(Boolean));
+  const workers = new Set(Object.entries(state.facilityStaff ?? {})
+    .filter(([id, monster]) => FACILITY_DEFS[id] && (state.productionFacilities?.[id] ?? 0) > 0 && monster && !deployed.has(monster))
+    .map(([, monster]) => monster));
+  guardians += workers.size;
 
   const raw =
     IDLE_BASE_PER_MIN +
@@ -113,48 +131,83 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
  * starts on the next collect so the first visit never dumps epoch-sized gold.
  */
 export function computeIdleReward(state: Readonly<GameState>, now: number): IdleReward {
-  const ratePerMin = dungeonGoldPerMin(state);
+  return computeIdleSettlement(state, now).reward;
+}
+
+function validFraction(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value < 1 ? value : 0;
+}
+
+function splitOutput(amount: number): { whole: number; fraction: number } {
+  // Repeated 1/30-hour intervals must not strand an item at 0.9999999999999999.
+  const whole = Math.floor(amount + 1e-9);
+  return { whole, fraction: Math.max(0, amount - whole) };
+}
+
+function computeIdleSettlement(state: Readonly<GameState>, now: number): {
+  reward: IdleReward; remainder: NonNullable<GameState['idleRemainder']>;
+} {
+  const deco = computeDecorationBonuses(state.placedDecorations);
+  const operationRate = dungeonGoldPerMin(state) * (1 + deco.idleGoldPct / 100) * notorietyIncomeMult(state);
+  const ratePerMin = operationRate + productionRatePerHour(state, FACILITY_DEFS.treasury) / 60;
   const last = state.lastIdleCollect ?? 0;
+  const remainder: NonNullable<GameState['idleRemainder']> = {
+    operationGold: validFraction(state.idleRemainder?.operationGold),
+    productionGold: validFraction(state.idleRemainder?.productionGold),
+    materials: {},
+  };
+  for (const def of Object.values(FACILITY_DEFS)) {
+    if (def.output.kind !== 'material') continue;
+    const id = def.output.materialId;
+    const fraction = validFraction(state.idleRemainder?.materials?.[id]);
+    if (fraction > 0) remainder.materials[id] = fraction;
+  }
 
   if (last <= 0 || now <= last) {
-    return { gold: 0, materials: {}, elapsedMs: 0, creditedMs: 0, capped: false, ratePerMin };
+    return { reward: { gold: 0, materials: {}, elapsedMs: 0, creditedMs: 0, capped: false, ratePerMin }, remainder };
   }
 
   const elapsedMs  = now - last;
   const capMs      = idleCapMs(state);
   const creditedMs = Math.min(elapsedMs, capMs);
 
-  // 운영수익 = (방 수익 + 보물고) × 명성 배수 × 장식 세트 배수 (GAME_DESIGN_BENCHMARK §4.1 ③).
-  const deco = computeDecorationBonuses(state.placedDecorations);
-  const nameMult = notorietyIncomeMult(state);
-  const goldMult = (1 + deco.idleGoldPct / 100) * nameMult;
-  const prodMult = 1 + deco.idleProductionPct / 100;
-
-  const operationGold = Math.floor(ratePerMin * (creditedMs / 60000) * goldMult);
-  // Apply the production bonus by scaling the credited window before flooring;
-  // the treasury's gold shares the name multiplier, materials do not.
-  const production = facilityProductionOverMs(state.productionFacilities, creditedMs * prodMult, state.facilityStaff);
+  const operation = splitOutput(operationRate * (creditedMs / 60000) + remainder.operationGold);
+  // Apply every multiplier before flooring each payout source once.
+  const production = facilityProductionAccruedOverMs(state.productionFacilities, creditedMs, state.facilityStaff, productionIncomeMultipliers(state));
+  const treasury = splitOutput(production.gold + remainder.productionGold);
+  remainder.operationGold = operation.fraction;
+  remainder.productionGold = treasury.fraction;
+  const materials: Record<string, number> = {};
+  for (const [id, amount] of Object.entries(production.materials)) {
+    const output = splitOutput(amount + (remainder.materials[id] ?? 0));
+    if (output.whole > 0) materials[id] = output.whole;
+    if (output.fraction > 0) remainder.materials[id] = output.fraction;
+    else delete remainder.materials[id];
+  }
 
   return {
-    gold: operationGold + Math.floor(production.gold * nameMult),
-    materials: production.materials,
-    elapsedMs,
-    creditedMs,
-    capped: elapsedMs > capMs,
-    ratePerMin,
+    reward: {
+      gold: operation.whole + treasury.whole,
+      materials,
+      elapsedMs,
+      creditedMs,
+      capped: elapsedMs > capMs,
+      ratePerMin,
+    },
+    remainder,
   };
 }
 
 /**
  * Collect idle income: returns a new state with the gold credited and the
- * clock reset to `now`. Always advances the clock (even on a 0 payout) so the
- * accumulation window restarts from this visit.
+ * clock advanced to `now` (never backwards). Incomplete output is retained even
+ * on a zero payout so frequent claims cannot discard slower production.
  */
 export function collectIdleIncome(
   state: Readonly<GameState>,
   now: number,
 ): { state: GameState; reward: IdleReward } {
-  const reward = computeIdleReward(state, now);
+  const { reward, remainder } = computeIdleSettlement(state, now);
   const materials = { ...(state.materials ?? {}) };
   for (const [id, qty] of Object.entries(reward.materials)) {
     materials[id] = (materials[id] ?? 0) + qty;
@@ -164,7 +217,8 @@ export function collectIdleIncome(
       ...state,
       homeGold: state.homeGold + reward.gold,
       materials,
-      lastIdleCollect: now,
+      lastIdleCollect: Math.max(state.lastIdleCollect ?? 0, now),
+      idleRemainder: remainder,
     },
     reward,
   };

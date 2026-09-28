@@ -97,6 +97,20 @@ export function facilityRatePerHour(def: FacilityDef, level: number, staffMult =
   return def.baseRatePerHour * Math.min(level, def.maxLevel) * staffMult;
 }
 
+export interface ProductionMultipliers {
+  production: number;
+  gold: number;
+}
+
+/** The credited rate, shared by payout and the production district. */
+export function facilityIncomeRatePerHour(
+  def: FacilityDef, level: number, staffMult: number,
+  multipliers: ProductionMultipliers,
+): number {
+  return facilityRatePerHour(def, level, staffMult) * multipliers.production
+    * (def.output.kind === 'gold' ? multipliers.gold : 1);
+}
+
 /**
  * Gold cost to take a facility from `currentLevel` to the next level.
  * Returns the build cost at level 0, scales for upgrades, or null when maxed.
@@ -117,6 +131,23 @@ export function facilityProductionOverMs(
   facilities: Readonly<Record<string, number>> | undefined,
   ms: number,
   staff: Readonly<Record<string, string>> | undefined = undefined,
+  multipliers: ProductionMultipliers = { production: 1, gold: 1 },
+): FacilityProduction {
+  const accrued = facilityProductionAccruedOverMs(facilities, ms, staff, multipliers);
+  const materials: Record<string, number> = {};
+  for (const [id, value] of Object.entries(accrued.materials)) {
+    const whole = Math.floor(value);
+    if (whole > 0) materials[id] = whole;
+  }
+  return { materials, gold: Math.floor(accrued.gold) };
+}
+
+/** Unrounded production, so collection can retain incomplete output. */
+export function facilityProductionAccruedOverMs(
+  facilities: Readonly<Record<string, number>> | undefined,
+  ms: number,
+  staff: Readonly<Record<string, string>> | undefined = undefined,
+  multipliers: ProductionMultipliers = { production: 1, gold: 1 },
 ): FacilityProduction {
   const hours = Math.max(0, ms) / 3_600_000;
   const matFloat: Record<string, number> = {};
@@ -126,7 +157,7 @@ export function facilityProductionOverMs(
     const level = facilities?.[id] ?? 0;
     if (level <= 0) continue;
     const def = FACILITY_DEFS[id];
-    const amount = facilityRatePerHour(def, level, facilityStaffMult(id, staff?.[id])) * hours;
+    const amount = facilityIncomeRatePerHour(def, level, facilityStaffMult(id, staff?.[id]), multipliers) * hours;
     if (def.output.kind === 'gold') {
       goldFloat += amount;
     } else {
@@ -134,12 +165,7 @@ export function facilityProductionOverMs(
     }
   }
 
-  const materials: Record<string, number> = {};
-  for (const [id, v] of Object.entries(matFloat)) {
-    const floored = Math.floor(v);
-    if (floored > 0) materials[id] = floored;
-  }
-  return { materials, gold: Math.floor(goldFloat) };
+  return { materials: matFloat, gold: goldFloat };
 }
 
 /** Count of currently built facilities (level >= 1). */

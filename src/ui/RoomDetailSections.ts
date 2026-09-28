@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { showToast } from './Toast';
 import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
@@ -147,9 +148,14 @@ export function buildRoomTypeStrip(
         calculateRoomMetrics(freshGs, freshSlot),
         calculateRoomMetrics(freshGs, previewSlot),
       );
-      const result = changeRoomSlotType(freshGs, _slotIdx, td.id);
+      const result = changeRoomSlotType(freshGs, _slotIdx, td.id, Date.now());
       if (!result.ok) return;
-      _cb.saveAndRefresh(result.state);
+      try {
+        _cb.saveAndRefresh(result.state);
+      } catch {
+        showToast(scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+        return;
+      }
       _cb.markRoomChanged?.(_slotIdx);
       registerRoomDesignFeedback(scene, _slotIdx, td.name, td.icon, freshDelta, accent, growthStats);
       showRoomGrowthFeedback(scene, freshDelta, `${td.name} 설계 적용`, growthStats);

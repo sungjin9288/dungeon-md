@@ -1,7 +1,10 @@
+import { FACILITY_DEFS } from './production';
+import { decorationsInSet } from './decorations';
 import { describe, it, expect } from 'vitest';
 import { getWisdomBonuses, type GameState, type DungeonSlot } from './wisdom';
 import {
   dungeonGoldPerMin,
+  productionRatePerHour,
   computeIdleReward,
   collectIdleIncome,
   startIdleClock,
@@ -189,5 +192,35 @@ describe('operating income (P1 ③)', () => {
     const r = computeIdleReward(built, built.lastIdleCollect + 30 * 60 * 60 * 1000);
     expect(r.capped).toBe(true);
     expect(r.creditedMs).toBe(24 * 60 * 60 * 1000);
+  });
+});
+
+describe('credited income rates', () => {
+  const state = makeState({
+    dungeonSlots: [slot('combat', 2, ['m1'])], dmLevel: 30,
+    wisdomTree: { goldHands: 5 }, notorietyTier: 10,
+    placedDecorations: [...decorationsInSet('bounty'), ...decorationsInSet('abyssal')],
+    productionFacilities: { mine: 5, treasury: 5 },
+    facilityStaff: { treasury: 'dokkaebi_warrior' }, lastIdleCollect: 1000,
+  });
+  it('the total rate reconstructs the awarded gold within per-source flooring', () => {
+    for (const minutes of [0.1, 1, 60, 720, 1440, 2880]) {
+      const reward = computeIdleReward(state, 1000 + minutes * 60_000);
+      const projected = reward.ratePerMin * reward.creditedMs / 60_000;
+      expect(projected - reward.gold).toBeGreaterThanOrEqual(-1e-8);
+      expect(projected - reward.gold).toBeLessThan(2);
+    }
+    expect(computeIdleReward({ ...state, lastIdleCollect: 0 }, 1000).ratePerMin)
+      .toBe(computeIdleReward(state, 1000).ratePerMin);
+  });
+  it('facility rates include production bonuses and gold-only notoriety before flooring', () => {
+    expect(productionRatePerHour(state, FACILITY_DEFS.mine)).toBeCloseTo(11.5);
+    expect(productionRatePerHour(state, FACILITY_DEFS.treasury)).toBeCloseTo(2026.875);
+    const onlyFacilities = { ...state, dungeonSlots: [] };
+    const reward = computeIdleReward(onlyFacilities, 1000 + 3_600_000);
+    expect(reward.gold).toBe(Math.floor(productionRatePerHour(onlyFacilities, FACILITY_DEFS.treasury)));
+    expect(reward.materials.common_ore).toBe(Math.floor(productionRatePerHour(onlyFacilities, FACILITY_DEFS.mine)));
+    expect(productionRatePerHour(state, FACILITY_DEFS.mine, 0)).toBe(0);
+    expect(productionRatePerHour(state, FACILITY_DEFS.mine, 4)).toBeCloseTo(9.2);
   });
 });

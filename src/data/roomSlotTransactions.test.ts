@@ -91,7 +91,7 @@ describe('roomSlotTransactions — slot shape', () => {
     const slot = makeSlot({ roomLevel: 1, monsterIds: ['m1'], trapIds: ['t1'] });
     const state = makeState({ dungeonSlots: [slot] });
 
-    const result = changeRoomSlotType(state, 0, 'combat');
+    const result = changeRoomSlotType(state, 0, 'combat', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -105,7 +105,7 @@ describe('roomSlotTransactions — slot shape', () => {
     const slot = makeSlot({ roomType: undefined, roomLevel: 0, hp: 0, maxHp: 0, monsterIds: [], trapIds: [] });
     const state = makeState({ dungeonSlots: [slot] });
 
-    const result = changeRoomSlotType(state, 0, 'combat');
+    const result = changeRoomSlotType(state, 0, 'combat', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -118,10 +118,10 @@ describe('roomSlotTransactions — slot shape', () => {
     const slot = makeSlot({ roomType: 'combat', building: 'tower', roomLevel: 2 });
     const state = makeState({ dungeonSlots: [slot], roomsBuilt: ['tower'] });
 
-    const sameFamily = changeRoomSlotType(state, 0, 'combat');
+    const sameFamily = changeRoomSlotType(state, 0, 'combat', 1000);
     expect(sameFamily.ok && sameFamily.slot.building).toBe('tower');
 
-    const otherFamily = changeRoomSlotType(state, 0, 'magic');
+    const otherFamily = changeRoomSlotType(state, 0, 'magic', 1000);
     expect(otherFamily.ok && otherFamily.slot.building).toBe('scroll_library');
     // an already-built room changing role is not a new building
     expect(otherFamily.ok && otherFamily.state.roomsBuilt).toEqual(['tower']);
@@ -131,19 +131,19 @@ describe('roomSlotTransactions — slot shape', () => {
     const slot = makeSlot({ roomType: 'combat', roomLevel: 1 });
     const state = makeState({ dungeonSlots: [slot] });
 
-    const tower = setRoomSlotBuilding(state, 0, 'tower');
+    const tower = setRoomSlotBuilding(state, 0, 'tower', 1000);
     expect(tower.ok).toBe(true);
     if (!tower.ok) return;
     expect(tower.slot.building).toBe('tower');
     expect(tower.slot.roomType).toBe('combat');
 
-    const altar = setRoomSlotBuilding(state, 0, 'spirit_altar');
+    const altar = setRoomSlotBuilding(state, 0, 'spirit_altar', 1000);
     expect(altar.ok).toBe(false);
     if (altar.ok) return;
     expect(altar.reason).toBe('building_locked');
     expect(altar.state).toBe(state);
 
-    const library = setRoomSlotBuilding(state, 0, 'scroll_library');
+    const library = setRoomSlotBuilding(state, 0, 'scroll_library', 1000);
     expect(library.ok && library.slot.roomType).toBe('magic');
   });
 
@@ -158,7 +158,7 @@ describe('roomSlotTransactions — slot shape', () => {
     });
     const state = makeState({ dungeonSlots: [slot] });
 
-    const result = changeRoomSlotType(state, 0, 'trap');
+    const result = changeRoomSlotType(state, 0, 'trap', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -271,10 +271,10 @@ describe('roomSlotTransactions — repair and upgrade', () => {
     const state = startQuest(makeState({
       homeGold: 500,
       dmLevel: 5,
-      dungeonSlots: [makeSlot({ roomLevel: 1, hp: 100, maxHp: 200, monsterIds: ['m1'], trapIds: ['t1'] })],
+      dungeonSlots: [makeSlot({ roomType: 'support', roomLevel: 1, hp: 100, maxHp: 200, monsterIds: ['m1'], trapIds: ['t1'] })],
     }), 'MQ-007');
 
-    const result = upgradeRoomSlot(state, 0);
+    const result = upgradeRoomSlot(state, 0, 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -290,9 +290,9 @@ describe('roomSlotTransactions — repair and upgrade', () => {
   });
 
   it('blocks upgrade at DM level cap', () => {
-    const state = makeState({ dmLevel: 1, dungeonSlots: [makeSlot({ roomLevel: 1 })] });
+    const state = makeState({ dmLevel: 1, dungeonSlots: [makeSlot({ roomType: 'support', roomLevel: 1 })] });
 
-    const result = upgradeRoomSlot(state, 0);
+    const result = upgradeRoomSlot(state, 0, 1000);
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
@@ -309,7 +309,7 @@ describe('roomSlotTransactions — monster assignment', () => {
       ],
     });
 
-    const result = assignMonsterToRoomSlot(state, 1, 1, 'dokkaebi_warrior');
+    const result = assignMonsterToRoomSlot(state, 1, 1, 'dokkaebi_warrior', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -321,7 +321,7 @@ describe('roomSlotTransactions — monster assignment', () => {
   it('removes a monster from a slot', () => {
     const state = makeState({ dungeonSlots: [makeSlot({ monsterIds: ['m1'] })] });
 
-    const result = removeMonsterFromRoomSlot(state, 0, 0);
+    const result = removeMonsterFromRoomSlot(state, 0, 0, 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -335,7 +335,7 @@ describe('roomSlotTransactions — monster assignment', () => {
       dungeonSlots: [makeSlot({ monsterIds: [undefined] })],
     }), 'MQ-002');
 
-    const result = assignMonsterToRoomSlot(started, 0, 0, 'dokkaebi_warrior');
+    const result = assignMonsterToRoomSlot(started, 0, 0, 'dokkaebi_warrior', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -353,7 +353,7 @@ describe('roomSlotTransactions — monster assignment', () => {
     }), 'MQ-027');
     expect(started.questProgress['MQ-027'].objectives.O2).toBe(1); // auto-met baseline
 
-    const result = assignMonsterToRoomSlot(started, 1, 0, 'dokkaebi_warrior');
+    const result = assignMonsterToRoomSlot(started, 1, 0, 'dokkaebi_warrior', 1000);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;

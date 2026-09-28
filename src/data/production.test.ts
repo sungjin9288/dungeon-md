@@ -83,7 +83,7 @@ describe('buildOrUpgradeFacility', () => {
 
   it('builds a facility, spending gold immutably', () => {
     const before = makeState({ homeGold: 500 });
-    const r = buildOrUpgradeFacility(before, 'mine');
+    const r = buildOrUpgradeFacility(before, 'mine', 1000);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.newLevel).toBe(1);
@@ -95,17 +95,17 @@ describe('buildOrUpgradeFacility', () => {
   });
 
   it('rejects when gold is insufficient', () => {
-    const r = buildOrUpgradeFacility(makeState({ homeGold: 10 }), 'mine');
+    const r = buildOrUpgradeFacility(makeState({ homeGold: 10 }), 'mine', 1000);
     expect(r).toEqual({ ok: false, reason: 'no_gold' });
   });
 
   it('rejects an unknown facility', () => {
-    expect(buildOrUpgradeFacility(makeState(), 'nope').ok).toBe(false);
+    expect(buildOrUpgradeFacility(makeState(), 'nope', 1000).ok).toBe(false);
   });
 
   it('rejects upgrading past max level', () => {
     const maxed = makeState({ productionFacilities: { mine: FACILITY_DEFS.mine.maxLevel } });
-    expect(buildOrUpgradeFacility(maxed, 'mine')).toEqual({ ok: false, reason: 'maxed' });
+    expect(buildOrUpgradeFacility(maxed, 'mine', 1000)).toEqual({ ok: false, reason: 'maxed' });
   });
 });
 

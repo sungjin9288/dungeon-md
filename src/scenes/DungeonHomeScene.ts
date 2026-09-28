@@ -168,8 +168,8 @@ export class DungeonHomeScene extends Phaser.Scene {
   constructor() { super({ key: 'DungeonHomeScene' }); }
 
   /** @internal */ persistGameState(nextState = this.gs): void {
+    saveGameState(nextState);
     this.gs = nextState;
-    saveGameState(this.gs);
     this.refreshCurrencyTexts();
     this.refreshTopBarProgress();
   }

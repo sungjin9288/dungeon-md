@@ -14,7 +14,6 @@ import {
   FACILITY_DEFS,
   FACILITY_ORDER,
   builtFacilityCount,
-  facilityRatePerHour,
   facilityUpgradeCost,
   type FacilityDef,
   facilityStaffMult,
@@ -24,6 +23,7 @@ import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { openProductionStaffPicker } from '../ui/ProductionStaffPicker';
 import {
   idleCapHours,
+  productionRatePerHour,
   collectIdleIncome,
   computeIdleReward,
   hasIdlePayout,
@@ -153,7 +153,7 @@ export class ProductionScene extends Phaser.Scene {
     let treasuryRate = 0;
     for (const id of FACILITY_ORDER) {
       const def = FACILITY_DEFS[id];
-      const rate = facilityRatePerHour(def, this.gs.productionFacilities?.[id] ?? 0, facilityStaffMult(id, this.gs.facilityStaff?.[id]));
+      const rate = productionRatePerHour(this.gs, def);
       if (def.output.kind === 'gold') treasuryRate += rate;
       else materialRate += rate;
     }
@@ -331,8 +331,7 @@ export class ProductionScene extends Phaser.Scene {
     this.add.text(x + w / 2, y + 78, built ? `가동 · Lv.${level}` : '미건설', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: built ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
-    const staffMult = facilityStaffMult(id, this.gs.facilityStaff?.[id]);
-    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, facilityRatePerHour(def, level, staffMult), true) : '생산 중지', {
+    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, productionRatePerHour(this.gs, def, level), true) : '생산 중지', {
       fontFamily: 'sans-serif', fontSize: '10px', color: built ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
 
@@ -389,9 +388,9 @@ export class ProductionScene extends Phaser.Scene {
     const level = this.gs.productionFacilities?.[def.id] ?? 0;
     const staffId = this.gs.facilityStaff?.[def.id];
     const staffMult = facilityStaffMult(def.id, staffId);
-    const currentRate = facilityRatePerHour(def, level, staffMult);
+    const currentRate = productionRatePerHour(this.gs, def, level);
     const cost = facilityUpgradeCost(def, level);
-    const nextRate = cost === null ? currentRate : facilityRatePerHour(def, level + 1, staffMult);
+    const nextRate = cost === null ? currentRate : productionRatePerHour(this.gs, def, level + 1);
     const affordable = cost !== null && this.gs.homeGold >= cost;
     const accent = affordable ? DUNGEON_UI.BRASS_BRIGHT : cost === null ? DUNGEON_UI.JADE : DUNGEON_UI.EMBER;
 
@@ -542,7 +541,7 @@ export class ProductionScene extends Phaser.Scene {
 
   private buildOrUpgrade(id: string): void {
     if (!this.beginTransaction()) return;
-    const result = buildOrUpgradeFacility(this.gs, id);
+    const result = buildOrUpgradeFacility(this.gs, id, now());
     if (!result.ok) {
       this.receipt = {
         text: result.reason === 'no_gold' ? '명령 실패 · 골드가 부족합니다' : result.reason === 'maxed' ? '명령 실패 · 최대 레벨입니다' : '명령 실패 · 알 수 없는 시설입니다',
@@ -552,14 +551,10 @@ export class ProductionScene extends Phaser.Scene {
       return;
     }
 
-    const seeded = (this.gs.lastIdleCollect ?? 0) > 0
-      ? result.state
-      : { ...result.state, lastIdleCollect: now() };
-    this.gs = seeded;
-    saveGameState(this.gs);
+    if (!this.persistGameState(result.state)) return;
     const def = FACILITY_DEFS[id];
     this.receipt = {
-      text: `${def.name} ${result.newLevel === 1 ? '건설' : `Lv.${result.newLevel} 강화`} 완료 · 골드 ${result.spent.toLocaleString('ko-KR')} 소모`,
+      text: `${def.name} ${result.newLevel === 1 ? '건설' : `Lv.${result.newLevel} 강화`} 완료 · 골드 ${result.spent.toLocaleString('ko-KR')} 소모${hasIdlePayout(result.idleReward) ? ' · 적립분 수령' : ''}`,
       tone: 'success',
     };
     this.render();
@@ -567,27 +562,25 @@ export class ProductionScene extends Phaser.Scene {
 
   private assignStaff(facilityId: string, monsterId: string): void {
     if (!this.beginTransaction()) return;
-    const result = assignFacilityStaff(this.gs, facilityId, monsterId);
+    const result = assignFacilityStaff(this.gs, facilityId, monsterId, now());
     if (!result.ok) {
       this.receipt = { text: result.reason === 'not_built' ? '배정 실패 · 시설을 먼저 건설하세요' : result.reason === 'not_owned' ? '배정 실패 · 보유하지 않은 수호자입니다' : '배정 실패 · 알 수 없는 시설입니다', tone: 'warning' };
       this.render();
       return;
     }
-    this.gs = result.state;
-    saveGameState(this.gs);
+    if (!this.persistGameState(result.state)) return;
     const name = resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
     const moved = result.movedFromRoom ? ' · 방에서 이동' : result.movedFromFacility ? ` · ${FACILITY_DEFS[result.movedFromFacility]?.name ?? ''}에서 이동` : '';
-    this.receipt = { text: `${name} 근무 시작 · 산출 ×${result.staffMult.toFixed(1)}${moved}`, tone: 'success' };
+    this.receipt = { text: `${name} 근무 시작 · 산출 ×${result.staffMult.toFixed(1)}${moved}${hasIdlePayout(result.idleReward) ? ' · 적립분 수령' : ''}`, tone: 'success' };
     this.render();
   }
 
   private clearStaff(facilityId: string): void {
     if (!this.beginTransaction()) return;
-    const result = clearFacilityStaff(this.gs, facilityId);
+    const result = clearFacilityStaff(this.gs, facilityId, now());
     if (!result.ok) { this.render(); return; }
-    this.gs = result.state;
-    saveGameState(this.gs);
-    this.receipt = { text: `${FACILITY_DEFS[facilityId].name} 근무 해제 · 수호자가 대기로 돌아왔습니다`, tone: 'success' };
+    if (!this.persistGameState(result.state)) return;
+    this.receipt = { text: `${FACILITY_DEFS[facilityId].name} 근무 해제 · 수호자가 대기로 돌아왔습니다${hasIdlePayout(result.idleReward) ? ' · 적립분 수령' : ''}`, tone: 'success' };
     this.render();
   }
 
@@ -600,12 +593,23 @@ export class ProductionScene extends Phaser.Scene {
       return;
     }
 
-    this.gs = state;
-    saveGameState(this.gs);
+    if (!this.persistGameState(state)) return;
     this.receipt = {
       text: `수령 완료 · ${this.rewardLines(reward).filter(Boolean).join(' · ')}`,
       tone: 'success',
     };
     this.render();
+  }
+
+  private persistGameState(nextState: GameState): boolean {
+    try {
+      saveGameState(nextState);
+    } catch {
+      this.receipt = { text: '저장 실패 · 다시 시도해주세요', tone: 'warning' };
+      this.render();
+      return false;
+    }
+    this.gs = nextState;
+    return true;
   }
 }

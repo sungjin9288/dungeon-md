@@ -184,7 +184,7 @@ describe('RoomEditorPreviewState', () => {
       ownedMonsters: [ownedMonster('m1'), ownedMonster('m2')],
     });
     const initial = deriveRoomEditorPreviewState(state, state.dungeonSlots[0], 'monster');
-    const assigned = assignMonsterToRoomSlot(state, 0, 1, 'm2');
+    const assigned = assignMonsterToRoomSlot(state, 0, 1, 'm2', 1000);
 
     expect(initial.nextTarget).toEqual({ kind: 'monster', slotIndex: 1 });
     expect(assigned.ok).toBe(true);
@@ -194,7 +194,7 @@ describe('RoomEditorPreviewState', () => {
     expect(deriveRoomEditorPreviewState(assignedReloaded, assignedReloaded.dungeonSlots[0], 'monster').nextTarget)
       .toEqual({ kind: 'monster', slotIndex: 2 });
 
-    const removed = removeMonsterFromRoomSlot(assignedReloaded, 0, 1);
+    const removed = removeMonsterFromRoomSlot(assignedReloaded, 0, 1, 1000);
     expect(removed.ok).toBe(true);
     if (!removed.ok) return;
     saveGameState(removed.state);

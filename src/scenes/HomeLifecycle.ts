@@ -146,7 +146,7 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
     cy += 26;
   }
 
-  overlay.add(scene.add.text(cx, cy + 5, `운영 ${Math.round(reward.ratePerMin)} 황금/분 · 최대 ${idleCapHours(scene.gs)}시간 적립`, {
+  overlay.add(scene.add.text(cx, cy + 5, `총 ${reward.ratePerMin.toFixed(1)} 황금/분 · 최대 ${idleCapHours(scene.gs)}시간 적립`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#8f8779',
   }).setOrigin(0.5));
 
@@ -154,10 +154,16 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
   const claim = addPrimaryActionButton(scene, {
     x: cx - btnW / 2, y: py + h - 58, w: btnW, h: btnH, label: '수령', fontSize: '17px',
     fillColor: 0x16231d, hoverFillColor: 0x234133, borderColor: 0x66b58c,
-    once: true,
     onPress: () => {
+      // Animation callbacks may still be queued after a successful claim/scene exit.
+      if (!overlay.active || !scene.scene.isActive()) return;
       const { state } = collectIdleIncome(scene.gs, Date.now());
-      scene.persistGameState(state);
+      try {
+        scene.persistGameState(state);
+      } catch {
+        showToast(scene, '수령 저장 실패. 다시 시도해주세요.', { color: '#ff8888', depth: 901 });
+        return;
+      }
       overlay.destroy();
       scrim.destroy();
     },
@@ -508,7 +514,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
     const afterReturn = () => {
       if (didLevelUp) {
         const slotUnlocked = battleReturnGrowth.nextSlots > battleReturnGrowth.previousSlots;
-        scene.time.delayedCall(200, () => showDmLevelUpOverlay(scene, scene.gs.dmLevel, {
+        scene.time.delayedCall(200, () => showDmLevelUpOverlay(scene, battleReturnGrowth, {
           primaryLabel: slotUnlocked ? '새 방 설계' : '확인',
           onDismiss: slotUnlocked
             ? () => revealUnlockedRoom(

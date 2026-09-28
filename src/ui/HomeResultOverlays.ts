@@ -6,7 +6,6 @@
 import type Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { getUnlockedSlots } from '../data/wisdom';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
 import {
   buildBattleReturnGrowthSummary,
@@ -135,11 +134,12 @@ export function showBattleReturnOverlay(
 
 export function showDmLevelUpOverlay(
   scene: Phaser.Scene,
-  newLevel: number,
+  growth: BattleReturnGrowthContext,
   options: DmLevelUpOverlayOptions = {},
 ): void {
-  const newSlots  = getUnlockedSlots(newLevel);
-  const prevSlots = getUnlockedSlots(newLevel - 1);
+  const newLevel = growth.nextDmLevel;
+  const newSlots = growth.nextSlots;
+  const prevSlots = growth.previousSlots;
   const slotUnlocked = newSlots > prevSlots;
 
   const c = scene.add.container(0, 0).setDepth(75);

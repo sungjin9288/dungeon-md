@@ -5,6 +5,7 @@
  */
 
 import Phaser from 'phaser';
+import { showToast } from './Toast';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getMonsterAtk } from '../data/barracks';
 import { assignMonsterToRoomSlot, installTrapInRoomSlot } from '../data/roomSlotTransactions';
@@ -405,9 +406,14 @@ export function showMonsterPicker(
           previewSlot,
         );
         const growthStats = getPreviewGrowthStats(freshGs, slotIdx, previewSlot);
-        const result = assignMonsterToRoomSlot(freshGs, slotIdx, monsterSlotIdx, om.id);
+        const result = assignMonsterToRoomSlot(freshGs, slotIdx, monsterSlotIdx, om.id, Date.now());
         if (!result.ok) return;
-        cb.saveAndRefresh(result.state);
+        try {
+          cb.saveAndRefresh(result.state);
+        } catch {
+          showToast(scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+          return;
+        }
         cb.markRoomChanged?.(slotIdx);
         registerRoomLoadoutFeedback(scene, slotIdx, 'monster', mDef.name, mDef.emoji, freshDelta, 0x66c08a, growthStats);
         showRoomGrowthFeedback(scene, freshDelta, `${mDef.name} 배치 완료`, growthStats);
@@ -417,6 +423,7 @@ export function showMonsterPicker(
         scene.time.delayedCall(250, () => nav.openRoomDetail(scene, state, theme, cb, slotIdx, state.roomDetailCellX, state.roomDetailCellY));
       },
     });
+    pickBtn.zone.setName(`room-picker-monster-${om.id}`);
     list.add([pickBtn.bg, pickBtn.text, pickBtn.zone]);
   });
 

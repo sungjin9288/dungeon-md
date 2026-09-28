@@ -12,6 +12,7 @@ import {
 } from './wisdom';
 import { applyQuestObjectiveUpdate, tickSubQuestProgress } from './quests';
 import type { EquipmentStats } from './barracks';
+import { collectIdleIncome } from './idleIncome';
 import { getRoomEquipmentDamageReduction, reduceRoomEquipmentDamage } from './equipmentDefense';
 
 export const ROOM_UPGRADE_COSTS = [150, 300, 600, 1200, 2400];
@@ -22,6 +23,7 @@ export type RoomSlotTransactionFailureReason =
   | 'slot_not_found'
   | 'insufficient_gold'
   | 'room_level_cap_reached'
+  | 'room_not_built'
   | 'invalid_slot_index';
 
 export type RoomSlotTransactionResult =
@@ -124,6 +126,7 @@ export function changeRoomSlotType(
   state: GameState,
   slotIdx: number,
   roomType: RoomSlotType,
+  timestamp: number,
 ): RoomSlotTransactionResult {
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
@@ -131,7 +134,7 @@ export function changeRoomSlotType(
   const building = slot.building && ROOM_FAMILY[slot.building] === roomType
     ? slot.building
     : FAMILY_DEFAULT_ROOM[roomType];
-  return applySlotDesign(state, slotIdx, slot, roomType, building);
+  return applySlotDesign(state, slotIdx, slot, roomType, building, timestamp);
 }
 
 /** Pick the concrete building a slot fights as; its family follows the building. */
@@ -139,11 +142,12 @@ export function setRoomSlotBuilding(
   state: GameState,
   slotIdx: number,
   building: RoomType,
+  timestamp: number,
 ): RoomSlotTransactionResult {
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
   if (!isRoomBuildingUnlocked(building, state)) return { ok: false, state, reason: 'building_locked' };
-  return applySlotDesign(state, slotIdx, slot, ROOM_FAMILY[building], building);
+  return applySlotDesign(state, slotIdx, slot, ROOM_FAMILY[building], building, timestamp);
 }
 
 function applySlotDesign(
@@ -152,12 +156,13 @@ function applySlotDesign(
   slot: DungeonSlot,
   roomType: RoomSlotType,
   building: RoomType,
+  timestamp: number,
 ): RoomSlotTransactionResult {
   const isFirstDesign = slot.roomLevel < 1 || slot.maxHp <= 0;
   const nextSlot = normalizeDungeonSlot(isFirstDesign
     ? createDefaultDungeonSlot(roomType, building)
     : { ...slot, roomType, building });
-  const withSlot = replaceSlot(state, slotIdx, nextSlot);
+  const withSlot = replaceSlot(collectIdleIncome(state, timestamp).state, slotIdx, nextSlot);
   // Achievements count buildings ("raise a void forge"), so the first design of
   // a slot — the moment a room actually exists — is what gets recorded.
   const previousBuilding = getSlotBuilding(slot);
@@ -201,9 +206,11 @@ export function getRoomUpgradeHp(level: number): number {
 export function upgradeRoomSlot(
   state: GameState,
   slotIdx: number,
+  timestamp: number,
 ): RoomSlotTransactionResult & { cost?: number; previousLevel?: number; nextLevel?: number } {
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
+  if (!slot.roomType || slot.roomLevel < 1) return { ok: false, state, reason: 'room_not_built' };
   if (slot.roomLevel >= 5 || slot.roomLevel >= getMaxRoomLevel(state.dmLevel)) {
     return { ok: false, state, reason: 'room_level_cap_reached' };
   }
@@ -220,7 +227,8 @@ export function upgradeRoomSlot(
     hp: nextHp,
     maxHp: nextHp,
   });
-  const withSlot = replaceSlot({ ...state, homeGold: (state.homeGold ?? 0) - cost }, slotIdx, nextSlot);
+  const settled = collectIdleIncome(state, timestamp).state;
+  const withSlot = replaceSlot({ ...settled, homeGold: settled.homeGold - cost }, slotIdx, nextSlot);
   const [questUpdated] = applyQuestObjectiveUpdate(withSlot, 'upgrade_room');
   const nextState = tickSubQuestProgress(questUpdated, 'upgrade_room');
 
@@ -240,6 +248,7 @@ export function assignMonsterToRoomSlot(
   slotIdx: number,
   monsterSlotIdx: number,
   monsterId: string,
+  timestamp: number,
 ): RoomSlotTransactionResult {
   if (slotIdx < 0 || monsterSlotIdx < 0) return { ok: false, state, reason: 'invalid_slot_index' };
   const clearedSlots = (state.dungeonSlots ?? []).map(slot => {
@@ -262,7 +271,9 @@ export function assignMonsterToRoomSlot(
   // A guardian defends or works, never both — a room placement ends its shift.
   const facilityStaff: Record<string, string> = {};
   for (const [facilityId, staffed] of Object.entries(state.facilityStaff ?? {})) if (staffed !== monsterId) facilityStaff[facilityId] = staffed;
-  const withSlot = { ...state, dungeonSlots, facilityStaff };
+  // Settle before the operating guardian count or facility staffing changes.
+  const settled = collectIdleIncome(state, timestamp).state;
+  const withSlot = { ...settled, dungeonSlots, facilityStaff };
 
   // Quest tick only for NET-NEW placements — moving an already-placed monster
   // between slots must not re-count toward assign_monster objectives.
@@ -281,6 +292,7 @@ export function removeMonsterFromRoomSlot(
   state: GameState,
   slotIdx: number,
   monsterSlotIdx: number,
+  timestamp: number,
 ): RoomSlotTransactionResult {
   const slot = state.dungeonSlots?.[slotIdx];
   if (!slot) return { ok: false, state, reason: 'slot_not_found' };
@@ -291,7 +303,7 @@ export function removeMonsterFromRoomSlot(
   const monsterIds = Array.from({ length: cap.monsters }, (_, i) => slot.monsterIds?.[i]);
   monsterIds[monsterSlotIdx] = undefined;
   const nextSlot = normalizeDungeonSlot({ ...slot, monsterIds });
-  return { ok: true, state: replaceSlot(state, slotIdx, nextSlot), slot: nextSlot, changed: true };
+  return { ok: true, state: replaceSlot(collectIdleIncome(state, timestamp).state, slotIdx, nextSlot), slot: nextSlot, changed: true };
 }
 
 function getTrapCost(trapId: string | undefined): number {

@@ -4,6 +4,7 @@
 // 다이빙을 대체하는 핵심 루프 UI. 데이터 변경은 roomSlotTransactions 재사용.
 
 import Phaser from 'phaser';
+import { showToast } from './Toast';
 import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
@@ -98,13 +99,14 @@ function firstEmptyStrict(arr: (string | undefined)[], cap: number): number {
 // with best-fit owned monsters → top up traps while gold allows. Single commit.
 function applyRecommendedLoadout(): void {
   if (!ctxRef) return;
+  const timestamp = Date.now();
   let state = ctxRef.getGameState();
   let slot = state.dungeonSlots?.[activeSlot];
 
   if (!slot?.roomType) {
     const rec = getRoomDesignRecommendation(state, activeSlot);
     state = ensureDungeonSlot(state, activeSlot).state;
-    const r = changeRoomSlotType(state, activeSlot, rec.roomType);
+    const r = changeRoomSlotType(state, activeSlot, rec.roomType, timestamp);
     if (r.ok) state = r.state;
   }
   for (let guard = 0; guard < 6; guard++) {
@@ -114,7 +116,7 @@ function applyRecommendedLoadout(): void {
     if (mIdx < 0) break;
     const rec = getMonsterLoadoutRecommendation(state, activeSlot);
     if (!rec) break;
-    const r = assignMonsterToRoomSlot(state, activeSlot, mIdx, rec.monsterId);
+    const r = assignMonsterToRoomSlot(state, activeSlot, mIdx, rec.monsterId, timestamp);
     if (!r.ok) break;
     state = r.state;
   }
@@ -225,7 +227,7 @@ function render(): void {
       });
       c.add(z);
     }
-  } else if (slot) {
+  } else if (slot?.roomType && lv >= 1) {
     const maxLv = Math.min(5, getMaxRoomLevel(gs.dmLevel));
     if (lv >= maxLv) {
       c.add(scene.add.text(CANVAS_WIDTH - 22, TRAY_Y + 36, '강화 최대', {
@@ -246,8 +248,9 @@ function render(): void {
       }).setOrigin(0.5).setDepth(122));
       if (afford) {
         const z = scene.add.zone(bx + bw / 2, by + 11, bw, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
+        z.setName('placement-room-upgrade');
         z.on('pointerdown', () => {
-          const r = upgradeRoomSlot(ctxRef!.getGameState(), activeSlot);
+          const r = upgradeRoomSlot(ctxRef!.getGameState(), activeSlot, Date.now());
           if (r.ok) commit(r.state);
         });
         c.add(z);
@@ -308,12 +311,13 @@ function renderTypeStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     const family = ROOM_SLOT_TYPE_DEFS.find(t => t.id === ROOM_FAMILY[type]);
     const on = active === type;
     const z = chipBase(inner, x, 0, cardW, h, on, COLORS.JADE);
+    z.setName(`placement-building-${type}`);
     addText(inner, x + cardW / 2, h / 2 - 14, def.emoji, '24px', '#ffffff', false, 0.5);
     addText(inner, x + cardW / 2, h - 30, def.koreanName, '11px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
     addText(inner, x + cardW / 2, h - 14, family?.name ?? '', '10px', on ? '#9fe1cb' : '#8f8468', false, 0.5);
     z.on('pointerdown', () => {
       const ensured = ensureDungeonSlot(ctxRef!.getGameState(), activeSlot);
-      const r = setRoomSlotBuilding(ensured.state, activeSlot, type);
+      const r = setRoomSlotBuilding(ensured.state, activeSlot, type, Date.now());
       if (r.ok) commit(r.state);
     });
     x += cardW + gap;
@@ -335,6 +339,7 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
   for (const { om } of items) {
     const on = placed.has(om.id);
     const z = chipBase(inner, x, 0, itemW, h, on, on ? COLORS.JADE : 0xc8921a);
+    z.setName(`placement-monster-${om.id}`);
     addMonsterPortrait(ctxRef!.scene, inner, x + itemW / 2, 28, om.id, {
       size: 38, depth: 122, frameColor: on ? COLORS.JADE : 0xc8921a,
     });
@@ -345,11 +350,11 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
       const cur = gsNow.dungeonSlots?.[activeSlot];
       if (on) {
         const mIdx = (cur?.monsterIds ?? []).indexOf(om.id);
-        if (mIdx >= 0) { const r = removeMonsterFromRoomSlot(gsNow, activeSlot, mIdx); if (r.ok) commit(r.state); }
+        if (mIdx >= 0) { const r = removeMonsterFromRoomSlot(gsNow, activeSlot, mIdx, Date.now()); if (r.ok) commit(r.state); }
       } else {
         const cap2 = getRoomSlotCapacity(cur?.roomLevel ?? 1, cur?.roomType);
         const mIdx = firstEmpty(cur?.monsterIds ?? [], cap2.monsters);
-        const r = assignMonsterToRoomSlot(gsNow, activeSlot, mIdx, om.id);
+        const r = assignMonsterToRoomSlot(gsNow, activeSlot, mIdx, om.id, Date.now());
         if (r.ok) commit(r.state);
       }
     });
@@ -402,7 +407,12 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
 // ── Shared ───────────────────────────────────────────────────────────────────
 function commit(state: GameState): void {
   if (!ctxRef) return;
-  ctxRef.persist(state);
+  try {
+    ctxRef.persist(state);
+  } catch {
+    showToast(ctxRef.scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+    return;
+  }
   ctxRef.rebuildSlots();
   render();
 }

@@ -6,7 +6,7 @@ import {
   DUNGEON_UI_CSS,
   ZONE_ACCENTS,
 } from '../constants/colors';
-import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
+import { CANVAS_WIDTH, ROOT_NAV_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { applyCasualBackground } from '../ui/AmbientBackground';
 import { getContextualBackTarget, getZoneDestination } from '../data/navigationContract';
 import {
@@ -68,10 +68,10 @@ export class StageSelectScene extends Phaser.Scene {
   // Ch9 (st81–90) sits below Ch8 (path bottom ≈ 4448), pushing the hub buttons
   // down by one 10-stage section (+484) from their pre-Ch9 positions.
   // Total content bottom = deepest hub button row (abyss/생산/장식):
-  //   btnY 4658 + btnH 48 + 28 padding ≈ 4734.
+  //   btnY 4658 + btnH 48 + 28 padding ≈ 4734, plus fixed navigation clearance.
   // Scroll clamp is derived live from this + the DPR-zoom camera offset
   // (see the pointermove handler) so the true top (world y=0) stays reachable.
-  private contentHeight = 4734;
+  private contentHeight = 4734 + ROOT_NAV_HEIGHT;
   private frontierIdx   = 0;
   private fixedHeaderContainer?: Phaser.GameObjects.Container;
 

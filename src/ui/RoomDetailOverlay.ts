@@ -4,6 +4,7 @@
  */
 
 import Phaser from 'phaser';
+import { showToast } from './Toast';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getSlotBuildingName } from '../data/roomBuildings';
@@ -253,7 +254,7 @@ export function openRoomDetail(
   const barColor = hpPct > 0.66 ? DUNGEON_UI.JADE : hpPct > 0.33 ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.EMBER;
   const maxRoomLv = getMaxRoomLevel(gs.dmLevel);
   const isDamaged = slot.hp < slot.maxHp;
-  const canShowUpgradeButton = slot.roomLevel < 5 && slot.roomLevel < maxRoomLv;
+  const canShowUpgradeButton = !!slot.roomType && slot.roomLevel >= 1 && slot.roomLevel < 5 && slot.roomLevel < maxRoomLv;
   const growthPanelH = isDamaged ? 268 : 216;
   const growthAccent = slot.roomType ? ROOM_TYPE_ACCENT[slot.roomType] ?? 0xc8921a : 0xc8921a;
   const growthFrame = addFramedPanel(scene, {
@@ -374,7 +375,7 @@ export function openRoomDetail(
           const previousLevel = freshSlot?.roomLevel ?? slot.roomLevel;
           const previousHp = freshSlot?.maxHp ?? slot.maxHp;
           const previousCap = getRoomSlotCapacity(previousLevel, freshSlot?.roomType ?? slot.roomType);
-          const result = upgradeRoomSlot(freshGs, slotIdx);
+          const result = upgradeRoomSlot(freshGs, slotIdx, Date.now());
           if (!result.ok) return;
           const upgradeDelta = freshSlot
             ? calculateRoomMetricDelta(freshGs, freshSlot, result.slot)
@@ -385,7 +386,12 @@ export function openRoomDetail(
                 calculateRoomMetrics(freshGs, result.slot),
               )
             : undefined;
-          cb.saveAndRefresh(result.state);
+          try {
+            cb.saveAndRefresh(result.state);
+          } catch {
+            showToast(scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+            return;
+          }
           cb.markRoomChanged?.(slotIdx);
           registerRoomUpgradeFeedback(
             scene,

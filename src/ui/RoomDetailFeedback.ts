@@ -7,6 +7,7 @@
  */
 
 import Phaser from 'phaser';
+import { showToast } from './Toast';
 import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
   getRoomSlotCapacity, ROOM_SLOT_TYPE_DEFS,
@@ -530,12 +531,17 @@ export function applyRecommendedRoomDesign(
     calculateRoomMetrics(freshGs, freshSlot),
     calculateRoomMetrics(freshGs, previewSlot),
   );
-  const result = changeRoomSlotType(freshGs, slotIdx, recommendation.roomType);
+  const result = changeRoomSlotType(freshGs, slotIdx, recommendation.roomType, Date.now());
   if (!result.ok) return;
 
   const typeDef = ROOM_SLOT_TYPE_DEFS.find(def => def.id === recommendation.roomType);
   const accent = ROOM_TYPE_ACCENT[recommendation.roomType] ?? 0xc8921a;
-  cb.saveAndRefresh(result.state);
+  try {
+    cb.saveAndRefresh(result.state);
+  } catch {
+    showToast(scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+    return;
+  }
   cb.markRoomChanged?.(slotIdx);
   registerRoomDesignFeedback(
     scene,
@@ -626,13 +632,18 @@ export function applyRecommendedMonsterPlacement(
     calculateRoomMetrics(freshGs, freshSlot),
     calculateRoomMetrics(freshGs, previewSlot),
   );
-  const result = assignMonsterToRoomSlot(freshGs, slotIdx, monsterSlotIdx, recommendation.monsterId);
+  const result = assignMonsterToRoomSlot(freshGs, slotIdx, monsterSlotIdx, recommendation.monsterId, Date.now());
   if (!result.ok) {
     logger.debug(`[ROOM] recommended monster assignment failed: ${result.reason}`);
     return;
   }
 
-  cb.saveAndRefresh(result.state);
+  try {
+    cb.saveAndRefresh(result.state);
+  } catch {
+    showToast(scene, '저장 실패 · 다시 시도해주세요', { depth: 901 });
+    return;
+  }
   cb.markRoomChanged?.(slotIdx);
   registerRoomLoadoutFeedback(
     scene,
