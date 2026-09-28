@@ -8,7 +8,7 @@ import {
   type AchievementCategory,
 } from './achievements';
 import { TOTAL_STAGES } from './stageProgress';
-import { TRIBE_TOTALS } from './monsters';
+import { TRIBE_TOTALS, SKIN_DATA } from './monsters';
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -660,10 +660,6 @@ describe('getProgress — collection (extended)', () => {
     expect(def.getProgress(makeCtx({ ownedSkinCount: 3 }))).toBe(3);
   });
 
-  it('skin_all: target is 13', () => {
-    expect(getAchievementDef('skin_all')!.target).toBe(13);
-  });
-
   it('fusion_first: 1 when totalFusions >= 1', () => {
     const def = getAchievementDef('fusion_first')!;
     expect(def.getProgress(makeCtx({ totalFusions: 0 }))).toBe(0);
@@ -674,5 +670,16 @@ describe('getProgress — collection (extended)', () => {
     const def = getAchievementDef('fusion_10')!;
     expect(def.target).toBe(10);
     expect(def.getProgress(makeCtx({ totalFusions: 7 }))).toBe(7);
+  });
+});
+
+describe('skin catalog completion', () => {
+  it('requires the entire current catalog and describes that same target', () => {
+    const achievement = getAchievementDef('skin_all')!;
+    expect(achievement.target).toBe(SKIN_DATA.length);
+    expect(achievement.description).toContain(`${SKIN_DATA.length}개`);
+    expect(checkAchievements({ ...emptyCtx, ownedSkinCount: SKIN_DATA.length - 1 }, {})).not.toContain('skin_all');
+    expect(checkAchievements({ ...emptyCtx, ownedSkinCount: SKIN_DATA.length }, {})).toContain('skin_all');
+    expect(checkAchievements({ ...emptyCtx, ownedSkinCount: SKIN_DATA.length }, { skin_all: { unlocked: true } })).not.toContain('skin_all');
   });
 });

@@ -3,7 +3,7 @@
  * the 800-line file limit. Import via achievements.ts (public API unchanged).
  */
 
-import { TRIBE_TOTALS } from './monsters';
+import { TRIBE_TOTALS, SKIN_DATA } from './monsters';
 import { TOTAL_STAGES } from './stageProgress';
 
 // ─── Types & Interfaces ───────────────────────────────────────────────────────
@@ -522,10 +522,10 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'skin_all',
     name: '스킨 마스터',
-    description: '스킨 13개를 모두 획득하세요.',
+    description: `스킨 ${SKIN_DATA.length}개를 모두 획득하세요.`,
     icon: '💎',
     category: 'collection',
-    target: 13,
+    target: SKIN_DATA.length,
     reward: { gems: 50 },
     getProgress: ctx => ctx.ownedSkinCount,
   },

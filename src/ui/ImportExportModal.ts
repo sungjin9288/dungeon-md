@@ -2,7 +2,7 @@
  * Import confirmation modal for save data.
  */
 
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { importGameState } from '../data/wisdom';
 
@@ -16,6 +16,16 @@ export function showImportConfirm(
   const DX = (CW - DW) / 2, DY = (CH - DH) / 2;
 
   const dialog = scene.add.container(0, 0).setDepth(55);
+  let live = true;
+  let pending = false;
+  const close = (): void => { dialog.destroy(true); };
+  dialog.once('destroy', () => {
+    live = false;
+    parentOv.off('destroy', close);
+    scene.events.off('shutdown', close);
+  });
+  parentOv.once('destroy', close);
+  scene.events.once('shutdown', close);
 
   const dBackdrop = scene.add.rectangle(CW / 2, CH / 2, CW, CH, 0x000000, 0.5)
     .setInteractive();
@@ -44,21 +54,32 @@ export function showImportConfirm(
     color: '#ff6644', fontStyle: 'bold',
   }).setOrigin(0.5).setInteractive();
   dialog.add(confirmBtn);
-  confirmBtn.on('pointerdown', () => {
-    navigator.clipboard.readText().then((code) => {
+  confirmBtn.on('pointerdown', async () => {
+    if (!live || pending) return;
+    pending = true;
+    confirmBtn.setText('읽는 중…');
+    try {
+      const code = await navigator.clipboard.readText();
+      if (!live) return;
       const result = importGameState(code.trim());
-      dialog.destroy(true);
+      close();
       parentOv.destroy(true);
       if (result.success) {
         toastFn('세이브 복원 완료! 다시 불러옵니다...');
-        scene.time.delayedCall(800, () => scene.scene.start('DungeonHomeScene'));
+        const cancelRestart = (): void => { restart.remove(false); };
+        const restart = scene.time.delayedCall(800, () => {
+          scene.events.off('shutdown', cancelRestart);
+          scene.scene.start('DungeonHomeScene');
+        });
+        scene.events.once('shutdown', cancelRestart);
       } else {
         toastFn(result.error ?? '가져오기 실패', '#ff8888');
       }
-    }).catch(() => {
-      dialog.destroy(true);
+    } catch {
+      if (!live) return;
+      close();
       toastFn('클립보드 접근 실패', '#ff8888');
-    });
+    }
   });
 
   // Cancel
@@ -67,7 +88,7 @@ export function showImportConfirm(
     color: '#888888',
   }).setOrigin(0.5).setInteractive();
   dialog.add(cancelBtn);
-  cancelBtn.on('pointerdown', () => { dialog.destroy(true); });
+  cancelBtn.on('pointerdown', close);
 
-  dBackdrop.on('pointerdown', () => { dialog.destroy(true); });
+  dBackdrop.on('pointerdown', close);
 }

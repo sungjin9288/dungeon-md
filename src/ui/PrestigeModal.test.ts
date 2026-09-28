@@ -1,14 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
-import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
+import { loadGameState, saveGameStateWithCampaign, type GameState } from '../data/wisdom';
 import { applyPrestigeStart } from '../data/prestigeTransactions';
 import { addFramedPanel, addPrimaryActionButton } from './GameUiPrimitives';
 import { buildPrestigeBadge, openPrestigeModal } from './PrestigeModal';
 
+vi.mock('./Toast', () => ({ showToast: vi.fn() }));
+
 vi.mock('../data/wisdom', () => ({
   loadGameState: vi.fn(),
-  saveGameState: vi.fn(),
+  saveGameStateWithCampaign: vi.fn(),
   getPrestigeDmgMult: vi.fn(() => 1),
 }));
 
@@ -123,10 +125,10 @@ describe('openPrestigeModal', () => {
     confirmOptions?.onPress();
 
     expect(applyPrestigeStart).toHaveBeenCalledWith(current);
-    expect(saveGameState).toHaveBeenCalledWith(next);
+    expect(saveGameStateWithCampaign).toHaveBeenCalledWith(next, next.stageProgress);
     expect(container.destroy).toHaveBeenCalledOnce();
     expect(onConfirm).toHaveBeenCalledOnce();
-    expect(vi.mocked(saveGameState).mock.invocationCallOrder[0])
+    expect(vi.mocked(saveGameStateWithCampaign).mock.invocationCallOrder[0])
       .toBeLessThan(onConfirm.mock.invocationCallOrder[0]);
   });
 });

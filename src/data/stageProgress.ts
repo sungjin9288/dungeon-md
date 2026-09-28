@@ -120,7 +120,7 @@ export const STAGE_CONFIGS = [
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
-const SAVE_KEY = 'dungeonStageProgress';
+export const STAGE_PROGRESS_KEY = 'dungeonStageProgress';
 const CHAPTER_GATE_UNLOCKS: Record<number, number> = {
   9:  10,
   19: 20,
@@ -149,7 +149,7 @@ export function highestClearedStage(
 }
 
 export function loadProgress(): StageProgress[] {
-  const raw = localStorage.getItem(SAVE_KEY);
+  const raw = localStorage.getItem(STAGE_PROGRESS_KEY);
   if (raw) {
     try {
       const saved = JSON.parse(raw) as StageProgress[];
@@ -169,7 +169,7 @@ export function loadProgress(): StageProgress[] {
 }
 
 export function saveProgress(progress: StageProgress[]): void {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(progress));
+  localStorage.setItem(STAGE_PROGRESS_KEY, JSON.stringify(progress));
 }
 
 export function applyStageClear(

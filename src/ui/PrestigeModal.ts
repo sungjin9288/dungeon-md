@@ -5,13 +5,14 @@
  * and taps the prestige button in DungeonHomeScene settings.
  */
 
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { loadGameState, saveGameState, getPrestigeDmgMult } from '../data/wisdom';
+import { loadGameState, saveGameStateWithCampaign, getPrestigeDmgMult } from '../data/wisdom';
 import { applyPrestigeStart } from '../data/prestigeTransactions';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { showToast } from './Toast';
 
 const CX = CANVAS_WIDTH / 2;
 const PRESTIGE_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -254,7 +255,13 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
       const current = loadGameState();
       const result  = applyPrestigeStart(current);
       if (!result.ok) return;
-      if (result.changed) saveGameState(result.state);
+      try {
+        if (result.changed) saveGameStateWithCampaign(result.state, result.state.stageProgress);
+      } catch {
+        container.destroy();
+        showToast(scene, '환생 저장 실패. 다시 시도해주세요.', { color: '#ff8888' });
+        return;
+      }
       container.destroy();
       onConfirm();
     },

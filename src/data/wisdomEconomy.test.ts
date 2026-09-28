@@ -54,3 +54,11 @@ describe('wisdom-tree economy guard', () => {
     }
   });
 });
+
+it('celestialBlood advertises its existing stage-clear payout without repricing it', () => {
+  const branch = BRANCH_DEFS.find(b => b.id === 'celestialBlood')!;
+  expect(branch.effect).toContain('스테이지 클리어 시');
+  expect(branch.effect).not.toContain('웨이브');
+  expect(branchTotal(branch)).toBe(200);
+  expect(branch.getValue(5)).toBe(5);
+});

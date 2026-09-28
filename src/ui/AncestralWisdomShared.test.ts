@@ -73,7 +73,7 @@ describe('AncestralWisdomShared', () => {
     const state = loadGameState();
     state.soulCrystals = 100;
     state.wisdomTree = { ...state.wisdomTree, goldHands: 2 };
-    const snapshot = { branchId: 'goldHands', tier: 2, cost: 20, soulCrystals: 100 };
+    const snapshot = { branchId: 'goldHands', tier: 2, cost: 20, soulCrystals: 100, nextEffect: '던전 운영 수익 +30%' };
 
     expect(isWisdomUpgradeSnapshotCurrent(state, snapshot)).toBe(true);
     expect(isWisdomUpgradeSnapshotCurrent({ ...state, soulCrystals: 99 }, snapshot)).toBe(false);
@@ -85,5 +85,27 @@ describe('AncestralWisdomShared', () => {
       ...state,
       wisdomTree: { ...state.wisdomTree, goldHands: -1 },
     }, snapshot)).toBe(false);
+  });
+});
+
+
+describe('선조의 지혜 실제 효과 표시와 승인', () => {
+  const branch = BRANCH_DEFS.find(b => b.id === 'ancestorsWisdom')!;
+  it.each([[5, 3, '방 슬롯 +3 · 던전 HP +0', '방 슬롯 +3 · 던전 HP +20'],
+    [8, 0, '방 슬롯 +0 · 던전 HP +0', '방 슬롯 +0 · 던전 HP +20'],
+    [7, 2, '방 슬롯 +1 · 던전 HP +20', '방 슬롯 +1 · 던전 HP +40']] as const)(
+    'DM %i tier %i의 현재와 다음 효과를 표시한다', (dmLevel, tier, current, next) => {
+      const state = loadGameState(); state.dmLevel = dmLevel; state.soulCrystals = 100;
+      state.wisdomTree = { ancestorsWisdom: tier };
+      const view = getWisdomBranchView(state, branch);
+      expect(view.currentEffect).toBe(current); expect(view.nextEffect).toBe(next);
+      expect(view.canUpgrade).toBe(true);
+    });
+  it('확인 중 DM이 올라 효과가 바뀌면 다시 확인해야 한다', () => {
+    const state = loadGameState(); state.dmLevel = 7; state.soulCrystals = 100;
+    state.wisdomTree = { ancestorsWisdom: 0 };
+    const snapshot = { branchId: branch.id, tier: 0, cost: 5, soulCrystals: 100, nextEffect: '방 슬롯 +1 · 던전 HP +0' };
+    expect(isWisdomUpgradeSnapshotCurrent(state, snapshot)).toBe(true);
+    expect(isWisdomUpgradeSnapshotCurrent({ ...state, dmLevel: 8 }, snapshot)).toBe(false);
   });
 });

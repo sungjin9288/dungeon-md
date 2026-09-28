@@ -2,6 +2,7 @@ import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barrac
 import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
 import type { RoomFamily, RoomType } from './rooms';
 import type { ForecastCard } from './forecast';
+import { loadProgress, saveProgress, STAGE_PROGRESS_KEY } from './stageProgress';
 export type { OwnedMonster };
 
 // ─── Branch definitions ───────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'ancestorsWisdom',
     name: '선조의 지혜',
     icon: '📜',
-    effect: '추가 방 슬롯 +{value}',
+    effect: '추가 방 슬롯 +{value} · 초과 슬롯당 던전 HP +20',
     costPerTier: [5, 15, 25, 40, 60],
     getValue: (tier) => tier,
     position: { x: 195, y: 664 },
@@ -96,7 +97,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'celestialBlood',
     name: '천계의 혈통',
     icon: '✨',
-    effect: '웨이브 클리어 시 소울 크리스탈 +{value}개',
+    effect: '스테이지 클리어 시 소울 크리스탈 +{value}개',
     costPerTier: [10, 20, 35, 55, 80],
     getValue: (tier) => tier,
     position: { x: 340, y: 760 },
@@ -294,6 +295,8 @@ export interface GameState {
   craftedEquipment:  Array<{ id: string; name: string; type: string; rarity: number; emoji: string; stats: Record<string, number> }>;
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
+  /** Incomplete idle output carried between claims; absent in legacy saves. */
+  idleRemainder?: { operationGold: number; productionGold: number; materials: Record<string, number> };
   productionFacilities: Record<string, number>;  // 생산 시설 facilityId → level (0/absent = not built)
   facilityStaff: Record<string, string>;         // 생산 시설 facilityId → 근무 몬스터 id (근무 중인 몬스터는 방어에 참여하지 않는다)
   ownedDecorations:  string[];        // 장식품 owned (decorationId)
@@ -492,18 +495,49 @@ export function saveGameState(state: GameState): void {
   localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
 }
 
+/** Save a whole-run replacement; undo the campaign write if game-state storage fails. */
+export function saveGameStateWithCampaign(state: GameState, campaignProgress: StageProgressEntry[]): void {
+  const previousProgress = localStorage.getItem(STAGE_PROGRESS_KEY);
+  saveProgress(campaignProgress);
+  try {
+    saveGameState(state);
+  } catch (error) {
+    // Each localStorage write is atomic. Restore the first key's exact previous value.
+    if (previousProgress === null) localStorage.removeItem(STAGE_PROGRESS_KEY);
+    else localStorage.setItem(STAGE_PROGRESS_KEY, previousProgress);
+    throw error;
+  }
+}
+
 // ─── Save Export / Import ────────────────────────────────────────────────────
 
 export function exportGameState(): string {
-  const gs = loadGameState();
-  return btoa(unescape(encodeURIComponent(JSON.stringify(gs))));
+  const backup = {
+    format: 'dungeon-guardian-save', version: 1,
+    gameState: loadGameState(), campaignProgress: loadProgress(),
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(backup))));
+}
+
+function isStageProgress(value: unknown): value is StageProgressEntry[] {
+  return Array.isArray(value) && value.every(entry =>
+    entry !== null && typeof entry === 'object'
+    && typeof entry.unlocked === 'boolean'
+    && Number.isInteger(entry.bestStars) && entry.bestStars >= 0 && entry.bestStars <= 3
+    && (entry.bestHpPercent === undefined
+      || (Number.isFinite(entry.bestHpPercent) && entry.bestHpPercent >= 0 && entry.bestHpPercent <= 100)),
+  );
 }
 
 export function importGameState(encoded: string): { success: boolean; error?: string } {
   try {
     const json = decodeURIComponent(escape(atob(encoded)));
-    const parsed = JSON.parse(json) as Partial<GameState>;
-    if (typeof parsed.dmLevel !== 'number' || !Array.isArray(parsed.ownedMonsters)) {
+    const payload = JSON.parse(json);
+    const isBackup = payload?.format === 'dungeon-guardian-save';
+    const parsed = (isBackup ? payload.gameState : payload) as Partial<GameState> | null;
+    if (!parsed || typeof parsed.dmLevel !== 'number' || !Array.isArray(parsed.ownedMonsters)
+      || (isBackup && (payload.version !== 1 || !isStageProgress(payload.campaignProgress)))
+      || (parsed.stageProgress !== undefined && !isStageProgress(parsed.stageProgress))) {
       return { success: false, error: '유효하지 않은 세이브 데이터' };
     }
     const defaults = defaultGameState();
@@ -520,7 +554,10 @@ export function importGameState(encoded: string): { success: boolean; error?: st
       abyss:         { ...DEFAULT_ABYSS_STATE, ...(parsed.abyss ?? {}) },
       dungeonSlots,
     };
-    saveGameState(merged);
+    // Old flat exports only contain GameState progress. Replace the destination's
+    // campaign too; retaining it would mix two different players' progression.
+    const campaignProgress = migrateStageProgress(isBackup ? payload.campaignProgress : merged.stageProgress);
+    saveGameStateWithCampaign(merged, campaignProgress);
     return { success: true };
   } catch {
     return { success: false, error: '데이터 파싱 실패' };
@@ -563,6 +600,18 @@ export function getUnlockedSlotCount(state: Readonly<Pick<GameState, 'dmLevel' |
   return Math.min(MAX_DUNGEON_SLOTS, getUnlockedSlots(state.dmLevel ?? 1) + extra);
 }
 
+/** Each purchased slot still has value after DM progression fills the board.
+ * Derived from the existing tier: no migration, refund, or persisted conversion.
+ */
+export function getAncestorsWisdomEffect(
+  state: Readonly<Pick<GameState, 'wisdomTree'> & Partial<Pick<GameState, 'dmLevel'>>>,
+): { extraSlots: number; hpBonus: number } {
+  const purchased = BRANCH_DEFS[4].getValue(state.wisdomTree?.ancestorsWisdom ?? 0);
+  const remaining = Math.max(0, MAX_DUNGEON_SLOTS - getUnlockedSlots(state.dmLevel ?? 1));
+  const extraSlots = Math.min(purchased, remaining);
+  return { extraSlots, hpBonus: (purchased - extraSlots) * 20 };
+}
+
 // ─── Bonus computation ────────────────────────────────────────────────────────
 
 export interface WisdomBonuses {
@@ -570,26 +619,27 @@ export interface WisdomBonuses {
   dungeonMaxHpBonus:  number;   // extra flat HP
   roomCostMult:       number;   // multiplier on home room upgrade cost (< 1 = cheaper)
   waveRewardMult:     number;   // multiplier on wave gold reward
-  extraSlots:         number;   // additional room slots unlocked
+  extraSlots:         number;   // effective extra room slots, excluding HP-converted overflow
   crystalEarnMult:    number;   // multiplier on soul crystal drops
   monsterDmgMult:     number;   // multiplier on incoming monster damage
   monsterAtkMult:     number;   // multiplier on monster attack damage (>= 1)
-  crystalPerWave:        number;   // flat soul crystals earned on each wave clear
+  crystalPerWave:        number;   // legacy field name: flat soul crystals earned once on stage clear
   fortressHp:            number;   // extra HP added at dungeon start
   summonBonusCrystal:    number;   // flat crystals added per summon pull
   forgeBonusCrystal:     number;   // flat crystals added on each craft completion
 }
 
-export function getWisdomBonuses(state: Readonly<Pick<GameState, 'wisdomTree'>>): WisdomBonuses {
+export function getWisdomBonuses(state: Readonly<Pick<GameState, 'wisdomTree'> & Partial<Pick<GameState, 'dmLevel'>>>): WisdomBonuses {
   // Partial states (tests, imported saves mid-migration) may lack the tree;
   // an absent tree simply means no branch has been raised.
   const t: Record<string, number> = state.wisdomTree ?? {};
+  const ancestors = getAncestorsWisdomEffect(state);
   return {
     idleIncomeMult:    1 + BRANCH_DEFS[0].getValue(t['goldHands']     ?? 0) / 100,
-    dungeonMaxHpBonus: BRANCH_DEFS[1].getValue(t['ironWalls']          ?? 0),
+    dungeonMaxHpBonus: BRANCH_DEFS[1].getValue(t['ironWalls']          ?? 0) + ancestors.hpBonus,
     roomCostMult:      1 - BRANCH_DEFS[2].getValue(t['masterCraft']    ?? 0) / 100,
     waveRewardMult:    1 + BRANCH_DEFS[3].getValue(t['swiftVictory']   ?? 0) / 100,
-    extraSlots:        BRANCH_DEFS[4].getValue(t['ancestorsWisdom']    ?? 0),
+    extraSlots:        ancestors.extraSlots,
     crystalEarnMult:   1 + BRANCH_DEFS[5].getValue(t['crystalResonance'] ?? 0) / 100,
     monsterDmgMult:    1 - BRANCH_DEFS[6].getValue(t['guardianBlessing'] ?? 0) / 100,
     monsterAtkMult:    1 + BRANCH_DEFS[7].getValue(t['eliteTrainer']   ?? 0) / 100,
@@ -683,6 +733,7 @@ export function startPrestige(state: GameState): GameState {
     // ── Reset ──────────────────────────────────────────────────────────────
     stageProgress:          fresh.stageProgress,
     homeGold:               fresh.homeGold,
+    idleRemainder:          state.idleRemainder ? { ...state.idleRemainder, operationGold: 0, productionGold: 0 } : undefined,
     activeMainQuestId:      'MQ-001',
     questProgress:          {},
     activeSubQuestIds:      [],

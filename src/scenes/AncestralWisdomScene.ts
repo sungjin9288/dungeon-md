@@ -304,11 +304,11 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.add.text(PANEL_X + 18, DETAIL_Y + 70, `현재 · ${view.currentEffect}`, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + 18, DETAIL_Y + 96, this.nextEffectLabel(view), {
+    this.add.text(PANEL_X + 18, DETAIL_Y + 91, this.nextEffectLabel(view), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: view.inertReason ? DUNGEON_UI_CSS.EMBER : view.nextEffect ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+      color: view.nextEffect ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 96, this.costConsequenceLabel(view), {
+    this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 106, this.costConsequenceLabel(view), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: view.canUpgrade ? DUNGEON_UI_CSS.BRASS : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(1, 0.5);
@@ -331,7 +331,9 @@ export class AncestralWisdomScene extends Phaser.Scene {
           ? DUNGEON_UI_CSS.JADE
           : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + 26, DETAIL_Y + 178, this.receipt?.detail ?? '승인 결과와 수정·등급 변동이 이곳에 유지됩니다', {
+    this.add.text(PANEL_X + 26, DETAIL_Y + 178, this.receipt?.detail ?? (selected.id === 'ancestorsWisdom'
+      ? '9칸을 넘는 추가 슬롯은 1칸당 던전 최대 HP +20으로 적용됩니다. DM 성장 후에도 유지됩니다.'
+      : '승인 결과와 수정·등급 변동이 이곳에 유지됩니다'), {
       fontFamily: 'sans-serif', fontSize: '10px',
       color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: PANEL_W - 52 }, lineSpacing: 3,
@@ -400,6 +402,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       tier: view.tier,
       cost: view.cost,
       soulCrystals: this.gameState.soulCrystals,
+      nextEffect: view.nextEffect,
     };
 
     const overlay = this.add.container(0, 0).setDepth(1000);
@@ -517,7 +520,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       this.gameState = before;
       this.receipt = {
         title: `${branch.name} · 저장 상태 변경 감지`,
-        detail: '승인한 등급·비용·잔액과 달라 의식을 실행하지 않았습니다',
+        detail: '승인한 효과·등급·비용·잔액과 달라 의식을 실행하지 않았습니다',
         tone: 'warning',
       };
       this.queueRender();
@@ -632,10 +635,6 @@ export class AncestralWisdomScene extends Phaser.Scene {
   private nextEffectLabel(view: WisdomBranchView): string {
     if (!view.validTier) return '다음 효과를 계산할 수 없습니다';
     if (view.isMaxed) return '모든 잠재력이 해방되었습니다';
-    // A tier that provably buys nothing right now must say so before the player
-    // pays for it — 선조의 지혜 costs 145 crystals in total and grants zero
-    // slots from DM 8 onward, permanently and across every prestige.
-    if (view.inertReason) return view.inertReason;
     return `다음 · ${view.nextEffect}`;
   }
 

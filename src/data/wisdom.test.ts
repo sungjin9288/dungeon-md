@@ -6,7 +6,6 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { wisdomBranchInertReason } from '../ui/AncestralWisdomShared';
 import { TOTAL_STAGES } from './stageProgress';
 import {
   BRANCH_DEFS,
@@ -26,6 +25,7 @@ import {
   startPrestige,
   type GameState,
   getUnlockedSlotCount,
+  getAncestorsWisdomEffect,
 } from './wisdom';
 import { defaultOwnedMonster } from './barracks';
 
@@ -774,41 +774,51 @@ describe('startPrestige', () => {
   });
 });
 
-describe('효과 없는 지혜 노드는 그 사실을 말한다', () => {
-  // 선조의 지혜 costs 5+15+25+40+60 = 145 crystals and adds `tier` slots, but
-  // the live count is min(9, getUnlockedSlots(dmLevel) + tier) and the DM curve
-  // alone reaches 9 at DM 8. startPrestige does NOT reset dmLevel, so past DM 8
-  // every tier buys exactly zero slots for the rest of the game and every
-  // prestige after it.
-  const node = BRANCH_DEFS.find(branch => branch.id === 'ancestorsWisdom')!;
-
-  it('DM 8부터 어떤 티어도 슬롯을 늘리지 않는다', () => {
-    for (const dmLevel of [8, 12, 20, 40]) {
-      const base = getUnlockedSlots(dmLevel);
-      for (const tier of [1, 3, 5]) {
-        const withNode = getUnlockedSlotCount({ dmLevel, wisdomTree: { ancestorsWisdom: tier } } as never);
-        expect(withNode, `dm ${dmLevel} tier ${tier}`).toBe(base);
-      }
+describe('선조의 지혜 초과 슬롯의 HP 전환', () => {
+  it.each([1, 5, 7, 8, 12, 40])('DM %i의 모든 티어에 슬롯 또는 HP 효용이 있다', dmLevel => {
+    for (let tier = 0; tier <= 5; tier++) {
+      const state = { dmLevel, wisdomTree: { ancestorsWisdom: tier } };
+      const effect = getAncestorsWisdomEffect(state);
+      expect(effect.extraSlots + effect.hpBonus / 20).toBe(tier);
+      expect(getUnlockedSlotCount(state) - getUnlockedSlots(dmLevel)).toBe(effect.extraSlots);
+      expect(getUnlockedSlotCount(state)).toBeLessThanOrEqual(9);
+      expect(getWisdomBonuses(state).extraSlots).toBe(effect.extraSlots);
+      expect(getWisdomBonuses(state).dungeonMaxHpBonus).toBe(effect.hpBonus);
     }
   });
 
-  it('그 구간에서 뷰가 무효 사유를 내놓는다', () => {
-    const inert = wisdomBranchInertReason({ dmLevel: 12 } as never, node);
-    expect(inert).not.toBeNull();
-    expect(inert).toContain('최대');
+  it('부분 상한과 전체 상한을 정확히 나눈다', () => {
+    expect(getAncestorsWisdomEffect({ dmLevel: 5, wisdomTree: { ancestorsWisdom: 5 } })).toEqual({ extraSlots: 3, hpBonus: 40 });
+    expect(getAncestorsWisdomEffect({ dmLevel: 7, wisdomTree: { ancestorsWisdom: 3 } })).toEqual({ extraSlots: 1, hpBonus: 40 });
+    expect(getAncestorsWisdomEffect({ dmLevel: 8, wisdomTree: { ancestorsWisdom: 5 } })).toEqual({ extraSlots: 0, hpBonus: 100 });
   });
 
-  it('아직 효과가 있는 구간에서는 무효 사유가 없다', () => {
-    expect(wisdomBranchInertReason({ dmLevel: 3 } as never, node)).toBeNull();
-    for (const tier of [1, 3]) {
-      expect(getUnlockedSlotCount({ dmLevel: 3, wisdomTree: { ancestorsWisdom: tier } } as never))
-        .toBeGreaterThan(getUnlockedSlots(3));
-    }
+  it('기존 투자와 다른 HP 가호를 합산하고 저장·프레스티지 후에도 동일하다', () => {
+    const state = loadGameState(); state.dmLevel = 12;
+    state.wisdomTree = { ancestorsWisdom: 5, ironWalls: 5, dungeonFortress: 5 };
+    const before = structuredClone(state);
+    expect(getWisdomBonuses(state).dungeonMaxHpBonus).toBe(200);
+    expect(getWisdomBonuses(state).fortressHp).toBe(250);
+    saveGameState(state);
+    expect(getWisdomBonuses(loadGameState())).toEqual(getWisdomBonuses(state));
+    const prestige = startPrestige(state);
+    expect(prestige.dmLevel).toBe(12);
+    expect(getWisdomBonuses(prestige)).toEqual(getWisdomBonuses(state));
+    expect(state).toEqual(before);
   });
 
-  it('다른 노드는 무효 판정 대상이 아니다', () => {
-    for (const branch of BRANCH_DEFS.filter(b => b.id !== 'ancestorsWisdom')) {
-      expect(wisdomBranchInertReason({ dmLevel: 40 } as never, branch), branch.id).toBeNull();
+  it('최대 보드에서 구매하면 기존 비용으로 HP가 증가한다', () => {
+    const state = loadGameState(); state.dmLevel = 8; state.soulCrystals = 145;
+    let next = state;
+    for (let tier = 1; tier <= 5; tier++) {
+      const result = upgradeWisdomBranch(next, 'ancestorsWisdom');
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error('upgrade failed');
+      next = result.state;
+      expect(getWisdomBonuses(next).dungeonMaxHpBonus).toBe(tier * 20);
+      expect(getUnlockedSlotCount(next)).toBe(9);
     }
+    expect(next.soulCrystals).toBe(0);
+    expect(state.soulCrystals).toBe(145);
   });
-})
+});
