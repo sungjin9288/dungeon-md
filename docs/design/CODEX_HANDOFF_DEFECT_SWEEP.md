@@ -1463,3 +1463,37 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
 - 검증: ownedMonsterBattleAtk(4, 장비 무시로 되돌리면 2건 실패 확인)·waveHudLabel(3), 전체 **160파일/3,338 tests**,
   tsc·build 통과. **브라우저 확인은 ERP 검증 구간 동안 보류 요청으로 미실행** — 재개 시 상세 헤더 장착 전후 ATK와
   스테이지 클리어 결과 HUD를 실제 화면에서 확인할 것.
+
+## §34 메인 퀘스트 목표 정합성 — 2026-09-29 (Claude)
+
+커밋 `1f24935`(push 없음). 브라우저 없이 목표 10종의 진행 지점·도달 가능성·안내를 전수 점검했다(코드 확인 후 수정).
+
+### 수정
+
+1. **`reach_dm_level`이 전투 횟수를 셌다(HIGH).** 정산마다 +1이어서 "DM Lv.10"(MQ-022 등 9개 퀘스트)이 레벨과
+   무관하게 전투 10회로 완료됐다. 페이싱 모델(`target <= dmLevel`)과도 어긋났다. 위치형(`POSITIONAL_OBJECTIVES`)으로
+   바꾸고 정산은 현재 DM 레벨을 기록한다. 홈 완료 판정(`advanceCompletedMainQuest`) 직전에도 동기화해 퀘스트·서브
+   퀘스트 보상으로 오른 레벨도 인정한다. 주석이 가리키던 `syncAutoMetObjectives`는 존재하지 않았다.
+2. **스테이지 클리어로 끝난 퀘스트가 홈 보상 단계를 건너뜀(HIGH).** 전투 중 `completeAndAdvance`를 바로 불러
+   `applyMainQuestCompletionRewards`(설계도·각성석)와 완료 팝업이 빠졌다 — MQ-030·034·044 설계도 미지급.
+   `applyQuestObjectiveProgress`는 진행만 올리고(`questDone` 보고, 토스트 유지) 완료는 홈 `initQuests`가 한다.
+3. **`complete_stage` 시작 시 미반영.** 이전 퀘스트 진행 중 이미 깬 스테이지가 새 퀘스트에 0으로 시작해 재도전이
+   필요했다. `startQuest`가 `stageProgress`의 최고 클리어 번호로 자동 충족한다.
+4. **`totalGoldEarned` 이중 누적.** 처치 순간과 전리품 정산에서 두 번 더해 누적 골드 목표·업적이 부풀었다.
+   처치 경로에서 제거.
+
+검증: questObjectiveIntegrity(7, 위치형 되돌리면 실패 확인), 기존 progressionTransactions 테스트 2건은 의도한 동작
+변경에 맞게 갱신. 전체 **161파일/3,345 tests**, tsc·build 통과. 브라우저 확인은 ERP 검증 구간 보류로 미실행.
+기존 저장의 부풀려진 `reach_dm_level` 진행도는 이관하지 않는다(목표 이상이면 이미 충족, 미만이면 실제 레벨이 넘을 때 충족).
+
+### 설계 판단 필요 (수정하지 않음)
+
+- **`upgrade_room` 영구 정지 가능성:** 강화는 방 9개 × 4회 = 36회가 전부이고 되돌릴 수 없다. MQ-016(5)·028(3)·
+  032(3)·036(4)·040(5) 사이에 모든 방을 Lv5로 올린 플레이어는 MQ-036/040을 끝낼 수 없다. 자동 충족 규칙
+  (예: 모든 방 최대 레벨이면 충족) 또는 목표 변경 필요.
+- **`collect_gold` 규칙 혼재:** 시작 시에는 누적 총액(`totalGoldEarned`)으로 자동 충족, 진행 중에는 전리품만 센다
+  (방치 수익·상인·퀘스트 보상 제외).
+- **`defend_invasion` 안내:** 퀘스트 침략 배너는 진행도 0일 때만 뜬다. MQ-037(2)·040(3)·041(5)은 첫 승 이후
+  오늘의 손님 카드에만 의존하고(상인 카드는 전투 없음) 퀘스트 로그 바로 가기도 없다.
+- 침략 설정이 있지만 방어 목표가 없어 발동하지 않는 퀘스트: MQ-012·015·027·032. INV-006 중복(MQ-019·027).
+- 퀘스트 해금 `summon_altar`·`forge`·`affinity_system`·`research_lab`은 어떤 기능도 막지 않는다(칭호 표시만).

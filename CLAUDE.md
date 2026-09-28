@@ -552,6 +552,8 @@ Home은 `battleResult`를 **한 번만** 정산한다: `'battle-result'`/`'forec
 `applyBattleReturnSettlement(..., { defendInvasion: false })`로 전리품·`STAGE_CLEAR_DM_XP`·재료를 정산한다
 (스테이지는 침략 방어 목표를 올리지 않는다). 모든 패배는 "던전으로 귀환 · 방어선 보강"을 제공하고,
 스테이지 패배는 전리품 + `STAGE_DEFEAT_DM_XP`를 즉시 정산해 홈으로 간다(`buildFailOptions`).
+메인 퀘스트 완료는 홈만 한다(`settleCompletedHomeMainQuest` — 설계도·각성석·팝업). 전투·스테이지 경로는 진행도만
+올린다(`applyQuestObjectiveProgress`). `reach_dm_level`·`complete_stage`는 위치형(현재 값 기록)이다.
 
 ---
 
