@@ -345,7 +345,8 @@ function buildQuestLogContainer(
   state: QuestLogState,
   gs: GameState,
 ): Phaser.GameObjects.Container {
-  const c = scene.add.container(0, 0).setDepth(50);
+  // Above the invasion banner (60), below Home's result overlays (70+).
+  const c = scene.add.container(0, 0).setDepth(65);
 
   // Full-screen background
   const bg = scene.add.graphics();
@@ -760,6 +761,8 @@ function drawSubQuestSection(
         once: true,
         onPress: claim,
       });
+      // The pill stays 18px tall; the touch target meets the 44px minimum.
+      claimBtn.zone.setPosition(btnX, btnY + 9 - 22).setSize(btnW, 44);
       c.add([claimBtn.bg, claimBtn.text, claimBtn.zone]);
     }
 
