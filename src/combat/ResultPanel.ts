@@ -13,7 +13,8 @@
 //   revive           — gem/ad revive (called by fail-panel action)
 //   resetStage       — full stage reset (called by fail-panel action)
 
-import { STAGE_DEFEAT_DM_XP } from '../data/invasionTransactions';
+import { STAGE_DEFEAT_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
+import { loadGameState, saveGameState } from '../data/wisdom';
 import Phaser from 'phaser';
 import {
   CASUAL,
@@ -118,7 +119,7 @@ export function showResultPanel(ctx: ResultFlowContext, isFail: boolean, reward:
   // Fail: dynamic height based on option count; Success: dynamic based on materials
   const matEntries = Object.entries(ctx.materialsEarnedThisRun ?? {}).filter(([, q]) => q > 0);
   const matRowCount = Math.min(Math.ceil(matEntries.length / 3), 2);
-  const failOptionCount = (ctx.returnTo ? 1 : 0) + 3; // returnTo + ad + gems + reset
+  const failOptionCount = FAIL_OPTION_COUNT; // retreat + ad + gems + reset
   const ch     = isFail
     ? 140 + failOptionCount * 54 + (failCallout ? 40 : 0)
     : 350 + matRowCount * 36;
@@ -392,41 +393,7 @@ function buildFailContent(
     }
   }
 
-  const options: Array<{
-    label: string;
-    action: () => void;
-    tone: ResultActionTone;
-    keepPanel?: boolean;
-    canDismiss?: () => boolean;
-  }> = [
-    ...(ctx.returnTo ? [{
-      label: '던전으로 귀환 · 방어선 보강',
-      tone: 'primary' as const,
-      action: () => {
-        scene.registry.set('battleResult', {
-          won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP,
-          materialsEarned: { ...ctx.materialsEarnedThisRun },
-          ...(callout ? { callout } : {}),
-        });
-        ov.destroy();
-        scene.scene.stop('UIScene');
-        scene.scene.start(ctx.returnTo ?? 'DungeonHomeScene');
-      },
-    }] : []),
-    { label: '광고 확인 후 부활', tone: ctx.returnTo ? 'secondary' : 'primary', action: () => revive(ctx, 0) },
-    {
-      label: '보석 5개로 부활',
-      tone: 'arcane',
-      canDismiss: () => ctx.gems >= 5,
-      action: () => revive(ctx, 5),
-    },
-    {
-      label: '처음부터 재정비',
-      tone: 'danger',
-      keepPanel: true,
-      action: () => confirmReset(ctx, ov),
-    },
-  ];
+  const options = buildFailOptions(ctx, ov, callout);
 
   options.forEach(({ label, action, tone, keepPanel, canDismiss }, i) => {
     const oy = cy + (callout ? 190 : 145) + i * 54;
@@ -446,6 +413,68 @@ function buildFailContent(
       },
     });
   });
+}
+
+// ─── buildFailOptions ─────────────────────────────────────────────────────────
+
+export interface FailOption {
+  label: string;
+  action: () => void;
+  tone: ResultActionTone;
+  keepPanel?: boolean;
+  canDismiss?: () => boolean;
+}
+
+/** Retreat home to reinforce is always offered; a lost campaign stage had none. */
+export const FAIL_OPTION_COUNT = 4;
+
+export function buildFailOptions(
+  ctx: ResultFlowContext,
+  ov: Phaser.GameObjects.Container,
+  callout: BattleResultCallout | null,
+): FailOption[] {
+  const scene = ctx.scene;
+  const retreat = (): void => {
+    const materialsEarned = { ...ctx.materialsEarnedThisRun };
+    if (ctx.returnTo) {
+      scene.registry.set('battleResult', {
+        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned,
+        ...(callout ? { callout } : {}),
+      });
+    } else {
+      // A campaign stage has no Home hand-off: settle here, and not as a
+      // story-invasion defense.
+      const settled = applyBattleReturnSettlement(loadGameState(), {
+        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned,
+      }, { defendInvasion: false });
+      try {
+        if (settled.changed) saveGameState(settled.state);
+      } catch (error: unknown) {
+        logger.warn('[RESULT] stage retreat save failed', error);
+        scene.registry.set('status', '저장 실패 · 다시 시도해주세요');
+        return;
+      }
+    }
+    ov.destroy();
+    scene.scene.stop('UIScene');
+    scene.scene.start(ctx.returnTo ?? 'DungeonHomeScene');
+  };
+  return [
+    { label: '던전으로 귀환 · 방어선 보강', tone: 'primary', action: retreat },
+    { label: '광고 확인 후 부활', tone: 'secondary', action: () => revive(ctx, 0) },
+    {
+      label: '보석 5개로 부활',
+      tone: 'arcane',
+      canDismiss: () => ctx.gems >= 5,
+      action: () => revive(ctx, 5),
+    },
+    {
+      label: '처음부터 재정비',
+      tone: 'danger',
+      keepPanel: true,
+      action: () => confirmReset(ctx, ov),
+    },
+  ];
 }
 
 // ─── revive ───────────────────────────────────────────────────────────────────

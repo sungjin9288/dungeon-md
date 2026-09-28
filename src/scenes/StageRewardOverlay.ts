@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { STAGE_CONFIGS } from '../data/stageProgress';
+import { STAGE_CLEAR_DM_XP } from '../data/invasionTransactions';
 import { ALL_STAGES } from '../data/allStages';
 import { stageLootPotential } from '../data/campaignPacing';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton, type InfoRowOptions } from '../ui/GameUiPrimitives';
@@ -36,7 +37,6 @@ export class StageRewardOverlay extends Phaser.Scene {
     const estimatedGold = stageDef
       ? stageLootPotential(stageDef)
       : (() => { let g = 0; for (let w = 1; w <= waveCount; w++) g += 50 + w * 10 + (ch - 1) * 40; return g; })();
-    const estimatedGems = cfg.bossWave ? 5 : 2;
     const isBoss = cfg.bossWave ?? false;
 
     // Load stage progress
@@ -116,7 +116,8 @@ export class StageRewardOverlay extends Phaser.Scene {
     // Reward rows
     const rows = [
       { icon: '💰', label: '예상 골드', value: `~${estimatedGold.toLocaleString('ko-KR')}`, valueColor: '#ffcc44' },
-      { icon: '💎', label: '보석', value: `+${estimatedGems}`, valueColor: '#aa88ff' },
+      // Stages pay no gems (the card used to promise +2/+5); the clear pays DM XP.
+      { icon: '✨', label: 'DM XP', value: `+${STAGE_CLEAR_DM_XP}`, valueColor: '#aa88ff' },
       { icon: '〰', label: '웨이브', value: `${waveCount}파`, valueColor: CSS.PARCHMENT_DIM },
       { icon: '👹', label: '보스', value: isBoss ? '있음' : '없음', valueColor: isBoss ? '#ff6655' : '#6f5a45' },
     ] satisfies Array<Omit<InfoRowOptions, 'x' | 'y' | 'w'>>;

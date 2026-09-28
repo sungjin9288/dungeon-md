@@ -2,7 +2,7 @@
 // Handles the animated stage-clear overlay after each chapter is beaten.
 // Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
-import { STAGE_CLEAR_DM_XP } from '../data/invasionTransactions';
+import { STAGE_CLEAR_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
 import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
 import {
@@ -16,7 +16,7 @@ import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { applyClearRewards } from '../data/clearRewards';
-import { recordClear, STAGE_CONFIGS } from '../data/stageProgress';
+import { recordClear, STAGE_CONFIGS, stageClearTitle } from '../data/stageProgress';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
 import { popIn } from '../ui/motion';
@@ -70,9 +70,20 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Pass stageNum as amount so complete_stage objectives like target=73
   // are satisfied immediately on clearing that specific stage.
   // Invasion battles have no stageNumber and must not tick complete_stage.
-  const finalGs = stageNum !== undefined
+  const questGs = stageNum !== undefined
     ? ctx.tickQuestAndNotify(updated, 'complete_stage', stageNum)
     : updated;
+  // Battles returning to Home/Abyss hand their loot over there. A campaign stage
+  // has no hand-off, so it settles loot, clear DM XP and run materials now —
+  // before any button, so leaving the result screen cannot lose them.
+  const finalGs = ctx.returnTo
+    ? questGs
+    : applyBattleReturnSettlement(questGs, {
+        won: true,
+        goldEarned: ctx.gold,
+        dmXP: STAGE_CLEAR_DM_XP,
+        materialsEarned: { ...ctx.materialsEarnedThisRun },
+      }, { defendInvasion: false }).state;
   saveGameState(finalGs);
 
   // Sync to StageSelectScene's own progress key
@@ -137,6 +148,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     ? `${ctx.weeklyBossMode.name} · 격파`
     : ctx.returnTo
     ? '침공 방어 성공'
+    : stageCfgX?.stageNumber !== undefined
+    ? stageClearTitle(stageCfgX.stageNumber)
     : `${chLabel} 전선 확보`;
   const title = scene.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
     fontFamily: 'sans-serif', fontSize: '24px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,

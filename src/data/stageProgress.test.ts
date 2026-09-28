@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   STAGE_CONFIGS,
+  stageClearTitle,
   TOTAL_STAGES,
   applyStageClear,
   loadProgress,
@@ -446,4 +447,21 @@ describe('STAGE_CONFIGS — Ch4/Ch6/Ch7 group gates & additional slot pins', () 
     expect(prog[0].bestHpPercent).toBe(0);
   });
 
+});
+
+// Every regular clear used to read "N장 전선 확보", so clearing stage 1 of 10
+// looked like the whole chapter was secured.
+describe('stageClearTitle', () => {
+  it('names the gate for a mid-chapter clear', () => {
+    expect(stageClearTitle(1)).toBe('관문 1 확보');
+    expect(stageClearTitle(9)).toBe('관문 9 확보');
+  });
+  it('secures the chapter only on its last stage', () => {
+    for (const cfg of STAGE_CONFIGS) {
+      const next = STAGE_CONFIGS.find(c => c.stageNumber === cfg.stageNumber + 1);
+      const last = !next || next.chapter !== cfg.chapter;
+      expect(stageClearTitle(cfg.stageNumber)).toBe(last ? `${cfg.chapter}장 전선 확보` : `관문 ${cfg.stageNumber} 확보`);
+    }
+    expect(stageClearTitle(10)).toBe('1장 전선 확보');
+  });
 });

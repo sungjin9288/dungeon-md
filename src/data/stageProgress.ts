@@ -12,6 +12,14 @@ export type StageProgress = StageProgressEntry;
 
 export const TOTAL_STAGES = 90;
 
+/** Clear-screen title: the chapter is secured only by its last stage. */
+export function stageClearTitle(stageNumber: number): string {
+  const cfg = STAGE_CONFIGS.find(c => c.stageNumber === stageNumber);
+  if (!cfg) return '관문 확보';
+  const next = STAGE_CONFIGS.find(c => c.stageNumber === stageNumber + 1);
+  return !next || next.chapter !== cfg.chapter ? `${cfg.chapter}장 전선 확보` : `관문 ${stageNumber} 확보`;
+}
+
 // ─── Per-stage boot config ────────────────────────────────────────────────────
 // Minimal configs used to launch DungeonScene (chapter, bossWave flag). The
 // battle grid always mirrors the home board, so stages carry no slot count.

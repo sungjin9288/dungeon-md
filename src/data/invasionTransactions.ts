@@ -71,9 +71,15 @@ function battleSettlementChanged(source: GameState, next: GameState): boolean {
   );
 }
 
+export interface BattleSettlementOptions {
+  /** Story invasions and forecast cards defend the home; campaign stages do not tick it. */
+  readonly defendInvasion?: boolean;
+}
+
 export function applyBattleReturnSettlement(
   state: GameState,
   result: BattleReturnResult,
+  { defendInvasion = true }: BattleSettlementOptions = {},
 ): BattleReturnSettlement {
   let dmXP = (state.dmXP ?? 0) + result.dmXP;
   let dmLevel = state.dmLevel ?? 1;
@@ -102,7 +108,7 @@ export function applyBattleReturnSettlement(
   nextState = tickSubQuestProgress(levelQuestState, 'reach_dm_level');
 
   let defendUpdate: ObjectiveUpdate | null = null;
-  if (result.won) {
+  if (result.won && defendInvasion) {
     const [defendQuestState, update] = applyQuestObjectiveUpdate(nextState, 'defend_invasion');
     nextState = tickSubQuestProgress(defendQuestState, 'defend_invasion');
     defendUpdate = update;
