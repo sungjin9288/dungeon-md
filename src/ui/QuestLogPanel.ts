@@ -22,6 +22,7 @@ import {
 } from './GameUiPrimitives';
 import { addQuestSpeakerVisual } from './QuestSpeakerView';
 import { questUnlockLabel } from '../data/dmTitles';
+import { questObjectiveDestination } from '../data/questRoutes';
 
 const QUEST_PANEL_FILL = CASUAL.PANEL;
 const QUEST_ROW_FILL = CASUAL.PANEL_SOFT;
@@ -289,6 +290,8 @@ function buildQuestRewardRows(
 export interface QuestLogState {
   questLogOpen: boolean;
   questLogContainer?: Phaser.GameObjects.Container;
+  /** Scene change for an objective's "바로 가기"; the route is hidden without it. */
+  navigate?: (sceneKey: string) => void;
 }
 
 export function openQuestLog(
@@ -336,6 +339,9 @@ function buildQuestLogContainer(
   const bg = scene.add.graphics();
   bg.fillStyle(CASUAL.PANEL, 1);
   bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  // Graphics has no size of its own: without an explicit hit area the log's
+  // tap-to-close never fired and taps reached Home's room cards and deck below.
+  bg.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   c.add(bg);
 
   // Header bar
@@ -378,12 +384,13 @@ function buildQuestLogContainer(
   if (subQuestView.changed) saveGameState(workGs);
 
   let y = 56;
-  y = drawMainQuestCard(scene, c, y, workGs);
+  y = drawMainQuestCard(scene, c, y, workGs, state.navigate
+    ? (sceneKey: string) => { closeQuestLog(state, scene); state.navigate?.(sceneKey); }
+    : undefined);
   y = drawSubQuestSection(scene, c, y, subQuestView, state);
   drawMiniQuestSection(scene, c, y, workGs);
 
-  // Tap dim bg behind to close
-  bg.setInteractive();
+  // Tap the background to close (its full-screen hit area is set above).
   bg.on('pointerdown', () => closeQuestLog(state, scene));
 
   return c;
@@ -396,6 +403,7 @@ function drawMainQuestCard(
   c: Phaser.GameObjects.Container,
   y: number,
   gs: GameState,
+  onRoute?: (sceneKey: string) => void,
 ): number {
   const PAD    = 12;
   const CARD_W = CANVAS_WIDTH - PAD * 2;
@@ -499,12 +507,31 @@ function drawMainQuestCard(
   quest.objectives.forEach((obj, oi) => {
     const cur = prog?.objectives[obj.id] ?? 0;
     const pct = Math.min(cur / obj.target, 1);
+    const destination = onRoute && cur < obj.target ? questObjectiveDestination(obj.type) : null;
+    const routeW = 82;
     const objectiveText = scene.add.text(innerX, contentY, `▸ ${obj.description}`, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
       color: DUNGEON_UI_CSS.TEXT,
-      wordWrap: { width: innerWidth, useAdvancedWrap: true },
+      wordWrap: { width: destination ? innerWidth - routeW - 8 : innerWidth, useAdvancedWrap: true },
     });
     cardContent.add(objectiveText);
+    if (destination && onRoute) {
+      const route = addPrimaryActionButton(scene, {
+        x: innerX + innerWidth - routeW,
+        y: contentY - 12,
+        w: routeW,
+        h: 44,
+        label: '바로 가기',
+        fontSize: '11px',
+        fillColor: DUNGEON_UI.STONE_RAISED,
+        hoverFillColor: DUNGEON_UI.IRON,
+        borderColor: DUNGEON_UI.BRASS,
+        hoverBorderColor: DUNGEON_UI.BRASS_BRIGHT,
+        textColor: DUNGEON_UI_CSS.BRASS,
+        onPress: () => onRoute(destination),
+      });
+      cardContent.add([route.bg, route.text, route.zone]);
+    }
     const progressY = objectiveText.y + objectiveText.height + 6;
     const progressValue = scene.add.text(innerX + innerWidth, progressY + 6, `${cur}/${obj.target}`, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
