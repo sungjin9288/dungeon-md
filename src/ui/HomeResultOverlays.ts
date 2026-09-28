@@ -3,7 +3,7 @@
 // DungeonHomeScene. Split from HomeOverlays.ts to keep each module under the
 // 800-line limit.
 
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
@@ -373,7 +373,7 @@ export function showChapterCompleteOverlay(
 
 // ─── Shared overlay helpers ───────────────────────────────────────────────────
 
-function buildOverlayDim(
+export function buildOverlayDim(
   scene: Phaser.Scene,
   fillColor: number,
   alpha: number,
@@ -381,6 +381,9 @@ function buildOverlayDim(
   const dim = scene.add.graphics();
   dim.fillStyle(fillColor, alpha);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  // Graphics has no size of its own; without a hit area taps beside the panel
+  // reached Home's room cards (and opened the tray above the overlay).
+  dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   return dim;
 }
 

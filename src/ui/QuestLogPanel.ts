@@ -50,7 +50,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
   const dim = scene.add.graphics();
   dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  dim.setInteractive();
+  dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   c.add(dim);
 
   const rows = buildQuestRewardRows(quest);
@@ -141,7 +141,7 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
   const dim = scene.add.graphics();
   dim.fillStyle(0x000000, 0.5);
   dim.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  dim.setInteractive();
+  dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT), Phaser.Geom.Rectangle.Contains);
   c.add(dim);
 
   const rows = buildQuestRewardRows(quest, true);
