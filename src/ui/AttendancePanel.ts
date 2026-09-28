@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { loadGameState, saveGameState } from '../data/wisdom';
+import { loadGameState } from '../data/wisdom';
 import { getTodayString } from '../data/daily';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel } from './GameUiPrimitives';
@@ -17,6 +17,7 @@ import {
   claimDailyAttendance,
   type AttendanceReward,
 } from '../data/attendance';
+import { commitSceneState } from './sceneStateCommit';
 
 function rewardText(rw: AttendanceReward): string {
   const parts: string[] = [];
@@ -120,7 +121,7 @@ export function showAttendancePanel(scene: Phaser.Scene): void {
     zone.on('pointerdown', () => {
       const result = claimDailyAttendance(loadGameState(), getTodayString());
       if (!result.ok) return;
-      saveGameState(result.state);
+      commitSceneState(scene, result.state);
       audioManager.playSfx('gold_earn');
       c.destroy();
       showAttendanceToast(scene, result.reward ? rewardText(result.reward) : '');

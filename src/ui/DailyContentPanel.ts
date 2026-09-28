@@ -6,12 +6,13 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { prepareDailyChallengeViewState, getTodayString } from '../data/daily';
-import { loadGameState, saveGameState } from '../data/wisdom';
+import { loadGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
 import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
 import { canClaimAttendance } from '../data/attendance';
 import { showAttendancePanel } from './AttendancePanel';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { commitSceneState } from './sceneStateCommit';
 
 // Casual-toy challenge modal palette (used only by showChallengePanel).
 const CHALLENGE_PANEL_FILL = CASUAL.PANEL;       // cream modal body
@@ -194,7 +195,7 @@ export function showChallengePanel(scene: Phaser.Scene): void {
   const gs = loadGameState();
   const dailyView = prepareDailyChallengeViewState(gs);
   const workGs = dailyView.state;
-  if (dailyView.changed) saveGameState(workGs);
+  if (dailyView.changed) commitSceneState(scene, workGs);
   const { challenges } = dailyView;
 
   const c = scene.add.container(0, 0).setDepth(95);

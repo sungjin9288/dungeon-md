@@ -71,7 +71,7 @@ export class BarracksScene extends Phaser.Scene {
 
   constructor() { super({ key: 'BarracksScene' }); }
 
-  create(): void {
+  create(data?: { scrollY?: number }): void {
     this.gs = loadGameState();
     this.legionMenuOverlay = undefined;
     this.scrollY = 0;
@@ -89,6 +89,10 @@ export class BarracksScene extends Phaser.Scene {
     this.buildRootNavigation();
     if (this.focusRoomSlotIdx === null) this.buildLegionManagementDisclosure();
     this.setupScroll();
+    if (data?.scrollY) {
+      this.scrollY = Phaser.Math.Clamp(data.scrollY, 0, this.maxScrollY);
+      this.contentContainer.setY(-this.scrollY);
+    }
 
     if (this.focusMonsterId) {
       const focusId = this.focusMonsterId;
@@ -418,7 +422,14 @@ export class BarracksScene extends Phaser.Scene {
       {
         scene: this,
         focusSourceLabel: this.focusMonsterId === m.id ? this.focusSourceLabel ?? undefined : undefined,
-        onClose:   () => { this.detailOverlay = undefined; },
+        onClose:   () => {
+          this.detailOverlay = undefined;
+          // Feeding/equipping/skills saved from the detail; the roster, header power
+          // and growth hall still showed the state from scene start.
+          if (JSON.stringify(loadGameState()) !== JSON.stringify(this.gs)) {
+            this.scene.restart({ scrollY: this.scrollY });
+          }
+        },
         onRefresh: (updated, refreshTab) => { this.detailOverlay = undefined; this.showMonsterDetail(updated, refreshTab); },
         onOpenForge: (monster) => {
           this.detailOverlay = undefined;
