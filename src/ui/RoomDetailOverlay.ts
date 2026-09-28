@@ -9,7 +9,7 @@ import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getSlotBuildingName } from '../data/roomBuildings';
 import {
-  getRoomSlotCapacity, getMaxRoomLevel, ROOM_SLOT_TYPE_DEFS,
+  getRoomSlotCapacity, getMaxRoomLevel, getDmLevelForRoomLevel, ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot } from '../data/wisdom';
 import {
   calculateRoomMetricDelta,
@@ -413,7 +413,7 @@ export function openRoomDetail(
     content.add([upgBtn.bg, upgBtn.text, upgBtn.zone]);
     nextGrowthY += 54;
   } else if (slot.roomLevel < 5 && slot.roomLevel >= maxRoomLv) {
-    const neededDm = [5, 10, 15, 20][slot.roomLevel - 1] ?? 20;
+    const neededDm = getDmLevelForRoomLevel(slot.roomLevel + 1);
     upgradeSummary = `DM Lv.${neededDm} 달성 후 다음 확장`;
     content.add(scene.add.text(secX + 18, nextGrowthY + 12, `잠금 · ${upgradeSummary}`, {
       fontFamily: 'sans-serif',

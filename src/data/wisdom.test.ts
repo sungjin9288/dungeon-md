@@ -13,6 +13,7 @@ import {
   SLOT_UNLOCK_LEVELS,
   getRoomSlotCapacity,
   getMaxRoomLevel,
+  getDmLevelForRoomLevel,
   getUnlockedSlots,
   getWisdomBonuses,
   getPrestigeDmgMult,
@@ -820,5 +821,19 @@ describe('선조의 지혜 초과 슬롯의 HP 전환', () => {
     }
     expect(next.soulCrystals).toBe(0);
     expect(state.soulCrystals).toBe(145);
+  });
+});
+
+// Room detail kept its own table (Lv2 at DM5) after the gate moved to DM3, and
+// the placement tray said "강화 최대" for a gated room. Both now read the gate.
+describe('getDmLevelForRoomLevel', () => {
+  it('is the first DM level whose gate allows the room level', () => {
+    expect([2, 3, 4, 5].map(getDmLevelForRoomLevel)).toEqual([3, 10, 15, 20]);
+    for (const level of [2, 3, 4, 5]) {
+      const dm = getDmLevelForRoomLevel(level);
+      expect(getMaxRoomLevel(dm)).toBeGreaterThanOrEqual(level);
+      expect(getMaxRoomLevel(dm - 1)).toBeLessThan(level);
+    }
+    expect(getDmLevelForRoomLevel(1)).toBe(1);
   });
 });

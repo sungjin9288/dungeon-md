@@ -8,10 +8,11 @@ import { showToast } from './Toast';
 import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import {
-  ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel,
+  ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel, getDmLevelForRoomLevel,
   type GameState, type DungeonSlot,
 } from '../data/wisdom';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
+import { shortenLabel } from './MonsterDetailShared';
 import { TRAP_DEFS } from '../data/traps';
 import { getTrapStock } from '../data/trapTransactions';
 import { isMonsterOnShift } from '../data/productionTransactions';
@@ -230,7 +231,9 @@ function render(): void {
   } else if (slot?.roomType && lv >= 1) {
     const maxLv = Math.min(5, getMaxRoomLevel(gs.dmLevel));
     if (lv >= maxLv) {
-      c.add(scene.add.text(CANVAS_WIDTH - 22, TRAY_Y + 36, '강화 최대', {
+      // A DM-gated room is not maxed: say which DM level opens the next one.
+      const gateLabel = lv >= 5 ? '강화 최대' : `강화 DM${getDmLevelForRoomLevel(lv + 1)} 필요`;
+      c.add(scene.add.text(CANVAS_WIDTH - 22, TRAY_Y + 36, gateLabel, {
         fontFamily: 'sans-serif', fontSize: '12px', color: '#6a6052',
       }).setOrigin(1, 0).setDepth(122));
     } else {
@@ -343,6 +346,9 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
     addMonsterPortrait(ctxRef!.scene, inner, x + itemW / 2, 28, om.id, {
       size: 38, depth: 122, frameColor: on ? COLORS.JADE : 0xc8921a,
     });
+    // Portrait alone did not say who is being placed.
+    const profileName = resolveOwnedMonsterProfile(om.id)?.name ?? om.id;
+    addText(inner, x + itemW / 2, 62, shortenLabel(profileName, 6), '10px', '#e7d6b5', true, 0.5);
     const onShift = !on && isMonsterOnShift(gs, om.id);
     addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : onShift ? '근무 중' : `Lv.${om.level}`, '10px', on ? '#9fe1cb' : onShift ? '#c8a04a' : '#c8b890', false, 0.5, on || onShift ? 'sans-serif' : 'monospace');
     z.on('pointerdown', () => {

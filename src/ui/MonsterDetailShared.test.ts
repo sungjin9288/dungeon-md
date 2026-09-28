@@ -14,6 +14,7 @@ import {
   getEquipmentRarityColor,
   getRecommendedEquipmentId,
   shortenLabel,
+  equipmentTileLabel,
   formatCraftedStatLine,
   getGrowthDirective,
   getFeedTrainingPreview,
@@ -221,4 +222,14 @@ describe('getFeedTrainingPreview', () => {
 it('monster equipment details use current combat stats instead of the crafting snapshot', () => {
   const gs = makeGs({ craftedEquipment: [{ id: 'eq_dragon_fang', name: '용아검', emoji: '⚔', type: 'weapon', rarity: 3, stats: { atkMult: .4 } }] });
   expect(getEquipmentDisplay(gs, 'eq_dragon_fang')?.desc).toBe('ATK +40% · 보스 기본피해 +25%');
+});
+
+// 44px equipment tiles cut every name to its first word: "도깨비… 황금 … 행운의…".
+describe('equipmentTileLabel', () => {
+  it('keeps the distinguishing last word', () => {
+    expect(['도깨비 방망이', '황금 갑옷', '행운의 부적'].map(equipmentTileLabel)).toEqual(['방망이', '갑옷', '부적']);
+  });
+  it('shortens long single words', () => {
+    expect(equipmentTileLabel('천상의검날개')).toBe('천상의…');
+  });
 });

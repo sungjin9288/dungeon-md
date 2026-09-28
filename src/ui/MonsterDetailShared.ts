@@ -331,6 +331,12 @@ export function shortenLabel(label: string, max: number): string {
   return label.length > max ? `${label.slice(0, Math.max(1, max - 1))}…` : label;
 }
 
+/** 44px equipment tile label: the last word names the item ("도깨비 방망이" → "방망이"). */
+export function equipmentTileLabel(name: string): string {
+  const words = name.trim().split(/\s+/);
+  return shortenLabel(words[words.length - 1] ?? name, 4);
+}
+
 export function formatCraftedStatLine(stats: Record<string, number>): string {
   return summarizeStatEffects(stats, '제작 장비').join(' · ');
 }

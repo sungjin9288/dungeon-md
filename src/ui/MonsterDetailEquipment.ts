@@ -18,6 +18,7 @@ import {
   getRecommendedEquipmentId,
   getEquipmentImpactLabel,
   shortenLabel,
+  equipmentTileLabel,
 } from './MonsterDetailShared';
 
 // Keep EQUIPMENT_DEFS import to prevent unused import warning — used via getEquipmentDisplay indirectly
@@ -92,8 +93,12 @@ export function buildEquipmentSlot(
     fontStyle: 'bold',
     color: DUNGEON_UI_CSS.TEXT,
   }).setOrigin(0, 0.5));
+  // Name the recommendation and its effect: the tiles alone showed only an icon.
+  const recommendedItem = inventory.find(item => item.id === recommendedId);
   ov.add(scene.add.text(x + w - 12, storageY + 15,
-    inventory.length > 0 ? '추천 장비 우선' : '제작 필요', {
+    recommendedItem
+      ? `추천 ${shortenLabel(recommendedItem.name, 8)} · ${shortenLabel(getEquipmentImpactLabel(recommendedItem), 14)}`
+      : inventory.length > 0 ? '추천 장비 우선' : '제작 필요', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       color: inventory.length > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
@@ -175,7 +180,8 @@ export function drawEquipmentMiniCard(
     fontSize: '16px',
     color: typeMeta.css,
   }).setOrigin(0.5));
-  ov.add(scene.add.text(x + size / 2, y + 33, equipped ? '장착' : recommended ? '추천' : `R${ed.rarity + 1}`, {
+  // Status reads from the border (jade 장착, brass 추천); the label names the item.
+  ov.add(scene.add.text(x + size / 2, y + 33, equipped ? '장착' : equipmentTileLabel(ed.name), {
     fontFamily: 'sans-serif',
     fontSize: '10px',
     color: equipped ? DUNGEON_UI_CSS.JADE : recommended ? DUNGEON_UI_CSS.BRASS : typeMeta.css,

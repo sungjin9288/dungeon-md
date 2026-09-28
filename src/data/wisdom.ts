@@ -223,6 +223,13 @@ export function getMaxRoomLevel(dmLevel: number): number {
   return 1;
 }
 
+/** DM level that first unlocks `roomLevel` — derived from the gate, never a copy of it. */
+export function getDmLevelForRoomLevel(roomLevel: number): number {
+  let dm = 1;
+  while (getMaxRoomLevel(dm) < roomLevel && dm < 100) dm++;
+  return dm;
+}
+
 export interface DungeonSlot {
   roomType?:   RoomSlotType;
   /** Concrete room that deploys; absent means the family's default (see roomBuildings.ts). */

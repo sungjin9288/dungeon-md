@@ -462,7 +462,8 @@ export function addActionQueueRankMarkers(
     cell.center.x,
     cell.rect.y + 14,
     action.icon,
-    action.label,
+    // The pin sits on the card title; carry the room number so it stays readable.
+    `#${action.slotIdx + 1} ${action.label}`,
     action.accent,
     () => scene.selectRoomForPlacement(action.slotIdx),
   );
