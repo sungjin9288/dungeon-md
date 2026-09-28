@@ -107,8 +107,9 @@ export function applyBattleReturnSettlement(
 
   const [goldQuestState] = applyQuestObjectiveUpdate(nextState, 'collect_gold', result.goldEarned);
   nextState = tickSubQuestProgress(goldQuestState, 'collect_gold', result.goldEarned);
-  const [levelQuestState] = applyQuestObjectiveUpdate(nextState, 'reach_dm_level');
-  nextState = tickSubQuestProgress(levelQuestState, 'reach_dm_level');
+  // Positional: progress is the DM level itself, not a count of settlements.
+  const [levelQuestState] = applyQuestObjectiveUpdate(nextState, 'reach_dm_level', dmLevel);
+  nextState = tickSubQuestProgress(levelQuestState, 'reach_dm_level', dmLevel);
 
   let defendUpdate: ObjectiveUpdate | null = null;
   if (result.won && defendInvasion) {

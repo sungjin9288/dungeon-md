@@ -1,4 +1,5 @@
 import {
+  applyQuestObjectiveUpdate,
   assignSubQuests,
   completeAndAdvance,
   isActiveQuestObjectiveComplete,
@@ -120,12 +121,15 @@ export function initializeHomeQuestState(
 }
 
 export function advanceCompletedMainQuest(state: GameState): MainQuestAdvanceResult {
+  // A DM level gained outside a battle settlement (quest or sub-quest reward)
+  // has not ticked reach_dm_level yet; sync it before judging completion.
+  const [synced] = applyQuestObjectiveUpdate(state, 'reach_dm_level', state.dmLevel ?? 1);
   // completeAndAdvance() completes unconditionally — only settle when the
   // active quest's objectives are actually all met (e.g. home settle path).
-  if (!isActiveQuestObjectiveComplete(state)) {
+  if (!isActiveQuestObjectiveComplete(synced)) {
     return { state, changed: false, completion: null };
   }
-  const [nextState, completion] = completeAndAdvance(state);
+  const [nextState, completion] = completeAndAdvance(synced);
   return {
     state: nextState,
     changed: nextState !== state,

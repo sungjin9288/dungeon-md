@@ -123,7 +123,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   spawnDeathParticles(scene, inv.x, inv.y);
 
   // ── Persistence & achievements ──────────────────────────────────────────────
-  const progressResult = applyInvaderKillProgress(loadGameState(), inv.def.type, goldReward);
+  const progressResult = applyInvaderKillProgress(loadGameState(), inv.def.type);
   saveGameState(progressResult.state);
   ctx.checkAchievementsAndToast(progressResult.state);
 

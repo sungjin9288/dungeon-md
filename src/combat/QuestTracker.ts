@@ -50,7 +50,7 @@ export function tickQuestAndNotify(
   amount = 1,
 ): GameState {
   const result = applyQuestObjectiveProgress(gs, type, amount);
-  if (result.questCompleted) {
+  if (result.questDone) {
     ctx.scene.time.delayedCall(600, () => showQuestCompleteToast(ctx));
   }
   return result.state;

@@ -4,7 +4,6 @@ import { applyDailyChallengeTick } from './daily';
 import { SKIN_DATA } from './monsters';
 import {
   applyQuestObjectiveUpdate,
-  completeAndAdvance,
   tickSubQuestProgress,
   type ObjectiveType,
 } from './quests';
@@ -34,9 +33,10 @@ export interface ConsecutiveDayProgressResult {
 }
 
 export interface QuestObjectiveProgressResult {
-  state:          GameState;
-  changed:        boolean;
-  questCompleted: boolean;
+  state:     GameState;
+  changed:   boolean;
+  /** Every objective of the active main quest is now met; Home completes it. */
+  questDone: boolean;
 }
 
 export interface InvaderKillProgressResult {
@@ -143,35 +143,28 @@ export function applyQuestObjectiveProgress(
   type: ObjectiveType,
   amount = 1,
 ): QuestObjectiveProgressResult {
+  // Progress only. Completion belongs to Home (`settleCompletedHomeMainQuest`):
+  // completing here skipped its blueprint/awakening rewards and popup, so a
+  // quest finished by a stage clear (MQ-030/034/044) never paid its blueprint.
   const [questState, update] = applyQuestObjectiveUpdate(state, type, amount);
   const subQuestState = tickSubQuestProgress(questState, type, amount);
-
-  if (update?.questDone) {
-    const [completedState, completion] = completeAndAdvance(subQuestState);
-    return {
-      state: completedState,
-      changed: completedState !== state,
-      questCompleted: completion !== null,
-    };
-  }
-
   return {
     state: subQuestState,
     changed: subQuestState !== state,
-    questCompleted: false,
+    questDone: update?.questDone ?? false,
   };
 }
 
 export function applyInvaderKillProgress(
   state: GameState,
   invaderType: string,
-  goldEarned: number,
 ): InvaderKillProgressResult {
+  // Kill gold is battle loot; `totalGoldEarned` grows once, when the loot is
+  // settled home (`applyBattleReturnSettlement`). Adding it here counted it twice.
   const killState: GameState = {
     ...state,
-    totalKills:      (state.totalKills      ?? 0) + 1,
-    totalGoldEarned: (state.totalGoldEarned ?? 0) + goldEarned,
-    bossesKilled:    [...(state.bossesKilled ?? []), invaderType],
+    totalKills:   (state.totalKills ?? 0) + 1,
+    bossesKilled: [...(state.bossesKilled ?? []), invaderType],
   };
   const dailyResult = applyDailyChallengeTick(killState, 'kill_count');
 

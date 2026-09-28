@@ -57,6 +57,14 @@ export function startQuest(gs: GameState, questId: string): GameState {
         logger.debug(`[OBJECTIVE] assign_monster: ${objectives[o.id]}/${o.target} (auto-met from placements)`);
       }
     }
+    if (o.type === 'complete_stage') {
+      // Stages cleared while an earlier quest was active still count.
+      const cleared = (gs.stageProgress ?? []).reduce((hi, e, i) => ((e?.bestStars ?? 0) > 0 ? i + 1 : hi), 0);
+      if (cleared > cur) {
+        objectives[o.id] = Math.min(cleared, o.target);
+        logger.debug(`[OBJECTIVE] complete_stage: ${objectives[o.id]}/${o.target} (auto-met from cleared stages)`);
+      }
+    }
     if (o.type === 'build_room') {
       const built = Math.max(
         (gs.dungeonSlots ?? []).filter(s => s != null).length,
@@ -102,11 +110,11 @@ export interface ObjectiveUpdate {
  * replaying stage 1 eleven times finished it without ever leaving the tutorial.
  * Progress for these is the high-water mark instead.
  *
- * `reach_dm_level` has the same shape but is already handled by comparing
- * against `gs.dmLevel` directly (see syncAutoMetObjectives), so it never went
- * through this path.
+ * `reach_dm_level` has the same shape: settlements tick it with the current
+ * DM level. It used to tick +1 per battle, so "DM Lv.10" meant ten battles at
+ * any level (§34).
  */
-const POSITIONAL_OBJECTIVES: ReadonlySet<ObjectiveType> = new Set(['complete_stage']);
+const POSITIONAL_OBJECTIVES: ReadonlySet<ObjectiveType> = new Set(['complete_stage', 'reach_dm_level']);
 
 /** Progress an objective from `current` by `amount`, honouring positional types. */
 export function nextObjectiveProgress(

@@ -192,7 +192,8 @@ describe('progressionTransactions — monster XP', () => {
 });
 
 describe('progressionTransactions — quest objective progress', () => {
-  it('ticks main and sub quest progress, completes the quest, and advances without mutating input', () => {
+  // Completion is Home's job (settleCompletedHomeMainQuest) — see §34.
+  it('ticks main and sub quest progress and reports completion without completing or mutating input', () => {
     const state = startQuest(makeState({
       activeSubQuestIds: ['SQ-006'],
       subQuestProgress: { 'SQ-006': 0 },
@@ -201,14 +202,12 @@ describe('progressionTransactions — quest objective progress', () => {
     const result = applyQuestObjectiveProgress(state, 'build_room');
 
     expect(result.changed).toBe(true);
-    expect(result.questCompleted).toBe(true);
+    expect(result.questDone).toBe(true);
     expect(result.state.questProgress['MQ-001'].objectives.O1).toBe(1);
-    expect(result.state.questProgress['MQ-001'].completed).toBe(true);
-    expect(result.state.activeMainQuestId).toBe('MQ-002');
-    expect(result.state.questProgress['MQ-002']).toBeDefined();
+    expect(result.state.questProgress['MQ-001'].completed).toBe(false);
+    expect(result.state.activeMainQuestId).toBe('MQ-001');
     expect(result.state.subQuestProgress['SQ-006']).toBe(1);
-    expect(result.state.homeGold).toBe(100);
-    expect(result.state.dmXP).toBe(50);
+    expect(result.state.homeGold).toBe(0);
     expect(state.questProgress['MQ-001'].objectives.O1).toBe(0);
     expect(state.subQuestProgress['SQ-006']).toBe(0);
     expect(state.homeGold).toBe(0);
@@ -228,12 +227,12 @@ describe('progressionTransactions — invader kill progress', () => {
       },
     });
 
-    const result = applyInvaderKillProgress(state, 'shaman', 17);
+    const result = applyInvaderKillProgress(state, 'shaman');
 
     expect(result.changed).toBe(true);
     expect(result.state).not.toBe(state);
     expect(result.state.totalKills).toBe(3);
-    expect(result.state.totalGoldEarned).toBe(47);
+    expect(result.state.totalGoldEarned).toBe(30); // loot counts at settlement (§34)
     expect(result.state.bossesKilled).toEqual(['knight', 'shaman']);
     expect(result.state.dailyChallengeDate).toBe(getTodayString());
     expect(result.state.dailyChallenges['dc-old-0']).toBeUndefined();
