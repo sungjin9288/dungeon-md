@@ -117,6 +117,15 @@ export function buildEquipmentSlot(
       item.id === recommendedId,
     );
   });
+  if (inventory.length > 0) {
+    // Equipment is an unlock, not a stack: one item can be worn by any number
+    // of guardians at once. Nothing on screen said so (§35).
+    ov.add(scene.add.text(x + 12, storageY + 87, '해금한 장비는 여러 수호자가 함께 장착할 수 있습니다', {
+      fontFamily: 'sans-serif',
+      fontSize: '10px',
+      color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(0, 0.5));
+  }
   if (inventory.length === 0) {
     ov.add(scene.add.text(x + 82, storageY + 58, '보관 중인 장비 없음', {
       fontFamily: 'sans-serif',

@@ -21,7 +21,6 @@ export interface Reward {
   gems?:         number;
   soulCrystals?: number;
   dmXP:          number;
-  items?:        string[];
   unlocks?:      string[];
 }
 
@@ -127,7 +126,7 @@ export const MAIN_QUESTS: MainQuest[] = [
         { waveNumber: 2, invaders: [{ type: 'peasant_soldier', count: 4 }, { type: 'shield_knight', count: 2 }] },
       ],
     },
-    reward: { gold: 500, dmXP: 200, items: ['basic_sword'] },
+    reward: { gold: 500, dmXP: 200 },
     nextQuestId: 'MQ-007',
   },
   {
