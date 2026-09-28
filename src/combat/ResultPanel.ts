@@ -428,6 +428,12 @@ export interface FailOption {
 /** Retreat home to reinforce is always offered; a lost campaign stage had none. */
 export const FAIL_OPTION_COUNT = 4;
 
+/**
+ * The ad revive has no real ad behind it yet; unlimited, it made every defeat
+ * a free half-HP retry of the same wave. One per battle; the gem revive keeps its cost.
+ */
+export const AD_REVIVES_PER_BATTLE = 1;
+
 export function buildFailOptions(
   ctx: ResultFlowContext,
   ov: Phaser.GameObjects.Container,
@@ -461,7 +467,18 @@ export function buildFailOptions(
   };
   return [
     { label: '던전으로 귀환 · 방어선 보강', tone: 'primary', action: retreat },
-    { label: '광고 확인 후 부활', tone: 'secondary', action: () => revive(ctx, 0) },
+    ctx.adRevivesUsed < AD_REVIVES_PER_BATTLE
+      ? {
+        label: '광고 확인 후 부활',
+        tone: 'secondary',
+        action: () => { ctx.setAdRevivesUsed(ctx.adRevivesUsed + 1); revive(ctx, 0); },
+      }
+      : {
+        label: '광고 부활 사용함 · 전투당 1회',
+        tone: 'secondary',
+        canDismiss: () => false,
+        action: () => { scene.registry.set('status', '광고 부활은 전투당 1회입니다'); },
+      },
     {
       label: '보석 5개로 부활',
       tone: 'arcane',

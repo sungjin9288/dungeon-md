@@ -271,6 +271,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     get maxHp() { return ds.maxHp; },
     get gold() { return ds.gold; },
     get gems() { return ds.gems; },
+    get adRevivesUsed() { return ds.adRevivesUsed; },
     get wave() { return ds.wave; },
     get maxWave() { return ds.maxWave; },
     get stageChapter() { return ds.stageChapter; },
@@ -319,6 +320,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
       saveGameState({ ...loadGameState(), gems: g });
     },
     setWave: (w) => { ds.wave = w; ds.registry.set('wave', w); },
+    setAdRevivesUsed: (n) => { ds.adRevivesUsed = n; },
     setWaveActive: (v) => { ds.waveActive = v; },
     setWaveEndChecked: (v) => { ds.waveEndChecked = v; },
     setWaveHasSpawned: (v) => { ds.waveHasSpawned = v; },

@@ -25,6 +25,8 @@ export interface ResultFlowContext {
   maxHp: number;
   gold: number;
   gems: number;
+  /** Ad revives used this battle (limit AD_REVIVES_PER_BATTLE). */
+  adRevivesUsed: number;
   wave: number;
   maxWave: number;
   stageChapter: number;
@@ -81,6 +83,7 @@ export interface ResultFlowContext {
   setDungeonHp: (hp: number) => void;
   setGold: (gold: number) => void;
   setGems: (gems: number) => void;
+  setAdRevivesUsed: (count: number) => void;
   setWave: (wave: number) => void;
   setWaveActive: (active: boolean) => void;
   setWaveEndChecked: (v: boolean) => void;

@@ -183,6 +183,7 @@ export class DungeonScene extends Phaser.Scene {
   // ── Per-wave stats ─────────────────────────────────────────────────────────
   killsThisWave      = 0;
   breakthruCount     = 0;
+  adRevivesUsed      = 0;          // per battle; see AD_REVIVES_PER_BATTLE
   waveStartSlotHps: number[] = [];   // snapshot of slot HPs at wave start
   waveStartDungeonHp = 0;           // for no_damage challenge tracking
   consecutiveNoDmgWaves = 0;         // consecutive waves cleared without taking HP damage
@@ -299,6 +300,7 @@ export class DungeonScene extends Phaser.Scene {
     // next battle at 0.15×.
     applyBattleSpeed(this, this.speedMult);
     this.killsThisRun    = 0;
+    this.adRevivesUsed   = 0;
     this.goldEarnedThisRun = 0;
     this.endlessRecordBroken = false;
     this.endlessPreviousWaveHp = 0;

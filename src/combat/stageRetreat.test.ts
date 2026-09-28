@@ -6,17 +6,22 @@ vi.mock('phaser', () => ({ default: {} }));
 vi.mock('./WaveLifecycle', () => ({ enableWaveButton: vi.fn() }));
 vi.mock('../ui/HomeResultOverlays', () => ({ addBattleCalloutRow: vi.fn() }));
 vi.mock('../ui/GameUiPrimitives', () => ({ addFramedPanel: vi.fn(), addPrimaryActionButton: vi.fn() }));
-const { buildFailOptions, FAIL_OPTION_COUNT } = await import('./ResultPanel');
+const { buildFailOptions, FAIL_OPTION_COUNT, AD_REVIVES_PER_BATTLE } = await import('./ResultPanel');
 
 // A lost campaign stage offered only revive or restart: there was no way back
 // to Home to reinforce, which is the loop the defeat hint asks for.
-function ctx(returnTo?: string) {
+function ctx(returnTo?: string, adRevivesUsed = 0) {
   const registry = new Map<string, unknown>();
   const started: string[] = [];
+  const revives = { used: adRevivesUsed };
   return {
-    registry, started,
+    registry, started, revives,
     value: {
       returnTo, gold: 120, gems: 0, materialsEarnedThisRun: { old_cloth: 1 },
+      maxHp: 1000, wave: 4,
+      get adRevivesUsed() { return revives.used; },
+      setAdRevivesUsed: (n: number) => { revives.used = n; },
+      setDungeonHp: vi.fn(), setWaveEndChecked: vi.fn(), setWave: vi.fn(), startWave: vi.fn(),
       scene: {
         registry: { set: (k: string, v: unknown) => registry.set(k, v) },
         scene: { stop: vi.fn(), start: (key: string) => started.push(key) },
@@ -52,5 +57,28 @@ describe('battle defeat options', () => {
     buildFailOptions(c.value as never, ov as never, null)[0].action();
     expect(loadGameState().homeGold).toBe(500);
     expect(c.registry.get('battleResult')).toMatchObject({ won: false, goldEarned: 120, dmXP: STAGE_DEFEAT_DM_XP });
+  });
+});
+
+describe('ad revive limit', () => {
+  it('offers one free ad revive per battle', () => {
+    const c = ctx();
+    const ad = buildFailOptions(c.value as never, ov as never, null)[1];
+    expect(ad.label).toBe('광고 확인 후 부활');
+    ad.action();
+    expect(c.revives.used).toBe(AD_REVIVES_PER_BATTLE);
+    expect(c.value.startWave).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables the ad revive once it has been used this battle', () => {
+    const c = ctx(undefined, AD_REVIVES_PER_BATTLE);
+    const options = buildFailOptions(c.value as never, ov as never, null);
+    expect(options).toHaveLength(FAIL_OPTION_COUNT);
+    const ad = options[1];
+    expect(ad.label).toContain('사용함');
+    expect(ad.canDismiss?.()).toBe(false);
+    ad.action();
+    expect(c.value.startWave).not.toHaveBeenCalled();
+    expect(c.registry.get('status')).toBe('광고 부활은 전투당 1회입니다');
   });
 });
