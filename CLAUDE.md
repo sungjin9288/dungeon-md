@@ -168,7 +168,7 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   지혜`, 9 캡). 홈 보드·전투 그리드·추천·직렬화 전부 이 함수를 쓴다. 스테이지
   설정에 슬롯 수를 넣지 말 것.
 - 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). DM 게이트는 `getMaxRoomLevel`:
-  **Lv2는 DM3**, Lv3 DM10, Lv4 DM15, Lv5 DM20. Lv2가 DM5에 있던 동안 스테이지
+  **Lv2는 DM3**, Lv3 DM10, Lv4 DM15, Lv5 DM20. UI의 필요 DM 안내는 `getDmLevelForRoomLevel`로 게이트에서 역산한다(표를 복사하지 말 것). Lv2가 DM5에 있던 동안 스테이지
   5~7 lean은 organic 1/5 승이었다 — 그 구간에서 방어가 자랄 길이 수호자 레벨뿐인데
   웨이브는 8명 → 13명으로 커지고, 골드는 8,775가 쌓였는데 보드 전체 Lv2 값 750을
   쓸 수가 없었다. DM3은 슬롯을 하나도 주지 않는 죽은 레벨이었다(`SLOT_UNLOCK_LEVELS`
@@ -273,8 +273,9 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 (`idleIncome.ts computeIdleReward`). 각 수입원은 모든 배수 적용 후 한 번 내림한다.
 방치 패널의 분당 수익은 보물고를 포함한 총액이며, 생산 구역의 현재·다음 단계 표시는
 수령과 같은 `facilityIncomeRatePerHour`를 사용한다. 명성 배수 `1 + 0.15×(티어−1)`(`notorietyIncomeMult`)는 골드에만
-곱하고 재료에는 곱하지 않는다. 5분 미만 부재(`IDLE_PANEL_MIN_MS`)는 Home 진입 시 같은 `collectIdleIncome`으로 조용히 정산하고
-토스트만 띄운다(저장 실패 시 다음 진입에서 재정산). 회수 모달은 그 이상 부재에서만 뜬다.
+곱하고 재료에는 곱하지 않는다. 앱 실행 후 첫 Home 진입은 5분(`IDLE_PANEL_MIN_MS`), 같은 실행 중 재진입(전투·스테이지 복귀)은
+60분(`IDLE_IN_SESSION_PANEL_MIN_MS`) 미만이면 같은 `collectIdleIncome`으로 조용히 정산하고 토스트만
+띄운다(저장 실패 시 다음 진입에서 재정산). 회수 모달은 그 이상 부재에서만 뜬다.
 방치 상한 12h, 명성 티어 5부터 24h(`idleCapHours`) —
 UI 문구는 상수가 아니라 이 함수를 쓴다. 홈에 지은 `황금 광맥`은 **수익 방**
 (`IDLE_PER_GOLD_ROOM` 12/분)이며 전투 중 골드 생산은 없다(`runGoldVeins` 삭제 —
@@ -541,6 +542,11 @@ Home은 `battleResult`를 **한 번만** 정산한다: `'battle-result'`/`'forec
 재시작하므로 편집 레이어(상세 100·피커 110·트레이 120) 위 `MAIN_QUEST_RESULT_DEPTH`(130)에 뜬다.
 배치 트레이 커밋도 방 상세와 같은 `refreshHomeDynamicPanels`(보드·지시 덱·퀘스트 정산)를 쓴다.
 전투 카메라 연출은 DPR 줌의 배수로만 움직인다(`playBossCameraPunch`) — 절대 줌은 화면을 1/DPR로 줄인다.
+
+일반 스테이지(침공 전선, `returnTo` 없음)는 인계가 없으므로 `showChapterClear`가 클리어 순간
+`applyBattleReturnSettlement(..., { defendInvasion: false })`로 전리품·`STAGE_CLEAR_DM_XP`·재료를 정산한다
+(스테이지는 침략 방어 목표를 올리지 않는다). 모든 패배는 "던전으로 귀환 · 방어선 보강"을 제공하고,
+스테이지 패배는 전리품 + `STAGE_DEFEAT_DM_XP`를 즉시 정산해 홈으로 간다(`buildFailOptions`).
 
 ---
 
