@@ -1448,3 +1448,18 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
 
 - 1장이 소환 없이 무손실이면 2장 첫 관문이 첫 벽이 된다. 선택지: 1장 후반에 소환을 요구하는 관문/퀘스트 배치,
   또는 스테이지 11 난도 완화. §30의 "1장 난이도 여유"·"초반 골드 과잉"과 같은 축이다.
+
+## §33 수호자 ATK 표시와 결과 화면 HUD — 2026-09-28 (Claude)
+
+커밋 `e24a648` `1fda750`(push 없음).
+
+- **ATK 표시(§28 P1):** 수호자 상세 헤더·군단 카드/총 전투력/정렬·방 몬스터 선택·결과 MVP 칩이 `getMonsterAtk`
+  원시값을 써서 장비 `atkMult`(전투는 매 타격에 곱함)와 교감·흡수·각성이 빠졌다. 장착 직후 헤더가 변하지 않던
+  원인. `getOwnedMonsterBattleAtk`(barracks.ts)로 전투와 같은 배수를 표시한다. PreBattle과 전력 장비 영향은
+  장비를 별도 행으로 보이므로 육성 포함 기본값(`getOwnedMonsterAtk`)만 쓴다. 추천 모듈의 점수 계산은 바꾸지 않았다.
+- **결과 화면 HUD(§28 P2):** 최종 웨이브 클리어 시 `WaveLifecycle`이 레지스트리 `battleOutcome='clear'`를 세우고
+  HUD가 "✓ 침략 격퇴"(비취색)로 바꾼다. 라벨 규칙은 `ui/waveHudLabel.ts`(순수). 키는 `DungeonScene.create`에서
+  null로 프리시드(첫 set은 changedata 미발화), `UIScene.create`에서 재독(인스턴스 재사용). 패배·부활 경로는 그대로.
+- 검증: ownedMonsterBattleAtk(4, 장비 무시로 되돌리면 2건 실패 확인)·waveHudLabel(3), 전체 **160파일/3,338 tests**,
+  tsc·build 통과. **브라우저 확인은 ERP 검증 구간 동안 보류 요청으로 미실행** — 재개 시 상세 헤더 장착 전후 ATK와
+  스테이지 클리어 결과 HUD를 실제 화면에서 확인할 것.
