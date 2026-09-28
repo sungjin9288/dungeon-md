@@ -27,6 +27,7 @@ import { drawGrowthSigil } from './BarracksSkin';
 // ─── Shared layer ─────────────────────────────────────────────────────────────
 import {
   type MonsterDetailContext,
+  type MonsterDetailTab,
   FEED_GOLD_COST,
   FEED_XP_GAIN,
   DETAIL_TYPE_LABEL,
@@ -47,14 +48,14 @@ import {
 } from './MonsterDetailGrowth';
 
 // Re-export the context type so any future caller can import it from here
-export type { MonsterDetailContext } from './MonsterDetailShared';
+export type { MonsterDetailContext, MonsterDetailTab } from './MonsterDetailShared';
 
 // ─── Monster Detail Overlay ───────────────────────────────────────────────────
-type MonsterDetailTab = 'growth' | 'loadout' | 'appearance' | 'bond';
 
 export function showMonsterDetailPanel(
   ctx: MonsterDetailContext,
   monster: OwnedMonster,
+  initialTab: MonsterDetailTab = 'growth',
 ): Phaser.GameObjects.Container {
   const { scene, onClose, onRefresh } = ctx;
   const ov = scene.add.container(0, 0).setDepth(100);
@@ -209,7 +210,7 @@ export function showMonsterDetailPanel(
   });
   ov.add(closeTopZone);
 
-  let activeTab: MonsterDetailTab = 'growth';
+  let activeTab: MonsterDetailTab = initialTab;
   let bodyContainer: Phaser.GameObjects.Container | undefined;
   let tabContainer: Phaser.GameObjects.Container | undefined;
 
@@ -264,7 +265,7 @@ export function showMonsterDetailPanel(
     ...ctx,
     onRefresh: (updated) => {
       if (ov.active) ov.destroy();
-      onRefresh(updated);
+      onRefresh(updated, activeTab);
     },
     onOpenForge: ctx.onOpenForge
       ? (target) => {

@@ -230,6 +230,21 @@ function getPreferredRoomType(monsterType?: string): RoomSlotType {
   return 'combat';
 }
 
+/**
+ * Forge target rail room cue. The craft recommendation only exists when a
+ * blueprint does; without one, the guardian's real placement still decides it.
+ */
+export function getForgeTargetRoomCue(
+  gs: GameState,
+  monster: OwnedMonster,
+  room: { readonly kind: 'assigned' | 'recommended' | 'unassigned'; readonly roomLabel: string } | null | undefined,
+): string {
+  if (room?.kind === 'assigned') return `실제 ${room.roomLabel}`;
+  if (room?.kind === 'recommended') return `추천 ${room.roomLabel}`;
+  const placed = findMonsterRoom(gs, monster.id);
+  return placed ? `실제 방 #${placed.index + 1}` : '배치 대기';
+}
+
 export function getMonsterRoomPlan(gs: GameState, monster: OwnedMonster): MonsterRoomPlan {
   const deployed = findMonsterRoom(gs, monster.id);
   if (deployed) {
@@ -313,6 +328,8 @@ export function getMonsterCardActionCue(
   hasEquipment: boolean,
   isDeployed: boolean,
   roomPlan: MonsterRoomPlan,
+  /** Owned items this monster could equip now; 0 means crafting is the only route. */
+  equippableCount = 0,
 ): MonsterCardActionCue {
   const sp = monster.skillPoints ?? 0;
   if (sp > 0) {
@@ -346,6 +363,17 @@ export function getMonsterCardActionCue(
       accent:    0x55d4ff,
       fill:      0x102638,
       textColor: '#dce8c8',
+    };
+  }
+  if (!hasEquipment && equippableCount > 0) {
+    return {
+      icon:      '⚒',
+      label:     '장비 장착',
+      subLabel:  `보유 장비 ${equippableCount}개`,
+      chip:      '장착',
+      accent:    COLORS.TORCH_AMBER,
+      fill:      0x241707,
+      textColor: '#ffd08a',
     };
   }
   if (!hasEquipment) {

@@ -13,7 +13,7 @@ import {
   type MonsterId,
 } from '../data/monsters';
 import { getMonsterAtk } from '../data/barracks';
-import { showMonsterDetailPanel, showSkillShopPanel } from '../ui/MonsterDetailPanel';
+import { showMonsterDetailPanel, showSkillShopPanel, type MonsterDetailTab } from '../ui/MonsterDetailPanel';
 
 import {
   CARD_H,
@@ -411,7 +411,7 @@ export class BarracksScene extends Phaser.Scene {
 
   // ─── Monster Detail Overlay ───────────────────────────────────────────────────
 
-  private showMonsterDetail(m: OwnedMonster): void {
+  private showMonsterDetail(m: OwnedMonster, tab?: MonsterDetailTab): void {
     if (!resolveOwnedMonsterProfile(m.id)) return;
     this.detailOverlay?.destroy();
     this.detailOverlay = showMonsterDetailPanel(
@@ -419,7 +419,7 @@ export class BarracksScene extends Phaser.Scene {
         scene: this,
         focusSourceLabel: this.focusMonsterId === m.id ? this.focusSourceLabel ?? undefined : undefined,
         onClose:   () => { this.detailOverlay = undefined; },
-        onRefresh: (updated) => { this.detailOverlay = undefined; this.showMonsterDetail(updated); },
+        onRefresh: (updated, refreshTab) => { this.detailOverlay = undefined; this.showMonsterDetail(updated, refreshTab); },
         onOpenForge: (monster) => {
           this.detailOverlay = undefined;
           this.registry.set('forgeReturnScene', 'BarracksScene');
@@ -433,6 +433,7 @@ export class BarracksScene extends Phaser.Scene {
           : undefined,
       },
       m,
+      tab,
     );
   }
 

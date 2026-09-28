@@ -21,11 +21,14 @@ import {
 
 // ─── Re-exported type ─────────────────────────────────────────────────────────
 
+export type MonsterDetailTab = 'growth' | 'loadout' | 'appearance' | 'bond';
+
 export interface MonsterDetailContext {
   scene: Phaser.Scene;
   focusSourceLabel?: string;
   onClose: () => void;
-  onRefresh: (m: OwnedMonster) => void;
+  /** Re-open after a commit; `tab` keeps the player on the tab they acted in. */
+  onRefresh: (m: OwnedMonster, tab?: MonsterDetailTab) => void;
   onOpenForge?: (m: OwnedMonster) => void;
   onReturnToRoom?: () => void;
 }

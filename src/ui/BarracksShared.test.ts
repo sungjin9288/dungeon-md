@@ -12,6 +12,7 @@ import {
   getMonsterCollectionMeta,
   getMonsterRoomPlan,
   getMonsterCardActionCue,
+  getForgeTargetRoomCue,
 } from './BarracksShared';
 import type { GameState, DungeonSlot } from '../data/wisdom';
 import type { OwnedMonster } from '../data/barracks';
@@ -169,13 +170,41 @@ describe('getMonsterCardActionCue', () => {
     expect(cue.chip).toBe('훈련');
   });
 
-  it('returns 제작 chip when no equipment', () => {
-    const cue = getMonsterCardActionCue(makeMonster({ level: 10, skillPoints: 0 }), 0.5, false, false, lockedPlan);
+  it('returns 제작 chip when no equipment and nothing owned to equip', () => {
+    const cue = getMonsterCardActionCue(makeMonster({ level: 10, skillPoints: 0 }), 0.5, false, false, lockedPlan, 0);
     expect(cue.chip).toBe('제작');
+  });
+
+  // A new player owns three starter items; the card used to say "제작" and a
+  // blueprint-less forge was the only place it implied, while equipping is one tap.
+  it('returns 장착 chip when owned equipment is waiting', () => {
+    const cue = getMonsterCardActionCue(makeMonster({ level: 1, skillPoints: 0 }), 0.15, false, true, lockedPlan, 3);
+    expect(cue.chip).toBe('장착');
+    expect(cue.label).toBe('장비 장착');
+    expect(cue.subLabel).toBe('보유 장비 3개');
   });
 
   it('returns 활동 chip when deployed', () => {
     const cue = getMonsterCardActionCue(makeMonster({ level: 10, skillPoints: 0 }), 0.5, true, true, lockedPlan);
     expect(cue.chip).toBe('활동');
+  });
+});
+
+// ─── getForgeTargetRoomCue ────────────────────────────────────────────────────
+
+// With no blueprint there is no craft recommendation, and the forge rail read
+// "배치 대기" for a guardian that Barracks and Home showed placed in room #1.
+describe('getForgeTargetRoomCue', () => {
+  const warrior = makeMonster();
+  it('falls back to the real placement without a craft recommendation', () => {
+    const gs = makeGs([warrior], [makeCombatSlot(['dokkaebi_warrior'])]);
+    expect(getForgeTargetRoomCue(gs, warrior, null)).toBe('실제 방 #1');
+  });
+  it('keeps the recommendation cue when one exists', () => {
+    const gs = makeGs([warrior], [makeCombatSlot([])]);
+    expect(getForgeTargetRoomCue(gs, warrior, { kind: 'recommended', roomLabel: '방 #1' })).toBe('추천 방 #1');
+  });
+  it('says 배치 대기 only when the guardian is not placed', () => {
+    expect(getForgeTargetRoomCue(makeGs([warrior], []), warrior, null)).toBe('배치 대기');
   });
 });

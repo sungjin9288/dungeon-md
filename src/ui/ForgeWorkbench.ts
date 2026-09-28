@@ -18,6 +18,7 @@ import {
   type ForgeContext,
 } from './ForgeShared';
 import { drawDismantleSigil, drawForgeCrest } from './ForgeSkin';
+import { getForgeTargetRoomCue } from './BarracksShared';
 
 export function buildWorkbenchPanel(
   scene: Phaser.Scene,
@@ -347,11 +348,7 @@ export function buildForgeTargetRail(
   const next = targets[targets.length > 1 ? 1 : 0];
   const recommendation = active.recommendation;
   const targetName = getFocusMonsterDisplay(ctx.gs, active.monster.id)?.name ?? active.monster.id;
-  const roomCue = recommendation?.room.kind === 'assigned'
-    ? `실제 ${recommendation.room.roomLabel}`
-    : recommendation?.room.kind === 'recommended'
-      ? `추천 ${recommendation.room.roomLabel}`
-      : '배치 대기';
+  const roomCue = getForgeTargetRoomCue(ctx.gs, active.monster, recommendation?.room);
   const x = LIST_PAD;
   const w = CANVAS_WIDTH - LIST_PAD * 2;
   const h = 76;

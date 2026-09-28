@@ -50,7 +50,12 @@ export function buildMonsterCard(
   const deployed = getDeployedMonsterIds(ctx.gs).has(monster.id);
   const equipment = getEquipmentDisplay(ctx.gs, monster.equipment ?? null);
   const roomPlan = getMonsterRoomPlan(ctx.gs, monster);
-  const action = getMonsterCardActionCue(monster, xpPct, Boolean(equipment), deployed, roomPlan);
+  // Same ownership test as equipMonsterEquipment: starter/owned ids plus crafted ones.
+  const equippable = new Set([
+    ...(ctx.gs.ownedEquipment ?? []),
+    ...(ctx.gs.craftedEquipment ?? []).map(item => item.id),
+  ]).size;
+  const action = getMonsterCardActionCue(monster, xpPct, Boolean(equipment), deployed, roomPlan, equippable);
   const skillCount = (monster.equippedSkills ?? []).length;
 
   ctx.contentContainer.add(
