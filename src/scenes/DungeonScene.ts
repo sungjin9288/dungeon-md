@@ -315,6 +315,8 @@ export class DungeonScene extends Phaser.Scene {
     this.registry.set('wave',  this.wave);
     this.registry.set('maxWave', this.maxWave);
     this.registry.set('status','');
+    // Pre-seed: Phaser fires only setdata (not changedata) on a key's first set.
+    this.registry.set('battleOutcome', null);
 
     // Ch7 (stages 63-72) always use Celestial Realm theme
     const effectiveTheme = setup.stageNumber >= 63 ? 'celestial_realm' : gameState.equippedTheme;

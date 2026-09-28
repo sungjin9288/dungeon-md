@@ -171,6 +171,7 @@ export function checkWaveEnd(ctx: CheckWaveEndContext): void {
     if (dailyResult.changed) saveGameState(dailyResult.state);
 
     if (ctx.wave >= ctx.maxWave) {
+      ctx.scene.registry.set('battleOutcome', 'clear');
       ctx.showChapterClear();
     } else {
       ctx.showWaveClear();

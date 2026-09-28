@@ -13,6 +13,7 @@ import { getReducedMotion } from '../utils/reducedMotion';
 import { getEndlessModifierById } from '../data/endlessModifiers';
 import type { TraitCalloutPayload } from '../combat/TraitCallout';
 import { loadBattleSpeed, saveBattleSpeed } from '../data/battleSpeedSetting';
+import { getWaveHudLabel, type BattleOutcome } from '../ui/waveHudLabel';
 
 export class UIScene extends Phaser.Scene {
   private goldText!: Phaser.GameObjects.Text;
@@ -39,6 +40,7 @@ export class UIScene extends Phaser.Scene {
   private maxHp   = 1000;
   private wave    = 0;
   private maxWave = 10;
+  private battleOutcome: BattleOutcome = null;
 
   constructor() { super({ key: 'UIScene' }); }
 
@@ -80,6 +82,7 @@ export class UIScene extends Phaser.Scene {
     this.hp     = this.registry.get('hp')    ?? 1000;
     this.maxHp  = this.registry.get('hp')    ?? 1000;
     this.wave   = this.registry.get('wave')  ?? 0;
+    this.battleOutcome = (this.registry.get('battleOutcome') as BattleOutcome | undefined) ?? null;
     this.maxWave = this.registry.get('maxWave') ?? 10;
     const isEndless = this.maxWave >= 9999;
     const endlessHS = isEndless
@@ -301,10 +304,15 @@ export class UIScene extends Phaser.Scene {
   private safeHby = 60;
 
   private getWaveLabel(): string {
-    if (this.maxWave >= 9999) return this.wave > 0 ? `침략 ${this.wave}` : '침략 대기';
-    return this.wave > 0 && this.wave === this.maxWave
-      ? '⚠ 최종 침략!'
-      : `침략 ${this.wave}/${this.maxWave}`;
+    return getWaveHudLabel(this.wave, this.maxWave, this.battleOutcome).text;
+  }
+
+  private refreshWaveLabel(): void {
+    const label = getWaveHudLabel(this.wave, this.maxWave, this.battleOutcome);
+    this.waveLabel?.setText(label.text);
+    this.waveLabel?.setColor(
+      label.tone === 'final' ? DUNGEON_UI_CSS.EMBER : label.tone === 'clear' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT,
+    );
   }
 
   private redrawWaveProgress(): void {
@@ -436,15 +444,17 @@ export class UIScene extends Phaser.Scene {
     });
     on('changedata-wave', (_: unknown, v: number) => {
       this.wave = v;
-      const isFinal = this.maxWave < 9999 && v > 0 && v === this.maxWave;
-      this.waveLabel?.setText(this.getWaveLabel());
-      this.waveLabel?.setColor(isFinal ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.TEXT);
+      this.refreshWaveLabel();
       this.redrawWaveProgress();
     });
     on('changedata-maxWave', (_: unknown, v: number) => {
       this.maxWave = v;
-      this.waveLabel?.setText(this.getWaveLabel());
+      this.refreshWaveLabel();
       this.redrawWaveProgress();
+    });
+    on('changedata-battleOutcome', (_: unknown, v: BattleOutcome) => {
+      this.battleOutcome = v;
+      this.refreshWaveLabel();
     });
     on('changedata-status', (_: unknown, v: string) => {
       this.statusText?.setText(v);
