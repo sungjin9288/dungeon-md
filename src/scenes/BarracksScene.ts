@@ -69,13 +69,31 @@ export class BarracksScene extends Phaser.Scene {
   private focusSourceLabel: string | null = null;
   private focusRoomSlotIdx: number | null = null;
   private legionMenuOverlay?: Phaser.GameObjects.Container;
+  /** A ritual-v2 cutout for an owned guardian arrived after the roster was drawn. */
+  private artDirty = false;
 
   constructor() { super({ key: 'BarracksScene' }); }
 
   create(data?: { scrollY?: number }): void {
     this.gs = loadGameState();
     // Normally already streamed from Home; covers direct entry and new arrivals.
-    getCharacterArtStreamer(this.game).request(this.gs.ownedMonsters.map(monster => monster.id));
+    // A cutout that lands after the roster was drawn redraws it once (or on the
+    // detail panel's close, if one is open) instead of leaving the legacy JPEG.
+    this.artDirty = false;
+    const streamer = getCharacterArtStreamer(this.game);
+    const owned = new Set(this.gs.ownedMonsters.map(monster => monster.id));
+    let redraw: Phaser.Time.TimerEvent | null = null;
+    const off = streamer.onLoaded(id => {
+      if (!owned.has(id)) return;
+      this.artDirty = true;
+      if (redraw) return;
+      redraw = this.time.delayedCall(300, () => {
+        redraw = null;
+        if (!this.detailOverlay && !this.shopOverlay && !this.legionMenuOverlay) this.scene.restart({ scrollY: this.scrollY });
+      });
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
+    streamer.request(owned);
     this.legionMenuOverlay = undefined;
     this.scrollY = 0;
     this.focusMonsterId = this.consumeFocusMonsterId();
@@ -429,7 +447,7 @@ export class BarracksScene extends Phaser.Scene {
           this.detailOverlay = undefined;
           // Feeding/equipping/skills saved from the detail; the roster, header power
           // and growth hall still showed the state from scene start.
-          if (JSON.stringify(loadGameState()) !== JSON.stringify(this.gs)) {
+          if (this.artDirty || JSON.stringify(loadGameState()) !== JSON.stringify(this.gs)) {
             this.scene.restart({ scrollY: this.scrollY });
           }
         },
