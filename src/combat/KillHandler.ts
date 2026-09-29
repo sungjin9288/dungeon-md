@@ -101,7 +101,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   ctx.killsThisRun++;
   ctx.killsThisWave++;
   ctx.goldEarnedThisRun += goldReward;
-  ctx.killCounterText?.setText(`💀 ${ctx.killsThisWave} / ${ctx.waveInvaderTotal || '?'}`);
+  ctx.killCounterText?.setText(`격퇴 ${ctx.killsThisWave} / ${ctx.waveInvaderTotal || '?'}`);
   ctx.setRemainingInvadersRegistry(remainingInvaderCount(ctx.activeInvaders, inv));
 
   // ── Kill combo ──────────────────────────────────────────────────────────────
@@ -109,9 +109,9 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   if (now - ctx.lastKillTime < 2500) {
     ctx.killComboCount++;
     if (ctx.killComboCount >= 3) {
-      const comboText = ctx.killComboCount >= 7 ? `🔥 ${ctx.killComboCount}연속!! UNSTOPPABLE`
-                      : ctx.killComboCount >= 5 ? `🔥 ${ctx.killComboCount}연속! 맹공격`
-                      : `🔥 ${ctx.killComboCount}연속!`;
+      const comboText = ctx.killComboCount >= 7 ? `${ctx.killComboCount}연속!! UNSTOPPABLE`
+                      : ctx.killComboCount >= 5 ? `${ctx.killComboCount}연속! 맹공격`
+                      : `${ctx.killComboCount}연속!`;
       showFloatText(scene, inv.x, inv.y - 40, comboText, '#ff8800');
       playKillComboEdgeFlash(scene, ctx.killComboCount);
     }

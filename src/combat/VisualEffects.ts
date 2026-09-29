@@ -348,18 +348,18 @@ export function showWisdomToast(
   const b = wisdomBonuses;
   const lines: string[] = [];
   if (b.idleIncomeMult > 1) lines.push(`운영 수익 +${Math.round((b.idleIncomeMult - 1) * 100)}%`);
-  if (b.dungeonMaxHpBonus > 0) lines.push(`🏰 던전 HP +${b.dungeonMaxHpBonus}`);
-  if (b.roomCostMult   < 1) lines.push(`🔨 방 업그레이드 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
-  if (b.waveRewardMult > 1) lines.push(`⚡ 웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);
-  if (b.extraSlots     > 0) lines.push(`📜 추가 슬롯 +${b.extraSlots}`);
-  if (b.crystalEarnMult > 1) lines.push(`💠 수정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);
-  if (b.monsterDmgMult < 1) lines.push(`🛡 몬스터 피해 -${Math.round((1 - b.monsterDmgMult) * 100)}%`);
-  if (b.monsterAtkMult > 1) lines.push(`⚔️ 몬스터 공격 +${Math.round((b.monsterAtkMult - 1) * 100)}%`);
-  if (b.crystalPerWave > 0) lines.push(`💠 스테이지 클리어 수정 +${b.crystalPerWave}`);
-  if (b.fortressHp     > 0) lines.push(`🏯 요새 HP +${b.fortressHp}`);
+  if (b.dungeonMaxHpBonus > 0) lines.push(`던전 HP +${b.dungeonMaxHpBonus}`);
+  if (b.roomCostMult   < 1) lines.push(`방 업그레이드 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
+  if (b.waveRewardMult > 1) lines.push(`웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);
+  if (b.extraSlots     > 0) lines.push(`추가 슬롯 +${b.extraSlots}`);
+  if (b.crystalEarnMult > 1) lines.push(`결정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);
+  if (b.monsterDmgMult < 1) lines.push(`몬스터 피해 -${Math.round((1 - b.monsterDmgMult) * 100)}%`);
+  if (b.monsterAtkMult > 1) lines.push(`몬스터 공격 +${Math.round((b.monsterAtkMult - 1) * 100)}%`);
+  if (b.crystalPerWave > 0) lines.push(`스테이지 클리어 결정 +${b.crystalPerWave}`);
+  if (b.fortressHp     > 0) lines.push(`요새 HP +${b.fortressHp}`);
   if (lines.length === 0) return;
 
-  const toast = scene.add.text(CANVAS_WIDTH / 2, 98, `⛩ 선조의 가호\n${lines.join('  ')}`, {
+  const toast = scene.add.text(CANVAS_WIDTH / 2, 98, `선조의 가호\n${lines.join('  ')}`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#c070ff',
     align: 'center', backgroundColor: '#0d0a1a',
     padding: { x: 10, y: 6 },

@@ -151,7 +151,7 @@ export function startWave(ctx: WaveStartContext): void {
   ctx.killCounterText?.destroy();
   ctx.killCounterText = ctx.scene.add.text(
     CANVAS_WIDTH - 8, GRID_Y + 14,
-    `💀 0 / ${ctx.waveInvaderTotal || '?'}`,
+    `격퇴 0 / ${ctx.waveInvaderTotal || '?'}`,
     { fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
       stroke: '#000000', strokeThickness: 2 },
   ).setOrigin(1, 0).setDepth(92).setAlpha(0.85);

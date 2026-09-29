@@ -6,8 +6,9 @@ import {
   getSynergyGuardianCooldownMult, getSynergyGuardianAttackIntervalMult,
   type ActiveSynergy, type ActiveElementCombo,
 } from '../data/synergy';
-import { CANVAS_WIDTH } from '../constants/layout';
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
+import { TRIBE_LABELS } from '../ui/BarracksShared';
 
 // ─── SynergyManager ───────────────────────────────────────────────────────────
 //
@@ -18,18 +19,6 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 //   const sm = new SynergyManager(this);
 //   sm.recalc(this.roomGrid, this.effectiveCols); // call after any room change
 //   // read sm.activeSynergies / sm.activeElementCombos for ATK/SPD mult lookups
-
-const TRIBE_EMOJI: Record<string, string> = {
-  dokkaebi:   '👹',
-  gumiho:     '🦊',
-  dragon:     '🐉',
-  underworld: '💀',
-  sansin:     '⛩️',
-  sea:        '🌊',
-  mask:       '🎭',
-  moonlight:  '🌙',
-  celestial:  '✨',
-};
 
 // Casual toy: each tribe gets a saturated candy pill fill + a darker edge.
 const TRIBE_FILL: Record<string, number> = {
@@ -137,21 +126,25 @@ export class SynergyManager {
     if (this.activeSynergies.length === 0 && this.activeElementCombos.length === 0) return;
 
     this.display = this.scene.add.container(0, 0).setDepth(85);
-    let yOff = 48;
-    const PILL_H = 24;
+    // The top of the battle is UIScene's HUD (these pills used to sit hidden
+    // under it). They now stack upward in the free corners beside the skill
+    // dock: tribe synergies on the right, element combos on the left.
+    const PILL_H = 22;
     const GAP    = 4;
+    let yOff = CANVAS_HEIGHT - 8 - PILL_H;
 
     for (const syn of this.activeSynergies) {
-      const emoji      = TRIBE_EMOJI[syn.tribe] ?? '❓';
+      const name       = TRIBE_LABELS[syn.tribe] ?? syn.tribe;
       const tierDot    = syn.tier.count >= 8 ? '●●●●' : syn.tier.count >= 6 ? '●●●' : syn.tier.count >= 4 ? '●●' : '●';
-      const label      = `${emoji} ×${syn.count} ${tierDot}`;
+      const label      = `${name} ×${syn.count} ${tierDot}`;
       const fillCol    = TRIBE_FILL[syn.tribe] ?? CASUAL.GOLD;
       const edgeCol    = TRIBE_EDGE[syn.tribe] ?? CASUAL.GOLD_DK;
 
+      const fontSize = fitPillFont(this.scene, label);
       const tmp = this.scene.add.text(0, -1000, label, {
-        fontFamily: 'sans-serif', fontSize: '13px',
+        fontFamily: 'sans-serif', fontSize, fontStyle: 'bold',
       });
-      const pillW = Math.max(tmp.width + 16, 48);
+      const pillW = Math.min(Math.max(tmp.width + 12, 48), PILL_MAX_W);
       tmp.destroy();
 
       const pillX = CANVAS_WIDTH - 8 - pillW;
@@ -171,12 +164,13 @@ export class SynergyManager {
       g.strokeRoundedRect(pillX, yOff, pillW, PILL_H, 8);
 
       const t = this.scene.add.text(pillX + pillW / 2, yOff + PILL_H / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize, fontStyle: 'bold',
         color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
 
+      const pillTop = yOff;
       const synZone = this.scene.add.zone(pillX, yOff, pillW, PILL_H)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true })
@@ -185,14 +179,14 @@ export class SynergyManager {
       synZone.once('pointerdown', () => {
         const desc = syn.tier.desc;
         const tipX = CANVAS_WIDTH - 8;
-        const tipY = yOff + PILL_H + 4;
+        const tipY = pillTop - 4;
         const tip = this.scene.add.text(tipX, tipY, desc, {
           fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
           color: CASUAL_CSS.INK,
           backgroundColor: CASUAL_CSS.CREAM,
           padding: { x: 8, y: 5 },
           wordWrap: { width: 264, useAdvancedWrap: true },
-        }).setOrigin(1, 0).setDepth(200);
+        }).setOrigin(1, 1).setDepth(200);
         this.scene.tweens.add({
           targets: tip,
           alpha: { from: 1, to: 0 },
@@ -203,17 +197,19 @@ export class SynergyManager {
         });
       });
 
-      yOff += PILL_H + GAP;
+      yOff -= PILL_H + GAP;
     }
 
+    yOff = CANVAS_HEIGHT - 8 - PILL_H;
     for (const ec of this.activeElementCombos) {
-      const label  = `⚡${ec.combo.name}`;
-      const tmp    = this.scene.add.text(0, -1000, label, { fontFamily: 'sans-serif', fontSize: '11px' });
-      const pillW  = Math.max(tmp.width + 12, 48);
+      const label  = ec.combo.name;
+      const fontSize = fitPillFont(this.scene, label);
+      const tmp    = this.scene.add.text(0, -1000, label, { fontFamily: 'sans-serif', fontSize, fontStyle: 'bold' });
+      const pillW  = Math.min(Math.max(tmp.width + 12, 48), PILL_MAX_W);
       tmp.destroy();
 
-      const pillX = CANVAS_WIDTH - 8 - pillW;
-      const ecH   = PILL_H - 4;
+      const pillX = 8;
+      const ecH   = PILL_H;
 
       const g = this.scene.add.graphics().setDepth(85);
       // chunky drop shadow
@@ -230,12 +226,13 @@ export class SynergyManager {
       g.strokeRoundedRect(pillX, yOff, pillW, ecH, 7);
 
       const t = this.scene.add.text(pillX + pillW / 2, yOff + ecH / 2, label, {
-        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        fontFamily: 'sans-serif', fontSize, fontStyle: 'bold',
         color: CASUAL_CSS.WHITE, stroke: '#00000033', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(86);
 
       this.display.add([g, t]);
 
+      const pillTop = yOff;
       const ecZone = this.scene.add.zone(pillX, yOff, pillW, ecH)
         .setOrigin(0, 0)
         .setInteractive({ useHandCursor: true })
@@ -243,14 +240,14 @@ export class SynergyManager {
       this.tooltipZones.push(ecZone);
       ecZone.once('pointerdown', () => {
         const desc = ec.combo.desc;
-        const tipX = Math.min(pillX + pillW / 2, this.scene.scale.width - 80);
-        const tipY = yOff - 10;
+        const tipX = pillX;
+        const tipY = pillTop - 4;
         const tip = this.scene.add.text(tipX, tipY, desc, {
           fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
           color: CASUAL_CSS.INK,
           backgroundColor: CASUAL_CSS.CREAM,
           padding: { x: 8, y: 5 },
-        }).setOrigin(0.5, 1).setDepth(200);
+        }).setOrigin(0, 1).setDepth(200);
         this.scene.tweens.add({
           targets: tip,
           alpha: { from: 1, to: 0 },
@@ -261,7 +258,18 @@ export class SynergyManager {
         });
       });
 
-      yOff += ecH + GAP;
+      yOff -= ecH + GAP;
     }
   }
+}
+
+/** Corner beside the skill dock: (390 − 186) / 2 − 8 margin − 6 gap. */
+const PILL_MAX_W = 88;
+
+/** 11px unless the label would overflow the corner, then 10px. */
+function fitPillFont(scene: Phaser.Scene, label: string): string {
+  const probe = scene.add.text(0, -1000, label, { fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold' });
+  const fits = probe.width + 12 <= PILL_MAX_W;
+  probe.destroy();
+  return fits ? '11px' : '10px';
 }

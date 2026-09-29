@@ -329,12 +329,12 @@ export function setupDeathEmissary(ctx: BossContext, inv: Invader): void {
     if (pct <= 0.66 && emissaryPhase === 1) {
       emissaryPhase = 2;
       logger.debug('[DEATH_EMISSARY] phase 2 — faster ghost adds (12s)');
-      showBossPhaseText(ctx, inv, 2, '💀 2단계! 망령 가속!', 0x8800cc);
+      showBossPhaseText(ctx, inv, 2, '2단계! 망령 가속!', 0x8800cc);
     }
     if (pct <= 0.33 && emissaryPhase === 2) {
       emissaryPhase = 3;
       logger.debug('[DEATH_EMISSARY] phase 3 — JUDGMENT every 25s');
-      showBossPhaseText(ctx, inv, 3, '💀 3단계! 심판의 심판!', 0xcc0000);
+      showBossPhaseText(ctx, inv, 3, '3단계! 심판의 심판!', 0xcc0000);
       scene.time.addEvent({
         delay: 25000, repeat: -1,
         callback: () => {

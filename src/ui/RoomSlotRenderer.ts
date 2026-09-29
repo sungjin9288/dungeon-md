@@ -15,7 +15,7 @@ import type { GameState } from '../data/wisdom';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
-import { drawSigil } from './Sigils';
+import { addSigil, drawSigil } from './Sigils';
 import { ROOM_TYPE_SIGILS, sigilFor } from './sigilMaps';
 
 // ─── Shared layout constants ───────────────────────────────────────────────
@@ -400,7 +400,7 @@ export function drawBattleSlot(
     g.fillRoundedRect(x, y, SLOT_W, SLOT_H, 10);
     g.lineStyle(2, CASUAL.EDGE, 0.5);
     g.strokeRoundedRect(x + 1, y + 1, SLOT_W - 2, SLOT_H - 2, 10);
-    c.add(scene.add.text(cx, cy - 6, '🔒', { fontSize: '22px' }).setOrigin(0.5).setAlpha(0.82));
+    c.add(addSigil(scene, 'lock', cx, cy - 6, 22, CASUAL.INK_SOFT, { disc: false, alpha: 0.85 }));
     const reqLv = SLOT_UNLOCK_LEVELS[index]?.[0] ?? 99;
     g.fillStyle(0x140d07, 0.92);
     g.fillRoundedRect(cx - 24, cy + 16, 48, 16, 4);

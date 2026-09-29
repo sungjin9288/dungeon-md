@@ -43,15 +43,6 @@ export function showBossWarning(
   const bossColorNum = bossDef?.color ?? 0xff2222;
   const bossColorCss = '#' + bossColorNum.toString(16).padStart(6, '0');
 
-  // Boss emoji per type
-  const BOSS_EMOJI: Record<string, string> = {
-    fox_queen:          '🦊',
-    dragon_king:        '🐉',
-    death_emissary:     '💀',
-    three_god_destroyer:'⛩️',
-    eternal_emperor:    '👑',
-  };
-  const bossEmoji = (bossGrp ? BOSS_EMOJI[bossGrp.type] : null) ?? '⚔️';
 
   // Boss one-liner quote
   const BOSS_QUOTES: Record<string, string> = {
@@ -103,7 +94,7 @@ export function showBossWarning(
   nameCard.add(warningT);
 
   // Emoji + Name
-  const nameT = scene.add.text(0, 36, `${bossEmoji} ${bossName}`, {
+  const nameT = scene.add.text(0, 36, bossName, {
     fontFamily: 'Georgia, serif', fontSize: '19px', fontStyle: 'bold', color: '#ffffff',
     shadow: { color: bossColorCss, blur: 10, fill: true },
   }).setOrigin(0.5);

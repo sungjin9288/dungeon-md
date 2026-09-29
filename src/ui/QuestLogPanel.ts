@@ -274,7 +274,7 @@ function buildQuestRewardRows(
     rows.push({ icon: '💰', label: '골드', value: `+${quest.reward.gold.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.GOLD, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   if (quest.reward.soulCrystals) {
-    rows.push({ icon: '💠', label: '수정', value: `+${quest.reward.soulCrystals.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.BLUE, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
+    rows.push({ icon: '💠', label: '영혼 결정', value: `+${quest.reward.soulCrystals.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_ACCENT_CSS : CASUAL_CSS.BLUE, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });
   }
   if (quest.reward.dmXP) {
     rows.push({ icon: '✨', label: 'DM XP', value: `+${quest.reward.dmXP.toLocaleString('ko-KR')}`, valueColor: cosmic ? COSMIC_TEXT : CASUAL_CSS.INK, fillColor: cosmic ? COSMIC_ROW_FILL : QUEST_ROW_FILL });

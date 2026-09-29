@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addSigil } from '../ui/Sigils';
 import type { EquipmentStats } from '../data/barracks';
 import { getRoomEquipmentDamageReduction, reduceRoomEquipmentDamage } from '../data/equipmentDefense';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -156,10 +157,7 @@ export class Room extends Phaser.GameObjects.Container {
 
   private addLockGlyph(scene: Phaser.Scene): void {
     // Lock glyph in soft ink — clearly "locked" on the bright field.
-    const lock = scene.add.text(0, 0, '🔒', {
-      fontSize: '20px',
-    }).setOrigin(0.5).setAlpha(0.55);
-    this.add(lock);
+    this.add(addSigil(scene, 'lock', 0, 0, 20, CASUAL.INK_SOFT, { disc: false, alpha: 0.7 }));
     const label = scene.add.text(0, 22, '잠김', {
       fontFamily: 'Georgia, serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT,
       fontStyle: 'bold',

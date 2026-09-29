@@ -101,7 +101,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   });
 
   // ── Title ──────────────────────────────────────────────────────────────────
-  const titleT = scene.add.text(cx, 130, '⚔️ 공허 정복 완료! ⚔️', {
+  const titleT = scene.add.text(cx, 130, '공허 정복 완료!', {
     fontFamily: 'Georgia, serif', fontSize: '26px', fontStyle: 'bold', color: '#ffd700',
   }).setOrigin(0.5).setAlpha(0).setScale(0.8);
   ov.add(titleT);

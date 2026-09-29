@@ -464,7 +464,7 @@ export function resolveAttack(
         })[0];
       if (closest) {
         closest.takeDamage(200);
-        const ct = ctx.scene.add.text(closest.x, closest.y - 22, '💀 죽음의 울림!', {
+        const ct = ctx.scene.add.text(closest.x, closest.y - 22, '죽음의 울림!', {
           fontFamily: 'sans-serif', fontSize: '10px', color: '#cc0000',
         }).setOrigin(0.5).setDepth(55);
         ctx.scene.tweens.add({ targets: ct, y: ct.y - 28, alpha: 0, duration: 700, onComplete: () => ct.destroy() });

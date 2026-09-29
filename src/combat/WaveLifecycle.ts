@@ -285,8 +285,7 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
   if (nextCfg?.invaders) {
     const total   = nextCfg.invaders.reduce((s, inv) => s + inv.count, 0);
     const hasBoss = nextCfg.invaders.some(inv => inv.isBoss);
-    const icon    = hasBoss ? '👹' : '👾';
-    const label   = hasBoss ? `${icon} 보스 포함 ×${total}` : `${icon} ×${total}`;
+    const label   = hasBoss ? `다음 침입 · 보스 포함 ×${total}` : `다음 침입 ×${total}`;
     previewT = scene.add.text(CANVAS_WIDTH / 2, cdNumY - 18, label, {
       fontFamily: 'sans-serif', fontSize: '11px',
       color: hasBoss ? '#ff8844' : '#aaaacc',
