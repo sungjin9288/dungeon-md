@@ -1,10 +1,22 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 119,
+  "count": 126,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
       "bytes": 2660559,
+      "width": 1254,
+      "height": 1254
+    },
+    "abyssal_seer": {
+      "sha256": "338d21a1cd3edcc6ff4bceaee2dfb3c90c058fafeef54449adee3e41f42e8ddb",
+      "bytes": 2455785,
+      "width": 1254,
+      "height": 1254
+    },
+    "abyssal_warden": {
+      "sha256": "1ffee75c467f81bdbc0e8b1f668f06f033becef78108ce44a3174f3c5c82e3d5",
+      "bytes": 2481682,
       "width": 1254,
       "height": 1254
     },
@@ -77,6 +89,12 @@
     "celestial_sage": {
       "sha256": "5c6fde7996e8c788202e02670a44fa7288e3154f15031466dc3cbdd913bd32a6",
       "bytes": 2064049,
+      "width": 1254,
+      "height": 1254
+    },
+    "chaos_reaver": {
+      "sha256": "42838e8209639658a4d615d7363b6c5edb44194ed51ced432c21eb8487906f50",
+      "bytes": 2013898,
       "width": 1254,
       "height": 1254
     },
@@ -179,6 +197,12 @@
     "empyrean_sovereign": {
       "sha256": "708450db8c05aafca8036d1397be7b8bea3152ae1f6d8b897736682ed34da127",
       "bytes": 2275398,
+      "width": 1254,
+      "height": 1254
+    },
+    "eternal_colossus": {
+      "sha256": "685c33d9111ae1519346d8ad072c98a691bf613006c7ee1c84b0049a30ed3e38",
+      "bytes": 2557663,
       "width": 1254,
       "height": 1254
     },
@@ -476,6 +500,12 @@
       "width": 1254,
       "height": 1254
     },
+    "primordial_shaman": {
+      "sha256": "d952f343092f4252cf415325e452c460ec7a1343a6ed64ebc51ae9166f301737",
+      "bytes": 2639300,
+      "width": 1254,
+      "height": 1254
+    },
     "red_dragon_warrior": {
       "sha256": "ac40b5af483f3cb52b22e178051e16218c71b8ba421074b7d6803ee2cbf73c4b",
       "bytes": 2332800,
@@ -563,6 +593,12 @@
     "solar_warrior": {
       "sha256": "bf50570e24c5f96e120b48d632d687027629ed3da9c8d0a1fabb6a5648f7707b",
       "bytes": 1903920,
+      "width": 1254,
+      "height": 1254
+    },
+    "soul_devourer": {
+      "sha256": "0f078bfb11fa058de30d7a9b9495aa542f2e2cb003807c012e2a769e28237fdb",
+      "bytes": 2421832,
       "width": 1254,
       "height": 1254
     },
@@ -689,6 +725,12 @@
     "village_archer": {
       "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
       "bytes": 1722317,
+      "width": 1254,
+      "height": 1254
+    },
+    "void_harbinger": {
+      "sha256": "87f248f99a39025e048e25e86d1656a3cb06362f299ca0cd85514041f92c1f3c",
+      "bytes": 1998960,
       "width": 1254,
       "height": 1254
     },
