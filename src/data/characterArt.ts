@@ -158,6 +158,8 @@ const SKIN_ART_IDS: readonly string[] = [
   'little_dok_summer',
   'tortoise_jade',
   'divine_warrior',
+  'void_death',
+  'sage_primordial',
 ];
 
 export function getSkinArt(skinId: unknown): CharacterArt | null {
