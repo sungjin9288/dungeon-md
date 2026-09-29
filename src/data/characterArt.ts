@@ -172,6 +172,8 @@ const SKIN_ART_IDS: readonly string[] = [
   'void_death',
   'sage_primordial',
   'dancer_midnight',
+  'crow_solar',
+  'eternal_crow',
 ];
 
 export function getSkinArt(skinId: unknown): CharacterArt | null {

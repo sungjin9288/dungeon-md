@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 87,
+  "count": 99,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -26,6 +26,12 @@
       "width": 1254,
       "height": 1254
     },
+    "celestial_dancer": {
+      "sha256": "ae88d4d8890a3d4367947b7ee8b0a3462c5ad362c6e1424b8b994d8c70b36465",
+      "bytes": 1991970,
+      "width": 1254,
+      "height": 1254
+    },
     "celestial_fairy": {
       "sha256": "f1c1de0ed439f6407a98bfba855f600a68f698833e6d3865d1f714df95e59d66",
       "bytes": 2227972,
@@ -41,6 +47,12 @@
     "cheoyong_warrior": {
       "sha256": "40931cb4a62d9a51b3fce6288e5bbc122515c545f098b49f7eba04b308cbe630",
       "bytes": 2258605,
+      "width": 1254,
+      "height": 1254
+    },
+    "crescent_archer": {
+      "sha256": "b98519d8c32e18ab0eb59ab13ec90e037d0206e37375ad7dc85cecf7d437368c",
+      "bytes": 2182780,
       "width": 1254,
       "height": 1254
     },
@@ -158,6 +170,18 @@
       "width": 1254,
       "height": 1254
     },
+    "full_moon_sorcerer": {
+      "sha256": "de487dad7cdfe3dbcebb201945b490ad80250f014b7e164c0484397f97024d6a",
+      "bytes": 2566896,
+      "width": 1254,
+      "height": 1254
+    },
+    "galaxy_warrior": {
+      "sha256": "6b4670f433ddc36faa880dfeec19967599ec26ed8ec6545c96f509a33e963dbc",
+      "bytes": 2130047,
+      "width": 1254,
+      "height": 1254
+    },
     "ghost_hunter": {
       "sha256": "fe4d021f9d462ee724e7442429245b6ac0ea1b6cc041ab5fed2769798fbe1678",
       "bytes": 1866209,
@@ -272,6 +296,12 @@
       "width": 1254,
       "height": 1254
     },
+    "lunar_eclipse_mage": {
+      "sha256": "8d7158d1bcefa110330e995793cc23620409148567b91ae38d232d57a5a01b1b",
+      "bytes": 1939684,
+      "width": 1254,
+      "height": 1254
+    },
     "mask_archer": {
       "sha256": "efbf055e390014ee08b05f6dedf34bec07108bcf2361b5b47e7d8294248c047c",
       "bytes": 1836297,
@@ -308,6 +338,24 @@
       "width": 1254,
       "height": 1254
     },
+    "moonlight_complete": {
+      "sha256": "36f729ed842f86644f2176039cff20328eaad23030bfe29aae3451142388b071",
+      "bytes": 2046213,
+      "width": 1254,
+      "height": 1254
+    },
+    "moonlight_rabbit": {
+      "sha256": "60bb62204b3c9bfa28435f20492df517a6dbf0df9c7ca990dd676c1067efee9a",
+      "bytes": 1921223,
+      "width": 1254,
+      "height": 1254
+    },
+    "moonlight_tiger": {
+      "sha256": "b1a97a19544d8f3f30795bd1ce3927e574e16189477c8c85bd3b46f533fb55ac",
+      "bytes": 2309857,
+      "width": 1254,
+      "height": 1254
+    },
     "mountain_god_complete": {
       "sha256": "305b24c60e4cf8c1a8f190cc3912951116cb200561fcde4cbe2d58bfd255a65b",
       "bytes": 2615073,
@@ -339,8 +387,8 @@
       "height": 1254
     },
     "poison_dokkaebi": {
-      "sha256": "3d3208ded9b0a9ac2899cbbd8cd50f7af03f4943d995170bf0a81a2c3228d6b4",
-      "bytes": 1079544,
+      "sha256": "feb1dc980e774483ec5b12a214e974871455d5996afb610c649a0ec923822e3e",
+      "bytes": 1961565,
       "width": 1254,
       "height": 1254
     },
@@ -410,6 +458,12 @@
       "width": 1254,
       "height": 1254
     },
+    "solar_eclipse_warrior": {
+      "sha256": "9c3e4b0613dd091d47151e9b28937b8230cb6f2311fa6555f861a52553fa9121",
+      "bytes": 1928435,
+      "width": 1254,
+      "height": 1254
+    },
     "soul_guardian": {
       "sha256": "6f14900a44e6134fb47ae2e688fac251318fa2c6f86336af154db65cb251bc55",
       "bytes": 2476829,
@@ -428,6 +482,18 @@
       "width": 1254,
       "height": 1254
     },
+    "starlight_fairy": {
+      "sha256": "ab6af14b47f7724d0d802413f7adcca1646e4f1e923b9b0e74a83191f36f46ba",
+      "bytes": 1919407,
+      "width": 1254,
+      "height": 1254
+    },
+    "storm_archer": {
+      "sha256": "d0e89e88d02ef19c29ff7a2bb87aa20c57eb696ee3a4f4a24750eaeff66209a1",
+      "bytes": 2316776,
+      "width": 1254,
+      "height": 1254
+    },
     "storm_dokkaebi": {
       "sha256": "a966b8920e0806c35fdb14868ccde31cb1e0de7cab6a1ca7d77e2e8cf2dc4146",
       "bytes": 2533108,
@@ -443,6 +509,12 @@
     "thousand_pine": {
       "sha256": "a06095a7e01779fbe0234cac103fdac75210ba50dbbd2e900a9a4346fe924f23",
       "bytes": 3119468,
+      "width": 1254,
+      "height": 1254
+    },
+    "three_legged_crow": {
+      "sha256": "25ee14b8164da83752b57a0ead02cb151a42937bab8528173a723da0a56ffd70",
+      "bytes": 2144223,
       "width": 1254,
       "height": 1254
     },
