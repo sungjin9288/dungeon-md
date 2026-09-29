@@ -21,7 +21,6 @@ import { ROOM_TYPE_SIGILS, sigilFor } from '../ui/sigilMaps';
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
 export interface RoomLoadoutVisualOptions {
-  readonly roomTypeIcon: string;
   readonly roomTypeName: string;
   readonly accentColor: number;
   /** Abstract room category → pixel-room fixture (weapon rack / spikes / …). */

@@ -141,7 +141,6 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       }
 
       room.setDungeonSlotLoadoutVisual({
-        roomTypeIcon: typeDef?.icon ?? '◇',
         roomTypeName: typeDef?.name ?? '던전실',
         accentColor: slot.roomType ? SLOT_VISUAL_ACCENT[slot.roomType] : ROOM_DEFS[roomType].accentColor,
         slotRoomType: slot.roomType,

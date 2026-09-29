@@ -15,6 +15,8 @@ import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerat
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { RoomLoadoutVisualOptions } from './Room';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { drawSigil } from '../ui/Sigils';
+import { ROOM_TYPE_SIGILS, sigilFor } from '../ui/sigilMaps';
 
 // ─── drawStone ───────────────────────────────────────────────────────────────
 
@@ -276,12 +278,20 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
   g.fillStyle(0xffffff, 0.3);
   g.fillRoundedRect(-s / 2 + 20, -s / 2 + 9, s - 40, 5, 3);
 
-  const title = room.scene.add.text(0, -s / 2 + 15, `${options.roomTypeIcon} ${options.roomTypeName}`, {
+  // Family sigil + name, centred as one group. The emoji prefix drew at its own
+  // size and covered part of the 10px name on the ribbon.
+  const title = room.scene.add.text(0, -s / 2 + 15, options.roomTypeName, {
     fontFamily: 'Georgia, serif',
     fontSize: '10px',
     color: CASUAL_CSS.WHITE,
     fontStyle: 'bold',
   }).setOrigin(0.5);
+  if (options.slotRoomType) {
+    const sigilSize = 10;
+    const groupW = sigilSize + 3 + title.width;
+    title.setX(-groupW / 2 + sigilSize + 3 + title.width / 2);
+    drawSigil(g, sigilFor(ROOM_TYPE_SIGILS, options.slotRoomType, 'shield'), -groupW / 2 + sigilSize / 2, -s / 2 + 15, sigilSize, 0xffffff, { disc: false });
+  }
   room.slotLoadoutLabels.push(title);
   room.add(title);
 
