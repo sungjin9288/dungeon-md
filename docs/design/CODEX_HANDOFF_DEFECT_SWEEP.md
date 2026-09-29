@@ -1664,3 +1664,48 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
 - 도깨비족 12종 검수·등록(`471ba1b`) → 누적 36/136. poison_dokkaebi는 피사체가 캔버스의 73%로 다른 캐릭터
   (~95%)보다 작다 — 재생성 후보(사용 가능 수준이라 등록은 함).
 - 나머지는 부족 순서 배치 실행 중(`scratchpad/codex-art/batch-all.log`), 부족 단위로 검수·등록·커밋.
+
+## §39 화면 전수 이모지 정리·전투 시너지 표시·용어 통일·보스 아트 트랙 — 2026-09-29 (Claude)
+
+방법: 각 씬을 `?scene=` 로 열고 표시 중인 Text 객체와 `scene.add.text` 생성 훅으로 이모지를 수집 → 원인 파일
+수정 → 같은 경로 재캡처. 전투는 스테이지 11을 직접 시작해 수집. push 없음.
+
+### 발견한 기존 결함(이모지 정리 중)
+
+- **전투 시너지 표시가 보이지 않았다**: `SynergyManager`가 y=48에 그려 UIScene 상단 HUD 뒤에 완전히 가려짐.
+  스킬 도크 옆 빈 모서리로 이동(부족 시너지 오른쪽, 원소 콤보 왼쪽, 아래에서 위로, 88px 폭 맞춤).
+  알약 높이 22px는 터치 최소 44 미만(툴팁 보조 기능, 겹침 없이 키울 공간 없음) — 백로그.
+- 어두운 패널 위 제목 13곳이 크림 시대의 흰 외곽선(`stroke '#ffffff'`)을 유지해 번져 보임 → 어두운 외곽선.
+- 도전 과제 보상 알약의 글자가 19px 오른쪽으로 치우침. 소환 배너 설명이 대표 몬스터 초상과 겹침(Ch8·9 배너는
+  크게) — 가용 폭 맞춤 + 문구 축약. 배너 대표 몬스터가 이모지였음 → 원형 메달리온(`generateRoomToken`).
+- 외형 탭의 기본/스킨 카드가 이모지(👹)·잠금이 × → 초상화·닫힌 자물쇠 시질.
+
+### 이모지 → 시질 (추가 글리프 lock·unlock·target·calendar·crown·wave)
+
+- 스테이지 선택 허브 버튼, 소환 재화, 퀘스트 로그 헤더·보상, 일일/출석/설정/환생/스테이지 보상 오버레이,
+  전투 HUD(격퇴 카운터·다음 침입·연속 처치·보스 등장·선조의 가호·특성 안내), 잠긴 방.
+- 도전 변수 17·웨이브 사건 13(`ENDLESS_MODIFIER_SIGILS`/`WAVE_EVENT_SIGILS`), 상점 장비·스킬·테마
+  (`EQUIPMENT_TYPE_SIGILS`/`ACTIVE_SKILL_SIGILS`/`THEME_SIGILS`) — 전부 커버리지 테스트(`sigilMaps.test.ts`).
+- `addIconGlyph`(GameUiPrimitives): 데이터가 이모지 문자열을 주는 아이콘 칸을 시질로 매핑.
+- 남은 곳: 함정 아이콘(아트 생성 중, 생성 후 자동 교체), `Room.baseRoomIcon`(슬롯 로드아웃 없는 레거시 경로에서만
+  보임), 컷신 화자 이모지(아트 없는 화자 폴백), 데이터 내부 emoji 필드(표시 안 됨).
+
+### 용어
+
+- 같은 재화가 '영혼 수정' 31곳 / '영혼 결정' 14곳 → CLAUDE.md 표기 '영혼 결정'으로 통일, 약칭 '결정'.
+  '젬' → '보석'. 도감 안내문의 'random roll'·'roster' → 한국어.
+
+### 보스 아트 트랙(생성 중)
+
+- 컷신 악역 8종(fox_queen·dragon_king·death_emissary·three_god_destroyer·eternal_emperor·god_emperor·
+  primordial_titan·void_sovereign). `BOSS_ART_IDS`/`getBossArt`, 화자 → 수호자 또는 보스(`getSpeakerArtId`,
+  `selectSpeakerArtSource`), 컷신이 화자 아트를 스트리밍하고 도착 시 현재 화자 재그림, 보스 등장 카드 위 컷아웃,
+  DungeonScene이 이번 판 보스 아트 요청. 최종 보스 3종 명대사 추가.
+- '도깨비 대왕'(10스테이지 컷신)은 수호자 dokkaebi_king과 같은 인물일 수 있으나 기존 테스트가 명시적으로
+  연결을 금지 → 유지(사용자 판단 대상). '천상 수호자'는 수호자 이름과 정확히 일치 → 연결.
+- 생성·등록: `run-boss-art-codex.mjs` → `register-ritual-v2.mjs --bosses --ids ...`
+  (`export-cutout-art.mjs --bosses`). 스킨도 같은 내보내기(`--skins`)로 통합.
+
+### 캐릭터 아트
+
+- 도깨비족 17/17 완료(`259b342`), 누적 41/136. 저승족 이후 생성 중. 함정 아이콘 22종·보스 8종 병렬 생성.
