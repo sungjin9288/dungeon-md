@@ -1,10 +1,16 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 54,
+  "count": 64,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
       "bytes": 2660559,
+      "width": 1254,
+      "height": 1254
+    },
+    "bear_god": {
+      "sha256": "9f03718fad90f6b3a05447bc7a9746e0784a222f6bdc5d079374ebc4530313d4",
+      "bytes": 1975035,
       "width": 1254,
       "height": 1254
     },
@@ -20,9 +26,21 @@
       "width": 1254,
       "height": 1254
     },
+    "celestial_healer": {
+      "sha256": "a0e8a1078d95bb42fe37aa59bef770ca0b9fa632be03937150b0f1064dbdc94b",
+      "bytes": 2454063,
+      "width": 1254,
+      "height": 1254
+    },
     "death_messenger": {
       "sha256": "44f21e2444907fa9e2f30add70d350432e3666afe1c4da6c790b4d772ad24565",
       "bytes": 1548824,
+      "width": 1254,
+      "height": 1254
+    },
+    "deer_god": {
+      "sha256": "eaf9b5707bc6bb2c6be53217162a9b9006b2d4b88d91ff4ad3425b8d604988a0",
+      "bytes": 2704374,
       "width": 1254,
       "height": 1254
     },
@@ -200,15 +218,39 @@
       "width": 1254,
       "height": 1254
     },
+    "moon_rabbit_sage": {
+      "sha256": "3b9122a59eba518ea86bf67b7371e36922df789e7ff43d9a00cae8b803ab9dba",
+      "bytes": 1908378,
+      "width": 1254,
+      "height": 1254
+    },
+    "mountain_god_complete": {
+      "sha256": "305b24c60e4cf8c1a8f190cc3912951116cb200561fcde4cbe2d58bfd255a65b",
+      "bytes": 2615073,
+      "width": 1254,
+      "height": 1254
+    },
     "mountain_spirit": {
       "sha256": "85e3f1774b1974f2ce945f9a2a2841939e9480ecbe1a48e4449b37d8e179f849",
       "bytes": 2449537,
       "width": 1254,
       "height": 1254
     },
+    "mountain_spirit_boy": {
+      "sha256": "4f80f8061eb6ced21f2387fcecc8f204ed798b833beb7dd49f5ae0e2de395706",
+      "bytes": 2127285,
+      "width": 1254,
+      "height": 1254
+    },
     "one_tail_fox": {
       "sha256": "95e1ee0aeada0d43b273e942d3256b3a5addddf397012b5530510c8aebc9eb88",
       "bytes": 1738922,
+      "width": 1254,
+      "height": 1254
+    },
+    "phoenix": {
+      "sha256": "b94e7a0922c977b29faf8a5cfb2fdd64c85cdb3f6f110c1bb057311cd2208e85",
+      "bytes": 2335680,
       "width": 1254,
       "height": 1254
     },
@@ -272,6 +314,12 @@
       "width": 1254,
       "height": 1254
     },
+    "thousand_pine": {
+      "sha256": "a06095a7e01779fbe0234cac103fdac75210ba50dbbd2e900a9a4346fe924f23",
+      "bytes": 3119468,
+      "width": 1254,
+      "height": 1254
+    },
     "three_tail_fox": {
       "sha256": "b81fcf0759dadecd2c71a114ea27341f6dbed828665939f1e9a891dd0b867a06",
       "bytes": 1621456,
@@ -317,6 +365,18 @@
     "village_archer": {
       "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
       "bytes": 1722317,
+      "width": 1254,
+      "height": 1254
+    },
+    "volcanic_warrior": {
+      "sha256": "1c14ea369b85ef5c7057bbdba23fd503fe7662b0c3f258c68aab2528340c9dac",
+      "bytes": 2202225,
+      "width": 1254,
+      "height": 1254
+    },
+    "white_tiger": {
+      "sha256": "7a746b679679b03a6d468b697c4c918b998007cd005261f0aee41594e5e6914b",
+      "bytes": 1959852,
       "width": 1254,
       "height": 1254
     },
