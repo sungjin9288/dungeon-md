@@ -560,8 +560,18 @@ Home은 `battleResult`를 **한 번만** 정산한다: `'battle-result'`/`'forec
 
 ## 에셋
 
-- `public/assets/monsters/{id}.jpg` — AI 생성 몬스터 초상화 (Ch1–5 29종). 없을 경우 절차적 픽셀아트 폴백 (`src/art/PixelMonsters.ts`)
-- 인베이더는 `src/art/PixelInvaders.ts`의 절차적 픽셀아트로만 렌더 (BootScene에서 베이킹). AI JPG 에셋은 사용하지 않음
+- **캐릭터 아트 우선순위**: ritual-v2 컷아웃(`public/assets/monsters/ritual-v2/{id}.webp`, 512² 알파 WebP)
+  → legacy JPG(`public/assets/monsters/{id}.jpg`, `monster-ai-*`) → 절차적 픽셀아트(`src/art/PixelMonsters.ts`).
+  선택은 `characterArt.ts selectCharacterArtSource` 하나가 한다. 스킨은 `ritual-v2/skins/`, 컷신 악역 보스는
+  `ritual-v2/bosses/`(`getBossArt`, 화자 매핑 `getSpeakerArtId`).
+- **부팅 선로딩 금지**: ritual-v2는 `CharacterArtStreamer`로 화면이 요청해 받는다(동시 2, 실패 재시도 없음,
+  도착 시 리스너). 새 화면이 캐릭터를 그리면 `request(ids)` + 도착 시 1회 재그림을 붙일 것.
+- 함정·상태이상 아이콘: `public/assets/traps/{id}.webp`(256²) + `npm run gen:trap-art` 매니페스트, `TrapIcon`이
+  없으면 이모지로 폴백.
+- 생성·등록 파이프라인과 규칙(치비 2.5~3등신, 원본 gitignore·해시 `tools/ritual-v2-masters.json`, 교체 시 기존
+  WebP 명시 삭제): `scripts/register-ritual-v2.mjs` 헤더와 결함 스윕 인계 §37~§39.
+- 인베이더는 `src/art/PixelInvaders.ts`의 절차적 픽셀아트로만 렌더 (BootScene에서 베이킹). 보스 컷아웃은
+  전투 스프라이트가 아니라 컷신·보스 등장 카드용이다.
 
 ---
 
