@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 24,
+  "count": 36,
   "masters": {
     "celestial_fairy": {
       "sha256": "f1c1de0ed439f6407a98bfba855f600a68f698833e6d3865d1f714df95e59d66",
@@ -14,9 +14,39 @@
       "width": 1254,
       "height": 1254
     },
+    "dokkaebi_bomber": {
+      "sha256": "b8c46a14e3b14f92873dc6738800751de9ffb2bfac518890ed65762407b8b025",
+      "bytes": 1760292,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_captain": {
+      "sha256": "cbaad5dc63ed14bc476a1057b455c47c51554ddd39bcc78b69858f501cb73e3e",
+      "bytes": 1787804,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_duelist": {
+      "sha256": "57355ddaf11ec3e6d6653599e002c09d9343bdb144fcddd692ee59053954cf54",
+      "bytes": 1593099,
+      "width": 1254,
+      "height": 1254
+    },
     "dokkaebi_junior": {
       "sha256": "e93d5a8b0a2db4edc57769d8fa60a0ff7602f022c00f8a6b99201c59c4d5050e",
       "bytes": 1315335,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_king": {
+      "sha256": "4e22192269967787f6d6591cac05cf05cfd45e1c67e1907069253f1b7504d91e",
+      "bytes": 2363129,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_shaman": {
+      "sha256": "cbc9a9c019347ade55abb2752bc9dd04f7396cc359a36f5cf7504863a353752a",
+      "bytes": 2363519,
       "width": 1254,
       "height": 1254
     },
@@ -92,6 +122,18 @@
       "width": 1254,
       "height": 1254
     },
+    "healer_dokkaebi": {
+      "sha256": "8e4f75d307fb839c0401e936e2ddce09f45efc259fc210c6ebacafdbab7711c2",
+      "bytes": 1991799,
+      "width": 1254,
+      "height": 1254
+    },
+    "ice_dokkaebi": {
+      "sha256": "18dff1b414e0e23755ccb4145994238039750969322869f22455d8793516842e",
+      "bytes": 2086356,
+      "width": 1254,
+      "height": 1254
+    },
     "ice_gumiho": {
       "sha256": "c900054c51c5acbafa41520f0d02a2ad824cf833b7423668eca5012370876b63",
       "bytes": 2023762,
@@ -110,15 +152,39 @@
       "width": 1254,
       "height": 1254
     },
+    "poison_dokkaebi": {
+      "sha256": "3d3208ded9b0a9ac2899cbbd8cd50f7af03f4943d995170bf0a81a2c3228d6b4",
+      "bytes": 1079544,
+      "width": 1254,
+      "height": 1254
+    },
     "sage": {
       "sha256": "6f6b578a7bdecfbf1d17a1216d52c8f88083f03e1eda219a53ac7d17a25c2fe8",
       "bytes": 1629906,
       "width": 1254,
       "height": 1254
     },
+    "shadow_dokkaebi": {
+      "sha256": "e3700a8931a0c246ef5e6bba59124839ff92c7eb6639e212dbb3b2e339da0144",
+      "bytes": 1742577,
+      "width": 1254,
+      "height": 1254
+    },
+    "shield_dokkaebi": {
+      "sha256": "04bf0c94f5e6f73f4f89fa521c8ed4290e46dff3794a6d9386ccda596584c707",
+      "bytes": 2442955,
+      "width": 1254,
+      "height": 1254
+    },
     "spring_gumiho": {
       "sha256": "ee032260471dc2aefe97fb01bf1936398fb3def74d7ef9845de2095c81864812",
       "bytes": 1798559,
+      "width": 1254,
+      "height": 1254
+    },
+    "storm_dokkaebi": {
+      "sha256": "a966b8920e0806c35fdb14868ccde31cb1e0de7cab6a1ca7d77e2e8cf2dc4146",
+      "bytes": 2533108,
       "width": 1254,
       "height": 1254
     },
@@ -131,6 +197,12 @@
     "three_tail_fox": {
       "sha256": "b81fcf0759dadecd2c71a114ea27341f6dbed828665939f1e9a891dd0b867a06",
       "bytes": 1621456,
+      "width": 1254,
+      "height": 1254
+    },
+    "thunder_dokkaebi": {
+      "sha256": "e45b7b7540f1f8e887f711e340658475c2c10167f552df94c202fb3c80f8e01d",
+      "bytes": 1974293,
       "width": 1254,
       "height": 1254
     },
