@@ -29,6 +29,7 @@ import {
 } from '../ui/CodexShared';
 import { showCodexMonsterDetail } from '../ui/CodexMonsterDetail';
 import { generatePortrait } from '../art/PortraitGenerator';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import {
   addFramedPanel,
   addPrimaryActionButton,
@@ -118,6 +119,9 @@ export class CodexScene extends Phaser.Scene {
     super({ key: 'CodexScene' });
   }
 
+  private visibleArtIds = new Set<string>();
+  private artRedrawQueued = false;
+
   create(): void {
     this.gameState = loadGameState();
     this.codexTab = this.readTab();
@@ -132,6 +136,17 @@ export class CodexScene extends Phaser.Scene {
     this.transactionPending = false;
     this.lastTransactionAt = 0;
     this.detailOverlay = null;
+    this.visibleArtIds = new Set();
+    this.artRedrawQueued = false;
+    const off = getCharacterArtStreamer(this.game).onLoaded(id => {
+      if (!this.visibleArtIds.has(id) || this.artRedrawQueued) return;
+      this.artRedrawQueued = true;
+      this.events.once(Phaser.Scenes.Events.POST_UPDATE, () => {
+        this.artRedrawQueued = false;
+        if (this.sys.isActive()) this.render();
+      });
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
     this.resetCamera();
     this.render();
   }
@@ -317,6 +332,9 @@ export class CodexScene extends Phaser.Scene {
     const pageCount = Math.max(1, Math.ceil(records.length / RECORDS_PER_GUARDIAN_PAGE));
     const start = this.guardianPage * RECORDS_PER_GUARDIAN_PAGE;
     const visible = records.slice(start, start + RECORDS_PER_GUARDIAN_PAGE);
+    // Ritual-v2 cutouts stream in per page; the card redraws when one lands.
+    this.visibleArtIds = new Set(visible.map(monster => monster.id));
+    getCharacterArtStreamer(this.game).request(this.visibleArtIds);
     const gap = 6;
     const cardW = (W - gap * 2) / 3;
     visible.forEach((monster, index) => this.drawGuardianCard(monster, X + index * (cardW + gap), 344, cardW));

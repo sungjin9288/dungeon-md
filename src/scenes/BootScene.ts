@@ -6,7 +6,6 @@ import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
 import { getMonsterSpriteData, drawMonsterSprite } from '../art/PixelMonsters';
 import { getInvaderSpriteData } from '../art/PixelInvaders';
 import { PORTRAIT_IDS } from '../data/portraitManifest';
-import { CHARACTER_ART } from '../data/characterArt';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super({ key: 'BootScene' }); }
@@ -53,11 +52,9 @@ export class BootScene extends Phaser.Scene {
     PORTRAIT_IDS.forEach(id => {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
     });
-    // Nine ritual cutouts use 512x512 RGBA PNGs, each <=512 KiB, for the DPR-2
-    // story theatre. The legacy catalog keeps its separate 256px JPEG contract.
-    Object.values(CHARACTER_ART).forEach(art => {
-      this.load.image(art.textureKey, art.path);
-    });
+    // Ritual-v2 cutouts (512x512 RGBA) are NOT preloaded: nine of them already
+    // tripled the matched boot time. Screens request what they show through
+    // CharacterArtStreamer; until a cutout lands, the legacy JPEG above renders.
 
     // Illustrated dungeon backdrops — the original Dokkaebi lair shaft is the
     // home-board override; the legacy shaft remains available as an unmodified

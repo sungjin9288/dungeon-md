@@ -15,6 +15,8 @@ import {
 import { audioManager } from '../audio/AudioManager';
 import { TutorialOverlay } from '../ui/TutorialOverlay';
 import { showForecastTray } from '../ui/ForecastTray';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
+import { SPEAKER_MONSTER_IDS } from '../data/characterArt';
 import { FORECAST_ROUTE } from '../data/questRoutes';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
@@ -304,6 +306,23 @@ export class DungeonHomeScene extends Phaser.Scene {
     audioManager.resume().then(() => audioManager.playBgm('home'));
     this.maybeOpenFocusedDungeonSlot();
     this.maybeShowTutorial();
+    this.streamCharacterArt();
+  }
+
+  /**
+   * Request ritual-v2 cutouts for the roster and story speakers (not preloaded at
+   * boot). A placed guardian's art redraws the board once, batched, when it lands.
+   */
+  private streamCharacterArt(): void {
+    const streamer = getCharacterArtStreamer(this.game);
+    const placed = new Set((this.gs.dungeonSlots ?? []).flatMap(slot => slot?.monsterIds ?? []).filter((id): id is string => Boolean(id)));
+    let redraw: Phaser.Time.TimerEvent | null = null;
+    const off = streamer.onLoaded(id => {
+      if (!placed.has(id) || redraw) return;
+      redraw = this.time.delayedCall(250, () => { redraw = null; this.rebuildDungeonSlots(); });
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
+    streamer.request([...placed, ...SPEAKER_MONSTER_IDS, ...this.gs.ownedMonsters.map(monster => monster.id)]);
   }
 
   // ─── Idle (offline) dungeon income ────────────────────────────────────────

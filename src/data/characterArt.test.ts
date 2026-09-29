@@ -10,16 +10,20 @@ import {
 vi.mock('phaser', () => ({ default: {} }));
 import { ensurePortrait, generateMonsterSprite, generatePortrait, generateRoomToken } from '../art/PortraitGenerator';
 
-const IDS = [
+// The approved first nine keep their order; later ritual-v2 batches append (§37).
+const FIRST_NINE = [
   'dokkaebi_warrior', 'gumiho_guardian', 'death_messenger', 'mountain_spirit',
   'village_archer', 'dokkaebi_junior', 'gold_turtle', 'fire_dokkaebi', 'sage',
 ] as const;
+const IDS = Object.keys(CHARACTER_ART) as (keyof typeof CHARACTER_ART)[];
+/** A catalog monster that still renders its legacy JPEG (no ritual-v2 entry yet). */
+const LEGACY_ONLY = Object.keys(MONSTER_DEFS).find(id => !(id in CHARACTER_ART)) ?? 'missing';
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ritual character art', () => {
-  it('keeps nine versioned overrides separate from gameplay definitions', () => {
-    expect(Object.keys(CHARACTER_ART)).toEqual(IDS);
+  it('keeps versioned overrides separate from gameplay definitions', () => {
+    expect(IDS.slice(0, FIRST_NINE.length)).toEqual(FIRST_NINE);
     expect(Object.isFrozen(CHARACTER_ART)).toBe(true);
     for (const id of IDS) {
       const art = getCharacterArt(id)!;
@@ -40,7 +44,7 @@ describe('ritual character art', () => {
     expect(bytes.length).toBeLessThanOrEqual(512 * 1024);
   });
 
-  it.each([undefined, null, {}, '', 'constructor', 'toString', '__proto__', 'one_tail_fox', 'missing'])
+  it.each([undefined, null, {}, '', 'constructor', 'toString', '__proto__', LEGACY_ONLY, 'missing'])
     ('rejects an unknown or inherited override lookup: %s', id => {
       expect(getCharacterArt(id)).toBeNull();
     });
@@ -77,8 +81,8 @@ describe('ritual character art', () => {
   });
 
   it('retains the legacy path for the rest of the catalog and refuses invalid IDs', () => {
-    expect(selectCharacterArtSource('one_tail_fox', () => true))
-      .toEqual({ textureKey: 'monster-ai-one_tail_fox', version: 'legacy' });
+    expect(selectCharacterArtSource(LEGACY_ONLY, () => true))
+      .toEqual({ textureKey: `monster-ai-${LEGACY_ONLY}`, version: 'legacy' });
     const exists = vi.fn(() => true);
     for (const id of [undefined, {}, 'constructor', 'toString', '__proto__', 'missing']) {
       expect(selectCharacterArtSource(id, exists)).toBeNull();

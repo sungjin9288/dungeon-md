@@ -55,6 +55,11 @@ export const CHARACTER_ART = Object.freeze({
     textureKey: 'monster-ritual-v2-sage',
     path: '/assets/monsters/ritual-v2/sage.png',
   }),
+  one_tail_fox: Object.freeze({
+    monsterId: 'one_tail_fox', version: 'ritual-v2',
+    textureKey: 'monster-ritual-v2-one_tail_fox',
+    path: '/assets/monsters/ritual-v2/one_tail_fox.png',
+  }),
 } satisfies Partial<Record<MonsterId, CharacterArt>>);
 
 const SPEAKER_ART = Object.freeze({
@@ -64,6 +69,9 @@ const SPEAKER_ART = Object.freeze({
   '산신령': 'mountain_spirit',
   '신선 도인': 'sage',
 } as const);
+
+/** Monsters whose ritual art stands in for a story speaker; streamed early. */
+export const SPEAKER_MONSTER_IDS: readonly MonsterId[] = Object.values(SPEAKER_ART);
 
 export function getCharacterArt(monsterId: unknown): CharacterArt | null {
   return typeof monsterId === 'string' && Object.prototype.hasOwnProperty.call(CHARACTER_ART, monsterId)
