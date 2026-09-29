@@ -52,6 +52,11 @@ const RITUAL_V2_IDS = [
   'black_dragon_dokkaebi',
   'dokkaebi_general',
   'dokkaebi_god_king',
+  'venom_warrior',
+  'abyss_mage',
+  'skeleton_knight',
+  'soul_guardian',
+  'underworld_witch',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];

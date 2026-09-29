@@ -1,7 +1,13 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 43,
+  "count": 47,
   "masters": {
+    "abyss_mage": {
+      "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
+      "bytes": 2660559,
+      "width": 1254,
+      "height": 1254
+    },
     "black_dragon_dokkaebi": {
       "sha256": "e2f74851d3ced87e0b39df43d57cded67f8a0a4c3a472ce87ccd9c3e25a073de",
       "bytes": 2350885,
@@ -110,9 +116,9 @@
       "width": 1254,
       "height": 1254
     },
-    "ghost_hunter": {
-      "sha256": "d930b0d74d854da3e474121e2aac47eb6ee604ea6db432f088b60c253b735ea9",
-      "bytes": 1456145,
+    "frost_spirit": {
+      "sha256": "af385e36a6f4a8aa2fb8f7d51d1454c13f78fdbf66d8e2a139fa45714a5e8696",
+      "bytes": 2648575,
       "width": 1254,
       "height": 1254
     },
@@ -212,6 +218,18 @@
       "width": 1254,
       "height": 1254
     },
+    "skeleton_knight": {
+      "sha256": "df6a7a827125d33b2aa785ce1b1b1add6fe0a7999d84d11e9f582a22c653c8e3",
+      "bytes": 2306584,
+      "width": 1254,
+      "height": 1254
+    },
+    "soul_guardian": {
+      "sha256": "6f14900a44e6134fb47ae2e688fac251318fa2c6f86336af154db65cb251bc55",
+      "bytes": 2476829,
+      "width": 1254,
+      "height": 1254
+    },
     "spring_gumiho": {
       "sha256": "ee032260471dc2aefe97fb01bf1936398fb3def74d7ef9845de2095c81864812",
       "bytes": 1798559,
@@ -245,6 +263,12 @@
     "thunder_gumiho": {
       "sha256": "74deafbd69afffb6bc6d1b175d71c7dc7cb5c55555227b39ae8e6b6e3de9f45f",
       "bytes": 2438144,
+      "width": 1254,
+      "height": 1254
+    },
+    "underworld_witch": {
+      "sha256": "2a5f68500c17f5909c79eb8fc5e3673f803b5970296400be6d80d2492e304cc8",
+      "bytes": 2618270,
       "width": 1254,
       "height": 1254
     },
