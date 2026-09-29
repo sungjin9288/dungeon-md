@@ -9,7 +9,7 @@ export type BannerRarity = 'rare' | 'epic' | 'legendary';
 export interface SeasonBanner {
   id:                string;
   name:              string;           // "봄맞이 구미호 배너"
-  subname:           string;           // "이달의 피처드 배너"
+  subname:           string;           // "이달의 피처드 배너" (plain text — the card draws no emoji)
   icon:              string;           // "🌸"
   description:       string;          // 한 줄 설명
   season:            BannerSeason;
@@ -32,9 +32,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'spring_gumiho_2026',
     name:             '봄맞이 구미호 배너',
-    subname:          '🌸 이달의 피처드 배너',
+    subname:          '이달의 피처드 배너',
     icon:             '🌸',
-    description:      '벚꽃 피는 봄, 구미호 일족 등장 확률 3배!',
+    description:      '벚꽃 피는 봄, 구미호족 3배!',
     season:           'spring',
     bgColor:          0x1a0015,
     borderColor:      0xff44aa,
@@ -52,9 +52,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'summer_sea_2026',
     name:             '해신의 부름 배너',
-    subname:          '🌊 이달의 피처드 배너',
+    subname:          '이달의 피처드 배너',
     icon:             '🌊',
-    description:      '여름 바다의 신들이 깨어난다! 해신족 3배!',
+    description:      '여름 바다의 신들! 해신족 3배!',
     season:           'summer',
     bgColor:          0x00101a,
     borderColor:      0x00aaff,
@@ -72,9 +72,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'fall_underworld_2026',
     name:             '저승의 문 배너',
-    subname:          '💀 한정 이벤트 배너',
+    subname:          '한정 이벤트 배너',
     icon:             '💀',
-    description:      '이승과 저승의 경계가 허물어진다. 저승족 부스트!',
+    description:      '저승의 문이 열렸다! 저승족 부스트!',
     season:           'fall',
     bgColor:          0x0a0010,
     borderColor:      0xaa44ff,
@@ -92,9 +92,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'late_fall_moonlight_2026',
     name:             '달빛 축제 배너',
-    subname:          '🌙 이달의 피처드 배너',
+    subname:          '이달의 피처드 배너',
     icon:             '🌙',
-    description:      '가을밤 달빛 아래 신비로운 일족이 나타난다!',
+    description:      '가을밤 달빛 아래 신비한 일족 등장!',
     season:           'fall',
     bgColor:          0x080020,
     borderColor:      0x6666ff,
@@ -112,9 +112,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'winter_mountain_2026',
     name:             '설산의 수호자 배너',
-    subname:          '⛰️ 이달의 피처드 배너',
+    subname:          '이달의 피처드 배너',
     icon:             '⛰️',
-    description:      '눈 덮인 산에 신령이 깨어났다. 산신족 3배!',
+    description:      '눈 덮인 산의 신령, 산신족 3배!',
     season:           'winter',
     bgColor:          0x000d1a,
     borderColor:      0x44aaff,
@@ -132,9 +132,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'ch7_celestial_2026',
     name:             '신계의 부름 배너',
-    subname:          '✨ Ch7 기념 한정 배너',
+    subname:          'Ch7 기념 한정 배너',
     icon:             '✨',
-    description:      '신계가 열렸다! 천상족 전원 등장 확률 3배!',
+    description:      '신계가 열렸다! 천상족 3배!',
     season:           'special',
     bgColor:          0x090e24,
     borderColor:      0xffd700,
@@ -152,9 +152,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'ch8_abyss_2027',
     name:             '심연·공허 군주 배너',
-    subname:          '🌑 Ch8·9 정복 기념 한정 배너',
+    subname:          'Ch8·9 정복 기념 한정 배너',
     icon:             '🌑',
-    description:      '원초의 심연과 공허 너머를 정복한 영웅들을 위해! 최강 전설 등장률 대폭 상승!',
+    description:      '심연 정복 기념! 전설 등장률 대폭 상승!',
     season:           'special',
     bgColor:          0x03000a,
     borderColor:      0x9940ff,
@@ -177,9 +177,9 @@ export const SEASON_BANNERS: SeasonBanner[] = [
   {
     id:               'special_dragon_2026',
     name:             '용의 각성 배너',
-    subname:          '🐲 스페셜 한정 배너',
+    subname:          '스페셜 한정 배너',
     icon:             '🐲',
-    description:      '전설의 용족이 모습을 드러낸다! 전설 보장!',
+    description:      '전설의 용족 강림! 전설 보장!',
     season:           'special',
     bgColor:          0x100800,
     borderColor:      0xff8800,

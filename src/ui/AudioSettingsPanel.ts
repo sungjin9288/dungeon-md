@@ -47,10 +47,10 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   addToContainer(ov, panel.shadow, panel.panel, panel.glow);
 
   // Title
-  ov.add(scene.add.text(CW / 2, OY + 20, '⚙️  설정', {
+  ov.add(scene.add.text(CW / 2, OY + 20, '설정', {
     fontFamily: 'sans-serif', fontSize: '18px',
     color: CASUAL_CSS.INK, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5, 0));
 
   const cfg = audioManager.getSettings();
@@ -164,7 +164,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   };
 
   makeRow(
-    '🎵 배경음악 (BGM)',
+    '배경음악 (BGM)',
     60,
     cfg.bgmEnabled,
     (v) => audioManager.setBgmEnabled(v),
@@ -173,7 +173,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   );
 
   makeRow(
-    '🔊 효과음 (SFX)',
+    '효과음 (SFX)',
     140,
     cfg.sfxEnabled,
     (v) => audioManager.setSfxEnabled(v),
@@ -187,7 +187,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
   divG.lineBetween(OX + 16, OY + 220, OX + OW - 16, OY + 220);
   ov.add(divG);
 
-  ov.add(scene.add.text(CW / 2, OY + 234, '💾  세이브 관리', {
+  ov.add(scene.add.text(CW / 2, OY + 234, '세이브 관리', {
     fontFamily: 'sans-serif', fontSize: '14px',
     color: CASUAL_CSS.INK, fontStyle: 'bold',
   }).setOrigin(0.5, 0));
@@ -203,7 +203,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     y: OY + 258,
     w: OW - 32,
     h: 40,
-    label: '📤  세이브 내보내기',
+    label: '세이브 내보내기',
     fontSize: '12px',
     fillColor: CASUAL.BLUE,
     hoverFillColor: 0x66bcf4,
@@ -226,7 +226,7 @@ export function showAudioSettings(scene: Phaser.Scene): void {
     y: OY + 306,
     w: OW - 32,
     h: 40,
-    label: '📥  세이브 가져오기',
+    label: '세이브 가져오기',
     fontSize: '12px',
     fillColor: CASUAL.RED,
     hoverFillColor: 0xf57a66,

@@ -120,7 +120,7 @@ describe('openPrestigeModal', () => {
     openPrestigeModal(scene, onConfirm);
     const confirmOptions = vi.mocked(addPrimaryActionButton).mock.calls
       .map(([, options]) => options)
-      .find((options) => options.label === '✨ 시작하기');
+      .find((options) => options.label === '시작하기');
     expect(confirmOptions).toBeDefined();
     confirmOptions?.onPress();
 
@@ -151,7 +151,7 @@ describe('buildPrestigeBadge', () => {
       h: 20,
       radius: 8,
     }));
-    expect(scene.add.text).toHaveBeenCalledWith(0, 0, '👑 ×1', expect.objectContaining({
+    expect(scene.add.text).toHaveBeenCalledWith(0, 0, '명성 ×1', expect.objectContaining({
       fontSize: '10px',
     }));
   });

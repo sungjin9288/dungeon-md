@@ -323,7 +323,7 @@ function showRoomIntelTip(room: Room): void {
     fontSize: '10px',
     color: accentCss,
     fontStyle: 'bold',
-    stroke: '#ffffff',
+    stroke: '#0a0806',
     strokeThickness: 2,
   }).setOrigin(1, 0.5));
 

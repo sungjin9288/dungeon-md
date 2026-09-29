@@ -123,9 +123,9 @@ describe('formatPrestigeBattleBonus', () => {
 
   it('uses the production prestige multiplier for the player-facing bonus', () => {
     expect(formatPrestigeBattleBonus(makeGs({ prestigeLevel: 1 })))
-      .toBe('👑 명성 Lv.1 · 공격 피해 +10% · 전투 배율 ×1.1');
+      .toBe('명성 Lv.1 · 공격 피해 +10% · 전투 배율 ×1.1');
     expect(formatPrestigeBattleBonus(makeGs({ prestigeLevel: 3 })))
-      .toBe('👑 명성 Lv.3 · 공격 피해 +30% · 전투 배율 ×1.3');
+      .toBe('명성 Lv.3 · 공격 피해 +30% · 전투 배율 ×1.3');
   });
 });
 

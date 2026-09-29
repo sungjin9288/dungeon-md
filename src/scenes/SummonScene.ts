@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addSigil } from '../ui/Sigils';
 import {
   addFramedPanel,
   addPrimaryActionButton,
@@ -333,13 +334,14 @@ export class SummonScene extends Phaser.Scene {
 
     this.drawSummonSigil(c, def.id, left + 37, cardTop + 67, def.border);
 
-    const currencyIcon = def.currency === 'gems' ? '💎' : def.currency === 'soul' ? '💠' : '🤝';
+    const currencySigil = def.currency === 'gems' ? 'gem' : def.currency === 'soul' ? 'shard' : null;
     const costLabel = def.currency === 'fp'
       ? friendReady ? '오늘 무료 계약 가능' : '오늘 계약 완료'
       : def.cost10 !== null
-        ? `${currencyIcon} ${def.cost1} / ${def.cost10}`
-        : `${currencyIcon} ${def.cost1} · 미보유 우선`;
-    c.add(this.add.text(left + 70, cardTop + 57, costLabel, {
+        ? `${def.cost1} / ${def.cost10}`
+        : `${def.cost1} · 미보유 우선`;
+    if (currencySigil) c.add(addSigil(this, currencySigil, left + 77, cardTop + 57, 14, def.border));
+    c.add(this.add.text(left + (currencySigil ? 88 : 70), cardTop + 57, costLabel, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: canPull(def.cost1) ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0, 0.5));

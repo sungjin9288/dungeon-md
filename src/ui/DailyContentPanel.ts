@@ -8,7 +8,7 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { prepareDailyChallengeViewState, getTodayString } from '../data/daily';
 import { loadGameState } from '../data/wisdom';
 import { audioManager } from '../audio/AudioManager';
-import { addFramedPanel, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
+import { addFramedPanel, addIconGlyph, addPrimaryActionButton, addProgressBar, GAME_UI } from './GameUiPrimitives';
 import { canClaimAttendance } from '../data/attendance';
 import { showAttendancePanel } from './AttendancePanel';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -59,9 +59,7 @@ function addDailyHubRow(
   });
   container.add([frame.shadow, frame.panel, frame.glow]);
 
-  container.add(scene.add.text(x + 24, y + h / 2, row.icon, {
-    fontFamily: 'sans-serif', fontSize: '18px',
-  }).setOrigin(0.5));
+  container.add(addIconGlyph(scene, row.icon, x + 24, y + h / 2, 22));
   container.add(scene.add.text(x + 48, y + 20, row.title, {
     fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
@@ -156,7 +154,7 @@ export function showDailyContentHub(scene: Phaser.Scene): void {
     {
       icon: '🎯',
       title: '도전 과제',
-      status: `${completedCount}/${dailyView.challenges.length} 완료 · 총 보상 💎${dailyView.totalRewardGems}`,
+      status: `${completedCount}/${dailyView.challenges.length} 완료 · 총 보상 보석 ${dailyView.totalRewardGems}`,
       accent: CASUAL.BLUE,
       actionLabel: '보기',
       onPress: () => {
@@ -232,17 +230,17 @@ export function showChallengePanel(scene: Phaser.Scene): void {
   const totalGems = allDone ? dailyView.totalRewardGems : 0;
 
   if (allDone) {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 18, '🎉 모든 도전 완료!', {
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 18, '모든 도전 완료!', {
       fontFamily: 'sans-serif', fontSize: '17px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-      stroke: '#ffffff', strokeThickness: 4,
+      stroke: '#0a0806', strokeThickness: 4,
     }).setOrigin(0.5));
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 38, `오늘 총 +${totalGems} 💎 획득`, {
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 38, `오늘 총 보석 +${totalGems} 획득`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
     }).setOrigin(0.5));
   } else {
-    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 24, '🎯  오늘의 도전 과제', {
+    c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 24, '오늘의 도전 과제', {
       fontFamily: 'sans-serif', fontSize: '18px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-      stroke: '#ffffff', strokeThickness: 4,
+      stroke: '#0a0806', strokeThickness: 4,
     }).setOrigin(0.5));
   }
 
@@ -266,9 +264,18 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     c.add(rbg);
 
     // Status icon + description
-    c.add(scene.add.text(rowX + 14, rowY + 15, entry.completed ? '✅' : '🔲', {
-      fontFamily: 'sans-serif', fontSize: '14px',
-    }));
+    // Check box: filled with a tick when done.
+    const box = scene.add.graphics();
+    box.lineStyle(2, entry.completed ? CHALLENGE_DONE_GREEN : CHALLENGE_ROW_BORDER, 1);
+    box.strokeRoundedRect(rowX + 14, rowY + 15, 16, 16, 3);
+    if (entry.completed) {
+      box.fillStyle(CHALLENGE_DONE_GREEN, 1);
+      box.fillRoundedRect(rowX + 14, rowY + 15, 16, 16, 3);
+      box.lineStyle(2.5, 0xffffff, 1);
+      box.lineBetween(rowX + 18, rowY + 23, rowX + 21, rowY + 27);
+      box.lineBetween(rowX + 21, rowY + 27, rowX + 27, rowY + 19);
+    }
+    c.add(box);
     c.add(scene.add.text(rowX + 38, rowY + 12, ch.description, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: entry.completed ? CASUAL_CSS.GREEN : CASUAL_CSS.INK,
@@ -280,13 +287,13 @@ export function showChallengePanel(scene: Phaser.Scene): void {
     const rewardBorder = entry.completed ? CASUAL.GREEN_DK : CASUAL.GOLD_DK;
     const rewardBg = scene.add.graphics();
     rewardBg.fillStyle(rewardFill, 1);
-    rewardBg.fillRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
+    rewardBg.fillRoundedRect(PX + PW - 92, rowY + 10, 66, 20, 10);
     rewardBg.fillStyle(0xffffff, 0.12);
-    rewardBg.fillRoundedRect(PX + PW - 80, rowY + 12, 50, 4, 2);
+    rewardBg.fillRoundedRect(PX + PW - 88, rowY + 12, 58, 4, 2);
     rewardBg.lineStyle(2, rewardBorder, 1);
-    rewardBg.strokeRoundedRect(PX + PW - 84, rowY + 10, 58, 20, 10);
+    rewardBg.strokeRoundedRect(PX + PW - 92, rowY + 10, 66, 20, 10);
     c.add(rewardBg);
-    c.add(scene.add.text(PX + PW - 36, rowY + 20, `+${ch.reward.gems ?? 0} 💎`, {
+    c.add(scene.add.text(PX + PW - 59, rowY + 20, `보석 +${ch.reward.gems ?? 0}`, {
       fontFamily: 'sans-serif', fontSize: '10px',
       color: CASUAL_CSS.WHITE,
       fontStyle: 'bold',

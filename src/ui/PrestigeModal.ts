@@ -87,9 +87,9 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
   addToContainer(container, panel.shadow, panel.panel, panel.glow);
 
   // ── Header ─────────────────────────────────────────────────────────────────
-  const titleT = scene.add.text(CX, panelY + 28, '✨ New Game+ ✨', {
+  const titleT = scene.add.text(CX, panelY + 28, 'New Game+', {
     fontFamily: 'sans-serif', fontSize: '22px', fontStyle: 'bold', color: PRESTIGE_BORDER_CSS,
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5);
   container.add(titleT);
 
@@ -243,7 +243,7 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
     y: btnY,
     w: 124,
     h: 44,
-    label: '✨ 시작하기',
+    label: '시작하기',
     fontSize: '13px',
     fillColor: CASUAL.PURPLE,
     hoverFillColor: 0xc488f0,
@@ -294,7 +294,6 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
  */
 export function buildPrestigeBadge(scene: Phaser.Scene, x: number, y: number, prestigeLevel: number): Phaser.GameObjects.Container {
   if (prestigeLevel <= 0) return scene.add.container(x, y);
-  const label = getPrestigeLabel(prestigeLevel);
   const badge = scene.add.container(x, y);
 
   const frame = addFramedPanel(scene, {
@@ -314,7 +313,7 @@ export function buildPrestigeBadge(scene: Phaser.Scene, x: number, y: number, pr
   });
   addToContainer(badge, frame.shadow, frame.panel, frame.glow);
 
-  const t = scene.add.text(0, 0, `${label.emoji} ×${prestigeLevel}`, {
+  const t = scene.add.text(0, 0, `명성 ×${prestigeLevel}`, {
     fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: CASUAL_CSS.PURPLE,
   }).setOrigin(0.5);
   badge.add(t);

@@ -55,7 +55,7 @@ export class StageRewardOverlay extends Phaser.Scene {
     const cy = CANVAS_HEIGHT / 2 - ch2 / 2;
 
     // Difficulty badge
-    const diffLabel = isBoss ? '🔴 보스전' : ch <= 2 ? '🟢 입문' : ch <= 4 ? '🟡 보통' : '🔴 어려움';
+    const diffLabel = isBoss ? '보스전' : ch <= 2 ? '입문' : ch <= 4 ? '보통' : '어려움';
     const diffColor = isBoss ? '#ff4444' : ch <= 2 ? '#44cc66' : ch <= 4 ? '#ffcc44' : '#ff6644';
 
     // Dim
@@ -154,7 +154,7 @@ export class StageRewardOverlay extends Phaser.Scene {
 
     // Start button
     const btnY = cy + ch2 - 54;
-    const btnLabel = isCleared ? '🔄  재도전' : '⚔️  시작';
+    const btnLabel = isCleared ? '재도전' : '전투 시작';
     addPrimaryActionButton(this, {
       x: cx + 18,
       y: btnY,

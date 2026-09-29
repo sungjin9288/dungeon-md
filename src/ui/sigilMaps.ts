@@ -109,6 +109,15 @@ export const EMOJI_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; r
   '🕸': { kind: 'web', color: 0xb8a88a },
   '🏆': { kind: 'chalice', color: 0xe8c25a },
   '⭐': { kind: 'star', color: 0xe8c25a },
+  '🔓': { kind: 'lock', color: 0xe8c25a },
+  '🎯': { kind: 'target', color: 0xef846d },
+  '📅': { kind: 'calendar', color: 0xd8c08a },
+  '✅': { kind: 'star', color: 0x76c6a0 },
+  '👑': { kind: 'crown', color: 0xe8c25a },
+  '⚔': { kind: 'swords', color: 0xd8c08a },
+  '⚔️': { kind: 'swords', color: 0xd8c08a },
+  '🛠': { kind: 'hammer', color: 0xd08a52 },
+  '🌀': { kind: 'orb', color: 0xb58ae0 },
 };
 
 /** Active skills (barracks.ts ACTIVE_SKILLS ids) → sigil + the skill's VFX colour. */

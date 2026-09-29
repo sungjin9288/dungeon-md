@@ -22,8 +22,8 @@ import { commitSceneState } from './sceneStateCommit';
 function rewardText(rw: AttendanceReward): string {
   const parts: string[] = [];
   if (rw.gold)         parts.push(`골드 ${rw.gold}`);
-  if (rw.gems)         parts.push(`💎${rw.gems}`);
-  if (rw.soulCrystals) parts.push(`💠${rw.soulCrystals}`);
+  if (rw.gems)         parts.push(`보석 ${rw.gems}`);
+  if (rw.soulCrystals) parts.push(`결정 ${rw.soulCrystals}`);
   return parts.join(' ');
 }
 
@@ -51,7 +51,7 @@ export function showAttendancePanel(scene: Phaser.Scene): void {
   });
   [panel.shadow, panel.panel, panel.glow].forEach(o => { if (o) c.add(o); });
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '📅 출석 보상', {
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 22, '출석 보상', {
     fontFamily: 'sans-serif', fontSize: '18px', color: CASUAL_CSS.INK, fontStyle: 'bold',
     stroke: '#0a0806', strokeThickness: 3,
   }).setOrigin(0.5));
@@ -110,7 +110,7 @@ export function showAttendancePanel(scene: Phaser.Scene): void {
   btn.lineStyle(2, claimable ? CASUAL.GREEN_DK : CASUAL.EDGE, 1);
   btn.strokeRoundedRect(bx, by, bw, bh, 11);
   c.add(btn);
-  c.add(scene.add.text(CANVAS_WIDTH / 2, by + bh / 2, claimable ? '🎁 오늘 보상 수령' : '오늘 수령 완료 · 내일 또 오세요', {
+  c.add(scene.add.text(CANVAS_WIDTH / 2, by + bh / 2, claimable ? '오늘 보상 수령' : '오늘 수령 완료 · 내일 또 오세요', {
     fontFamily: 'sans-serif', fontSize: claimable ? '14px' : '11px', fontStyle: 'bold',
     color: claimable ? CASUAL_CSS.WHITE : CASUAL_CSS.INK_SOFT,
     stroke: claimable ? '#06351f' : undefined, strokeThickness: claimable ? 2 : 0,
@@ -131,7 +131,7 @@ export function showAttendancePanel(scene: Phaser.Scene): void {
 }
 
 function showAttendanceToast(scene: Phaser.Scene, rewardStr: string): void {
-  const t = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40, `📅 출석 보상  ${rewardStr}`, {
+  const t = scene.add.text(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 40, `출석 보상  ${rewardStr}`, {
     fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold',
     color: CASUAL_CSS.WHITE, backgroundColor: '#1c3a1c', padding: { x: 14, y: 8 },
   }).setOrigin(0.5).setDepth(500);

@@ -535,7 +535,7 @@ export function formatPrestigeBattleBonus(state: GameState): string | null {
 
   const multiplier = getPrestigeDmgMult(state);
   const bonusPercent = Math.round((multiplier - 1) * 100);
-  return `👑 명성 Lv.${prestigeLevel} · 공격 피해 +${bonusPercent}% · 전투 배율 ×${multiplier.toFixed(1)}`;
+  return `명성 Lv.${prestigeLevel} · 공격 피해 +${bonusPercent}% · 전투 배율 ×${multiplier.toFixed(1)}`;
 }
 
 export function getDefenseDirectiveDisplayChip(directive: DefenseDirective): string {

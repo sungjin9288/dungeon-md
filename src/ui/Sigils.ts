@@ -17,7 +17,8 @@ export type SigilKind =
   | 'spark' | 'pagoda' | 'moon' | 'flask' | 'plant' | 'totem' | 'chest' | 'banner'
   | 'flame' | 'statue' | 'spikes' | 'web' | 'orb' | 'chalice' | 'obelisk' | 'heart'
   | 'star' | 'book' | 'infinity' | 'sprout' | 'skull'
-  | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp' | 'snow';
+  | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp' | 'snow'
+  | 'lock' | 'target' | 'calendar' | 'crown';
 
 export const SIGIL_KINDS: readonly SigilKind[] = [
   'coin', 'wall', 'hammer', 'bolt', 'scroll', 'gem', 'shield', 'swords',
@@ -25,6 +26,7 @@ export const SIGIL_KINDS: readonly SigilKind[] = [
   'flame', 'statue', 'spikes', 'web', 'orb', 'chalice', 'obelisk', 'heart',
   'star', 'book', 'infinity', 'sprout', 'skull',
   'shard', 'cloth', 'ore', 'fur', 'wisp', 'snow',
+  'lock', 'target', 'calendar', 'crown',
 ];
 
 export interface SigilOptions {
@@ -255,6 +257,26 @@ export function drawSigil(
           line(bx, by, bx + Math.cos(a - 0.9 * sgn) * 3 * sgn, by + Math.sin(a - 0.9 * sgn) * 3 * sgn);
         }
       }
+      break;
+    case 'lock': // open shackle: something just became available
+      rect(-8, -1, 16, 12);
+      g.beginPath(); g.arc(X(-1), Y(-4), 5 * s, Math.PI, 0); g.strokePath();
+      line(4, -4, 4, -1);
+      fill(0.9); dot(0, 4, 1.8);
+      break;
+    case 'target':
+      circle(0, 0, 10); circle(0, 0, 5.5);
+      fill(0.9); dot(0, 0, 2);
+      break;
+    case 'calendar':
+      rect(-9, -7, 18, 17);
+      line(-9, -2, 9, -2);
+      line(-4, -10, -4, -5); line(4, -10, 4, -5);
+      fill(0.85); for (const [x, y] of [[-4, 3], [0, 3], [4, 3], [-4, 7]] as const) dot(x, y, 1.3);
+      break;
+    case 'crown':
+      strokePoly([[-10, 7], [-10, -5], [-5, 1], [0, -8], [5, 1], [10, -5], [10, 7]]);
+      fill(0.9); dot(0, -8, 1.6); dot(-10, -5, 1.4); dot(10, -5, 1.4);
       break;
     case 'skull':
       circle(0, -2, 8);

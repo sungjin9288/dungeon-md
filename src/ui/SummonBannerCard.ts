@@ -9,7 +9,8 @@ import { SUMMON_TRIBE_LABELS } from './SummonShared';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
-import { MONSTER_DEFS } from '../data/monsters';
+import { MONSTER_DEFS, type MonsterId } from '../data/monsters';
+import { generatePortrait, generateRoomToken } from '../art/PortraitGenerator';
 import { getBannerTimeLeft, type SeasonBanner } from '../data/banners';
 import { addFramedPanel } from './GameUiPrimitives';
 
@@ -49,26 +50,32 @@ export function buildBannerCard(
   container.add([frame.shadow, frame.panel, frame.glow]);
 
   // ── Season badge (top-left) ───────────────────────────────────
+  const badgeText = scene.add.text(BX + 18, topY + 13, banner.subname, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: banner.accentCss, fontStyle: 'bold',
+  }).setOrigin(0, 0.5);
+  const badgeW = Math.ceil(badgeText.width) + 16;
   const badgeBg = scene.add.graphics();
   badgeBg.fillStyle(DUNGEON_UI.SOOT, 0.92);
-  badgeBg.fillRoundedRect(BX + 10, topY + 7, 72, 18, 5);
+  badgeBg.fillRoundedRect(BX + 10, topY + 5, badgeW, 16, 5);
   badgeBg.lineStyle(1, banner.borderColor, 0.5);
-  badgeBg.strokeRoundedRect(BX + 10, topY + 7, 72, 18, 5);
-  container.add(badgeBg);
-  container.add(scene.add.text(BX + 46, topY + 16, banner.subname, {
-    fontFamily: 'sans-serif', fontSize: '10px', color: banner.accentCss, fontStyle: 'bold',
-  }).setOrigin(0.5));
+  badgeBg.strokeRoundedRect(BX + 10, topY + 5, badgeW, 16, 5);
+  container.add([badgeBg, badgeText]);
 
   // ── Banner name ───────────────────────────────────────────────
-  container.add(scene.add.text(BX + 16, topY + 30, banner.name, {
+  container.add(scene.add.text(BX + 16, topY + 32, banner.name, {
     fontFamily: 'sans-serif', fontSize: '14px',
     color: banner.accentCss, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
 
   // ── Description ───────────────────────────────────────────────
-  container.add(scene.add.text(BX + 16, topY + 50, banner.description, {
+  const shown = banner.featuredMonsters.slice(0, 4);
+  const overflowW = banner.featuredMonsters.length > shown.length ? 20 : 0; // room for the "+N" count
+  const emojiStartX = CANVAS_WIDTH - 16 - overflowW - shown.length * 34;
+  const description = scene.add.text(BX + 16, topY + 50, banner.description, {
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
-  }).setOrigin(0, 0.5));
+  }).setOrigin(0, 0.5);
+  fitTextWidth(description, emojiStartX - 6 - (BX + 16));
+  container.add(description);
 
   // ── Tribe synergy outlook: what collecting this banner unlocks ───────────
   const outlook = getBannerSynergyOutlook(banner, loadGameState());
@@ -97,12 +104,8 @@ export function buildBannerCard(
     },
   });
 
-  // ── Featured monster emojis (right side) ─────────────────────
-  const shown = banner.featuredMonsters.slice(0, 4);
-  const emojiStartX = CANVAS_WIDTH - 16 - shown.length * 34;
+  // ── Featured monster portraits (right side) ──────────────────
   shown.forEach((mId, idx) => {
-    const def = MONSTER_DEFS[mId as keyof typeof MONSTER_DEFS];
-    const em  = def?.emoji ?? '👾';
     const ex  = emojiStartX + idx * 34;
     const ey  = topY + BANER_H / 2;
 
@@ -114,9 +117,11 @@ export function buildBannerCard(
     eg.strokeCircle(ex + 14, ey, 16);
     container.add(eg);
 
-    container.add(scene.add.text(ex + 14, ey, em, {
-      fontFamily: 'sans-serif', fontSize: '22px',
-    }).setOrigin(0.5));
+    if (mId in MONSTER_DEFS) {
+      // Round medallion (rarity ring) fits the disc; square portrait only if no art source.
+      const key = generateRoomToken(scene, mId as MonsterId) ?? generatePortrait(scene, mId as MonsterId);
+      container.add(scene.add.image(ex + 14, ey, key).setDisplaySize(32, 32));
+    }
   });
   if (banner.featuredMonsters.length > 4) {
     container.add(scene.add.text(CANVAS_WIDTH - 14, topY + BANER_H / 2, `+${banner.featuredMonsters.length - 4}`, {
@@ -135,4 +140,13 @@ export function buildBannerCard(
   container.add(scene.add.text(BX + BW - 41, topY + 15, `피처드 ${boostPct}%↑`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: banner.accentCss, fontStyle: 'bold',
   }).setOrigin(0.5));
+}
+
+/** Trims a one-line label with an ellipsis until it fits `maxWidth` (the portraits own the right side). */
+function fitTextWidth(text: Phaser.GameObjects.Text, maxWidth: number): void {
+  let value = text.text;
+  while (text.width > maxWidth && value.length > 1) {
+    value = value.slice(0, -1);
+    text.setText(`${value.trimEnd()}…`);
+  }
 }

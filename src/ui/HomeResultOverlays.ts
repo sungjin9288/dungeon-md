@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
-import { addFramedPanel, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
+import { addFramedPanel, addIconGlyph, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
 import {
   buildBattleReturnGrowthSummary,
   type BattleReturnGrowthContext,
@@ -64,7 +64,7 @@ export function showBattleReturnOverlay(
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '침략 격퇴! ✓', {
     fontFamily: 'sans-serif', fontSize: '21px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
 
   addToContainer(c, ...Object.values(addInfoRow(scene, {
@@ -166,13 +166,13 @@ export function showDmLevelUpOverlay(
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 26, '✨ LEVEL UP! ✨', {
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 26, 'LEVEL UP!', {
     fontFamily: 'sans-serif', fontSize: '15px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
-    letterSpacing: 3, stroke: '#ffffff', strokeThickness: 3,
+    letterSpacing: 3, stroke: '#0a0806', strokeThickness: 3,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 60, `던전 마스터 Lv.${newLevel}`, {
     fontFamily: 'sans-serif', fontSize: '26px', fontStyle: 'bold', color: CASUAL_CSS.INK,
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
 
   const row = addInfoRow(scene, {
@@ -247,7 +247,7 @@ export function showBattleDefeatOverlay(
 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 28, '던전 함락...', {
     fontFamily: 'sans-serif', fontSize: '20px', color: CASUAL_CSS.RED, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
 
   const row = addInfoRow(scene, {
@@ -320,12 +320,12 @@ export function showChapterCompleteOverlay(
   });
   addToContainer(c, panel.shadow, panel.panel, panel.glow);
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 30, '✨  Chapter 1  ✨', {
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 30, 'Chapter 1', {
     fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.GOLD, fontStyle: 'bold',
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 58, '메인 퀘스트 완료!', {
     fontFamily: 'sans-serif', fontSize: '24px', color: CASUAL_CSS.GREEN, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 96, '던전이 더욱 강해졌다.\n연구소가 개방되었습니다.', {
     fontFamily: 'sans-serif', fontSize: '13px', color: CASUAL_CSS.INK,
@@ -413,9 +413,7 @@ export function addBattleCalloutRow(
     : callout.title;
   const detailLabel = roomSpecific ? callout.title : callout.body;
 
-  container.add(scene.add.text(x + 16, y + h / 2, callout.icon, {
-    fontFamily: 'sans-serif', fontSize: '11px',
-  }).setOrigin(0.5));
+  container.add(addIconGlyph(scene, callout.icon, x + 16, y + h / 2, 14));
   container.add(scene.add.text(x + 32, y + 10, '다음 수비 지시', {
     fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0, 0.5));

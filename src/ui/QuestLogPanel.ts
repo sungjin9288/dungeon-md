@@ -21,6 +21,7 @@ import {
   type InfoRowOptions,
 } from './GameUiPrimitives';
 import { addQuestSpeakerVisual } from './QuestSpeakerView';
+import { addSigil } from './Sigils';
 import { questUnlockLabel } from '../data/dmTitles';
 import { questObjectiveDestination } from '../data/questRoutes';
 import { settleIdleAcrossChange } from '../data/idleIncome';
@@ -179,7 +180,7 @@ export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): 
   c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 54, '원초의 심연 정복!', {
     fontFamily: 'sans-serif', fontSize: '24px',
     color: COSMIC_TEXT, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
 
   // Quest subtitle
@@ -370,7 +371,7 @@ function buildQuestLogContainer(
   c.add(scene.add.text(CANVAS_WIDTH / 2, 24, '퀘스트 로그', {
     fontFamily: 'sans-serif', fontSize: '18px',
     color: CASUAL_CSS.INK, fontStyle: 'bold',
-    stroke: '#ffffff', strokeThickness: 4,
+    stroke: '#0a0806', strokeThickness: 4,
   }).setOrigin(0.5));
 
   // chunky cream close pill
@@ -421,7 +422,8 @@ function drawMainQuestCard(
   const PAD    = 12;
   const CARD_W = CANVAS_WIDTH - PAD * 2;
 
-  c.add(scene.add.text(PAD, y, '📜  메인 퀘스트', {
+  c.add(addSigil(scene, 'scroll', PAD + 7, y + 8, 14, DUNGEON_UI.BRASS));
+  c.add(scene.add.text(PAD + 18, y, '메인 퀘스트', {
     fontFamily: 'sans-serif', fontSize: '12px',
     color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }));
@@ -569,10 +571,10 @@ function drawMainQuestCard(
   // Reward preview remains the final ledger row.
   const rwds: string[] = [];
   if (quest.reward.gold)         rwds.push(`골드 ${quest.reward.gold}`);
-  if (quest.reward.soulCrystals) rwds.push(`💠${quest.reward.soulCrystals}`);
-  if (quest.reward.dmXP)         rwds.push(`✨${quest.reward.dmXP}XP`);
+  if (quest.reward.soulCrystals) rwds.push(`결정 ${quest.reward.soulCrystals}`);
+  if (quest.reward.dmXP)         rwds.push(`${quest.reward.dmXP}XP`);
   const shownUnlock = (quest.reward.unlocks ?? []).map(questUnlockLabel).find(Boolean);
-  if (shownUnlock) rwds.push(`🔓${shownUnlock}`);
+  if (shownUnlock) rwds.push(`해금 ${shownUnlock}`);
   const reward = scene.add.text(innerX, contentY, `보상: ${rwds.join('  ')}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
     wordWrap: { width: innerWidth, useAdvancedWrap: true },
@@ -616,7 +618,8 @@ function drawSubQuestSection(
   const CARD_W = CANVAS_WIDTH - PAD * 2;
   const CARD_H = 62;
 
-  c.add(scene.add.text(PAD, y, '⚔️  서브 퀘스트', {
+  c.add(addSigil(scene, 'swords', PAD + 7, y + 8, 14, CASUAL.INK));
+  c.add(scene.add.text(PAD + 18, y, '서브 퀘스트', {
     fontFamily: 'sans-serif', fontSize: '12px',
     color: CASUAL_CSS.INK, fontStyle: 'bold',
   }));
@@ -675,7 +678,7 @@ function drawSubQuestSection(
     c.add([frame.shadow, frame.panel, frame.glow]);
 
     // Icon + title (+ check when done)
-    c.add(scene.add.text(PAD + 10, y + 10, `${done ? '✓ ' : ''}${sq.icon} ${sq.title}`, {
+    c.add(scene.add.text(PAD + 10, y + 10, `${done ? '✓ ' : ''}${sq.title}`, {
       fontFamily: 'sans-serif', fontSize: '12px',
       color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK, fontStyle: 'bold',
     }));
@@ -709,8 +712,8 @@ function drawSubQuestSection(
     // Reward preview
     const rwds: string[] = [];
     if (sq.reward.gold)         rwds.push(`골드 ${sq.reward.gold}`);
-    if (sq.reward.soulCrystals) rwds.push(`💠${sq.reward.soulCrystals}`);
-    if (sq.reward.dmXP)         rwds.push(`✨${sq.reward.dmXP}XP`);
+    if (sq.reward.soulCrystals) rwds.push(`결정 ${sq.reward.soulCrystals}`);
+    if (sq.reward.dmXP)         rwds.push(`${sq.reward.dmXP}XP`);
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, y + 26, rwds.join(' '), {
       fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.GOLD,
     }).setOrigin(1, 0.5));
@@ -784,7 +787,8 @@ function drawMiniQuestSection(
   const PAD    = 12;
   const CARD_W = CANVAS_WIDTH - PAD * 2;
 
-  c.add(scene.add.text(PAD, y, '🎯  일일 퀘스트', {
+  c.add(addSigil(scene, 'target', PAD + 7, y + 8, 14, CASUAL.INK));
+  c.add(scene.add.text(PAD + 18, y, '일일 퀘스트', {
     fontFamily: 'sans-serif', fontSize: '12px',
     color: CASUAL_CSS.INK, fontStyle: 'bold',
   }));
@@ -828,7 +832,7 @@ function drawMiniQuestSection(
     c.add(scene.add.text(PAD + 10, dy, `${checkmark}  ${ch.description}`, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: col,
     }));
-    const rwdStr = ch.reward.gems ? `💎${ch.reward.gems}` : '';
+    const rwdStr = ch.reward.gems ? `보석 ${ch.reward.gems}` : '';
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, dy, done ? '완료' : `${prog}/${ch.objective.target}  ${rwdStr}`, {
       fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: done ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
     }).setOrigin(1, 0));
@@ -840,7 +844,7 @@ function drawMiniQuestSection(
     fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold',
     color: allDone ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
   }));
-  c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, dy + 2, `총 보상: 💎${dailyView.totalRewardGems}`, {
+  c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, dy + 2, `총 보상: 보석 ${dailyView.totalRewardGems}`, {
     fontFamily: 'sans-serif', fontSize: '9px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
   }).setOrigin(1, 0));
 }

@@ -18,6 +18,7 @@ import {
 import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
+import { addSigil, type SigilKind } from '../ui/Sigils';
 import {
   type StageProgress, TOTAL_STAGES, STAGE_CONFIGS,
   loadProgress, saveProgress, recordClear,
@@ -270,9 +271,10 @@ export class StageSelectScene extends Phaser.Scene {
 
     this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
-      `⛩ 선조의 지혜  💠${crystals}`,
+      `선조의 지혜 · 결정 ${crystals}`,
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
       () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AncestralWisdomScene'); },
+      '14px', 'pagoda',
     );
   }
 
@@ -289,13 +291,13 @@ export class StageSelectScene extends Phaser.Scene {
     if (stage10Cleared) {
       this.buildDungeonCommand(
         btnX, btnY, btnW, btnH,
-        '⚔ 무한 던전',
+        '무한 던전',
         CASUAL.RED, CASUAL_CSS.RED,
         () => {
           this.registry.set('stageConfig', { stageNumber: 0, endless: true });
           this.scene.start('DungeonScene');
         },
-        '12px',
+        '12px', 'infinity',
       );
     } else {
       // Locked — sealed iron command.
@@ -324,10 +326,10 @@ export class StageSelectScene extends Phaser.Scene {
 
     this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
-      '🏆 업적',
+      '업적',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
       () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AchievementScene'); },
-      '12px',
+      '12px', 'star',
     );
   }
 
@@ -340,9 +342,10 @@ export class StageSelectScene extends Phaser.Scene {
 
     this.buildDungeonCommand(
       btnX, btnY, btnW, btnH,
-      '⚔️ 몬스터 막사',
+      '몬스터 막사',
       CASUAL.BLUE, CASUAL_CSS.BLUE,
       () => this.scene.start('BarracksScene'),
+      '14px', 'swords',
     );
   }
 
@@ -355,19 +358,19 @@ export class StageSelectScene extends Phaser.Scene {
     const btnY = 4658;
 
     this.buildDungeonCommand(
-      startX, btnY, btnW, btnH, '🕳 심연',
+      startX, btnY, btnW, btnH, '심연',
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
-      () => this.scene.start('AbyssScene'), '13px',
+      () => this.scene.start('AbyssScene'), '13px', 'orb',
     );
     this.buildDungeonCommand(
-      startX + btnW + gap, btnY, btnW, btnH, '🏭 생산',
+      startX + btnW + gap, btnY, btnW, btnH, '생산',
       CASUAL.GOLD, CASUAL_CSS.GOLD,
-      () => this.scene.start('ProductionScene'), '13px',
+      () => this.scene.start('ProductionScene'), '13px', 'hammer',
     );
     this.buildDungeonCommand(
-      startX + (btnW + gap) * 2, btnY, btnW, btnH, '🎏 장식',
+      startX + (btnW + gap) * 2, btnY, btnW, btnH, '장식',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
-      () => this.scene.start('DecorationScene'), '13px',
+      () => this.scene.start('DecorationScene'), '13px', 'banner',
     );
   }
 
@@ -383,6 +386,7 @@ export class StageSelectScene extends Phaser.Scene {
     labelColor: string,
     cb: () => void,
     fontSize = '14px',
+    sigil?: SigilKind,
   ): void {
     const radius = 6;
     const draw = (pressed: boolean): void => {
@@ -399,9 +403,16 @@ export class StageSelectScene extends Phaser.Scene {
     const bg = this.add.graphics();
     draw(false);
 
-    this.add.text(x + w / 2, y + h / 2, label, {
+    const text = this.add.text(x + w / 2, y + h / 2, label, {
       fontFamily: 'sans-serif', fontSize, fontStyle: 'bold', color: labelColor,
     }).setOrigin(0.5);
+    if (sigil) {
+      // Sigil + label centred as one group.
+      const size = 16, gap = 6;
+      const left = x + (w - (size + gap + text.width)) / 2;
+      addSigil(this, sigil, left + size / 2, y + h / 2, size, accent);
+      text.setX(left + size + gap + text.width / 2);
+    }
 
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h)
       .setInteractive({ useHandCursor: true });

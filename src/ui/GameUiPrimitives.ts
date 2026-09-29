@@ -177,6 +177,27 @@ export function addInfoRow(
   return { bg, iconText, labelText, valueText };
 }
 
+/**
+ * An icon slot that still receives emoji strings from data: known emoji draw as
+ * a line sigil (EMOJI_SIGILS), anything else stays a text glyph.
+ */
+export function addIconGlyph(
+  scene: Phaser.Scene,
+  icon: string,
+  x: number,
+  y: number,
+  size: number,
+  color?: number,
+): Phaser.GameObjects.Graphics | Phaser.GameObjects.Text {
+  const sigil = EMOJI_SIGILS[icon];
+  if (sigil) {
+    const g = scene.add.graphics();
+    drawSigil(g, sigil.kind, x, y, size, color ?? sigil.color, { disc: false });
+    return g;
+  }
+  return scene.add.text(x, y, icon, { fontFamily: 'sans-serif', fontSize: `${Math.round(size * 0.7)}px` }).setOrigin(0.5);
+}
+
 export interface PrimaryActionButtonOptions {
   readonly x: number;
   readonly y: number;

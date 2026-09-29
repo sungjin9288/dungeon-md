@@ -115,7 +115,7 @@ export function addPickerHeader(
     fontSize: '17px',
     color: CASUAL_CSS.INK,
     fontStyle: 'bold',
-    stroke: '#ffffff',
+    stroke: '#0a0806',
     strokeThickness: 3,
   }).setOrigin(0, 0.5));
   c.add(scene.add.text(22, 36, subtitle, {

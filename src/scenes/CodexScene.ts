@@ -404,7 +404,7 @@ export class CodexScene extends Phaser.Scene {
       return;
     }
     const rarity = getRarityMeta(monster.rarityTier);
-    this.leftText(32, 516, `${monster.emoji} ${monster.name}`, 14, DUNGEON_UI_CSS.PARCHMENT, true);
+    this.leftText(32, 516, monster.name, 14, DUNGEON_UI_CSS.PARCHMENT, true);
     this.leftText(32, 541, `${rarity.stars} ${rarity.label} · ${this.elementLabel(monster.element)} · Chapter ${monster.chapter ?? 1}`, 10, rarity.css, true);
     this.leftText(32, 566, `ATK ${monster.baseDamage} · COOL ${(monster.attackCooldown / 1000).toFixed(1)}s · RANGE ${monster.range}`, 10, DUNGEON_UI_CSS.TEXT);
     this.leftText(32, 589, owned ? '보유 기록 · 패시브/배치/성장 정보 열람 가능' : `획득 경로 · ${this.unlockLabel(monster.unlockMethod)}`, 10,
