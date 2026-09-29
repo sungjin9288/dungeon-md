@@ -11,6 +11,8 @@ import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/ro
 import { getReducedMotion } from '../utils/reducedMotion';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
 import { addMonsterPortrait } from '../ui/MonsterPortraitView';
+import { drawSigil } from '../ui/Sigils';
+import { ROOM_TYPE_SIGILS, sigilFor } from '../ui/sigilMaps';
 import {
   CASUAL,
   CASUAL_CSS,
@@ -29,7 +31,6 @@ import {
   getDefenseQueueBadgeLabel,
   getDefenseDirectiveDisplayChip,
   formatDefenseReadinessPercent,
-  getRoomTypeMeta,
   ROOM_STYLE,
   getMonsterDisplayName,
   getMonsterDisplayEmoji,
@@ -382,7 +383,6 @@ export function buildDefenseLoadout(
   dg.lineBetween(railX + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2, railX + 8 * (cellW + cellGap) + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2);
   for (let i = 0; i < 9; i++) {
     const slot = gs.dungeonSlots?.[i];
-    const meta = getRoomTypeMeta(slot?.roomType);
     const style = ROOM_STYLE[slot?.roomType ?? 'empty'];
     const queueItem = actionBySlot.get(i);
     const unlocked = i < defenseTotals.unlockedSlots;
@@ -404,12 +404,14 @@ export function buildDefenseLoadout(
     }
     dg.lineStyle(built ? 1.5 : 1, built ? style.accent : DUNGEON_UI.IRON, built ? 0.85 : unlocked ? 0.9 : 0.52);
     dg.strokeRoundedRect(cx, cy, cellW, cellH, 6);
-    scene.add.text(cx + cellW / 2, cy + 12, built ? meta.icon : String(i + 1), {
-      fontFamily: 'sans-serif',
-      fontSize: built ? '12px' : '11px',
-      color: built ? style.text : unlocked ? DUNGEON_UI_CSS.TEXT : '#526158',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
+    if (built) {
+      drawSigil(dg, sigilFor(ROOM_TYPE_SIGILS, slot?.roomType ?? '', 'shield'), cx + cellW / 2, cy + 12, 14, style.accent, { disc: false });
+    } else {
+      scene.add.text(cx + cellW / 2, cy + 12, String(i + 1), {
+        fontFamily: 'sans-serif', fontSize: '11px',
+        color: unlocked ? DUNGEON_UI_CSS.TEXT : '#526158', fontStyle: 'bold',
+      }).setOrigin(0.5);
+    }
     if (built && room) {
       const roomTarget = Math.max(35, Math.round((directive.pressure || defenseTotals.totalPower || 1) / Math.max(1, defenseTotals.builtRooms)));
       const roomRatio = Math.max(0, Math.min(1, room.power / roomTarget));
@@ -511,7 +513,7 @@ export function buildDefenseLoadout(
     ovBg.fillRoundedRect(-128, -popH / 2 + 12, 256, 34, 6);
     ov.add(ovBg);
 
-    ov.add(scene.add.text(0, -popH / 2 + 29, `#${room.index + 1} ${room.typeIcon} ${room.typeName}`, {
+    ov.add(scene.add.text(0, -popH / 2 + 29, `#${room.index + 1} ${room.typeName}`, {
       fontFamily: 'sans-serif', fontSize: '14px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
     }).setOrigin(0.5));
     ov.add(scene.add.text(0, -popH / 2 + 58, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}  DEF ${room.power}`, {
@@ -685,9 +687,7 @@ export function buildDefenseLoadout(
         equippedSkins: gs.equippedSkins,
       });
     } else {
-      scene.add.text(cx + 21, cy + 33, room.typeIcon, {
-        fontFamily: 'sans-serif', fontSize: '20px',
-      }).setOrigin(0.5);
+      drawSigil(dg, sigilFor(ROOM_TYPE_SIGILS, room.slot.roomType ?? '', 'shield'), cx + 21, cy + 33, 26, room.style.accent);
     }
 
     scene.add.text(cx + 42, cy + 15, `#${room.index + 1} ${shortenLabel(room.typeName, 6)}`, {

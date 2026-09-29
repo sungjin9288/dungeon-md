@@ -45,6 +45,14 @@ export const DECORATION_SET_SIGILS: Readonly<Record<string, SigilKind>> = {
   abyssal: 'orb',
 };
 
+/** Room families (wisdom.ts ROOM_SLOT_TYPE_DEFS ids): combat · trap · support · magic. */
+export const ROOM_TYPE_SIGILS: Readonly<Record<string, SigilKind>> = {
+  combat: 'swords',
+  trap: 'web',
+  support: 'heart',
+  magic: 'orb',
+};
+
 /** 명예 기록실: one sigil per category instead of 80 per-record emoji. */
 export const ACHIEVEMENT_CATEGORY_SIGILS: Readonly<Record<AchievementCategory, SigilKind>> = {
   combat: 'swords',

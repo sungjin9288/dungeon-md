@@ -15,6 +15,8 @@ import type { GameState } from '../data/wisdom';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
+import { drawSigil } from './Sigils';
+import { ROOM_TYPE_SIGILS, sigilFor } from './sigilMaps';
 
 // ─── Shared layout constants ───────────────────────────────────────────────
 
@@ -487,9 +489,7 @@ export function drawBattleSlot(
     g.fillCircle(x + 15, y + 15, 10);
     g.lineStyle(1.5, CASUAL.EDGE, 0.8);
     g.strokeCircle(x + 15, y + 15, 10);
-    c.add(scene.add.text(x + 15, y + 15, typeDef?.icon ?? '▣', {
-      fontFamily: 'sans-serif', fontSize: '12px',
-    }).setOrigin(0.5));
+    drawSigil(g, sigilFor(ROOM_TYPE_SIGILS, slot?.roomType ?? '', 'shield'), x + 15, y + 15, 15, CASUAL.SHADOW, { disc: false });
     drawRoomNameRibbon(scene, c, g, x, y, typeDef?.name ?? '던전 방', roomAccent, roomMetrics.readiness);
 
     // Soft accent glow behind the portrait — warm casual accent by monster type.

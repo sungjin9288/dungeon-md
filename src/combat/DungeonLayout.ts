@@ -102,7 +102,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       data.level = visualLevel;
 
       const typeDef = ROOM_SLOT_TYPE_DEFS.find(d => d.id === slot.roomType);
-      if (typeDef) room.setRoomTypeBadge(typeDef.icon);
+      if (typeDef) room.setRoomTypeBadge(typeDef.id);
 
       const monsterIds = getDefinedMonsterIds(slot.monsterIds).filter(id => (
         !staffedMonsterIds?.has(id)

@@ -15,6 +15,8 @@ import {
   setSlotLoadoutVisual,
 } from './RoomVisuals';
 import { MAX_ROOM_LEVEL } from '../data/wisdom';
+import { drawSigil } from '../ui/Sigils';
+import { ROOM_TYPE_SIGILS, sigilFor } from '../ui/sigilMaps';
 
 export type RoomState = 'empty' | 'occupied' | 'locked' | 'water';
 
@@ -52,7 +54,7 @@ export class Room extends Phaser.GameObjects.Container {
   private readonly reducedMotion = getReducedMotion();
   /** @internal */ levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
-  /** @internal */ roomTypeBadge?: Phaser.GameObjects.Text;
+  /** @internal */ roomTypeBadge?: Phaser.GameObjects.Graphics;
   /** @internal */ baseRoomIcon?: Phaser.GameObjects.Text;
   /** @internal */ baseRoomNameLabel?: Phaser.GameObjects.Text;
   /** @internal */ slotLoadoutGfx?: Phaser.GameObjects.Graphics;
@@ -387,14 +389,15 @@ export class Room extends Phaser.GameObjects.Container {
     this.add(this.monsterBadge);
   }
 
-  setRoomTypeBadge(icon: string | null): void {
+  /** Small room-family sigil in the cell's top-left corner (was an emoji). */
+  setRoomTypeBadge(roomType: string | null): void {
     this.roomTypeBadge?.destroy();
     this.roomTypeBadge = undefined;
-    if (!icon) return;
-    this.roomTypeBadge = this.scene.add.text(
-      -this.cs / 2 + 4, -this.cs / 2 + 2, icon, { fontSize: '11px' },
-    ).setOrigin(0, 0).setAlpha(0.85);
-    this.add(this.roomTypeBadge);
+    if (!roomType) return;
+    const badge = this.scene.add.graphics().setAlpha(0.85);
+    drawSigil(badge, sigilFor(ROOM_TYPE_SIGILS, roomType, 'shield'), -this.cs / 2 + 11, -this.cs / 2 + 9, 13, CASUAL.INK, { disc: false });
+    this.roomTypeBadge = badge;
+    this.add(badge);
   }
 
   private clearDungeonSlotLoadoutVisual(): void {
