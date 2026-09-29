@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
@@ -73,6 +74,8 @@ export class BarracksScene extends Phaser.Scene {
 
   create(data?: { scrollY?: number }): void {
     this.gs = loadGameState();
+    // Normally already streamed from Home; covers direct entry and new arrivals.
+    getCharacterArtStreamer(this.game).request(this.gs.ownedMonsters.map(monster => monster.id));
     this.legionMenuOverlay = undefined;
     this.scrollY = 0;
     this.focusMonsterId = this.consumeFocusMonsterId();

@@ -53,6 +53,12 @@ async function open(viewport, scene = 'DungeonHomeScene', motion = 'reduce') {
     const observed = await page.evaluate(() => ({ renderer: window.__phaserGame?.renderer?.type, active: window.__phaserGame?.scene.getScenes(true).map(s => s.scene.key) }));
     throw new Error(`Entry ${scene}: ${error}; ${JSON.stringify({ observed, errors })}`);
   }
+  // Ritual-v2 cutouts stream on demand (CharacterArtStreamer), not at boot.
+  await page.evaluate(async artIds => {
+    const { getCharacterArtStreamer } = await import('/src/art/CharacterArtStreamer.ts');
+    getCharacterArtStreamer(window.__phaserGame).request(artIds);
+  }, ids);
+  await page.waitForFunction(artIds => artIds.every(id => window.__phaserGame.textures.exists(`monster-ritual-v2-${id}`)), ids);
   await page.waitForTimeout(700);
   return { context, page, errors };
 }

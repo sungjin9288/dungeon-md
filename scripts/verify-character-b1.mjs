@@ -288,6 +288,12 @@ async function newFixture(viewport, motion = 'reduce', kind = 'seeded-mq008', op
     throw new Error(`fixture left loopback origin before readiness: ${page.url()}`);
   }
   await page.waitForTimeout(motion === 'reduce' ? 260 : 700);
+  // Ritual-v2 cutouts stream on demand (CharacterArtStreamer), not at boot.
+  await page.evaluate(async artIds => {
+    const { getCharacterArtStreamer } = await import('/src/art/CharacterArtStreamer.ts');
+    getCharacterArtStreamer(window.__phaserGame).request(artIds);
+  }, ids);
+  await page.waitForFunction(artIds => artIds.every(id => window.__phaserGame.textures.exists(`monster-ritual-v2-${id}`)), ids);
   recordFixture(kind, { viewport, motion, entry: 'DungeonHomeScene', readyMs });
   return { context, page, errors, networkErrors, viewport, motion, kind, readyMs };
 }
