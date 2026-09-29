@@ -366,7 +366,7 @@ export class AbyssScene extends Phaser.Scene {
 
     this.drawIntelRow(INTEL_Y + 40, '권장 전투력', formatHudResourceValue(config.recommendedPower), DUNGEON_UI_CSS.TEXT);
     const materialNames = [...new Set(getAbyssFloorLoot(this.selectedFloor).map((entry) => entry.id))]
-      .map((id) => `${MATERIAL_DEFS[id]?.emoji ?? '•'} ${MATERIAL_DEFS[id]?.name ?? id}`)
+      .map((id) => MATERIAL_DEFS[id]?.name ?? id)
       .join(' · ');
     this.drawIntelRow(INTEL_Y + 73, '획득 자원', materialNames, DUNGEON_UI_CSS.TEXT, 44);
     const rewardNote = boss

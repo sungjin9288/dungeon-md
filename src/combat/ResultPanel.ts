@@ -13,6 +13,8 @@
 //   revive           — gem/ad revive (called by fail-panel action)
 //   resetStage       — full stage reset (called by fail-panel action)
 
+import { drawSigil } from '../ui/Sigils';
+import { MATERIAL_SIGILS } from '../ui/sigilMaps';
 import { STAGE_DEFEAT_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import Phaser from 'phaser';
@@ -273,7 +275,6 @@ function buildSuccessContent(
       const colIdx = mi % COLS_PER_ROW;
       const chipY  = matDivY + 22 + rowIdx * 36;
       const def    = MATERIAL_DEFS[id];
-      const emoji  = def?.emoji ?? '?';
       const name   = def?.name  ?? id;
       const chipX  = cx + 16 + colIdx * chipW;
 
@@ -286,19 +287,20 @@ function buildSuccessContent(
       ov.add(chipBg);
       scene.tweens.add({ targets: chipBg, alpha: 1, duration: 180, delay: 710 + mi * 50 });
 
-      // Emoji + qty
-      const chipT = scene.add.text(chipX + (chipW - 4) / 2, chipY + 8, `${emoji} ×${qty}`, {
-        fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
-      }).setOrigin(0.5, 0).setAlpha(0);
-      ov.add(chipT);
-      scene.tweens.add({ targets: chipT, alpha: 1, duration: 180, delay: 720 + mi * 50 });
-
-      // Material name below
-      const nameT = scene.add.text(chipX + (chipW - 4) / 2, chipY + 18, name.length > 6 ? name.slice(0, 6) + '…' : name, {
+      // Sigil on the left, name over quantity on the right. The coloured-circle
+      // emoji read as placeholders, and qty (13px) sat on top of the name.
+      const matSigil = MATERIAL_SIGILS[id] ?? { kind: 'shard' as const, color: DUNGEON_UI.BRASS };
+      const sigilG = scene.add.graphics().setAlpha(0);
+      drawSigil(sigilG, matSigil.kind, chipX + 15, chipY + 15, 18, matSigil.color, { disc: false });
+      ov.add(sigilG);
+      const nameT = scene.add.text(chipX + 29, chipY + 9, name.length > 6 ? name.slice(0, 6) + '…' : name, {
         fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
-      }).setOrigin(0.5, 0).setAlpha(0);
-      ov.add(nameT);
-      scene.tweens.add({ targets: nameT, alpha: 1, duration: 180, delay: 730 + mi * 50 });
+      }).setOrigin(0, 0.5).setAlpha(0);
+      const chipT = scene.add.text(chipX + 29, chipY + 21, `×${qty}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
+      }).setOrigin(0, 0.5).setAlpha(0);
+      ov.add([nameT, chipT]);
+      scene.tweens.add({ targets: [sigilG, nameT, chipT], alpha: 1, duration: 180, delay: 720 + mi * 50 });
     });
 
     // If more than 6, show "+N more" hint

@@ -22,7 +22,7 @@ const TIER_HEX: Record<1 | 2 | 3, number> = { 1: 0xc8921a, 2: 0x8ac7ff, 3: 0xd48
 const TIER_CSS: Record<1 | 2 | 3, string> = { 1: '#c8921a', 2: '#8ac7ff', 3: '#d48cff' };
 
 function needLine(lines: readonly TrapNeedLine[]): string {
-  return lines.map(line => `${line.emoji}${line.name} ${line.have}/${line.need}`).join(' · ');
+  return lines.map(line => `${line.name} ${line.have}/${line.need}`).join(' · ');
 }
 
 function drawSummary(scene: Phaser.Scene, ctx: ForgeContext, c: Phaser.GameObjects.Container, y: number): number {

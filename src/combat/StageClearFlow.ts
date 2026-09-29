@@ -205,7 +205,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   if (matEntries.length > 0) {
     const parts = matEntries.map(([id, q]) => {
       const def = MATERIAL_DEFS[id];
-      return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${q}`;
+      return `${def?.name ?? id} ×${q}`;
     });
     const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170 + contentOffset, '', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,

@@ -32,7 +32,7 @@ function costLabel(action: BondActionId, materials: Readonly<Record<string, numb
   if (def.gold > 0) parts.push(`${def.gold}💰`);
   if (def.materialsAny.length > 0) {
     const chosen = materials && Object.keys(materials).length > 0 ? materials : def.materialsAny[0];
-    parts.push(Object.entries(chosen).map(([id, qty]) => `${MATERIAL_DEFS[id]?.emoji ?? ''}${MATERIAL_DEFS[id]?.name ?? id} ${qty}`).join(' '));
+    parts.push(Object.entries(chosen).map(([id, qty]) => `${MATERIAL_DEFS[id]?.name ?? id} ${qty}`).join(' '));
   }
   if (def.xp > 0) parts.push(`XP +${def.xp}`);
   return parts.length ? parts.join(' · ') : '무료';

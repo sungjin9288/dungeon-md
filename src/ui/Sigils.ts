@@ -16,13 +16,15 @@ export type SigilKind =
   | 'coin' | 'wall' | 'hammer' | 'bolt' | 'scroll' | 'gem' | 'shield' | 'swords'
   | 'spark' | 'pagoda' | 'moon' | 'flask' | 'plant' | 'totem' | 'chest' | 'banner'
   | 'flame' | 'statue' | 'spikes' | 'web' | 'orb' | 'chalice' | 'obelisk' | 'heart'
-  | 'star' | 'book' | 'infinity' | 'sprout' | 'skull';
+  | 'star' | 'book' | 'infinity' | 'sprout' | 'skull'
+  | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp';
 
 export const SIGIL_KINDS: readonly SigilKind[] = [
   'coin', 'wall', 'hammer', 'bolt', 'scroll', 'gem', 'shield', 'swords',
   'spark', 'pagoda', 'moon', 'flask', 'plant', 'totem', 'chest', 'banner',
   'flame', 'statue', 'spikes', 'web', 'orb', 'chalice', 'obelisk', 'heart',
   'star', 'book', 'infinity', 'sprout', 'skull',
+  'shard', 'cloth', 'ore', 'fur', 'wisp',
 ];
 
 export interface SigilOptions {
@@ -216,6 +218,31 @@ export function drawSigil(
       g.fillEllipse(X(-5), Y(-4), 10 * s, 6 * s);
       g.fillEllipse(X(5), Y(-7), 10 * s, 6 * s);
       stroke(); line(-7, 11, 7, 11);
+      break;
+    case 'shard': // broken fragment
+      fill(0.35); fillPoly([[-3, -11], [7, -4], [4, 10], [-8, 6], [-6, -2]]);
+      stroke(); strokePoly([[-3, -11], [7, -4], [4, 10], [-8, 6], [-6, -2]]);
+      line(-3, -11, 0, 2); line(0, 2, 4, 10);
+      break;
+    case 'cloth': // folded bolt of cloth
+      strokePoly([[-10, -6], [8, -9], [10, 6], [-8, 9]]);
+      line(-10, -6, -8, 9); line(-4, -7, -2, 8); line(3, -8, 5, 7);
+      break;
+    case 'ore': // rough rock chunk with a vein
+      fill(0.25); fillPoly([[-9, 2], [-6, -7], [2, -10], [9, -4], [8, 6], [-2, 10]]);
+      stroke(); strokePoly([[-9, 2], [-6, -7], [2, -10], [9, -4], [8, 6], [-2, 10]]);
+      line(-4, -2, 1, 2); line(1, 2, 6, -1);
+      break;
+    case 'fur': // soft tuft
+      for (const [x, h] of [[-6, 8], [-2, 11], [2, 10], [6, 7]] as const) {
+        g.beginPath(); g.moveTo(X(x - 2), Y(9)); g.lineTo(X(x), Y(9 - h * 1.6)); g.lineTo(X(x + 2), Y(9)); g.strokePath();
+      }
+      line(-9, 9, 9, 9);
+      break;
+    case 'wisp': // soul flame
+      fill(0.3); fillPoly([[0, -11], [5, -3], [6, 4], [2, 10], [-4, 9], [-6, 3], [-3, -2], [-1, 2]]);
+      stroke(); strokePoly([[0, -11], [5, -3], [6, 4], [2, 10], [-4, 9], [-6, 3], [-3, -2], [-1, 2]]);
+      fill(0.9); dot(-1, 5, 1.6); dot(2.5, 5, 1.6);
       break;
     case 'skull':
       circle(0, -2, 8);

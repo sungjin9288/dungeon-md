@@ -53,6 +53,21 @@ export const ROOM_TYPE_SIGILS: Readonly<Record<string, SigilKind>> = {
   magic: 'orb',
 };
 
+/** Materials (fusion.ts MATERIAL_DEFS ids): glyph + tint, replacing coloured-circle emoji. */
+export const MATERIAL_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; readonly color: number }>> = {
+  dok_fragment: { kind: 'shard', color: 0xd9634a },
+  iron_shard: { kind: 'shard', color: 0xa7adb2 },
+  fox_fur: { kind: 'fur', color: 0xe08a45 },
+  ice_crystal: { kind: 'gem', color: 0x8cc8e8 },
+  soul_fragment: { kind: 'wisp', color: 0xb58ae0 },
+  shadow_cloth: { kind: 'cloth', color: 0x7d7fa8 },
+  old_cloth: { kind: 'cloth', color: 0xb08a5a },
+  herb: { kind: 'sprout', color: 0x7ac47a },
+  common_ore: { kind: 'ore', color: 0xa89a82 },
+  magic_dust: { kind: 'spark', color: 0xe6cf7a },
+  boss_essence: { kind: 'orb', color: 0xc07ae0 },
+};
+
 /** 명예 기록실: one sigil per category instead of 80 per-record emoji. */
 export const ACHIEVEMENT_CATEGORY_SIGILS: Readonly<Record<AchievementCategory, SigilKind>> = {
   combat: 'swords',
