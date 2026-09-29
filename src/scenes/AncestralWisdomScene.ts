@@ -17,6 +17,8 @@ import {
   type GameState,
   type WisdomUpgradeFailureReason,
 } from '../data/wisdom';
+import { addSigil } from '../ui/Sigils';
+import { sigilFor, WISDOM_SIGILS } from '../ui/sigilMaps';
 import {
   addFramedPanel,
   addPrimaryActionButton,
@@ -237,9 +239,10 @@ export class AncestralWisdomScene extends Phaser.Scene {
       g.fillRect(PANEL_X + 6, y + 8, 3, BRANCH_H - 16);
     }
 
-    this.add.text(PANEL_X + 34, y + BRANCH_H / 2, branch.icon, {
-      fontFamily: 'sans-serif', fontSize: '21px',
-    }).setOrigin(0.5);
+    const sigilColor = !view.validTier ? DUNGEON_UI.EMBER
+      : view.isMaxed ? DUNGEON_UI.JADE
+        : selected ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS;
+    addSigil(this, sigilFor(WISDOM_SIGILS, branch.id), PANEL_X + 34, y + BRANCH_H / 2, 30, sigilColor);
     this.add.text(PANEL_X + 60, y + 19, branch.name, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
@@ -283,7 +286,8 @@ export class AncestralWisdomScene extends Phaser.Scene {
       glowOpacity: view.canUpgrade ? 0.05 : 0.02,
     });
 
-    this.add.text(PANEL_X + 18, DETAIL_Y + 22, `${selected.icon} ${selected.name}`, {
+    addSigil(this, sigilFor(WISDOM_SIGILS, selected.id), PANEL_X + 30, DETAIL_Y + 22, 22, tone, { disc: false });
+    this.add.text(PANEL_X + 46, DETAIL_Y + 22, selected.name, {
       fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
     this.add.text(PANEL_X + PANEL_W - 16, DETAIL_Y + 22, this.branchStateLabel(view), {
@@ -436,7 +440,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     overlay.add([frame.shadow, frame.panel, frame.glow]);
 
     const texts = [
-      this.add.text(CANVAS_WIDTH / 2, boxY + 32, `${branch.icon} ${branch.name} 의식 승인`, {
+      this.add.text(CANVAS_WIDTH / 2, boxY + 32, `${branch.name} 의식 승인`, {
         fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
       }).setOrigin(0.5),
       this.add.text(CANVAS_WIDTH / 2, boxY + 65, `등급 ${view.tier} → ${view.tier + 1}`, {

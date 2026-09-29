@@ -34,6 +34,8 @@ import {
   addSceneHeader,
 } from '../ui/GameUiPrimitives';
 import { formatHudResourceValue } from '../ui/HudResourceFormatting';
+import { addSigil } from '../ui/Sigils';
+import { DECORATION_SIGILS, sigilFor } from '../ui/sigilMaps';
 
 type ReceiptTone = 'success' | 'warning';
 type RelicActionKind = 'acquire' | 'place' | 'remove';
@@ -344,9 +346,8 @@ export class DecorationScene extends Phaser.Scene {
         g.fillTriangle(x + cardW / 2 - 6, RELIC_LIST_Y, x + cardW / 2 + 6, RELIC_LIST_Y, x + cardW / 2, RELIC_LIST_Y + 8);
       }
 
-      this.add.text(x + cardW / 2, RELIC_LIST_Y + 29, def.emoji, {
-        fontFamily: 'sans-serif', fontSize: '24px',
-      }).setOrigin(0.5);
+      addSigil(this, sigilFor(DECORATION_SIGILS, id), x + cardW / 2, RELIC_LIST_Y + 29, 30,
+        placed ? DUNGEON_UI.JADE : owned ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS, { alpha: owned ? 1 : 0.7 });
       this.add.text(x + cardW / 2, RELIC_LIST_Y + 62, def.name, {
         fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold',
         color: owned ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.TEXT,
@@ -399,9 +400,7 @@ export class DecorationScene extends Phaser.Scene {
     iconG.fillCircle(PANEL_X + 37, COMMAND_Y + 30, 22);
     iconG.lineStyle(1.5, panelTone, 0.85);
     iconG.strokeCircle(PANEL_X + 37, COMMAND_Y + 30, 22);
-    this.add.text(PANEL_X + 37, COMMAND_Y + 30, def.emoji, {
-      fontFamily: 'sans-serif', fontSize: '23px',
-    }).setOrigin(0.5);
+    addSigil(this, sigilFor(DECORATION_SIGILS, def.id), PANEL_X + 37, COMMAND_Y + 30, 30, panelTone, { disc: false });
 
     this.add.text(PANEL_X + 70, COMMAND_Y + 22, def.name, {
       fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,

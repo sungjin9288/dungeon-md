@@ -25,6 +25,8 @@ import {
   addSceneHeader,
 } from '../ui/GameUiPrimitives';
 import { formatHudResourceValue } from '../ui/HudResourceFormatting';
+import { addSigil } from '../ui/Sigils';
+import { ACHIEVEMENT_CATEGORY_SIGILS } from '../ui/sigilMaps';
 
 type AchievementFilter = AchievementCategory | 'all';
 type ReceiptTone = 'success' | 'warning';
@@ -335,9 +337,9 @@ export class AchievementScene extends Phaser.Scene {
       g.fillRect(PANEL_X + 6, y + 8, 3, RECORD_H - 16);
     }
 
-    this.add.text(PANEL_X + 30, y + RECORD_H / 2, def.icon, {
-      fontFamily: 'sans-serif', fontSize: '21px',
-    }).setOrigin(0.5).setAlpha(state === 'progress' ? 0.72 : 1);
+    addSigil(this, ACHIEVEMENT_CATEGORY_SIGILS[def.category], PANEL_X + 30, y + RECORD_H / 2, 28,
+      state === 'claimed' ? DUNGEON_UI.JADE : state === 'claimable' ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS,
+      { alpha: state === 'progress' ? 0.72 : 1 });
     this.add.text(PANEL_X + 54, y + 18, def.name, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
@@ -404,7 +406,8 @@ export class AchievementScene extends Phaser.Scene {
     }
 
     const progress = this.getProgress(selected);
-    this.add.text(PANEL_X + 18, DETAIL_Y + 22, `${selected.icon} ${selected.name}`, {
+    addSigil(this, ACHIEVEMENT_CATEGORY_SIGILS[selected.category], PANEL_X + 30, DETAIL_Y + 22, 22, tone, { disc: false });
+    this.add.text(PANEL_X + 46, DETAIL_Y + 22, selected.name, {
       fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
     this.add.text(PANEL_X + PANEL_W - 16, DETAIL_Y + 22, this.getStateLabel(state), {
