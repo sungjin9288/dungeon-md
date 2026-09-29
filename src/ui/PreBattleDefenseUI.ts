@@ -33,7 +33,6 @@ import {
   formatDefenseReadinessPercent,
   ROOM_STYLE,
   getMonsterDisplayName,
-  getMonsterDisplayEmoji,
   getTrapDisplay,
   getOwnedMonster,
   shortenLabel,
@@ -441,13 +440,13 @@ export function buildDefenseLoadout(
     const monsterLines = room.monsterIds.length > 0
       ? room.monsterIds.slice(0, 4).map(id => {
           const owned = getOwnedMonster(gs, id);
-          return `${getMonsterDisplayEmoji(id)} ${getMonsterDisplayName(id)}  Lv.${owned?.level ?? 1}`;
+          return `· ${getMonsterDisplayName(id)}  Lv.${owned?.level ?? 1}`;
         })
       : ['수호자 미배치'];
     const trapLines = room.trapIds.length > 0
       ? room.trapIds.slice(0, 4).map(id => {
           const trap = getTrapDisplay(id);
-          return `${trap.emoji} ${trap.name}`;
+          return `· ${trap.name}`;
         })
       : ['함정 미배치'];
     const equipmentLines = room.equipment.length > 0
@@ -696,9 +695,8 @@ export function buildDefenseLoadout(
     scene.add.text(cx + 42, cy + 30, `Lv.${room.slot.roomLevel}  HP ${room.slot.hp}/${room.slot.maxHp}`, {
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
     }).setOrigin(0, 0.5);
-    const trap = room.trapIds[0] ? getTrapDisplay(room.trapIds[0]) : null;
-    // The trap badge sat where the action pin ("1 배치") is drawn; the stats line carries it.
-    scene.add.text(cx + 42, cy + 45, `M${room.monsterIds.length}/${room.capacity.monsters} E${room.equipment.length} T${room.trapIds.length}/${room.capacity.traps}${trap ? ` ${trap.emoji}` : ''}`, {
+    // Trap count only: the trap badge sat under the action pin, and its emoji ran into the DEF badge.
+    scene.add.text(cx + 42, cy + 45, `M${room.monsterIds.length}/${room.capacity.monsters} E${room.equipment.length} T${room.trapIds.length}/${room.capacity.traps}`, {
       fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.BLUE,
     }).setOrigin(0, 0.5);
 
@@ -715,11 +713,13 @@ export function buildDefenseLoadout(
       }).setOrigin(0.5);
     }
 
+    // Shield sigil + value: "DEF 60" ran into the stats line and the corner socket.
     dg.fillStyle(room.style.accent, 0.18);
-    dg.fillRoundedRect(cx + cardW - 52, cy + 40, 42, 15, 4);
-    scene.add.text(cx + cardW - 31, cy + 47.5, `DEF ${room.power}`, {
+    dg.fillRoundedRect(cx + cardW - 50, cy + 40, 34, 15, 4);
+    drawSigil(dg, 'shield', cx + cardW - 42, cy + 47.5, 11, room.style.accent, { disc: false });
+    scene.add.text(cx + cardW - 19, cy + 47.5, `${room.power}`, {
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text, fontStyle: 'bold',
-    }).setOrigin(0.5);
+    }).setOrigin(1, 0.5);
 
     dg.fillStyle(DUNGEON_UI.SOOT, 0.92);
     dg.fillRoundedRect(cx + 42, cy + cardH - 8, cardW - 98, 4, 2);
