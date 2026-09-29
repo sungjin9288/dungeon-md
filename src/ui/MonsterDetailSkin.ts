@@ -3,6 +3,9 @@
  * and locked-skin purchase popup for MonsterDetailPanel.
  */
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { generatePortrait } from '../art/PortraitGenerator';
+import type { MonsterId } from '../data/monsters';
+import { addSigil } from './Sigils';
 import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type OwnedMonster } from '../data/wisdom';
 import {
@@ -43,7 +46,7 @@ export function buildSkinSlot(
   const baseW    = 78;
   const galleryX = x + baseW + 8;
   const galleryW = w - baseW - 8;
-  drawSkinDisplayCard(ctx, ov, m, typeId, x, y, baseW, null, !equipped, profile?.emoji ?? '?', '기본');
+  drawSkinDisplayCard(ctx, ov, m, typeId, x, y, baseW, null, !equipped, '기본');
 
   const gallery = scene.add.graphics();
   gallery.fillStyle(DUNGEON_UI.SOOT, 1);
@@ -111,7 +114,6 @@ export function drawSkinDisplayCard(
   w: number,
   skin: MonsterSkin | null,
   active: boolean,
-  fallbackEmoji: string,
   fallbackLabel: string,
 ): void {
   const { scene, onRefresh } = ctx;
@@ -125,10 +127,9 @@ export function drawSkinDisplayCard(
   bg.strokeRoundedRect(x, y, w, 88, 7);
   ov.add(bg);
 
-  ov.add(scene.add.text(x + w / 2, y + 34, skin ? skin.emoji : fallbackEmoji, {
-    fontFamily: 'sans-serif',
-    fontSize: skin ? '28px' : '30px',
-  }).setOrigin(0.5));
+  // The guardian itself (skin palette when a skin is shown), not the skin's emoji.
+  const portraitKey = generatePortrait(scene, typeId as MonsterId, skin?.id);
+  ov.add(scene.add.image(x + w / 2, y + 34, portraitKey).setDisplaySize(48, 48));
   ov.add(scene.add.text(x + w / 2, y + 71, skin ? shortenLabel(skin.name, 5) : fallbackLabel, {
     fontFamily: 'sans-serif',
     fontSize: '10px',
@@ -171,11 +172,12 @@ export function drawSkinMiniCard(
   bg.lineStyle(owned ? 2 : 1.5, active ? DUNGEON_UI.JADE : owned ? accent : DUNGEON_UI.EDGE, owned ? 1 : 0.55);
   bg.strokeRoundedRect(x, y, size, size, 6);
   ov.add(bg);
-  ov.add(scene.add.text(x + size / 2, y + size / 2 - 1, owned ? skin.emoji : '×', {
-    fontFamily: 'sans-serif',
-    fontSize: owned ? '14px' : '12px',
-    color: owned ? '#ffffff' : DUNGEON_UI_CSS.MUTED,
-  }).setOrigin(0.5));
+  if (owned) {
+    const portraitKey = generatePortrait(scene, skin.monsterId as MonsterId, skin.id);
+    ov.add(scene.add.image(x + size / 2, y + size / 2, portraitKey).setDisplaySize(size - 10, size - 10));
+  } else {
+    ov.add(addSigil(scene, 'lock', x + size / 2, y + size / 2, 18, DUNGEON_UI.EDGE, { disc: false }));
+  }
   if (skin.rarity !== 'normal') {
     ov.add(scene.add.text(x + size - 4, y + 5, skin.rarity === 'limited' ? 'L' : 'R', {
       fontFamily: 'monospace',

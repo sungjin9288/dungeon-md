@@ -109,7 +109,7 @@ export const EMOJI_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; r
   '🕸': { kind: 'web', color: 0xb8a88a },
   '🏆': { kind: 'chalice', color: 0xe8c25a },
   '⭐': { kind: 'star', color: 0xe8c25a },
-  '🔓': { kind: 'lock', color: 0xe8c25a },
+  '🔓': { kind: 'unlock', color: 0xe8c25a },
   '🎯': { kind: 'target', color: 0xef846d },
   '📅': { kind: 'calendar', color: 0xd8c08a },
   '✅': { kind: 'star', color: 0x76c6a0 },
@@ -155,5 +155,5 @@ export const ENDLESS_MODIFIER_SIGILS: Readonly<Record<string, SigilKind>> = {
 export const WAVE_EVENT_SIGILS: Readonly<Record<string, SigilKind>> = {
   merchant: 'coin', supply: 'chest', curse: 'skull', rally: 'banner', fog: 'wisp',
   void_storm: 'orb', ancient_blessing: 'spark', crimson_curse: 'flame', gold_vein: 'ore',
-  raiders: 'swords', guardian_rite: 'shield', unsealing: 'lock', time_warp: 'infinity',
+  raiders: 'swords', guardian_rite: 'shield', unsealing: 'unlock', time_warp: 'infinity',
 };

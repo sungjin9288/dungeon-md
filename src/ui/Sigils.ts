@@ -18,7 +18,7 @@ export type SigilKind =
   | 'flame' | 'statue' | 'spikes' | 'web' | 'orb' | 'chalice' | 'obelisk' | 'heart'
   | 'star' | 'book' | 'infinity' | 'sprout' | 'skull'
   | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp' | 'snow'
-  | 'lock' | 'target' | 'calendar' | 'crown' | 'wave';
+  | 'lock' | 'target' | 'calendar' | 'crown' | 'wave' | 'unlock';
 
 export const SIGIL_KINDS: readonly SigilKind[] = [
   'coin', 'wall', 'hammer', 'bolt', 'scroll', 'gem', 'shield', 'swords',
@@ -26,7 +26,7 @@ export const SIGIL_KINDS: readonly SigilKind[] = [
   'flame', 'statue', 'spikes', 'web', 'orb', 'chalice', 'obelisk', 'heart',
   'star', 'book', 'infinity', 'sprout', 'skull',
   'shard', 'cloth', 'ore', 'fur', 'wisp', 'snow',
-  'lock', 'target', 'calendar', 'crown', 'wave',
+  'lock', 'target', 'calendar', 'crown', 'wave', 'unlock',
 ];
 
 export interface SigilOptions {
@@ -258,10 +258,16 @@ export function drawSigil(
         }
       }
       break;
-    case 'lock': // open shackle: something just became available
+    case 'lock': // closed shackle: not available yet
       rect(-8, -1, 16, 12);
-      g.beginPath(); g.arc(X(-1), Y(-4), 5 * s, Math.PI, 0); g.strokePath();
-      line(4, -4, 4, -1);
+      g.beginPath(); g.arc(X(0), Y(-5), 5 * s, Math.PI, 0); g.strokePath();
+      line(-5, -5, -5, -1); line(5, -5, 5, -1);
+      fill(0.9); dot(0, 4, 1.8);
+      break;
+    case 'unlock': // shackle swung open: something just became available
+      rect(-8, -1, 16, 12);
+      g.beginPath(); g.arc(X(-1), Y(-7), 5 * s, Math.PI, 0); g.strokePath();
+      line(4, -7, 4, -1);
       fill(0.9); dot(0, 4, 1.8);
       break;
     case 'target':
