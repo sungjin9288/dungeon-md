@@ -1738,4 +1738,7 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
   (맨 경로 import는 별개 스트리머를 만든다 — 개발 서버 전용 현상, 앱은 단일 모듈).
 - 남은 판단(사용자): '도깨비 대왕' 화자를 dokkaebi_king에 연결할지(현재 미연결, 기존 계약 유지),
   `fox_queen` 표기("여우 여왕 (보스)" vs 컷신 "구미호 여왕").
-- 다음: 개발 마무리 후 Codex 리뷰(`codex review --base origin/main`, 사용자 지시 순서).
+- **Codex 리뷰(개발 완료 후, 사용자 지시 순서)**: `codex review --base origin/main`(gpt-6-luna, 93커밋) → P2 2건.
+  ① 새 세이브의 첫 홈 방문(방치 시계만 시작)이 실행 중 첫 방문으로 기록되지 않아, 이후 5분 넘은 실행 중 복귀에
+  차단 모달이 뜸 ② 목표 미완료 시 파생 목표 동기화(예: MQ-010 DM 레벨)를 버림. 둘 다 실패 테스트로 재현 후 수정
+  (`0b17bb9`), 수정 커밋 재리뷰(`--commit`) 결함 없음. tsc·vitest 3760·build 통과, 홈 브라우저 진입 콘솔 오류 0.
