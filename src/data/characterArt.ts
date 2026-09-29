@@ -21,6 +21,20 @@ const RITUAL_V2_IDS = [
   'fire_dokkaebi',
   'sage',
   'one_tail_fox',
+  'three_tail_fox',
+  'five_tail_fox',
+  'fox_shaman',
+  'fox_spirit_elder',
+  'spring_gumiho',
+  'summer_gumiho',
+  'ice_gumiho',
+  'thunder_gumiho',
+  'fox_warrior',
+  'gumiho_queen',
+  'gumiho_goddess',
+  'gumiho_archmage',
+  'celestial_fairy',
+  'gumiho_demon',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];

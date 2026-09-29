@@ -1,0 +1,150 @@
+{
+  "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
+  "count": 24,
+  "masters": {
+    "celestial_fairy": {
+      "sha256": "f1c1de0ed439f6407a98bfba855f600a68f698833e6d3865d1f714df95e59d66",
+      "bytes": 2227972,
+      "width": 1254,
+      "height": 1254
+    },
+    "death_messenger": {
+      "sha256": "44f21e2444907fa9e2f30add70d350432e3666afe1c4da6c790b4d772ad24565",
+      "bytes": 1548824,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_junior": {
+      "sha256": "e93d5a8b0a2db4edc57769d8fa60a0ff7602f022c00f8a6b99201c59c4d5050e",
+      "bytes": 1315335,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_warrior": {
+      "sha256": "da6b3b3c1195d8707ed2784149a85edb79022ca450542c22a5bb9889d4a44137",
+      "bytes": 2165538,
+      "width": 1254,
+      "height": 1254
+    },
+    "fire_dokkaebi": {
+      "sha256": "48f441f5bee24cb0fff10f4f966735cf50cd14334a253ee1347257dcea5779c8",
+      "bytes": 1660235,
+      "width": 1254,
+      "height": 1254
+    },
+    "five_tail_fox": {
+      "sha256": "7d3c14a29dba6b6a80c2a41f8c4d607481da574c3af4d02f1837ca95f06a21ff",
+      "bytes": 2512365,
+      "width": 1254,
+      "height": 1254
+    },
+    "fox_shaman": {
+      "sha256": "e17330c6623fcb4d20e332027f5da509ad7a5c1bf844da61d1743f5616b26aa6",
+      "bytes": 2180004,
+      "width": 1254,
+      "height": 1254
+    },
+    "fox_spirit_elder": {
+      "sha256": "3489b51ea176a55a52bfb00ac6ea51f9d63c26cc53fbbfd2376b5c694ccd5c22",
+      "bytes": 2727911,
+      "width": 1254,
+      "height": 1254
+    },
+    "fox_warrior": {
+      "sha256": "c6028f3530f4a50db63d612cda1afd8e6b540bddeb5659a4ce00193916b8167e",
+      "bytes": 2218223,
+      "width": 1254,
+      "height": 1254
+    },
+    "gold_turtle": {
+      "sha256": "b577c58c25156647ffe4cd5817c757c7e3ecc22277bb19e4b86b3ef1f4784b4a",
+      "bytes": 2034266,
+      "width": 1254,
+      "height": 1254
+    },
+    "gumiho_archmage": {
+      "sha256": "ffe9cdf0d91279804f3c2e00dbca1939d263e306a120b8315b58b08b7c2e6e0f",
+      "bytes": 2109260,
+      "width": 1254,
+      "height": 1254
+    },
+    "gumiho_demon": {
+      "sha256": "c314d87033986347af766f581f69ee5cf520392eb752f2d23f6e94ed77f52583",
+      "bytes": 1982240,
+      "width": 1254,
+      "height": 1254
+    },
+    "gumiho_goddess": {
+      "sha256": "b997c0fc1f7ca6b331d55eb7cd3f1208d694a16c83b1d71e98a17154e8c8daa4",
+      "bytes": 2177027,
+      "width": 1254,
+      "height": 1254
+    },
+    "gumiho_guardian": {
+      "sha256": "ce373fb0c69cee5df5563e673e81554de1a549a264b484138f6f46945a85fede",
+      "bytes": 2263141,
+      "width": 1254,
+      "height": 1254
+    },
+    "gumiho_queen": {
+      "sha256": "dad22be546788bad652364fe0c8cb6bda5cdf615076001936455cd364190de77",
+      "bytes": 2231572,
+      "width": 1254,
+      "height": 1254
+    },
+    "ice_gumiho": {
+      "sha256": "c900054c51c5acbafa41520f0d02a2ad824cf833b7423668eca5012370876b63",
+      "bytes": 2023762,
+      "width": 1254,
+      "height": 1254
+    },
+    "mountain_spirit": {
+      "sha256": "85e3f1774b1974f2ce945f9a2a2841939e9480ecbe1a48e4449b37d8e179f849",
+      "bytes": 2449537,
+      "width": 1254,
+      "height": 1254
+    },
+    "one_tail_fox": {
+      "sha256": "95e1ee0aeada0d43b273e942d3256b3a5addddf397012b5530510c8aebc9eb88",
+      "bytes": 1738922,
+      "width": 1254,
+      "height": 1254
+    },
+    "sage": {
+      "sha256": "6f6b578a7bdecfbf1d17a1216d52c8f88083f03e1eda219a53ac7d17a25c2fe8",
+      "bytes": 1629906,
+      "width": 1254,
+      "height": 1254
+    },
+    "spring_gumiho": {
+      "sha256": "ee032260471dc2aefe97fb01bf1936398fb3def74d7ef9845de2095c81864812",
+      "bytes": 1798559,
+      "width": 1254,
+      "height": 1254
+    },
+    "summer_gumiho": {
+      "sha256": "3a5eb8dc50727b349f51a39f6db261da604e3ccd7bce7fb2df47ab00bef3fcad",
+      "bytes": 2144477,
+      "width": 1254,
+      "height": 1254
+    },
+    "three_tail_fox": {
+      "sha256": "b81fcf0759dadecd2c71a114ea27341f6dbed828665939f1e9a891dd0b867a06",
+      "bytes": 1621456,
+      "width": 1254,
+      "height": 1254
+    },
+    "thunder_gumiho": {
+      "sha256": "74deafbd69afffb6bc6d1b175d71c7dc7cb5c55555227b39ae8e6b6e3de9f45f",
+      "bytes": 2438144,
+      "width": 1254,
+      "height": 1254
+    },
+    "village_archer": {
+      "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
+      "bytes": 1722317,
+      "width": 1254,
+      "height": 1254
+    }
+  }
+}
