@@ -137,6 +137,10 @@ const RITUAL_V2_IDS = [
   'abyssal_warden',
   'soul_devourer',
   'eternal_colossus',
+  'primordial_devourer',
+  'void_acolyte',
+  'rift_stalker',
+  'void_archon',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];

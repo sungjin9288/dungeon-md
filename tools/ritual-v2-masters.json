@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 126,
+  "count": 131,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -482,6 +482,12 @@
       "width": 1254,
       "height": 1254
     },
+    "null_sorcerer": {
+      "sha256": "fbf19eac08544ba78a27658efcef13a8816a60319a75a894d13301e9f48c95a2",
+      "bytes": 2378987,
+      "width": 1254,
+      "height": 1254
+    },
     "one_tail_fox": {
       "sha256": "95e1ee0aeada0d43b273e942d3256b3a5addddf397012b5530510c8aebc9eb88",
       "bytes": 1738922,
@@ -500,6 +506,12 @@
       "width": 1254,
       "height": 1254
     },
+    "primordial_devourer": {
+      "sha256": "85dc814aac5bd867710fc5fe54aca91e49176ae70697f7dce03a24730f2bf7ab",
+      "bytes": 2656662,
+      "width": 1254,
+      "height": 1254
+    },
     "primordial_shaman": {
       "sha256": "d952f343092f4252cf415325e452c460ec7a1343a6ed64ebc51ae9166f301737",
       "bytes": 2639300,
@@ -509,6 +521,12 @@
     "red_dragon_warrior": {
       "sha256": "ac40b5af483f3cb52b22e178051e16218c71b8ba421074b7d6803ee2cbf73c4b",
       "bytes": 2332800,
+      "width": 1254,
+      "height": 1254
+    },
+    "rift_stalker": {
+      "sha256": "331a8e0386d2e1c2ed52fc8393cf470911afa70dbdc3deba47147da5da36ba25",
+      "bytes": 2137076,
       "width": 1254,
       "height": 1254
     },
@@ -725,6 +743,18 @@
     "village_archer": {
       "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
       "bytes": 1722317,
+      "width": 1254,
+      "height": 1254
+    },
+    "void_acolyte": {
+      "sha256": "a73d9d4cb86de57054260eb7e6be1d279d37928d30f60016a82c219570cc41d4",
+      "bytes": 2210883,
+      "width": 1254,
+      "height": 1254
+    },
+    "void_archon": {
+      "sha256": "618c6366fbb6eeac46e7c4d5f428abeeeaad4c13aead89293eab84c488b70770",
+      "bytes": 1654040,
       "width": 1254,
       "height": 1254
     },
