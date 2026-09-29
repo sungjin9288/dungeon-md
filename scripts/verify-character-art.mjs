@@ -138,6 +138,12 @@ async function gallery(fixture, missing = 'none') {
     const game = window.__phaserGame;
     game.scene.getScenes(true).forEach(scene => game.scene.stop(scene.scene.key));
     if (missing !== 'none') {
+      // Screens stream ritual-v2 cutouts on demand, so a removed texture would simply be fetched again.
+      // A faithful "source missing" fault is a failed load: the streamer records it and never retries.
+      const { getCharacterArtStreamer } = await import('/src/art/CharacterArtStreamer.ts');
+      const { CHARACTER_ART } = await import('/src/data/characterArt.ts');
+      const streamer = getCharacterArtStreamer(game);
+      for (const id of Object.keys(CHARACTER_ART)) streamer.failed.add(id);
       for (const id of ids) {
         for (const key of [`monster-ritual-v2-${id}`, `portrait-ritual-v2-${id}`, `roomtoken-ritual-v2-${id}`, `sprite-ritual-v2-${id}`, `portrait-${id}`, `roomtoken-${id}`]) if (game.textures.exists(key)) game.textures.remove(key);
         if (missing === 'both' && game.textures.exists(`monster-ai-${id}`)) game.textures.remove(`monster-ai-${id}`);
@@ -242,7 +248,7 @@ try {
       await click(page, 195, 538);
       audit.receipts.push({ case: 'supplied result close real input', viewport, saveNeutral: beforeReveal === await storage(page), closed: await page.evaluate(() => window.__artRevealClosed === true) });
 
-      for (const [name, cinematicId, index] of [['mountain-left', 'ch1_opening', 0], ['dokkaebi-right', 'ch1_opening', 2], ['gumiho-right', 'ch2_opening', 0], ['dokkaebi-left', 'ch2_opening', 2], ['messenger-left', 'ch4_opening', 0], ['unknown-left', 'stage10_boss_intro', 0], ['unknown-right', 'stage20_boss_intro', 0]]) {
+      for (const [name, cinematicId, index] of [['mountain-left', 'ch1_opening', 0], ['dokkaebi-right', 'ch1_opening', 2], ['gumiho-right', 'ch2_opening', 0], ['dokkaebi-left', 'ch2_opening', 2], ['messenger-left', 'ch4_opening', 0], ['unknown-left', 'stage10_boss_intro', 0], ['boss-right', 'stage20_boss_intro', 0]]) {
         await switchScene(page, 'CinematicScene', { cinematicId, nextScene: 'BarracksScene' });
         const entered = await storage(page);
         for (let i = 0; i < index; i++) await click(page, 195, 764);
@@ -252,7 +258,9 @@ try {
           return { index: scene.lineIndex, line: scene.lines[scene.lineIndex], artVisible: scene.speakerArt.visible, artKey: scene.speakerArt.texture.key, artX: scene.speakerArt.x, artSize: [scene.speakerArt.displayWidth, scene.speakerArt.displayHeight], emojiVisible: scene.speakerEmoji.visible, phase: scene.phase };
         });
         audit.receipts.push({ case: `story-${name}`, viewport, ...receipt, saveNeutralAfterEntry: entered === await storage(page) });
-        if (name.startsWith('unknown') ? receipt.artVisible || !receipt.emojiVisible : !receipt.artVisible || !receipt.artKey.startsWith('monster-ritual-v2-')) audit.failures.push({ case: name, reason: 'speaker source/fallback gate', receipt });
+        // Guardians show their ritual-v2 cutout, chapter villains their boss cutout, unmapped speakers the emoji seal.
+        const expectedArtPrefix = name.startsWith('boss') ? 'boss-ritual-v2-' : 'monster-ritual-v2-';
+        if (name.startsWith('unknown') ? receipt.artVisible || !receipt.emojiVisible : !receipt.artVisible || !receipt.artKey.startsWith(expectedArtPrefix)) audit.failures.push({ case: name, reason: 'speaker source/fallback gate', receipt });
         if (state.scenes.some(s => s.fixedOverflow.length || s.under44.length || s.textBelow10.length)) audit.failures.push({ case: name, reason: 'cinematic layout minimum gate' });
         await click(page, 318, 48);
         await page.waitForFunction(() => window.__phaserGame.scene.isActive('BarracksScene'));
