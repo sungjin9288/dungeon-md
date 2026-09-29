@@ -13,7 +13,7 @@ import { drawBattleSlot as _drawBattleSlot, SLOT_W, SLOT_H } from '../ui/RoomSlo
 import { drawStalactites, drawStalagmites, addWaterDrip } from '../themes/decorations';
 import { getReducedMotion } from '../utils/reducedMotion';
 import { audioManager } from '../audio/AudioManager';
-import { addRoomActivityAura as _addRoomActivityAura, drawDungeonRoomAlcove as _drawDungeonRoomAlcove, makeRoomSlotCtx as _makeRoomSlotCtx } from './HomeRoomCards';
+import { addRoomActivityAura as _addRoomActivityAura, drawDungeonRoomAlcove as _drawDungeonRoomAlcove, getHomeRoomTitle, makeRoomSlotCtx as _makeRoomSlotCtx } from './HomeRoomCards';
 
 // ─── Layout constants (must match DungeonHomeScene.ts) ─────────────────────────
 
@@ -462,8 +462,10 @@ export function addActionQueueRankMarkers(
     cell.center.x,
     cell.rect.y + 14,
     action.icon,
-    // The pin sits on the card title; carry the room number so it stays readable.
-    `#${action.slotIdx + 1} ${action.label}`,
+    // The marker sits on the card title and hid it ("전투실" vanished under
+    // "#1 모집", §28 P1): carry the number and the room's name.
+    [`#${action.slotIdx + 1}`, getHomeRoomTitle(scene.gs.dungeonSlots?.[action.slotIdx]), action.label]
+      .filter(Boolean).join(' · ').replace(/^(#\d+) · /, '$1 '),
     action.accent,
     () => scene.selectRoomForPlacement(action.slotIdx),
   );
@@ -480,7 +482,11 @@ function addHomeSpatialDirective(
   onPress: () => void,
 ): void {
   void icon;
-  const w = Math.max(72, 26 + label.length * 10);
+  const text = scene.add.text(0, 1, label, {
+    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
+  }).setOrigin(0.5);
+  // Measured, not estimated from the character count: Hangul is ~12px wide.
+  const w = Math.max(72, Math.ceil(text.width) + 22);
   const marker = scene.add.container(x, y).setDepth(14);
   const bg = scene.add.graphics();
   bg.fillStyle(0x070806, 0.94);
@@ -491,10 +497,7 @@ function addHomeSpatialDirective(
   bg.fillRect(-w / 2, -14, 3, 28);
   bg.lineStyle(1, 0xa98245, 0.68);
   bg.strokeRoundedRect(-w / 2, -14, w, 28, 4);
-  marker.add(bg);
-  marker.add(scene.add.text(0, 1, label, {
-    fontFamily: 'sans-serif', fontSize: '12px', color: CASUAL_CSS.INK, fontStyle: 'bold',
-  }).setOrigin(0.5));
+  marker.add([bg, text]);
   const zone = scene.add.zone(0, 0, Math.max(44, w), 44)
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true });

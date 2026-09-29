@@ -48,6 +48,15 @@ const GRID_START_Y     = TOP_H + QUEST_BANNER_H + 10;
 
 // ─── rebuildDungeonSlots ─────────────────────────────────────────────────────
 
+
+/** The name a Home room card shows; the action marker that sits on it repeats it (§35). */
+export function getHomeRoomTitle(slot: DungeonSlot | null | undefined): string | null {
+  if (!slot?.roomType) return null;
+  if (slot.hp <= 0) return '파손된 방';
+  const typeDef = ROOM_SLOT_TYPE_DEFS.find(def => def.id === slot.roomType);
+  return typeDef ? getSlotBuildingName(slot, typeDef.name) : '던전 방';
+}
+
 export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
   if (scene.dungeonContainer) scene.dungeonContainer.destroy();
   const c = scene.add.container(0, 0).setDepth(3);
@@ -206,11 +215,10 @@ function drawHomeDungeonHotspot(
     return;
   }
 
-  const typeDef = ROOM_SLOT_TYPE_DEFS.find(def => def.id === slot.roomType);
   const metrics = calculateRoomMetrics(scene.gs, slot);
   const monsterIds = (slot.monsterIds ?? []).filter((id): id is string => Boolean(id));
   const trapCount = (slot.trapIds ?? []).filter(Boolean).length;
-  const title = broken ? '파손된 방' : typeDef ? getSlotBuildingName(slot, typeDef.name) : '던전 방';
+  const title = getHomeRoomTitle(slot) ?? '던전 방';
   c.add(scene.add.text(cx, y + 8, title, {
     fontFamily: 'Georgia, serif', fontSize: '11px',
     color: broken ? CASUAL_CSS.RED : '#ead7af', fontStyle: 'bold',

@@ -392,7 +392,9 @@ export function resumePreBattleFromRoomEdit(scene: DungeonHomeScene): void {
 
 export function initQuests(scene: DungeonHomeScene): void {
   scene.applyGameStateResult(initializeHomeQuestState(scene.gs));
-  settlePendingQuestCompletion(scene);
+  // A completing quest restarts Home through its popup; offering the next
+  // quest's invasion now showed its banner beside the popup (it returns after).
+  if (settlePendingQuestCompletion(scene)) return;
   checkForInvasion(
     scene, scene.gs, scene.invasionState,
     GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
