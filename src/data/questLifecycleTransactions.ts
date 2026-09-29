@@ -134,7 +134,8 @@ export function advanceCompletedMainQuest(state: GameState): MainQuestAdvanceRes
   // completeAndAdvance() completes unconditionally — only settle when the
   // active quest's objectives are actually all met (e.g. home settle path).
   if (!isActiveQuestObjectiveComplete(synced)) {
-    return { state, changed: false, completion: null };
+    // Keep the partial sync (e.g. MQ-010 level counter while gold is short); synced === state when nothing moved.
+    return { state: synced, changed: synced !== state, completion: null };
   }
   const [nextState, completion] = completeAndAdvance(synced);
   return {

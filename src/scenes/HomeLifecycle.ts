@@ -67,14 +67,15 @@ let homeVisitedThisLaunch = false;
 
 export function maybeShowIdleIncome(scene: DungeonHomeScene): void {
   const now = Date.now();
+  // This visit counts as the launch's first even when it only starts the clock below.
+  const firstVisit = !homeVisitedThisLaunch;
+  homeVisitedThisLaunch = true;
   // First-ever visit: start the clock, no payout (avoid an epoch-sized reward).
   if ((scene.gs.lastIdleCollect ?? 0) <= 0) {
     scene.persistGameState(startIdleClock(scene.gs, now));
     return;
   }
   const reward = computeIdleReward(scene.gs, now);
-  const firstVisit = !homeVisitedThisLaunch;
-  homeVisitedThisLaunch = true;
   if (!hasIdlePayout(reward)) return;   // nothing meaningful accrued yet — keep accruing
   if (!shouldShowIdlePanel(reward, { firstVisit })) {
     autoCollectIdleIncome(scene, now);

@@ -192,6 +192,20 @@ describe('questLifecycleTransactions — main quest completion advancement', () 
     expect(result.state.activeMainQuestId).toBe('MQ-003');
   });
 
+  it('keeps derived progress when the quest is not yet complete (MQ-010: DM level reached, gold short)', () => {
+    // A DM level gained outside a battle (quest/sub-quest reward) must still move the level counter.
+    const state = { ...startQuest(makeState(), 'MQ-010'), dmLevel: 4, totalGoldEarned: 200 };
+
+    const result = advanceCompletedMainQuest(state);
+
+    expect(result.completion).toBeNull();
+    expect(result.changed).toBe(true);
+    expect(result.state.questProgress['MQ-010'].objectives).toMatchObject({ O1: 4, O2: 200 });
+    expect(result.state.activeMainQuestId).toBe('MQ-010');
+    // Already in sync: same reference, nothing to persist.
+    expect(advanceCompletedMainQuest(result.state)).toMatchObject({ state: result.state, changed: false });
+  });
+
   it('does NOT settle a quest with only partial multi-objective progress (MQ-004 O1 met, O2 unmet)', () => {
     // MQ-004: build_room 2 + reach_dm_level 3 — only the build objective met.
     const started = startQuest(makeState(), 'MQ-004');
