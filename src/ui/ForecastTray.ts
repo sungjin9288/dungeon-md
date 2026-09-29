@@ -9,6 +9,7 @@
 // modal harness measures it against the same 390×844 contract.
 
 import Phaser from 'phaser';
+import { drawSigil, type SigilKind } from './Sigils';
 import type { DungeonHomeScene } from '../scenes/DungeonHomeScene';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
@@ -30,8 +31,9 @@ import {
   raiseNotorietyTier,
 } from '../data/notoriety';
 
-const KIND_ICON: Readonly<Record<ForecastKind, string>> = {
-  raid: '⚔️', elite: '🛡️', merchant: '💰', pilgrim: '🕯️', treasure: '💎', weekly_boss: '👑', daily_rule: '🎯',
+/** Guest kind → line sigil (was emoji). Tinted with the card's accent. */
+const KIND_SIGIL: Readonly<Record<ForecastKind, SigilKind>> = {
+  raid: 'swords', elite: 'shield', merchant: 'coin', pilgrim: 'flame', treasure: 'chest', weekly_boss: 'skull', daily_rule: 'scroll',
 };
 
 const KIND_ACCENT: Readonly<Record<ForecastKind, number>> = {
@@ -168,7 +170,9 @@ export function showForecastTray(scene: DungeonHomeScene): void {
       accentColor: accent, accentAlpha: taken ? 0.4 : 0.9, glowOpacity: 0, shadowOpacity: 0.12, shadowOffsetY: 2,
     });
     container.add([frame.shadow, frame.panel, frame.glow]);
-    container.add(scene.add.text(rowX + 24, y + 26, KIND_ICON[card.kind], { fontFamily: 'sans-serif', fontSize: '18px' }).setOrigin(0.5));
+    const kindG = scene.add.graphics();
+    drawSigil(kindG, KIND_SIGIL[card.kind], rowX + 24, y + 26, 24, accent, { alpha: taken ? 0.5 : 1 });
+    container.add(kindG);
     container.add(scene.add.text(rowX + 48, y + 18, `${card.title} · ${card.bandTier}단계`, {
       fontFamily: 'sans-serif', fontSize: '13px', color: taken ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0, 0.5));

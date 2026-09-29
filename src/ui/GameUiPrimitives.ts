@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { drawSigil } from './Sigils';
+import { EMOJI_SIGILS } from './sigilMaps';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CANVAS_WIDTH, SCENE_HEADER_TOUCH_HEIGHT } from '../constants/layout';
 import { addInnerGlow, addPanelShadow } from './PanelDepth';
@@ -151,7 +153,11 @@ export function addInfoRow(
   bg.fillStyle(borderColor, 0.16);
   bg.fillRect(x, y, 3, h);
 
-  const iconText = scene.add.text(x + 14, y + h / 2, icon, {
+  // Known emoji draw as a line sigil on the row's own graphics; the text ref
+  // stays (empty) so callers that add refs.iconText keep working.
+  const sigil = EMOJI_SIGILS[icon];
+  if (sigil) drawSigil(bg, sigil.kind, x + 14, y + h / 2, Math.min(16, h - 6), sigil.color, { disc: false });
+  const iconText = scene.add.text(x + 14, y + h / 2, sigil ? '' : icon, {
     fontFamily: 'sans-serif',
     fontSize: '11px',
   }).setOrigin(0.5);

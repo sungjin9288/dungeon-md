@@ -218,7 +218,7 @@ function render(): void {
     bg.lineStyle(1, afford ? 0xcc6a5a : 0x4a3d28, 1);
     bg.strokeRoundedRect(bx, by, bw, 22, 6);
     c.add(bg);
-    c.add(scene.add.text(bx + bw / 2, by + 11, `방 수리 ${cost}💰`, {
+    c.add(scene.add.text(bx + bw / 2, by + 11, `방 수리 ${cost}골드`, {
       fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#ffd8c8' : '#7a6f58', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(122));
     if (afford) {
@@ -247,7 +247,7 @@ function render(): void {
       bg.lineStyle(1, afford ? COLORS.JADE : 0x4a3d28, 1);
       bg.strokeRoundedRect(bx, by, bw, 22, 6);
       c.add(bg);
-      c.add(scene.add.text(bx + bw / 2, by + 11, `방 강화 ${cost}💰`, {
+      c.add(scene.add.text(bx + bw / 2, by + 11, `방 강화 ${cost}골드`, {
         fontFamily: 'sans-serif', fontSize: '11px', color: afford ? '#f0e6c8' : '#7a6f58', fontStyle: 'bold',
       }).setOrigin(0.5).setDepth(122));
       if (afford) {
@@ -386,7 +386,7 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     inner.add(addTrapIcon(ctxRef!.scene, trap.id, x + itemW / 2, 24, 28, locked ? 0.35 : 1).setDepth(123));
     addText(inner, x + 6, 5, `T${trap.tier}`, '10px', locked ? '#6a6052' : '#c8b890', true);
     addText(inner, x + itemW / 2, h - 30, trap.name, '11px', locked ? '#6a6052' : '#f0e6c8', false, 0.5);
-    const priceLabel = trap.tier === 1 ? `${trap.cost}💰` : stock > 0 ? `재고 ${stock}` : '재고 없음';
+    const priceLabel = trap.tier === 1 ? `${trap.cost}골드` : stock > 0 ? `재고 ${stock}` : '재고 없음';
     addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : priceLabel,
       '10px', on ? '#9fe1cb' : locked ? '#6a6052' : afford ? '#c8b890' : '#cc6a5a', false, 0.5, on ? 'sans-serif' : 'monospace');
     if (on) {

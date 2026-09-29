@@ -451,7 +451,7 @@ export function buildDefenseLoadout(
         })
       : ['함정 미배치'];
     const equipmentLines = room.equipment.length > 0
-      ? room.equipment.slice(0, 3).map(equipment => `${equipment.icon} ${equipment.name}  ${equipment.effect}`)
+      ? room.equipment.slice(0, 3).map(equipment => `${equipment.name}  ${equipment.effect}`)
       : ['장비 미장착'];
     const popH = 232 + Math.max(monsterLines.length, trapLines.length) * 16 + Math.min(3, equipmentLines.length) * 14;
     let dismissZone: Phaser.GameObjects.Zone | null = null;

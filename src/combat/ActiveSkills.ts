@@ -5,6 +5,8 @@
 // flashText / skillHitFlash helpers.
 
 import Phaser from 'phaser';
+import { drawSigil, type SigilKind } from '../ui/Sigils';
+import { ACTIVE_SKILL_SIGILS } from '../ui/sigilMaps';
 import { Room } from '../objects/Room';
 import { Invader } from '../objects/Invader';
 import type { RoomData } from '../data/rooms';
@@ -56,11 +58,12 @@ const SKILL_VISUALS: Record<string, SkillVisualSpec> = {
   war_cry:          { icon: '📣', color: 0xff6644, css: '#ff8866' },
 };
 
-function getSkillVisual(skillId: string): SkillVisualSpec {
-  return SKILL_VISUALS[skillId] ?? { icon: '✨', color: 0xffffff, css: '#ffffff' };
+function getSkillVisual(skillId: string): SkillVisualSpec & { readonly sigil?: SigilKind } {
+  const visual = SKILL_VISUALS[skillId] ?? { icon: '✨', color: 0xffffff, css: '#ffffff' };
+  return { ...visual, sigil: ACTIVE_SKILL_SIGILS[skillId]?.kind };
 }
 
-function showSkillCastPulse(ctx: ActiveSkillContext, visual: SkillVisualSpec): void {
+function showSkillCastPulse(ctx: ActiveSkillContext, visual: SkillVisualSpec & { readonly sigil?: SigilKind }): void {
   const { scene, room } = ctx;
   const c = scene.add.container(room.x, room.y).setDepth(214);
 
@@ -85,11 +88,9 @@ function showSkillCastPulse(ctx: ActiveSkillContext, visual: SkillVisualSpec): v
   glyphBg.lineStyle(1, visual.color, 0.62);
   glyphBg.strokeCircle(0, 0, 13);
 
-  const glyph = scene.add.text(0, -1, visual.icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '16px',
-  }).setOrigin(0.5);
-  glyph.setShadow(0, 2, '#000000', 0.45, true, true);
+  // Line sigil (was the emoji icon), matching the command strip.
+  const glyph = scene.add.graphics();
+  drawSigil(glyph, visual.sigil ?? 'spark', 0, -1, 18, visual.color, { disc: false });
 
   c.add([ring, rays, glyphBg, glyph]);
   scene.tweens.add({
@@ -323,9 +324,9 @@ export function activateSkillEffect(skillId: string, ctx: ActiveSkillContext): v
     }
     case 'gold_rush': {
       ctx.addGold(200);
-      ctx.showGoldFloat('+200 💰', room.x, room.y - 30);
+      ctx.showGoldFloat('+200 골드', room.x, room.y - 30);
       showRoomBloom(scene, room, visual);
-      flashText(ctx, '💰 골드 +200!', '#ffdd44');
+      flashText(ctx, '골드 +200!', '#ffdd44');
       break;
     }
     case 'speed_up': {

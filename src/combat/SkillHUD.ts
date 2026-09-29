@@ -10,6 +10,8 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { ACTIVE_SKILLS, type ActiveSkill } from '../data/barracks';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { drawSigil } from '../ui/Sigils';
+import { ACTIVE_SKILL_SIGILS } from '../ui/sigilMaps';
 
 // ─── Skill slot geometry ───────────────────────────────────────────────────────
 
@@ -173,7 +175,8 @@ class SkillSlot {
   readonly skill: ActiveSkill | null;
   private bg: Phaser.GameObjects.Graphics;
   private cooldownArc: Phaser.GameObjects.Graphics;
-  private iconText: Phaser.GameObjects.Text;
+  /** Skill sigil drawn around (0,0) and positioned at the slot centre, so scale pivots there. */
+  private iconText: Phaser.GameObjects.Graphics;
   private cdLabel: Phaser.GameObjects.Text;
   private badgeText: Phaser.GameObjects.Text;
   private categoryText: Phaser.GameObjects.Text;
@@ -217,12 +220,9 @@ class SkillSlot {
     this.container.add(this.badgeText);
 
     // Icon
-    const icon = skill?.icon ?? '◇';
-    this.iconText = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE / 2, icon, {
-      fontFamily: 'sans-serif',
-      fontSize: '21px',
-    }).setOrigin(0.5).setAlpha(skill ? 1 : 0.3);
-    this.iconText.setShadow(0, 2, '#00000055', 0.36, true, true);
+    const sigil = skill ? ACTIVE_SKILL_SIGILS[skill.id] : undefined;
+    this.iconText = scene.add.graphics({ x: x + SLOT_SIZE / 2, y: y + SLOT_SIZE / 2 }).setAlpha(skill ? 1 : 0.3);
+    drawSigil(this.iconText, sigil?.kind ?? 'spark', 0, 0, 26, sigil?.color ?? 0xd8c08a);
     this.container.add(this.iconText);
 
     this.categoryText = scene.add.text(x + SLOT_SIZE / 2, y + SLOT_SIZE - 7, getCategoryLabel(skill?.category), {

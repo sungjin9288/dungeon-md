@@ -82,3 +82,54 @@ export const ACHIEVEMENT_CATEGORY_SIGILS: Readonly<Record<AchievementCategory, S
 export function sigilFor(map: Readonly<Record<string, SigilKind>>, id: string, fallback: SigilKind = 'spark'): SigilKind {
   return map[id] ?? fallback;
 }
+
+/**
+ * Emoji still passed as icon strings by shared row/card renderers (addInfoRow
+ * etc.) → the sigil drawn in their place. Unmapped strings (⚔, ◆, ✦ …) are
+ * already typographic glyphs and keep rendering as text.
+ */
+export const EMOJI_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; readonly color: number }>> = {
+  '💰': { kind: 'coin', color: 0xe8c25a },
+  '✨': { kind: 'spark', color: 0xe8c25a },
+  '💎': { kind: 'gem', color: 0x7fd3c4 },
+  '💠': { kind: 'gem', color: 0x8fb8f0 },
+  '⚒': { kind: 'hammer', color: 0xd08a52 },
+  '🔧': { kind: 'hammer', color: 0xd08a52 },
+  '🔥': { kind: 'flame', color: 0xef846d },
+  '⚡': { kind: 'bolt', color: 0xe8c25a },
+  '🔮': { kind: 'orb', color: 0xb58ae0 },
+  '🛡️': { kind: 'shield', color: 0x9fb4c8 },
+  '🛡': { kind: 'shield', color: 0x9fb4c8 },
+  '📜': { kind: 'scroll', color: 0xd8c08a },
+  '🏰': { kind: 'wall', color: 0xb8a88a },
+  '💚': { kind: 'heart', color: 0x76c6a0 },
+  '👹': { kind: 'skull', color: 0xef846d },
+  '❄': { kind: 'snow', color: 0xa8d8f0 },
+  '❄️': { kind: 'snow', color: 0xa8d8f0 },
+  '🕸': { kind: 'web', color: 0xb8a88a },
+  '🏆': { kind: 'chalice', color: 0xe8c25a },
+  '⭐': { kind: 'star', color: 0xe8c25a },
+};
+
+/** Active skills (barracks.ts ACTIVE_SKILLS ids) → sigil + the skill's VFX colour. */
+export const ACTIVE_SKILL_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; readonly color: number }>> = {
+  fire_burst: { kind: 'flame', color: 0xff8a4a },
+  ice_arrow: { kind: 'snow', color: 0x88ddff },
+  lightning: { kind: 'bolt', color: 0xfff27a },
+  poison_cloud: { kind: 'flask', color: 0x7cff64 },
+  heavy_strike: { kind: 'hammer', color: 0xff9a35 },
+  fortress: { kind: 'wall', color: 0x8acbff },
+  heal_room: { kind: 'heart', color: 0x5cff9b },
+  shield: { kind: 'shield', color: 0xaab7ff },
+  gold_rush: { kind: 'coin', color: 0xffdf6e },
+  speed_up: { kind: 'infinity', color: 0x44ffcc },
+  summon_ghost: { kind: 'wisp', color: 0xcc88ff },
+  timestop: { kind: 'moon', color: 0xffffff },
+  curse_all: { kind: 'orb', color: 0x9944ff },
+  healing_rain: { kind: 'sprout', color: 0x44ccff },
+  rage: { kind: 'skull', color: 0xff5555 },
+  meteor: { kind: 'star', color: 0xff6644 },
+  emergency_repair: { kind: 'hammer', color: 0x66ddff },
+  war_cry: { kind: 'banner', color: 0xff6644 },
+};
+

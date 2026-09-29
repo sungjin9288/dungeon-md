@@ -12,6 +12,8 @@ import { loadGameState } from '../data/wisdom';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { addFramedPanel } from '../ui/GameUiPrimitives';
+import { drawSigil } from '../ui/Sigils';
+import { ACTIVE_SKILL_SIGILS } from '../ui/sigilMaps';
 import { getReducedMotion } from '../utils/reducedMotion';
 
 export interface SkillPopupContext {
@@ -253,11 +255,9 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
     drawCard();
     popup.add(bg);
 
-    const iconT = scene.add.text(bx + 19.5, by + 19.5, sk.icon, {
-      fontFamily: 'sans-serif',
-      fontSize: '17px',
-    }).setOrigin(0.5);
-    iconT.setAlpha(ready ? 1 : 0.45);
+    const skSigil = ACTIVE_SKILL_SIGILS[sk.id];
+    const iconT = scene.add.graphics().setAlpha(ready ? 1 : 0.45);
+    drawSigil(iconT, skSigil?.kind ?? 'spark', bx + 19.5, by + 19.5, 22, skSigil?.color ?? 0xd8c08a, { disc: false });
     popup.add(iconT);
 
     const nameT = scene.add.text(bx + 39, by + 18, sk.name, {

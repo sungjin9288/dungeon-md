@@ -5,6 +5,8 @@
  * commits one action per tap.
  */
 import Phaser from 'phaser';
+import { drawSigil, type SigilKind } from './Sigils';
+
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { BOND_ACTIONS, BOND_ACTION_ORDER, BOND_MAX, BOND_STORY_BY_TRIBE, BOND_STORY_DEFAULT, BOND_THRESHOLDS, bondTier, nextBondThreshold, type BondActionId } from '../data/bond';
 import { canPerformBondAction, getBondAffinity, performBondAction, type BondFailureReason } from '../data/bondTransactions';
@@ -13,6 +15,9 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { loadGameState, saveGameState, type OwnedMonster } from '../data/wisdom';
 import type { MonsterDetailContext } from './MonsterDetailShared';
+
+/** Care action sigils (treat: herb/ore snack, talk, joint training). */
+const BOND_ACTION_SIGILS: Readonly<Record<BondActionId, SigilKind>> = { treat: 'plant', talk: 'book', spar: 'swords' };
 
 const ROW_H = 52;
 const BUTTON_W = 96;
@@ -29,7 +34,7 @@ const FAILURE_LABEL: Record<BondFailureReason, string> = {
 function costLabel(action: BondActionId, materials: Readonly<Record<string, number>> | null): string {
   const def = BOND_ACTIONS[action];
   const parts: string[] = [];
-  if (def.gold > 0) parts.push(`${def.gold}💰`);
+  if (def.gold > 0) parts.push(`${def.gold}골드`);
   if (def.materialsAny.length > 0) {
     const chosen = materials && Object.keys(materials).length > 0 ? materials : def.materialsAny[0];
     parts.push(Object.entries(chosen).map(([id, qty]) => `${MATERIAL_DEFS[id]?.name ?? id} ${qty}`).join(' '));
@@ -102,10 +107,12 @@ export function buildBondTab(
     g.lineStyle(1, check.ok ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, check.ok ? 0.7 : 0.6);
     g.strokeRoundedRect(x, rowY, w, ROW_H, 7);
     container.add(g);
-    container.add(scene.add.text(x + 12, rowY + 12, `${def.emoji} ${def.name}  +${def.gain}`, {
+    // Line sigil for the action (the emoji rendered in the platform's own style).
+    drawSigil(g, BOND_ACTION_SIGILS[id] ?? 'heart', x + 20, rowY + 20, 20, check.ok ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS, { disc: false });
+    container.add(scene.add.text(x + 36, rowY + 12, `${def.name}  +${def.gain}`, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }));
-    container.add(scene.add.text(x + 12, rowY + 31, `${costLabel(id, check.materials)} · 오늘 ${check.remaining}/${def.dailyLimit}`, {
+    container.add(scene.add.text(x + 36, rowY + 31, `${costLabel(id, check.materials)} · 오늘 ${check.remaining}/${def.dailyLimit}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }));
 
@@ -126,7 +133,7 @@ export function buildBondTab(
         if (!result.ok) { opts.toast(FAILURE_LABEL[result.reason], DUNGEON_UI_CSS.EMBER); return; }
         saveGameState(result.state);
         const crossed = result.crossed.map(t => ` · ${t.label} 달성!`).join('');
-        opts.toast(`${def.emoji} ${def.name} · 교감 ${result.affinityBefore} → ${result.affinityAfter}${crossed}${result.levelled ? ' · 레벨 업!' : ''}`, DUNGEON_UI_CSS.JADE);
+        opts.toast(`${def.name} · 교감 ${result.affinityBefore} → ${result.affinityAfter}${crossed}${result.levelled ? ' · 레벨 업!' : ''}`, DUNGEON_UI_CSS.JADE);
         opts.rerender();
       });
       container.add(zone);

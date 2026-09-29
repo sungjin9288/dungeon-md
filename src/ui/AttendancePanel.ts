@@ -21,7 +21,7 @@ import { commitSceneState } from './sceneStateCommit';
 
 function rewardText(rw: AttendanceReward): string {
   const parts: string[] = [];
-  if (rw.gold)         parts.push(`💰${rw.gold}`);
+  if (rw.gold)         parts.push(`골드 ${rw.gold}`);
   if (rw.gems)         parts.push(`💎${rw.gems}`);
   if (rw.soulCrystals) parts.push(`💠${rw.soulCrystals}`);
   return parts.join(' ');

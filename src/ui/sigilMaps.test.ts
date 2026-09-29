@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('phaser', () => ({ default: {} }));
 const { SIGIL_KINDS } = await import('./Sigils');
-const { ACHIEVEMENT_CATEGORY_SIGILS, DECORATION_SET_SIGILS, DECORATION_SIGILS, MATERIAL_SIGILS, ROOM_TYPE_SIGILS, WISDOM_SIGILS } = await import('./sigilMaps');
+const { ACHIEVEMENT_CATEGORY_SIGILS, ACTIVE_SKILL_SIGILS, DECORATION_SET_SIGILS, DECORATION_SIGILS, EMOJI_SIGILS, MATERIAL_SIGILS, ROOM_TYPE_SIGILS, WISDOM_SIGILS } = await import('./sigilMaps');
 const { BRANCH_DEFS, ROOM_SLOT_TYPE_DEFS } = await import('../data/wisdom');
 const { DECORATION_DEFS, SET_DEFS } = await import('../data/decorations');
 const { MATERIAL_DEFS } = await import('../data/fusion');
+const { ACTIVE_SKILLS } = await import('../data/barracks');
 const { ACHIEVEMENT_DEFS } = await import('../data/achievementData');
 
 // Emoji icons were replaced by line sigils on the meta screens (§37): every
@@ -32,5 +33,10 @@ describe('sigil coverage', () => {
 
   it('maps every material', () => {
     for (const id of Object.keys(MATERIAL_DEFS)) expect(known.has(MATERIAL_SIGILS[id]?.kind), id).toBe(true);
+  });
+
+  it('maps every active skill and every emoji alias to a real glyph', () => {
+    for (const skill of ACTIVE_SKILLS) expect(known.has(ACTIVE_SKILL_SIGILS[skill.id]?.kind), skill.id).toBe(true);
+    for (const [emoji, sigil] of Object.entries(EMOJI_SIGILS)) expect(known.has(sigil.kind), emoji).toBe(true);
   });
 });

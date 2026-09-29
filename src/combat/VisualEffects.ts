@@ -307,7 +307,7 @@ export function showSoulHarvestExec(
   g.fillCircle(x, y, 28);
   scene.tweens.add({ targets: g, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 500,
     onComplete: () => g.destroy() });
-  const t = scene.add.text(x, y - 20, '💀 처형 +5💰', {
+  const t = scene.add.text(x, y - 20, '처형 +5골드', {
     fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#cc88ff',
     stroke: '#000000', strokeThickness: 3,
   }).setOrigin(0.5).setDepth(56);
@@ -347,7 +347,7 @@ export function showWisdomToast(
 ): void {
   const b = wisdomBonuses;
   const lines: string[] = [];
-  if (b.idleIncomeMult > 1) lines.push(`💰 운영 수익 +${Math.round((b.idleIncomeMult - 1) * 100)}%`);
+  if (b.idleIncomeMult > 1) lines.push(`운영 수익 +${Math.round((b.idleIncomeMult - 1) * 100)}%`);
   if (b.dungeonMaxHpBonus > 0) lines.push(`🏰 던전 HP +${b.dungeonMaxHpBonus}`);
   if (b.roomCostMult   < 1) lines.push(`🔨 방 업그레이드 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
   if (b.waveRewardMult > 1) lines.push(`⚡ 웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);

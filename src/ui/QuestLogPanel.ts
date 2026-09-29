@@ -568,7 +568,7 @@ function drawMainQuestCard(
 
   // Reward preview remains the final ledger row.
   const rwds: string[] = [];
-  if (quest.reward.gold)         rwds.push(`💰${quest.reward.gold}`);
+  if (quest.reward.gold)         rwds.push(`골드 ${quest.reward.gold}`);
   if (quest.reward.soulCrystals) rwds.push(`💠${quest.reward.soulCrystals}`);
   if (quest.reward.dmXP)         rwds.push(`✨${quest.reward.dmXP}XP`);
   const shownUnlock = (quest.reward.unlocks ?? []).map(questUnlockLabel).find(Boolean);
@@ -708,7 +708,7 @@ function drawSubQuestSection(
 
     // Reward preview
     const rwds: string[] = [];
-    if (sq.reward.gold)         rwds.push(`💰${sq.reward.gold}`);
+    if (sq.reward.gold)         rwds.push(`골드 ${sq.reward.gold}`);
     if (sq.reward.soulCrystals) rwds.push(`💠${sq.reward.soulCrystals}`);
     if (sq.reward.dmXP)         rwds.push(`✨${sq.reward.dmXP}XP`);
     c.add(scene.add.text(CANVAS_WIDTH - PAD - 10, y + 26, rwds.join(' '), {

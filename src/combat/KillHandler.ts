@@ -93,7 +93,7 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
   }
   ctx.gold += goldReward;
   ctx.setGoldRegistry(ctx.gold);
-  showGoldFloat(scene, `+${goldReward} 💰`, inv.x, inv.y - 20);
+  showGoldFloat(scene, `+${goldReward} 골드`, inv.x, inv.y - 20);
   ctx.spawnCoinFlyEffect(inv.x, inv.y - 10);
   audioManager.playSfx('death');
 

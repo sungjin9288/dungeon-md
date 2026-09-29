@@ -162,7 +162,7 @@ export function getGrowthDirective(
   if (nextNode) {
     return {
       title: '스킬 성장이 가능',
-      body:  `${nextNode.icon} ${nextNode.name} 노드를 열어 전투 역할을 강화하세요.`,
+      body:  `${nextNode.name} 노드를 열어 전투 역할을 강화하세요.`,
       accent: CASUAL.PURPLE,
     };
   }

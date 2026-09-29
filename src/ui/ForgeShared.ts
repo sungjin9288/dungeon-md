@@ -318,7 +318,7 @@ export function buildForgeTargetCue(
     ? '교체 후보'
     : getForgeNeedLabel(def);
   const statusLabel = currentEquipment
-    ? `${currentEquipment.emoji} ${truncateLabel(currentEquipment.name, 6)}`
+    ? truncateLabel(currentEquipment.name, 6)
     : '장비 없음';
   const priority = (focusMonsterId === monster.id ? 100 : 0)
     + (!currentEquipment ? 48 : 8)

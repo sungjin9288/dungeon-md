@@ -17,14 +17,14 @@ export type SigilKind =
   | 'spark' | 'pagoda' | 'moon' | 'flask' | 'plant' | 'totem' | 'chest' | 'banner'
   | 'flame' | 'statue' | 'spikes' | 'web' | 'orb' | 'chalice' | 'obelisk' | 'heart'
   | 'star' | 'book' | 'infinity' | 'sprout' | 'skull'
-  | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp';
+  | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp' | 'snow';
 
 export const SIGIL_KINDS: readonly SigilKind[] = [
   'coin', 'wall', 'hammer', 'bolt', 'scroll', 'gem', 'shield', 'swords',
   'spark', 'pagoda', 'moon', 'flask', 'plant', 'totem', 'chest', 'banner',
   'flame', 'statue', 'spikes', 'web', 'orb', 'chalice', 'obelisk', 'heart',
   'star', 'book', 'infinity', 'sprout', 'skull',
-  'shard', 'cloth', 'ore', 'fur', 'wisp',
+  'shard', 'cloth', 'ore', 'fur', 'wisp', 'snow',
 ];
 
 export interface SigilOptions {
@@ -243,6 +243,18 @@ export function drawSigil(
       fill(0.3); fillPoly([[0, -11], [5, -3], [6, 4], [2, 10], [-4, 9], [-6, 3], [-3, -2], [-1, 2]]);
       stroke(); strokePoly([[0, -11], [5, -3], [6, 4], [2, 10], [-4, 9], [-6, 3], [-3, -2], [-1, 2]]);
       fill(0.9); dot(-1, 5, 1.6); dot(2.5, 5, 1.6);
+      break;
+    case 'snow': // six-armed snowflake with small barbs
+      for (let i = 0; i < 3; i++) {
+        const a = (i * Math.PI) / 3 + Math.PI / 2;
+        const cx1 = Math.cos(a) * 10, cy1 = Math.sin(a) * 10;
+        line(-cx1, -cy1, cx1, cy1);
+        for (const sgn of [1, -1]) {
+          const bx = Math.cos(a) * 6 * sgn, by = Math.sin(a) * 6 * sgn;
+          line(bx, by, bx + Math.cos(a + 0.9 * sgn) * 3 * sgn, by + Math.sin(a + 0.9 * sgn) * 3 * sgn);
+          line(bx, by, bx + Math.cos(a - 0.9 * sgn) * 3 * sgn, by + Math.sin(a - 0.9 * sgn) * 3 * sgn);
+        }
+      }
       break;
     case 'skull':
       circle(0, -2, 8);
