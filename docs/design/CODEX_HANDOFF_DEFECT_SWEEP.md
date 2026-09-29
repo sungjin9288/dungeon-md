@@ -1725,3 +1725,17 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
 - 캐릭터: 도깨비·구미호·저승·산신·해신·탈·달빛 완료, 누적 99/136(용족 진행 중, 이후 천상·원초·공허·기타).
   poison_dokkaebi 재생성으로 교체 — `export-character-art`는 다른 내용의 기존 WebP 덮어쓰기를 거부하므로
   교체 시 기존 런타임 파일을 명시적으로 지운 뒤 등록한다(안전장치 유지).
+
+## §40 아트 트랙 완료 — 2026-09-30 (Claude)
+
+- **캐릭터 ritual-v2 136/136**(`1fa64c0`): 11부족 전부 + 기타. 런타임 13 MB(WebP). 커버리지 가드 테스트 추가
+  (`characterArt.test.ts` — 모든 `MONSTER_DEFS` id에 컷아웃). legacy JPG는 컷아웃이 스트리밍되기 전 소스로 유지.
+- **스킨 17/17, 보스 8/8, 함정·상태이상 22/22** 완료(§39).
+- **재생성 이력**: 저승족 7(성인 비율), 보스 3(여우 귀 여성·반실사), poison_dokkaebi·primordial_devourer(피사체
+  65~73%) — 전부 `rejected/`에 원본 보관(git 제외). 원인과 규칙은 §39.
+- **검증** `verify-character-art.mjs`: 60 캡처·실패 0·콘솔 오류 0·수명주기 안정, 연속 2회. 이번에 고친 검증기 결함:
+  보스 화자 케이스, 스트리밍을 고려한 결함 주입(전 v2 텍스처 제거 + 스트리머 실패 등록), HMR `?t=` 모듈 인스턴스
+  (맨 경로 import는 별개 스트리머를 만든다 — 개발 서버 전용 현상, 앱은 단일 모듈).
+- 남은 판단(사용자): '도깨비 대왕' 화자를 dokkaebi_king에 연결할지(현재 미연결, 기존 계약 유지),
+  `fox_queen` 표기("여우 여왕 (보스)" vs 컷신 "구미호 여왕").
+- 다음: 개발 마무리 후 Codex 리뷰(`codex review --base origin/main`, 사용자 지시 순서).
