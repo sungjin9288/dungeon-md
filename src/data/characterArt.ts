@@ -135,6 +135,14 @@ export interface CharacterArtSource {
  */
 const SKIN_ART_IDS: readonly string[] = [
   'dok_warrior_gold',
+  'dok_warrior_new_year',
+  'gumiho_spring',
+  'gumiho_frost',
+  'flame_blue',
+  'frost_aurora',
+  'hermit_golden',
+  'tiger_shadow',
+  'death_silver',
 ];
 
 export function getSkinArt(skinId: unknown): CharacterArt | null {
