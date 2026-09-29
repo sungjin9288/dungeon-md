@@ -17,6 +17,10 @@ const IDS = Object.keys(CHARACTER_ART) as (keyof typeof CHARACTER_ART)[];
 /** A catalog monster that still renders its legacy JPEG (no ritual-v2 entry yet). */
 const LEGACY_ONLY = Object.keys(MONSTER_DEFS).find(id => !(id in CHARACTER_ART)) ?? 'missing';
 
+it('covers every monster with a ritual-v2 cutout', () => {
+  expect(Object.keys(MONSTER_DEFS).filter(id => !(id in CHARACTER_ART))).toEqual([]);
+});
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ritual character art', () => {
@@ -98,9 +102,12 @@ describe('ritual character art', () => {
     expect(selectCharacterArtSource(id, () => true, 'festival-skin')).toBeNull();
   });
 
-  it('retains the legacy path for the rest of the catalog and refuses invalid IDs', () => {
-    expect(selectCharacterArtSource(LEGACY_ONLY, () => true))
-      .toEqual({ textureKey: `monster-ai-${LEGACY_ONLY}`, version: 'legacy' });
+  it('keeps the legacy path while a cutout has not streamed in, and refuses invalid IDs', () => {
+    // Every monster now has ritual-v2 art; legacy JPG remains the source until the cutout texture loads.
+    const legacyOnlyLoaded = (key: string): boolean => key.startsWith('monster-ai-');
+    for (const id of Object.keys(MONSTER_DEFS)) {
+      expect(selectCharacterArtSource(id, legacyOnlyLoaded)).toEqual({ textureKey: `monster-ai-${id}`, version: 'legacy' });
+    }
     const exists = vi.fn(() => true);
     for (const id of [undefined, {}, 'constructor', 'toString', '__proto__', 'missing']) {
       expect(selectCharacterArtSource(id, exists)).toBeNull();

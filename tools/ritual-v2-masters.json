@@ -1,10 +1,16 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 131,
+  "count": 136,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
       "bytes": 2660559,
+      "width": 1254,
+      "height": 1254
+    },
+    "abyss_titan": {
+      "sha256": "e5874f7f33c4687c5d54fdf15035f0133d4f47c9fec75bd39993c232fff88af9",
+      "bytes": 2036866,
       "width": 1254,
       "height": 1254
     },
@@ -488,6 +494,12 @@
       "width": 1254,
       "height": 1254
     },
+    "oblivion_devourer": {
+      "sha256": "7aaffa7136b8b8023da2501acee4acd7564a9344d5c8609b595519c0cc3e890f",
+      "bytes": 2108376,
+      "width": 1254,
+      "height": 1254
+    },
     "one_tail_fox": {
       "sha256": "95e1ee0aeada0d43b273e942d3256b3a5addddf397012b5530510c8aebc9eb88",
       "bytes": 1738922,
@@ -626,6 +638,12 @@
       "width": 1254,
       "height": 1254
     },
+    "soul_reaver": {
+      "sha256": "2000795f93d7e235e4672a755b987c0978c3d699a90bc0122a877cef59aa9a61",
+      "bytes": 2129218,
+      "width": 1254,
+      "height": 1254
+    },
     "spirit_summoner": {
       "sha256": "df44ce16e06e19c1c8d6f61d2f7e3b89a2256373e24412871e14c27f8b1f291a",
       "bytes": 2536234,
@@ -698,6 +716,12 @@
       "width": 1254,
       "height": 1254
     },
+    "thunder_hero": {
+      "sha256": "861b8b67cfd7f3181d37a2a0f79927c8c04650c7f5fcb5691cb74a763843f423",
+      "bytes": 1783829,
+      "width": 1254,
+      "height": 1254
+    },
     "thunder_mask_warrior": {
       "sha256": "efa8cbe51a5957328231549ac1d5df347f5cb1f16da5e0adf26b9cb62629a340",
       "bytes": 2433225,
@@ -761,6 +785,12 @@
     "void_harbinger": {
       "sha256": "87f248f99a39025e048e25e86d1656a3cb06362f299ca0cd85514041f92c1f3c",
       "bytes": 1998960,
+      "width": 1254,
+      "height": 1254
+    },
+    "void_monarch": {
+      "sha256": "ed89a4b112037d5b0101c5d297d8b60585deea9abbe4c12f7c7e1af41f1bcfa4",
+      "bytes": 1878575,
       "width": 1254,
       "height": 1254
     },

@@ -140,10 +140,18 @@ async function gallery(fixture, missing = 'none') {
     if (missing !== 'none') {
       // Screens stream ritual-v2 cutouts on demand, so a removed texture would simply be fetched again.
       // A faithful "source missing" fault is a failed load: the streamer records it and never retries.
-      const { getCharacterArtStreamer } = await import('/src/art/CharacterArtStreamer.ts');
+      // Import the module instance the app actually loaded: after HMR the dev server serves it as
+      // `…/CharacterArtStreamer.ts?t=…`, and a bare path would create a second, unrelated streamer.
+      const streamerUrl = performance.getEntriesByType('resource').map(entry => entry.name)
+        .find(name => name.includes('/src/art/CharacterArtStreamer.ts')) ?? '/src/art/CharacterArtStreamer.ts';
+      const { getCharacterArtStreamer } = await import(streamerUrl);
       const { CHARACTER_ART } = await import('/src/data/characterArt.ts');
       const streamer = getCharacterArtStreamer(game);
-      for (const id of Object.keys(CHARACTER_ART)) streamer.failed.add(id);
+      for (const id of Object.keys(CHARACTER_ART)) {
+        streamer.failed.add(id);
+        // Cutouts already streamed by earlier screens (e.g. Home's story speakers) count as present otherwise.
+        for (const key of [`monster-ritual-v2-${id}`, `portrait-ritual-v2-${id}`, `roomtoken-ritual-v2-${id}`, `sprite-ritual-v2-${id}`]) if (game.textures.exists(key)) game.textures.remove(key);
+      }
       for (const id of ids) {
         for (const key of [`monster-ritual-v2-${id}`, `portrait-ritual-v2-${id}`, `roomtoken-ritual-v2-${id}`, `sprite-ritual-v2-${id}`, `portrait-${id}`, `roomtoken-${id}`]) if (game.textures.exists(key)) game.textures.remove(key);
         if (missing === 'both' && game.textures.exists(`monster-ai-${id}`)) game.textures.remove(`monster-ai-${id}`);
