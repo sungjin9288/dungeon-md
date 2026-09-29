@@ -108,7 +108,7 @@ export class UIScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: DUNGEON_UI_CSS.PARCHMENT,
     });
-    this.add.text(18, st + 38, modifier ? `${modifier.icon} ${modifier.name}` : '전선 작전 · DUNGEON DEFENSE', {
+    this.add.text(18, st + 38, modifier ? `도전 변수 · ${modifier.name}` : '전선 작전 · DUNGEON DEFENSE', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',
@@ -118,8 +118,8 @@ export class UIScene extends Phaser.Scene {
       this.add.zone(87, st + 30, 154, 44)
         .setName('endlessModifierControl')
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.showModifierToast(modifier.icon, modifier.name, modifier.desc));
-      this.time.delayedCall(500, () => this.showModifierToast(modifier.icon, modifier.name, modifier.desc));
+        .on('pointerdown', () => this.showModifierToast(modifier.name, modifier.desc));
+      this.time.delayedCall(500, () => this.showModifierToast(modifier.name, modifier.desc));
     }
 
     // ── Wave pill (left, row 2) — wave counter only ────────────────────────
@@ -539,8 +539,8 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private showModifierToast(icon: string, name: string, desc: string): void {
-    const toast = this.add.text(CANVAS_WIDTH / 2, 130, `${icon} ${name}\n${desc}`, {
+  private showModifierToast(name: string, desc: string): void {
+    const toast = this.add.text(CANVAS_WIDTH / 2, 130, `${name}\n${desc}`, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', align: 'center',
       color: CASUAL_CSS.PURPLE, backgroundColor: '#080b09',
       padding: { x: 14, y: 8 },

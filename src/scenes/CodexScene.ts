@@ -4,6 +4,8 @@
  * current save passed to the existing pure transactions.
  */
 
+import { ENDLESS_MODIFIER_SIGILS, WAVE_EVENT_SIGILS } from '../ui/sigilMaps';
+import { addSigil, type SigilKind } from '../ui/Sigils';
 import Phaser from 'phaser';
 import { CANVAS_HEIGHT, CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
@@ -61,7 +63,7 @@ interface Receipt {
 
 interface IntelRecord {
   readonly id: string;
-  readonly icon: string;
+  readonly sigil: SigilKind;
   readonly name: string;
   readonly summary: string;
   readonly detail: string;
@@ -446,7 +448,7 @@ export class CodexScene extends Phaser.Scene {
     g.strokeRoundedRect(28, 644, W - 28, 60, 7);
     this.leftText(40, 661, this.receipt?.title ?? '보상 기록 대기', 10,
       this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED, true);
-    this.leftText(40, 686, this.receipt?.detail ?? '수령 결과와 roster 변동이 이곳에 유지됩니다', 10,
+    this.leftText(40, 686, this.receipt?.detail ?? '수령 결과와 보유 변동이 이곳에 표시됩니다', 10,
       this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED, false, W - 52);
     const hasAll = eligible.length > 0;
     const primaryW = hasAll ? 214 : W - 28;
@@ -598,7 +600,7 @@ export class CodexScene extends Phaser.Scene {
     g.strokeRoundedRect(X, y, W, 64, 8);
     g.fillStyle(record.accent, 0.22);
     g.fillRoundedRect(24, y + 10, 42, 44, 7);
-    this.centerText(45, y + 32, record.icon, 22, '#ffffff');
+    addSigil(this, record.sigil, 45, y + 32, 26, DUNGEON_UI.BRASS_BRIGHT, { disc: false });
     this.leftText(78, y + 20, record.name, 12, DUNGEON_UI_CSS.PARCHMENT, true);
     this.rightText(X + W - 14, y + 20, record.metrics, 10,
       tab === 'modifiers' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE, true);
@@ -616,7 +618,8 @@ export class CodexScene extends Phaser.Scene {
   private drawIntelDetail(selected: IntelRecord | undefined, tab: 'modifiers' | 'events', accent: number): void {
     this.panel(536, 236, accent, accent);
     if (!selected) return;
-    this.leftText(32, 560, `${selected.icon} ${selected.name}`, 15, DUNGEON_UI_CSS.PARCHMENT, true);
+    addSigil(this, selected.sigil, 42, 560, 18, accent, { disc: false });
+    this.leftText(58, 560, selected.name, 15, DUNGEON_UI_CSS.PARCHMENT, true);
     this.rightText(X + W - 16, 560, selected.metrics, 10,
       tab === 'modifiers' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE, true);
     const g = this.add.graphics();
@@ -628,8 +631,8 @@ export class CodexScene extends Phaser.Scene {
       tab === 'modifiers' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE, true);
     this.leftText(40, 638, selected.detail, 11, DUNGEON_UI_CSS.TEXT, false, W - 52);
     this.leftText(32, 694, tab === 'modifiers'
-      ? '실제 선택은 무한 던전 진입 시 기존 random roll이 결정합니다.'
-      : '실제 발생은 전투의 기존 seeded roll이 결정합니다.', 10, DUNGEON_UI_CSS.MUTED, false, W - 36);
+      ? '실제 선택은 무한 던전 진입 시 무작위로 정해집니다.'
+      : '실제 발생은 전투 중 무작위로 정해집니다.', 10, DUNGEON_UI_CSS.MUTED, false, W - 36);
   }
 
   // ── Transactions ──────────────────────────────────────────────────────────
@@ -757,7 +760,7 @@ export class CodexScene extends Phaser.Scene {
   private intelRecords(tab: 'modifiers' | 'events'): IntelRecord[] {
     if (tab === 'modifiers') return ENDLESS_MODIFIERS.map(modifier => ({
       id: modifier.id,
-      icon: modifier.icon,
+      sigil: ENDLESS_MODIFIER_SIGILS[modifier.id] ?? 'skull',
       name: modifier.name,
       summary: modifier.desc.split(' · 보상')[0],
       detail: modifier.desc,
@@ -766,7 +769,7 @@ export class CodexScene extends Phaser.Scene {
     }));
     return WAVE_EVENTS.map(event => ({
       id: event.type,
-      icon: event.icon,
+      sigil: WAVE_EVENT_SIGILS[event.type] ?? 'spark',
       name: event.name,
       summary: event.description,
       detail: event.description,

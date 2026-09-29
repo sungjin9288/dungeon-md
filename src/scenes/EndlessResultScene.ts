@@ -102,7 +102,7 @@ export class EndlessResultScene extends Phaser.Scene {
   private drawModifier(): void {
     const modifier = getEndlessModifierById(this.registry.get('endlessModifier'));
     this.label(32, 533, '이번 원정의 도전 변수', 11, DUNGEON_UI_CSS.MUTED);
-    this.label(32, 556, modifier ? `${modifier.icon} ${modifier.name}` : '기본 도전', 14,
+    this.label(32, 556, modifier ? modifier.name : '기본 도전', 14,
       DUNGEON_UI_CSS.PARCHMENT, true);
     this.label(32, 583, modifier?.desc ?? '적용된 도전 변수 없음', 11,
       DUNGEON_UI_CSS.TEXT).setWordWrapWidth(326).setLineSpacing(3);

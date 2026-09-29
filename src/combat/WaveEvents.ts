@@ -4,6 +4,8 @@
  * Each function receives a WaveEventContext that provides read/write
  * access to wave multiplier state and scene rendering capabilities.
  */
+import { WAVE_EVENT_SIGILS } from '../ui/sigilMaps';
+import { addSigil } from '../ui/Sigils';
 import Phaser from 'phaser';
 import { rollWaveEvent, type WaveEventDef } from '../data/waveEvents';
 import { INVADER_DEFS, type InvaderDef, type InvaderType } from '../data/invaders';
@@ -124,9 +126,8 @@ export function showWaveEvent(
   addToContainer(ov, frame.shadow, frame.panel, frame.glow);
 
   // Icon
-  const icon = scene.add.text(cx + cw / 2, cy + 30, evt.icon, {
-    fontSize: '32px',
-  }).setOrigin(0.5);
+  const icon = addSigil(scene, WAVE_EVENT_SIGILS[evt.type] ?? 'spark', cx + cw / 2, cy + 30, 34,
+    Number.parseInt(evt.color.slice(1), 16));
   ov.add(icon);
 
   // Event identity keeps its semantic accent against the stone surface.

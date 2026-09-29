@@ -142,3 +142,18 @@ export const ACTIVE_SKILL_SIGILS: Readonly<Record<string, { readonly kind: Sigil
   war_cry: { kind: 'banner', color: 0xff6644 },
 };
 
+
+/** Endless-run modifiers (endlessModifiers.ts ENDLESS_MODIFIERS ids). */
+export const ENDLESS_MODIFIER_SIGILS: Readonly<Record<string, SigilKind>> = {
+  swift: 'bolt', armored: 'shield', swarm: 'web', elite: 'crown', frenzy: 'flame',
+  relentless: 'moon', glacial: 'snow', blitz: 'spark', golden: 'coin', juggernaut: 'statue',
+  tempest: 'orb', cursed: 'skull', glass_cannon: 'shard', vanguard: 'swords', treasure: 'chest',
+  doomtide: 'wave', phantom: 'wisp',
+};
+
+/** Wave events (waveEvents.ts WAVE_EVENTS types). */
+export const WAVE_EVENT_SIGILS: Readonly<Record<string, SigilKind>> = {
+  merchant: 'coin', supply: 'chest', curse: 'skull', rally: 'banner', fog: 'wisp',
+  void_storm: 'orb', ancient_blessing: 'spark', crimson_curse: 'flame', gold_vein: 'ore',
+  raiders: 'swords', guardian_rite: 'shield', unsealing: 'lock', time_warp: 'infinity',
+};

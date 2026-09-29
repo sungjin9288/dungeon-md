@@ -18,7 +18,7 @@ export type SigilKind =
   | 'flame' | 'statue' | 'spikes' | 'web' | 'orb' | 'chalice' | 'obelisk' | 'heart'
   | 'star' | 'book' | 'infinity' | 'sprout' | 'skull'
   | 'shard' | 'cloth' | 'ore' | 'fur' | 'wisp' | 'snow'
-  | 'lock' | 'target' | 'calendar' | 'crown';
+  | 'lock' | 'target' | 'calendar' | 'crown' | 'wave';
 
 export const SIGIL_KINDS: readonly SigilKind[] = [
   'coin', 'wall', 'hammer', 'bolt', 'scroll', 'gem', 'shield', 'swords',
@@ -26,7 +26,7 @@ export const SIGIL_KINDS: readonly SigilKind[] = [
   'flame', 'statue', 'spikes', 'web', 'orb', 'chalice', 'obelisk', 'heart',
   'star', 'book', 'infinity', 'sprout', 'skull',
   'shard', 'cloth', 'ore', 'fur', 'wisp', 'snow',
-  'lock', 'target', 'calendar', 'crown',
+  'lock', 'target', 'calendar', 'crown', 'wave',
 ];
 
 export interface SigilOptions {
@@ -277,6 +277,14 @@ export function drawSigil(
     case 'crown':
       strokePoly([[-10, 7], [-10, -5], [-5, 1], [0, -8], [5, 1], [10, -5], [10, 7]]);
       fill(0.9); dot(0, -8, 1.6); dot(-10, -5, 1.4); dot(10, -5, 1.4);
+      break;
+    case 'wave': // three breaking crests
+      for (const y of [-6, 0, 6]) {
+        g.beginPath();
+        g.arc(X(-5), Y(y), 5 * s, Math.PI, 0, false);
+        g.arc(X(5), Y(y), 5 * s, Math.PI, 0, true);
+        g.strokePath();
+      }
       break;
     case 'skull':
       circle(0, -2, 8);
