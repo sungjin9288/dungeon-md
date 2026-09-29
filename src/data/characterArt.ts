@@ -123,6 +123,7 @@ export interface CharacterArtSource {
  * procedural palette portrait. Appended by scripts/register-ritual-v2.mjs --skins.
  */
 const SKIN_ART_IDS: readonly string[] = [
+  'dok_warrior_gold',
 ];
 
 export function getSkinArt(skinId: unknown): CharacterArt | null {
@@ -146,6 +147,8 @@ const BOSS_ART_IDS: readonly string[] = [
   'god_emperor',
   'primordial_titan',
   'void_sovereign',
+  'death_emissary',
+  'eternal_emperor',
 ];
 
 export function getBossArt(bossType: unknown): CharacterArt | null {
