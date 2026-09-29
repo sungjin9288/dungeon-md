@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { SKIN_DATA } from '../data/monsters';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
@@ -74,6 +76,17 @@ export class ShopScene extends Phaser.Scene {
     this.drawTabBar();
     this.buildContent();
     this.startResetClock();
+
+    // Skin cutouts (few, small) stream in; redraw the skin tab once they land.
+    const streamer = getCharacterArtStreamer(this.game);
+    let redraw = false;
+    const offArt = streamer.onLoaded(() => {
+      if (redraw || this.activeTab !== 'skin') return;
+      redraw = true;
+      this.time.delayedCall(250, () => { redraw = false; if (this.sys.isActive() && this.activeTab === 'skin') this.buildContent(); });
+    });
+    this.events.once('shutdown', offArt);
+    streamer.request(SKIN_DATA.map(skin => skin.id));
 
     this.events.once('shutdown', () => {
       this.resetTick?.remove();

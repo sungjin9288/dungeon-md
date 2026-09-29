@@ -13,7 +13,7 @@
  * never twice, and tells listeners when one lands so a screen can redraw.
  */
 import type Phaser from 'phaser';
-import { getCharacterArt } from '../data/characterArt';
+import { getStreamableArt } from '../data/characterArt';
 import { logger } from '../utils/logger';
 
 /** Loads one image URL; resolves with something the texture manager accepts. */
@@ -39,10 +39,10 @@ export class CharacterArtStreamer {
     private readonly concurrency = CHARACTER_ART_CONCURRENCY,
   ) {}
 
-  /** Queue the cutouts for `ids` that have art, are not loaded and not already queued. */
+  /** Queue the cutouts for `ids` (monster or skin ids) that have art, are not loaded and not already queued. */
   request(ids: Iterable<string>): void {
     for (const id of ids) {
-      const art = getCharacterArt(id);
+      const art = getStreamableArt(id);
       if (!art || this.sink.exists(art.textureKey) || this.pending.has(id) || this.failed.has(id)) continue;
       this.pending.add(id);
       this.queue.push(id);
@@ -63,7 +63,7 @@ export class CharacterArtStreamer {
   private pump(): void {
     while (this.active < this.concurrency && this.queue.length > 0) {
       const id = this.queue.shift()!;
-      const art = getCharacterArt(id);
+      const art = getStreamableArt(id);
       if (!art) { this.pending.delete(id); continue; }
       this.active += 1;
       this.load(art.path)

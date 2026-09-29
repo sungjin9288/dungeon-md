@@ -81,7 +81,8 @@ export class BarracksScene extends Phaser.Scene {
     // detail panel's close, if one is open) instead of leaving the legacy JPEG.
     this.artDirty = false;
     const streamer = getCharacterArtStreamer(this.game);
-    const owned = new Set(this.gs.ownedMonsters.map(monster => monster.id));
+    // Owned guardians plus their equipped skins: either cutout landing redraws.
+    const owned = new Set([...this.gs.ownedMonsters.map(monster => monster.id), ...Object.values(this.gs.equippedSkins ?? {})]);
     let redraw: Phaser.Time.TimerEvent | null = null;
     const off = streamer.onLoaded(id => {
       if (!owned.has(id)) return;

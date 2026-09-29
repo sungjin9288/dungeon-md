@@ -76,14 +76,39 @@ export interface CharacterArtSource {
   readonly version: 'ritual-v2' | 'legacy';
 }
 
-/** Null selects the existing procedural path, including explicit skin rendering. */
+/**
+ * Ritual-v2 skin cutouts (SKIN_DATA ids). A skin without an entry keeps the
+ * procedural palette portrait. Appended by scripts/export-skin-art.mjs batches.
+ */
+const SKIN_ART_IDS: readonly string[] = [
+];
+
+export function getSkinArt(skinId: unknown): CharacterArt | null {
+  if (typeof skinId !== 'string' || !SKIN_ART_IDS.includes(skinId)) return null;
+  return {
+    monsterId: skinId as MonsterId,
+    version: 'ritual-v2',
+    textureKey: `skin-ritual-v2-${skinId}`,
+    path: `/assets/monsters/ritual-v2/skins/${skinId}.webp`,
+  };
+}
+
+/** Streamable art by id: a monster cutout or, failing that, a skin cutout. */
+export function getStreamableArt(id: unknown): CharacterArt | null {
+  return getCharacterArt(id) ?? getSkinArt(id);
+}
+
+/** Null selects the existing procedural path (a skin with no loaded skin art included). */
 export function selectCharacterArtSource(
   monsterId: unknown,
   textureExists: (key: string) => boolean,
   skinId?: string,
 ): CharacterArtSource | null {
-  if (skinId || typeof monsterId !== 'string'
-    || !Object.prototype.hasOwnProperty.call(MONSTER_DEFS, monsterId)) return null;
+  if (typeof monsterId !== 'string' || !Object.prototype.hasOwnProperty.call(MONSTER_DEFS, monsterId)) return null;
+  if (skinId) {
+    const skinArt = getSkinArt(skinId);
+    return skinArt && textureExists(skinArt.textureKey) ? { textureKey: skinArt.textureKey, version: skinArt.version } : null;
+  }
   const art = getCharacterArt(monsterId);
   if (art && textureExists(art.textureKey)) return { textureKey: art.textureKey, version: art.version };
   const legacyKey = `monster-ai-${monsterId}`;

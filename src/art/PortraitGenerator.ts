@@ -184,7 +184,7 @@ export function generatePortrait(
 ): string {
   const source = selectCharacterArtSource(monsterId, textureKey => scene.textures.exists(textureKey), skinId);
   const key = skinId
-    ? `portrait-${monsterId}-${skinId}`
+    ? (source ? `portrait-ritual-v2-skin-${skinId}` : `portrait-${monsterId}-${skinId}`)
     : source?.version === 'ritual-v2' ? `portrait-ritual-v2-${monsterId}` : `portrait-${monsterId}`;
 
   if (scene.textures.exists(key)) return key;

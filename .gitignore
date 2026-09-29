@@ -27,3 +27,4 @@ graph.json
 # ritual-v2 masters (~2 MB each): provenance in tools/ritual-v2-masters.json; the first nine stay tracked
 output/character-art/ritual-v2/*-master.png
 output/trap-art/v1/*-master.png
+output/character-art/ritual-v2/skins/*-master.png

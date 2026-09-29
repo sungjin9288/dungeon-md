@@ -322,7 +322,7 @@ export class DungeonHomeScene extends Phaser.Scene {
       redraw = this.time.delayedCall(250, () => { redraw = null; this.rebuildDungeonSlots(); });
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
-    streamer.request([...placed, ...SPEAKER_MONSTER_IDS, ...this.gs.ownedMonsters.map(monster => monster.id)]);
+    streamer.request([...placed, ...SPEAKER_MONSTER_IDS, ...this.gs.ownedMonsters.map(monster => monster.id), ...Object.values(this.gs.equippedSkins ?? {})]);
   }
 
   // ─── Idle (offline) dungeon income ────────────────────────────────────────
