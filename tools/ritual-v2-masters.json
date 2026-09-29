@@ -1,7 +1,13 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 36,
+  "count": 43,
   "masters": {
+    "black_dragon_dokkaebi": {
+      "sha256": "e2f74851d3ced87e0b39df43d57cded67f8a0a4c3a472ce87ccd9c3e25a073de",
+      "bytes": 2350885,
+      "width": 1254,
+      "height": 1254
+    },
     "celestial_fairy": {
       "sha256": "f1c1de0ed439f6407a98bfba855f600a68f698833e6d3865d1f714df95e59d66",
       "bytes": 2227972,
@@ -29,6 +35,18 @@
     "dokkaebi_duelist": {
       "sha256": "57355ddaf11ec3e6d6653599e002c09d9343bdb144fcddd692ee59053954cf54",
       "bytes": 1593099,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_general": {
+      "sha256": "beadad92895d485932c102f88d7b76a197878d0fbc68658361ff57f3ef5e3688",
+      "bytes": 2335488,
+      "width": 1254,
+      "height": 1254
+    },
+    "dokkaebi_god_king": {
+      "sha256": "0de2eb2e78a4d52ca7dbd1cf144846c57c12613beccb3476e49abebc44bde287",
+      "bytes": 2331791,
       "width": 1254,
       "height": 1254
     },
@@ -62,6 +80,12 @@
       "width": 1254,
       "height": 1254
     },
+    "fire_dokkaebi_king": {
+      "sha256": "30e713f882d4dc403aca84b1e248556dd622730db26b6615e421eae51b1f8508",
+      "bytes": 2671931,
+      "width": 1254,
+      "height": 1254
+    },
     "five_tail_fox": {
       "sha256": "7d3c14a29dba6b6a80c2a41f8c4d607481da574c3af4d02f1837ca95f06a21ff",
       "bytes": 2512365,
@@ -83,6 +107,18 @@
     "fox_warrior": {
       "sha256": "c6028f3530f4a50db63d612cda1afd8e6b540bddeb5659a4ce00193916b8167e",
       "bytes": 2218223,
+      "width": 1254,
+      "height": 1254
+    },
+    "ghost_hunter": {
+      "sha256": "d930b0d74d854da3e474121e2aac47eb6ee604ea6db432f088b60c253b735ea9",
+      "bytes": 1456145,
+      "width": 1254,
+      "height": 1254
+    },
+    "gold_dokkaebi": {
+      "sha256": "1233f82bdee33e40b0ff6865e2a9a114a3004ccb9e9881a43991f8bad3edc1c2",
+      "bytes": 1527245,
       "width": 1254,
       "height": 1254
     },
@@ -209,6 +245,12 @@
     "thunder_gumiho": {
       "sha256": "74deafbd69afffb6bc6d1b175d71c7dc7cb5c55555227b39ae8e6b6e3de9f45f",
       "bytes": 2438144,
+      "width": 1254,
+      "height": 1254
+    },
+    "venom_warrior": {
+      "sha256": "ea5bb6988cd4919c1035ce32836e2d218d4a28eac0ceaa6a6ce87f224d276074",
+      "bytes": 2156102,
       "width": 1254,
       "height": 1254
     },
