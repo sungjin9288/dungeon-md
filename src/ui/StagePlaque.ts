@@ -452,10 +452,10 @@ export function drawGenericPlaque(
       _drawPlaqueAccent(bg, x, y, w, accentCol, isFrontier ? 1 : 0.72);
     };
     drawBase(theme.unclearedBg, edgeBase);
-    scene.add.text(x + w / 2, y + 14, label, {
+    scene.add.text(isBoss ? x + 9 : x + w / 2, y + 14, label, {
       fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
       color: DUNGEON_UI_CSS.PARCHMENT,
-    }).setOrigin(0.5);
+    }).setOrigin(isBoss ? 0 : 0.5, 0.5);
     scene.add.text(x + w / 2, y + h - 16, '☆☆☆', {
       fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
@@ -475,10 +475,12 @@ export function drawGenericPlaque(
     bg.lineStyle(1, isBoss ? bossEdge : DUNGEON_UI.BRASS, 0.92);
     bg.strokeRoundedRect(x + 3, y + 3, w - 6, h - 6, 4);
     _drawPlaqueAccent(bg, x, y, w, DUNGEON_UI.BRASS, 0.9);
-    scene.add.text(x + w / 2, y + 14, label, {
+    // A boss plaque's number moves left so the right-aligned "BOSS" tag has
+    // its own space; centred, "10" and "BOSS" overlapped.
+    scene.add.text(isBoss ? x + 9 : x + w / 2, y + 14, label, {
       fontFamily: 'sans-serif', fontSize: '17px', fontStyle: 'bold',
       color: DUNGEON_UI_CSS.TEXT,
-    }).setOrigin(0.5);
+    }).setOrigin(isBoss ? 0 : 0.5, 0.5);
     addStarPop(scene, x + w / 2, y + h - 16, prog.bestStars, theme.starColor);
     if (prog.bestHpPercent !== undefined) {
       _drawHpDisplay(scene, x, y, w, h, prog.bestHpPercent, theme.showHpBar);

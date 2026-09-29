@@ -94,7 +94,9 @@ function autoCollectIdleIncome(scene: DungeonHomeScene, now: number): void {
     return;
   }
   const label = reward.gold > 0 ? `운영 수익 +${reward.gold.toLocaleString('ko-KR')} 황금` : '생산 재료 적립';
-  showToast(scene, label, { color: '#d8b869' });
+  // Home's stats ledger (26px) sits right above the root nav where the shared
+  // toast default lands; lift this one clear of it.
+  showToast(scene, label, { color: '#d8b869', y: ROOT_NAV_Y - 26 - 20 });
 }
 
 // ─── formatIdleDuration ──────────────────────────────────────────────────────
