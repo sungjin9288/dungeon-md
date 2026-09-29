@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 64,
+  "count": 76,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -98,6 +98,12 @@
       "width": 1254,
       "height": 1254
     },
+    "dragon_king_guardian": {
+      "sha256": "c4803d0d3675dd9592a88bd5fe96127a1976efb8c9dcb162e9cc2dc34fa27eb6",
+      "bytes": 2183945,
+      "width": 1254,
+      "height": 1254
+    },
     "fire_dokkaebi": {
       "sha256": "48f441f5bee24cb0fff10f4f966735cf50cd14334a253ee1347257dcea5779c8",
       "bytes": 1660235,
@@ -164,6 +170,12 @@
       "width": 1254,
       "height": 1254
     },
+    "great_serpent": {
+      "sha256": "98ce2270438cf7db989d581fe6f963e2b179ef377b23aa0d293f6208a115f016",
+      "bytes": 2392385,
+      "width": 1254,
+      "height": 1254
+    },
     "gumiho_archmage": {
       "sha256": "ffe9cdf0d91279804f3c2e00dbca1939d263e306a120b8315b58b08b7c2e6e0f",
       "bytes": 2109260,
@@ -218,6 +230,18 @@
       "width": 1254,
       "height": 1254
     },
+    "jellyfish_sorcerer": {
+      "sha256": "f2f65969e92ea1180d4cadab04874fb6be4b36f1ecad3a7cae39133e098cdcee",
+      "bytes": 2125253,
+      "width": 1254,
+      "height": 1254
+    },
+    "kraken_soldier": {
+      "sha256": "c64e694ae9d01344b56755c518eeea7bc846f7463c872ddbb08c6dcdb93f93c3",
+      "bytes": 2337078,
+      "width": 1254,
+      "height": 1254
+    },
     "moon_rabbit_sage": {
       "sha256": "3b9122a59eba518ea86bf67b7371e36922df789e7ff43d9a00cae8b803ab9dba",
       "bytes": 1908378,
@@ -266,9 +290,51 @@
       "width": 1254,
       "height": 1254
     },
+    "sea_dragon_archer": {
+      "sha256": "90f153c2a027701a3338b0884c787957417a9a1cef952d44a8ee812cfbcbefaf",
+      "bytes": 1921320,
+      "width": 1254,
+      "height": 1254
+    },
+    "sea_dragon_lord": {
+      "sha256": "303e7a53c82613c3f8716fed2bf3af17784625bf9620ff42fd907073e4e111d3",
+      "bytes": 2272847,
+      "width": 1254,
+      "height": 1254
+    },
+    "sea_general": {
+      "sha256": "1795ff9f9c4c42df49b85fbd011f65fe7278f44568d35ee6f90d383a64b031b3",
+      "bytes": 2108118,
+      "width": 1254,
+      "height": 1254
+    },
+    "sea_god_complete": {
+      "sha256": "f1c63210ddb9e5918422610251ad3f0e61f1c4a34964f64593e96214ab46f014",
+      "bytes": 2241463,
+      "width": 1254,
+      "height": 1254
+    },
+    "sea_god_spear": {
+      "sha256": "041d404d4d3fcc0452a4dabed4fb49ebc86797a4d957df89fb163dca60fd34f1",
+      "bytes": 2175686,
+      "width": 1254,
+      "height": 1254
+    },
+    "sea_witch": {
+      "sha256": "53a21763981f644b4a9393c2382075d53b433eea14e74b6a37a3473979aa76f0",
+      "bytes": 2301855,
+      "width": 1254,
+      "height": 1254
+    },
     "shadow_dokkaebi": {
       "sha256": "e3700a8931a0c246ef5e6bba59124839ff92c7eb6639e212dbb3b2e339da0144",
       "bytes": 1742577,
+      "width": 1254,
+      "height": 1254
+    },
+    "shark_warrior": {
+      "sha256": "8a279d2a3b2fa91f85945efe36a6043e20de476b719b690c99e1d7fca6259e93",
+      "bytes": 1996390,
       "width": 1254,
       "height": 1254
     },
@@ -335,6 +401,12 @@
     "thunder_gumiho": {
       "sha256": "74deafbd69afffb6bc6d1b175d71c7dc7cb5c55555227b39ae8e6b6e3de9f45f",
       "bytes": 2438144,
+      "width": 1254,
+      "height": 1254
+    },
+    "tide_leviathan": {
+      "sha256": "df37aac6b43709642cdd9a42da5deb8d249f69a09249ec2eb7bbd420e74d0552",
+      "bytes": 2676649,
       "width": 1254,
       "height": 1254
     },
