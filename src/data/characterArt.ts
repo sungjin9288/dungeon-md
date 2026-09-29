@@ -110,6 +110,17 @@ const RITUAL_V2_IDS = [
   'solar_eclipse_warrior',
   'lunar_eclipse_mage',
   'moonlight_complete',
+  'mountain_god',
+  'red_dragon_warrior',
+  'blue_dragon_guardian',
+  'gold_dragon_sage',
+  'black_dragon_assassin',
+  'white_dragon_healer',
+  'blue_dragon_archmage',
+  'banya_guardian',
+  'dragon_avatar',
+  'twilight_dragon',
+  'five_dragon_complete',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];

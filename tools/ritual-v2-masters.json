@@ -1,10 +1,16 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 99,
+  "count": 110,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
       "bytes": 2660559,
+      "width": 1254,
+      "height": 1254
+    },
+    "banya_guardian": {
+      "sha256": "da7477b3e19a3358c89acd3d28ab0aebfdaac2cdd0284f0070ab78d00d2af19f",
+      "bytes": 2118337,
       "width": 1254,
       "height": 1254
     },
@@ -14,9 +20,27 @@
       "width": 1254,
       "height": 1254
     },
+    "black_dragon_assassin": {
+      "sha256": "5bd67daad6b3a0a7ba1645e62ee629d128dc21d797fe4d47d2b46a391e9dde27",
+      "bytes": 2033631,
+      "width": 1254,
+      "height": 1254
+    },
     "black_dragon_dokkaebi": {
       "sha256": "e2f74851d3ced87e0b39df43d57cded67f8a0a4c3a472ce87ccd9c3e25a073de",
       "bytes": 2350885,
+      "width": 1254,
+      "height": 1254
+    },
+    "blue_dragon_archmage": {
+      "sha256": "743ff69a32dac2438e792d5ecb74684a8aed291cd79ba9d0bbad2b88c9dbf5d3",
+      "bytes": 2404511,
+      "width": 1254,
+      "height": 1254
+    },
+    "blue_dragon_guardian": {
+      "sha256": "aa4173a304f7ece64ac7297c6ac6846517dabeca07e1936a7397dd4390cc3e39",
+      "bytes": 2461686,
       "width": 1254,
       "height": 1254
     },
@@ -122,6 +146,12 @@
       "width": 1254,
       "height": 1254
     },
+    "dragon_avatar": {
+      "sha256": "f525cc43f6c51db7129ce9e21d757e537b2b36e9796c37fa01d6a1e322b0b421",
+      "bytes": 2432639,
+      "width": 1254,
+      "height": 1254
+    },
     "dragon_king_guardian": {
       "sha256": "c4803d0d3675dd9592a88bd5fe96127a1976efb8c9dcb162e9cc2dc34fa27eb6",
       "bytes": 2183945,
@@ -137,6 +167,12 @@
     "fire_dokkaebi_king": {
       "sha256": "30e713f882d4dc403aca84b1e248556dd622730db26b6615e421eae51b1f8508",
       "bytes": 2671931,
+      "width": 1254,
+      "height": 1254
+    },
+    "five_dragon_complete": {
+      "sha256": "2d55abdba4aac80c394272b4e5c0b20407fa2a2e9a8f9a3636bd59489b595573",
+      "bytes": 2093859,
       "width": 1254,
       "height": 1254
     },
@@ -203,6 +239,12 @@
     "gold_dokkaebi": {
       "sha256": "1233f82bdee33e40b0ff6865e2a9a114a3004ccb9e9881a43991f8bad3edc1c2",
       "bytes": 1527245,
+      "width": 1254,
+      "height": 1254
+    },
+    "gold_dragon_sage": {
+      "sha256": "336516debce12aa36cf6da27f35e0163f29146f73a10832fabaa994a14f4a051",
+      "bytes": 2156521,
       "width": 1254,
       "height": 1254
     },
@@ -356,6 +398,12 @@
       "width": 1254,
       "height": 1254
     },
+    "mountain_god": {
+      "sha256": "0aac69ade8792e9a4f1bf91c76c5c80e4836986f40ed3eb52b4a942a1093780a",
+      "bytes": 1967791,
+      "width": 1254,
+      "height": 1254
+    },
     "mountain_god_complete": {
       "sha256": "305b24c60e4cf8c1a8f190cc3912951116cb200561fcde4cbe2d58bfd255a65b",
       "bytes": 2615073,
@@ -389,6 +437,12 @@
     "poison_dokkaebi": {
       "sha256": "feb1dc980e774483ec5b12a214e974871455d5996afb610c649a0ec923822e3e",
       "bytes": 1961565,
+      "width": 1254,
+      "height": 1254
+    },
+    "red_dragon_warrior": {
+      "sha256": "ac40b5af483f3cb52b22e178051e16218c71b8ba421074b7d6803ee2cbf73c4b",
+      "bytes": 2332800,
       "width": 1254,
       "height": 1254
     },
@@ -548,6 +602,12 @@
       "width": 1254,
       "height": 1254
     },
+    "twilight_dragon": {
+      "sha256": "69bd9673ae5ed7b55948e3cd1a847cefd83b6b1f7c6ba7a992d0dbe42b97c769",
+      "bytes": 2129068,
+      "width": 1254,
+      "height": 1254
+    },
     "underworld_archer": {
       "sha256": "84a851f2197c9892c7079bad0d674c2018a41461ff2ba369f8d9c33e422817a1",
       "bytes": 2144090,
@@ -581,6 +641,12 @@
     "volcanic_warrior": {
       "sha256": "1c14ea369b85ef5c7057bbdba23fd503fe7662b0c3f258c68aab2528340c9dac",
       "bytes": 2202225,
+      "width": 1254,
+      "height": 1254
+    },
+    "white_dragon_healer": {
+      "sha256": "32e5f9c2a9819c34b0b7db76dc1d05ce56bb2ef0e4bb592df0cfe7d049fdf87e",
+      "bytes": 2119020,
       "width": 1254,
       "height": 1254
     },
