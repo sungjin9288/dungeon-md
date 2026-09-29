@@ -148,7 +148,7 @@ export class ShopScene extends Phaser.Scene {
       }).setOrigin(0.5, 0));
     };
     addLabel(70, '보석');
-    addLabel(195, '영혼 수정');
+    addLabel(195, '영혼 결정');
     addLabel(320, '재입고');
 
     this.gemsText = this.add.text(70, 81, '', {
@@ -547,7 +547,7 @@ export class ShopScene extends Phaser.Scene {
       const detail = result.reason === 'insufficient_gems'
         ? '보석 잔액이 부족합니다. 자원은 변경되지 않았습니다.'
         : result.reason === 'insufficient_soul_crystals'
-          ? '영혼 수정 잔액이 부족합니다. 자원은 변경되지 않았습니다.'
+          ? '영혼 결정 잔액이 부족합니다. 자원은 변경되지 않았습니다.'
           : '보유하지 않은 외형입니다. 상태는 변경되지 않았습니다.';
       return { ok: false, title: '구매 조건 미충족', detail };
     }

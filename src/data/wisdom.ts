@@ -69,7 +69,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'crystalResonance',
     name: '결정 공명',
     icon: '💎',
-    effect: '영혼 수정 획득 +{value}%',
+    effect: '영혼 결정 획득 +{value}%',
     costPerTier: [5, 10, 20, 35, 50],
     getValue: (tier) => tier * 20,
     position: { x: 50, y: 584 },

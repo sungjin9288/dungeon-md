@@ -178,7 +178,7 @@ export class FusionScene extends Phaser.Scene {
 
     const resourceY = HEADER_H + RESOURCE_H / 2;
     const resources = [
-      { label: '영혼 수정', value: String(state.soulCrystals ?? 0), color: DUNGEON_UI_CSS.BRASS },
+      { label: '영혼 결정', value: String(state.soulCrystals ?? 0), color: DUNGEON_UI_CSS.BRASS },
       { label: '각성석', value: String(state.awakeningStones ?? 0), color: '#aeb8ed' },
       { label: '완료 의식', value: String(state.totalFusions ?? 0), color: DUNGEON_UI_CSS.JADE },
     ];

@@ -199,7 +199,7 @@ export class AchievementScene extends Phaser.Scene {
     const items = [
       { label: '달성 기록', value: `${achieved} / ${ALL_ACHIEVEMENT_DEFS.length}`, color: achieved > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT },
       { label: '미수령', value: `${claimable}건`, color: claimable > 0 ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED },
-      { label: '보유 재화', value: `젬 ${formatHudResourceValue(this.gameState.gems ?? 0)} · 수정 ${formatHudResourceValue(this.gameState.soulCrystals ?? 0)}`, color: DUNGEON_UI_CSS.TEXT },
+      { label: '보유 재화', value: `보석 ${formatHudResourceValue(this.gameState.gems ?? 0)} · 결정 ${formatHudResourceValue(this.gameState.soulCrystals ?? 0)}`, color: DUNGEON_UI_CSS.TEXT },
     ];
 
     items.forEach((item, index) => {
@@ -610,8 +610,8 @@ export class AchievementScene extends Phaser.Scene {
 
   private formatReward(def: AchievementDef): string {
     const parts: string[] = [];
-    if (def.reward.gems) parts.push(`젬 ${this.formatNumber(def.reward.gems)}`);
-    if (def.reward.soulCrystals) parts.push(`수정 ${this.formatNumber(def.reward.soulCrystals)}`);
+    if (def.reward.gems) parts.push(`보석 ${this.formatNumber(def.reward.gems)}`);
+    if (def.reward.soulCrystals) parts.push(`결정 ${this.formatNumber(def.reward.soulCrystals)}`);
     return parts.join(' · ');
   }
 
@@ -688,7 +688,7 @@ export class AchievementScene extends Phaser.Scene {
     this.gameState = result.state;
     this.receipt = {
       title: `${def.name} · 보상 수령 완료`,
-      detail: `${this.formatReward(def)} · 젬 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} · 수정 ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
+      detail: `${this.formatReward(def)} · 보석 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} · 결정 ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
       tone: 'success',
     };
     this.queueRender();
@@ -712,7 +712,7 @@ export class AchievementScene extends Phaser.Scene {
     saveGameState(result.state);
     this.receipt = {
       title: `전체 수령 완료 · ${result.claimedCount}건`,
-      detail: `젬 +${this.formatNumber(result.gems)} · 수정 +${this.formatNumber(result.soulCrystals)} · 보유 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} / ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
+      detail: `보석 +${this.formatNumber(result.gems)} · 결정 +${this.formatNumber(result.soulCrystals)} · 보유 ${this.formatNumber(before.gems ?? 0)}→${this.formatNumber(result.state.gems ?? 0)} / ${this.formatNumber(before.soulCrystals ?? 0)}→${this.formatNumber(result.state.soulCrystals ?? 0)}`,
       tone: 'success',
     };
     this.queueRender();

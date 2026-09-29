@@ -144,7 +144,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
   private drawHeader(): void {
     const header = addSceneHeader(this, {
       title: '선조의 의식실',
-      subtitle: '영혼 수정을 바쳐 영구 가호를 해방',
+      subtitle: '영혼 결정을 바쳐 영구 가호를 해방',
       onBack: () => this.returnToPreviousScene(),
     });
     const backZone = header.container.list.find(child => child.type === 'Zone') as Phaser.GameObjects.Zone | undefined;
@@ -166,7 +166,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
 
     const summary = getWisdomSummary(this.gameState);
     const items = [
-      { label: '영혼 수정', value: formatHudResourceValue(this.gameState.soulCrystals), color: DUNGEON_UI_CSS.BRASS },
+      { label: '영혼 결정', value: formatHudResourceValue(this.gameState.soulCrystals), color: DUNGEON_UI_CSS.BRASS },
       { label: '해방 단계', value: `${summary.totalTiers} / ${summary.totalTierCapacity}`, color: DUNGEON_UI_CSS.TEXT },
       { label: '완성 가호', value: `${summary.maxedBranches} / ${summary.branchCount}`, color: summary.maxedBranches > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED },
     ];
@@ -391,7 +391,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 116, '선택과 계보 전환은 저장되지 않습니다', {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
-    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 137, '확인 후에만 영혼 수정과 영구 가호가 변경됩니다', {
+    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 137, '확인 후에만 영혼 결정과 영구 가호가 변경됩니다', {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
   }
@@ -452,7 +452,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       this.add.text(boxX + 22, boxY + 137, `해방 · ${view.nextEffect}`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
       }).setOrigin(0, 0.5),
-      this.add.text(boxX + 22, boxY + 183, `소모 · 영혼 수정 ${view.cost}`, {
+      this.add.text(boxX + 22, boxY + 183, `소모 · 영혼 결정 ${view.cost}`, {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
       }).setOrigin(0, 0.5),
       this.add.text(boxX + boxW - 22, boxY + 183, `보유 ${formatHudResourceValue(this.gameState.soulCrystals)} → ${formatHudResourceValue(this.gameState.soulCrystals - view.cost)}`, {
@@ -538,7 +538,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       this.gameState = result.state;
       this.receipt = {
         title: `${branch.name} · ${this.failureTitle(result.reason)}`,
-        detail: '영혼 수정과 지혜 등급은 변경되지 않았습니다',
+        detail: '영혼 결정과 지혜 등급은 변경되지 않았습니다',
         tone: 'warning',
       };
       this.queueRender();
@@ -551,7 +551,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
     this.gameState = next;
     this.receipt = {
       title: `${branch.name} · 등급 ${result.previousTier}→${result.nextTier} 해방`,
-      detail: `영혼 수정 ${formatHudResourceValue(before.soulCrystals)}→${formatHudResourceValue(result.state.soulCrystals)} · 정확히 ${result.cost} 소모`,
+      detail: `영혼 결정 ${formatHudResourceValue(before.soulCrystals)}→${formatHudResourceValue(result.state.soulCrystals)} · 정확히 ${result.cost} 소모`,
       tone: 'success',
     };
     this.queueRender();
@@ -629,7 +629,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
   private branchCostLabel(view: WisdomBranchView): string {
     if (!view.validTier) return '진행 불가';
     if (view.isMaxed) return '완성';
-    return `수정 ${view.cost ?? 0}`;
+    return `결정 ${view.cost ?? 0}`;
   }
 
   private branchStateLabel(view: WisdomBranchView): string {
@@ -655,20 +655,20 @@ export class AncestralWisdomScene extends Phaser.Scene {
   private commandStatus(view: WisdomBranchView): string {
     if (!view.validTier) return '저장된 등급 값이 올바르지 않아 거래를 차단했습니다';
     if (view.isMaxed) return '이 가호는 최고 등급까지 완성되었습니다';
-    if (!view.canUpgrade) return `영혼 수정 ${view.deficit}개를 더 모아야 합니다`;
+    if (!view.canUpgrade) return `영혼 결정 ${view.deficit}개를 더 모아야 합니다`;
     return `${view.cost}개를 바치면 다음 영구 효과가 즉시 적용됩니다`;
   }
 
   private commandLabel(view: WisdomBranchView): string {
     if (!view.validTier) return '저장 데이터 확인 필요';
     if (view.isMaxed) return '최고 등급 해방 완료';
-    if (!view.canUpgrade) return `영혼 수정 ${view.deficit} 부족`;
+    if (!view.canUpgrade) return `영혼 결정 ${view.deficit} 부족`;
     return `등급 ${view.tier + 1} 의식 승인`;
   }
 
   private failureTitle(reason: WisdomUpgradeFailureReason): string {
     if (reason === 'max_tier') return '이미 최고 등급';
-    if (reason === 'insufficient_soul_crystals') return '영혼 수정 부족';
+    if (reason === 'insufficient_soul_crystals') return '영혼 결정 부족';
     return '알 수 없는 가호';
   }
 }

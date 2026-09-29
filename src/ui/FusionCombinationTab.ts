@@ -95,7 +95,7 @@ export function buildCombinationTab(
 
   const balanceOk = (gameState.soulCrystals ?? 0) >= FUSION_COMBINATION_COST;
   const resourceY = slotY + slotH + 18;
-  c.add(ctx.scene.add.text(panelX + 18, resourceY, '영혼 수정', {
+  c.add(ctx.scene.add.text(panelX + 18, resourceY, '영혼 결정', {
     fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
   c.add(ctx.scene.add.text(panelX + panelW - 18, resourceY,
@@ -144,7 +144,7 @@ export function buildCombinationTab(
       fontFamily: 'sans-serif', fontSize: '17px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
     }).setOrigin(0.5));
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 69,
-      `결과 없음 가능 · 실패해도 영혼 수정 ${FUSION_COMBINATION_COST} 소모`, {
+      `결과 없음 가능 · 실패해도 영혼 결정 ${FUSION_COMBINATION_COST} 소모`, {
         fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
       }).setOrigin(0.5));
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 91, '원본 수호자는 소모되지 않습니다', {
@@ -163,7 +163,7 @@ export function buildCombinationTab(
   const warningY = resultY + resultH + 16;
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, warningY,
     bothFilled
-      ? `실행 시 영혼 수정 ${FUSION_COMBINATION_COST}이 즉시 소모됩니다`
+      ? `실행 시 영혼 결정 ${FUSION_COMBINATION_COST}이 즉시 소모됩니다`
       : '공명원을 선택하면 결과와 risk를 표시합니다', {
       fontFamily: 'sans-serif', fontSize: '11px',
       color: bothFilled ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
@@ -174,7 +174,7 @@ export function buildCombinationTab(
     x: panelX + 16, y: warningY + 18, w: panelW - 32, h: 48,
     label: canExecute
       ? hybrid ? '확인된 조합 의식 준비' : '미지의 조합 시도'
-      : bothFilled ? `영혼 수정 ${FUSION_COMBINATION_COST} 부족` : '공명원을 먼저 선택하세요',
+      : bothFilled ? `영혼 결정 ${FUSION_COMBINATION_COST} 부족` : '공명원을 먼저 선택하세요',
     fontSize: '15px', enabled: canExecute, once: true, showArrow: false,
     fillColor: hybrid ? TAB_ACCENT['조합'] : DUNGEON_UI.EMBER,
     borderColor: DUNGEON_UI.BRASS_BRIGHT,
@@ -191,7 +191,7 @@ export function buildCombinationTab(
       showConfirmDialog(
         ctx,
         hybrid ? `${hybrid.name} 공명을 실행합니다` : '결과가 없는 미지의 공명입니다',
-        `${names}\n영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지`,
+        `${names}\n영혼 결정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지`,
         '조합',
         () => executeCombination(ctx, state, combineSlots),
       );
@@ -214,7 +214,7 @@ function executeCombination(
     logger.warn(`[COMBINATION] rejected: ${result.reason}`);
     showFusionResultPanel(ctx, {
       tabId: '조합', status: 'failure', title: '조합 조건이 바뀌었습니다',
-      detail: '영혼 수정 잔액과 선택한 공명원을 다시 확인하세요.',
+      detail: '영혼 결정 잔액과 선택한 공명원을 다시 확인하세요.',
     });
     return;
   }
@@ -228,7 +228,7 @@ function executeCombination(
         tabId: '조합',
         status: result.isNewDiscovery ? 'discovery' : 'success',
         title: `${result.hybrid.name} 조합 성공`,
-        detail: `영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지${result.isNewDiscovery ? '\n신규 조합이 도감에 기록되었습니다.' : ''}`,
+        detail: `영혼 결정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지${result.isNewDiscovery ? '\n신규 조합이 도감에 기록되었습니다.' : ''}`,
       });
     });
     return;
@@ -238,7 +238,7 @@ function executeCombination(
   showFusionAnimation(ctx, '조합', () => {
     showFusionResultPanel(ctx, {
       tabId: '조합', status: 'failure', title: '공명 결과 없음',
-      detail: `영혼 수정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지\n융합 진척은 증가하지 않았습니다.`,
+      detail: `영혼 결정 ${FUSION_COMBINATION_COST} 소모 · 원본 2체 유지\n융합 진척은 증가하지 않았습니다.`,
     });
   });
 }

@@ -194,7 +194,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'crystal_10',
     name: '결정 수집가',
-    description: '영혼 수정 10개를 모으세요.',
+    description: '영혼 결정 10개를 모으세요.',
     icon: '💎',
     category: 'economy',
     target: 10,
@@ -204,7 +204,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: 'crystal_50',
     name: '결정 마스터',
-    description: '영혼 수정 50개를 모으세요.',
+    description: '영혼 결정 50개를 모으세요.',
     icon: '🔷',
     category: 'economy',
     target: 50,

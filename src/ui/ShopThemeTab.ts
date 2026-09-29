@@ -1,4 +1,6 @@
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import { addSigil } from './Sigils';
+import { THEME_SIGILS } from './sigilMaps';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import {
   equipTheme,
@@ -20,16 +22,15 @@ import {
 interface ThemeListing {
   readonly theme: DungeonTheme;
   readonly gemCost: number;
-  readonly emoji: string;
   readonly rarity: 'default' | 'rare' | 'epic' | 'legendary';
 }
 
 export const THEME_LISTINGS: ThemeListing[] = [
-  { theme: ALL_THEMES[0], gemCost: 0, emoji: '🪨', rarity: 'default' },
-  { theme: ALL_THEMES[1], gemCost: 150, emoji: '❄️', rarity: 'rare' },
-  { theme: ALL_THEMES[2], gemCost: 150, emoji: '🌋', rarity: 'rare' },
-  { theme: ALL_THEMES[3], gemCost: 300, emoji: '🌑', rarity: 'epic' },
-  { theme: ALL_THEMES[4], gemCost: 400, emoji: '✨', rarity: 'legendary' },
+  { theme: ALL_THEMES[0], gemCost: 0, rarity: 'default' },
+  { theme: ALL_THEMES[1], gemCost: 150, rarity: 'rare' },
+  { theme: ALL_THEMES[2], gemCost: 150, rarity: 'rare' },
+  { theme: ALL_THEMES[3], gemCost: 300, rarity: 'epic' },
+  { theme: ALL_THEMES[4], gemCost: 400, rarity: 'legendary' },
 ];
 
 const RARITY: Record<ThemeListing['rarity'], { label: string; color: number; css: string }> = {
@@ -80,7 +81,7 @@ function drawThemeCard(
   h: number,
   state: ReturnType<typeof loadGameState>,
 ): void {
-  const { theme, gemCost, emoji, rarity } = listing;
+  const { theme, gemCost, rarity } = listing;
   const owned = rarity === 'default' || (state.ownedThemes ?? []).includes(theme.id);
   const equipped = (state.equippedTheme ?? 'cave') === theme.id;
   const rarityMeta = RARITY[rarity];
@@ -93,9 +94,8 @@ function drawThemeCard(
   iconPlate.lineStyle(1, accent, 0.78);
   iconPlate.strokeRoundedRect(x + 14, y + 18, 54, 54, 9);
   ctx.contentCtr.add(iconPlate);
-  ctx.contentCtr.add(ctx.scene.add.text(x + 41, y + 45, emoji, {
-    fontFamily: 'sans-serif', fontSize: '27px',
-  }).setOrigin(0.5));
+  const sigil = THEME_SIGILS[theme.id] ?? { kind: 'wall' as const, color: DUNGEON_UI.BRASS_BRIGHT };
+  ctx.contentCtr.add(addSigil(ctx.scene, sigil.kind, x + 41, y + 45, 30, sigil.color, { disc: false }));
 
   ctx.contentCtr.add(ctx.scene.add.text(x + 80, y + 17, theme.name, {
     fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,

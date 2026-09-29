@@ -1,4 +1,6 @@
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
+import { ACTIVE_SKILL_SIGILS, EQUIPMENT_TYPE_SIGILS } from './sigilMaps';
+import { addSigil } from './Sigils';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import {
   purchaseDailyEquipment,
@@ -52,7 +54,7 @@ export function buildEquipmentTab(ctx: ShopDailyTabContext): void {
     ctx.scene,
     ctx.contentCtr,
     '일일 장비 보급',
-    `오늘의 보급품 3종 · 보유 ${ownedCount} · 영혼 수정 결제`,
+    `오늘의 보급품 3종 · 보유 ${ownedCount} · 영혼 결정 결제`,
   );
   equipment.forEach((item, index) => {
     drawDailyCard(ctx, item, index, state.ownedEquipment.includes(item.id), 'equipment');
@@ -68,7 +70,7 @@ export function buildSkillTab(ctx: ShopDailyTabContext): void {
     ctx.scene,
     ctx.contentCtr,
     '일일 전술 교본',
-    `오늘의 교본 3종 · 보유 ${ownedCount} · 영혼 수정 결제`,
+    `오늘의 교본 3종 · 보유 ${ownedCount} · 영혼 결정 결제`,
   );
   skills.forEach((item, index) => {
     drawDailyCard(ctx, item, index, state.ownedActiveSkills.includes(item.id), 'skill');
@@ -102,9 +104,10 @@ function drawDailyCard(
   iconPlate.lineStyle(1.5, accent, 0.82);
   iconPlate.strokeRoundedRect(x + 16, y + 20, 66, 66, 10);
   ctx.contentCtr.add(iconPlate);
-  ctx.contentCtr.add(ctx.scene.add.text(x + 49, y + 53, item.icon, {
-    fontFamily: 'sans-serif', fontSize: '31px',
-  }).setOrigin(0.5));
+  const sigil = kind === 'skill'
+    ? ACTIVE_SKILL_SIGILS[item.id] ?? { kind: 'spark' as const, color: 0x9fb4f0 }
+    : { kind: EQUIPMENT_TYPE_SIGILS[(item as Equipment).type] ?? 'gem', color: DUNGEON_UI.BRASS_BRIGHT };
+  ctx.contentCtr.add(addSigil(ctx.scene, sigil.kind, x + 49, y + 53, 36, sigil.color, { disc: false }));
 
   ctx.contentCtr.add(ctx.scene.add.text(x + 96, y + 20, item.name, {
     fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
@@ -120,7 +123,7 @@ function drawDailyCard(
     wordWrap: { width: w - 116 },
   }));
 
-  ctx.contentCtr.add(ctx.scene.add.text(x + 18, y + 118, owned ? '보급 완료' : `영혼 수정 ${item.gemCost}`, {
+  ctx.contentCtr.add(ctx.scene.add.text(x + 18, y + 118, owned ? '보급 완료' : `영혼 결정 ${item.gemCost}`, {
     fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
     color: owned ? DUNGEON_UI_CSS.JADE : '#aab9ff',
   }));
@@ -139,7 +142,7 @@ function drawDailyCard(
         description: kind === 'equipment'
           ? `${item.desc} 효과의 장비를 보유 목록에 추가합니다.`
           : `${item.desc} 효과의 전술 교본을 보유 목록에 추가합니다.`,
-        costLabel: `영혼 수정 ${item.gemCost}`,
+        costLabel: `영혼 결정 ${item.gemCost}`,
         execute: () => {
           if (!isCurrentDailyOffer(kind, item.id)) {
             return {
@@ -168,7 +171,7 @@ function dailyOutcome(
     return {
       ok: false,
       title: '보급 조건 미충족',
-      detail: '영혼 수정 잔액이 부족합니다. 자원과 보유 목록은 변경되지 않았습니다.',
+      detail: '영혼 결정 잔액이 부족합니다. 자원과 보유 목록은 변경되지 않았습니다.',
     };
   }
   if (result.changed) saveGameState(result.state);
@@ -177,6 +180,6 @@ function dailyOutcome(
     title: result.changed ? `${itemName} 지급 완료` : '이미 보유한 보급품',
     detail: result.changed
       ? kind === 'equipment' ? '장비 보유 목록에 추가했습니다.' : '액티브 스킬 보유 목록에 추가했습니다.'
-      : '추가 영혼 수정은 사용되지 않았습니다.',
+      : '추가 영혼 결정은 사용되지 않았습니다.',
   };
 }

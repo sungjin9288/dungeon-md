@@ -157,3 +157,17 @@ export const WAVE_EVENT_SIGILS: Readonly<Record<string, SigilKind>> = {
   void_storm: 'orb', ancient_blessing: 'spark', crimson_curse: 'flame', gold_vein: 'ore',
   raiders: 'swords', guardian_rite: 'shield', unsealing: 'unlock', time_warp: 'infinity',
 };
+
+/** Equipment slot type (barracks.ts Equipment.type) for shop/item tiles. */
+export const EQUIPMENT_TYPE_SIGILS: Readonly<Record<string, SigilKind>> = {
+  weapon: 'swords', armor: 'shield', accessory: 'gem',
+};
+
+/** Dungeon themes (themes/ ALL_THEMES ids). */
+export const THEME_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; readonly color: number }>> = {
+  cave: { kind: 'ore', color: 0xb8a88a },
+  ice_cave: { kind: 'snow', color: 0x88ddff },
+  lava_cave: { kind: 'flame', color: 0xff8a4a },
+  void_throne: { kind: 'orb', color: 0xb58ae0 },
+  celestial_realm: { kind: 'star', color: 0xe8c25a },
+};

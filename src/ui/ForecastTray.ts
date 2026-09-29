@@ -49,8 +49,8 @@ function rewardSummary(card: ForecastCard, gs: GameState): string {
   if (card.kind === 'merchant') parts.push(`골드 ${merchantPayout(gs, card.bandTier).gold}`);
   else if (card.reward.gold) parts.push(`골드 ${card.reward.gold}`);
   if (card.reward.gems) parts.push(`보석 ${card.reward.gems}`);
-  if (card.reward.soulCrystals) parts.push(`수정 ${card.reward.soulCrystals}`);
-  if (card.daily) parts.push(`수정 ${card.daily.rewards.crystals}`);
+  if (card.reward.soulCrystals) parts.push(`결정 ${card.reward.soulCrystals}`);
+  if (card.daily) parts.push(`결정 ${card.daily.rewards.crystals}`);
   if (card.reward.notoriety) parts.push(`명성 +${card.reward.notoriety}`);
   return parts.join(' · ') || '보상 없음';
 }

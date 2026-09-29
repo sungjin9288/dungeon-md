@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getDailyItems, isCurrentDailyOffer, seededShuffle } from './ShopDailyTab';
+
+vi.mock('phaser', () => ({ default: {} }));
+const { getDailyItems, isCurrentDailyOffer, seededShuffle } = await import('./ShopDailyTab');
 
 afterEach(() => {
   vi.useRealTimers();

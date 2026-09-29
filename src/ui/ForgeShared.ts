@@ -167,10 +167,10 @@ export function summarizeStatEffects(
     if (key === 'freezeChance') return `동결 +${Math.round(value * 100)}%`;
     if (key === 'skillCdMult')  return `쿨타임 -${Math.round((1 - value) * 100)}%`;
     if (key === 'skillCDReduction' || key === 'cdReduction') return `쿨타임 -${Math.round(value * 100)}%`;
-    if (key === 'scEarnBonus')  return `수정 +${Math.round(value * 100)}%`;
+    if (key === 'scEarnBonus')  return `결정 +${Math.round(value * 100)}%`;
     if (key === 'goldBonus')    return `골드 +${Math.round(value * 100)}%`;
     if (key === 'goldMult')     return `골드 +${Math.round(value * 100)}%`;
-    if (key === 'crystalMult')  return `수정 +${Math.round(value * 100)}%`;
+    if (key === 'crystalMult')  return `결정 +${Math.round(value * 100)}%`;
     if (key === 'dmgReduction') return `방 피해 -${Math.round(value * 100)}%`;
     if (key === 'atkSpeedBonus') return `기본공속 +${Math.round(value * 100)}%`;
     if (key === 'bossDmgBonus') return `보스 기본피해 +${Math.round(value * 100)}%`;

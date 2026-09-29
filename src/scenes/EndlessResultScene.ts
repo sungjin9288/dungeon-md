@@ -36,7 +36,7 @@ export class EndlessResultScene extends Phaser.Scene {
     this.drawRecord(result);
     this.drawLedger(result);
     this.drawModifier();
-    this.label(195, 628, '영혼 수정 지급 완료', 13, DUNGEON_UI_CSS.JADE, true).setOrigin(0.5);
+    this.label(195, 628, '영혼 결정 지급 완료', 13, DUNGEON_UI_CSS.JADE, true).setOrigin(0.5);
     this.label(195, 654, '이번 원정에서 얻은 기록은 다음 도전에도 남습니다', 11,
       DUNGEON_UI_CSS.MUTED).setOrigin(0.5);
     this.drawActions();
@@ -84,7 +84,7 @@ export class EndlessResultScene extends Phaser.Scene {
     const rows = [
       { label: '처치한 침략자', value: result.kills, color: DUNGEON_UI_CSS.PARCHMENT },
       { label: '원정 중 획득 골드', value: result.goldEarned, color: DUNGEON_UI_CSS.BRASS },
-      { label: '지급된 영혼 수정', value: result.crystalsEarned, color: DUNGEON_UI_CSS.JADE },
+      { label: '지급된 영혼 결정', value: result.crystalsEarned, color: DUNGEON_UI_CSS.JADE },
     ];
     rows.forEach((row, index) => {
       const y = 373 + index * 52;
