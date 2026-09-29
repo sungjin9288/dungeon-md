@@ -57,6 +57,13 @@ const RITUAL_V2_IDS = [
   'skeleton_knight',
   'soul_guardian',
   'underworld_witch',
+  'ghost_hunter',
+  'underworld_archer',
+  'hell_guard',
+  'yomra_warrior',
+  'ghost_king',
+  'spirit_summoner',
+  'underworld_complete',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];

@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 47,
+  "count": 54,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -122,6 +122,18 @@
       "width": 1254,
       "height": 1254
     },
+    "ghost_hunter": {
+      "sha256": "fe4d021f9d462ee724e7442429245b6ac0ea1b6cc041ab5fed2769798fbe1678",
+      "bytes": 1866209,
+      "width": 1254,
+      "height": 1254
+    },
+    "ghost_king": {
+      "sha256": "035e384b6a82bb4b8c3e14166accbadd9d1d64cf36252c874a1fbe4d24e9f459",
+      "bytes": 2164043,
+      "width": 1254,
+      "height": 1254
+    },
     "gold_dokkaebi": {
       "sha256": "1233f82bdee33e40b0ff6865e2a9a114a3004ccb9e9881a43991f8bad3edc1c2",
       "bytes": 1527245,
@@ -167,6 +179,12 @@
     "healer_dokkaebi": {
       "sha256": "8e4f75d307fb839c0401e936e2ddce09f45efc259fc210c6ebacafdbab7711c2",
       "bytes": 1991799,
+      "width": 1254,
+      "height": 1254
+    },
+    "hell_guard": {
+      "sha256": "f18b50389a3acc4b283c486c60b598a439158a7ea0784c7c53114bef766f0dde",
+      "bytes": 1746449,
       "width": 1254,
       "height": 1254
     },
@@ -230,6 +248,12 @@
       "width": 1254,
       "height": 1254
     },
+    "spirit_summoner": {
+      "sha256": "df44ce16e06e19c1c8d6f61d2f7e3b89a2256373e24412871e14c27f8b1f291a",
+      "bytes": 2536234,
+      "width": 1254,
+      "height": 1254
+    },
     "spring_gumiho": {
       "sha256": "ee032260471dc2aefe97fb01bf1936398fb3def74d7ef9845de2095c81864812",
       "bytes": 1798559,
@@ -266,6 +290,18 @@
       "width": 1254,
       "height": 1254
     },
+    "underworld_archer": {
+      "sha256": "84a851f2197c9892c7079bad0d674c2018a41461ff2ba369f8d9c33e422817a1",
+      "bytes": 2144090,
+      "width": 1254,
+      "height": 1254
+    },
+    "underworld_complete": {
+      "sha256": "d1de11cd67096d13bdcd27575126c070f623db5e231e3a8af3c58854419f0c56",
+      "bytes": 2401715,
+      "width": 1254,
+      "height": 1254
+    },
     "underworld_witch": {
       "sha256": "2a5f68500c17f5909c79eb8fc5e3673f803b5970296400be6d80d2492e304cc8",
       "bytes": 2618270,
@@ -281,6 +317,12 @@
     "village_archer": {
       "sha256": "fef1537272ce053a68a1f8c1130cc08b0259ec2708b6f9f429f9e6f98e26a62b",
       "bytes": 1722317,
+      "width": 1254,
+      "height": 1254
+    },
+    "yomra_warrior": {
+      "sha256": "51d92aa1853c294c351c43517463d1810afe741fc5492a36089e6e82d011eb49",
+      "bytes": 2114667,
       "width": 1254,
       "height": 1254
     }
