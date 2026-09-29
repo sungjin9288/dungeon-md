@@ -3,6 +3,7 @@
 // These are cinematic / high-stakes animations — boss entrance, wave banner,
 // kill reactions — as opposed to the small per-hit effects in VisualEffects.ts.
 
+import { getBossArt } from '../data/characterArt';
 import Phaser from 'phaser';
 import { applyBattleSpeed } from './BattleSpeed';
 import { Invader } from '../objects/Invader';
@@ -51,6 +52,9 @@ export function showBossWarning(
     death_emissary:      '저승의 문은 이미 열렸다...',
     three_god_destroyer: '모든 것을 부숴버리겠다!!',
     eternal_emperor:     '영원히... 너희는 나를 이길 수 없다.',
+    god_emperor:         '천상의 심판은 피할 수 없다.',
+    primordial_titan:    '태초의 흙으로 모든 것을 되돌리리라.',
+    void_sovereign:      '모든 빛은 결국 공허로 돌아온다.',
   };
   const bossQuote = bossGrp ? (BOSS_QUOTES[bossGrp.type] ?? null) : null;
 
@@ -99,6 +103,12 @@ export function showBossWarning(
     shadow: { color: bossColorCss, blur: 10, fill: true },
   }).setOrigin(0.5);
   nameCard.add(nameT);
+
+  // Boss cutout above the card, when its art has streamed in.
+  const bossArt = bossGrp ? getBossArt(bossGrp.type) : null;
+  if (bossArt && scene.textures.exists(bossArt.textureKey)) {
+    nameCard.add(scene.add.image(0, -8, bossArt.textureKey).setOrigin(0.5, 1).setDisplaySize(200, 200));
+  }
 
   // HP bar preview
   const hpLabel = scene.add.text(0, 62, `HP  ${bossHp.toLocaleString()}`, {

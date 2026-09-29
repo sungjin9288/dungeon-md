@@ -3,9 +3,7 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type Phaser from 'phaser';
 import { MONSTER_DEFS } from './monsterRegistry';
-import {
-  CHARACTER_ART, getCharacterArt, getCharacterArtForSpeaker, selectCharacterArtSource,
-} from './characterArt';
+import { CHARACTER_ART, getBossArt, getCharacterArt, getCharacterArtForSpeaker, getSpeakerArtId, selectCharacterArtSource, selectSpeakerArtSource } from './characterArt';
 
 vi.mock('phaser', () => ({ default: {} }));
 import { ensurePortrait, generateMonsterSprite, generatePortrait, generateRoomToken } from '../art/PortraitGenerator';
@@ -60,6 +58,24 @@ describe('ritual character art', () => {
     for (const speaker of ['도깨비 대왕', '구미호 여왕', '저승왕 사자', '산신', '구미호 ', 'constructor', '__proto__']) {
       expect(getCharacterArtForSpeaker(speaker)).toBeNull();
     }
+  });
+
+  it('resolves story speakers to a guardian or a chapter-villain boss by exact name', () => {
+    expect(getSpeakerArtId('천상 수호자')).toBe('celestial_guardian');
+    expect(getSpeakerArtId('구미호 여왕')).toBe('fox_queen');
+    expect(getSpeakerArtId('천제')).toBe('god_emperor');
+    expect(getSpeakerArtId('공허 군주')).toBe('void_sovereign');
+    for (const speaker of ['도깨비 대왕', '구미호 여왕 ', '천', 'constructor', '__proto__', 42]) {
+      expect(getSpeakerArtId(speaker)).toBeNull();
+    }
+  });
+
+  it('selects a boss speaker only once its cutout is registered and loaded', () => {
+    expect(getBossArt('not_a_boss')).toBeNull();
+    expect(selectSpeakerArtSource('공허 군주', () => true)).toEqual(
+      getBossArt('void_sovereign') ? { textureKey: 'boss-ritual-v2-void_sovereign', version: 'ritual-v2' } : null,
+    );
+    expect(selectSpeakerArtSource('공허 군주', () => false)).toBeNull();
   });
 
   it('maps the sage only for the exact 신선 도인 speaker label', () => {

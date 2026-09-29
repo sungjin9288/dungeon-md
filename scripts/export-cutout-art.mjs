@@ -1,25 +1,29 @@
-// Mechanical runtime export of skin masters: contain 428×428 on a 512×512
-// transparent canvas, encode WebP q0.92 with alpha, ≤512 KiB. No repaint.
+// Mechanical runtime export of ritual-v2 SKIN or BOSS masters: contain 428×428 on a
+// 512×512 transparent canvas, encode WebP q0.92 with alpha, ≤512 KiB. No repaint.
 //
-//   node scripts/export-skin-art.mjs --ids gumiho_frost,...   (or --all)
+//   node scripts/export-cutout-art.mjs --skins  --ids gumiho_frost,...   (or --all)
+//   node scripts/export-cutout-art.mjs --bosses --ids fox_queen,...      (or --all)
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { RUNTIME_WEBP_QUALITY, validateRuntimeWebp } from './character-art-export-options.mjs';
 import { loadSkins } from './run-skin-art-codex.mjs';
+import { BOSS_SUBJECTS } from './run-boss-art-codex.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const masterDir = path.join(root, 'output/character-art/ritual-v2/skins');
-const outDir = path.join(root, 'public/assets/monsters/ritual-v2/skins');
-const known = loadSkins();
+const kind = process.argv.includes('--bosses') ? 'bosses' : process.argv.includes('--skins') ? 'skins' : null;
+if (!kind) { console.error('usage: --skins | --bosses, then --ids a,b | --all'); process.exit(1); }
+const masterDir = path.join(root, 'output/character-art/ritual-v2', kind);
+const outDir = path.join(root, 'public/assets/monsters/ritual-v2', kind);
+const known = kind === 'skins' ? new Set(loadSkins().keys()) : new Set(Object.keys(BOSS_SUBJECTS));
 
 const i = process.argv.indexOf('--ids');
 const ids = process.argv.includes('--all')
-  ? [...known.keys()].filter(id => existsSync(path.join(masterDir, `${id}-master.png`)))
+  ? [...known].filter(id => existsSync(path.join(masterDir, `${id}-master.png`)))
   : (i >= 0 ? process.argv[i + 1] : '').split(',').map(s => s.trim()).filter(Boolean);
 if (ids.length === 0) { console.error('usage: --ids a,b | --all'); process.exit(1); }
 const unknown = ids.filter(id => !known.has(id));
-if (unknown.length) { console.error(`unknown skin id: ${unknown.join(', ')}`); process.exit(1); }
+if (unknown.length) { console.error(`unknown ${kind} id: ${unknown.join(', ')}`); process.exit(1); }
 
 const masters = ids.map(id => {
   const file = path.join(masterDir, `${id}-master.png`);

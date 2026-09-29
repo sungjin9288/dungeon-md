@@ -7,7 +7,7 @@
  *   node scripts/run-skin-art-codex.mjs [--ids a,b] [--force]
  *
  * Masters: output/character-art/ritual-v2/skins/{skinId}-master.png (skins whose
- * base master does not exist yet are skipped). Export: scripts/export-skin-art.mjs.
+ * base master does not exist yet are skipped). Export: scripts/export-cutout-art.mjs --skins.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, openSync, readFileSync } from 'node:fs';

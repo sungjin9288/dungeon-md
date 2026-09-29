@@ -4,7 +4,8 @@ import { DUNGEON_UI as UI, DUNGEON_UI_CSS as CSS } from '../constants/colors';
 import { type DialogueLine, getCinematic } from '../data/cinematics';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { markCinematicSeen } from '../data/storyTransactions';
-import { getCharacterArtForSpeaker, selectCharacterArtSource } from '../data/characterArt';
+import { getSpeakerArtId, selectSpeakerArtSource } from '../data/characterArt';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { addFramedPanel, addPrimaryActionButton } from '../ui/GameUiPrimitives';
 import { getReducedMotion } from '../utils/reducedMotion';
 
@@ -66,6 +67,19 @@ export class CinematicScene extends Phaser.Scene {
 
     this.buildTheatre(def.id);
     this.showLine(0);
+    this.streamSpeakerArt();
+  }
+
+  /** Request every speaker's cutout; redraw the current speaker when theirs lands. */
+  private streamSpeakerArt(): void {
+    const streamer = getCharacterArtStreamer(this.game);
+    const off = streamer.onLoaded(id => {
+      const line = this.lines[this.lineIndex];
+      if (line && getSpeakerArtId(line.speaker) === id && this.sys.isActive()) this.applySpeakerArt(line);
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
+    const ids = this.lines.map(line => getSpeakerArtId(line.speaker)).filter((id): id is string => Boolean(id));
+    streamer.request(new Set(ids));
   }
 
   private text(x: number, y: number, value: string, size: number, color: string = CSS.TEXT): Phaser.GameObjects.Text {
@@ -156,22 +170,7 @@ export class CinematicScene extends Phaser.Scene {
     this.progressRule.clear().fillStyle(UI.IRON).fillRect(44, 522, 302, 1);
     this.progressRule.fillStyle(UI.BRASS).fillRect(44, 522, 302 * (index + 1) / this.lines.length, 1);
 
-    const speakerX = line.side === 'left' ? 126 : 264;
-    this.speakerEmoji.setPosition(speakerX, 289).setText(line.emoji).setAlpha(1).setScale(1);
-    const art = getCharacterArtForSpeaker(line.speaker);
-    const source = art ? selectCharacterArtSource(art.monsterId, key => this.textures.exists(key)) : null;
-    this.speakerEmoji.setVisible(!source);
-    this.speakerArt.setVisible(Boolean(source));
-    if (source) {
-      this.speakerArt.setTexture(source.textureKey)
-        .setPosition(line.side === 'left' ? 155 : 235, 284).setDisplaySize(248, 248);
-    }
-    this.speakerSeal.clear();
-    if (!source) {
-      this.speakerSeal.fillStyle(UI.STONE_RAISED).fillCircle(speakerX, 289, 66);
-      this.speakerSeal.lineStyle(1, UI.BRASS, 0.7).strokeCircle(speakerX, 289, 70);
-    }
-    this.speakerSeal.lineStyle(2, UI.BRASS).lineBetween(speakerX - 36, 423, speakerX + 36, 423);
+    this.applySpeakerArt(line);
     this.dialogueText.setAlpha(1).setText('');
     this.phase = 'typing';
     this.actionText.setText('대사 펼치기');
@@ -190,6 +189,25 @@ export class CinematicScene extends Phaser.Scene {
         if (shown >= line.text.length) this.revealLine(version);
       },
     });
+  }
+
+  /** Speaker portrait (guardian or boss cutout) or the emoji seal until art streams in. */
+  private applySpeakerArt(line: DialogueLine): void {
+    const speakerX = line.side === 'left' ? 126 : 264;
+    this.speakerEmoji.setPosition(speakerX, 289).setText(line.emoji).setAlpha(1).setScale(1);
+    const source = selectSpeakerArtSource(line.speaker, key => this.textures.exists(key));
+    this.speakerEmoji.setVisible(!source);
+    this.speakerArt.setVisible(Boolean(source));
+    if (source) {
+      this.speakerArt.setTexture(source.textureKey)
+        .setPosition(line.side === 'left' ? 155 : 235, 284).setDisplaySize(248, 248);
+    }
+    this.speakerSeal.clear();
+    if (!source) {
+      this.speakerSeal.fillStyle(UI.STONE_RAISED).fillCircle(speakerX, 289, 66);
+      this.speakerSeal.lineStyle(1, UI.BRASS, 0.7).strokeCircle(speakerX, 289, 70);
+    }
+    this.speakerSeal.lineStyle(2, UI.BRASS).lineBetween(speakerX - 36, 423, speakerX + 36, 423);
   }
 
   private revealLine(version = this.lineVersion): void {

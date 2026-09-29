@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from '../combat/BattleSpeed';
 import { Room } from '../objects/Room';
@@ -267,6 +268,10 @@ export class DungeonScene extends Phaser.Scene {
     this.weeklyBossMode = setup.weeklyBossMode;
 
     this.waveConfigs    = setup.waveConfigs;
+    // Boss cutouts for this run's boss intro(s); a boss without art keeps the text card.
+    getCharacterArtStreamer(this.game).request(new Set(
+      this.waveConfigs.flatMap(wave => wave.invaders.filter(inv => inv.isBoss).map(inv => inv.type)),
+    ));
     this.maxWave        = this.isEndless ? 9999 : setup.waveConfigs.length;
     this.stageChapter   = setup.stageChapter;
     this.stageNumber    = setup.stageNumber;

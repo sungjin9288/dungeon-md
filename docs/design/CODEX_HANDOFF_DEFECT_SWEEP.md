@@ -1656,7 +1656,7 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
   스킨을 샀는데 기본 모습이 나오는 것을 막기 위함).
 - 스트리머가 스킨 id도 받는다. 요청처: 상점(스킨 탭, 도착 시 1회 재그림), 홈·군단(장착 스킨).
 - 생성: `run-skin-art-codex.mjs`(주제 `skin-art-subjects.json` 17종, 기본 캐릭터 원본을 참조 첨부 — 기본
-  원본이 없으면 건너뜀) → `register-ritual-v2.mjs --skins --ids ...`(`export-skin-art.mjs` + `SKIN_ART_IDS` 추가).
+  원본이 없으면 건너뜀) → `register-ritual-v2.mjs --skins --ids ...`(`export-cutout-art.mjs --skins` + `SKIN_ART_IDS` 추가).
   원본은 `output/character-art/ritual-v2/skins/`(git 제외).
 
 ### 캐릭터 아트 진행

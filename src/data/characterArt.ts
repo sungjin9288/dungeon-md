@@ -71,6 +71,19 @@ const SPEAKER_ART = Object.freeze({
   '저승사자': 'death_messenger',
   '산신령': 'mountain_spirit',
   '신선 도인': 'sage',
+  '천상 수호자': 'celestial_guardian',
+} as const);
+
+/** Chapter villains in cinematics → boss invader type (their own boss cutout). */
+const SPEAKER_BOSS = Object.freeze({
+  '구미호 여왕': 'fox_queen',
+  '용왕': 'dragon_king',
+  '저승왕 사자': 'death_emissary',
+  '삼신 파괴자': 'three_god_destroyer',
+  '영원의 황제': 'eternal_emperor',
+  '천제': 'god_emperor',
+  '원초신': 'primordial_titan',
+  '공허 군주': 'void_sovereign',
 } as const);
 
 /** Monsters whose ritual art stands in for a story speaker; streamed early. */
@@ -95,7 +108,7 @@ export interface CharacterArtSource {
 
 /**
  * Ritual-v2 skin cutouts (SKIN_DATA ids). A skin without an entry keeps the
- * procedural palette portrait. Appended by scripts/export-skin-art.mjs batches.
+ * procedural palette portrait. Appended by scripts/register-ritual-v2.mjs --skins.
  */
 const SKIN_ART_IDS: readonly string[] = [
 ];
@@ -110,9 +123,46 @@ export function getSkinArt(skinId: unknown): CharacterArt | null {
   };
 }
 
-/** Streamable art by id: a monster cutout or, failing that, a skin cutout. */
+/**
+ * Ritual-v2 boss cutouts (invader boss types). A boss without an entry keeps the
+ * emoji/seal fallback. Appended by scripts/register-ritual-v2.mjs --bosses.
+ */
+const BOSS_ART_IDS: readonly string[] = [
+];
+
+export function getBossArt(bossType: unknown): CharacterArt | null {
+  if (typeof bossType !== 'string' || !BOSS_ART_IDS.includes(bossType)) return null;
+  return {
+    monsterId: bossType as MonsterId,
+    version: 'ritual-v2',
+    textureKey: `boss-ritual-v2-${bossType}`,
+    path: `/assets/monsters/ritual-v2/bosses/${bossType}.webp`,
+  };
+}
+
+/** Streamable art by id: a monster cutout, else a skin cutout, else a boss cutout. */
 export function getStreamableArt(id: unknown): CharacterArt | null {
-  return getCharacterArt(id) ?? getSkinArt(id);
+  return getCharacterArt(id) ?? getSkinArt(id) ?? getBossArt(id);
+}
+
+/** Streamer id for a story speaker (guardian or boss), or null when none is mapped. */
+export function getSpeakerArtId(speaker: unknown): string | null {
+  if (typeof speaker !== 'string') return null;
+  if (Object.prototype.hasOwnProperty.call(SPEAKER_ART, speaker)) return SPEAKER_ART[speaker as keyof typeof SPEAKER_ART];
+  if (Object.prototype.hasOwnProperty.call(SPEAKER_BOSS, speaker)) return SPEAKER_BOSS[speaker as keyof typeof SPEAKER_BOSS];
+  return null;
+}
+
+/** Loaded art for a story speaker: guardian (with legacy fallback) or boss cutout. */
+export function selectSpeakerArtSource(
+  speaker: unknown,
+  textureExists: (key: string) => boolean,
+): CharacterArtSource | null {
+  if (typeof speaker === 'string' && Object.prototype.hasOwnProperty.call(SPEAKER_ART, speaker)) {
+    return selectCharacterArtSource(SPEAKER_ART[speaker as keyof typeof SPEAKER_ART], textureExists);
+  }
+  const boss = getBossArt(getSpeakerArtId(speaker));
+  return boss && textureExists(boss.textureKey) ? { textureKey: boss.textureKey, version: boss.version } : null;
 }
 
 /** Null selects the existing procedural path (a skin with no loaded skin art included). */
