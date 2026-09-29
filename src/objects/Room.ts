@@ -5,7 +5,7 @@ import { getRoomEquipmentDamageReduction, reduceRoomEquipmentDamage } from '../d
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { CELL_SIZE } from '../constants/layout';
 import { getReducedMotion } from '../utils/reducedMotion';
-import { ROOM_DEFS, type RoomData, type RoomType } from '../data/rooms';
+import { ROOM_DEFS, ROOM_FAMILY, type RoomData, type RoomType } from '../data/rooms';
 import {
   drawStoneVisual,
   drawLevelBadgeVisual,
@@ -55,7 +55,7 @@ export class Room extends Phaser.GameObjects.Container {
   /** @internal */ levelBadge?:   Phaser.GameObjects.Graphics;
   private monsterBadge?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   /** @internal */ roomTypeBadge?: Phaser.GameObjects.Graphics;
-  /** @internal */ baseRoomIcon?: Phaser.GameObjects.Text;
+  /** @internal */ baseRoomIcon?: Phaser.GameObjects.Graphics;
   /** @internal */ baseRoomNameLabel?: Phaser.GameObjects.Text;
   /** @internal */ slotLoadoutGfx?: Phaser.GameObjects.Graphics;
   /** @internal */ slotLoadoutLabels: Phaser.GameObjects.Text[] = [];
@@ -322,8 +322,8 @@ export class Room extends Phaser.GameObjects.Container {
     stripe.fillRect(-this.cs / 2 + 7, -this.cs / 2 + 7, 3, this.cs - 14);
     this.add(stripe);
 
-    // Room icon (emoji)
-    this.baseRoomIcon = this.scene.add.text(0, -14, def.emoji, { fontSize: '28px' }).setOrigin(0.5);
+    // Room icon: the family sigil (was the building's emoji).
+    this.baseRoomIcon = addSigil(this.scene, ROOM_TYPE_SIGILS[ROOM_FAMILY[type]] ?? 'shield', 0, -14, 28, def.accentColor);
     this.add(this.baseRoomIcon);
 
     // Room name — parchment ink so it reads on the dark pixel room.
