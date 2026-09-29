@@ -6,6 +6,8 @@ export const CANVAS_HEIGHT = 844;
 export const ROOT_NAV_HEIGHT = 64;
 export const ROOT_NAV_Y = CANVAS_HEIGHT - ROOT_NAV_HEIGHT;
 export const SCENE_HEADER_TOUCH_HEIGHT = 44;
+/** Minimum touch target (px, logical) for any tappable control. */
+export const TOUCH_MIN = 44;
 
 export const GRID_COLS  = 3;
 export const GRID_ROWS  = 3;   // 3×3 = 9 max rooms

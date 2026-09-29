@@ -6,7 +6,7 @@ import {
   getSynergyGuardianCooldownMult, getSynergyGuardianAttackIntervalMult,
   type ActiveSynergy, type ActiveElementCombo,
 } from '../data/synergy';
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { CANVAS_HEIGHT, CANVAS_WIDTH, TOUCH_MIN } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { TRIBE_LABELS } from '../ui/BarracksShared';
 
@@ -131,7 +131,10 @@ export class SynergyManager {
     // dock: tribe synergies on the right, element combos on the left.
     const PILL_H = 22;
     const GAP    = 4;
-    let yOff = CANVAS_HEIGHT - 8 - PILL_H;
+    const bottom = CANVAS_HEIGHT - 8;
+    let yOff = bottom - PILL_H;
+    const synLines: string[] = [];
+    let synLeft = CANVAS_WIDTH;
 
     for (const syn of this.activeSynergies) {
       const name       = TRIBE_LABELS[syn.tribe] ?? syn.tribe;
@@ -170,37 +173,16 @@ export class SynergyManager {
 
       this.display.add([g, t]);
 
-      const pillTop = yOff;
-      const synZone = this.scene.add.zone(pillX, yOff, pillW, PILL_H)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(90);
-      this.tooltipZones.push(synZone);
-      synZone.once('pointerdown', () => {
-        const desc = syn.tier.desc;
-        const tipX = CANVAS_WIDTH - 8;
-        const tipY = pillTop - 4;
-        const tip = this.scene.add.text(tipX, tipY, desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-          color: CASUAL_CSS.INK,
-          backgroundColor: CASUAL_CSS.CREAM,
-          padding: { x: 8, y: 5 },
-          wordWrap: { width: 264, useAdvancedWrap: true },
-        }).setOrigin(1, 1).setDepth(200);
-        this.scene.tweens.add({
-          targets: tip,
-          alpha: { from: 1, to: 0 },
-          y: tipY - 16,
-          duration: 400,
-          delay: 2100,
-          onComplete: () => tip.destroy(),
-        });
-      });
+      synLines.push(`${label} · ${syn.tier.desc}`);
+      synLeft = Math.min(synLeft, pillX);
 
       yOff -= PILL_H + GAP;
     }
+    this.addColumnTooltip(synLeft, CANVAS_WIDTH - 8, yOff + PILL_H, bottom, synLines, 'right');
 
-    yOff = CANVAS_HEIGHT - 8 - PILL_H;
+    yOff = bottom - PILL_H;
+    const ecLines: string[] = [];
+    let ecRight = 0;
     for (const ec of this.activeElementCombos) {
       const label  = ec.combo.name;
       const fontSize = fitPillFont(this.scene, label);
@@ -232,34 +214,50 @@ export class SynergyManager {
 
       this.display.add([g, t]);
 
-      const pillTop = yOff;
-      const ecZone = this.scene.add.zone(pillX, yOff, pillW, ecH)
-        .setOrigin(0, 0)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(90);
-      this.tooltipZones.push(ecZone);
-      ecZone.once('pointerdown', () => {
-        const desc = ec.combo.desc;
-        const tipX = pillX;
-        const tipY = pillTop - 4;
-        const tip = this.scene.add.text(tipX, tipY, desc, {
-          fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-          color: CASUAL_CSS.INK,
-          backgroundColor: CASUAL_CSS.CREAM,
-          padding: { x: 8, y: 5 },
-        }).setOrigin(0, 1).setDepth(200);
-        this.scene.tweens.add({
-          targets: tip,
-          alpha: { from: 1, to: 0 },
-          y: tipY - 16,
-          duration: 400,
-          delay: 2100,
-          onComplete: () => tip.destroy(),
-        });
-      });
+      ecLines.push(`${label} · ${ec.combo.desc}`);
+      ecRight = Math.max(ecRight, pillX + pillW);
 
       yOff -= ecH + GAP;
     }
+    this.addColumnTooltip(8, ecRight, yOff + PILL_H, bottom, ecLines, 'left');
+  }
+
+  /**
+   * One tap target per pill column: pills are 22px tall and 4px apart, so a
+   * per-pill zone could never meet the 44px touch minimum. Tapping the column
+   * shows every active entry's effect at once.
+   */
+  private addColumnTooltip(
+    left: number, right: number, top: number, bottom: number,
+    lines: readonly string[], align: 'left' | 'right',
+  ): void {
+    if (lines.length === 0 || right <= left) return;
+    const zoneTop = Math.min(top, bottom - TOUCH_MIN);
+    const zone = this.scene.add.zone(left, zoneTop, right - left, bottom - zoneTop)
+      .setOrigin(0, 0)
+      .setInteractive({ useHandCursor: true })
+      .setDepth(90);
+    this.tooltipZones.push(zone);
+    zone.on('pointerdown', () => {
+      const tipX = align === 'right' ? right : left;
+      const tipY = zoneTop - 4;
+      const tip = this.scene.add.text(tipX, tipY, lines.join('\n'), {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: CASUAL_CSS.INK,
+        backgroundColor: CASUAL_CSS.CREAM,
+        padding: { x: 8, y: 5 },
+        lineSpacing: 3,
+        wordWrap: { width: 264, useAdvancedWrap: true },
+      }).setOrigin(align === 'right' ? 1 : 0, 1).setDepth(200);
+      this.scene.tweens.add({
+        targets: tip,
+        alpha: { from: 1, to: 0 },
+        y: tipY - 16,
+        duration: 400,
+        delay: 2600,
+        onComplete: () => tip.destroy(),
+      });
+    });
   }
 }
 

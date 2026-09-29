@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import { showToast } from './Toast';
 import { COLORS } from '../constants/colors';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, TOUCH_MIN } from '../constants/layout';
 import {
   ROOM_SLOT_TYPE_DEFS, getRoomSlotCapacity, getMaxRoomLevel, getDmLevelForRoomLevel,
   type GameState, type DungeonSlot,
@@ -50,7 +50,6 @@ const TAB_BAR_H = 64;
 // failures. Visuals stay compact; the interactive zones are the 44px ones.
 const TRAY_H    = 272;
 /** Minimum touch target (modal harness treats anything smaller as a failure). */
-const TOUCH_MIN = 44;
 const TRAY_Y    = CANVAS_HEIGHT - TAB_BAR_H - TRAY_H;
 const PANEL_BG     = 0x12100a;
 const PANEL_BG_TOP = 0x1c1810;
