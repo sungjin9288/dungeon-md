@@ -116,6 +116,7 @@ EndlessResultScene        엔드리스 결과
 - `startWave`와 `enableWaveButton`은 이전 준비 타이머를 취소한다. 방어선 확인·즉시 시작
   후 예약된 tick이 새 웨이브의 스폰/종료 플래그를 다시 초기화해서는 안 된다.
 - 준비 교체·정상 완료·씬 shutdown은 해당 타이머, 임시 표시, 상태 문구와 listener를 정리한다.
+  `startWave`는 이전 웨이브 결과 패널도 닫는다(`dismissResultOverlay`) — 준비 만료 후 HUD 버튼 시작 경로.
   `DungeonScene.create`는 파괴된 countdownBar 참조를 초기화한다. 저장 형식·보상은 유지한다.
 - 수정 전 실제 결과 버튼에서 늦은 플래그 초기화와 음수 준비 시간을 재현했다.
   검증 범위와 장기 주행 미실행 제한은 결함 스윕 인계 §16.
