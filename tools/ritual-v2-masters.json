@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 110,
+  "count": 119,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -62,9 +62,21 @@
       "width": 1254,
       "height": 1254
     },
+    "celestial_guardian": {
+      "sha256": "987d7890ca6437c89bcd29d0c8a1b5723d8108db697a0a778add971a7b2aeb3d",
+      "bytes": 1862606,
+      "width": 1254,
+      "height": 1254
+    },
     "celestial_healer": {
       "sha256": "a0e8a1078d95bb42fe37aa59bef770ca0b9fa632be03937150b0f1064dbdc94b",
       "bytes": 2454063,
+      "width": 1254,
+      "height": 1254
+    },
+    "celestial_sage": {
+      "sha256": "5c6fde7996e8c788202e02670a44fa7288e3154f15031466dc3cbdd913bd32a6",
+      "bytes": 2064049,
       "width": 1254,
       "height": 1254
     },
@@ -89,6 +101,12 @@
     "deer_god": {
       "sha256": "eaf9b5707bc6bb2c6be53217162a9b9006b2d4b88d91ff4ad3425b8d604988a0",
       "bytes": 2704374,
+      "width": 1254,
+      "height": 1254
+    },
+    "divine_healer": {
+      "sha256": "44697a7573fe16dede0ade4e6dcb862b4e542cb59822edab57e9695fa33ab0c7",
+      "bytes": 1502251,
       "width": 1254,
       "height": 1254
     },
@@ -155,6 +173,12 @@
     "dragon_king_guardian": {
       "sha256": "c4803d0d3675dd9592a88bd5fe96127a1976efb8c9dcb162e9cc2dc34fa27eb6",
       "bytes": 2183945,
+      "width": 1254,
+      "height": 1254
+    },
+    "empyrean_sovereign": {
+      "sha256": "708450db8c05aafca8036d1397be7b8bea3152ae1f6d8b897736682ed34da127",
+      "bytes": 2275398,
       "width": 1254,
       "height": 1254
     },
@@ -236,6 +260,12 @@
       "width": 1254,
       "height": 1254
     },
+    "god_realm_general": {
+      "sha256": "8a28f41eb9fc448084ef347fc62373637ba4d8145e2106a99ab75ca7fda9dc42",
+      "bytes": 2814570,
+      "width": 1254,
+      "height": 1254
+    },
     "gold_dokkaebi": {
       "sha256": "1233f82bdee33e40b0ff6865e2a9a114a3004ccb9e9881a43991f8bad3edc1c2",
       "bytes": 1527245,
@@ -299,6 +329,12 @@
     "healer_dokkaebi": {
       "sha256": "8e4f75d307fb839c0401e936e2ddce09f45efc259fc210c6ebacafdbab7711c2",
       "bytes": 1991799,
+      "width": 1254,
+      "height": 1254
+    },
+    "heaven_mage": {
+      "sha256": "7c8e5d5fe1e94b77a426cda0eb2b24e196fae5f2c49e6a8d60077af543464e32",
+      "bytes": 2032557,
       "width": 1254,
       "height": 1254
     },
@@ -512,9 +548,21 @@
       "width": 1254,
       "height": 1254
     },
+    "sky_archer": {
+      "sha256": "11ffd5ac1569a289d6522caa1d9e7c0a646114367458023814387b9d7661869d",
+      "bytes": 2317060,
+      "width": 1254,
+      "height": 1254
+    },
     "solar_eclipse_warrior": {
       "sha256": "9c3e4b0613dd091d47151e9b28937b8230cb6f2311fa6555f861a52553fa9121",
       "bytes": 1928435,
+      "width": 1254,
+      "height": 1254
+    },
+    "solar_warrior": {
+      "sha256": "bf50570e24c5f96e120b48d632d687027629ed3da9c8d0a1fabb6a5648f7707b",
+      "bytes": 1903920,
       "width": 1254,
       "height": 1254
     },
@@ -539,6 +587,12 @@
     "starlight_fairy": {
       "sha256": "ab6af14b47f7724d0d802413f7adcca1646e4f1e923b9b0e74a83191f36f46ba",
       "bytes": 1919407,
+      "width": 1254,
+      "height": 1254
+    },
+    "starlight_knight": {
+      "sha256": "20b15073f09b4f09092b7c43e6f2865d4f83933e587b14700752073c1230ff33",
+      "bytes": 2131117,
       "width": 1254,
       "height": 1254
     },
