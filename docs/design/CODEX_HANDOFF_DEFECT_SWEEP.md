@@ -1619,6 +1619,48 @@ idleIncome·homeIdlePersistence(실행 중 재진입), wisdom(getDmLevelForRoomL
 
 ### 백로그
 
-- 런타임 PNG 장당 ~300 KB → 136종 ~40 MB 번들 증가. 무손실 재인코딩은 ~9%뿐, WebP 전환(형식 규격 변경) 검토.
+- ~~런타임 PNG 번들 증가~~ → §38 WebP 전환으로 해소.
 - 상점 스킨 카드의 이모지 장식, 스킬·도전 변수·장비·재료의 이모지 아이콘(범위 큼), 보스 일러스트 슬롯.
 - 시안 비교·검수는 사람 인수 전의 자기 검수다. ERP 보류 중 구미호 14종 내보내기에 headless Chromium이 수 초 사용됨.
+
+## §38 런타임 WebP·이모지 잔여 정리·스킨 아트 트랙 — 2026-09-29 (Claude)
+
+사용자 지시: 권장안대로 전부 진행, Codex 코드 리뷰는 개발 완료 후. push 없음.
+
+### 런타임 형식 WebP 전환(`d7bc2c4`)
+
+- §37 백로그의 번들 증가 대응. 캐릭터 컷아웃·함정 아이콘을 WebP q0.92(알파 유지)로 출하.
+  등록된 24종 기준 6.6 MB → 1.8 MB. `character-art-export-options.mjs`의 `RUNTIME_EXT`·`validateRuntimeWebp`
+  (RIFF/WEBP·VP8X 알파 플래그·크기·상한)가 단일 진실원이며, 내보내기 3종(캐릭터·함정·스킨)이 공유한다.
+- `verify-character-art.mjs`는 WebP 헤더 검사로 바뀌었고, `verify-character-b1.mjs`는 역사 기록용으로
+  `LEGACY_B1=1`일 때만 실행된다.
+
+### 이모지 → 시질 잔여 정리(`2aa8644`, `046e13d`)
+
+- 재료(색 원 이모지) → `MATERIAL` 시질, 웨이브 결과 재료 칩은 시질 + 이름 + ×수량으로 재배치.
+- 액티브 스킬(`SkillHUD` 아이콘이 Graphics), 스킬 팝업·시전 글리프, 손님 카드(`ForecastTray KIND_SIGIL`),
+  교감 행동(`BOND_ACTION_SIGILS`), 정보 행(`GameUiPrimitives.addInfoRow`가 `EMOJI_SIGILS`로 매핑).
+  문장 속 '💰'는 '골드'로. 얼음 화살이 보석처럼 보여 `snow` 글리프 추가.
+- 남은 이모지: 도전 변수·서브 퀘스트 아이콘 등 데이터 쪽 일부(백로그).
+
+### 스킨 초상화 결함(`bb5ffd7`)
+
+- `MonsterPortraitView`가 스킨 장착 시 스킨의 이모지를 초상 대신 그렸다. 이제 항상
+  `generatePortrait(scene, typeId, skinId)`를 쓰고, 스킨 팔레트로 칠한 초상을 보여준다.
+
+### 스킨 아트 트랙(`c7bed9c`, `471ba1b`)
+
+- `characterArt.ts`: `SKIN_ART_IDS`(현재 비어 있음)·`getSkinArt`·`getStreamableArt`. 스킨 텍스처 키
+  `skin-ritual-v2-<skinId>`, 경로 `/assets/monsters/ritual-v2/skins/<skinId>.webp`.
+  `selectCharacterArtSource`는 스킨이 있으면 스킨 컷아웃만 쓴다(없으면 기존 초상 경로, 기본 컷아웃 대체 없음 —
+  스킨을 샀는데 기본 모습이 나오는 것을 막기 위함).
+- 스트리머가 스킨 id도 받는다. 요청처: 상점(스킨 탭, 도착 시 1회 재그림), 홈·군단(장착 스킨).
+- 생성: `run-skin-art-codex.mjs`(주제 `skin-art-subjects.json` 17종, 기본 캐릭터 원본을 참조 첨부 — 기본
+  원본이 없으면 건너뜀) → `register-ritual-v2.mjs --skins --ids ...`(`export-skin-art.mjs` + `SKIN_ART_IDS` 추가).
+  원본은 `output/character-art/ritual-v2/skins/`(git 제외).
+
+### 캐릭터 아트 진행
+
+- 도깨비족 12종 검수·등록(`471ba1b`) → 누적 36/136. poison_dokkaebi는 피사체가 캔버스의 73%로 다른 캐릭터
+  (~95%)보다 작다 — 재생성 후보(사용 가능 수준이라 등록은 함).
+- 나머지는 부족 순서 배치 실행 중(`scratchpad/codex-art/batch-all.log`), 부족 단위로 검수·등록·커밋.
