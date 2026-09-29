@@ -133,6 +133,7 @@ export function getSkinArt(skinId: unknown): CharacterArt | null {
  * emoji/seal fallback. Appended by scripts/register-ritual-v2.mjs --bosses.
  */
 const BOSS_ART_IDS: readonly string[] = [
+  'fox_queen',
 ];
 
 export function getBossArt(bossType: unknown): CharacterArt | null {
