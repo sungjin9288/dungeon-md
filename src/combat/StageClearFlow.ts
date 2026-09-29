@@ -203,13 +203,21 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Materials earned this run
   const matEntries = Object.entries(ctx.materialsEarnedThisRun).filter(([, q]) => q > 0);
   if (matEntries.length > 0) {
-    const matStr = '획득 재료: ' + matEntries.map(([id, q]) => {
+    const parts = matEntries.map(([id, q]) => {
       const def = MATERIAL_DEFS[id];
       return `${def?.emoji ?? '?'} ${def?.name ?? id} ×${q}`;
-    }).join('  ');
-    const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170 + contentOffset, matStr, {
+    });
+    const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170 + contentOffset, '', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5).setAlpha(0);
+    // One centred line wider than the panel spilled past both edges with six
+    // or more materials: keep what fits and count the rest.
+    const maxW = cw - 32;
+    for (let shown = parts.length; shown >= 1; shown--) {
+      const rest = parts.length - shown;
+      matT.setText('획득 재료: ' + parts.slice(0, shown).join('  ') + (rest > 0 ? `  외 ${rest}종` : ''));
+      if (matT.width <= maxW) break;
+    }
     ov.add(matT);
     revealAlpha(scene, matT, 180, 210);
   }
@@ -243,7 +251,9 @@ export function showChapterClear(ctx: ResultFlowContext): void {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.TEXT,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(chipT);
-      const lvT = scene.add.text(cx2 + chipW / 2, chipRowY + 18, `Lv.${m.level} · ATK ${atk}`, {
+      // Support guardians deal no damage; "ATK 0" read as broken.
+      const statLine = atk > 0 ? `ATK ${atk}` : '지원';
+      const lvT = scene.add.text(cx2 + chipW / 2, chipRowY + 18, `Lv.${m.level} · ${statLine}`, {
         fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
       }).setOrigin(0.5, 0).setAlpha(0);
       ov.add(lvT);

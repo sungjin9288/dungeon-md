@@ -27,6 +27,12 @@ import { cancelPrepCountdown } from './WaveLifecycle';
 
 export interface WaveStartContext {
   readonly equipmentAttackCounts?: Map<string, number>;
+  /**
+   * Closes the previous wave's result panel. When the prep countdown ran out
+   * the HUD's "침입 방어 개시" started the next wave with that panel still
+   * covering the board, and it lingered under the stage-clear result.
+   */
+  readonly dismissResultOverlay?: () => void;
   readonly scene:             Phaser.Scene;
   readonly maxWave:           number;
   readonly isEndless:         boolean;
@@ -84,6 +90,7 @@ export interface WaveStartContext {
 export function startWave(ctx: WaveStartContext): void {
   if (ctx.wave >= ctx.maxWave) return;
   cancelPrepCountdown(ctx.scene);
+  ctx.dismissResultOverlay?.();
   ctx.equipmentAttackCounts?.clear();
   ctx.wave++;
   ctx.waveActive = true;

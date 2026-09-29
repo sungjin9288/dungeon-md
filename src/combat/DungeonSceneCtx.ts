@@ -108,6 +108,7 @@ export function buildActiveSkillContext(ds: DungeonScene, room: import('../objec
 export function buildWaveStartCtx(ds: DungeonScene): WaveStartContext {
   return {
     equipmentAttackCounts: ds.equipmentAttackCounts,
+    dismissResultOverlay: () => { ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; },
     scene:             ds,
     maxWave:           ds.maxWave,
     isEndless:         ds.isEndless,
