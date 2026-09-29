@@ -126,7 +126,7 @@ describe('battleResultCallout projector', () => {
         { roomType: 'unknown', hp: 0, maxHp: 100 },
         { roomType: 'combat', hp: 0, maxHp: 0 },
         { roomType: 'support', hp: 120, maxHp: 100 },
-        { roomType: 'trap', hp: 70, maxHp: 100 },
+        { roomType: 'trap', hp: 30, maxHp: 100 },
         { roomType: 'magic', hp: -1, maxHp: 100 },
       ],
     };
@@ -140,9 +140,9 @@ describe('battleResultCallout projector', () => {
 
   it('breaks equal recent-loss and HP-ratio ties by slot index', () => {
     const callout = project(true, [
-      slot('combat', 50),
-      slot('trap', 50),
-      slot('support', 50),
+      slot('combat', 40),
+      slot('trap', 40),
+      slot('support', 40),
     ], [100, 100, 100]);
 
     expect(callout?.slotIdx).toBe(0);
@@ -171,5 +171,11 @@ describe('battleResultCallout projector', () => {
       outcome: true,
       slots: [null, { roomType: 'combat', hp: Number.NaN, maxHp: 100 }],
     })).toBeNull();
+  });
+
+  it('does not ask for repair above the Home repair threshold (§35)', () => {
+    const callout = project(true, [slot('trap', 85), slot('combat', 95)], [90, 100]);
+    expect(callout?.directiveKind).toBe('battle-ready');
+    expect(callout?.slotIdx).toBeNull();
   });
 });

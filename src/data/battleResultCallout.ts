@@ -2,6 +2,7 @@ import {
   getReadinessDirectiveCopy,
   type ReadinessDirectiveSeverity,
 } from './readinessDirectives';
+import { REPAIR_RECOMMEND_PCT } from './roomActionRecommendations';
 import { ROOM_SLOT_TYPE_DEFS } from './wisdom';
 
 export type BattleResultCalloutState = 'destroyed' | 'damaged' | 'ready';
@@ -144,7 +145,11 @@ export function projectBattleResultCallout(
   if (candidates.length === 0) return null;
 
   const won = didWin(input.outcome);
-  const candidate = chooseCandidate(candidates.filter(item => item.hp < item.maxHp));
+  // Same bar as Home's repair directive: every breakthrough trims all rooms by
+  // 5%, so "전투 후 복구" on an 85% room fired after nearly every battle while
+  // Home (and the summary's own CTA) pointed elsewhere (§35).
+  const candidate = chooseCandidate(candidates.filter(item =>
+    item.destroyed || item.ratio * 100 < REPAIR_RECOMMEND_PCT));
   if (!candidate) return overallCallout(won);
 
   const state: BattleResultCalloutState = candidate.destroyed

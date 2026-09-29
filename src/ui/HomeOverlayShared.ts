@@ -32,7 +32,8 @@ const VICTORY_TEXT = CASUAL_CSS.GREEN;
 /**
  * Pick the single growth highlight shown on the battle-return overlay.
  * Priority (first match wins): room expansion → master level-up →
- * crafting materials → pending quest completion → generic dungeon growth.
+ * pending quest completion (it is what the button leads to next) →
+ * crafting materials → generic dungeon growth.
  */
 export function buildBattleReturnGrowthSummary(
   growth?: BattleReturnGrowthContext,
@@ -68,19 +69,6 @@ export function buildBattleReturnGrowthSummary(
     };
   }
 
-  if (materialCount > 0) {
-    return {
-      icon: '⚒',
-      label: '제작 재료',
-      value: `+${materialCount.toLocaleString('ko-KR')}`,
-      valueColor: CASUAL_CSS.BLUE,
-      fillColor: CASUAL.PANEL_SOFT,
-      borderColor: CASUAL.BLUE_DK,
-      note: '공방에서 수호자 장비를 제작하거나 강화하세요',
-      buttonLabel: '공방 준비',
-    };
-  }
-
   if (growth?.questCompletionPending) {
     return {
       icon: '📜',
@@ -91,6 +79,20 @@ export function buildBattleReturnGrowthSummary(
       borderColor: CASUAL.GOLD_DK,
       note: '확인 후 메인 퀘스트 보상과 해금이 이어집니다',
       buttonLabel: '퀘스트 보상 확인',
+    };
+  }
+
+  if (materialCount > 0) {
+    return {
+      icon: '⚒',
+      label: '제작 재료',
+      value: `+${materialCount.toLocaleString('ko-KR')}`,
+      valueColor: CASUAL_CSS.BLUE,
+      fillColor: CASUAL.PANEL_SOFT,
+      borderColor: CASUAL.BLUE_DK,
+      note: '공방에서 수호자 장비를 제작하거나 강화하세요',
+      // The button only closes the summary; '공방 준비' promised a trip there.
+      buttonLabel: '재료 확인',
     };
   }
 

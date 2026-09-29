@@ -63,4 +63,13 @@ describe('buildBattleReturnGrowthSummary', () => {
     expect(summary.label).toBe('퀘스트 완료');
     expect(summary.buttonLabel).toBe('퀘스트 보상 확인');
   });
+
+  it('puts a pending quest completion ahead of materials: it is the next step (§35)', () => {
+    const summary = buildBattleReturnGrowthSummary({
+      ...baseGrowth,
+      materialsEarned: { iron: 2 },
+      questCompletionPending: true,
+    });
+    expect(summary.label).toBe('퀘스트 완료');
+  });
 });
