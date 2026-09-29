@@ -1,3 +1,11 @@
+// HISTORICAL (2026-09-07 B1 acceptance audit): compares runtime PNG bytes with the
+// approved hashes in tools/character-b1-assets.json. Runtime art moved to WebP in
+// CODEX_HANDOFF_DEFECT_SWEEP.md §38, so this is kept for provenance, not as a
+// current gate — use verify-character-art.mjs. Run anyway with LEGACY_B1=1.
+if (process.env.LEGACY_B1 !== '1') {
+  console.log('verify-character-b1: historical PNG-era audit; set LEGACY_B1=1 to run (see §38).');
+  process.exit(0);
+}
 // B1 character-art acceptance: isolated production renderers, real input paths,
 // and bounded lifecycle evidence. Historical character-art QA is intentionally
 // not imported or overwritten here.

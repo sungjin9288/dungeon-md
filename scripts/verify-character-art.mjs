@@ -25,11 +25,13 @@ for (const path of ['src/data/characterArt.ts', 'src/art/PortraitGenerator.ts', 
   audit.sourceHashes[path] = hash(await readFile(resolve(root, path)));
 }
 for (const id of ids) {
-  const path = `public/assets/monsters/ritual-v2/${id}.png`;
+  // Runtime cutouts are WebP with alpha since §38 (VP8X header, alpha flag 0x10).
+  const path = `public/assets/monsters/ritual-v2/${id}.webp`;
   const data = await readFile(resolve(root, path));
-  const source = { id, path, bytes: data.length, sha256: hash(data), width: data.readUInt32BE(16), height: data.readUInt32BE(20), bitDepth: data[24], colorType: data[25] };
+  const isWebp = data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 16) === 'WEBPVP8X';
+  const source = { id, path, bytes: data.length, sha256: hash(data), format: isWebp ? 'webp' : 'unknown', width: isWebp ? 1 + data.readUIntLE(24, 3) : 0, height: isWebp ? 1 + data.readUIntLE(27, 3) : 0, alpha: isWebp && (data[20] & 0x10) === 0x10 };
   audit.sources.push(source);
-  if (source.width !== 512 || source.height !== 512 || source.colorType !== 6 || source.bytes > 512 * 1024) audit.failures.push({ case: id, reason: 'source dimensions/RGBA/size gate', source });
+  if (!isWebp || source.width !== 512 || source.height !== 512 || !source.alpha || source.bytes > 512 * 1024) audit.failures.push({ case: id, reason: 'source dimensions/alpha/size gate', source });
 }
 
 const browser = await chromium.launch({ headless: process.env.HEADED === '0' });

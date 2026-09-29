@@ -128,12 +128,33 @@ export async function preflightCharacterArtOutputTargets(ids, outputRoot, reposi
   const targets = [];
   for (const id of ids) {
     targets.push(await inspectOutputTarget(
-      path.join(resolvedRoot, `${id}.png`),
+      path.join(resolvedRoot, `${id}.${RUNTIME_EXT}`),
       resolvedRoot,
       realOutputRoot,
     ));
   }
   return targets;
+}
+
+/**
+ * Runtime format: lossy WebP q0.92 with alpha (VP8X, alpha flag 0x10). At 512²
+ * it is ~60 KB against ~260 KB PNG with no visible difference at 2× zoom; 136
+ * characters would otherwise add ~36 MB to the shipped bundle. Masters are
+ * untouched; the export only resizes onto the canvas and encodes.
+ */
+export const RUNTIME_EXT = 'webp';
+export const RUNTIME_WEBP_QUALITY = 0.92;
+
+export function validateRuntimeWebp(bytes, id, size = 512, maxBytes = MAX_RUNTIME_BYTES) {
+  if (bytes.length > maxBytes) throw new Error(`${id} exceeds runtime byte budget`);
+  if (bytes.length < 30 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WEBP') {
+    throw new Error(`${id} has invalid WebP signature`);
+  }
+  if (bytes.toString('ascii', 12, 16) !== 'VP8X') throw new Error(`${id} is missing VP8X (extended WebP)`);
+  if ((bytes[20] & 0x10) === 0) throw new Error(`${id} must carry an alpha channel`);
+  const width = 1 + bytes.readUIntLE(24, 3);
+  const height = 1 + bytes.readUIntLE(27, 3);
+  if (width !== size || height !== size) throw new Error(`${id} must be ${size}x${size}`);
 }
 
 export function validateRuntimePng(bytes, id) {

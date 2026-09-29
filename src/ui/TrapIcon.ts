@@ -1,6 +1,6 @@
 /**
  * Trap / affliction icon: the painted icon when its texture was loaded
- * (public/assets/traps/{id}.png via trapArtManifest), otherwise the emoji the
+ * (public/assets/traps/{id}.webp via trapArtManifest), otherwise the emoji the
  * game always showed. One call site pattern for tray chips, pickers and Forge.
  */
 import Phaser from 'phaser';

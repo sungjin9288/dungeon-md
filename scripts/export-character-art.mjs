@@ -10,7 +10,9 @@ import {
   preflightCharacterArtMasters,
   preflightCharacterArtOutputTargets,
   validateKnownCharacterArtIds,
-  validateRuntimePng,
+  RUNTIME_EXT,
+  RUNTIME_WEBP_QUALITY,
+  validateRuntimeWebp,
   writeCharacterArtOutputs,
 } from './character-art-export-options.mjs';
 
@@ -31,7 +33,7 @@ const exports = [];
 try {
   const page = await browser.newPage();
   for (const { id, bytes: master } of masters) {
-    const exported = await page.evaluate(async base64 => {
+    const exported = await page.evaluate(async ({ base64, quality }) => {
       const image = new Image();
       image.src = `data:image/png;base64,${base64}`;
       await image.decode();
@@ -42,11 +44,11 @@ try {
       const scale = 428 / Math.max(image.width, image.height);
       const width = image.width * scale, height = image.height * scale;
       ctx.drawImage(image, (512 - width) / 2, (512 - height) / 2, width, height);
-      return canvas.toDataURL('image/png').split(',')[1];
-    }, master.toString('base64'));
+      return canvas.toDataURL('image/webp', quality).split(',')[1];
+    }, { base64: master.toString('base64'), quality: RUNTIME_WEBP_QUALITY });
     const bytes = Buffer.from(exported, 'base64');
-    validateRuntimePng(bytes, id);
-    exports.push({ id, outputPath: path.join(outputRoot, `${id}.png`), bytes });
+    validateRuntimeWebp(bytes, id);
+    exports.push({ id, outputPath: path.join(outputRoot, `${id}.${RUNTIME_EXT}`), bytes });
   }
 } finally {
   await browser.close();
@@ -59,6 +61,6 @@ for (const { id, outputPath, bytes, status } of plan) {
   if (status === 'unchanged') {
     console.log(`${relativeOutput}: unchanged, no write (${bytes.length} bytes)`);
   } else {
-    console.log(`${relativeOutput}: created 512×512 RGBA, ${bytes.length} bytes, 42px transparent export margin`);
+    console.log(`${relativeOutput}: created 512×512 WebP with alpha, ${bytes.length} bytes, 42px transparent export margin`);
   }
 }

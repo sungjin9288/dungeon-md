@@ -44,7 +44,7 @@ export const CHARACTER_ART: Readonly<Record<RitualV2Id, CharacterArt>> = Object.
     monsterId: id,
     version: 'ritual-v2' as const,
     textureKey: `monster-ritual-v2-${id}`,
-    path: `/assets/monsters/ritual-v2/${id}.png`,
+    path: `/assets/monsters/ritual-v2/${id}.webp`,
   })])) as Record<RitualV2Id, CharacterArt>,
 );
 

@@ -28,19 +28,21 @@ describe('ritual character art', () => {
     for (const id of IDS) {
       const art = getCharacterArt(id)!;
       expect(art.monsterId).toBe(MONSTER_DEFS[id].id);
-      expect(art.path).toBe(`/assets/monsters/ritual-v2/${id}.png`);
+      expect(art.path).toBe(`/assets/monsters/ritual-v2/${id}.webp`);
       expect(art.textureKey).toBe(`monster-ritual-v2-${id}`);
       expect(art.version).toBe('ritual-v2');
       expect(Object.isFrozen(art)).toBe(true);
     }
   });
 
-  it.each(IDS)('%s points to a bounded 512px RGBA PNG', id => {
+  // Runtime cutouts are 512² WebP with alpha (VP8X, alpha flag) — §38.
+  it.each(IDS)('%s points to a bounded 512px WebP with alpha', id => {
     const bytes = readFileSync(resolve(process.cwd(), `public${CHARACTER_ART[id].path}`));
-    expect(bytes.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
-    expect(bytes.readUInt32BE(16)).toBe(512);
-    expect(bytes.readUInt32BE(20)).toBe(512);
-    expect(bytes[25]).toBe(6); // PNG truecolor with alpha.
+    expect(bytes.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(bytes.toString('ascii', 8, 16)).toBe('WEBPVP8X');
+    expect(bytes[20] & 0x10).toBe(0x10);
+    expect(1 + bytes.readUIntLE(24, 3)).toBe(512);
+    expect(1 + bytes.readUIntLE(27, 3)).toBe(512);
     expect(bytes.length).toBeLessThanOrEqual(512 * 1024);
   });
 

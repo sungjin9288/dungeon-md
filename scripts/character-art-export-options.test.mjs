@@ -12,6 +12,7 @@ import {
   preflightCharacterArtOutputTargets,
   validateKnownCharacterArtIds,
   validateRuntimePng,
+  validateRuntimeWebp,
   writeCharacterArtOutputs,
 } from './character-art-export-options.mjs';
 
@@ -137,14 +138,14 @@ test('preflights the whole batch before writing and rejects different existing b
   t.after(async () => (await import('node:fs/promises')).rm(root, { recursive: true, force: true }));
   const outputRoot = path.join(root, 'public/assets/monsters/ritual-v2');
   await mkdir(outputRoot, { recursive: true });
-  const first = path.join(outputRoot, 'sage.png');
-  const second = path.join(outputRoot, 'gold_turtle.png');
+  const first = path.join(outputRoot, 'sage.webp');
+  const second = path.join(outputRoot, 'gold_turtle.webp');
   await writeFile(second, Buffer.from('different'));
 
   await assert.rejects(planCharacterArtOutputWrites([
     { id: 'sage', outputPath: first, bytes: runtimePng() },
     { id: 'gold_turtle', outputPath: second, bytes: runtimePng() },
-  ], outputRoot), /existing output differs: .*gold_turtle\.png/);
+  ], outputRoot), /existing output differs: .*gold_turtle\.webp/);
   await assert.rejects(readFile(first), { code: 'ENOENT' });
 });
 
@@ -154,8 +155,8 @@ test('reports identical outputs as no-write and creates new outputs exclusively'
   const outputRoot = path.join(root, 'public/assets/monsters/ritual-v2');
   await mkdir(outputRoot, { recursive: true });
   const bytes = runtimePng();
-  const unchanged = path.join(outputRoot, 'sage.png');
-  const fresh = path.join(outputRoot, 'gold_turtle.png');
+  const unchanged = path.join(outputRoot, 'sage.webp');
+  const fresh = path.join(outputRoot, 'gold_turtle.webp');
   await writeFile(unchanged, bytes);
 
   const plan = await planCharacterArtOutputWrites([
@@ -168,7 +169,7 @@ test('reports identical outputs as no-write and creates new outputs exclusively'
   assert.deepEqual(await readFile(unchanged), bytes);
   assert.deepEqual(await readFile(fresh), bytes);
 
-  const raced = path.join(outputRoot, 'village_archer.png');
+  const raced = path.join(outputRoot, 'village_archer.webp');
   const racedPlan = await planCharacterArtOutputWrites([
     { id: 'village_archer', outputPath: raced, bytes },
   ], outputRoot);
@@ -182,8 +183,8 @@ test('rejects output symlinks even when their targets are contained', async t =>
   t.after(async () => (await import('node:fs/promises')).rm(root, { recursive: true, force: true }));
   const outputRoot = path.join(root, 'public/assets/monsters/ritual-v2');
   await mkdir(outputRoot, { recursive: true });
-  const target = path.join(outputRoot, 'target.png');
-  const linked = path.join(outputRoot, 'sage.png');
+  const target = path.join(outputRoot, 'target.webp');
+  const linked = path.join(outputRoot, 'sage.webp');
   await writeFile(target, runtimePng());
   await symlink(target, linked);
 
@@ -206,4 +207,19 @@ test('rejects a runtime output root that resolves outside the repository', async
     preflightCharacterArtOutputTargets(['sage'], outputRoot, root),
     /runtime root real path is outside the repository/,
   );
+});
+
+test('validateRuntimeWebp accepts a 512² extended WebP with alpha and rejects the rest (§38)', () => {
+  const webp = ({ size = 512, alpha = true, chunk = 'VP8X', bytes = 64 } = {}) => {
+    const b = Buffer.alloc(bytes);
+    b.write('RIFF', 0, 'ascii'); b.write('WEBP', 8, 'ascii'); b.write(chunk, 12, 'ascii');
+    b[20] = alpha ? 0x10 : 0; b.writeUIntLE(size - 1, 24, 3); b.writeUIntLE(size - 1, 27, 3);
+    return b;
+  };
+  assert.doesNotThrow(() => validateRuntimeWebp(webp(), 'sage'));
+  assert.throws(() => validateRuntimeWebp(Buffer.alloc(64), 'sage'), /invalid WebP signature/);
+  assert.throws(() => validateRuntimeWebp(webp({ chunk: 'VP8 ' }), 'sage'), /missing VP8X/);
+  assert.throws(() => validateRuntimeWebp(webp({ alpha: false }), 'sage'), /alpha channel/);
+  assert.throws(() => validateRuntimeWebp(webp({ size: 511 }), 'sage'), /must be 512x512/);
+  assert.throws(() => validateRuntimeWebp(webp({ bytes: 512 * 1024 + 1 }), 'sage'), /byte budget/);
 });
