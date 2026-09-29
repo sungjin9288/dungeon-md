@@ -1,6 +1,6 @@
 {
   "note": "ritual-v2 master PNG provenance; masters live in output/character-art/ritual-v2 (not committed after the first nine)",
-  "count": 76,
+  "count": 87,
   "masters": {
     "abyss_mage": {
       "sha256": "c56faf4bb3b4b8d0d2e1db4029087983ab120445315e3f440ad21dca2495a14f",
@@ -20,6 +20,12 @@
       "width": 1254,
       "height": 1254
     },
+    "bongsan_maskman": {
+      "sha256": "c01a92659142b656bcb4cd7bad0277260d45cb2d2052f6673a688cf078f0463e",
+      "bytes": 2073511,
+      "width": 1254,
+      "height": 1254
+    },
     "celestial_fairy": {
       "sha256": "f1c1de0ed439f6407a98bfba855f600a68f698833e6d3865d1f714df95e59d66",
       "bytes": 2227972,
@@ -29,6 +35,12 @@
     "celestial_healer": {
       "sha256": "a0e8a1078d95bb42fe37aa59bef770ca0b9fa632be03937150b0f1064dbdc94b",
       "bytes": 2454063,
+      "width": 1254,
+      "height": 1254
+    },
+    "cheoyong_warrior": {
+      "sha256": "40931cb4a62d9a51b3fce6288e5bbc122515c545f098b49f7eba04b308cbe630",
+      "bytes": 2258605,
       "width": 1254,
       "height": 1254
     },
@@ -158,6 +170,12 @@
       "width": 1254,
       "height": 1254
     },
+    "glacier_warrior": {
+      "sha256": "dd24c7c221215eda56ac8fedecfcc220fd190c294498eb06a412c67ea2848b03",
+      "bytes": 1874233,
+      "width": 1254,
+      "height": 1254
+    },
     "gold_dokkaebi": {
       "sha256": "1233f82bdee33e40b0ff6865e2a9a114a3004ccb9e9881a43991f8bad3edc1c2",
       "bytes": 1527245,
@@ -167,6 +185,12 @@
     "gold_turtle": {
       "sha256": "b577c58c25156647ffe4cd5817c757c7e3ecc22277bb19e4b86b3ef1f4784b4a",
       "bytes": 2034266,
+      "width": 1254,
+      "height": 1254
+    },
+    "great_mask_god": {
+      "sha256": "1b13b65589f5f41b219cbc21c52e3742bffbc4b52e50f3f9bc838c748728c4f9",
+      "bytes": 2286278,
       "width": 1254,
       "height": 1254
     },
@@ -230,6 +254,12 @@
       "width": 1254,
       "height": 1254
     },
+    "iron_mask": {
+      "sha256": "3cb0eb591272c5f2a7b648975a2ccb627c9225837abdd0a5705b0a2c3adc8908",
+      "bytes": 2600138,
+      "width": 1254,
+      "height": 1254
+    },
     "jellyfish_sorcerer": {
       "sha256": "f2f65969e92ea1180d4cadab04874fb6be4b36f1ecad3a7cae39133e098cdcee",
       "bytes": 2125253,
@@ -239,6 +269,36 @@
     "kraken_soldier": {
       "sha256": "c64e694ae9d01344b56755c518eeea7bc846f7463c872ddbb08c6dcdb93f93c3",
       "bytes": 2337078,
+      "width": 1254,
+      "height": 1254
+    },
+    "mask_archer": {
+      "sha256": "efbf055e390014ee08b05f6dedf34bec07108bcf2361b5b47e7d8294248c047c",
+      "bytes": 1836297,
+      "width": 1254,
+      "height": 1254
+    },
+    "mask_berserker": {
+      "sha256": "aa4a40b3531db68a67942fab39d759c6c0e5ae2d6279ce49c34cdfcd54f69f27",
+      "bytes": 2067763,
+      "width": 1254,
+      "height": 1254
+    },
+    "mask_complete": {
+      "sha256": "a74b75b4b95edfb10a8a8d4dcf5e1dae953b30674aa50c613392fbc836176a95",
+      "bytes": 2292079,
+      "width": 1254,
+      "height": 1254
+    },
+    "mask_dancer": {
+      "sha256": "bd1efdb85ceb66c1f96089dd497a7ea9088581c8b5fe08b75d97ee6e3c526b20",
+      "bytes": 2268252,
+      "width": 1254,
+      "height": 1254
+    },
+    "mask_wizard": {
+      "sha256": "a26b85e0306f42ec1ecf88a7c0080d9db1a946397988230c170eca9f780cf8d5",
+      "bytes": 1916215,
       "width": 1254,
       "height": 1254
     },
@@ -401,6 +461,12 @@
     "thunder_gumiho": {
       "sha256": "74deafbd69afffb6bc6d1b175d71c7dc7cb5c55555227b39ae8e6b6e3de9f45f",
       "bytes": 2438144,
+      "width": 1254,
+      "height": 1254
+    },
+    "thunder_mask_warrior": {
+      "sha256": "efa8cbe51a5957328231549ac1d5df347f5cb1f16da5e0adf26b9cb62629a340",
+      "bytes": 2433225,
       "width": 1254,
       "height": 1254
     },

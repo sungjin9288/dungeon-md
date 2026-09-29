@@ -87,6 +87,17 @@ const RITUAL_V2_IDS = [
   'dragon_king_guardian',
   'tide_leviathan',
   'sea_god_complete',
+  'iron_mask',
+  'mask_dancer',
+  'mask_berserker',
+  'mask_archer',
+  'bongsan_maskman',
+  'cheoyong_warrior',
+  'mask_wizard',
+  'thunder_mask_warrior',
+  'glacier_warrior',
+  'great_mask_god',
+  'mask_complete',
 ] as const satisfies readonly MonsterId[];
 
 type RitualV2Id = (typeof RITUAL_V2_IDS)[number];
@@ -160,6 +171,7 @@ const SKIN_ART_IDS: readonly string[] = [
   'divine_warrior',
   'void_death',
   'sage_primordial',
+  'dancer_midnight',
 ];
 
 export function getSkinArt(skinId: unknown): CharacterArt | null {
