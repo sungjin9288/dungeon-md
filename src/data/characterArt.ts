@@ -141,6 +141,11 @@ export function getSkinArt(skinId: unknown): CharacterArt | null {
  */
 const BOSS_ART_IDS: readonly string[] = [
   'fox_queen',
+  'dragon_king',
+  'three_god_destroyer',
+  'god_emperor',
+  'primordial_titan',
+  'void_sovereign',
 ];
 
 export function getBossArt(bossType: unknown): CharacterArt | null {
