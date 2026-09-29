@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { TRAP_ART_IDS } from '../data/trapArtManifest';
+import { trapArtKey } from '../ui/TrapIcon';
 import { COLORS, CSS } from '../constants/colors';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { INVADER_DEFS, type InvaderType } from '../data/invaders';
@@ -51,6 +53,10 @@ export class BootScene extends Phaser.Scene {
     // once caused. Missing monsters fall back to procedural PixelMonsters art.
     PORTRAIT_IDS.forEach(id => {
       this.load.image(`monster-ai-${id}`, `/assets/monsters/${id}.jpg`);
+    });
+    // Painted trap / affliction icons (256px, ≤128 KiB) that exist on disk.
+    TRAP_ART_IDS.forEach(id => {
+      this.load.image(trapArtKey(id), `/assets/traps/${id}.png`);
     });
     // Ritual-v2 cutouts (512x512 RGBA) are NOT preloaded: nine of them already
     // tripled the matched boot time. Screens request what they show through

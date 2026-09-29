@@ -4,6 +4,7 @@
 // costs, and the two actions. All facts come from trapForgeView (pure).
 
 import Phaser from 'phaser';
+import { addTrapIcon } from './TrapIcon';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { buildTrapForgeRows, summarizeTrapForge, type TrapForgeRow, type TrapNeedLine } from '../data/trapForgeView';
@@ -78,7 +79,7 @@ function drawTrapRow(scene: Phaser.Scene, ctx: ForgeContext, c: Phaser.GameObjec
   g.strokeRoundedRect(x, y, w, ROW_H, 8);
   c.add(g);
 
-  c.add(scene.add.text(x + 30, y + 26, def.emoji, { fontSize: '26px' }).setOrigin(0.5).setAlpha(locked ? 0.35 : 1));
+  c.add(addTrapIcon(scene, def.id, x + 30, y + 26, 32, locked ? 0.35 : 1));
   c.add(scene.add.text(x + 30, y + 50, `T${def.tier}`, {
     fontFamily: 'monospace', fontSize: '10px', fontStyle: 'bold', color: TIER_CSS[def.tier],
   }).setOrigin(0.5));

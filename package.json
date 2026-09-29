@@ -12,7 +12,8 @@
     "gen:portraits": "node scripts/gen-portrait-manifest.mjs",
     "gen:art-brief": "node scripts/gen-art-brief.mjs",
     "check:portraits": "node scripts/check-portraits.mjs",
-    "gen:portraits:openai": "node scripts/gen-portraits-openai.mjs"
+    "gen:portraits:openai": "node scripts/gen-portraits-openai.mjs",
+    "gen:trap-art": "node scripts/gen-trap-art-manifest.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.2.0",

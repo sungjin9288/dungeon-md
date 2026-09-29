@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { showToast } from './Toast';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { getOwnedMonsterBattleAtk } from '../data/barracks';
+import { addTrapIcon } from './TrapIcon';
 import { assignMonsterToRoomSlot, installTrapInRoomSlot } from '../data/roomSlotTransactions';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { TRAP_DEFS } from '../data/traps';
@@ -141,9 +142,7 @@ export function showTrapPicker(
     iconBg.fillStyle(accent, enabled ? 0.18 : 0.08);
     iconBg.fillCircle(cardX + trapCardW / 2, cardY + 48, 18);
     list.add(iconBg);
-    list.add(scene.add.text(cardX + trapCardW / 2, cardY + 48, trap.emoji, {
-      fontFamily: 'sans-serif', fontSize: '25px',
-    }).setOrigin(0.5).setAlpha(alpha));
+    list.add(addTrapIcon(scene, trap.id, cardX + trapCardW / 2, cardY + 48, 34, alpha));
 
     list.add(scene.add.text(cardX + trapCardW / 2, cardY + 80, fitPickerLabel(trap.name, 8), {
       fontFamily: 'sans-serif',

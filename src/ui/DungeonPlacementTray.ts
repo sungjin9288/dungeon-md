@@ -27,6 +27,7 @@ import {
 } from '../data/roomSlotTransactions';
 import { getRoomDesignRecommendation } from '../data/roomDesignRecommendations';
 import { getMonsterLoadoutRecommendation, getTrapLoadoutRecommendation } from '../data/roomLoadoutRecommendations';
+import { addTrapIcon } from './TrapIcon';
 import { addMonsterPortrait } from './MonsterPortraitView';
 import {
   getPlacementTrayOpeningTab,
@@ -382,7 +383,7 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     const on = placed.has(trap.id);
     const accent = locked ? 0x555044 : on ? COLORS.JADE : trap.tier === 1 ? 0xc8921a : trap.tier === 2 ? 0x8ac7ff : 0xd48cff;
     const z = chipBase(inner, x, 0, itemW, h, on, accent);
-    addText(inner, x + itemW / 2, 20, trap.emoji, '22px', '#ffffff', false, 0.5).setAlpha(locked ? 0.35 : 1);
+    inner.add(addTrapIcon(ctxRef!.scene, trap.id, x + itemW / 2, 24, 28, locked ? 0.35 : 1).setDepth(123));
     addText(inner, x + 6, 5, `T${trap.tier}`, '10px', locked ? '#6a6052' : '#c8b890', true);
     addText(inner, x + itemW / 2, h - 30, trap.name, '11px', locked ? '#6a6052' : '#f0e6c8', false, 0.5);
     const priceLabel = trap.tier === 1 ? `${trap.cost}💰` : stock > 0 ? `재고 ${stock}` : '재고 없음';
