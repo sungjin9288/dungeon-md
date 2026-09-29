@@ -68,8 +68,10 @@ export function addMonsterPortrait(
   let roleCue: Phaser.GameObjects.Text | undefined;
   let elementCue: Phaser.GameObjects.Text | undefined;
 
-  if (typeId && !skin) {
-    const portraitKey = generatePortrait(scene, typeId);
+  if (typeId) {
+    // A skinned guardian renders its skin palette through the same generator the
+    // Codex uses; without it an equipped skin showed only its emoji.
+    const portraitKey = generatePortrait(scene, typeId, skin?.id);
     if (scene.textures.exists(portraitKey)) {
       image = scene.add.image(x, y, portraitKey)
         .setOrigin(0.5)
