@@ -32,7 +32,7 @@ describe('설계도 획득처', () => {
     expect(adventurerBlueprintFor({ blueprints: all }, 10)).toBeNull();
   });
 
-  it('심연: 보스층 첫 정복에만 한 번, 이미 있으면 주지 않는다', () => {
+  it('심연: 보스층을 이기면 한 번, 이미 있으면 주지 않는다', () => {
     expect(abyssBlueprintFor({ blueprints: [] }, 10)).toBe('bp_fox_robe');
     expect(abyssBlueprintFor({ blueprints: [] }, 11)).toBeNull();
     expect(abyssBlueprintFor({ blueprints: ['bp_fox_robe'] }, 10)).toBeNull();
@@ -43,6 +43,14 @@ describe('설계도 획득처', () => {
     const replay = clearAbyssFloor(first.state, 10, () => 0.5);
     expect(replay.blueprint).toBeNull();
     expect(replay.state.blueprints.filter(id => id === 'bp_fox_robe')).toHaveLength(1);
+  });
+
+  it('보스층을 이 기능 전에 이미 깬 세이브도 재도전 승리로 받는다(첫 정복을 놓쳐 영영 못 얻지 않게)', () => {
+    const passed = { ...loadGameState(), blueprints: [], abyss: { ...loadGameState().abyss, highestFloor: 25 } };
+    const replay = clearAbyssFloor(passed, 20, () => 0.5);
+    expect(replay.firstClear).toBe(false);
+    expect(replay.blueprint).toBe('bp_frost_lance');
+    expect(replay.state.abyss.highestFloor).toBe(25);
   });
 
   it('grantBlueprint는 중복을 만들지 않고 입력을 바꾸지 않는다', () => {

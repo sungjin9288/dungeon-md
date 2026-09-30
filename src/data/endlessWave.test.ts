@@ -694,7 +694,7 @@ describe('마일스톤은 벽이어야 한다', () => {
         }
       }
     }
-  });
+  }, 30_000); // 13 변수 × 32 seed 전수 — 전체 병렬 실행 부하에서 기본 5초를 넘긴다
 });
 
 function seededRandom(seed: number): () => number {

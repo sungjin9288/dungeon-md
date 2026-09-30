@@ -4,7 +4,7 @@
  * - 시작: 메인 임무 MQ-007 완료(도깨비 방망이·철 갑옷)
  * - 메인 임무: QUEST_BLUEPRINT_REWARDS
  * - 라이벌 던전마스터(주간 보스): 보스 부적
- * - 심연 보스층 첫 정복: 10층마다 한 장(깊을수록 희귀)
+ * - 심연 보스층 격파: 10층마다 한 장(깊을수록 희귀). 아직 없으면 재도전 승리에도 준다(소탕 제외).
  * - 모험가 파티 격퇴: 명성 단계에 맞는 아직 없는 설계도 한 장 — 모험가는 짐을 들고 온다(visitors.ts).
  * 순수 모듈.
  */
@@ -21,7 +21,7 @@ export interface BlueprintSource {
   readonly label: string;
 }
 
-/** 심연 보스층(10층마다) 첫 정복 보상. */
+/** 심연 보스층(10층마다) 격파 보상 — 아직 없을 때. */
 export const ABYSS_BLUEPRINT_FLOORS: Readonly<Record<number, string>> = {
   10: 'bp_fox_robe',
   20: 'bp_frost_lance',
@@ -56,13 +56,13 @@ export function getBlueprintSource(blueprintId: string): BlueprintSource | null 
   if (questId) return { kind: 'quest', label: questLabel(questId) };
   if (blueprintId === WEEKLY_BOSS_BLUEPRINT) return { kind: 'weekly_boss', label: '라이벌 던전마스터 격퇴(월요일)' };
   const floor = Object.keys(ABYSS_BLUEPRINT_FLOORS).map(Number).find(f => ABYSS_BLUEPRINT_FLOORS[f] === blueprintId);
-  if (floor !== undefined) return { kind: 'abyss', label: `심연 ${floor}층 첫 정복` };
+  if (floor !== undefined) return { kind: 'abyss', label: `심연 ${floor}층 보스 격파` };
   const adventurer = ADVENTURER_BLUEPRINT_POOL.find(entry => entry.id === blueprintId);
   if (adventurer) return { kind: 'adventurer', label: `모험가 파티 격퇴 · 명성 ${adventurer.minTier}단계+` };
   return null;
 }
 
-/** 이 층을 처음 정복하면 받는 설계도(이미 있으면 null). */
+/** 이 층 보스를 이기면 받는 설계도(이미 있으면 null). */
 export function abyssBlueprintFor(state: Readonly<Pick<GameState, 'blueprints'>>, floor: number): string | null {
   const id = ABYSS_BLUEPRINT_FLOORS[floor];
   return id && !(state.blueprints ?? []).includes(id) ? id : null;

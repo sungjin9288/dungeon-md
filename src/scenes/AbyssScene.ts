@@ -7,6 +7,7 @@
 
 import Phaser from 'phaser';
 import { BLUEPRINT_DEFS } from '../data/fusion';
+import { abyssBlueprintFor } from '../data/blueprintSources';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { CASUAL_CSS, COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
@@ -323,7 +324,9 @@ export class AbyssScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold',
       color: available ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
-    const stateLabel = !withinRange ? '봉인' : boss ? '보스' : cleared ? '정복' : isNext ? '원정' : '잠김';
+    // A boss floor whose blueprint is still missing says so on the chip (cleared ones too: replay pays it).
+    const blueprintAhead = withinRange && boss && abyssBlueprintFor(this.gs, floor) !== null;
+    const stateLabel = !withinRange ? '봉인' : boss ? (blueprintAhead ? '📜 보스' : '보스') : cleared ? '정복' : isNext ? '원정' : '잠김';
     this.add.text(x + w / 2, y + 47, stateLabel, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: boss ? CASUAL_CSS.PURPLE : cleared ? DUNGEON_UI_CSS.JADE : isNext ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
@@ -372,7 +375,10 @@ export class AbyssScene extends Phaser.Scene {
       .map((id) => MATERIAL_DEFS[id]?.name ?? id)
       .join(' · ');
     this.drawIntelRow(INTEL_Y + 73, '획득 자원', materialNames, DUNGEON_UI_CSS.TEXT, 44);
-    const rewardNote = boss
+    const blueprintId = abyssBlueprintFor(this.gs, this.selectedFloor);
+    const rewardNote = blueprintId
+      ? `격파 시 설계도 「${BLUEPRINT_DEFS[blueprintId]?.name ?? blueprintId}」 · 보스 정수 확정`
+      : boss
       ? '보스 정수 확정 · 각성석 획득 가능'
       : cleared
         ? '심연 열쇠 1개로 즉시 소탕'
