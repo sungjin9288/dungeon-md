@@ -20,32 +20,34 @@ export interface SummonTypeDef {
   desc:     string;
 }
 
+// Card colours follow the dungeon palette (spirit-fire blue, vermilion seal, jade, amber)
+// rather than the neon violet/pink/mint/orange that read as a generic gacha skin.
 export const SUMMON_TYPE_DEFS: readonly SummonTypeDef[] = [
   {
     id: 'normal',     name: '일반 소환',  icon: '🌀',
     cost1: 30,  cost10: 250, currency: 'gems',
-    bgColor: 0x0d0028, border: 0x6644ff, accent: '#a088ff',
+    bgColor: 0x0c1122, border: 0x5b7fd6, accent: '#a9c0f0',   // 도깨비불 청색
     hasPity: true, pityRarity: 'Epic',
     desc: '에픽 천장 50회',
   },
   {
     id: 'special',    name: '특별 소환',  icon: '⭐',
     cost1: 50,  cost10: 450, currency: 'gems',
-    bgColor: 0x1a001a, border: 0xff44aa, accent: '#ff88cc',
+    bgColor: 0x1c0a07, border: 0xd4553a, accent: '#f2a58a',   // 주홍 인장
     hasPity: true, pityRarity: 'Legend',
     desc: '전설 천장 80회',
   },
   {
     id: 'soul',       name: '영혼 소환',  icon: '💠',
     cost1: 50,  cost10: null, currency: 'soul',
-    bgColor: 0x001a1a, border: 0x44ffcc, accent: '#88ffee',
+    bgColor: 0x071610, border: 0x3fae8a, accent: '#9ad9c0',   // 옥
     hasPity: false,
     desc: '미보유 몬스터만',
   },
   {
     id: 'friendship', name: '우정 소환',  icon: '🤝',
     cost1: 0,   cost10: null, currency: 'fp',
-    bgColor: 0x1a0800, border: 0xff9944, accent: '#ffcc88',
+    bgColor: 0x1a1206, border: 0xc9953e, accent: '#e8cc8e',   // 호박
     hasPity: false,
     desc: '무료 1회/일',
   },
