@@ -286,6 +286,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     get goldEarnedThisRun() { return ds.goldEarnedThisRun; },
     get materialsEarnedThisRun() { return ds.materialsEarnedThisRun; },
     get tribeShardsEarnedThisRun() { return ds.tribeShardsEarnedThisRun; },
+    get goldStolenThisRun() { return ds.goldStolenThisRun; },
     get waveGoldMult() { return ds.waveGoldMult; },
     get waveEndChecked() { return ds.waveEndChecked; },
     get waveHasSpawned() { return ds.waveHasSpawned; },
@@ -525,6 +526,8 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     get breakthruCount()         { return ds.breakthruCount; },
     set breakthruCount(v)        { ds.breakthruCount = v; },
     tribeShardsEarnedThisRun: ds.tribeShardsEarnedThisRun,
+    get goldStolenThisRun()      { return ds.goldStolenThisRun; },
+    set goldStolenThisRun(v)     { ds.goldStolenThisRun = v; },
     hasSynergy:         (id)  => ds.synergyManager.hasSpecial(id),
     applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct, ds.equipmentMap, index => {
       const cell = cellOfSlot(ds.topology, index);

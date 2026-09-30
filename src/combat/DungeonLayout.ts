@@ -381,6 +381,40 @@ function drawInvasionRoute(scene: Phaser.Scene, waypoints: readonly Point[]): vo
   });
 }
 
+/**
+ * 목적이 있는 손님의 우회선 — 주 통로에서 목표 방까지만(나머지는 주 경로와 겹친다). 이번 전투에 그 손님이
+ * 올 때만 그린다: 점선 + 목표 방 위 표식(💰 보물고 / 🐲 굴).
+ */
+export function drawVisitorDetour(
+  scene: Phaser.Scene,
+  waypoints: readonly Point[],
+  corridorY: number,
+  kind: 'adventurer' | 'wanderer',
+): void {
+  const color = kind === 'adventurer' ? COLORS.TORCH_GOLD : 0x9a6cd8;
+  const branchAt = waypoints.findIndex(pt => pt.y !== corridorY);
+  // A corridor target has no branch: mark the deepest point the visitor reaches.
+  const target = branchAt >= 0 ? waypoints[branchAt] : waypoints.reduce((a, b) => (b.x > a.x ? b : a));
+  const from = branchAt > 0 ? waypoints[branchAt - 1] : target;
+  const g = scene.add.graphics().setDepth(50);
+  const len = Math.hypot(target.x - from.x, target.y - from.y);
+  const ux = len > 0 ? (target.x - from.x) / len : 0;
+  const uy = len > 0 ? (target.y - from.y) / len : 0;
+  g.lineStyle(3, color, 0.7);
+  for (let d = 0; d < len; d += 12) {
+    const end = Math.min(len, d + 6);
+    g.lineBetween(from.x + ux * d, from.y + uy * d, from.x + ux * end, from.y + uy * end);
+  }
+  // Tag in the seam between the corridor and the side room, above the room cards' decoration.
+  const tagY = target.y === corridorY ? target.y - 44 : (corridorY + target.y) / 2;
+  const label = `${kind === 'adventurer' ? '💰 보물고' : '🐲 굴'} 우회`;
+  const tag = scene.add.text(target.x, tagY, label, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: '#1a120a',
+    backgroundColor: kind === 'adventurer' ? '#e8c060' : '#b89ae8', padding: { x: 5, y: 2 },
+  }).setOrigin(0.5).setDepth(63);
+  scene.tweens.add({ targets: tag, alpha: { from: 1, to: 0.55 }, duration: 900, yoyo: true, repeat: -1 });
+}
+
 function drawRouteChevrons(
   g: Phaser.GameObjects.Graphics,
   from: { readonly x: number; readonly y: number },

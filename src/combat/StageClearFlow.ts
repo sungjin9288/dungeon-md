@@ -195,7 +195,8 @@ export function showChapterClear(ctx: ResultFlowContext): void {
 
   // Stats row: gold + kills + waves
   const contentOffset = ctx.dailyMode ? 20 : 0;
-  const statsStr = `황금 ${ctx.gold} · 격퇴 ${ctx.killsThisRun} · 침입 ${ctx.wave}`;
+  const stolen = ctx.goldStolenThisRun > 0 ? ` · 도굴 −${ctx.goldStolenThisRun}` : '';
+  const statsStr = `황금 ${ctx.gold} · 격퇴 ${ctx.killsThisRun} · 침입 ${ctx.wave}${stolen}`;
   const killT = scene.add.text(CANVAS_WIDTH / 2, cy + 152 + contentOffset, statsStr, {
     fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5).setAlpha(0);

@@ -55,6 +55,7 @@ import { checkAchievementsAndToast as _checkAchievementsAndToast, tickQuestAndNo
 import {
   drawDungeonBackground,
   buildInvaderPath,
+  drawVisitorDetour,
   pathFromWaypoints,
   buildDungeonGrid,
   placeDungeonTorches,
@@ -203,6 +204,8 @@ export class DungeonScene extends Phaser.Scene {
   materialsEarnedThisRun: Record<string, number> = {};
   /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(부족 → 개수). */
   tribeShardsEarnedThisRun: Record<string, number> = {};
+  /** 탈출한 모험가가 훔쳐 간 전리품 골드 합계. */
+  goldStolenThisRun = 0;
   equipmentMap = new Map<string, EquipmentStats>();  // monsterId → equipment stats
   guardianAtkMult = new Map<string, number>();       // monsterId → level·강타 multiplier
 
@@ -337,6 +340,7 @@ export class DungeonScene extends Phaser.Scene {
     this.killsThisRun    = 0;
     this.adRevivesUsed   = 0;
     this.goldEarnedThisRun = 0;
+    this.goldStolenThisRun = 0;
     // The scene instance is reused between battles, so per-run tallies must be cleared here —
     // kept as the same objects because context adapters hold references to them.
     clearTally(this.materialsEarnedThisRun);
@@ -503,12 +507,16 @@ export class DungeonScene extends Phaser.Scene {
     const geometry = { gridX: GRID_X, gridY: GRID_Y, cellSize: this.effectiveCellSize, margin: ROUTE_MARGIN };
     this.invaderPath = buildInvaderPath(this, corridorWaypoints(this.topology, geometry));
     this.visitorRoutes = new Map();
+    const visiting = new Set(this.waveConfigs.flatMap(wave => wave.invaders.map(group => group.visitor)));
     for (const [kind, exit] of [['adventurer', 'leave'], ['wanderer', 'stay']] as const) {
       const targetSlot = findVisitorTarget(this.dungeonPlan, this.dungeonTrapSlots, kind);
-      const path = targetSlot === null
-        ? this.invaderPath
-        : pathFromWaypoints(visitorWaypoints(this.topology, geometry, targetSlot, exit));
-      this.visitorRoutes.set(kind, { path, targetSlot });
+      if (targetSlot === null) {
+        this.visitorRoutes.set(kind, { path: this.invaderPath, targetSlot });
+        continue;
+      }
+      const waypoints = visitorWaypoints(this.topology, geometry, targetSlot, exit);
+      this.visitorRoutes.set(kind, { path: pathFromWaypoints(waypoints), targetSlot });
+      if (visiting.has(kind)) drawVisitorDetour(this, waypoints, waypoints[0].y, kind);
     }
   }
 

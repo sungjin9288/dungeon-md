@@ -38,6 +38,7 @@ export interface BattleEventContext {
   get breakthruCount(): number;       set breakthruCount(v: number);
   /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(전투 끝에 홈으로 정산). */
   readonly tribeShardsEarnedThisRun: Record<string, number>;
+  get goldStolenThisRun(): number;    set goldStolenThisRun(v: number);
 
   hasSynergy(id: string): boolean;
   applyRoomSlotDamage(pct: number): void;
@@ -81,6 +82,7 @@ function handleAdventurerEscape(ctx: BattleEventContext, inv: Invader): void {
   const stolen = adventurerStealAmount(inv.def.reward, ctx.gold);
   if (stolen > 0) {
     ctx.gold -= stolen;
+    ctx.goldStolenThisRun += stolen;
     ctx.setGoldRegistry(ctx.gold);
   }
   showGoldFloat(ctx.scene, stolen > 0 ? `도굴 −${stolen}` : '도굴 실패', inv.x, inv.y - 20);
