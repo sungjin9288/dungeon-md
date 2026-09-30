@@ -78,11 +78,11 @@ export const CINEMATICS: CinematicDef[] = [
   {
     id: 'stage20_boss_intro',
     lines: [
-      { speaker: '구미호 여왕', emoji: '🦊', side: 'right',
+      { speaker: '여우 여왕', emoji: '🦊', side: 'right',
         text: '호호호... 내 영역까지 들어왔군요.' },
-      { speaker: '구미호 여왕', emoji: '🦊', side: 'right',
+      { speaker: '여우 여왕', emoji: '🦊', side: 'right',
         text: '제 꼬리가 몇 개인지 알아요? 아홉 개예요.' },
-      { speaker: '구미호 여왕', emoji: '🦊', side: 'right',
+      { speaker: '여우 여왕', emoji: '🦊', side: 'right',
         text: '당신의 소중한 동료들도... 제 편으로 만들어 드릴게요. 후후후.' },
     ],
   },

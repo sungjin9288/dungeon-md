@@ -34,7 +34,17 @@ export interface BossHudOptions {
   labelColor?: string;
 }
 
-const DEFAULT_LABEL = '👹 도깨비 대왕';
+/**
+ * The HUD names the boss actually on the field. A hardcoded default ('도깨비
+ * 대왕') used to label every unlabelled boss — stage 10's knight, the fox queen —
+ * as the dokkaebi king. Data names carry a "(보스)" / "(최종 보스)" tag the bar
+ * does not need.
+ */
+export function resolveBossHudLabel(explicit: string | undefined, bossName: string | undefined): string {
+  if (explicit) return explicit;
+  const name = (bossName ?? '').replace(/\s*\((?:최종\s*)?보스\)\s*$/, '').trim();
+  return name || '보스';
+}
 
 /** HP ratio at/below which the boss is treated as enraged (fill turns PURPLE). */
 const ENRAGE_THRESHOLD = 0.5;
@@ -44,7 +54,7 @@ export class BossHud {
   private fill?:  Phaser.GameObjects.Graphics;
   private label?: Phaser.GameObjects.Text;
   private maxHp        = 0;
-  private displayLabel = DEFAULT_LABEL;
+  private explicitLabel?: string;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -59,7 +69,7 @@ export class BossHud {
     this.destroy();
 
     this.maxHp        = maxHp;
-    this.displayLabel = opts.label ?? DEFAULT_LABEL;
+    this.explicitLabel = opts.label;
 
     // ── Plate: compact soot-and-iron boss command bar ──
     const px = BAR_X - 4;
@@ -86,7 +96,7 @@ export class BossHud {
     this.fill = this.scene.add.graphics().setDepth(96);
 
     // ── Boss name + HP numbers ──
-    this.label = this.scene.add.text(CANVAS_WIDTH / 2, BAR_Y + BAR_HEIGHT / 2, this.displayLabel, {
+    this.label = this.scene.add.text(CANVAS_WIDTH / 2, BAR_Y + BAR_HEIGHT / 2, resolveBossHudLabel(this.explicitLabel, undefined), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: DUNGEON_UI_CSS.EMBER,
       stroke: '#030504', strokeThickness: 2,
@@ -129,7 +139,7 @@ export class BossHud {
     }
 
     if (this.label) {
-      this.label.setText(`${this.displayLabel} · ${boss.hp}/${this.maxHp}`);
+      this.label.setText(`${resolveBossHudLabel(this.explicitLabel, boss.def.koreanName)} · ${boss.hp}/${this.maxHp}`);
     }
   }
 

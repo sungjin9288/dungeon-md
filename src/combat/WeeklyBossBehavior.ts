@@ -26,7 +26,7 @@ export function setupWeeklyBossPhases(ctx: BossContext, inv: Invader, boss: Week
   const { scene } = ctx;
 
   ctx.bossHud.build(inv.maxHp, {
-    label:      `👑 ${boss.name}`,
+    label:      boss.name,
     bgColor:    0x1a0530,
     labelColor: '#cc88ff',
   });

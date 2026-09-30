@@ -359,11 +359,11 @@ describe('STAGE_CINEMATICS — remaining chapter and boss mappings', () => {
 // ─── CINEMATICS — stage20 boss intro and Ch8 cinematic spot-checks ───────────
 
 describe('CINEMATICS — stage20 and Ch8 cinematic spot-checks', () => {
-  it('stage20_boss_intro features 구미호 여왕 (3 lines)', () => {
+  it('stage20_boss_intro features 여우 여왕 (3 lines)', () => {
     const c = getCinematic('stage20_boss_intro')!;
     expect(c).toBeDefined();
     expect(c.lines).toHaveLength(3);
-    expect(c.lines.some(l => l.speaker === '구미호 여왕')).toBe(true);
+    expect(c.lines.some(l => l.speaker === '여우 여왕')).toBe(true);
   });
 
   it('primordial_titan_boss_intro features 원초신 as the main speaker', () => {

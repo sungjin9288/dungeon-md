@@ -149,7 +149,7 @@ export const CHAPTER_2: StageConfig[] = [
     ],
   },
   {
-    id: 20, chapter: 2, koreanName: '구미호 여왕의 궁전', gridCols: 4,
+    id: 20, chapter: 2, koreanName: '여우 여왕의 궁전', gridCols: 4,
     dungeonHp: 2500,
     waves: [
       { wave: 1,  clearReward: 120, invaders: [{ type: 'high_priest', count: 9, spawnDelay: 1700 }] },

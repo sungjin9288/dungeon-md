@@ -66,10 +66,12 @@ describe('ritual character art', () => {
 
   it('resolves story speakers to a guardian or a chapter-villain boss by exact name', () => {
     expect(getSpeakerArtId('천상 수호자')).toBe('celestial_guardian');
-    expect(getSpeakerArtId('구미호 여왕')).toBe('fox_queen');
+    expect(getSpeakerArtId('여우 여왕')).toBe('fox_queen');
+    // The guardian gumiho_queen is 구미호 여왕; the chapter-2 villain is 여우 여왕 (invader data).
+    expect(getSpeakerArtId('구미호 여왕')).toBeNull();
     expect(getSpeakerArtId('천제')).toBe('god_emperor');
     expect(getSpeakerArtId('공허 군주')).toBe('void_sovereign');
-    for (const speaker of ['도깨비 대왕', '구미호 여왕 ', '천', 'constructor', '__proto__', 42]) {
+    for (const speaker of ['도깨비 대왕', '여우 여왕 ', '천', 'constructor', '__proto__', 42]) {
       expect(getSpeakerArtId(speaker)).toBeNull();
     }
   });

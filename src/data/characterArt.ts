@@ -171,7 +171,7 @@ const SPEAKER_ART = Object.freeze({
 
 /** Chapter villains in cinematics → boss invader type (their own boss cutout). */
 const SPEAKER_BOSS = Object.freeze({
-  '구미호 여왕': 'fox_queen',
+  '여우 여왕': 'fox_queen',
   '용왕': 'dragon_king',
   '저승왕 사자': 'death_emissary',
   '삼신 파괴자': 'three_god_destroyer',

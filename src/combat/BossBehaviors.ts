@@ -246,7 +246,7 @@ export function setupDragonKingPhase(ctx: BossContext, inv: Invader): void {
 
 function buildDragonKingHpBar(ctx: BossContext, maxHp: number): void {
   ctx.bossHud.build(maxHp, {
-    label:      '🐲 용왕',
+    label:      '용왕',
     bgColor:    0x001430,
     labelColor: '#44aaff',
   });
