@@ -6,6 +6,7 @@
  */
 
 import Phaser from 'phaser';
+import { BLUEPRINT_DEFS } from '../data/fusion';
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
 import { CASUAL_CSS, COLORS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState, type GameState } from '../data/wisdom';
@@ -119,7 +120,9 @@ export class AbyssScene extends Phaser.Scene {
         title: resolved.firstClear
           ? `${pendingFloor}층 정복 완료 · 최심 ${deepestBefore}→${this.gs.abyss.highestFloor}`
           : `${pendingFloor}층 원정 완료 · 최심 ${this.gs.abyss.highestFloor}층`,
-        detail: this.formatLoot(resolved.loot),
+        detail: resolved.blueprint
+          ? `설계도 「${BLUEPRINT_DEFS[resolved.blueprint]?.name ?? resolved.blueprint}」 획득 · ${this.formatLoot(resolved.loot)}`
+          : this.formatLoot(resolved.loot),
         tone: 'success',
       };
       return pendingFloor;

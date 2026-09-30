@@ -39,7 +39,7 @@ import {
   computeIdleReward, collectIdleIncome, startIdleClock, hasIdlePayout, shouldShowIdlePanel, idleCapHours, settleIdleAcrossChange,
   type IdleReward,
 } from '../data/idleIncome';
-import { MATERIAL_DEFS } from '../data/fusion';
+import { BLUEPRINT_DEFS, MATERIAL_DEFS } from '../data/fusion';
 import {
   showBattleReturnOverlay,
   showDmLevelUpOverlay,
@@ -509,6 +509,10 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
           now: Date.now(),
         });
         scene.applyGameStateResult(forecast);
+        if (forecast.blueprint) {
+          const name = BLUEPRINT_DEFS[forecast.blueprint]?.name ?? forecast.blueprint;
+          scene.time.delayedCall(1400, () => showToast(scene, `모험가의 짐에서 설계도 「${name}」 획득`, { color: '#ffd166' }));
+        }
         if (forecast.card) {
           const delta = forecast.notorietyDelta;
           scene.time.delayedCall(500, () => showToast(

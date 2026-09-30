@@ -115,6 +115,20 @@ describe('settleForecastBattle', () => {
     expect(settled.battle.changed).toBe(true);
   });
 
+  it('beating an adventurer party yields a blueprint for its tier; a raid or a loss does not', () => {
+    const day = beginForecastDay(state({ blueprints: [] }), '2026-09-17', pinned('2026-09-17')).state;
+    const party = { ...day.forecast.cards[0], id: 'party', kind: 'treasure' as const, bandTier: 2 };
+    const withParty = { ...day, forecast: { ...day.forecast, cards: [...day.forecast.cards, party], taken: ['party'] } };
+    const win = settleForecastBattle(withParty, 'party', won);
+    expect(win.blueprint).toBe('bp_herb_potion');
+    expect(win.state.blueprints).toContain('bp_herb_potion');
+    expect(settleForecastBattle(withParty, 'party', lost).blueprint).toBeNull();
+    const raid = day.forecast.cards[0];
+    const took = takeForecastCard(day, raid.id);
+    if (!took.ok) throw new Error('take failed');
+    expect(settleForecastBattle(took.state, raid.id, won).state.blueprints).toEqual([]);
+  });
+
   it('a flawless win earns half again as much name; a loss costs a tenth', () => {
     const day = beginForecastDay(state({ notoriety: 200 }), '2026-09-17', pinned('2026-09-17')).state;
     const raid = day.forecast.cards[0];

@@ -18,6 +18,7 @@ import {
   settleNotorietyWeek,
 } from './notoriety';
 import type { GameState } from './wisdom';
+import { adventurerBlueprintFor, grantBlueprint } from './blueprintSources';
 
 /** Facility outputs the merchant buys; other materials are crafting stock and stay. */
 export const MERCHANT_BUYS: Readonly<Record<string, number>> = { common_ore: 6, herb: 6, old_cloth: 8, magic_dust: 12 };
@@ -69,6 +70,8 @@ export interface ForecastSettlement {
   readonly card: ForecastCard | null;
   readonly notorietyDelta: number;
   readonly battle: BattleReturnSettlement;
+  /** 모험가 파티 격퇴로 얻은 설계도(없으면 null/생략). */
+  readonly blueprint?: string | null;
 }
 
 function findCard(state: GameState, cardId: string): ForecastCard | undefined {
@@ -166,6 +169,7 @@ export function settleForecastBattle(
 
   let next = battle.state;
   let notorietyDelta = 0;
+  let blueprint: string | null = null;
   if (result.won) {
     const gain = Math.round(card.reward.notoriety * (options.flawless ? NOTORIETY_GAIN.flawlessMult : 1));
     next = applyNotorietyGain(next, gain);
@@ -181,6 +185,11 @@ export function settleForecastBattle(
       soulCrystals:    (next.soulCrystals ?? 0) + (card.reward.soulCrystals ?? 0),
       materials,
     };
+    // An adventurer party carries gear plans: beating one yields a blueprint for this tier.
+    if (card.kind === 'treasure') {
+      blueprint = adventurerBlueprintFor(next, card.bandTier);
+      next = grantBlueprint(next, blueprint);
+    }
   } else if (card.kind !== 'weekly_boss') {
     // The weekly boss is a stretch challenge: losing it costs no name.
     const before = next.notoriety ?? 0;
@@ -188,5 +197,5 @@ export function settleForecastBattle(
     notorietyDelta = (next.notoriety ?? 0) - before;
   }
 
-  return { state: next, changed: true, card, notorietyDelta, battle };
+  return { state: next, changed: true, card, notorietyDelta, battle, blueprint };
 }

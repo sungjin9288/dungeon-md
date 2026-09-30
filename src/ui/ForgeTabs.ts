@@ -4,6 +4,7 @@ import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { BLUEPRINT_DEFS, RARITY_COLORS, RARITY_NAMES, type BlueprintDef } from '../data/fusion';
 import { getDismantleReturns } from '../data/forgeTransactions';
 import { rankForgeBlueprints } from '../data/forgeRecommendations';
+import { getBlueprintSource } from '../data/blueprintSources';
 import {
   LIST_PAD,
   rarityHex,
@@ -338,6 +339,58 @@ function drawEmptyBlueprintState(
     .setInteractive({ useHandCursor: true });
   zone.on('pointerdown', ctx.onOpenAbyss);
   c.add(zone);
+
+  drawBlueprintLeads(scene, ctx, c, y + h + 12);
+}
+
+/**
+ * 빈 공방에서 다음 목표를 보여준다: 아직 없는 설계도를 희귀도 낮은 순으로, 어디서 얻는지와 함께.
+ * 같은 말("설계도 필요")만 반복하던 빈 화면 대신 플레이어가 향할 곳을 준다.
+ */
+function drawBlueprintLeads(
+  scene: Phaser.Scene,
+  ctx: ForgeContext,
+  c: Phaser.GameObjects.Container,
+  y: number,
+): void {
+  const owned = new Set(ctx.gs.blueprints ?? []);
+  const leads = (Object.values(BLUEPRINT_DEFS) as BlueprintDef[])
+    .filter(bp => !owned.has(bp.id))
+    .map(bp => ({ bp, source: getBlueprintSource(bp.id) }))
+    .filter((entry): entry is { bp: BlueprintDef; source: NonNullable<typeof entry.source> } => entry.source !== null)
+    .sort((a, b) => a.bp.rarity - b.bp.rarity)
+    .slice(0, 5);
+  if (leads.length === 0) return;
+
+  const x = LIST_PAD;
+  const w = CANVAS_WIDTH - LIST_PAD * 2;
+  const rowH = 34;
+  c.add(scene.add.text(x + 4, y, '다음에 얻을 설계도', {
+    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+  }));
+  leads.forEach(({ bp, source }, i) => {
+    const ry = y + 22 + i * (rowH + 4);
+    // Same rarity reading as the rest of the forge (rarityHex / craft FX): value as the table index.
+    const css: string = RARITY_COLORS[bp.rarity] ?? '#ffaa44';
+    const color = rarityHex(bp.rarity);
+    const g = scene.add.graphics();
+    g.fillStyle(DUNGEON_UI.STONE, 1);
+    g.fillRoundedRect(x, ry, w, rowH, 6);
+    g.fillStyle(color, 0.9);
+    g.fillRoundedRect(x + 4, ry + 5, 4, rowH - 10, 2);
+    g.lineStyle(1, DUNGEON_UI.IRON, 0.8);
+    g.strokeRoundedRect(x, ry, w, rowH, 6);
+    c.add(g);
+    c.add(scene.add.text(x + 16, ry + rowH / 2, `${bp.resultEmoji} ${bp.name}`, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+    }).setOrigin(0, 0.5));
+    c.add(scene.add.text(x + 132, ry + rowH / 2, RARITY_NAMES[bp.rarity] ?? '특수', {
+      fontFamily: 'sans-serif', fontSize: '10px', color: css,
+    }).setOrigin(0, 0.5));
+    c.add(scene.add.text(x + w - 10, ry + rowH / 2, source.label, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+    }).setOrigin(1, 0.5));
+  });
 }
 
 export function buildDismantleTab(

@@ -7,6 +7,7 @@
  */
 
 import type { GameState } from './wisdom';
+import { abyssBlueprintFor, grantBlueprint } from './blueprintSources';
 import {
   type AbyssState,
   type AbyssLoot,
@@ -79,6 +80,8 @@ export interface AbyssClearResult {
   readonly state: GameState;
   readonly loot: AbyssLoot;
   readonly firstClear: boolean;
+  /** 보스층 첫 정복으로 얻은 설계도(blueprintSources.ts), 없으면 null. */
+  readonly blueprint: string | null;
 }
 
 /**
@@ -95,8 +98,10 @@ export function clearAbyssFloor(
   const firstClear = floor === abyss.highestFloor + 1 && floor <= ABYSS_MAX_FLOOR;
   const loot = rollAbyssLoot(floor, rng, firstClear ? 1.5 : 1);
   let next = applyLoot(state, loot);
+  let blueprint: string | null = null;
   if (firstClear) {
-    next = { ...next, abyss: { ...abyss, highestFloor: floor } };
+    blueprint = abyssBlueprintFor(next, floor);
+    next = grantBlueprint({ ...next, abyss: { ...abyss, highestFloor: floor } }, blueprint);
   }
-  return { state: next, loot, firstClear };
+  return { state: next, loot, firstClear, blueprint };
 }
