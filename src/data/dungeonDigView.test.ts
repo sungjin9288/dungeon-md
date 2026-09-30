@@ -30,4 +30,14 @@ describe('굴착 자리 보기', () => {
     expect(getDigSpotView(state({ dmLevel: 3, homeGold: 10_000, dungeonPlan: onePlan }), 'up'))
       .toMatchObject({ title: '곁방 굴착 · 위', nextPermitDm: 4, licenseOffer: { kind: 'side', gems: 200 } });
   });
+  it('곁방 허가를 다 써도 살 수 있는 허가증이 있으면 곁방 자리를 남긴다(허가증 구매 창의 유일한 입구)', () => {
+    const usedSide = { corridor: [0], sides: [{ slot: 1, anchor: 0, side: 'up' as const }] };
+    const full = state({ dmLevel: 4, homeGold: 10_000, gems: 1_000, dungeonPlan: usedSide });
+    expect(getDigSpotView(full, 'down')).toMatchObject({ hasPermit: false, licenseOffer: { kind: 'side', gems: 200 } });
+    expect(showSideDigSpots(full)).toBe(true);
+    // 허가증도 다 샀으면 숨긴다(다음 레벨 허가까지 보드를 +로 덮지 않는다).
+    const maxed = state({ dmLevel: 4, dungeonPlan: usedSide, dungeonLicenses: { side: 4 } });
+    const fullyUsed = { ...usedSide, sides: [0, 1, 2, 3, 4].map(i => ({ slot: i + 1, anchor: 0, side: 'up' as const })) };
+    expect(showSideDigSpots({ ...maxed, dungeonPlan: fullyUsed })).toBe(false);
+  });
 });

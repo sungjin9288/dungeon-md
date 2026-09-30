@@ -76,7 +76,12 @@ export function getDigSpotView(state: Readonly<GameState>, kind: DigSpotKind): D
   };
 }
 
-/** 보드에 곁방 굴착 자리를 보여줄지: 곁방 허가가 한 칸이라도 남았을 때만(아니면 보드가 +로 뒤덮인다). */
+/**
+ * 보드에 곁방 굴착 자리를 보여줄지. 곁방 허가가 남았거나, 곁방이 열린 뒤(용량 1+) 살 수 있는 보석 허가증이
+ * 남았을 때 — 허가증 구매 창은 이 자리를 눌러야만 열린다. 둘 다 없으면 숨긴다(보드가 +로 뒤덮이지 않게).
+ */
 export function showSideDigSpots(state: Readonly<GameState>): boolean {
-  return getDungeonPlan(state).sides.length < getSideCapacity(state);
+  const capacity = getSideCapacity(state);
+  if (getDungeonPlan(state).sides.length < capacity) return true;
+  return capacity > 0 && getLicenses(state).side < MAX_SIDE_LICENSES;
 }

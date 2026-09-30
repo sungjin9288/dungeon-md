@@ -300,9 +300,11 @@ function serializeHomeScene(scene: DungeonHomeScene): RuntimeRecord {
   const raw = scene as unknown as RuntimeRecord;
   const gs = asRecord(raw['gs']);
   const slots = Array.isArray(gs['dungeonSlots']) ? gs['dungeonSlots'] : [];
+  // Same count as the home board: the saved dungeon plan (an unmigrated state falls back to the old grid).
   const unlockedSlots = getDungeonRoomCount({
-    dmLevel:    asNumber(gs['dmLevel'], 1),
-    wisdomTree: asRecord(gs['wisdomTree']) as Record<string, number>,
+    dmLevel:     asNumber(gs['dmLevel'], 1),
+    wisdomTree:  asRecord(gs['wisdomTree']) as Record<string, number>,
+    dungeonPlan: (gs as Partial<GameState>).dungeonPlan,
   });
   const slotCount = Math.max(slots.length, unlockedSlots);
   const actionQueue = getDungeonActionQueue(gs as unknown as GameState, unlockedSlots);

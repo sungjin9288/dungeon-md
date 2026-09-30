@@ -158,7 +158,7 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
 
 // ─── Dig spots + board scroll (corridor dungeon) ─────────────────────────────
 
-/** 굴착 자리 타일: 주 통로 끝은 항상, 곁방 자리는 곁방 허가가 남았을 때만(보드가 +로 뒤덮이지 않게). */
+/** 굴착 자리 타일: 주 통로 끝은 항상, 곁방 자리는 곁방 허가나 살 수 있는 허가증이 남았을 때만(`showSideDigSpots`). */
 function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Container): void {
   const spots = scene.boardLayout.digSpots ?? [];
   const sides = showSideDigSpots(scene.gs);
