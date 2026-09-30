@@ -5,9 +5,8 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
-import { getDigSpotView, showSideDigSpots } from '../data/dungeonDigView';
 import { handleSwapTarget } from '../ui/HomeRoomSwap';
-import { openDigPanel } from '../ui/HomeDigPanel';
+import { drawDigSpots, enableBoardScroll } from './HomeBoardDigSpots';
 import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
 import { getSlotBuilding, getSlotBuildingName } from '../data/roomBuildings';
 import { IDLE_PER_GOLD_ROOM } from '../data/idleIncome';
@@ -26,7 +25,6 @@ import { generateMonsterSprite } from '../art/PortraitGenerator';
 import { logger } from '../utils/logger';
 import {
   type RoomSlotContext,
-  drawBattleSlot as _drawBattleSlot,
   SLOT_W,
 } from '../ui/RoomSlotRenderer';
 import {
@@ -162,136 +160,6 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
   scene.addActionQueueRankMarkers(c, unlockedCount);
   drawSynergySummary(synergyCtx, c, CANVAS_WIDTH);
   enableBoardScroll(scene, c, boardRegionBottom);
-}
-
-// ─── Dig spots + board scroll (corridor dungeon) ─────────────────────────────
-
-/** 굴착 자리 타일: 주 통로 끝은 항상, 곁방 자리는 곁방 허가나 살 수 있는 허가증이 남았을 때만(`showSideDigSpots`). */
-function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Container): void {
-  const spots = scene.boardLayout.digSpots ?? [];
-  const sides = showSideDigSpots(scene.gs);
-  for (const spot of spots) {
-    if (spot.kind !== 'corridor' && !sides) continue;
-    const view = getDigSpotView(scene.gs, spot.kind);
-    const { x, y, w, h } = spot.rect;
-    // The corridor end is the main expansion; side spots stay quiet (dashed outline, small +)
-    // so a board full of empty dig spots does not outshine the rooms that exist.
-    const main = spot.kind === 'corridor';
-    const inset = main ? 10 : 22;
-    const accent = view.canDig ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
-    const g = scene.add.graphics();
-    const rx = x + inset, ry = y + inset, rw = w - inset * 2, rh = h - inset * 2;
-    if (main) {
-      g.fillStyle(0x000000, view.canDig ? 0.34 : 0.22);
-      g.fillRoundedRect(rx, ry, rw, rh, 12);
-      g.lineStyle(2, accent, view.canDig ? 0.9 : 0.5);
-      g.strokeRoundedRect(rx, ry, rw, rh, 12);
-    } else {
-      strokeDashedRect(g, rx, ry, rw, rh, accent, view.canDig ? 0.55 : 0.3);
-    }
-    const cx = x + w / 2, cy = y + h / 2 - 8;
-    const arm = main ? 10 : 6;
-    g.lineStyle(main ? 3 : 2, accent, view.canDig ? (main ? 1 : 0.7) : 0.5);
-    g.lineBetween(cx - arm, cy, cx + arm, cy);
-    g.lineBetween(cx, cy - arm, cx, cy + arm);
-    c.add(g);
-    const label = spot.kind === 'corridor'
-      ? (view.canDig ? `굴착 ${view.cost.toLocaleString('ko-KR')}` : view.blocker ?? '굴착')
-      : (view.canDig ? '곁방' : view.blocker ?? '곁방');
-    c.add(scene.add.text(cx, cy + 22, label, {
-      fontFamily: 'sans-serif', fontSize: main ? '11px' : '10px', fontStyle: 'bold',
-      color: view.canDig && main ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5).setAlpha(main ? 1 : 0.8));
-    const zone = scene.add.zone(x + w / 2, y + h / 2, w - inset * 2, h - inset * 2)
-      .setName(`home-dig-${spot.kind}-${spot.anchor}`)
-      .setDepth(10).setInteractive({ useHandCursor: true });
-    zone.on('pointerup', () => { if (!scene.boardDragMoved && scene.swapSourceIdx === null) openDigPanel(scene, spot); });
-    c.add(zone);
-  }
-}
-
-/** Dashed rounded-ish outline (corners left open) for quiet placeholders. */
-function strokeDashedRect(
-  g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, alpha: number,
-): void {
-  const dash = 7, gap = 5;
-  g.lineStyle(1.5, color, alpha);
-  const edge = (x1: number, y1: number, x2: number, y2: number): void => {
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    for (let d = 6; d < len - 6; d += dash + gap) {
-      const e = Math.min(len - 6, d + dash);
-      g.lineBetween(x1 + ((x2 - x1) * d) / len, y1 + ((y2 - y1) * d) / len, x1 + ((x2 - x1) * e) / len, y1 + ((y2 - y1) * e) / len);
-    }
-  };
-  edge(x, y, x + w, y);
-  edge(x + w, y, x + w, y + h);
-  edge(x + w, y + h, x, y + h);
-  edge(x, y + h, x, y);
-}
-
-const BOARD_DRAG_THRESHOLD = 10;
-
-/** 보드가 화면보다 넓으면 보드 영역 안에서만 가로로 끌어 스크롤한다(마스크 + 컨테이너 x). */
-function enableBoardScroll(scene: DungeonHomeScene, c: Phaser.GameObjects.Container, regionBottom: number): void {
-  const maxScroll = Math.max(0, Math.ceil(scene.boardLayout.boardRect.w - CANVAS_WIDTH));
-  scene.boardScrollX = Phaser.Math.Clamp(scene.boardScrollX, 0, maxScroll);
-  c.x = -scene.boardScrollX;
-  if (maxScroll === 0) return;
-
-  const top = scene.boardLayout.boardRect.y - 6;
-  const maskShape = scene.make.graphics({}, false);
-  maskShape.fillStyle(0xffffff, 1).fillRect(0, top, CANVAS_WIDTH, regionBottom - top + 6);
-  c.setMask(maskShape.createGeometryMask());
-  c.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
-
-  // Edge cues: the corridor runs past the screen. Fixed to the screen (not the scrolling
-  // container) and hidden at the end they point to.
-  const midY = scene.boardLayout.heart.y;
-  const cue = (side: 'left' | 'right'): Phaser.GameObjects.Container => {
-    const x = side === 'left' ? 0 : CANVAS_WIDTH - 22;
-    const bg = scene.add.graphics();
-    bg.fillStyle(0x000000, 0.42);
-    bg.fillRect(x, top + 6, 22, regionBottom - top - 6);
-    const arrow = scene.add.text(x + 11, midY, side === 'left' ? '‹' : '›', {
-      fontFamily: 'sans-serif', fontSize: '26px', color: '#e8c060', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    return scene.add.container(0, 0, [bg, arrow]).setDepth(12);
-  };
-  const leftCue = cue('left');
-  const rightCue = cue('right');
-  const syncCues = (): void => {
-    leftCue.setVisible(scene.boardScrollX > 4);
-    rightCue.setVisible(scene.boardScrollX < maxScroll - 4);
-  };
-  syncCues();
-  c.once(Phaser.GameObjects.Events.DESTROY, () => { leftCue.destroy(); rightCue.destroy(); });
-
-  let startX: number | null = null;
-  let startScroll = 0;
-  const onDown = (pointer: Phaser.Input.Pointer): void => {
-    scene.boardDragMoved = false;
-    startX = pointer.worldY >= top && pointer.worldY <= regionBottom ? pointer.worldX : null;
-    startScroll = scene.boardScrollX;
-  };
-  const onMove = (pointer: Phaser.Input.Pointer): void => {
-    if (startX === null || !pointer.isDown) return;
-    const dx = pointer.worldX - startX;
-    if (!scene.boardDragMoved && Math.abs(dx) < BOARD_DRAG_THRESHOLD) return;
-    scene.boardDragMoved = true;
-    scene.boardScrollX = Phaser.Math.Clamp(startScroll - dx, 0, maxScroll);
-    if (c.active) c.x = -scene.boardScrollX;
-    syncCues();
-  };
-  const onUp = (): void => { startX = null; };
-  scene.input.on(Phaser.Input.Events.POINTER_DOWN, onDown);
-  scene.input.on(Phaser.Input.Events.POINTER_MOVE, onMove);
-  scene.input.on(Phaser.Input.Events.POINTER_UP, onUp);
-  // The board is rebuilt often; drop this board's listeners with it.
-  c.once(Phaser.GameObjects.Events.DESTROY, () => {
-    scene.input.off(Phaser.Input.Events.POINTER_DOWN, onDown);
-    scene.input.off(Phaser.Input.Events.POINTER_MOVE, onMove);
-    scene.input.off(Phaser.Input.Events.POINTER_UP, onUp);
-  });
 }
 
 function drawHomeDungeonHotspot(
@@ -666,106 +534,6 @@ export function addRoomActivityAura(
   }
 }
 
-// ─── addDungeonCrewLayer ──────────────────────────────────────────────────────
-
-export function addDungeonCrewLayer(
-  scene: DungeonHomeScene,
-  c: Phaser.GameObjects.Container,
-  unlockedCount: number,
-): void {
-  const reducedMotion = getReducedMotion();
-  for (let idx = 0; idx < unlockedCount; idx++) {
-    const slot = scene.gs.dungeonSlots?.[idx];
-    if (!slot?.roomType || slot.hp <= 0) continue;
-
-    const monsterIds = (slot.monsterIds ?? []).filter((id): id is string => typeof id === 'string');
-    const trapIds = (slot.trapIds ?? []).filter((id): id is string => typeof id === 'string');
-    if (monsterIds.length === 0 && trapIds.length === 0) continue;
-
-    const crewCell = scene.boardLayout.cellsByIdx.get(idx);
-    const sx = crewCell?.rect.x ?? 0;
-    const sy = crewCell?.rect.y ?? 0;
-    const accent = monsterIds.length > 0 ? scene.getRoomActivityColor(slot) : 0xffc45f;
-    const icon = monsterIds.length > 0
-      ? scene.resolveMonsterVisual(monsterIds[0]).emoji
-      : '⚠';
-    const loadoutCount = monsterIds.length + trapIds.length;
-    const badgeX = sx + scene.boardLayout.slotW + 5;
-    const badgeY = sy + 42 + (idx % 2) * 15;
-
-    addRoomCrewBadge(scene, c, badgeX, badgeY, icon, loadoutCount, accent, trapIds.length > 0, reducedMotion, idx);
-  }
-}
-
-// ─── addRoomCrewBadge ─────────────────────────────────────────────────────────
-
-export function addRoomCrewBadge(
-  scene: DungeonHomeScene,
-  c: Phaser.GameObjects.Container,
-  x: number,
-  y: number,
-  icon: string,
-  count: number,
-  accent: number,
-  hasTrap: boolean,
-  reducedMotion: boolean,
-  seed: number,
-): void {
-  const badge = scene.add.container(x, y).setDepth(13);
-  const g = scene.add.graphics();
-  const countText = count > 1 ? String(Math.min(count, 9)) : '';
-
-  g.fillStyle(0x050402, 0.94);
-  g.fillCircle(0, 0, 9.5);
-  g.lineStyle(1.2, accent, 0.78);
-  g.strokeCircle(0, 0, 9.5);
-  g.fillStyle(accent, 0.18);
-  g.fillCircle(0, 0, 6);
-  g.fillStyle(0xffffff, 0.22);
-  g.fillCircle(-3.5, -3.5, 1.7);
-  if (hasTrap) {
-    g.fillStyle(0xffc45f, 0.94);
-    g.fillTriangle(-9, 8, -4, -1, 1, 8);
-    g.lineStyle(1, 0x050402, 0.64);
-    g.lineBetween(-7, 6, -4, 1);
-    g.lineBetween(-4, 1, -1, 6);
-  }
-  if (count > 1) {
-    g.fillStyle(accent, 0.94);
-    g.fillCircle(7.5, 7.5, 4.8);
-    g.lineStyle(1, 0x050402, 0.72);
-    g.strokeCircle(7.5, 7.5, 4.8);
-  }
-  badge.add(g);
-
-  badge.add(scene.add.text(0, -1, icon, {
-    fontFamily: 'sans-serif',
-    fontSize: '10px',
-    color: '#f0e6c8',
-    fontStyle: 'bold',
-  }).setOrigin(0.5));
-  if (countText) {
-    badge.add(scene.add.text(7.5, 7.5, countText, {
-      fontFamily: 'monospace',
-      fontSize: '10px',
-      color: '#06100d',
-      fontStyle: 'bold',
-    }).setOrigin(0.5));
-  }
-  c.add(badge);
-
-  if (reducedMotion) return;
-  scene.tweens.add({
-    targets: badge,
-    y: y + (seed % 2 === 0 ? -2 : 2),
-    alpha: { from: 0.86, to: 1 },
-    duration: 760 + (seed % 5) * 80,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut',
-  });
-}
-
 // ─── getRoomActivityColor ─────────────────────────────────────────────────────
 
 export function getRoomActivityColor(
@@ -788,20 +556,6 @@ export function makeRoomSlotCtx(scene: DungeonHomeScene): RoomSlotContext {
     scene, theme: scene.theme, gs: scene.gs,
     reducedMotion: getReducedMotion(),
   };
-}
-
-// ─── drawBattleSlot ───────────────────────────────────────────────────────────
-
-export function drawBattleSlot(
-  scene: DungeonHomeScene,
-  c: Phaser.GameObjects.Container,
-  g: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  index: number,
-  unlocked: boolean,
-): void {
-  _drawBattleSlot(makeRoomSlotCtx(scene), c, g, x, y, index, unlocked);
 }
 
 // ─── addRoomChangedPulse ──────────────────────────────────────────────────────
