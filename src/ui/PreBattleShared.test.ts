@@ -243,6 +243,18 @@ describe('getDefenseDirective', () => {
     expect(weak.severity).not.toBe('ready');
   });
 
+  it('a growth chore (equipment) is advice too once power covers the invasion — the first battle said 보강 권장 at 3x', () => {
+    const gs = makeGs({
+      dmLevel: 3,
+      dungeonPlan: { corridor: [0], sides: [] },
+      dungeonSlots: [makeCombatSlot({ monsterIds: ['dokkaebi_warrior', 'dokkaebi_junior'], trapIds: ['spike_trap'], roomLevel: 1, hp: 200, maxHp: 200 })],
+    });
+    const rooms = getDefenseRooms(gs);
+    const directive = getDefenseDirective(rooms, getDefenseTotals(gs, rooms), gs, makeInvasionConfig(1, 1));
+    expect(directive.readiness).toBeGreaterThanOrEqual(100);
+    expect(directive.severity).toBe('ready');
+  });
+
   it('has readiness >= 100 when totalPower far exceeds pressure', () => {
     // Build multiple rooms with traps so totalPower far exceeds minimal pressure
     const slots: DungeonSlot[] = Array.from({ length: 3 }, () =>

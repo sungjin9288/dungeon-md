@@ -455,14 +455,7 @@ export function getDefenseDirective(
   const actionQueue = getDungeonActionQueue(gs, totals.unlockedSlots);
   const firstRoomAction = actionQueue[0];
   if (firstRoomAction && firstRoomAction.kind !== 'growth') {
-    const chore = buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure);
-    // Already strong enough for this invasion: a room chore (an empty seat, a missing trap)
-    // is advice, not a reason to hold the sortie — "보강 권장" at 50x the needed power misled.
-    // The chore stays on the card and its button; only the verdict turns to ready.
-    if (readiness >= 100 && chore.severity === 'warning') {
-      return { ...chore, severity: 'ready', chip: '여유', accent: 0xffe27a, fill: defenseDirectiveFill('ready') };
-    }
-    return chore;
+    return softenWhenReady(buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure), readiness);
   }
 
   if (pressure > 0 && readiness < 80) {
@@ -496,7 +489,8 @@ export function getDefenseDirective(
   }
 
   if (firstRoomAction) {
-    return buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure);
+    // Growth chores (equipment, skill points) land here: same rule as the room chores above.
+    return softenWhenReady(buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure), readiness);
   }
 
   return buildDefenseDirective(
@@ -516,6 +510,16 @@ export function getDefenseActionVerb(directive: DefenseDirective): string {
   if (directive.title.includes('함정')) return '함정';
   if (directive.title.includes('복구')) return '수리';
   return '정비';
+}
+
+/**
+ * Already strong enough for this invasion: a room chore (an empty seat, a missing trap, equipment)
+ * is advice, not a reason to hold the sortie — "보강 권장" at 50x the needed power misled.
+ * The chore stays on the card and its button; only the verdict turns to ready.
+ */
+function softenWhenReady(chore: DefenseDirective, readiness: number): DefenseDirective {
+  if (readiness < 100 || chore.severity !== 'warning') return chore;
+  return { ...chore, severity: 'ready', chip: '여유', accent: 0xffe27a, fill: defenseDirectiveFill('ready') };
 }
 
 export function getDefenseActionButtonLabel(directive: DefenseDirective): string {

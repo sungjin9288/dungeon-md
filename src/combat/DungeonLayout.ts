@@ -318,6 +318,8 @@ function drawDungeonDefenseFrame(
   g.fillTriangle(heartX, heartY - 8, heartX - 8, heartY, heartX, heartY + 8);
   g.fillTriangle(heartX, heartY - 8, heartX + 8, heartY, heartX, heartY + 8);
 
+  drawUnexcavatedRock(scene, g, heartX + 34, y, gridH);
+
   // Corner studs — iron rings with brass centers.
   [[x - 14, y - 16], [x + gridW + 14, y - 16], [x - 14, y + gridH + 16], [x + gridW + 14, y + gridH + 16]].forEach(([sx, sy]) => {
     g.fillStyle(CASUAL.PANEL, 1);
@@ -700,4 +702,33 @@ export function addDungeonFog(scene: Phaser.Scene): void {
       duration: Phaser.Math.Between(600, 1000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
   });
+}
+
+/**
+ * A young corridor ends well short of the screen edge; the space past the heart is solid rock
+ * not yet dug (home: 굴착). Drawn only when there is room for it, so a long corridor is untouched.
+ */
+function drawUnexcavatedRock(scene: Phaser.Scene, g: Phaser.GameObjects.Graphics, left: number, top: number, height: number): void {
+  const right = CANVAS_WIDTH - 10;
+  const w = right - left;
+  if (w < 60) return;
+  g.fillStyle(0x3a2e24, 0.5);
+  g.fillRoundedRect(left, top, w, height, 14);
+  g.lineStyle(1.5, 0x5a4634, 0.55);
+  g.strokeRoundedRect(left, top, w, height, 14);
+  // Cracks and loose stones — deterministic so the backdrop is the same every battle.
+  g.lineStyle(1.2, 0x241b14, 0.55);
+  for (let i = 0; i < 4; i++) {
+    const cx = left + (w * (i + 0.6)) / 4.4;
+    const cy = top + height * (0.2 + 0.18 * (i % 3));
+    g.lineBetween(cx, cy, cx + 14, cy + 18);
+    g.lineBetween(cx + 14, cy + 18, cx + 6, cy + 34);
+  }
+  g.fillStyle(0x5a4634, 0.6);
+  for (let i = 0; i < 6; i++) {
+    g.fillCircle(left + 12 + ((i * 37) % Math.max(1, w - 24)), top + height - 14 - (i % 2) * 8, 3 + (i % 3));
+  }
+  scene.add.text(left + w / 2, top + height / 2, '미개척 암반', {
+    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: '#c9b08a',
+  }).setOrigin(0.5).setAlpha(0.8).setDepth(-19);
 }

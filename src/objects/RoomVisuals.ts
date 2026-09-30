@@ -370,10 +370,10 @@ export function setSlotLoadoutVisual(room: Room, options: RoomLoadoutVisualOptio
   }
 
   const loadoutLabel = options.equipmentCount > 0
-    ? `M${options.monsterCount}/${options.monsterCapacity} E${options.equipmentCount} T${options.trapCount}/${options.trapCapacity}`
-    : `M${options.monsterCount}/${options.monsterCapacity} · T${options.trapCount}/${options.trapCapacity}`;
+    ? `수호${options.monsterCount}/${options.monsterCapacity} 장비${options.equipmentCount} 함정${options.trapCount}/${options.trapCapacity}`
+    : `수호 ${options.monsterCount}/${options.monsterCapacity} · 함정 ${options.trapCount}/${options.trapCapacity}`;
   const loadout = room.scene.add.text(0, stripY + 7, loadoutLabel, {
-    fontFamily: 'monospace',
+    fontFamily: 'sans-serif',
     fontSize: '10px',
     color: CASUAL_CSS.INK,
     fontStyle: 'bold',
