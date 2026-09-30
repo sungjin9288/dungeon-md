@@ -82,12 +82,13 @@ describe('Home syncs reach_dm_level before settling', () => {
 });
 
 describe('upgrade_room cannot deadlock once every room is maxed (§35)', () => {
+  const nineRooms = { corridor: [0, 1, 2, 3, 4, 5, 6, 7, 8], sides: [] };
   const maxedSlots = (n: number, level: number) => Array.from({ length: n }, () => ({
     roomType: 'combat' as const, roomLevel: level, hp: 100, maxHp: 100, monsterIds: [], trapIds: [],
   }));
 
   it('auto-meets upgrade_room when no unlocked room can be upgraded any further', () => {
-    const state = withQuest({ dmLevel: 20, dungeonSlots: maxedSlots(9, 5) as never }, 'MQ-036');
+    const state = withQuest({ dmLevel: 20, dungeonPlan: nineRooms, dungeonSlots: maxedSlots(9, 5) as never }, 'MQ-036');
     const quest = state.questProgress['MQ-036'].objectives;
     expect(Object.values(quest)).toContain(4);
   });
@@ -95,7 +96,7 @@ describe('upgrade_room cannot deadlock once every room is maxed (§35)', () => {
   it('keeps upgrade_room open while any room is below the cap', () => {
     const slots = maxedSlots(9, 5);
     slots[3] = { ...slots[3], roomLevel: 4 };
-    const state = withQuest({ dmLevel: 20, dungeonSlots: slots as never }, 'MQ-036');
+    const state = withQuest({ dmLevel: 20, dungeonPlan: nineRooms, dungeonSlots: slots as never }, 'MQ-036');
     expect(Object.values(state.questProgress['MQ-036'].objectives)).not.toContain(4);
   });
 });

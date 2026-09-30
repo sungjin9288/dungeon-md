@@ -7,8 +7,8 @@ import { CASUAL, CASUAL_CSS } from '../constants/colors';
 export interface BattleReturnGrowthContext {
   readonly previousDmLevel: number;
   readonly nextDmLevel: number;
-  readonly previousSlots: number;
-  readonly nextSlots: number;
+  readonly previousPermits: number;
+  readonly nextPermits: number;
   readonly questCompletionPending?: boolean;
   readonly materialsEarned?: Record<string, number>;
 }
@@ -31,7 +31,7 @@ const VICTORY_TEXT = CASUAL_CSS.GREEN;
 
 /**
  * Pick the single growth highlight shown on the battle-return overlay.
- * Priority (first match wins): room expansion → master level-up →
+ * Priority (first match wins): dig permit gained → master level-up →
  * pending quest completion (it is what the button leads to next) →
  * crafting materials → generic dungeon growth.
  */
@@ -41,18 +41,18 @@ export function buildBattleReturnGrowthSummary(
   const materialCount = Object.values(growth?.materialsEarned ?? {})
     .reduce((sum, qty) => sum + Math.max(0, qty), 0);
   const leveledUp = !!growth && growth.nextDmLevel > growth.previousDmLevel;
-  const slotUnlocked = !!growth && growth.nextSlots > growth.previousSlots;
+  const permitGained = !!growth && growth.nextPermits > growth.previousPermits;
 
-  if (slotUnlocked && growth) {
+  if (permitGained && growth) {
     return {
-      icon: '🏰',
-      label: '던전 확장',
-      value: `${growth.previousSlots} → ${growth.nextSlots} 방`,
+      icon: '⛏',
+      label: '굴착 허가',
+      value: `${growth.previousPermits} → ${growth.nextPermits}칸`,
       valueColor: CASUAL_CSS.GREEN,
       fillColor: CASUAL.PANEL_SOFT,
       borderColor: CASUAL.GREEN_DK,
-      note: '새 방을 설계해 침입 동선을 더 길게 만들 수 있습니다',
-      buttonLabel: '방 확장 확인',
+      note: '골드로 새 방을 파서 침입 동선을 늘릴 수 있습니다',
+      buttonLabel: '굴착 허가 확인',
     };
   }
 

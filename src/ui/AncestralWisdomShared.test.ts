@@ -91,21 +91,24 @@ describe('AncestralWisdomShared', () => {
 
 describe('선조의 지혜 실제 효과 표시와 승인', () => {
   const branch = BRANCH_DEFS.find(b => b.id === 'ancestorsWisdom')!;
-  it.each([[5, 3, '방 슬롯 +3 · 던전 HP +0', '방 슬롯 +3 · 던전 HP +20'],
-    [8, 0, '방 슬롯 +0 · 던전 HP +0', '방 슬롯 +0 · 던전 HP +20'],
-    [7, 2, '방 슬롯 +1 · 던전 HP +20', '방 슬롯 +1 · 던전 HP +40']] as const)(
-    'DM %i tier %i의 현재와 다음 효과를 표시한다', (dmLevel, tier, current, next) => {
+  // 곁방 상한 12 = 레벨 허가(DM5:1 · DM23:7 · DM24:8) + 보석 허가증 + 선조의 지혜. 넘치는 티어만 HP.
+  it.each([[5, 0, 3, '곁방 허가 +3 · 던전 HP +0', '곁방 허가 +4 · 던전 HP +0'],
+    [24, 4, 2, '곁방 허가 +0 · 던전 HP +40', '곁방 허가 +0 · 던전 HP +60'],
+    [23, 4, 2, '곁방 허가 +1 · 던전 HP +20', '곁방 허가 +1 · 던전 HP +40']] as const)(
+    'DM %i 허가증 %i tier %i의 현재와 다음 효과를 표시한다', (dmLevel, side, tier, current, next) => {
       const state = loadGameState(); state.dmLevel = dmLevel; state.soulCrystals = 100;
+      state.dungeonLicenses = { side };
       state.wisdomTree = { ancestorsWisdom: tier };
       const view = getWisdomBranchView(state, branch);
       expect(view.currentEffect).toBe(current); expect(view.nextEffect).toBe(next);
       expect(view.canUpgrade).toBe(true);
     });
   it('확인 중 DM이 올라 효과가 바뀌면 다시 확인해야 한다', () => {
-    const state = loadGameState(); state.dmLevel = 7; state.soulCrystals = 100;
+    const state = loadGameState(); state.dmLevel = 23; state.soulCrystals = 100;
+    state.dungeonLicenses = { side: 4 };
     state.wisdomTree = { ancestorsWisdom: 0 };
-    const snapshot = { branchId: branch.id, tier: 0, cost: 5, soulCrystals: 100, nextEffect: '방 슬롯 +1 · 던전 HP +0' };
+    const snapshot = { branchId: branch.id, tier: 0, cost: 5, soulCrystals: 100, nextEffect: '곁방 허가 +1 · 던전 HP +0' };
     expect(isWisdomUpgradeSnapshotCurrent(state, snapshot)).toBe(true);
-    expect(isWisdomUpgradeSnapshotCurrent({ ...state, dmLevel: 8 }, snapshot)).toBe(false);
+    expect(isWisdomUpgradeSnapshotCurrent({ ...state, dmLevel: 24 }, snapshot)).toBe(false);
   });
 });

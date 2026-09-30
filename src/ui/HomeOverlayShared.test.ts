@@ -14,8 +14,8 @@ import {
 const baseGrowth: BattleReturnGrowthContext = {
   previousDmLevel: 5,
   nextDmLevel: 5,
-  previousSlots: 4,
-  nextSlots: 4,
+  previousPermits: 4,
+  nextPermits: 4,
 };
 
 describe('buildBattleReturnGrowthSummary', () => {
@@ -25,15 +25,15 @@ describe('buildBattleReturnGrowthSummary', () => {
     expect(summary.buttonLabel).toBe('던전 성장 확인');
   });
 
-  it('prioritizes room expansion over a level-up when both occur', () => {
+  it('prioritizes a new dig permit over a level-up when both occur', () => {
     const summary = buildBattleReturnGrowthSummary({
       previousDmLevel: 5,
       nextDmLevel: 6,
-      previousSlots: 4,
-      nextSlots: 5,
+      previousPermits: 4,
+      nextPermits: 5,
     });
-    expect(summary.label).toBe('던전 확장');
-    expect(summary.value).toBe('4 → 5 방');
+    expect(summary.label).toBe('굴착 허가');
+    expect(summary.value).toBe('4 → 5칸');
     expect(summary.valueColor).toBe(CASUAL_CSS.GREEN);
   });
 

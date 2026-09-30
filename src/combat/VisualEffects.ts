@@ -351,7 +351,7 @@ export function showWisdomToast(
   if (b.dungeonMaxHpBonus > 0) lines.push(`던전 HP +${b.dungeonMaxHpBonus}`);
   if (b.roomCostMult   < 1) lines.push(`방 업그레이드 비용 -${Math.round((1 - b.roomCostMult) * 100)}%`);
   if (b.waveRewardMult > 1) lines.push(`웨이브 보상 +${Math.round((b.waveRewardMult - 1) * 100)}%`);
-  if (b.extraSlots     > 0) lines.push(`추가 슬롯 +${b.extraSlots}`);
+  if (b.extraSlots     > 0) lines.push(`곁방 허가 +${b.extraSlots}`);
   if (b.crystalEarnMult > 1) lines.push(`결정 획득 +${Math.round((b.crystalEarnMult - 1) * 100)}%`);
   if (b.monsterDmgMult < 1) lines.push(`몬스터 피해 -${Math.round((1 - b.monsterDmgMult) * 100)}%`);
   if (b.monsterAtkMult > 1) lines.push(`몬스터 공격 +${Math.round((b.monsterAtkMult - 1) * 100)}%`);

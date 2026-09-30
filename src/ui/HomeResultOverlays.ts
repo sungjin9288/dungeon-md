@@ -138,9 +138,9 @@ export function showDmLevelUpOverlay(
   options: DmLevelUpOverlayOptions = {},
 ): void {
   const newLevel = growth.nextDmLevel;
-  const newSlots = growth.nextSlots;
-  const prevSlots = growth.previousSlots;
-  const slotUnlocked = newSlots > prevSlots;
+  const newPermits = growth.nextPermits;
+  const prevPermits = growth.previousPermits;
+  const permitGained = newPermits > prevPermits;
 
   const c = scene.add.container(0, 0).setDepth(75);
   c.add(buildOverlayDim(scene, 0x000000, 0.5));
@@ -180,16 +180,17 @@ export function showDmLevelUpOverlay(
     y: PY + 96,
     w: PW - 48,
     h: 30,
-    icon: slotUnlocked ? '🏰' : '⚔',
-    label: slotUnlocked ? '방 슬롯 해금' : '전투력 강화',
-    value: slotUnlocked ? `${prevSlots} → ${newSlots}` : '적용 완료',
-    valueColor: slotUnlocked ? CASUAL_CSS.GREEN : CASUAL_CSS.GOLD,
+    icon: permitGained ? '⛏' : '⚔',
+    label: permitGained ? '굴착 허가' : '전투력 강화',
+    value: permitGained ? `${prevPermits} → ${newPermits}칸` : '적용 완료',
+    valueColor: permitGained ? CASUAL_CSS.GREEN : CASUAL_CSS.GOLD,
     fillColor: CASUAL.PANEL_SOFT,
-    borderColor: slotUnlocked ? CASUAL.GREEN_DK : CASUAL.GOLD_DK,
+    borderColor: permitGained ? CASUAL.GREEN_DK : CASUAL.GOLD_DK,
   });
   addToContainer(c, ...Object.values(row));
 
-  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 148, '다음 방어 준비에 즉시 반영됩니다', {
+  const note = permitGained ? '골드로 새 방을 팔 수 있습니다' : '다음 방어 준비에 즉시 반영됩니다';
+  c.add(scene.add.text(CANVAS_WIDTH / 2, PY + 148, note, {
     fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, fontStyle: 'bold',
   }).setOrigin(0.5));
 

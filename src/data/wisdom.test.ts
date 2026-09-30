@@ -27,8 +27,10 @@ import {
   type GameState,
   getUnlockedSlotCount,
   getAncestorsWisdomEffect,
+  migrateToDungeonPlan,
 } from './wisdom';
 import { defaultOwnedMonster } from './barracks';
+import { getSideCapacity } from './dungeonPlan';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -795,10 +797,13 @@ describe('선조의 지혜 초과 슬롯의 HP 전환', () => {
   });
 
   it('기존 투자와 다른 HP 가호를 합산하고 저장·프레스티지 후에도 동일하다', () => {
+    // 가로 던전: DM12 곁방 허가 4 + 선조의 지혜 5티어 = 곁방 9 — 상한(12) 안이라 HP로 넘치지 않는다.
     const state = loadGameState(); state.dmLevel = 12;
     state.wisdomTree = { ancestorsWisdom: 5, ironWalls: 5, dungeonFortress: 5 };
     const before = structuredClone(state);
-    expect(getWisdomBonuses(state).dungeonMaxHpBonus).toBe(200);
+    expect(getAncestorsWisdomEffect(state)).toEqual({ extraSlots: 5, hpBonus: 0 });
+    expect(getSideCapacity(state)).toBe(9);
+    expect(getWisdomBonuses(state).dungeonMaxHpBonus).toBe(100);
     expect(getWisdomBonuses(state).fortressHp).toBe(250);
     saveGameState(state);
     expect(getWisdomBonuses(loadGameState())).toEqual(getWisdomBonuses(state));
@@ -808,8 +813,8 @@ describe('선조의 지혜 초과 슬롯의 HP 전환', () => {
     expect(state).toEqual(before);
   });
 
-  it('최대 보드에서 구매하면 기존 비용으로 HP가 증가한다', () => {
-    const state = loadGameState(); state.dmLevel = 8; state.soulCrystals = 145;
+  it('최대 보드에서 구매하면 기존 비용으로 HP가 증가한다(옛 격자 세이브)', () => {
+    const state: GameState = { ...loadGameState(), dungeonPlan: undefined, dmLevel: 8, soulCrystals: 145 };
     let next = state;
     for (let tier = 1; tier <= 5; tier++) {
       const result = upgradeWisdomBranch(next, 'ancestorsWisdom');
@@ -821,6 +826,70 @@ describe('선조의 지혜 초과 슬롯의 HP 전환', () => {
     }
     expect(next.soulCrystals).toBe(0);
     expect(state.soulCrystals).toBe(145);
+  });
+});
+
+describe('선조의 지혜 → 곁방 허가(가로 던전)', () => {
+  const corridor = (overrides: Partial<GameState>): GameState => ({ ...loadGameState(), ...overrides });
+
+  it('곁방 상한을 넘는 티어만 HP로 남는다', () => {
+    // DM24 곁방 허가 8 + 보석 허가증 4 = 12(상한) → 지혜 3티어는 전부 HP.
+    const full = corridor({ dmLevel: 24, dungeonLicenses: { side: 4 }, wisdomTree: { ancestorsWisdom: 3 } });
+    expect(getAncestorsWisdomEffect(full)).toEqual({ extraSlots: 0, hpBonus: 60 });
+    expect(getSideCapacity(full)).toBe(12);
+    const partial = corridor({ dmLevel: 24, dungeonLicenses: { side: 2 }, wisdomTree: { ancestorsWisdom: 3 } });
+    expect(getAncestorsWisdomEffect(partial)).toEqual({ extraSlots: 2, hpBonus: 20 });
+  });
+
+  it('옛 격자에서 이미 칸을 연 티어는 주 통로에 있으므로 곁방으로 다시 세지 않는다', () => {
+    // DM2 격자 4칸 + 지혜 2칸 = 6칸 → 주 통로 6(레벨 허가 2 + 옛 던전 허가 4), 곁방 보너스 0.
+    const legacy: GameState = { ...loadGameState(), dungeonPlan: undefined, dmLevel: 2, wisdomTree: { ancestorsWisdom: 2 } };
+    const migrated = migrateToDungeonPlan(legacy);
+    expect(migrated.dungeonPlan?.corridor).toHaveLength(6);
+    expect(migrated.dungeonLicenses).toMatchObject({ legacyCorridor: 4, legacyWisdom: 2 });
+    expect(getAncestorsWisdomEffect(migrated)).toEqual({ extraSlots: 0, hpBonus: 0 });
+    const third = { ...migrated, wisdomTree: { ancestorsWisdom: 3 } };
+    expect(getAncestorsWisdomEffect(third)).toEqual({ extraSlots: 1, hpBonus: 0 });
+  });
+});
+
+describe('가로 던전 켜기 — 새 게임 · 불러오기 · 복원 · 환생', () => {
+  it('새 게임은 주 통로 1칸에서 시작한다', () => {
+    localStorage.clear();
+    expect(loadGameState().dungeonPlan).toEqual({ corridor: [0], sides: [] });
+  });
+
+  it('배치도 없는 옛 세이브는 불러올 때 이전되고 원본은 한 번만 보관된다', () => {
+    localStorage.clear();
+    const old = { ...loadGameState(), dungeonPlan: undefined, dmLevel: 8 };
+    localStorage.setItem('dungeonGameState', JSON.stringify(old));
+    const loaded = loadGameState();
+    expect(loaded.dungeonPlan?.corridor).toEqual([2, 1, 0, 3, 4, 5, 8, 7, 6]);
+    expect(loaded.dungeonLicenses).toMatchObject({ legacyCorridor: 4 });
+    const backup = localStorage.getItem('dungeonGameState_prePlan');
+    expect(JSON.parse(backup!).dungeonPlan).toBeUndefined();
+    saveGameState(loaded);
+    expect(loadGameState().dungeonPlan).toEqual(loaded.dungeonPlan);
+    localStorage.setItem('dungeonGameState', JSON.stringify({ ...old, dmLevel: 1 }));
+    loadGameState();
+    expect(localStorage.getItem('dungeonGameState_prePlan')).toBe(backup);
+  });
+
+  it('옛 세이브 코드를 복원해도 같은 이전을 거친다', () => {
+    localStorage.clear();
+    const old = { ...loadGameState(), dungeonPlan: undefined, dmLevel: 5 };
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(old))));
+    expect(importGameState(code).success).toBe(true);
+    const stored = JSON.parse(localStorage.getItem('dungeonGameState')!);
+    expect(stored.dungeonPlan.corridor).toHaveLength(6);
+  });
+
+  it('환생은 던전을 1칸으로 되돌리되 보석 허가증은 남긴다', () => {
+    const state = { ...loadGameState(), dmLevel: 12, dungeonPlan: { corridor: [0, 1, 2], sides: [] },
+      dungeonLicenses: { corridor: 1, side: 2, legacyCorridor: 3, legacyWisdom: 1 } };
+    const next = startPrestige(state);
+    expect(next.dungeonPlan).toEqual({ corridor: [0], sides: [] });
+    expect(next.dungeonLicenses).toEqual({ corridor: 1, side: 2, legacyCorridor: 0, legacyWisdom: 0 });
   });
 });
 

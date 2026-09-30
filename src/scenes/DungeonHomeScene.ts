@@ -85,7 +85,6 @@ import {
   advanceCompletedQuest as _advanceCompletedQuest,
   handleQuestComplete as _handleQuestComplete,
   checkBattleReturn as _checkBattleReturn,
-  revealUnlockedRoom as _revealUnlockedRoom,
   maybeShowTutorial as _maybeShowTutorial,
 } from './HomeLifecycle';
 import {
@@ -362,7 +361,6 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   private checkBattleReturn(): void { _checkBattleReturn(this); }
 
-  /** @internal */ revealUnlockedRoom(previousSlots: number, nextSlots: number): void { _revealUnlockedRoom(this, previousSlots, nextSlots); }
 
   // ─── Quest completion handling ────────────────────────────────────────────────
 

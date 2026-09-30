@@ -1,5 +1,13 @@
 import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barracks';
-import type { DungeonLicenses, DungeonPlan } from './dungeonPlan';
+import {
+  MAX_SIDE_ROOMS,
+  getLicenses,
+  getSidePermit,
+  migrateLegacyDungeon,
+  starterDungeonPlan,
+  type DungeonLicenses,
+  type DungeonPlan,
+} from './dungeonPlanRules';
 import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
 import type { RoomFamily, RoomType } from './rooms';
 import type { ForecastCard } from './forecast';
@@ -61,7 +69,7 @@ export const BRANCH_DEFS: BranchDef[] = [
     id: 'ancestorsWisdom',
     name: '선조의 지혜',
     icon: '📜',
-    effect: '추가 방 슬롯 +{value} · 초과 슬롯당 던전 HP +20',
+    effect: '곁방 허가 +{value} · 곁방 상한 초과분당 던전 HP +20',
     costPerTier: [5, 15, 25, 40, 60],
     getValue: (tier) => tier,
     position: { x: 195, y: 664 },
@@ -305,7 +313,7 @@ export interface GameState {
   /** 던전 배치도(주 통로 + 곁방). 없으면 옛 3×3 격자에서 계산한다 — dungeonPlan.ts getDungeonPlan. */
   dungeonPlan?:      DungeonPlan;
   /** 보석 허가증·옛 던전 허가. 없으면 0. */
-  dungeonLicenses?:  DungeonLicenses;
+  dungeonLicenses?:  Partial<DungeonLicenses>;
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   /** Incomplete idle output carried between claims; absent in legacy saves. */
   idleRemainder?: { operationGold: number; productionGold: number; materials: Record<string, number> };
@@ -407,6 +415,7 @@ function defaultGameState(): GameState {
     abyss:             { ...DEFAULT_ABYSS_STATE },
     craftedEquipment:  [],
     dungeonSlots:      [],
+    dungeonPlan:       starterDungeonPlan(),
     lastIdleCollect:   0,
     productionFacilities: {},
     facilityStaff: {},
@@ -486,7 +495,7 @@ export function loadGameState(): GameState {
       const dungeonSlots: DungeonSlot[] = (rawSlots ?? []).map(s =>
         migrateDungeonSlot(s as Record<string, unknown>),
       );
-      return {
+      const merged: GameState = {
         ...defaults,
         ...saved,
         wisdomTree:        { ...defaults.wisdomTree, ...(saved.wisdomTree ?? {}) },
@@ -497,10 +506,24 @@ export function loadGameState(): GameState {
         ownedActiveSkills: saved.ownedActiveSkills  ?? defaults.ownedActiveSkills,
         abyss:             { ...DEFAULT_ABYSS_STATE, ...(saved.abyss ?? {}) },
         dungeonSlots,
+        // A save from before the corridor dungeon has no plan: never inherit the new-game plan.
+        dungeonPlan:       saved.dungeonPlan,
       };
+      if (merged.dungeonPlan) return merged;
+      backupPrePlanSave(raw);
+      return migrateToDungeonPlan(merged);
     } catch { /* fall through */ }
   }
   return defaultGameState();
+}
+
+/** 옛 3×3 세이브를 처음 이전할 때 원본을 한 번 보관한다(되돌림 대비). 저장 공간 부족은 이전을 막지 않는다. */
+const PRE_PLAN_BACKUP_KEY = 'dungeonGameState_prePlan';
+
+function backupPrePlanSave(raw: string): void {
+  try {
+    if (localStorage.getItem(PRE_PLAN_BACKUP_KEY) === null) localStorage.setItem(PRE_PLAN_BACKUP_KEY, raw);
+  } catch { /* backup is best-effort */ }
 }
 
 export function saveGameState(state: GameState): void {
@@ -565,11 +588,12 @@ export function importGameState(encoded: string): { success: boolean; error?: st
       stageProgress: migrateStageProgress(parsed.stageProgress ?? defaults.stageProgress),
       abyss:         { ...DEFAULT_ABYSS_STATE, ...(parsed.abyss ?? {}) },
       dungeonSlots,
+      dungeonPlan:   parsed.dungeonPlan,
     };
     // Old flat exports only contain GameState progress. Replace the destination's
     // campaign too; retaining it would mix two different players' progression.
     const campaignProgress = migrateStageProgress(isBackup ? payload.campaignProgress : merged.stageProgress);
-    saveGameStateWithCampaign(merged, campaignProgress);
+    saveGameStateWithCampaign(migrateToDungeonPlan(merged), campaignProgress);
     return { success: true };
   } catch {
     return { success: false, error: '데이터 파싱 실패' };
@@ -607,6 +631,15 @@ export const MAX_DUNGEON_SLOTS = 9;
  * validates home slots — and the battle grid, which mirrors the home board —
  * must use this rather than `getUnlockedSlots` so the two never disagree.
  */
+/**
+ * 옛 3×3 세이브 → 가로 던전 배치도(열린 칸을 옛 침입 순서대로 주 통로에, 초과분은 옛 던전 허가).
+ * 이미 배치도가 있으면 같은 참조. 불러오기·세이브 복원이 쓴다.
+ */
+export function migrateToDungeonPlan(state: GameState): GameState {
+  if (state.dungeonPlan) return state;
+  return migrateLegacyDungeon(state, getUnlockedSlotCount(state), getAncestorsWisdomEffect(state).extraSlots);
+}
+
 export function getUnlockedSlotCount(state: Readonly<Pick<GameState, 'dmLevel' | 'wisdomTree'>>): number {
   const extra = BRANCH_DEFS[4].getValue(state.wisdomTree?.['ancestorsWisdom'] ?? 0);
   return Math.min(MAX_DUNGEON_SLOTS, getUnlockedSlots(state.dmLevel ?? 1) + extra);
@@ -616,9 +649,18 @@ export function getUnlockedSlotCount(state: Readonly<Pick<GameState, 'dmLevel' |
  * Derived from the existing tier: no migration, refund, or persisted conversion.
  */
 export function getAncestorsWisdomEffect(
-  state: Readonly<Pick<GameState, 'wisdomTree'> & Partial<Pick<GameState, 'dmLevel'>>>,
+  state: Readonly<Pick<GameState, 'wisdomTree'> & Partial<Pick<GameState, 'dmLevel' | 'dungeonPlan' | 'dungeonLicenses'>>>,
 ): { extraSlots: number; hpBonus: number } {
   const purchased = BRANCH_DEFS[4].getValue(state.wisdomTree?.ancestorsWisdom ?? 0);
+  if (state.dungeonPlan) {
+    // Corridor dungeon: each tier is one side-room permit. Tiers that opened old grid cells already live in the
+    // corridor (legacyWisdom); tiers past the side-room cap stay as dungeon HP.
+    const licenses = getLicenses(state);
+    const tiers = Math.max(0, purchased - licenses.legacyWisdom);
+    const room = Math.max(0, MAX_SIDE_ROOMS - getSidePermit(state.dmLevel ?? 1) - licenses.side);
+    const sideSlots = Math.min(tiers, room);
+    return { extraSlots: sideSlots, hpBonus: (tiers - sideSlots) * 20 };
+  }
   const remaining = Math.max(0, MAX_DUNGEON_SLOTS - getUnlockedSlots(state.dmLevel ?? 1));
   const extraSlots = Math.min(purchased, remaining);
   return { extraSlots, hpBonus: (purchased - extraSlots) * 20 };
@@ -752,6 +794,9 @@ export function startPrestige(state: GameState): GameState {
     subQuestProgress:       {},
     completedSubQuestIds:   [],
     dungeonSlots:           fresh.dungeonSlots,
+    // The dungeon is dug again from one room. Gem licenses are permanent; the old-grid allowances are not.
+    dungeonPlan:            fresh.dungeonPlan,
+    dungeonLicenses:        { ...getLicenses(state), legacyCorridor: 0, legacyWisdom: 0 },
     gameCompleted:          false,
     cinematicSeen:          [],           // re-watch all cinematics
     dailyDungeonCompleted:  '',

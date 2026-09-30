@@ -59,9 +59,11 @@ function branchEffect(state: GameState, branch: BranchDef, tier: number): string
   if (branch.id !== 'ancestorsWisdom') return branch.effect.replace('{value}', String(branch.getValue(tier)));
   const { extraSlots, hpBonus } = getAncestorsWisdomEffect({
     dmLevel: state.dmLevel,
+    dungeonPlan: state.dungeonPlan,
+    dungeonLicenses: state.dungeonLicenses,
     wisdomTree: { ...state.wisdomTree, ancestorsWisdom: tier },
   });
-  return `방 슬롯 +${extraSlots} · 던전 HP +${hpBonus}`;
+  return `${state.dungeonPlan ? '곁방 허가' : '방 슬롯'} +${extraSlots} · 던전 HP +${hpBonus}`;
 }
 
 export function getWisdomBranchView(state: GameState, branch: BranchDef): WisdomBranchView {

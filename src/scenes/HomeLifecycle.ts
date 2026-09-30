@@ -6,7 +6,9 @@
  *
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
-import { getDungeonRoomCount } from '../data/dungeonPlan';
+import { getDigPermitTotal, getDungeonRoomCount } from '../data/dungeonPlan';
+import { getDigSpotView } from '../data/dungeonDigView';
+import { openDigPanel } from '../ui/HomeDigPanel';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
@@ -496,7 +498,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   const prevCrystal = scene.gs.soulCrystals;
   const prevGems    = scene.gs.gems;
   const prevDmLevel = scene.gs.dmLevel;
-  const prevSlots = getDungeonRoomCount({ dmLevel: prevDmLevel, wisdomTree: scene.gs.wisdomTree });
+  const prevPermits = getDigPermitTotal(scene.gs);
 
   // A forecast card's battle settles through the card (loot + DM XP once, then
   // the card's reward and the name); any other battle settles as before.
@@ -522,8 +524,8 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   const battleReturnGrowth = {
     previousDmLevel: prevDmLevel,
     nextDmLevel: scene.gs.dmLevel,
-    previousSlots: prevSlots,
-    nextSlots: getDungeonRoomCount(scene.gs),
+    previousPermits: prevPermits,
+    nextPermits: getDigPermitTotal(scene.gs),
     questCompletionPending: !!settlement.defendUpdate?.questDone,
     materialsEarned: result.materialsEarned,
   };
@@ -584,41 +586,28 @@ export function presentBattleReturnWin(
   };
   const afterReturn = () => {
     if (!didLevelUp) { release(); return; }
-    const slotUnlocked = growth.nextSlots > growth.previousSlots;
+    const permitGained = growth.nextPermits > growth.previousPermits;
     scene.time.delayedCall(200, () => showDmLevelUpOverlay(scene, growth, {
-      primaryLabel: slotUnlocked ? '새 방 설계' : '확인',
+      primaryLabel: permitGained ? '굴착하러 가기' : '확인',
       onDismiss: () => {
-        // The quest popup restarts Home, which shows the new empty slot anyway.
+        // The quest popup restarts Home; the new dig spot is on the board anyway.
         const questShown = release();
-        if (slotUnlocked && !questShown) revealUnlockedRoom(scene, growth.previousSlots, growth.nextSlots);
+        if (permitGained && !questShown) revealDigPermit(scene);
       },
     }));
   };
   scene.time.delayedCall(400, () => showBattleReturnOverlay(scene, result, afterReturn, growth, result.callout));
 }
 
-// ─── revealUnlockedRoom ───────────────────────────────────────────────────────
+// ─── revealDigPermit ──────────────────────────────────────────────────────────
 
-export function revealUnlockedRoom(
-  scene: DungeonHomeScene,
-  previousSlots: number,
-  nextSlots: number,
-): void {
-  if (nextSlots <= previousSlots) return;
-  const slotIdx = previousSlots;
-  if (slotIdx < 0 || slotIdx >= getDungeonRoomCount(scene.gs)) return;
-
-  scene.pendingRoomFeedback = {
-    kind: 'unlock',
-    slotIdx,
-    title: '새 방 해금',
-    body: `방 #${slotIdx + 1} 설계 가능`,
-    statLabel: '방',
-    statBefore: String(previousSlots),
-    statAfter: String(nextSlots),
-    accent: 0x55b88a,
-  };
-  scene.recentlyChangedRoomIdx = slotIdx;
+/** 레벨업으로 굴착 허가가 늘면: 쓸 수 있는 굴착 자리(주 통로 끝 우선)로 보드를 옮기고 굴착 창을 연다. */
+export function revealDigPermit(scene: DungeonHomeScene): void {
+  const spots = scene.boardLayout?.digSpots ?? [];
+  const spot = spots.find(s => s.kind === 'corridor' && getDigSpotView(scene.gs, s.kind).hasPermit)
+    ?? spots.find(s => s.kind !== 'corridor' && getDigSpotView(scene.gs, s.kind).hasPermit);
+  if (!spot) return;
+  scene.boardScrollX = Math.max(0, spot.rect.x - (CANVAS_WIDTH - spot.rect.w) / 2);
   scene.refreshHomeDynamicPanels();
 
   scene.time.delayedCall(420, () => {
@@ -626,8 +615,7 @@ export function revealUnlockedRoom(
     const overlayOpen = !!scene.roomDetailState.roomDetailContainer
       || !!scene.roomDetailState.monsterPickerContainer
       || !!scene.roomDetailState.trapPickerContainer;
-    if (overlayOpen) return;
-    scene.openDungeonSlot(slotIdx);
+    if (!overlayOpen) openDigPanel(scene, spot);
   });
 }
 
@@ -665,9 +653,11 @@ export function maybeShowTutorial(scene: DungeonHomeScene): void {
 export function collectTutorialAnchors(scene: DungeonHomeScene): TutorialAnchors {
   const PILL = 8;
   const cells = [...(scene.boardLayout?.cellsByIdx.values() ?? [])];
-  const withPill = (r: TutorialRect): TutorialRect => ({ x: r.x, y: r.y - PILL, w: r.w, h: r.h + PILL });
+  // The corridor board scrolls sideways inside its container; highlights are in screen space.
+  const withPill = (r: TutorialRect): TutorialRect => ({ x: r.x - scene.boardScrollX, y: r.y - PILL, w: r.w, h: r.h + PILL });
   const first = cells.find(cell => cell.slotIdx === 0)?.rect;
-  const topRow = cells.filter(cell => cell.isUnlocked && cell.floor === 0).map(cell => cell.rect);
+  const roomRow = scene.boardLayout?.horizontal ? 1 : 0;   // corridor board: the main corridor band
+  const topRow = cells.filter(cell => cell.isUnlocked && cell.floor === roomRow).map(cell => cell.rect);
   const union = topRow.length
     ? topRow.reduce((a, r) => {
         const x = Math.min(a.x, r.x), y = Math.min(a.y, r.y);

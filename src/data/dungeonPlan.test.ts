@@ -23,6 +23,11 @@ function state(overrides: Partial<GameState> = {}): GameState {
   return { ...loadGameState(), ...overrides };
 }
 
+/** 가로 던전 이전의 세이브(배치도 없음) — 방 수가 DM 레벨의 옛 격자에서 나온다. */
+function legacyState(overrides: Partial<GameState> = {}): GameState {
+  return state({ dungeonPlan: undefined, ...overrides });
+}
+
 describe('허가 표', () => {
   it('레벨업마다가 아니라 정해진 레벨에서만, 상한까지 오른다', () => {
     expect(getCorridorPermit(1)).toBe(1);
@@ -71,11 +76,11 @@ describe('옛 3×3 격자 → 배치도', () => {
   it('배치도가 없으면 계산하고, 있으면 저장된 것을 쓴다', () => {
     const saved = { corridor: [0], sides: [] };
     expect(getDungeonPlan(state({ dmLevel: 8, dungeonPlan: saved }))).toBe(saved);
-    expect(getDungeonPlan(state({ dmLevel: 8 })).corridor).toHaveLength(9);
+    expect(getDungeonPlan(legacyState({ dmLevel: 8 })).corridor).toHaveLength(9);
   });
 
   it('이전 시 레벨 허가를 넘던 옛 칸은 옛 던전 허가로 인정해 손실이 없다', () => {
-    const migrated = migrateToDungeonPlan(state({ dmLevel: 8 }));   // 옛 9칸, 새 허가는 5칸
+    const migrated = migrateToDungeonPlan(legacyState({ dmLevel: 8 }));   // 옛 9칸, 새 허가는 5칸
     expect(migrated.dungeonPlan?.corridor).toHaveLength(9);
     expect(migrated.dungeonLicenses?.legacyCorridor).toBe(4);
     expect(getCorridorCapacity(migrated)).toBe(9);
@@ -116,7 +121,7 @@ describe('굴착 거래', () => {
   });
 
   it('배치도가 없던 옛 세이브는 굴착할 때 옛 던전 허가와 함께 이전된다', () => {
-    const legacy = state({ dmLevel: 8, homeGold: 100_000 });  // 옛 9칸, 새 허가 5칸
+    const legacy = legacyState({ dmLevel: 8, homeGold: 100_000 });  // 옛 9칸, 새 허가 5칸
     const result = digCorridorRoom(legacy);
     expect(result).toMatchObject({ ok: false, reason: 'no_permit' });  // 9칸이 이미 허가(5+옛 4)를 다 채움
     expect(result.state).toBe(legacy);                                 // 거절은 저장을 바꾸지 않는다
@@ -173,7 +178,7 @@ describe('칸 번호 연속 불변식', () => {
 
   it('옛 세이브의 방 수는 옛 열린 칸 수와 같다', () => {
     for (const dmLevel of [1, 2, 4, 6, 8, 20]) {
-      expect(getDungeonRoomCount(state({ dmLevel }))).toBe(planFromLegacyGrid(state({ dmLevel })).corridor.length);
+      expect(getDungeonRoomCount(legacyState({ dmLevel }))).toBe(planFromLegacyGrid(state({ dmLevel })).corridor.length);
     }
   });
 });

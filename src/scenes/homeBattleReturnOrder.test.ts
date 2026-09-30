@@ -28,7 +28,7 @@ function scene() {
   });
   return s;
 }
-const growth = { previousDmLevel: 2, nextDmLevel: 2, previousSlots: 4, nextSlots: 4, questCompletionPending: true };
+const growth = { previousDmLevel: 2, nextDmLevel: 2, previousPermits: 4, nextPermits: 4, questCompletionPending: true };
 const result = { won: true, goldEarned: 30, dmXP: 150 };
 
 beforeEach(() => {

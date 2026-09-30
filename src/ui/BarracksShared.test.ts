@@ -127,6 +127,7 @@ describe('getMonsterRoomPlan', () => {
       { ...makeCombatSlot([]), roomType: 'magic' },
     ]);
     gs.dmLevel = 2;
+    gs.dungeonPlan = { corridor: [0, 1], sides: [] };
 
     const plan = getMonsterRoomPlan(gs, m);
     expect(plan.kind).toBe('recommended');

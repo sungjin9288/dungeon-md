@@ -189,7 +189,8 @@ describe('getDefenseTotals', () => {
 
   it('sums totalPower across rooms', () => {
     const gs = makeGs({
-      dmLevel: 2, // unlocks 2 slots
+      dmLevel: 2,
+      dungeonPlan: { corridor: [0, 1], sides: [] },
       dungeonSlots: [
         makeCombatSlot({ monsterIds: ['dokkaebi_warrior'] }),
         makeCombatSlot({ roomType: 'trap', trapIds: ['spike_trap'] }),

@@ -72,7 +72,8 @@ EndlessResultScene        엔드리스 결과
 - **`importGameState()`** — Base64 세이브 복원 (동일 마이그레이션 적용)
 - **`StageProgressEntry`** — `{ unlocked, bestStars, bestHpPercent? }` (StageSelectScene과 공유)
 - **`WisdomBonuses`** — 지혜의 나무 보너스 계산
-- **`getUnlockedSlots(dmLevel)`** — DM레벨 → 방 슬롯 수
+- **`getUnlockedSlots(dmLevel)`** — 옛 3×3 격자의 DM레벨 → 슬롯 수(옛 세이브 이전·캠페인 모델 전용)
+- **`migrateToDungeonPlan()`** — 불러오기·복원 시 옛 세이브를 가로 던전 배치도로 이전(원본은 `dungeonGameState_prePlan`에 한 번 보관)
 
 ### `src/scenes/StageSelectScene.ts`
 - **`STAGE_CONFIGS[90]`** — stageNumber 1–90, slots, chapter, bossWave (Ch1–Ch9)
@@ -130,7 +131,10 @@ EndlessResultScene        엔드리스 결과
   직전 기록 없는 독립 조회는 기존 무작위 큐를 반환한다. DPS·전술적 난이도·승률 보장이 아니다.
 - 검증과 이전 간헐 실패의 해결 근거는 결함 스윕 인계 §15.
 
-### 선조의 지혜 (2026-09-22)
+### 선조의 지혜 (2026-09-22, 가로 던전 2026-09-30)
+- **가로 던전(배치도 있음)**: 등급마다 **곁방 허가 +1**. 곁방 상한 12(레벨 허가 + 보석 허가증 + 지혜)를
+  넘는 등급만 던전 HP +20. 옛 격자에서 이미 칸을 연 등급(`dungeonLicenses.legacyWisdom`)은 주 통로에
+  들어가 있으므로 다시 세지 않는다. 아래는 배치도 없는 옛 상태의 규칙이다.
 - 9칸 보드에 들어가는 지혜 슬롯은 기존대로 해금하고, 초과 슬롯당 던전 최대 HP +20을 준다.
   `getAncestorsWisdomEffect`가 DM 레벨·기존 투자 등급에서 매번 계산한다. DM8 이상 5등급은 +100 HP.
 - `getWisdomBonuses.extraSlots`는 실제 추가 슬롯 수, `dungeonMaxHpBonus`는 강인한 성벽과
@@ -165,9 +169,11 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 - 전투 골드 = **전리품**. 0에서 시작해 처치·웨이브 보상으로만 쌓이고, 소비처는
   긴급 수리뿐. 정산 시 남은 전리품이 `homeGold`로 귀속(`applyBattleReturnSettlement`).
   `StageConfig.startGold`는 존재하지 않는다.
-- 슬롯 수의 단일 진실원은 `getUnlockedSlotCount(state)`(DM 레벨 + 지혜 `선조의
-  지혜`, 9 캡). 홈 보드·전투 그리드·추천·직렬화 전부 이 함수를 쓴다. 스테이지
-  설정에 슬롯 수를 넣지 말 것.
+- 던전 구조의 단일 진실원은 **배치도** `GameState.dungeonPlan`(주 통로 순서 + 곁방, `dungeonPlan.ts`,
+  설계 `docs/design/DUNGEON_EXPANSION_DESIGN.md`). 방 수는 `getDungeonRoomCount`, 순서는
+  `getDungeonPlan(state).corridor`. 새 게임은 주 통로 1칸, 방은 레벨 **허가** 안에서 골드로 **굴착**하고
+  보석 **허가증**으로 한계를 넘긴다(최대 주 통로 12 · 곁방 12). 레벨업은 방이 아니라 허가를 준다.
+  `getUnlockedSlotCount`는 옛 3×3 세이브 이전용이다. 스테이지 설정에 슬롯 수를 넣지 말 것.
 - 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). DM 게이트는 `getMaxRoomLevel`:
   **Lv2는 DM3**, Lv3 DM10, Lv4 DM15, Lv5 DM20. UI의 필요 DM 안내는 `getDmLevelForRoomLevel`로 게이트에서 역산한다(표를 복사하지 말 것). Lv2가 DM5에 있던 동안 스테이지
   5~7 lean은 organic 1/5 승이었다 — 그 구간에서 방어가 자랄 길이 수호자 레벨뿐인데

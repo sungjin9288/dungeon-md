@@ -7,71 +7,22 @@
  *
  * 레벨은 "허가", 골드는 "굴착비", 보석은 "특전(추가 허가증)"이다. 순수 함수만 둔다(Phaser 없음).
  */
-import { getUnlockedSlotCount, type GameState } from './wisdom';
+import {
+  MAX_CORRIDOR_ROOMS,
+  MAX_SIDE_ROOMS,
+  getCorridorPermit,
+  getLicenses,
+  getSidePermit,
+  legacyGridPlan,
+  type DungeonPlan,
+  type SideDir,
+} from './dungeonPlanRules';
+import { getAncestorsWisdomEffect, getUnlockedSlotCount, migrateToDungeonPlan as migrateToDungeonPlanRules, type GameState } from './wisdom';
 
-export type SideDir = 'up' | 'down';
+export * from './dungeonPlanRules';
 
-/** 주 통로 `anchor`번째 방의 위 또는 아래에 붙은 곁방. `slot`은 dungeonSlots 인덱스. */
-export interface SideRoom {
-  readonly slot: number;
-  readonly anchor: number;
-  readonly side: SideDir;
-}
 
-export interface DungeonPlan {
-  /** 입구에서 심장부 순서의 dungeonSlots 인덱스. 침입자가 이 순서로 지난다. */
-  readonly corridor: readonly number[];
-  readonly sides: readonly SideRoom[];
-}
-
-export interface DungeonLicenses {
-  /** 보석으로 산 주 통로 추가 허가(최대 MAX_CORRIDOR_LICENSES). */
-  readonly corridor: number;
-  /** 보석으로 산 곁방 추가 허가(최대 MAX_SIDE_LICENSES). */
-  readonly side: number;
-  /** 옛 3×3 던전에서 이전할 때 레벨 허가를 넘던 칸 — 손실 없이 인정한다. */
-  readonly legacyCorridor: number;
-}
-
-// ─── 허가 표 ─────────────────────────────────────────────────────────────────
-
-/** [DM 레벨, 주 통로 허가 칸 수] — 레벨업마다가 아니라 정해진 레벨에서만 오른다. */
-export const CORRIDOR_PERMIT_LEVELS: readonly (readonly [number, number])[] = [
-  [1, 1], [2, 2], [3, 3], [5, 4], [7, 5], [9, 6], [12, 7], [15, 8], [18, 9], [22, 10],
-];
-/** [DM 레벨, 곁방 허가 칸 수]. */
-export const SIDE_PERMIT_LEVELS: readonly (readonly [number, number])[] = [
-  [4, 1], [6, 2], [8, 3], [11, 4], [14, 5], [17, 6], [20, 7], [24, 8],
-];
-
-export const MAX_CORRIDOR_LICENSES = 2;
-export const MAX_SIDE_LICENSES = 4;
-/** 보석 특전 가격(n번째 허가증). */
-export const CORRIDOR_LICENSE_GEMS: readonly number[] = [300, 600];
-export const SIDE_LICENSE_GEMS: readonly number[] = [200, 300, 400, 500];
-
-export const MAX_CORRIDOR_ROOMS = 10 + MAX_CORRIDOR_LICENSES;   // 12
-export const MAX_SIDE_ROOMS = 8 + MAX_SIDE_LICENSES;            // 12
-
-const EMPTY_LICENSES: DungeonLicenses = { corridor: 0, side: 0, legacyCorridor: 0 };
-
-function permitFrom(table: readonly (readonly [number, number])[], dmLevel: number): number {
-  let count = 0;
-  for (const [level, value] of table) if (dmLevel >= level) count = value;
-  return count;
-}
-
-export function getCorridorPermit(dmLevel: number): number {
-  return permitFrom(CORRIDOR_PERMIT_LEVELS, dmLevel);
-}
-
-export function getSidePermit(dmLevel: number): number {
-  return permitFrom(SIDE_PERMIT_LEVELS, dmLevel);
-}
-
-export function getLicenses(state: Readonly<Pick<GameState, 'dungeonLicenses'>>): DungeonLicenses {
-  return { ...EMPTY_LICENSES, ...(state.dungeonLicenses ?? {}) };
-}
+// ─── 수용량 ───────────────────────────────────────────────────────────────────
 
 /** 지금 가질 수 있는 주 통로 칸 수(레벨 허가 + 보석 허가증 + 옛 던전 허가). */
 export function getCorridorCapacity(state: Readonly<Pick<GameState, 'dmLevel' | 'dungeonLicenses'>>): number {
@@ -80,51 +31,36 @@ export function getCorridorCapacity(state: Readonly<Pick<GameState, 'dmLevel' | 
   return Math.min(MAX_CORRIDOR_ROOMS + licenses.legacyCorridor, capacity);
 }
 
-/** 곁방 칸 수(레벨 허가 + 보석 허가증). */
-export function getSideCapacity(state: Readonly<Pick<GameState, 'dmLevel' | 'dungeonLicenses'>>): number {
+/** 곁방 칸 수(레벨 허가 + 보석 허가증 + 선조의 지혜). */
+export function getSideCapacity(
+  state: Readonly<Pick<GameState, 'dmLevel' | 'dungeonLicenses' | 'dungeonPlan' | 'wisdomTree'>>,
+): number {
   const licenses = getLicenses(state);
-  return Math.min(MAX_SIDE_ROOMS, getSidePermit(state.dmLevel ?? 1) + licenses.side);
+  const wisdom = state.dungeonPlan ? getAncestorsWisdomEffect(state).extraSlots : 0;
+  return Math.min(MAX_SIDE_ROOMS, getSidePermit(state.dmLevel ?? 1) + licenses.side + wisdom);
 }
 
-// ─── 굴착비 ──────────────────────────────────────────────────────────────────
-
-/** n번째 칸(주 통로 + 곁방 합산, 1부터)을 파는 골드. 첫 칸은 시작 던전이라 무료. */
-export function getDigCost(nthRoom: number): number {
-  if (nthRoom <= 1) return 0;
-  return Math.round((150 * nthRoom ** 1.6) / 10) * 10;
+/** 지금 가질 수 있는 방 칸 수 합계(주 통로 + 곁방 허가). 레벨업 안내가 이 값의 변화를 보여준다. */
+export function getDigPermitTotal(
+  state: Readonly<Pick<GameState, 'dmLevel' | 'dungeonLicenses' | 'dungeonPlan' | 'wisdomTree'>>,
+): number {
+  return getCorridorCapacity(state) + getSideCapacity(state);
 }
 
 // ─── 옛 3×3 격자 → 배치도 ────────────────────────────────────────────────────
 
-/**
- * 옛 전투 경로가 격자 칸을 지나던 순서(입구 쪽 먼저): 0행 오른쪽→왼쪽, 1행 왼쪽→오른쪽, 2행 오른쪽→왼쪽.
- */
-export const LEGACY_GRID_ROUTE: readonly number[] = [2, 1, 0, 3, 4, 5, 8, 7, 6];
-
 /** 배치도가 없는 세이브: 지금 열린 격자 칸을 옛 침입 순서대로 한 줄 주 통로로 본다(현재 전투와 같다). */
 export function planFromLegacyGrid(state: Readonly<Pick<GameState, 'dmLevel' | 'wisdomTree'>>): DungeonPlan {
-  const open = getUnlockedSlotCount(state);
-  return { corridor: LEGACY_GRID_ROUTE.filter(slot => slot < open), sides: [] };
+  return legacyGridPlan(getUnlockedSlotCount(state));
 }
 
 export function getDungeonPlan(state: Readonly<Pick<GameState, 'dungeonPlan' | 'dmLevel' | 'wisdomTree'>>): DungeonPlan {
   return state.dungeonPlan ?? planFromLegacyGrid(state);
 }
 
-/**
- * 새 규칙으로 넘어갈 때 한 번: 배치도를 저장하고, 레벨 허가를 넘던 옛 칸은 "옛 던전 허가"로 인정한다.
- * 이미 배치도가 있으면 그대로 둔다(같은 참조).
- */
+/** 불러오기와 같은 이전(이미 배치도가 있으면 같은 참조). */
 export function migrateToDungeonPlan(state: GameState): GameState {
-  if (state.dungeonPlan) return state;
-  const plan = planFromLegacyGrid(state);
-  const permit = getCorridorPermit(state.dmLevel ?? 1);
-  const licenses = getLicenses(state);
-  return {
-    ...state,
-    dungeonPlan: plan,
-    dungeonLicenses: { ...licenses, legacyCorridor: Math.max(licenses.legacyCorridor, plan.corridor.length - permit) },
-  };
+  return migrateToDungeonPlanRules(state);
 }
 
 // ─── 조회 ────────────────────────────────────────────────────────────────────
