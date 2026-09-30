@@ -16,7 +16,7 @@ vi.mock('../ui/GameUiPrimitives', () => ({
 
 function object() {
   const result: Record<string, Mock<() => unknown>> = {};
-  for (const method of ['setDepth', 'setInteractive', 'add', 'fillStyle', 'fillRect', 'fillCircle', 'strokeCircle', 'setOrigin', 'lineStyle', 'lineBetween', 'setAlpha', 'destroy']) result[method] = vi.fn(() => result);
+  for (const method of ['setDepth', 'setInteractive', 'add', 'fillStyle', 'fillRect', 'fillCircle', 'strokeCircle', 'setOrigin', 'lineStyle', 'lineBetween', 'setAlpha', 'destroy', 'once']) result[method] = vi.fn(() => result);
   const live = Object.assign(result, { active: true });
   live.destroy = vi.fn(() => { live.active = false; return live; });
   return live;
