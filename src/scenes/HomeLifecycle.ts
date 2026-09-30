@@ -98,7 +98,7 @@ function autoCollectIdleIncome(scene: DungeonHomeScene, now: number): void {
     logger.warn('[IDLE] silent claim save failed; income keeps accruing', error);
     return;
   }
-  const label = reward.gold > 0 ? `운영 수익 +${reward.gold.toLocaleString('ko-KR')} 황금` : '생산 재료 적립';
+  const label = reward.gold > 0 ? `운영 수익 +${reward.gold.toLocaleString('ko-KR')} 골드` : '생산 재료 적립';
   // Home's stats ledger (26px) sits right above the root nav where the shared
   // toast default lands; lift this one clear of it.
   showToast(scene, label, { color: '#d8b869', y: ROOT_NAV_Y - 26 - 20 });
@@ -166,7 +166,7 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
 
   let cy = py + 108;
   if (reward.gold > 0) {
-    overlay.add(scene.add.text(cx, cy, `+${reward.gold.toLocaleString('ko-KR')} 황금`, {
+    overlay.add(scene.add.text(cx, cy, `+${reward.gold.toLocaleString('ko-KR')} 골드`, {
       fontFamily: 'sans-serif', fontSize: '25px', fontStyle: 'bold',
       color: '#d8b869',
     }).setOrigin(0.5));
@@ -180,7 +180,7 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
     cy += 26;
   }
 
-  overlay.add(scene.add.text(cx, cy + 5, `총 ${reward.ratePerMin.toFixed(1)} 황금/분 · 최대 ${idleCapHours(scene.gs)}시간 적립`, {
+  overlay.add(scene.add.text(cx, cy + 5, `총 ${reward.ratePerMin.toFixed(1)} 골드/분 · 최대 ${idleCapHours(scene.gs)}시간 적립`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: '#8f8779',
   }).setOrigin(0.5));
 

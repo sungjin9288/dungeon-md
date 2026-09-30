@@ -49,9 +49,9 @@ export function openDigPanel(scene: DungeonHomeScene, spot: DigSpot): void {
 
   root.add(text(x + 20, y + 18, view.title, 17, DUNGEON_UI_CSS.PARCHMENT, true));
   root.add(text(x + 20, y + 48, view.usageLine, 11, DUNGEON_UI_CSS.MUTED));
-  root.add(text(x + 20, y + 74, `굴착비 ${view.cost.toLocaleString('ko-KR')} 황금`, 14,
+  root.add(text(x + 20, y + 74, `굴착비 ${view.cost.toLocaleString('ko-KR')} 골드`, 14,
     view.canAfford ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER, true));
-  root.add(text(x + 20, y + 96, `보유 ${(scene.gs.homeGold ?? 0).toLocaleString('ko-KR')} 황금`, 11, DUNGEON_UI_CSS.MUTED));
+  root.add(text(x + 20, y + 96, `보유 ${(scene.gs.homeGold ?? 0).toLocaleString('ko-KR')} 골드`, 11, DUNGEON_UI_CSS.MUTED));
   if (view.blocker) root.add(text(x + 20, y + 118, view.blocker, 12, DUNGEON_UI_CSS.EMBER, true));
 
   const dig = addPrimaryActionButton(scene, {

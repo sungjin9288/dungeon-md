@@ -107,7 +107,7 @@ describe('Home entry after a short absence', () => {
     expect(saved.homeGold).toBe(before.homeGold + computeIdleReward({ ...before, lastIdleCollect: Date.now() - 60_000 }, Date.now()).gold);
     expect(saved.lastIdleCollect).toBe(Date.now());
     expect(scene.gs).toEqual(saved);
-    expect(showToast).toHaveBeenCalledWith(scene, expect.stringContaining('황금'), expect.anything());
+    expect(showToast).toHaveBeenCalledWith(scene, expect.stringContaining('골드'), expect.anything());
     expect(expected.gold).toBeGreaterThan(0);
   });
 

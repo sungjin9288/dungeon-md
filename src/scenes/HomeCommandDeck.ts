@@ -5,6 +5,7 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { revealDigPermit } from './HomeLifecycle';
 import { getDungeonRoomCount } from '../data/dungeonPlan';
 import { getLineageNextStep } from '../data/lineage';
 import { getHomeTodos } from '../data/homeTodos';
@@ -256,6 +257,21 @@ function getHomeDirective(
       accent: action.accent,
       slotIdx: action.slotIdx,
       onPress,
+    };
+  }
+
+  if (canonical.kind === 'dig') {
+    return {
+      icon: canonical.icon,
+      title: canonical.title,
+      body: canonical.body,
+      ctaLabel: canonical.ctaLabel,
+      statLabel: canonical.statLabel,
+      statValue: canonical.statValue,
+      accent: canonical.accent,
+      slotIdx: null,
+      // Scroll the board to the corridor end and open the dig panel (same path as a new permit).
+      onPress: () => revealDigPermit(scene),
     };
   }
 

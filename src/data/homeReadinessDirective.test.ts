@@ -131,3 +131,29 @@ describe('homeReadinessDirective', () => {
     });
   });
 });
+
+describe('dig directive — a free corridor permit outranks growth chores', () => {
+  const staffed = makeSlot('combat', { monsterIds: ['dokkaebi_warrior', 'dokkaebi_junior'], trapIds: ['spike_trap'] });
+  const base = {
+    dmLevel: 4,
+    dungeonPlan: { corridor: [0], sides: [] },
+    dungeonSlots: [staffed],
+    ownedMonsters: [makeMonster(), makeMonster({ id: 'dokkaebi_junior' })],
+  };
+
+  it('points at the corridor dig when a permit is free and affordable (the quest said 방 2개, the card said 장비)', () => {
+    const directive = getHomeReadinessDirective(makeState({ ...base, homeGold: 5000 }), 1);
+    expect(directive).toMatchObject({ kind: 'dig', destination: 'dig', roomAction: null });
+    expect(directive.body).toContain('450');
+  });
+
+  it('does not dig while the gold is short or no permit is left', () => {
+    expect(getHomeReadinessDirective(makeState({ ...base, homeGold: 10 }), 1).kind).not.toBe('dig');
+    expect(getHomeReadinessDirective(makeState({ ...base, dmLevel: 1, homeGold: 5000 }), 1).kind).not.toBe('dig');
+  });
+
+  it('urgent room work still comes first', () => {
+    const empty = makeState({ ...base, homeGold: 5000, dungeonSlots: [makeSlot('combat')] });
+    expect(getHomeReadinessDirective(empty, 1).kind).not.toBe('dig');
+  });
+});

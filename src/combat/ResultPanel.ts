@@ -182,7 +182,7 @@ function buildSuccessContent(
   scene.tweens.add({ targets: starsT, alpha: 1, duration: 300, delay: 350 });
 
   // Reward
-  const rewardT = scene.add.text(CANVAS_WIDTH / 2, cy + 106, `작전 보상 · 황금 +${reward}`, {
+  const rewardT = scene.add.text(CANVAS_WIDTH / 2, cy + 106, `작전 보상 · 골드 +${reward}`, {
     fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(rewardT);

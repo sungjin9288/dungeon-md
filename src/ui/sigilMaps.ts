@@ -94,6 +94,7 @@ export const EMOJI_SIGILS: Readonly<Record<string, { readonly kind: SigilKind; r
   '💎': { kind: 'gem', color: 0x7fd3c4 },
   '💠': { kind: 'gem', color: 0x8fb8f0 },
   '⚒': { kind: 'hammer', color: 0xd08a52 },
+  '⛏': { kind: 'hammer', color: 0x6fbf73 },
   '🔧': { kind: 'hammer', color: 0xd08a52 },
   '🔥': { kind: 'flame', color: 0xef846d },
   '⚡': { kind: 'bolt', color: 0xe8c25a },

@@ -88,7 +88,7 @@ try {
       return { gold: reward.gold, rate: reward.ratePerMin };
     });
     const rendered = await texts(page);
-    assert(rendered.some(t => t.startsWith(`총 ${expected.rate.toFixed(1)} 황금/분`)), 'total rate label');
+    assert(rendered.some(t => t.startsWith(`총 ${expected.rate.toFixed(1)} 골드/분`)), 'total rate label');
     assert(rendered.includes(`+${expected.gold.toLocaleString('ko-KR')} 황금`));
     assert(expected.rate * 60 - expected.gold >= 0 && expected.rate * 60 - expected.gold < 2);
   });
