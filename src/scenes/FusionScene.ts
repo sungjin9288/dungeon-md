@@ -23,7 +23,9 @@ import {
   buildAbsorptionTab,
   buildCombinationTab,
   buildAwakeningTab,
+  rememberFusionSources,
 } from '../ui/FusionTabs';
+import { FUSION_EVOLVE_ID_KEY, FUSION_RETURN_SCENE_KEY, pickEvolutionMaterials } from '../data/fusionCandidates';
 
 const HEADER_H = 58;
 const RESOURCE_H = 38;
@@ -47,6 +49,7 @@ export class FusionScene extends Phaser.Scene {
   private headerContainer?: Phaser.GameObjects.Container;
   private transactionInFlight = false;
   private codexOpen = false;
+  private returnScene = 'DungeonHomeScene';
 
   private evoSlots: (OwnedMonster | null)[] = [null, null, null];
   private absorbTarget: OwnedMonster | null = null;
@@ -60,7 +63,8 @@ export class FusionScene extends Phaser.Scene {
 
   create(): void {
     this.activeTab = '진화';
-    this.evoSlots = [null, null, null];
+    this.evoSlots = this.consumeEvolveHandoff();
+    this.returnScene = this.consumeReturnScene();
     this.absorbTarget = null;
     this.absorbSacrifices = [];
     this.combineSlots = [null, null];
@@ -83,6 +87,24 @@ export class FusionScene extends Phaser.Scene {
       this.headerContainer = undefined;
     });
     if (!getReducedMotion()) this.cameras.main.fadeIn(160, 0, 0, 0);
+  }
+
+  /** 병영 상세 '진화 가능'에서 왔으면 그 종류의 재료 3체로 진화 슬롯을 채운다(한 번 쓰고 지움). */
+  private consumeEvolveHandoff(): (OwnedMonster | null)[] {
+    const id = this.registry.get(FUSION_EVOLVE_ID_KEY);
+    this.registry.remove(FUSION_EVOLVE_ID_KEY);
+    if (typeof id !== 'string') return [null, null, null];
+    const owned = loadGameState().ownedMonsters ?? [];
+    const picked = pickEvolutionMaterials(owned, id);
+    if (picked.length === 0) return [null, null, null];
+    rememberFusionSources(owned);
+    return picked;
+  }
+
+  private consumeReturnScene(): string {
+    const scene = this.registry.get(FUSION_RETURN_SCENE_KEY);
+    this.registry.remove(FUSION_RETURN_SCENE_KEY);
+    return scene === 'BarracksScene' ? scene : 'DungeonHomeScene';
   }
 
   private pickInitialAwakeningTarget(): OwnedMonster | null {
@@ -148,11 +170,11 @@ export class FusionScene extends Phaser.Scene {
       onPress: () => {
         if (this.transactionInFlight || this.codexOpen) return;
         if (getReducedMotion()) {
-          this.scene.start('DungeonHomeScene');
+          this.scene.start(this.returnScene);
           return;
         }
         this.cameras.main.fadeOut(160, 0, 0, 0);
-        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('DungeonHomeScene'));
+        this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start(this.returnScene));
       },
     });
     c.add([back.bg, back.text, back.zone]);

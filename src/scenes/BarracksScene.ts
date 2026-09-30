@@ -15,6 +15,7 @@ import {
   type MonsterId,
 } from '../data/monsters';
 import { getOwnedMonsterBattleAtk } from '../data/barracks';
+import { FUSION_EVOLVE_ID_KEY, FUSION_RETURN_SCENE_KEY } from '../data/fusionCandidates';
 import { showMonsterDetailPanel, showSkillShopPanel, type MonsterDetailTab } from '../ui/MonsterDetailPanel';
 
 import {
@@ -469,6 +470,12 @@ export class BarracksScene extends Phaser.Scene {
           if (this.focusRoomSlotIdx !== null) this.registry.set('focusRoomSlotIdx', this.focusRoomSlotIdx);
           this.scene.start('ForgeScene');
         },
+        onOpenFusion: (monster) => {
+          this.detailOverlay = undefined;
+          this.registry.set(FUSION_EVOLVE_ID_KEY, monster.id);
+          this.registry.set(FUSION_RETURN_SCENE_KEY, 'BarracksScene');
+          this.scene.start('FusionScene');
+        },
         onReturnToRoom: this.focusRoomSlotIdx !== null
           ? () => this.returnToFocusedRoom()
           : undefined,
@@ -577,7 +584,10 @@ export class BarracksScene extends Phaser.Scene {
         this.scene.start('CodexScene');
       } },
       { label: '소환', action: 'summon', onPress: () => this.scene.start('SummonScene') },
-      { label: '융합', action: 'fusion', onPress: () => this.scene.start('FusionScene') },
+      { label: '융합', action: 'fusion', onPress: () => {
+        this.registry.set(FUSION_RETURN_SCENE_KEY, 'BarracksScene');
+        this.scene.start('FusionScene');
+      } },
       { label: '스킬', action: 'skill', onPress: () => this.showSkillShop() },
       { label: '상점', action: 'shop', onPress: () => this.scene.start('ShopScene') },
     ];

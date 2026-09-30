@@ -5,6 +5,10 @@ import type { OwnedMonster } from './barracks';
 import { getNextEvolution } from './fusion';
 
 export const EVOLUTION_MATERIALS = 3;
+/** registry 인계 — 다른 화면(병영 상세)에서 합성 의식실을 이 종류의 재료로 채워 열 때. */
+export const FUSION_EVOLVE_ID_KEY = 'fusionEvolveId';
+/** registry 인계 — 합성 의식실 '← 귀환'이 돌아갈 씬(없으면 홈). */
+export const FUSION_RETURN_SCENE_KEY = 'fusionReturnScene';
 
 export interface EvolutionCandidate {
   readonly id: string;

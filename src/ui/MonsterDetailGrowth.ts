@@ -16,6 +16,7 @@ import {
   shortenLabel,
 } from './MonsterDetailShared';
 import { drawGrowthSigil } from './BarracksSkin';
+import { onReleaseTap } from './releaseTap';
 
 // ─── Hero Collection Badges ───────────────────────────────────────────────────
 
@@ -193,6 +194,16 @@ export function buildGrowthCommandPanel(
   }).setOrigin(0, 0.5);
   fitTextToWidth(body, skillSlotLabel.x - skillSlotLabel.width - 8 - body.x);
   ov.add(body);
+
+  const openFusion = ctx.onOpenFusion;
+  if (directive.action === 'evolve' && openFusion) {
+    // The whole route card is the button (48px tall); release-tap so a press that
+    // started on the tab strip above cannot fire it.
+    const zone = scene.add.zone(x + w / 2, y + 24, w, 48).setInteractive({ useHandCursor: true })
+      .setName('monster-detail-evolve');
+    onReleaseTap(zone, () => openFusion(m));
+    ov.add(zone);
+  }
 }
 
 /** Trim a one-line text with an ellipsis until it fits `maxW` logical px. */

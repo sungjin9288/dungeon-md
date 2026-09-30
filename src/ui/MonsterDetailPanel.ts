@@ -273,6 +273,12 @@ export function showMonsterDetailPanel(
           ctx.onOpenForge?.(target);
         }
       : undefined,
+    onOpenFusion: ctx.onOpenFusion
+      ? (target) => {
+          if (ov.active) ov.destroy();
+          ctx.onOpenFusion?.(target);
+        }
+      : undefined,
   };
 
   const renderGrowthBody = (container: Phaser.GameObjects.Container): void => {

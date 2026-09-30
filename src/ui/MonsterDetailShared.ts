@@ -18,6 +18,8 @@ import {
   xpToNextLevel,
   type SkillTree,
 } from '../data/barracks';
+import { getMonsterDisplayName, getNextEvolution } from '../data/fusion';
+import { EVOLUTION_MATERIALS } from '../data/fusionCandidates';
 
 // ─── Re-exported type ─────────────────────────────────────────────────────────
 
@@ -30,6 +32,8 @@ export interface MonsterDetailContext {
   /** Re-open after a commit; `tab` keeps the player on the tab they acted in. */
   onRefresh: (m: OwnedMonster, tab?: MonsterDetailTab) => void;
   onOpenForge?: (m: OwnedMonster) => void;
+  /** 진화 지시를 누르면 — 합성 의식실을 이 몬스터의 재료 3체로 채워 연다. */
+  onOpenFusion?: (m: OwnedMonster) => void;
   onReturnToRoom?: () => void;
 }
 
@@ -109,6 +113,8 @@ export type GrowthDirective = {
   title: string;
   body: string;
   accent: number;
+  /** 'evolve' — 같은 몬스터가 3체 모였다. 패널을 누르면 합성 의식실(재료 채움)로 간다. */
+  action?: 'evolve';
 };
 
 // ─── Pure helpers — collection meta ──────────────────────────────────────────
@@ -154,6 +160,16 @@ export function getGrowthDirective(
   gs: GameState,
   xpPct: number,
 ): GrowthDirective {
+  const evolution = getNextEvolution(m.id);
+  const copies = (gs.ownedMonsters ?? []).filter(owned => owned.id === m.id).length;
+  if (evolution && copies >= EVOLUTION_MATERIALS) {
+    return {
+      title: `진화 가능 · ${copies}체 ›`,
+      body:  `→ ${getMonsterDisplayName(evolution.resultId)}`,
+      accent: CASUAL.GREEN,
+      action: 'evolve',
+    };
+  }
   const nextNode = tree?.nodes.find(node => {
     const spent     = (m.spentSkills[node.id] ?? 0) >= 1;
     const prereqMet = !node.requires || (m.spentSkills[node.requires] ?? 0) >= 1;

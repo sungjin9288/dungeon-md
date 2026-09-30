@@ -164,6 +164,16 @@ describe('formatCraftedStatLine', () => {
 // ─── getGrowthDirective ───────────────────────────────────────────────────────
 
 describe('getGrowthDirective', () => {
+  it('puts evolution first once three copies of an evolvable kind are owned', () => {
+    const m   = makeMonster({ skillPoints: 10, spentSkills: {} });
+    const three = makeGs({ ownedMonsters: [m, makeMonster(), makeMonster()] });
+    const dir = getGrowthDirective(m, undefined, three, 0.9);
+    expect(dir.action).toBe('evolve');
+    expect(dir.title).toBe('진화 가능 · 3체 ›');
+    const two = makeGs({ ownedMonsters: [m, makeMonster()] });
+    expect(getGrowthDirective(m, undefined, two, 0.9).action).toBeUndefined();
+  });
+
   it('suggests skill growth when a spendable node is available', () => {
     const m   = makeMonster({ skillPoints: 10, spentSkills: {} });
     const gs  = makeGs();
