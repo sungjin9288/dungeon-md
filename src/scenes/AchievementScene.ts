@@ -76,11 +76,10 @@ const STATUS_Y = 76;
 const CATEGORY_Y = 144;
 const ARCHIVE_Y = 246;
 const RECORDS_Y = 306;
-const RECORD_H = 64;
-const RECORD_GAP = 8;
-const DETAIL_Y = 524;
+const RECORD_H = 72;
+const RECORD_GAP = 6;
 const COMMAND_Y = 728;
-const RECORDS_PER_PAGE = 3;
+const RECORDS_PER_PAGE = 5;
 const TRANSACTION_COOLDOWN_MS = 250;
 
 function now(): number {
@@ -131,7 +130,6 @@ export class AchievementScene extends Phaser.Scene {
     this.drawStatusRail();
     this.drawCategorySeals();
     this.drawArchivePage(records);
-    this.drawSelectedRecord(records);
     this.drawCommands();
   }
 
@@ -340,18 +338,23 @@ export class AchievementScene extends Phaser.Scene {
     addSigil(this, ACHIEVEMENT_CATEGORY_SIGILS[def.category], PANEL_X + 30, y + RECORD_H / 2, 28,
       state === 'claimed' ? DUNGEON_UI.JADE : state === 'claimable' ? DUNGEON_UI.BRASS_BRIGHT : DUNGEON_UI.BRASS,
       { alpha: state === 'progress' ? 0.72 : 1 });
-    this.add.text(PANEL_X + 54, y + 18, def.name, {
+    this.add.text(PANEL_X + 54, y + 15, def.name, {
       fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 12, y + 18, this.getStateLabel(state), {
+    // The description used to live only in a separate detail panel under three cards; it rides on the card now.
+    this.add.text(PANEL_X + 54, y + 25, def.description, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
+      wordWrap: { width: PANEL_W - 66 }, lineSpacing: 1, maxLines: 2,
+    });
+    this.add.text(PANEL_X + PANEL_W - 12, y + 15, this.getStateLabel(state), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: state === 'claimable' ? DUNGEON_UI_CSS.BRASS : state === 'claimed' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5);
 
     addProgressBar(this, {
       x: PANEL_X + 54,
-      y: y + 39,
-      w: 168,
+      y: y + 55,
+      w: 150,
       h: 7,
       ratio: progress.ratio,
       fillColor: state === 'claimable' || state === 'claimed' ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
@@ -359,12 +362,12 @@ export class AchievementScene extends Phaser.Scene {
       borderColor: DUNGEON_UI.EDGE,
       animate: false,
     });
-    this.add.text(PANEL_X + PANEL_W - 12, y + 43, `${this.formatNumber(progress.current)} / ${this.formatNumber(def.target)}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(1, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 12, y + 55, this.formatReward(def), {
+    const reward = this.add.text(PANEL_X + PANEL_W - 12, y + 59, this.formatReward(def), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: state === 'claimed' ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.BRASS,
+    }).setOrigin(1, 0.5);
+    this.add.text(reward.x - reward.width - 8, y + 59, `${this.formatNumber(progress.current)} / ${this.formatNumber(def.target)}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5);
 
     const zone = this.add.zone(PANEL_X, y, PANEL_W, RECORD_H).setOrigin(0)
@@ -375,87 +378,6 @@ export class AchievementScene extends Phaser.Scene {
       this.selectedId = def.id;
       this.render();
     });
-  }
-
-  private drawSelectedRecord(records: readonly AchievementDef[]): void {
-    const selected = records.find(def => def.id === this.selectedId) ?? records[0];
-    const state = selected ? this.getRecordState(selected) : 'progress';
-    const tone = state === 'claimable'
-      ? DUNGEON_UI.BRASS
-      : state === 'claimed'
-        ? DUNGEON_UI.JADE
-        : DUNGEON_UI.IRON;
-
-    addFramedPanel(this, {
-      x: PANEL_X,
-      y: DETAIL_Y,
-      w: PANEL_W,
-      h: 194,
-      fillColor: DUNGEON_UI.STONE_RAISED,
-      borderColor: tone,
-      accentColor: tone,
-      glowColor: tone,
-      glowOpacity: state === 'claimable' ? 0.06 : 0.02,
-    });
-
-    if (!selected) {
-      this.add.text(CANVAS_WIDTH / 2, DETAIL_Y + 78, '선택 가능한 기록이 없습니다', {
-        fontFamily: 'sans-serif', fontSize: '12px', color: DUNGEON_UI_CSS.MUTED,
-      }).setOrigin(0.5);
-      return;
-    }
-
-    const progress = this.getProgress(selected);
-    addSigil(this, ACHIEVEMENT_CATEGORY_SIGILS[selected.category], PANEL_X + 30, DETAIL_Y + 22, 22, tone, { disc: false });
-    this.add.text(PANEL_X + 46, DETAIL_Y + 22, selected.name, {
-      fontFamily: 'sans-serif', fontSize: '15px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
-    }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 16, DETAIL_Y + 22, this.getStateLabel(state), {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: state === 'claimable' ? DUNGEON_UI_CSS.BRASS : state === 'claimed' ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(1, 0.5);
-    this.add.text(PANEL_X + 18, DETAIL_Y + 49, selected.description, {
-      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
-      wordWrap: { width: PANEL_W - 36 }, lineSpacing: 2,
-    }).setOrigin(0, 0.5);
-
-    addProgressBar(this, {
-      x: PANEL_X + 18,
-      y: DETAIL_Y + 72,
-      w: PANEL_W - 36,
-      h: 9,
-      ratio: progress.ratio,
-      fillColor: state === 'claimable' || state === 'claimed' ? DUNGEON_UI.JADE : DUNGEON_UI.BRASS,
-      trackColor: DUNGEON_UI.SOOT,
-      borderColor: DUNGEON_UI.EDGE,
-      animate: false,
-    });
-    this.add.text(PANEL_X + 18, DETAIL_Y + 95, `진행 ${this.formatNumber(progress.current)} / ${this.formatNumber(selected.target)}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 18, DETAIL_Y + 95, `보상 ${this.formatReward(selected)}`, {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: state === 'claimed' ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.BRASS,
-    }).setOrigin(1, 0.5);
-
-    const receiptTone = this.receipt?.tone === 'warning'
-      ? DUNGEON_UI.EMBER
-      : this.receipt
-        ? DUNGEON_UI.JADE
-        : DUNGEON_UI.IRON;
-    const receiptG = this.add.graphics();
-    receiptG.fillStyle(DUNGEON_UI.SOOT, 0.8);
-    receiptG.fillRoundedRect(PANEL_X + 14, DETAIL_Y + 112, PANEL_W - 28, 66, 7);
-    receiptG.lineStyle(1, receiptTone, this.receipt ? 0.9 : 0.65);
-    receiptG.strokeRoundedRect(PANEL_X + 14, DETAIL_Y + 112, PANEL_W - 28, 66, 7);
-    this.add.text(PANEL_X + 26, DETAIL_Y + 130, this.receipt?.title ?? '보상 기록 대기', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + 26, DETAIL_Y + 157, this.receipt?.detail ?? '수령 결과와 재화 변동이 이곳에 유지됩니다', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
-      wordWrap: { width: PANEL_W - 52 }, lineSpacing: 2,
-    }).setOrigin(0, 0.5);
   }
 
   private drawCommands(): void {
@@ -473,9 +395,14 @@ export class AchievementScene extends Phaser.Scene {
       borderColor: selectedClaimable ? DUNGEON_UI.BRASS : DUNGEON_UI.IRON,
       shadowOpacity: 0.24,
     });
-    this.add.text(PANEL_X + 16, COMMAND_Y + 19, selectedClaimable ? '선택 기록의 보상을 회수할 수 있습니다' : this.commandStatus(selected), {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: selectedClaimable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
+    // 방금 한 수령의 결과가 있으면 그것을, 없으면 선택 기록의 상태를 한 줄로(재화 변동은 상단 '보유 재화').
+    const status = this.receipt?.title
+      ?? (selectedClaimable ? '선택 기록의 보상을 회수할 수 있습니다' : this.commandStatus(selected));
+    const statusColor = this.receipt
+      ? (this.receipt.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE)
+      : selectedClaimable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED;
+    this.add.text(PANEL_X + 16, COMMAND_Y + 19, status, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: statusColor,
     }).setOrigin(0, 0.5);
 
     const gap = 8;

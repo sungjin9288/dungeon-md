@@ -117,3 +117,27 @@ export function isWisdomUpgradeSnapshotCurrent(
     && view.cost === snapshot.cost
     && state.soulCrystals === snapshot.soulCrystals;
 }
+
+export type WisdomTierStatus = 'owned' | 'next' | 'locked';
+
+export interface WisdomTierRow {
+  readonly tier: number;
+  readonly effect: string;
+  readonly cost: number;
+  readonly status: WisdomTierStatus;
+}
+
+/** 한 가호의 1~5등급 전체 — 각 등급을 올렸을 때의 누적 효과, 그 등급의 결정 값, 보유/다음/잠김. */
+export function getWisdomTierLadder(state: GameState, branch: BranchDef): WisdomTierRow[] {
+  const owned = getWisdomBranchView(state, branch).tier;
+  return Array.from({ length: MAX_WISDOM_TIER }, (_, index) => {
+    const tier = index + 1;
+    return {
+      tier,
+      effect: branchEffect(state, branch, tier),
+      cost: branch.costPerTier[index] ?? 0,
+      status: tier <= owned ? 'owned' : tier === owned + 1 ? 'next' : 'locked',
+    };
+  });
+}
+

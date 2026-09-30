@@ -21,6 +21,7 @@ import { ROOM_DEFS, ROOM_FAMILY, type RoomType } from '../data/rooms';
 import {
   PREMIUM_BUILDING_GEMS,
   getSlotBuilding,
+  getSlotBuildingName,
   listLockedPremiumBuildings,
   listUnlockedBuildings,
   purchasePremiumBuilding,
@@ -179,7 +180,7 @@ function render(): void {
 
   // ── Header row 1: title + 상세/닫기 ──────────────────────────────────────
   const lv = slot?.roomLevel ?? 1;
-  c.add(scene.add.text(20, TRAY_Y + 11, `방 #${activeSlot + 1}  ·  ${typeDef ? typeDef.name : '미설계'}`, {
+  c.add(scene.add.text(20, TRAY_Y + 11, `방 #${activeSlot + 1}  ·  ${typeDef && slot ? getSlotBuildingName(slot, typeDef.name) : '미설계'}`, {
     fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f0e6c8', fontStyle: 'bold',
   }).setDepth(122));
   if (ctxRef?.startSwap && countRooms(getDungeonPlan(gs)) >= 2) {

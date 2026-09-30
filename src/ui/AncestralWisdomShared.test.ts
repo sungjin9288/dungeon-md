@@ -5,6 +5,7 @@ import {
   getWisdomBranchView,
   getWisdomLineageBranches,
   getWisdomSummary,
+  getWisdomTierLadder,
   isWisdomUpgradeSnapshotCurrent,
 } from './AncestralWisdomShared';
 
@@ -111,4 +112,16 @@ describe('선조의 지혜 실제 효과 표시와 승인', () => {
     expect(isWisdomUpgradeSnapshotCurrent(state, snapshot)).toBe(true);
     expect(isWisdomUpgradeSnapshotCurrent({ ...state, dmLevel: 24 }, snapshot)).toBe(false);
   });
+
+  it('등급표: 5등급 효과·비용과 보유/다음/잠김 상태', () => {
+    const state = loadGameState();
+    state.wisdomTree = { ...state.wisdomTree, goldHands: 2 };
+    const branch = BRANCH_DEFS.find(candidate => candidate.id === 'goldHands')!;
+    const ladder = getWisdomTierLadder(state, branch);
+    expect(ladder).toHaveLength(MAX_WISDOM_TIER);
+    expect(ladder.map(row => row.status)).toEqual(['owned', 'owned', 'next', 'locked', 'locked']);
+    expect(ladder.map(row => row.cost)).toEqual(branch.costPerTier);
+    expect(ladder[2].effect).toBe(getWisdomBranchView(state, branch).nextEffect);
+  });
 });
+

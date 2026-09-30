@@ -29,6 +29,7 @@ import { formatHudResourceValue } from '../ui/HudResourceFormatting';
 import {
   WISDOM_LINEAGES,
   getWisdomBranchView,
+  getWisdomTierLadder,
   getWisdomLineageBranches,
   getWisdomSummary,
   isWisdomUpgradeSnapshotCurrent,
@@ -318,31 +319,28 @@ export class AncestralWisdomScene extends Phaser.Scene {
       color: view.canUpgrade ? DUNGEON_UI_CSS.BRASS : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(1, 0.5);
 
-    const receiptTone = this.receipt?.tone === 'warning'
-      ? DUNGEON_UI.EMBER
-      : this.receipt
-        ? DUNGEON_UI.JADE
-        : DUNGEON_UI.IRON;
-    const receiptG = this.add.graphics();
-    receiptG.fillStyle(DUNGEON_UI.SOOT, 0.84);
-    receiptG.fillRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
-    receiptG.lineStyle(1, receiptTone, this.receipt ? 0.92 : 0.62);
-    receiptG.strokeRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
-    this.add.text(PANEL_X + 26, DETAIL_Y + 139, this.receipt?.title ?? '의식 기록 대기', {
-      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-      color: this.receipt?.tone === 'warning'
-        ? DUNGEON_UI_CSS.EMBER
-        : this.receipt
-          ? DUNGEON_UI_CSS.JADE
-          : DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + 26, DETAIL_Y + 178, this.receipt?.detail ?? (selected.id === 'ancestorsWisdom'
-      ? '9칸을 넘는 추가 슬롯은 1칸당 던전 최대 HP +20으로 적용됩니다. DM 성장 후에도 유지됩니다.'
-      : '승인 결과와 수정·등급 변동이 이곳에 유지됩니다'), {
-      fontFamily: 'sans-serif', fontSize: '10px',
-      color: this.receipt ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
-      wordWrap: { width: PANEL_W - 52 }, lineSpacing: 3,
-    }).setOrigin(0, 0.5);
+    // 등급표: 다섯 등급의 누적 효과와 값 — 보유(옥), 다음(놋쇠), 잠김(흐림).
+    const ladderG = this.add.graphics();
+    ladderG.fillStyle(DUNGEON_UI.SOOT, 0.84);
+    ladderG.fillRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
+    ladderG.lineStyle(1, DUNGEON_UI.IRON, 0.62);
+    ladderG.strokeRoundedRect(PANEL_X + 14, DETAIL_Y + 116, PANEL_W - 28, 108, 7);
+    getWisdomTierLadder(this.gameState, selected).forEach((row, index) => {
+      const rowY = DETAIL_Y + 131 + index * 19;
+      const color = row.status === 'owned'
+        ? DUNGEON_UI_CSS.JADE
+        : row.status === 'next' ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED;
+      const bold = row.status === 'next' ? 'bold' : 'normal';
+      this.add.text(PANEL_X + 26, rowY, `${row.status === 'owned' ? '✓' : row.status === 'next' ? '▸' : '·'} 등급 ${row.tier}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color,
+      }).setOrigin(0, 0.5);
+      this.add.text(PANEL_X + 86, rowY, row.effect, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: bold, color,
+      }).setOrigin(0, 0.5);
+      this.add.text(PANEL_X + PANEL_W - 26, rowY, row.status === 'owned' ? '' : `결정 ${row.cost}`, {
+        fontFamily: 'sans-serif', fontSize: '10px', fontStyle: bold, color,
+      }).setOrigin(1, 0.5);
+    });
   }
 
   private drawCommand(): void {
@@ -363,7 +361,7 @@ export class AncestralWisdomScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: view.canUpgrade ? DUNGEON_UI_CSS.BRASS : view.isMaxed ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0, 0.5);
-    this.add.text(PANEL_X + PANEL_W - 16, COMMAND_Y + 22, `보유 수정 ${formatHudResourceValue(this.gameState.soulCrystals)}`, {
+    this.add.text(PANEL_X + PANEL_W - 16, COMMAND_Y + 22, `보유 결정 ${formatHudResourceValue(this.gameState.soulCrystals)}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(1, 0.5);
 
@@ -388,12 +386,18 @@ export class AncestralWisdomScene extends Phaser.Scene {
     command.zone.setName('wisdom-upgrade');
     this.bindOrderAction(command.zone);
 
-    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 116, '선택과 계보 전환은 저장되지 않습니다', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(0.5);
-    this.add.text(CANVAS_WIDTH / 2, COMMAND_Y + 137, '확인 후에만 영혼 결정과 영구 가호가 변경됩니다', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
-    }).setOrigin(0.5);
+    // 방금 한 의식의 결과(성공·거절). 없으면 비워 둔다.
+    if (this.receipt) {
+      const warning = this.receipt.tone === 'warning';
+      this.add.text(PANEL_X + 16, COMMAND_Y + 110, this.receipt.title, {
+        fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+        color: warning ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.JADE,
+      }).setOrigin(0, 0.5);
+      this.add.text(PANEL_X + 16, COMMAND_Y + 130, this.receipt.detail, {
+        fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
+        wordWrap: { width: PANEL_W - 32 }, lineSpacing: 2,
+      }).setOrigin(0, 0);
+    }
   }
 
   private showUpgradeConfirm(branch: BranchDef): void {

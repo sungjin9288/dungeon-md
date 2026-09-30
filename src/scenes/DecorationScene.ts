@@ -429,7 +429,7 @@ export class DecorationScene extends Phaser.Scene {
       lineSpacing: 2,
     }).setOrigin(0, 0.5);
 
-    this.add.text(PANEL_X + 16, COMMAND_Y + 292, this.receipt?.text ?? '선택한 유물의 비용과 세트 영향을 확인하세요', {
+    this.add.text(PANEL_X + 16, COMMAND_Y + 292, this.receipt?.text ?? '', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: this.receipt ? 'bold' : 'normal',
       color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
       wordWrap: { width: 184 },
@@ -488,13 +488,10 @@ export class DecorationScene extends Phaser.Scene {
     }
 
     if (def.cost.kind === 'gold') {
-      const shortage = Math.max(0, def.cost.gold - this.gs.homeGold);
-      const values = [
-        { label: '보유', value: formatHudResourceValue(this.gs.homeGold), ok: this.gs.homeGold >= def.cost.gold },
-        { label: '필요', value: def.cost.gold.toLocaleString('ko-KR'), ok: true },
-        { label: '부족', value: shortage.toLocaleString('ko-KR'), ok: shortage === 0 },
-      ];
-      values.forEach((item, index) => this.drawCostChip(PANEL_X + 16 + index * 108, y + 15, 100, item.label, item.value, item.ok));
+      // Same shape as the material chips: one chip, held / needed (was three chips 보유·필요·부족).
+      this.drawCostChip(PANEL_X + 16, y + 15, 158, '골드',
+        `${formatHudResourceValue(this.gs.homeGold)} / ${def.cost.gold.toLocaleString('ko-KR')}`,
+        this.gs.homeGold >= def.cost.gold);
       return;
     }
 
