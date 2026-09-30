@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import { BattleCameras } from '../combat/BattleCameras';
-import { battlefieldWidth, buildBattleTopology, corridorWaypoints, type BattleTopology } from '../data/battleTopology';
-import { getDungeonPlan } from '../data/dungeonPlan';
+import { battlefieldWidth, buildBattleTopology, corridorWaypoints, visitorWaypoints, type BattleTopology } from '../data/battleTopology';
+import { getDungeonPlan, type DungeonPlan } from '../data/dungeonPlan';
+import { findVisitorTarget, type VisitorKind } from '../data/visitors';
+import type { SpawnQueueItem, VisitorRoute } from '../combat/SpawnPipeline';
 import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from '../combat/BattleSpeed';
@@ -14,7 +16,7 @@ import {
   GRID_COLS, GRID_ROWS, CELL_SIZE, GRID_X, GRID_Y,
 } from '../constants/layout';
 import { type RoomData } from '../data/rooms';
-import type { InvaderType, InvaderDef } from '../data/invaders';
+import type { InvaderType } from '../data/invaders';
 import { type WaveSpec } from '../data/stages';
 import { loadGameState, saveGameState, getWisdomBonuses, getPrestigeDmgMult, type WisdomBonuses } from '../data/wisdom';
 import { computeDecorationBonuses, EMPTY_BONUSES, type DecorationBonuses } from '../data/decorations';
@@ -53,6 +55,7 @@ import { checkAchievementsAndToast as _checkAchievementsAndToast, tickQuestAndNo
 import {
   drawDungeonBackground,
   buildInvaderPath,
+  pathFromWaypoints,
   buildDungeonGrid,
   placeDungeonTorches,
   addDustMoteParticles,
@@ -100,6 +103,11 @@ import {
 /** 입구·심장부가 격자 밖으로 나가는 거리(px). */
 const ROUTE_MARGIN = 50;
 
+/** Empty a per-run tally in place (context adapters keep a reference to the object). */
+function clearTally(tally: Record<string, number>): void {
+  for (const key of Object.keys(tally)) delete tally[key];
+}
+
 export class DungeonScene extends Phaser.Scene {
   // ── Dynamic grid dimensions (overridden per chapter) ───────────────────────
   effectiveCols     = GRID_COLS;   // 3 for Ch1, 4 for Ch2
@@ -121,8 +129,12 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Combat ─────────────────────────────────────────────────────────────────
   invaderPath!: Phaser.Curves.Path;
+  /** 목적이 있는 손님(모험가·떠돌이 몬스터)의 경로 — buildPath()에서 목표 방을 찾아 만든다. */
+  visitorRoutes = new Map<VisitorKind, VisitorRoute>();
   /** 배치도 → 전투 칸(주 통로 가운데 줄 + 곁방). create()에서 홈 던전으로부터 만든다. */
   topology!: BattleTopology;
+  /** 홈 던전 배치도(손님의 목표 방 찾기에 쓴다). */
+  dungeonPlan!: DungeonPlan;
   /** 전장 전체 폭(주 통로가 길면 화면보다 넓다). */
   worldWidth = CANVAS_WIDTH;
   private battleCameras?: BattleCameras;
@@ -175,7 +187,7 @@ export class DungeonScene extends Phaser.Scene {
   wave         = 0;
   maxWave      = 10;
   waveActive   = false;
-  spawnQueue:  Array<{ def: InvaderDef; delay: number }> = [];
+  spawnQueue:  SpawnQueueItem[] = [];
   prepTimer    = 0;
   prepActive   = false;
 
@@ -189,6 +201,8 @@ export class DungeonScene extends Phaser.Scene {
   killComboCount   = 0;
   lastKillTime     = 0;
   materialsEarnedThisRun: Record<string, number> = {};
+  /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(부족 → 개수). */
+  tribeShardsEarnedThisRun: Record<string, number> = {};
   equipmentMap = new Map<string, EquipmentStats>();  // monsterId → equipment stats
   guardianAtkMult = new Map<string, number>();       // monsterId → level·강타 multiplier
 
@@ -288,7 +302,8 @@ export class DungeonScene extends Phaser.Scene {
     this.stageNumber    = setup.stageNumber;
     // The battlefield is the home dungeon itself (corridor + side rooms), whatever
     // the stage: stage grid widths and water cells no longer apply.
-    this.topology       = buildBattleTopology(getDungeonPlan(gameState));
+    this.dungeonPlan    = getDungeonPlan(gameState);
+    this.topology       = buildBattleTopology(this.dungeonPlan);
     this.effectiveCols  = this.topology.cols;
     this.effectiveCellSize = CELL_SIZE;
     this.waterCells = new Set<number>();
@@ -322,6 +337,10 @@ export class DungeonScene extends Phaser.Scene {
     this.killsThisRun    = 0;
     this.adRevivesUsed   = 0;
     this.goldEarnedThisRun = 0;
+    // The scene instance is reused between battles, so per-run tallies must be cleared here —
+    // kept as the same objects because context adapters hold references to them.
+    clearTally(this.materialsEarnedThisRun);
+    clearTally(this.tribeShardsEarnedThisRun);
     this.endlessRecordBroken = false;
     this.endlessPreviousWaveHp = 0;
     this.skillCooldowns.clear();
@@ -481,9 +500,16 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private buildPath(): void {
-    this.invaderPath = buildInvaderPath(this, corridorWaypoints(this.topology, {
-      gridX: GRID_X, gridY: GRID_Y, cellSize: this.effectiveCellSize, margin: ROUTE_MARGIN,
-    }));
+    const geometry = { gridX: GRID_X, gridY: GRID_Y, cellSize: this.effectiveCellSize, margin: ROUTE_MARGIN };
+    this.invaderPath = buildInvaderPath(this, corridorWaypoints(this.topology, geometry));
+    this.visitorRoutes = new Map();
+    for (const [kind, exit] of [['adventurer', 'leave'], ['wanderer', 'stay']] as const) {
+      const targetSlot = findVisitorTarget(this.dungeonPlan, this.dungeonTrapSlots, kind);
+      const path = targetSlot === null
+        ? this.invaderPath
+        : pathFromWaypoints(visitorWaypoints(this.topology, geometry, targetSlot, exit));
+      this.visitorRoutes.set(kind, { path, targetSlot });
+    }
   }
 
   private buildGrid(): void {

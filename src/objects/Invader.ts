@@ -19,6 +19,7 @@ import {
   invaderPreUpdate,
 } from './InvaderVisuals';
 import { isMovementLocked, restingPathSpeed } from './movementLock';
+import type { VisitorKind } from '../data/visitors';
 
 // ─── Burn stack ───────────────────────────────────────────────────────────────
 
@@ -147,6 +148,11 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   /** @internal */ baseScaleY = 1;
   /** Active hit-flash tween, killed on new hit to prevent stacking. */
   /** @internal */ hitTween?:    Phaser.Tweens.Tween;
+  /** 손님 종류(visitors.ts). 목표 방이 없으면 'raider' — 심장부로 간다. */
+  visitor: VisitorKind = 'raider';
+  /** 모험가·떠돌이 몬스터가 찾아가는 방의 홈 슬롯. */
+  visitorTargetSlot: number | null = null;
+
   /** Active breathing tween. */
   /** @internal */ breathTween?: Phaser.Tweens.Tween;
 

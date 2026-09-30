@@ -14,6 +14,8 @@ export interface BattleReturnResult {
   /** Dungeon HP left as a share of max (0–1); absent on older hand-offs. */
   hpShare?:         number;
   materialsEarned?: Record<string, number>;
+  /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(부족 → 개수). */
+  tribeShardsEarned?: Record<string, number>;
   readonly callout?: BattleResultCallout;
 }
 
@@ -66,6 +68,7 @@ function battleSettlementChanged(source: GameState, next: GameState): boolean {
     source.dmLevel !== next.dmLevel ||
     source.totalGoldEarned !== next.totalGoldEarned ||
     !numberRecordsEqual(source.materials ?? {}, next.materials ?? {}) ||
+    !numberRecordsEqual(source.tribeShards ?? {}, next.tribeShards ?? {}) ||
     !questProgressEqual(source.questProgress ?? {}, next.questProgress ?? {}) ||
     !numberRecordsEqual(source.subQuestProgress ?? {}, next.subQuestProgress ?? {}) ||
     !stringArraysEqual(source.activeSubQuestIds ?? [], next.activeSubQuestIds ?? [])
@@ -96,6 +99,11 @@ export function applyBattleReturnSettlement(
     materials[id] = (materials[id] ?? 0) + qty;
   });
 
+  const tribeShards = { ...(state.tribeShards ?? {}) };
+  Object.entries(result.tribeShardsEarned ?? {}).forEach(([tribe, qty]) => {
+    tribeShards[tribe] = (tribeShards[tribe] ?? 0) + qty;
+  });
+
   let nextState: GameState = {
     ...state,
     homeGold:        (state.homeGold ?? 0) + result.goldEarned,
@@ -103,6 +111,7 @@ export function applyBattleReturnSettlement(
     dmLevel,
     totalGoldEarned: (state.totalGoldEarned ?? 0) + result.goldEarned,
     materials,
+    tribeShards,
   };
 
   const [goldQuestState] = applyQuestObjectiveUpdate(nextState, 'collect_gold', result.goldEarned);

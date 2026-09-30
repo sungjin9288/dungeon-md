@@ -197,6 +197,7 @@ export function buildSpawnPipelineCtx(ds: DungeonScene): SpawnPipelineContext {
     set spawnQueue(v)    { ds.spawnQueue = v; },
     set waveHasSpawned(v: boolean) { ds.waveHasSpawned = v; },
     setRemainingInvadersRegistry: (n) => ds.registry.set('remainingInvaders', n),
+    visitorRoute: (kind)     => ds.visitorRoutes.get(kind) ?? { path: ds.invaderPath, targetSlot: null },
     hasSynergy:   (id)       => ds.synergyManager.hasSpecial(id),
     applyBehavior: (inv, def) => {
       // Weekly boss mode: the boss runs the generic raid phase ruleset
@@ -284,6 +285,7 @@ export function buildResultFlowCtx(ds: DungeonScene): ResultFlowContext {
     get breakthruCount() { return ds.breakthruCount; },
     get goldEarnedThisRun() { return ds.goldEarnedThisRun; },
     get materialsEarnedThisRun() { return ds.materialsEarnedThisRun; },
+    get tribeShardsEarnedThisRun() { return ds.tribeShardsEarnedThisRun; },
     get waveGoldMult() { return ds.waveGoldMult; },
     get waveEndChecked() { return ds.waveEndChecked; },
     get waveHasSpawned() { return ds.waveHasSpawned; },
@@ -522,6 +524,7 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     set tauntBoostActiveUntil(v) { ds.tauntBoostActiveUntil = v; },
     get breakthruCount()         { return ds.breakthruCount; },
     set breakthruCount(v)        { ds.breakthruCount = v; },
+    tribeShardsEarnedThisRun: ds.tribeShardsEarnedThisRun,
     hasSynergy:         (id)  => ds.synergyManager.hasSpecial(id),
     applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct, ds.equipmentMap, index => {
       const cell = cellOfSlot(ds.topology, index);

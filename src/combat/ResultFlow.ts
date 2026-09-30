@@ -37,6 +37,7 @@ export interface ResultFlowContext {
   breakthruCount: number;
   goldEarnedThisRun: number;
   materialsEarnedThisRun: Record<string, number>;
+  tribeShardsEarnedThisRun: Record<string, number>;
   waveGoldMult: number;
   waveEndChecked: boolean;
   waveHasSpawned: boolean;

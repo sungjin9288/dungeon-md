@@ -19,6 +19,20 @@ import type { BossContext } from './BossBehaviors';
 import { resolveSpawnDef } from './spawnDefResolve';
 import { playInvaderSpawnEntrance } from './ImpactVfx';
 import { announceTraitOnce } from './TraitCallout';
+import type { VisitorKind } from '../data/visitors';
+
+/** 생성 대기열 한 칸. `visitor`가 없으면 토벌대. */
+export interface SpawnQueueItem {
+  readonly def: InvaderDef;
+  readonly delay: number;
+  readonly visitor?: VisitorKind;
+}
+
+/** 손님 종류의 경로와 목표 방(없으면 null — 토벌대 경로로 심장부). */
+export interface VisitorRoute {
+  readonly path: Phaser.Curves.Path;
+  readonly targetSlot: number | null;
+}
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
@@ -36,13 +50,14 @@ export interface SpawnPipelineContext {
 
   get waveActive():    boolean;
   get activeInvaders(): Invader[];
-  get spawnQueue():    Array<{ def: InvaderDef; delay: number }>;
-  set spawnQueue(v:    Array<{ def: InvaderDef; delay: number }>);
+  get spawnQueue():    SpawnQueueItem[];
+  set spawnQueue(v:    SpawnQueueItem[]);
   set waveHasSpawned(v: boolean);
 
   setRemainingInvadersRegistry(n: number): void;
   hasSynergy(id: string): boolean;
   applyBehavior(inv: Invader, def: InvaderDef): void;
+  visitorRoute(kind: VisitorKind): VisitorRoute;
 }
 
 // ─── processSpawnQueue ────────────────────────────────────────────────────────
@@ -62,7 +77,7 @@ export function processSpawnQueue(ctx: SpawnPipelineContext, initialDelay: numbe
         ...ctx.spawnQueue.slice(pendingIndex + 1),
       ];
       if (!ctx.waveActive) return;
-      spawnInvaderWithDef(ctx, item.def);
+      spawnInvaderWithDef(ctx, item.def, item.visitor);
     });
     acc += item.delay;
   });
@@ -76,10 +91,14 @@ export function processSpawnQueue(ctx: SpawnPipelineContext, initialDelay: numbe
 //   4. Register in activeInvaders, mark waveHasSpawned.
 //   5. Hand off to InvaderBehaviors for per-type passive/phase setup.
 
-export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef): void {
+export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef, visitor: VisitorKind = 'raider'): void {
   const modDef = resolveSpawnDef(def, ctx, ctx.weeklyBoss);
+  const route = visitor === 'raider' ? { path: ctx.invaderPath, targetSlot: null } : ctx.visitorRoute(visitor);
 
-  const inv = new Invader(ctx.scene, ctx.invaderPath, modDef);
+  const inv = new Invader(ctx.scene, route.path, modDef);
+  // No target room: the visitor behaves as a raider and heads for the heart.
+  inv.visitor = route.targetSlot === null ? 'raider' : visitor;
+  inv.visitorTargetSlot = route.targetSlot;
   inv.setDepth(40);
 
   playInvaderSpawnEntrance(ctx.scene, inv, !!modDef.isBoss);

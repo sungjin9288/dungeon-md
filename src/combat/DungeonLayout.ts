@@ -332,14 +332,17 @@ function drawDungeonDefenseFrame(
 // ─── Path ─────────────────────────────────────────────────────────────────────
 
 /** 침입 경로: 배치도의 주 통로를 따라 입구(왼쪽) → 심장부(오른쪽). battleTopology.corridorWaypoints. */
-export function buildInvaderPath(scene: Phaser.Scene, waypoints: readonly Point[]): Phaser.Curves.Path {
+/** A straight-segment path through the waypoints (no route drawing). */
+export function pathFromWaypoints(waypoints: readonly Point[]): Phaser.Curves.Path {
   const [first, ...rest] = waypoints;
   const path = new Phaser.Curves.Path(first.x, first.y);
   for (const pt of rest) path.lineTo(pt.x, pt.y);
-
-  drawInvasionRoute(scene, waypoints);
-
   return path;
+}
+
+export function buildInvaderPath(scene: Phaser.Scene, waypoints: readonly Point[]): Phaser.Curves.Path {
+  drawInvasionRoute(scene, waypoints);
+  return pathFromWaypoints(waypoints);
 }
 
 function drawInvasionRoute(scene: Phaser.Scene, waypoints: readonly Point[]): void {

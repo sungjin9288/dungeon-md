@@ -3,6 +3,7 @@
 // Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
 import { STAGE_CLEAR_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
+import { TRIBE_LABELS } from '../ui/BarracksShared';
 import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
 import {
@@ -84,6 +85,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
         goldEarned: ctx.gold,
         dmXP: STAGE_CLEAR_DM_XP,
         materialsEarned: { ...ctx.materialsEarnedThisRun },
+        tribeShardsEarned: { ...ctx.tribeShardsEarnedThisRun },
       }, { defendInvasion: false, now: Date.now() }).state;
   saveGameState(finalGs);
 
@@ -202,11 +204,15 @@ export function showChapterClear(ctx: ResultFlowContext): void {
 
   // Materials earned this run
   const matEntries = Object.entries(ctx.materialsEarnedThisRun).filter(([, q]) => q > 0);
-  if (matEntries.length > 0) {
-    const parts = matEntries.map(([id, q]) => {
+  // Wanderers recruited in the lair pay tribe shards; show them with the haul.
+  const shardParts = Object.entries(ctx.tribeShardsEarnedThisRun)
+    .filter(([, q]) => q > 0)
+    .map(([tribe, q]) => `${TRIBE_LABELS[tribe] ?? tribe} 조각 ×${q}`);
+  if (matEntries.length > 0 || shardParts.length > 0) {
+    const parts = [...shardParts, ...matEntries.map(([id, q]) => {
       const def = MATERIAL_DEFS[id];
       return `${def?.name ?? id} ×${q}`;
-    });
+    })];
     const matT = scene.add.text(CANVAS_WIDTH / 2, cy + 170 + contentOffset, '', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5).setAlpha(0);
@@ -215,7 +221,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     const maxW = cw - 32;
     for (let shown = parts.length; shown >= 1; shown--) {
       const rest = parts.length - shown;
-      matT.setText('획득 재료: ' + parts.slice(0, shown).join('  ') + (rest > 0 ? `  외 ${rest}종` : ''));
+      matT.setText('획득: ' + parts.slice(0, shown).join('  ') + (rest > 0 ? `  외 ${rest}종` : ''));
       if (matT.width <= maxW) break;
     }
     ov.add(matT);
@@ -319,6 +325,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
             dmXP: STAGE_CLEAR_DM_XP,
             hpShare: ctx.maxHp > 0 ? ctx.dungeonHp / ctx.maxHp : 0,
             materialsEarned: { ...ctx.materialsEarnedThisRun },
+            tribeShardsEarned: { ...ctx.tribeShardsEarnedThisRun },
             ...(returnCallout ? { callout: returnCallout } : {}),
           });
           ov.destroy();

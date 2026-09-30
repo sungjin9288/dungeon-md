@@ -5,6 +5,8 @@
 // construction and dispatch.
 
 import { markBattleHud } from './battleHudMark';
+import type { SpawnQueueItem } from './SpawnPipeline';
+import type { VisitorKind } from '../data/visitors';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
@@ -70,8 +72,8 @@ export interface WaveStartContext {
   set pendingWaveMults(v:   { gold: number; hp: number; atk: number; spd: number } | undefined);
   get waveFogOverlay():     Phaser.GameObjects.Graphics | undefined;
   set waveFogOverlay(v:     Phaser.GameObjects.Graphics | undefined);
-  get spawnQueue():         Array<{ def: InvaderDef; delay: number }>;
-  set spawnQueue(v:         Array<{ def: InvaderDef; delay: number }>);
+  get spawnQueue():         SpawnQueueItem[];
+  set spawnQueue(v:         SpawnQueueItem[]);
 
   setWaveRegistry(v: number): void;
   setHpRegistry(v: number): void;
@@ -218,10 +220,10 @@ export function startWave(ctx: WaveStartContext): void {
     logger.debug(`[ENDLESS WAVE ${ctx.wave}] spawning ${ctx.spawnQueue.length} invaders`);
   } else {
     const cfg = ctx.waveConfigs[Math.min(ctx.wave - 1, ctx.waveConfigs.length - 1)];
-    const queue: Array<{ def: InvaderDef; delay: number }> = [];
-    cfg.invaders.forEach((item: { type: InvaderType; count: number; spawnDelay: number }) => {
+    const queue: SpawnQueueItem[] = [];
+    cfg.invaders.forEach((item: { type: InvaderType; count: number; spawnDelay: number; visitor?: VisitorKind }) => {
       for (let i = 0; i < item.count; i++) {
-        queue.push({ def: INVADER_DEFS[item.type], delay: item.spawnDelay });
+        queue.push({ def: INVADER_DEFS[item.type], delay: item.spawnDelay, visitor: item.visitor });
       }
     });
     ctx.spawnQueue = queue;

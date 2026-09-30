@@ -233,7 +233,7 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
 
 홈의 하루 결정 = **오늘의 손님 카드 3장**(`forecast.ts`, 날짜·명성 티어로 시드된
 결정적 발급). 1번 = 일반 침입(현재 티어), 2번 = 정예(60%)/한 단계 위 일반, 3번 =
-특수(상인·순례자·보물·일일 규칙) — 월요일은 주간 보스. 카드 전투는 스토리 침입과
+특수(상인·떠돌이 몬스터·모험가·일일 규칙) — 월요일(티어 5+)은 라이벌 던전마스터. 카드 전투는 스토리 침입과
 같은 인라인 경로(`stageConfig{waves,dungeonHp}` + `returnTo` + `forecastCardId`)로
 DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 `settleForecastBattle`로 정산한 뒤 `'forecast-return'` 계약대로 레지스트리를 비운다.
@@ -248,6 +248,14 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 - 가드: `notorietyBands.test.ts` — 티어 n 편성을 기준 스테이지의 기대 홈이 막는지
   (9~10티어는 veteran). organic: `scripts/verify-forecast-playthrough.mjs`.
 - 홈 `DailyContentPanel`은 도전 과제·출석만 남는다(일일 던전·주간 보스 진입은 카드로).
+
+### 손님 종류 (2026-09-30, 가로 던전 P4)
+
+`visitors.ts`가 단일 진실원. 웨이브 그룹의 `visitor`(없으면 토벌대)가 경로를 정한다: 모험가 → 황금 광맥으로
+우회 후 입구 탈출(전리품 도굴 ×3, 잡으면 확정 재료), 떠돌이 몬스터 → 용의 둥지에서 멈춤(40% 포섭 → 부족 조각 +10).
+목표 방이 없으면 심장부로. 예보 treasure/pilgrim 카드가 이 손님이며 `forecastBattleWaves`가 시작 때 손님을 단다.
+생성 대기열 항목은 `SpawnQueueItem{def,delay,visitor}`, 경로는 `DungeonScene.visitorRoutes`(buildPath에서 계산).
+전투 씬은 재사용되므로 run 단위 기록(`materialsEarnedThisRun`·`tribeShardsEarnedThisRun`)은 create에서 비운다.
 
 ### 함정 제작 · 콤보 (2026-09-18, Phase 3)
 

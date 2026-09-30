@@ -67,14 +67,18 @@ export function runTrapEffects(ctx: RoomMechanicsContext, now: number): void {
     const triggered = (inv as unknown as Record<string, unknown>)['_trapCols'] as Set<number>;
 
     const cs = ctx.effectiveCellSize;
+    // The room the invader is standing in: its row band (corridor, or a side room a visitor
+    // walked into) and the column whose centre it is passing. Each room fires once per invader.
+    const row = Math.floor((inv.y - GRID_Y) / cs);
+    if (row < 0 || row >= GRID_ROWS) continue;
     for (let col = 0; col < ctx.effectiveCols; col++) {
       const cx = GRID_X + col * cs + cs / 2;
-      if (Math.abs(inv.x - cx) > cs * TRAP_TRIGGER_FRACTION || triggered.has(col)) continue;
-      triggered.add(col);
+      const cell = row * ctx.effectiveCols + col;
+      if (Math.abs(inv.x - cx) > cs * TRAP_TRIGGER_FRACTION || triggered.has(cell)) continue;
+      if (row !== CORRIDOR_ROW && Math.abs(inv.y - (GRID_Y + row * cs + cs / 2)) > cs * TRAP_TRIGGER_FRACTION) continue;
+      triggered.add(cell);
 
-      // Only the corridor room the invader is walking through; a side room's traps
-      // are for the visitors who enter that side room.
-      const slotIdx = slotOfCell(ctx, CORRIDOR_ROW, col);
+      const slotIdx = slotOfCell(ctx, row, col);
       const slot    = slotIdx === null ? undefined : ctx.dungeonTrapSlots[slotIdx];
       if (!slot || slotIdx === null) continue;
       for (const trapId of (slot.trapIds ?? [])) {

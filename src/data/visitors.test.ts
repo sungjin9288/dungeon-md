@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import {
+  adventurerLoot,
+  adventurerStealAmount,
+  findVisitorTarget,
+  resolveWandererArrival,
+  VISITOR_TARGET_BUILDING,
+  WANDERER_RECRUIT_CHANCE,
+  WANDERER_RECRUIT_SHARDS,
+} from './visitors';
+import { DROP_TABLE } from './fusion';
+
+const room = (building: string, hp = 100) => ({ roomType: building === 'gold' ? 'support' : 'combat', building, hp }) as never;
+
+describe('손님이 찾아갈 방', () => {
+  const plan = { corridor: [0, 1, 2], sides: [{ slot: 3, anchor: 2, side: 'up' as const }, { slot: 4, anchor: 0, side: 'down' as const }] };
+
+  it('토벌대는 목표 방이 없다(심장부로)', () => {
+    expect(findVisitorTarget(plan, [room('gold')], 'raider')).toBeNull();
+  });
+
+  it('모험가는 황금 광맥, 떠돌이 몬스터는 용의 둥지를 찾는다', () => {
+    expect(VISITOR_TARGET_BUILDING).toEqual({ adventurer: 'gold', wanderer: 'dragons_lair' });
+    const slots = [room('guardian'), room('guardian'), room('guardian'), room('gold'), room('dragons_lair')];
+    expect(findVisitorTarget(plan, slots, 'adventurer')).toBe(3);
+    expect(findVisitorTarget(plan, slots, 'wanderer')).toBe(4);
+  });
+
+  it('여럿이면 입구에서 가까운 것, 무너진 방은 제외, 없으면 null', () => {
+    const slots = [room('guardian'), room('gold'), room('guardian'), room('gold'), room('gold')];
+    expect(findVisitorTarget(plan, slots, 'adventurer')).toBe(4);          // 곁방(열 0)이 주 통로 열 1보다 앞
+    const broken = [room('guardian'), room('gold'), room('guardian'), room('gold'), room('gold', 0)];
+    expect(findVisitorTarget(plan, broken, 'adventurer')).toBe(1);
+    expect(findVisitorTarget(plan, [room('guardian')], 'wanderer')).toBeNull();
+  });
+});
+
+describe('도착·처치 결과', () => {
+  it('모험가는 처치 보상의 3배를 훔치되 가진 전리품까지만', () => {
+    expect(adventurerStealAmount(35, 1000)).toBe(105);
+    expect(adventurerStealAmount(35, 40.7)).toBe(40);
+    expect(adventurerStealAmount(35, 0)).toBe(0);
+  });
+
+  it('모험가를 잡으면 짐의 재료가 확정으로 떨어진다', () => {
+    expect(adventurerLoot('soldier')).toBe('iron_shard');
+    expect(adventurerLoot('god_emperor')).toBe(DROP_TABLE.god_emperor?.[0]?.id ?? 'old_cloth');
+  });
+
+  it('떠돌이 몬스터 포섭: 확률 안이면 그 부족 조각, 부족 없는 침입자는 불가', () => {
+    expect(resolveWandererArrival('fox_spirit', 0)).toEqual({ tribe: 'gumiho', shards: WANDERER_RECRUIT_SHARDS });
+    expect(resolveWandererArrival('fox_spirit', WANDERER_RECRUIT_CHANCE)).toBeNull();
+    expect(resolveWandererArrival('peasant', 0)).toBeNull();
+  });
+});

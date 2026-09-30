@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T05:18:41.338Z",
+  "generatedAt": "2026-09-30T06:00:10.720Z",
   "base": "http://127.0.0.1:8083",
   "stage": 20,
   "scope": "Movement-lock invariants during a real battle with a tier-3 trap room. Not a balance or endurance run.",
@@ -27,7 +27,7 @@
     },
     {
       "id": "locks-hold-and-release",
-      "samples": 275,
+      "samples": 211,
       "maxLocks": 1,
       "lockedMoving": 0,
       "freeStopped": 0,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { getDailyDungeon, getWeeklyBoss } from './daily';
-import { FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
+import { FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, buildWandererWaves, forecastBattleWaves, forecastVisitor, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
+import { WANDERER_TRIBE } from './visitors';
+import { invaderThreshold } from './notoriety';
 import { INVADER_DEFS } from './invaders';
 import { getNotorietyBand, NOTORIETY_BANDS } from './notoriety';
 import { seededRand } from './daily';
@@ -76,5 +78,50 @@ describe('buildBandWaves', () => {
     expect(high.length).toBeGreaterThan(low.length);
     const total = (waves: typeof low) => waves.reduce((s, w) => s + (w.clearReward ?? 0), 0);
     expect(total(high)).toBeGreaterThan(total(low));
+  });
+});
+
+describe('손님 종류 카드', () => {
+  it('카드 종류 → 손님: 보물 = 모험가, 순례 = 떠돌이 몬스터, 상인은 전투 없음, 나머지는 토벌대', () => {
+    expect(forecastVisitor('treasure')).toBe('adventurer');
+    expect(forecastVisitor('pilgrim')).toBe('wanderer');
+    expect(forecastVisitor('merchant')).toBeNull();
+    for (const kind of ['raid', 'elite', 'weekly_boss', 'daily_rule'] as const) expect(forecastVisitor(kind)).toBe('raider');
+  });
+
+  it('발급된 카드의 모든 침입자가 카드의 손님 종류를 단다', () => {
+    for (let day = 1; day <= 40; day++) {
+      const date = `2026-10-${String((day % 28) + 1).padStart(2, '0')}`;
+      for (const tier of [1, 4, 8]) {
+        for (const card of issueForecastCards({ ...input(date, tier), isMonday: false })) {
+          const visitor = forecastVisitor(card.kind);
+          if (visitor === 'adventurer' || visitor === 'wanderer') {
+            for (const wave of card.waves ?? []) for (const group of wave.invaders) expect(group.visitor).toBe(visitor);
+          }
+        }
+      }
+    }
+  });
+
+  it('떠돌이 몬스터는 포섭 가능한 괴물형이고, 밴드 위협도를 크게 넘지 않는다', () => {
+    for (const band of NOTORIETY_BANDS) {
+      const ceiling = Math.max(...band.pool.map(invaderThreshold)) * 1.25;
+      const floor = Math.min(...(Object.keys(WANDERER_TRIBE) as (keyof typeof WANDERER_TRIBE)[]).map(invaderThreshold));
+      for (const wave of buildWandererWaves(band, seededRand(band.tier))) {
+        for (const group of wave.invaders) {
+          expect(WANDERER_TRIBE[group.type], `${band.tier} ${group.type}`).toBeDefined();
+          expect(invaderThreshold(group.type)).toBeLessThanOrEqual(Math.max(ceiling, floor));
+        }
+      }
+    }
+  });
+});
+
+describe('전투 시작 시 손님 적용', () => {
+  it('규칙 이전에 발급된 보물 카드(손님 표시 없음)도 모험가로 싸운다', () => {
+    const legacy = { kind: 'treasure' as const, waves: [{ wave: 1, invaders: [{ type: 'soldier' as const, count: 2, spawnDelay: 1000 }] }] };
+    expect(forecastBattleWaves(legacy)[0].invaders[0].visitor).toBe('adventurer');
+    expect(legacy.waves[0].invaders[0]).not.toHaveProperty('visitor');
+    expect(forecastBattleWaves({ kind: 'raid', waves: legacy.waves })[0].invaders[0]).not.toHaveProperty('visitor');
   });
 });

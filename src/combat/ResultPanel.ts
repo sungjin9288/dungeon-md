@@ -444,16 +444,17 @@ export function buildFailOptions(
   const scene = ctx.scene;
   const retreat = (): void => {
     const materialsEarned = { ...ctx.materialsEarnedThisRun };
+    const tribeShardsEarned = { ...ctx.tribeShardsEarnedThisRun };
     if (ctx.returnTo) {
       scene.registry.set('battleResult', {
-        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned,
+        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned, tribeShardsEarned,
         ...(callout ? { callout } : {}),
       });
     } else {
       // A campaign stage has no Home hand-off: settle here, and not as a
       // story-invasion defense.
       const settled = applyBattleReturnSettlement(loadGameState(), {
-        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned,
+        won: false, goldEarned: ctx.gold, dmXP: STAGE_DEFEAT_DM_XP, materialsEarned, tribeShardsEarned,
       }, { defendInvasion: false, now: Date.now() });
       try {
         if (settled.changed) saveGameState(settled.state);

@@ -8,6 +8,7 @@ import {
   corridorWaypoints,
   neighborSlots,
   slotAt,
+  visitorWaypoints,
 } from './battleTopology';
 
 const plan = {
@@ -65,5 +66,32 @@ describe('가로 도달 거리', () => {
     expect(corridorReach(110, 1)).toBeCloseTo(143);
     expect(corridorReach(110, 2)).toBeCloseTo(253);
     expect(corridorReach(110, 0)).toBeCloseTo(143);   // 사거리 0 이하도 최소 1칸
+  });
+});
+
+describe('손님 경로', () => {
+  const geometry = { gridX: 30, gridY: 130, cellSize: 110, margin: 50 };
+  const topology = buildBattleTopology(plan);   // 곁방 9 = 주 통로 2번째 방(열 1) 위
+  const corridorY = 130 + 110 * 1.5;
+
+  it('목표 방이 없으면 토벌대와 같은 경로', () => {
+    expect(visitorWaypoints(topology, geometry, null, 'leave')).toEqual(corridorWaypoints(topology, geometry));
+    expect(visitorWaypoints(topology, geometry, 42, 'stay')).toEqual(corridorWaypoints(topology, geometry));
+  });
+
+  it('모험가: 곁방까지 들어갔다가 같은 길로 입구 밖으로 나간다', () => {
+    const points = visitorWaypoints(topology, geometry, 9, 'leave');
+    const roomX = 30 + 110 * 1.5;
+    expect(points[0]).toEqual({ x: -20, y: corridorY });
+    expect(points).toContainEqual({ x: roomX, y: 130 + 55 });       // 위 곁방 중심
+    expect(points[points.length - 1]).toEqual(points[0]);           // 입구로 탈출
+    expect(Math.max(...points.map(p => p.x))).toBe(roomX);           // 심장부 쪽으로는 가지 않는다
+  });
+
+  it('떠돌이 몬스터: 굴 중심에서 멈춘다(주 통로 방이면 그 방)', () => {
+    const lair = visitorWaypoints(topology, geometry, 10, 'stay');   // 아래 곁방, 열 3
+    expect(lair[lair.length - 1]).toEqual({ x: 30 + 110 * 3.5, y: 130 + 110 * 2.5 });
+    const corridorRoom = visitorWaypoints(topology, geometry, 0, 'stay');   // 주 통로 열 2
+    expect(corridorRoom[corridorRoom.length - 1]).toEqual({ x: 30 + 110 * 2.5, y: corridorY });
   });
 });

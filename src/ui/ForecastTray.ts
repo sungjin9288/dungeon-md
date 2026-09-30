@@ -20,7 +20,9 @@ import { showToast } from './Toast';
 import { showDailyContentHub } from './DailyContentPanel';
 import { INVADER_DEFS } from '../data/invaders';
 import { getTodayString } from '../data/daily';
-import { isBattleCard, type ForecastCard, type ForecastKind } from '../data/forecast';
+import { forecastBattleWaves, forecastVisitor, isBattleCard, type ForecastCard, type ForecastKind } from '../data/forecast';
+import { findVisitorTarget } from '../data/visitors';
+import { getDungeonPlan } from '../data/dungeonPlan';
 import { isForecastCardTaken, takeForecastCard, merchantPayout } from '../data/forecastTransactions';
 import { type GameState } from '../data/wisdom';
 import { settleIdleAcrossChange } from '../data/idleIncome';
@@ -55,17 +57,26 @@ function rewardSummary(card: ForecastCard, gs: GameState): string {
   return parts.join(' · ') || '보상 없음';
 }
 
-function guestSummary(card: ForecastCard): string {
+/** 목적이 있는 손님이 오늘 던전에서 어디로 갈지 — 목표 방이 있는지로 갈린다. */
+function visitorHint(card: ForecastCard, gs: GameState): string | null {
+  const visitor = forecastVisitor(card.kind);
+  if (visitor !== 'adventurer' && visitor !== 'wanderer') return null;
+  const hasTarget = findVisitorTarget(getDungeonPlan(gs), gs.dungeonSlots ?? [], visitor) !== null;
+  if (visitor === 'adventurer') return hasTarget ? '황금 광맥을 노림 · 놓치면 도굴' : '황금 광맥이 없어 심장부로';
+  return hasTarget ? '용의 둥지에서 포섭 기회' : '용의 둥지가 없어 심장부로';
+}
+
+function guestSummary(card: ForecastCard, gs: GameState): string {
   if (card.kind === 'merchant') return '전투 없음 · 광석·약초·천·가루를 사 갑니다';
   const names = card.preview.invaderTypes.slice(0, 3).map(type => INVADER_DEFS[type]?.koreanName ?? type);
-  const traits = card.preview.traitBlurbs[0];
+  const note = visitorHint(card, gs) ?? card.preview.traitBlurbs[0];
   const waves = card.waves?.length ?? 0;
-  return `${waves}웨이브 · ${names.join('·')}${traits ? ` · ${traits}` : ''}`;
+  return `${waves}웨이브 · ${names.join('·')}${note ? ` · ${note}` : ''}`;
 }
 
 function launchForecastBattle(scene: DungeonHomeScene, card: ForecastCard): void {
   if (!isBattleCard(card)) return;
-  scene.registry.set('stageConfig', { waves: card.waves, dungeonHp: card.dungeonHp, chapter: card.bandTier });
+  scene.registry.set('stageConfig', { waves: forecastBattleWaves(card), dungeonHp: card.dungeonHp, chapter: card.bandTier });
   scene.registry.set('returnTo', 'DungeonHomeScene');
   scene.registry.set('forecastCardId', card.id);
   // The battle scene owns these modes' rules and rewards; the card only names them.
@@ -176,7 +187,7 @@ export function showForecastTray(scene: DungeonHomeScene): void {
     container.add(scene.add.text(rowX + 48, y + 18, `${card.title} · ${card.bandTier}단계`, {
       fontFamily: 'sans-serif', fontSize: '13px', color: taken ? CASUAL_CSS.INK_SOFT : CASUAL_CSS.INK, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
-    container.add(scene.add.text(rowX + 48, y + 38, guestSummary(card), {
+    container.add(scene.add.text(rowX + 48, y + 38, guestSummary(card, gs), {
       fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.INK_SOFT, wordWrap: { width: rowW - 150 },
     }).setOrigin(0, 0.5));
     container.add(scene.add.text(rowX + 48, y + 60, taken ? '오늘 처리 완료' : rewardSummary(card, gs), {

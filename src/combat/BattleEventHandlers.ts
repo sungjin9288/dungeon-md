@@ -16,6 +16,8 @@ import { playDungeonHpHitReaction } from './ImpactVfx';
 import { remainingInvaderCount } from './waveSpawnAccounting';
 import { logger } from '../utils/logger';
 import { resolveMonsterTypeId } from '../data/monsters';
+import { adventurerStealAmount, resolveWandererArrival } from '../data/visitors';
+import { TRIBE_LABELS } from '../ui/BarracksShared';
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -34,6 +36,8 @@ export interface BattleEventContext {
   get hexedInvader(): Invader | null; set hexedInvader(v: Invader | null);
   get tauntBoostActiveUntil(): number; set tauntBoostActiveUntil(v: number);
   get breakthruCount(): number;       set breakthruCount(v: number);
+  /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(전투 끝에 홈으로 정산). */
+  readonly tribeShardsEarnedThisRun: Record<string, number>;
 
   hasSynergy(id: string): boolean;
   applyRoomSlotDamage(pct: number): void;
@@ -47,6 +51,14 @@ export interface BattleEventContext {
 // ─── invaderReachedEnd ────────────────────────────────────────────────────────
 
 export function handleInvaderReachedEnd(ctx: BattleEventContext, inv: Invader): void {
+  if (inv.visitor === 'adventurer' || inv.visitor === 'wanderer') {
+    // A visitor with a destination never touches the heart: it leaves (adventurer) or settles (wanderer).
+    ctx.setRemainingInvadersRegistry(remainingInvaderCount(ctx.activeInvaders, inv));
+    ctx.activeInvaders = ctx.activeInvaders.filter(i => i !== inv);
+    if (inv.visitor === 'adventurer') handleAdventurerEscape(ctx, inv);
+    else handleWandererArrival(ctx, inv);
+    return;
+  }
   const balanceDefMult = ctx.hasSynergy('BALANCE_DEF') ? 0.85 : 1;
   const actualDamage   = Math.round(inv.def.damage * ctx.wisdomBonuses.monsterDmgMult * balanceDefMult);
 
@@ -62,6 +74,26 @@ export function handleInvaderReachedEnd(ctx: BattleEventContext, inv: Invader): 
   ctx.updateLowHpVignette();
 
   if (ctx.dungeonHp <= 0) ctx.triggerWaveFail();
+}
+
+/** 모험가가 입구로 빠져나감: 전리품 골드를 훔쳐 간다(던전 피해 없음). */
+function handleAdventurerEscape(ctx: BattleEventContext, inv: Invader): void {
+  const stolen = adventurerStealAmount(inv.def.reward, ctx.gold);
+  if (stolen > 0) {
+    ctx.gold -= stolen;
+    ctx.setGoldRegistry(ctx.gold);
+  }
+  showGoldFloat(ctx.scene, stolen > 0 ? `도굴 −${stolen}` : '도굴 실패', inv.x, inv.y - 20);
+}
+
+/** 떠돌이 몬스터가 굴에 닿음: 포섭 판정 — 성공하면 그 부족 조각. */
+function handleWandererArrival(ctx: BattleEventContext, inv: Invader): void {
+  const recruit = resolveWandererArrival(inv.def.type, Math.random());
+  if (recruit) {
+    ctx.tribeShardsEarnedThisRun[recruit.tribe] = (ctx.tribeShardsEarnedThisRun[recruit.tribe] ?? 0) + recruit.shards;
+  }
+  const label = recruit ? `포섭! ${TRIBE_LABELS[recruit.tribe] ?? recruit.tribe} 조각 +${recruit.shards}` : '포섭 실패';
+  showGoldFloat(ctx.scene, label, inv.x, inv.y - 20);
 }
 
 // ─── mirrorReflect ────────────────────────────────────────────────────────────

@@ -1,7 +1,11 @@
 // ─── Invasion forecast (침입 예보) ─────────────────────────────────────────────
 // Every day the home shows three visitors. Picking one is the day's decision:
-// a plain raid, an elite expedition, or a special guest (merchants, pilgrims,
-// treasure hunters, the daily rule, Monday's weekly boss). Cards are derived
+// a raid party (토벌대), an elite expedition, or a special guest — merchants,
+// an adventurer party after the treasure room (kind 'treasure'), a band of
+// wandering monsters looking for a lair (kind 'pilgrim'), the daily rule, or
+// Monday's rival dungeon master (kind 'weekly_boss'). Kind ids keep their old
+// names so cards already issued into a save stay valid; visitors.ts owns the
+// routes. Cards are derived
 // from the date and the player's notoriety tier, so re-opening the game shows
 // the same three. See docs/design/PHASE2_NOTORIETY_FORECAST.md §2.
 //
@@ -10,7 +14,8 @@
 import { dayIndexOf, seededRand, getDailyDungeon, getWeeklyBoss, type DailyRule, type DailyDungeon, type WeeklyBoss } from './daily';
 import { INVADER_DEFS, type InvaderType } from './invaders';
 import { getTraitBlurb } from './invaderTraits';
-import { getNotorietyBand, NOTORIETY_GAIN, type NotorietyBand } from './notoriety';
+import { getNotorietyBand, invaderThreshold, NOTORIETY_GAIN, type NotorietyBand } from './notoriety';
+import { WANDERER_TRIBE, type VisitorKind } from './visitors';
 import type { WaveSpec } from './stages';
 
 export type ForecastKind = 'raid' | 'elite' | 'merchant' | 'pilgrim' | 'treasure' | 'weekly_boss' | 'daily_rule';
@@ -52,14 +57,35 @@ export const FORECAST_SPECIAL_WEIGHTS: ReadonlyArray<readonly [ForecastKind, num
 ];
 
 export const FORECAST_TITLES: Readonly<Record<ForecastKind, readonly string[]>> = {
-  raid:        ['국경 순찰대', '떠돌이 용병단', '마을 자경단', '보물 사냥꾼 일당'],
-  elite:       ['왕실 정예대', '성기사단 원정', '길드의 정찰 부대', '현상금 사냥단'],
+  raid:        ['국경 토벌대', '영주의 토벌대', '마을 자경단', '수도 순찰대'],
+  elite:       ['왕실 정예 토벌대', '성기사단 원정', '용사 원정대', '현상금 사냥단'],
   merchant:    ['탐욕의 상인단'],
-  pilgrim:     ['순례자 행렬'],
-  treasure:    ['보물 사냥꾼의 도박'],
-  weekly_boss: ['주간 토벌대'],
+  pilgrim:     ['떠돌이 몬스터 무리'],
+  treasure:    ['모험가 파티'],
+  weekly_boss: ['라이벌 던전마스터'],
   daily_rule:  ['오늘의 시련'],
 };
+
+/** 카드의 손님 종류 — 전투 경로와 목표 방을 정한다(visitors.ts). 전투 없는 카드는 null. */
+export function forecastVisitor(kind: ForecastKind): VisitorKind | null {
+  if (kind === 'treasure') return 'adventurer';
+  if (kind === 'pilgrim') return 'wanderer';
+  return kind === 'merchant' ? null : 'raider';
+}
+
+function withVisitor(waves: readonly WaveSpec[], visitor: VisitorKind): WaveSpec[] {
+  return waves.map(wave => ({ ...wave, invaders: wave.invaders.map(group => ({ ...group, visitor })) }));
+}
+
+/**
+ * 전투에 넘길 카드의 웨이브 — 카드 종류의 손님을 단다. 발급 때도 달지만, 이 규칙 이전에 발급돼 세이브에
+ * 남은 오늘의 카드도 같은 경로로 싸우도록 시작할 때 한 번 더 적용한다.
+ */
+export function forecastBattleWaves(card: Pick<ForecastCard, 'kind' | 'waves'>): WaveSpec[] {
+  const visitor = forecastVisitor(card.kind);
+  const waves = card.waves ?? [];
+  return visitor === 'adventurer' || visitor === 'wanderer' ? withVisitor(waves, visitor) : [...waves];
+}
 
 // ─── Wave composition ─────────────────────────────────────────────────────────
 
@@ -132,8 +158,30 @@ function merchantCard(id: string, band: NotorietyBand): ForecastCard {
   };
 }
 
+/**
+ * 떠돌이 몬스터 무리: 4웨이브, 괴물형 침입자 중 이 밴드의 위협도(hp×speed) 안에 드는 것만.
+ * 밴드 풀의 가장 센 유닛의 1.25배까지 — 굴을 찾아온 손님이지 토벌대보다 센 부대가 아니다.
+ */
+export function buildWandererWaves(band: NotorietyBand, rand: () => number): WaveSpec[] {
+  const ceiling = Math.max(...band.pool.map(invaderThreshold)) * 1.25;
+  const all = (Object.keys(WANDERER_TRIBE) as InvaderType[]).sort((a, b) => invaderThreshold(a) - invaderThreshold(b));
+  const pool = all.filter(type => invaderThreshold(type) <= ceiling);
+  const choices = pool.length > 0 ? pool : all.slice(0, 1);
+  const waves: WaveSpec[] = [];
+  for (let w = 1; w <= 4; w++) {
+    const count = 3 + w + Math.floor(rand() * 2);
+    const delay = Math.max(1200, 2400 - band.tier * 80 - w * 60);
+    waves.push({
+      wave: w,
+      clearReward: Math.round((40 + w * 15) * band.lootMult),
+      invaders: [{ type: pick(choices, rand), count, spawnDelay: delay, visitor: 'wanderer' }],
+    });
+  }
+  return waves;
+}
+
 function pilgrimCard(id: string, band: NotorietyBand, rand: () => number): ForecastCard {
-  const waves = buildBandWaves(band, 'raid', rand).slice(0, 4);
+  const waves = buildWandererWaves(band, rand);
   return {
     id, kind: 'pilgrim', bandTier: band.tier, title: FORECAST_TITLES.pilgrim[0],
     waves, dungeonHp: band.dungeonHp, preview: previewOf(waves),
@@ -142,7 +190,7 @@ function pilgrimCard(id: string, band: NotorietyBand, rand: () => number): Forec
 }
 
 function treasureCard(id: string, band: NotorietyBand, rand: () => number): ForecastCard {
-  const waves = buildBandWaves(band, 'elite', rand);
+  const waves = withVisitor(buildBandWaves(band, 'elite', rand), 'adventurer');
   return {
     id, kind: 'treasure', bandTier: band.tier, title: FORECAST_TITLES.treasure[0],
     waves, dungeonHp: band.dungeonHp, preview: previewOf(waves),

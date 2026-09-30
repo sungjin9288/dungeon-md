@@ -74,6 +74,31 @@ export function corridorWaypoints(
   ];
 }
 
+export type RouteGeometry = { readonly gridX: number; readonly gridY: number; readonly cellSize: number; readonly margin: number };
+
+/**
+ * 목적이 있는 손님의 경로(visitors.ts). 목표 방이 없으면 토벌대와 같은 주 통로 경로.
+ * - `leave`(모험가): 입구 → 주 통로를 따라 목표 방의 열까지 → (곁방이면) 위·아래로 들어감 → 되돌아 나와 입구로 탈출.
+ * - `stay`(떠돌이 몬스터): 입구 → 목표 방 중심에서 멈춘다.
+ */
+export function visitorWaypoints(
+  topology: BattleTopology,
+  geometry: RouteGeometry,
+  targetSlot: number | null,
+  exit: 'leave' | 'stay',
+): readonly Point[] {
+  const target = targetSlot === null ? null : cellOfSlot(topology, targetSlot);
+  if (!target) return corridorWaypoints(topology, geometry);
+  const corridorY = geometry.gridY + geometry.cellSize * (CORRIDOR_ROW + 0.5);
+  const entrance = { x: geometry.gridX - geometry.margin, y: corridorY };
+  const colX = geometry.gridX + geometry.cellSize * (target.col + 0.5);
+  const roomY = geometry.gridY + geometry.cellSize * (target.row + 0.5);
+  const inward: Point[] = [entrance, { x: geometry.gridX, y: corridorY }, { x: colX, y: corridorY }];
+  if (target.row !== CORRIDOR_ROW) inward.push({ x: colX, y: roomY });
+  if (exit === 'stay') return inward;
+  return [...inward, ...[...inward].reverse().slice(1)];
+}
+
 /** 전장 전체 폭(격자 + 양쪽 입구·심장부 여백). 화면보다 넓으면 전투 카메라가 가로로 움직인다. */
 export function battlefieldWidth(
   topology: BattleTopology,

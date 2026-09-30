@@ -9,6 +9,7 @@
 // subsystems (BossContext, RoomMechanicsContext, etc.).
 
 import Phaser from 'phaser';
+import { adventurerLoot } from '../data/visitors';
 import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
 import type { RoomData } from '../data/rooms';
@@ -229,6 +230,12 @@ export function handleInvaderKilled(ctx: KillHandlerContext, inv: Invader): void
       ctx.materialsEarnedThisRun[matId] = (ctx.materialsEarnedThisRun[matId] ?? 0) + 1;
       const matDef = MATERIAL_DEFS[matId];
       logger.debug(`[MATERIAL DROP] ${matDef?.emoji ?? ''} ${matDef?.name ?? matId} ×1 (from ${inv.def.type})`);
+    }
+    // An adventurer carries its haul: catching one always drops a material (탐험 재료원).
+    if (inv.visitor === 'adventurer') {
+      const loot = adventurerLoot(inv.def.type);
+      ctx.materialsEarnedThisRun[loot] = (ctx.materialsEarnedThisRun[loot] ?? 0) + 1;
+      showGoldFloat(scene, `${MATERIAL_DEFS[loot]?.emoji ?? '🎒'} +1`, inv.x, inv.y - 44);
     }
   }
 }

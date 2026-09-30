@@ -33,6 +33,14 @@ function makeResult(overrides: Partial<BattleReturnResult> = {}): BattleReturnRe
 }
 
 describe('invasionTransactions — battle return settlement', () => {
+  it('adds tribe shards recruited from wanderers, and a shard-only result still counts as a change', () => {
+    const state = makeState({ tribeShards: { gumiho: 30 } });
+    const result = applyBattleReturnSettlement(state, makeResult({ tribeShardsEarned: { gumiho: 10, underworld: 10 } }));
+    expect(result.changed).toBe(true);
+    expect(result.state.tribeShards).toEqual({ gumiho: 40, underworld: 10 });
+    expect(state.tribeShards).toEqual({ gumiho: 30 });
+  });
+
   it('applies gold, DM XP, materials, and collect_gold progress without mutating input', () => {
     const state = makeState({
       homeGold: 100,

@@ -1,8 +1,10 @@
 import type { InvaderType } from './invaders';
+import type { VisitorKind } from './visitors';
 
 export interface WaveSpec {
   wave?: number;
-  invaders: Array<{ type: InvaderType; count: number; spawnDelay: number; isBoss?: boolean }>;
+  /** `visitor` 없으면 토벌대(심장부로). 모험가·떠돌이 몬스터는 목적 방을 찾는다(visitors.ts). */
+  invaders: Array<{ type: InvaderType; count: number; spawnDelay: number; isBoss?: boolean; visitor?: VisitorKind }>;
   clearReward?: number;
 }
 
