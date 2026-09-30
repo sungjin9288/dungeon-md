@@ -12,6 +12,8 @@
 //   drawJourneyTrail           — draw lit/dim connecting trail between nodes
 
 import Phaser from 'phaser';
+import { ALL_STAGES } from '../data/allStages';
+import { stageFeaturedInvader } from '../data/stageFeatured';
 import {
   CASUAL,
   CASUAL_CSS,
@@ -470,6 +472,7 @@ export function drawGenericPlaque(
     scene.add.text(x + w / 2, y + h - 16, '☆☆☆', {
       fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
+    _drawFeaturedInvader(scene, idx, x + w / 2, y + 38, 1);
     const zone = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => _pressPlaque(scene, bg, () => onSelect(idx)));
     zone.on('pointerover', () => drawBase(theme.unclearedHoverBg, edgeHover));
@@ -493,6 +496,7 @@ export function drawGenericPlaque(
       color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(isBoss ? 0 : 0.5, 0.5);
     addStarPop(scene, x + w / 2, y + h - 16, prog.bestStars, theme.starColor);
+    _drawFeaturedInvader(scene, idx, x + w / 2, y + 38, 0.75);
     if (prog.bestHpPercent !== undefined) {
       _drawHpDisplay(scene, x, y, w, h, prog.bestHpPercent, theme.showHpBar);
     }
@@ -515,6 +519,19 @@ export function drawGenericPlaque(
 }
 
 // ── Plaque visual helpers ─────────────────────────────────────────────────────
+
+/** 관문 창에 그 관문의 대표 침입자(보스 또는 주력) 픽셀 스프라이트 — 번호만 있던 칸에 "누구와 싸우는가". */
+function _drawFeaturedInvader(scene: Phaser.Scene, idx: number, cx: number, cy: number, alpha: number): void {
+  const stage = ALL_STAGES[idx];
+  const type = stage ? stageFeaturedInvader(stage) : null;
+  const key = type ? `invader-${type}` : null;
+  if (!key || !scene.textures.exists(key)) return;
+  // A warm backlight so dark pixel sprites read against the soot window (ember for bosses).
+  const glow = scene.add.graphics();
+  glow.fillStyle(stage?.waves.some(w => w.invaders.some(g => g.isBoss)) ? DUNGEON_UI.EMBER : DUNGEON_UI.BRASS, 0.2 * alpha);
+  glow.fillCircle(cx, cy + 1, 14);
+  scene.add.image(cx, cy, key).setDisplaySize(28, 28).setAlpha(alpha);
+}
 
 function _drawPlaqueAccent(
   g: Phaser.GameObjects.Graphics,
