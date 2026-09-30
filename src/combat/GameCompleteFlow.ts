@@ -154,7 +154,7 @@ export function showGameComplete(ctx: ResultFlowContext): void {
   const stats: [string, string][] = [
     ['클리어 스테이지',    `${totalStages} / ${TOTAL_STAGES}`],
     ['최종 던전 HP',       `${ctx.dungeonHp} / ${ctx.maxHp}`],
-    ['보너스 영혼 결정체', `+${awardedCrystalBonus} 💠`],
+    ['보너스 영혼 결정', `+${awardedCrystalBonus} 💠`],
     ['던전 마스터 레벨',   `${gs2.dmLevel ?? 1}`],
   ];
   stats.forEach(([label, value], i) => {

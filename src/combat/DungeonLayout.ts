@@ -4,6 +4,7 @@
 // inputs as plain parameters and mutate only the scene's display list and
 // the Room array passed back to the caller.
 
+import { getSlotBuildingName } from '../data/roomBuildings';
 import { markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
@@ -136,7 +137,8 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
       }
 
       room.setDungeonSlotLoadoutVisual({
-        roomTypeName: typeDef?.name ?? '던전실',
+        // The building (봉화 망루, 대형 보물고 …), or the family name for its default building — as on the home card.
+        roomTypeName: typeDef ? getSlotBuildingName(slot, typeDef.name) : '던전실',
         accentColor: slot.roomType ? SLOT_VISUAL_ACCENT[slot.roomType] : ROOM_DEFS[roomType].accentColor,
         slotRoomType: slot.roomType,
         primaryMonsterEmoji: monsterIds[0] ? getMonsterEmoji(monsterIds[0]) : null,

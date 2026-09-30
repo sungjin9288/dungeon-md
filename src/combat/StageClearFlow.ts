@@ -177,7 +177,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     popIn(scene, starT, { duration: 160, delay: 100 + si * 40 });
   }
 
-  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정체 · +${crystals}`, {
+  const crystalT = scene.add.text(CANVAS_WIDTH / 2, cy + 120, `영혼 결정 · +${crystals}`, {
     fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: CASUAL_CSS.BLUE,
   }).setOrigin(0.5).setAlpha(0);
   ov.add(crystalT);
@@ -196,7 +196,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Stats row: gold + kills + waves
   const contentOffset = ctx.dailyMode ? 20 : 0;
   const stolen = ctx.goldStolenThisRun > 0 ? ` · 도굴 −${ctx.goldStolenThisRun}` : '';
-  const statsStr = `골드 ${ctx.gold} · 격퇴 ${ctx.killsThisRun} · 침입 ${ctx.wave}${stolen}`;
+  const statsStr = `골드 ${ctx.gold} · 격퇴 ${ctx.killsThisRun} · 웨이브 ${ctx.wave}${stolen}`;
   const killT = scene.add.text(CANVAS_WIDTH / 2, cy + 152 + contentOffset, statsStr, {
     fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(0.5).setAlpha(0);

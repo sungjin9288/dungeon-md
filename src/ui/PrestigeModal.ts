@@ -150,7 +150,7 @@ export function openPrestigeModal(scene: Phaser.Scene, onConfirm: () => void): v
   // ── What resets / keeps ────────────────────────────────────────────────────
   const infoY = bonusY + 58;
   const resetItems = ['스테이지 진행', '퀘스트 진행', '골드', '던전 슬롯 배치', '컷씬 시청 기록'];
-  const keepItems  = ['지혜의 나무', 'DM 레벨', '몬스터 보유', '영혼 결정체', '장비 / 스킨'];
+  const keepItems  = ['지혜의 나무', 'DM 레벨', '몬스터 보유', '영혼 결정', '장비 / 스킨'];
 
   const resetFrame = addFramedPanel(scene, {
     x: CX - 142,

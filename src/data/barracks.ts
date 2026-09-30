@@ -688,7 +688,7 @@ export const EQUIPMENT_DEFS: Equipment[] = [
   { id: 'lucky_charm',     name: '행운의 부적', icon: '🍀', type: 'accessory',
     desc: '모든 발동 확률 +5%',           goldCost: 250, gemCost: 50 },
   { id: 'soul_crystal_acc',name: '영혼 결정',  icon: '💎', type: 'accessory',
-    desc: '영혼 결정체 획득 +15%',        goldCost: 300, gemCost: 60 },
+    desc: '영혼 결정 획득 +15%',        goldCost: 300, gemCost: 60 },
   { id: 'battle_ring',     name: '전투의 반지', icon: '💍', type: 'accessory',
     desc: '액티브 스킬 쿨타임 -15%',     goldCost: 280, gemCost: 56 },
 ];
