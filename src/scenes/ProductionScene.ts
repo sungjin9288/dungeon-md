@@ -331,8 +331,14 @@ export class ProductionScene extends Phaser.Scene {
     this.add.text(x + w / 2, y + 78, built ? `가동 · Lv.${level}` : '미건설', {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: built ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
-    this.add.text(x + w / 2, y + 97, built ? this.outputLabel(def, productionRatePerHour(this.gs, def, level), true) : '생산 중지', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: built ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED,
+    const buildCost = built ? null : facilityUpgradeCost(def, 0);
+    const canBuild = buildCost !== null && this.gs.homeGold >= buildCost;
+    const footer = built
+      ? this.outputLabel(def, productionRatePerHour(this.gs, def, level), true)
+      : buildCost === null ? '건설 불가' : `건설 ${buildCost.toLocaleString('ko-KR')}골드`;
+    this.add.text(x + w / 2, y + 97, footer, {
+      fontFamily: 'sans-serif', fontSize: '10px', fontStyle: canBuild ? 'bold' : 'normal',
+      color: built ? DUNGEON_UI_CSS.TEXT : canBuild ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5);
 
     const zone = this.add.zone(x, y, w, h).setOrigin(0).setName(`production-facility-${id}`)
@@ -428,12 +434,13 @@ export class ProductionScene extends Phaser.Scene {
         : `골드 ${(cost - this.gs.homeGold).toLocaleString('ko-KR')} 부족 · 필요 ${cost.toLocaleString('ko-KR')}`;
     this.drawStaffStrip(COMMAND_Y + 138, def.id, level, staffId, staffMult);
 
-    this.add.text(PANEL_X + 16, COMMAND_Y + 196, status, {
+    // 영수증이 없으면 상태 줄 하나를 강화 버튼 높이 가운데에 둔다.
+    this.add.text(PANEL_X + 16, COMMAND_Y + (this.receipt ? 196 : 217), status, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
       color: cost === null ? DUNGEON_UI_CSS.JADE : affordable ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0, 0.5);
 
-    const receiptText = this.receipt?.text ?? '선택한 시설의 생산량과 비용을 확인하세요';
+    const receiptText = this.receipt?.text ?? '';
     this.add.text(PANEL_X + 16, COMMAND_Y + 224, receiptText, {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: this.receipt ? 'bold' : 'normal',
       color: this.receipt?.tone === 'warning' ? DUNGEON_UI_CSS.EMBER : this.receipt ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
