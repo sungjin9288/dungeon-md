@@ -5,6 +5,7 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import { getLineageNextStep } from '../data/lineage';
 import { getHomeTodos } from '../data/homeTodos';
 import { getMonsterDisplayName } from '../data/fusion';
@@ -13,7 +14,6 @@ import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import {
-  getUnlockedSlotCount,
   type OwnedMonster,
 } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
@@ -71,7 +71,7 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
   scene.commandDeckContainer = deck;
   scene.commandDeckRect = { x: deckX, y: deckY, w: deckW, h: deckH };
 
-  const unlockedSlots = getUnlockedSlotCount(scene.gs);
+  const unlockedSlots = getDungeonRoomCount(scene.gs);
   const visibleSlots = (scene.gs.dungeonSlots ?? []).slice(0, unlockedSlots);
   const builtRooms = visibleSlots.filter(slot => !!slot?.roomType).length;
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
@@ -331,7 +331,7 @@ function drawHomeDirectiveCard(
 // ─── openFirstDungeonSlot ────────────────────────────────────────────────────
 
 function openFirstDungeonSlot(scene: DungeonHomeScene, preferredSlotIdx: number): void {
-  const unlockedSlots = getUnlockedSlotCount(scene.gs);
+  const unlockedSlots = getDungeonRoomCount(scene.gs);
   const idx = Phaser.Math.Clamp(preferredSlotIdx, 0, Math.max(0, unlockedSlots - 1));
   scene.selectRoomForPlacement(idx);
 }

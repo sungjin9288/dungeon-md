@@ -5,10 +5,10 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CASUAL } from '../constants/colors';
-import { getUnlockedSlotCount } from '../data/wisdom';
 import { calculateDungeonMetrics } from '../data/dungeonMetrics';
 import { bakeDungeonBackdrop } from '../art/DungeonBackdrop';
 
@@ -27,7 +27,7 @@ export function drawDungeonEntranceGate(
   y: number,
   accent: number,
 ): void {
-  const unlockedSlots = getUnlockedSlotCount(scene.gs);
+  const unlockedSlots = getDungeonRoomCount(scene.gs);
   const readiness = calculateDungeonMetrics(scene.gs, unlockedSlots).readiness;
   const statusLabel = readiness >= 80 ? '수비선 안정' : '침입 경로 경계';
   const statusColor = readiness >= 80 ? CASUAL.GREEN : accent;
@@ -76,7 +76,7 @@ export function drawDungeonHeartCore(
   y: number,
   _accent: number,
 ): void {
-  const unlockedSlots = getUnlockedSlotCount(scene.gs);
+  const unlockedSlots = getDungeonRoomCount(scene.gs);
   const dungeonMetrics = calculateDungeonMetrics(scene.gs, unlockedSlots);
   const readiness = dungeonMetrics.readiness;
   const accent = readiness >= 70 ? CASUAL.GOLD

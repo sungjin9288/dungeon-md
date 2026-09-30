@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getDungeonRoomCount } from './data/dungeonPlan';
 import * as Tone from 'tone';
 import { Capacitor } from '@capacitor/core';
 import { BootScene }             from './scenes/BootScene';
@@ -24,7 +25,7 @@ import { StageRewardOverlay }    from './scenes/StageRewardOverlay';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants/layout';
 import { applyCasualBackground } from './ui/AmbientBackground';
 import { getReducedMotion } from './utils/reducedMotion';
-import { getUnlockedSlotCount, loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
+import { loadGameState, type DungeonSlot, type GameState } from './data/wisdom';
 import { calculateRoomMetrics } from './data/dungeonMetrics';
 import { getDungeonActionQueue, getRoomActionRecommendation } from './data/roomActionRecommendations';
 import { installNativeSafeAreaFallback } from './constants/safeArea';
@@ -299,7 +300,7 @@ function serializeHomeScene(scene: DungeonHomeScene): RuntimeRecord {
   const raw = scene as unknown as RuntimeRecord;
   const gs = asRecord(raw['gs']);
   const slots = Array.isArray(gs['dungeonSlots']) ? gs['dungeonSlots'] : [];
-  const unlockedSlots = getUnlockedSlotCount({
+  const unlockedSlots = getDungeonRoomCount({
     dmLevel:    asNumber(gs['dmLevel'], 1),
     wisdomTree: asRecord(gs['wisdomTree']) as Record<string, number>,
   });

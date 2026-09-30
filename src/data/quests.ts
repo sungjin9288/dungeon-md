@@ -1,6 +1,7 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
 
-import { getUnlockedSlotCount, MAX_ROOM_LEVEL, type GameState } from './wisdom';
+import { MAX_ROOM_LEVEL, type GameState } from './wisdom';
+import { getDungeonRoomCount } from './dungeonPlan';
 import { logger } from '../utils/logger';
 
 // Re-export all types and data from questData for backwards compatibility
@@ -36,7 +37,7 @@ function highestClearedStage(gs: Readonly<GameState>): number {
  * could never be finished (MQ-036/040 deadlock, §35).
  */
 function noRoomLeftToUpgrade(gs: Readonly<GameState>): boolean {
-  const unlocked = getUnlockedSlotCount(gs);
+  const unlocked = getDungeonRoomCount(gs);
   const slots = gs.dungeonSlots ?? [];
   for (let i = 0; i < unlocked; i++) {
     const slot = slots[i];

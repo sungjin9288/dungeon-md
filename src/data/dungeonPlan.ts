@@ -135,6 +135,17 @@ export function countRooms(plan: DungeonPlan): number {
 }
 
 /**
+ * 던전의 방 칸 수(주 통로 + 곁방). 칸 번호는 항상 0..n-1로 연속이다 — 새 칸은 가장 작은 빈 번호를 받고
+ * (nextFreeSlot), 옛 격자 이전도 열린 칸 0..k-1을 그대로 쓴다. 그래서 "0..n-1 슬롯" 순회 코드는 그대로 맞다.
+ * 순서가 중요한 표시(침입 경로)는 getDungeonPlan(state).corridor 순서를 쓸 것.
+ */
+export function getDungeonRoomCount(
+  state: Readonly<Pick<GameState, 'dungeonPlan' | 'dmLevel' | 'wisdomTree'>>,
+): number {
+  return countRooms(getDungeonPlan(state));
+}
+
+/**
  * 새 칸에 줄 dungeonSlots 인덱스: 배치도에 없고 방이 지어진 적도 없는 가장 작은 번호.
  * 뒤로 건너뛰면 배열 중간이 비어, 배열을 순회하는 기존 코드가 빈 칸을 만난다.
  */

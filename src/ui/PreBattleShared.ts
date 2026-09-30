@@ -2,10 +2,10 @@
  * PreBattleShared.ts — consts, types, and pure helpers shared across the
  * PreBattle feature modules.  NO Phaser render logic here.
  */
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import {
   getPrestigeDmgMult,
   getRoomSlotCapacity,
-  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot,
   type GameState,
@@ -226,7 +226,7 @@ export function getMonsterDefenseScore(gs: GameState, monsterId: string): { base
 }
 
 export function getDefenseRooms(gs: GameState): DefenseRoomSummary[] {
-  const unlockedSlots = getUnlockedSlotCount(gs);
+  const unlockedSlots = getDungeonRoomCount(gs);
   const slots = gs.dungeonSlots ?? [];
   const rooms: DefenseRoomSummary[] = [];
 
@@ -270,7 +270,7 @@ export function getDefenseRooms(gs: GameState): DefenseRoomSummary[] {
 }
 
 export function getDefenseTotals(gs: GameState, rooms: readonly DefenseRoomSummary[]): DefenseTotals {
-  const unlockedSlots = getUnlockedSlotCount(gs);
+  const unlockedSlots = getDungeonRoomCount(gs);
   return {
     unlockedSlots,
     builtRooms: rooms.filter(room => !!room.slot.roomType).length,

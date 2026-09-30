@@ -8,12 +8,13 @@
 //   buildEquipmentMap()  — builds the monsterId → EquipmentStats lookup used
 //                          by combat multipliers.
 
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import Phaser from 'phaser';
 import { logger } from '../utils/logger';
 import { type WaveSpec } from '../data/stages';
 import { ALL_STAGES } from '../data/allStages';
 import { highestClearedStage } from '../data/stageProgress';
-import { loadGameState, getUnlockedSlotCount, type WisdomBonuses } from '../data/wisdom';
+import { loadGameState, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
 import { type DailyDungeon, type WeeklyBoss } from '../data/daily';
 import { rollEndlessModifier } from '../data/endlessModifiers';
@@ -63,7 +64,7 @@ export function resolveStageSetup(
 
   // The battle grid mirrors the home board exactly: nothing is built mid-battle,
   // so a stage cannot offer more (or fewer) cells than the player designed.
-  const baseSlots = getUnlockedSlotCount(gameState);
+  const baseSlots = getDungeonRoomCount(gameState);
   const isEndless = stageCfg?.endless ?? false;
   const endlessHighScore = isEndless ? (gameState.endlessHighScore ?? 0) : 0;
 

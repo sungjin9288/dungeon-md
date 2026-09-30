@@ -1,7 +1,7 @@
 import { getSlotBuildingName } from '../data/roomBuildings';
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import Phaser from 'phaser';
 import {
-  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   SLOT_UNLOCK_LEVELS,
   type DungeonSlot,
@@ -52,7 +52,7 @@ function getRoomVisual(slot: DungeonSlot | undefined): { icon: string; name: str
 }
 
 function getDungeonBuildSummary(gs: GameState): DungeonBuildSummary {
-  const unlockedSlots = getUnlockedSlotCount(gs);
+  const unlockedSlots = getDungeonRoomCount(gs);
   const visibleSlots = (gs.dungeonSlots ?? []).slice(0, unlockedSlots);
   const builtRooms = visibleSlots.filter(slot => !!slot?.roomType).length;
   const monsterCount = visibleSlots.reduce(

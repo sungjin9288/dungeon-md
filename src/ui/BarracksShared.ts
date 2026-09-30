@@ -1,6 +1,7 @@
 // ─── Barracks Shared ─────────────────────────────────────────────────────────
 // 병영 씬 공유 상수·타입·순수 헬퍼. 최하층 — 씬을 import하지 않는다 (순환 방지).
 
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import { COLORS } from '../constants/colors';
 import { MONSTER_DEFS, resolveOwnedMonsterProfile } from '../data/monsters';
 import {
@@ -10,7 +11,6 @@ import {
 } from '../data/barracks';
 import {
   getRoomSlotCapacity,
-  getUnlockedSlotCount,
   ROOM_SLOT_TYPE_DEFS,
   type GameState,
   type DungeonSlot,
@@ -259,7 +259,7 @@ export function getMonsterRoomPlan(gs: GameState, monster: OwnedMonster): Monste
 
   const def = resolveOwnedMonsterProfile(monster.id);
   const preferredType = getPreferredRoomType(def?.type);
-  const unlockedSlots = getUnlockedSlotCount(gs);
+  const unlockedSlots = getDungeonRoomCount(gs);
   const slots = gs.dungeonSlots ?? [];
   const viableRooms = slots
     .slice(0, unlockedSlots)

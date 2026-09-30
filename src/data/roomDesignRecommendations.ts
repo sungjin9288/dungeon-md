@@ -1,6 +1,6 @@
+import { getDungeonRoomCount } from './dungeonPlan';
 import {
   getRoomSlotCapacity,
-  getUnlockedSlotCount,
   type DungeonSlot,
   type GameState,
   type RoomSlotType,
@@ -43,7 +43,7 @@ export function getRoomDesignRecommendation(
   state: GameState,
   slotIdx: number,
 ): RoomDesignRecommendation {
-  const slots = (state.dungeonSlots ?? []).slice(0, getUnlockedSlotCount(state));
+  const slots = (state.dungeonSlots ?? []).slice(0, getDungeonRoomCount(state));
   const counts = countRoomTypes(slots);
   const gaps = countLoadoutGaps(slots);
   const assignedMonsterIds = new Set(

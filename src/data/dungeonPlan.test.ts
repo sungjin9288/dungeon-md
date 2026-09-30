@@ -9,6 +9,7 @@ import {
   getCorridorPermit,
   getDigCost,
   getDungeonPlan,
+  getDungeonRoomCount,
   getSideCapacity,
   getSidePermit,
   migrateToDungeonPlan,
@@ -149,5 +150,30 @@ describe('굴착 거래', () => {
     if (!second.ok) return;
     expect(buyDungeonLicense(second.state, 'corridor')).toMatchObject({ ok: false, reason: 'max_licenses' });
     expect(buyDungeonLicense(fresh({ gems: 100 }), 'side')).toMatchObject({ ok: false, reason: 'insufficient_gems' });
+  });
+});
+
+describe('칸 번호 연속 불변식', () => {
+  it('굴착을 반복해도 배치도 슬롯은 항상 0..n-1 — "방 수만큼 0부터 순회"하는 코드가 그대로 맞다', () => {
+    let current = state({ dmLevel: 30, homeGold: 10_000_000, dungeonPlan: { corridor: [0], sides: [] } });
+    const steps: Array<() => ReturnType<typeof digCorridorRoom>> = [
+      () => digCorridorRoom(current), () => digSideRoom(current, 0, 'up'), () => digCorridorRoom(current),
+      () => digSideRoom(current, 1, 'down'), () => digCorridorRoom(current), () => digSideRoom(current, 2, 'up'),
+    ];
+    for (const step of steps) {
+      const result = step();
+      expect(result.ok).toBe(true);
+      current = result.state;
+      const plan = getDungeonPlan(current);
+      const slots = [...plan.corridor, ...plan.sides.map(side => side.slot)].sort((a, b) => a - b);
+      expect(slots).toEqual(Array.from({ length: slots.length }, (_, i) => i));
+      expect(getDungeonRoomCount(current)).toBe(slots.length);
+    }
+  });
+
+  it('옛 세이브의 방 수는 옛 열린 칸 수와 같다', () => {
+    for (const dmLevel of [1, 2, 4, 6, 8, 20]) {
+      expect(getDungeonRoomCount(state({ dmLevel }))).toBe(planFromLegacyGrid(state({ dmLevel })).corridor.length);
+    }
   });
 });

@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import {
   loadGameState,
-  getUnlockedSlotCount,
   type OwnedMonster,
 } from '../data/wisdom';
 import {
@@ -489,7 +489,7 @@ export class BarracksScene extends Phaser.Scene {
     this.registry.remove('focusRoomSlotIdx');
     const slotIdx = typeof raw === 'number' ? raw : Number(raw);
     if (!Number.isInteger(slotIdx)) return null;
-    if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(this.gs)) return null;
+    if (slotIdx < 0 || slotIdx >= getDungeonRoomCount(this.gs)) return null;
     return slotIdx;
   }
 

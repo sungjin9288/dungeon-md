@@ -6,10 +6,10 @@
  *
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
-import { getUnlockedSlotCount } from '../data/wisdom';
 import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import { beginForecastDay, settleForecastBattle } from '../data/forecastTransactions';
 import { getTodayString } from '../data/daily';
@@ -221,7 +221,7 @@ export function consumeHomeRoomFeedback(scene: DungeonHomeScene): HomeRoomFeedba
   )) return null;
   const slotIdx = typeof raw.slotIdx === 'number' ? raw.slotIdx : Number(raw.slotIdx);
   if (!Number.isInteger(slotIdx)) return null;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return null;
+  if (slotIdx < 0 || slotIdx >= getDungeonRoomCount(scene.gs)) return null;
   if (!raw.title || !raw.body) return null;
   if (raw.kind === 'equipment' && (!raw.equipmentName || !raw.equipmentEmoji)) return null;
   return {
@@ -358,7 +358,7 @@ export function consumeFocusRoomSlotIdx(scene: DungeonHomeScene): number | null 
   scene.registry.remove('focusSourceLabel');
   const slotIdx = typeof raw === 'number' ? raw : Number(raw);
   if (!Number.isInteger(slotIdx)) return null;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return null;
+  if (slotIdx < 0 || slotIdx >= getDungeonRoomCount(scene.gs)) return null;
   return slotIdx;
 }
 
@@ -496,7 +496,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
   const prevCrystal = scene.gs.soulCrystals;
   const prevGems    = scene.gs.gems;
   const prevDmLevel = scene.gs.dmLevel;
-  const prevSlots = getUnlockedSlotCount({ dmLevel: prevDmLevel, wisdomTree: scene.gs.wisdomTree });
+  const prevSlots = getDungeonRoomCount({ dmLevel: prevDmLevel, wisdomTree: scene.gs.wisdomTree });
 
   // A forecast card's battle settles through the card (loot + DM XP once, then
   // the card's reward and the name); any other battle settles as before.
@@ -523,7 +523,7 @@ export function checkBattleReturn(scene: DungeonHomeScene): void {
     previousDmLevel: prevDmLevel,
     nextDmLevel: scene.gs.dmLevel,
     previousSlots: prevSlots,
-    nextSlots: getUnlockedSlotCount(scene.gs),
+    nextSlots: getDungeonRoomCount(scene.gs),
     questCompletionPending: !!settlement.defendUpdate?.questDone,
     materialsEarned: result.materialsEarned,
   };
@@ -606,7 +606,7 @@ export function revealUnlockedRoom(
 ): void {
   if (nextSlots <= previousSlots) return;
   const slotIdx = previousSlots;
-  if (slotIdx < 0 || slotIdx >= getUnlockedSlotCount(scene.gs)) return;
+  if (slotIdx < 0 || slotIdx >= getDungeonRoomCount(scene.gs)) return;
 
   scene.pendingRoomFeedback = {
     kind: 'unlock',

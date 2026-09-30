@@ -6,10 +6,10 @@
  * Shows room info, type selector, monster/trap slots, upgrade/repair controls.
  */
 
+import { getDungeonRoomCount } from '../data/dungeonPlan';
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
-import {
-  getUnlockedSlotCount, ROOM_SLOT_TYPE_DEFS,
+import { ROOM_SLOT_TYPE_DEFS,
   type DungeonSlot, type GameState } from '../data/wisdom';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import { type RoomOperationalMetrics } from '../data/dungeonMetrics';
@@ -423,7 +423,7 @@ export function getNextRoomDetailAction(
   state: GameState,
   currentSlotIdx: number,
 ): RoomDetailNextActionEntry | null {
-  const unlockedSlots = getUnlockedSlotCount(state);
+  const unlockedSlots = getDungeonRoomCount(state);
   const queue = getDungeonActionQueue(state, unlockedSlots);
   const index = queue.findIndex(action => action.slotIdx !== currentSlotIdx);
   if (index < 0) return null;
