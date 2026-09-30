@@ -26,6 +26,7 @@ export const IDLE_PER_LEVEL        = 2;     // each room level beyond 1
 export const IDLE_PER_GUARDIAN     = 1.5;   // each guardian deployed or working at a built facility
 export const IDLE_DM_BONUS         = 0.04;  // ×(1 + dmLevel * this)
 export const IDLE_PER_GOLD_ROOM    = 12;    // a 황금 광맥 built at home is a revenue room (no battle income)
+export const IDLE_PER_GRAND_VAULT  = 24;    // 대형 보물고 — the gem special room earns twice the vein
 /** A famous dungeon draws paying visitors: ×(1 + this × (tier − 1)) on gold (operation + treasury). */
 export const IDLE_NOTORIETY_BONUS  = 0.15;
 export const IDLE_CAP_HOURS        = 12;    // max accumulation window
@@ -117,10 +118,13 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
   let levelSum = 0;
   let guardians = 0;
   let goldRooms = 0;
+  let vaults = 0;
   for (const slot of built) {
     levelSum  += Math.max(0, (slot.roomLevel ?? 1) - 1);
     guardians += definedCount(slot.monsterIds);
-    if (getSlotBuilding(slot) === 'gold') goldRooms++;
+    const building = getSlotBuilding(slot);
+    if (building === 'gold') goldRooms++;
+    if (building === 'grand_vault') vaults++;
   }
 
   // Working guardians retain their operating contribution, with the same growth
@@ -136,7 +140,8 @@ export function dungeonGoldPerMin(state: Readonly<Pick<GameState, 'dungeonSlots'
     built.length * IDLE_PER_ROOM +
     levelSum * IDLE_PER_LEVEL +
     guardians * IDLE_PER_GUARDIAN +
-    goldRooms * IDLE_PER_GOLD_ROOM;
+    goldRooms * IDLE_PER_GOLD_ROOM +
+    vaults * IDLE_PER_GRAND_VAULT;
 
   const dmScale = 1 + Math.max(0, (state.dmLevel ?? 1)) * IDLE_DM_BONUS;
   // 지혜의 나무 `황금의 손` — the tree's only economy branch now that battles

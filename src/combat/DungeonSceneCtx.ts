@@ -5,6 +5,7 @@
  * required by the corresponding combat subsystem. DungeonScene is imported as
  * a TYPE ONLY to avoid a circular-dependency at runtime.
  */
+import { getSlotBuilding } from '../data/roomBuildings';
 import { cellOfSlot } from '../data/battleTopology';
 import type { DungeonScene } from '../scenes/DungeonScene';
 import type { ObjectiveType } from '../data/quests';
@@ -528,6 +529,11 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     tribeShardsEarnedThisRun: ds.tribeShardsEarnedThisRun,
     get goldStolenThisRun()      { return ds.goldStolenThisRun; },
     set goldStolenThisRun(v)     { ds.goldStolenThisRun = v; },
+    wandererDen: () => {
+      const target = ds.visitorRoutes.get('wanderer')?.targetSlot;
+      const slot = target === null || target === undefined ? undefined : ds.dungeonTrapSlots[target];
+      return slot?.roomType ? getSlotBuilding(slot) : null;
+    },
     hasSynergy:         (id)  => ds.synergyManager.hasSpecial(id),
     applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct, ds.equipmentMap, index => {
       const cell = cellOfSlot(ds.topology, index);

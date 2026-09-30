@@ -17,8 +17,15 @@ import { shortenLabel } from './MonsterDetailShared';
 import { TRAP_DEFS } from '../data/traps';
 import { getTrapStock } from '../data/trapTransactions';
 import { isMonsterOnShift } from '../data/productionTransactions';
-import { ROOM_DEFS, ROOM_FAMILY } from '../data/rooms';
-import { getSlotBuilding, listUnlockedBuildings } from '../data/roomBuildings';
+import { ROOM_DEFS, ROOM_FAMILY, type RoomType } from '../data/rooms';
+import {
+  PREMIUM_BUILDING_GEMS,
+  getSlotBuilding,
+  listLockedPremiumBuildings,
+  listUnlockedBuildings,
+  purchasePremiumBuilding,
+} from '../data/roomBuildings';
+import { openPremiumRoomConfirm } from './PremiumRoomConfirm';
 import {
   assignMonsterToRoomSlot, installTrapInRoomSlot, changeRoomSlotType,
   ensureDungeonSlot, setRoomSlotBuilding,
@@ -62,6 +69,9 @@ let container: Phaser.GameObjects.Container | null = null;
 let activeTab: PlacementTrayTab = 'monster';
 let activeSlot = -1;
 let ctxRef: PlacementTrayCtx | null = null;
+/** 이번 누름이 가로 목록 끌기였는지 — 끌기 뒤 손을 떼도 칸 탭으로 처리하지 않는다. */
+let stripDragMoved = false;
+const STRIP_DRAG_THRESHOLD = 10;
 
 export function openPlacementTray(ctx: PlacementTrayCtx, slotIdx: number): void {
   ctxRef = ctx;
@@ -316,7 +326,8 @@ function render(): void {
 function renderTypeStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: DungeonSlot | undefined, y: number, h: number): void {
   const cardW = 86, gap = 8;
   const buildings = listUnlockedBuildings(gs);
-  const inner = buildStrip(c, y, h, buildings.length, cardW, gap);
+  const locked = listLockedPremiumBuildings(gs);
+  const inner = buildStrip(c, y, h, buildings.length + locked.length, cardW, gap);
   const active = slot ? getSlotBuilding(slot) : null;
   let x = 0;
   for (const type of buildings) {
@@ -328,13 +339,44 @@ function renderTypeStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     addText(inner, x + cardW / 2, h / 2 - 14, def.emoji, '24px', '#ffffff', false, 0.5);
     addText(inner, x + cardW / 2, h - 30, def.koreanName, '11px', on ? '#9fe1cb' : '#c8b890', on, 0.5);
     addText(inner, x + cardW / 2, h - 14, family?.name ?? '', '10px', on ? '#9fe1cb' : '#8f8468', false, 0.5);
-    z.on('pointerdown', () => {
+    onChipTap(z, () => {
       const ensured = ensureDungeonSlot(ctxRef!.getGameState(), activeSlot);
       const r = setRoomSlotBuilding(ensured.state, activeSlot, type, Date.now());
       if (r.ok) commit(r.state);
     });
     x += cardW + gap;
   }
+  // 보석 특수 방(아직 안 산 것): 잠긴 칸 → 확인 창 → 해금하고 이 방에 짓는다.
+  for (const type of locked) {
+    const def = ROOM_DEFS[type];
+    const price = PREMIUM_BUILDING_GEMS[type] ?? 0;
+    const z = chipBase(inner, x, 0, cardW, h, false, 0x7fd3c4);
+    z.setName(`placement-building-${type}`);
+    addText(inner, x + cardW / 2, h / 2 - 14, def.emoji, '24px', '#ffffff', false, 0.5).setAlpha(0.45);
+    addText(inner, x + cardW / 2, h - 30, def.koreanName, '11px', '#c8b890', false, 0.5);
+    addText(inner, x + cardW / 2, h - 14, `🔒 보석 ${price}`, '10px', (gs.gems ?? 0) >= price ? '#7fd3c4' : '#8f8468', true, 0.5);
+    onChipTap(z, () => openPremiumRoomConfirm(ctxRef!.scene, {
+      building: type,
+      gems: price,
+      ownedGems: ctxRef!.getGameState().gems ?? 0,
+      onConfirm: () => buyAndBuild(type),
+    }));
+    x += cardW + gap;
+  }
+}
+
+/** 특수 방을 보석으로 해금하고 지금 방에 짓는다(설계가 거절되면 해금만 저장). */
+function buyAndBuild(type: RoomType): void {
+  if (!ctxRef) return;
+  const bought = purchasePremiumBuilding(ctxRef.getGameState(), type);
+  if (!bought.ok) {
+    showToast(ctxRef.scene, bought.reason === 'insufficient_gems' ? '보석이 부족합니다' : '지금은 살 수 없습니다', { depth: 901 });
+    return;
+  }
+  const ensured = ensureDungeonSlot(bought.state, activeSlot);
+  const built = setRoomSlotBuilding(ensured.state, activeSlot, type, Date.now());
+  commit(built.ok ? built.state : bought.state);
+  showToast(ctxRef.scene, `${ROOM_DEFS[type].koreanName} 해금`, { depth: 901 });
 }
 
 // ── 몬스터 ───────────────────────────────────────────────────────────────────
@@ -361,7 +403,7 @@ function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot
     addText(inner, x + itemW / 2, 62, shortenLabel(profileName, 6), '10px', '#e7d6b5', true, 0.5);
     const onShift = !on && isMonsterOnShift(gs, om.id);
     addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : onShift ? '근무 중' : `Lv.${om.level}`, '10px', on ? '#9fe1cb' : onShift ? '#c8a04a' : '#c8b890', false, 0.5, on || onShift ? 'sans-serif' : 'monospace');
-    z.on('pointerdown', () => {
+    onChipTap(z, () => {
       const gsNow = ctxRef!.getGameState();
       const cur = gsNow.dungeonSlots?.[activeSlot];
       if (on) {
@@ -399,13 +441,13 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
     addText(inner, x + itemW / 2, h - 14, on ? '✓ 해제' : locked ? `Lv.${trap.unlockLv} 해금` : priceLabel,
       '10px', on ? '#9fe1cb' : locked ? '#6a6052' : afford ? '#c8b890' : '#cc6a5a', false, 0.5, on ? 'sans-serif' : 'monospace');
     if (on) {
-      z.on('pointerdown', () => {
+      onChipTap(z, () => {
         const cur = ctxRef!.getGameState().dungeonSlots?.[activeSlot];
         const tIdx = (cur?.trapIds ?? []).indexOf(trap.id);
         if (tIdx >= 0) { const r = removeTrapFromRoomSlot(ctxRef!.getGameState(), activeSlot, tIdx); if (r.ok) commit(r.state); }
       });
     } else if (!locked && afford) {
-      z.on('pointerdown', () => {
+      onChipTap(z, () => {
         const gsNow = ctxRef!.getGameState();
         const cur = gsNow.dungeonSlots?.[activeSlot];
         const cap2 = getRoomSlotCapacity(cur?.roomLevel ?? 1, cur?.roomType);
@@ -414,7 +456,7 @@ function renderTrapStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: D
         if (r.ok) commit(r.state);
       });
     } else if (!locked && trap.tier > 1) {
-      z.on('pointerdown', () => ctxRef?.openForgeTraps());
+      onChipTap(z, () => ctxRef?.openForgeTraps());
     }
     x += itemW + gap;
   }
@@ -458,20 +500,38 @@ function buildStrip(
   if (contentW > VIEW_W) {
     const minX = (VIEW_X + padL) + (VIEW_W - contentW);
     const baseX = VIEW_X + padL;
-    let startPX = 0, dragBase = 0, dragging = false;
-    const dz = s.add.zone(CANVAS_WIDTH / 2, y + h / 2, VIEW_W, h + 8).setInteractive().setDepth(120);
-    c.add(dz);
-    // Keep the drag surface behind the item container so cards receive taps.
-    c.moveBelow<Phaser.GameObjects.GameObject>(dz, inner);
-    dz.on('pointerdown', (p: Phaser.Input.Pointer) => { dragging = true; startPX = p.x; dragBase = inner.x; });
-    dz.on('pointerup', () => { dragging = false; });
-    dz.on('pointerout', () => { dragging = false; });
-    dz.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!dragging) return;
-      inner.x = Phaser.Math.Clamp(dragBase + (p.x - startPX), minX, baseX);
+    // Scene-level drag so a drag may start on a chip (chips cover nearly the whole strip); chips act on
+    // release only when the press was not a drag (`onChipTap`).
+    let startX: number | null = null;
+    let dragBase = 0;
+    const onDown = (p: Phaser.Input.Pointer): void => {
+      stripDragMoved = false;
+      startX = p.worldY >= y - 4 && p.worldY <= y + h + 4 ? p.worldX : null;
+      dragBase = inner.x;
+    };
+    const onMove = (p: Phaser.Input.Pointer): void => {
+      if (startX === null || !p.isDown) return;
+      const dx = p.worldX - startX;
+      if (!stripDragMoved && Math.abs(dx) < STRIP_DRAG_THRESHOLD) return;
+      stripDragMoved = true;
+      if (inner.active) inner.x = Phaser.Math.Clamp(dragBase + dx, minX, baseX);
+    };
+    const onUp = (): void => { startX = null; };
+    s.input.on(Phaser.Input.Events.POINTER_DOWN, onDown);
+    s.input.on(Phaser.Input.Events.POINTER_MOVE, onMove);
+    s.input.on(Phaser.Input.Events.POINTER_UP, onUp);
+    inner.once(Phaser.GameObjects.Events.DESTROY, () => {
+      s.input.off(Phaser.Input.Events.POINTER_DOWN, onDown);
+      s.input.off(Phaser.Input.Events.POINTER_MOVE, onMove);
+      s.input.off(Phaser.Input.Events.POINTER_UP, onUp);
     });
   }
   return inner;
+}
+
+/** 가로 목록 칸의 탭: 손을 뗄 때, 그 누름이 목록 끌기가 아니었을 때만. */
+function onChipTap(z: Phaser.GameObjects.Zone, onTap: () => void): void {
+  z.on('pointerup', () => { if (!stripDragMoved) onTap(); });
 }
 
 function chipBase(

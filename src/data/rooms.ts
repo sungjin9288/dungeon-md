@@ -1,5 +1,6 @@
 export type RoomType = 'guardian' | 'trap' | 'gold' | 'tower' | 'scroll_library' | 'trap_corridor' | 'armory' | 'medicine_hall'
-  | 'spirit_altar' | 'dragons_lair' | 'celestial_shrine' | 'void_forge';
+  | 'spirit_altar' | 'dragons_lair' | 'celestial_shrine' | 'void_forge'
+  | 'grand_vault' | 'elite_den';
 
 export interface RoomDef {
   type: RoomType;
@@ -148,6 +149,24 @@ export const ROOM_DEFS: Record<RoomType, RoomDef> = {
     attackDamage: 260, attackRange: 3, attackCooldown: 5500,
     goldPerSec: 0, baseHp: 220, upgradeMult: 1.6,
   },
+
+  // ─── Gem-unlocked special rooms (roomBuildings.ts PREMIUM_BUILDING_GEMS) ──────
+  // Not chapter-gated: bought once with gems, kept forever (also through prestige).
+
+  grand_vault: {
+    type: 'grand_vault', koreanName: '대형 보물고',
+    description: '보석 특수 방 · 홈 운영 수익 +24 황금/분(황금 광맥의 2배) · 모험가가 노린다',
+    emoji: '🏦', cost: 200, accentColor: 0xe0b040, accentCSS: '#e0b040',
+    attackDamage: 0, attackRange: 0, attackCooldown: 0,
+    goldPerSec: 0, baseHp: 180, upgradeMult: 1.4,
+  },
+  elite_den: {
+    type: 'elite_den', koreanName: '고급 몬스터 굴',
+    description: '보석 특수 방 · 떠돌이 몬스터 포섭 70%·부족 조각 +20 · 근접 방어',
+    emoji: '🐺', cost: 200, accentColor: 0x8a5cc8, accentCSS: '#8a5cc8',
+    attackDamage: 24, attackRange: 1, attackCooldown: 3500,
+    goldPerSec: 0, baseHp: 280, upgradeMult: 1.5,
+  },
 };
 
 // Per-level effect tables. Home rooms climb to MAX_ROOM_LEVEL (5); a level past
@@ -205,11 +224,13 @@ export const ROOM_FAMILY: Record<RoomType, RoomFamily> = {
   dragons_lair:     'combat',
   celestial_shrine: 'combat',
   void_forge:       'combat',
+  elite_den:        'combat',
   trap:             'trap',
   trap_corridor:    'trap',
   gold:             'support',
   medicine_hall:    'support',
   armory:           'support',
+  grand_vault:      'support',
   scroll_library:   'magic',
   spirit_altar:     'magic',
 };

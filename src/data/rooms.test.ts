@@ -17,8 +17,8 @@ import {
 describe('ROOM_DEFS', () => {
   const entries = Object.entries(ROOM_DEFS) as [RoomType, (typeof ROOM_DEFS)[RoomType]][];
 
-  it('contains exactly 12 room types', () => {
-    expect(entries).toHaveLength(12);
+  it('contains exactly 14 room types (12 + 2 gem-unlocked special rooms)', () => {
+    expect(entries).toHaveLength(14);
   });
 
   it('every key matches the type field', () => {

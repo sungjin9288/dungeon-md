@@ -8,6 +8,8 @@
 // Layout stays inside the Daily hub's frame (20px inset, 356px tall) so the
 // modal harness measures it against the same 390×844 contract.
 
+import { getSlotBuilding } from '../data/roomBuildings';
+import { ROOM_DEFS } from '../data/rooms';
 import Phaser from 'phaser';
 import { trackHomeModal } from './homeModalQueue';
 import { drawSigil, type SigilKind } from './Sigils';
@@ -62,9 +64,12 @@ function rewardSummary(card: ForecastCard, gs: GameState): string {
 function visitorHint(card: ForecastCard, gs: GameState): string | null {
   const visitor = forecastVisitor(card.kind);
   if (visitor !== 'adventurer' && visitor !== 'wanderer') return null;
-  const hasTarget = findVisitorTarget(getDungeonPlan(gs), gs.dungeonSlots ?? [], visitor) !== null;
-  if (visitor === 'adventurer') return hasTarget ? '황금 광맥을 노림 · 놓치면 도굴' : '황금 광맥이 없어 심장부로';
-  return hasTarget ? '용의 둥지에서 포섭 기회' : '용의 둥지가 없어 심장부로';
+  const target = findVisitorTarget(getDungeonPlan(gs), gs.dungeonSlots ?? [], visitor);
+  const slot = target === null ? undefined : gs.dungeonSlots?.[target];
+  const building = slot?.roomType ? getSlotBuilding(slot) : null;
+  const name = building ? ROOM_DEFS[building].koreanName : null;
+  if (visitor === 'adventurer') return name ? `노림: ${name} · 놓치면 도굴` : '보물 방이 없어 심장부로';
+  return name ? `포섭 기회: ${name}` : '머물 굴이 없어 심장부로';
 }
 
 function guestSummary(card: ForecastCard, gs: GameState): string {

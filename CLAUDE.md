@@ -189,7 +189,8 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   (2026-09-18, P3 첫 배선). `simulation.ts`는 이 넷을 그대로 모델링하므로 예측과
   실전이 같은 레버를 본다.
 - 홈 방 = **가족 4종**(combat/trap/support/magic, 용량 보너스·픽셀 픽스처·추천)
-  **× 건물 12종**(`ROOM_DEFS`, 실제로 싸우는 방). `DungeonSlot.building`이 없으면
+  **× 건물 12종 + 보석 특수 방 2종**(`ROOM_DEFS`, 실제로 싸우는 방. 대형 보물고·고급 몬스터 굴은 챕터가 아니라
+  보석 300으로 영구 해금 — `roomBuildings.ts PREMIUM_BUILDING_GEMS`, `GameState.premiumBuildings`, 환생 유지). `DungeonSlot.building`이 없으면
   가족 기본 건물(`FAMILY_DEFAULT_ROOM`). 챕터 방은 도달한 챕터부터 해금
   (`roomBuildings.ts`). 첫 설계 시 `roomsBuilt`에 건물이 기록된다.
 - 밸런스 가드 `campaignPacing.test.ts`: 스타터(시작 보드 방 3개·스타터 3체)가
@@ -252,8 +253,9 @@ DungeonScene에 들어가고, 귀환 시 `HomeLifecycle.checkBattleReturn`이
 
 ### 손님 종류 (2026-09-30, 가로 던전 P4)
 
-`visitors.ts`가 단일 진실원. 웨이브 그룹의 `visitor`(없으면 토벌대)가 경로를 정한다: 모험가 → 황금 광맥으로
-우회 후 입구 탈출(전리품 도굴 ×3, 잡으면 확정 재료), 떠돌이 몬스터 → 용의 둥지에서 멈춤(40% 포섭 → 부족 조각 +10).
+`visitors.ts`가 단일 진실원. 웨이브 그룹의 `visitor`(없으면 토벌대)가 경로를 정한다: 모험가 → 황금 광맥·대형 보물고(가까운 쪽)로
+우회 후 입구 탈출(전리품 도굴 ×3, 잡으면 확정 재료), 떠돌이 몬스터 → 용의 둥지·고급 몬스터 굴에서 멈춤(40% 포섭 → 부족 조각 +10,
+고급 몬스터 굴은 70% · +20).
 목표 방이 없으면 심장부로. 예보 treasure/pilgrim 카드가 이 손님이며 `forecastBattleWaves`가 시작 때 손님을 단다.
 생성 대기열 항목은 `SpawnQueueItem{def,delay,visitor}`, 경로는 `DungeonScene.visitorRoutes`(buildPath에서 계산).
 전투 씬은 재사용되므로 run 단위 기록(`materialsEarnedThisRun`·`tribeShardsEarnedThisRun`)은 create에서 비운다.

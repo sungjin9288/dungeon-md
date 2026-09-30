@@ -9,7 +9,7 @@ import { handleSwapTarget } from '../ui/HomeRoomSwap';
 import { drawDigSpots, enableBoardScroll } from './HomeBoardDigSpots';
 import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
 import { getSlotBuilding, getSlotBuildingName } from '../data/roomBuildings';
-import { IDLE_PER_GOLD_ROOM } from '../data/idleIncome';
+import { IDLE_PER_GOLD_ROOM, IDLE_PER_GRAND_VAULT } from '../data/idleIncome';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
@@ -273,18 +273,24 @@ function drawHomeDungeonHotspot(
   } else if (trapCount > 0) {
     drawTrapSilhouette(g, cx, floorY - 3, accent);
   } else {
-    drawRoomEmblem(g, cx, innerY + innerH / 2 + 3, getSlotBuilding(slot) === 'gold' ? 'gold' : slot.roomType, accent);
+    drawRoomEmblem(g, cx, innerY + innerH / 2 + 3, incomeRate(slot) > 0 ? 'gold' : slot.roomType, accent);
   }
 
   // An income room earns rather than defends: show its revenue, not a combat readiness.
-  const isIncomeRoom = getSlotBuilding(slot) === 'gold';
+  const isIncomeRoom = incomeRate(slot) > 0;
   const footer = isIncomeRoom
-    ? `💰 +${IDLE_PER_GOLD_ROOM}/분`
+    ? `💰 +${incomeRate(slot)}/분`
     : `${metrics.readiness}% · 👹${monsterIds.length} 🕸${trapCount}`;
   c.add(scene.add.text(cx, floorY - 7, footer, {
     fontFamily: 'sans-serif', fontSize: '10px',
     color: isIncomeRoom || metrics.readiness >= 70 ? '#d8c187' : '#e89271', fontStyle: 'bold',
   }).setOrigin(0.5, 1).setDepth(8));
+}
+
+/** 수익 방(황금 광맥·대형 보물고)의 기본 분당 수익, 아니면 0. */
+function incomeRate(slot: DungeonSlot): number {
+  const building = getSlotBuilding(slot);
+  return building === 'gold' ? IDLE_PER_GOLD_ROOM : building === 'grand_vault' ? IDLE_PER_GRAND_VAULT : 0;
 }
 
 function drawSealedExpansion(

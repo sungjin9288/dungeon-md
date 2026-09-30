@@ -314,6 +314,8 @@ export interface GameState {
   dungeonPlan?:      DungeonPlan;
   /** 보석 허가증·옛 던전 허가. 없으면 0. */
   dungeonLicenses?:  Partial<DungeonLicenses>;
+  /** 보석으로 영구 해금한 특수 방(roomBuildings.ts PREMIUM_BUILDING_GEMS). 환생해도 유지. */
+  premiumBuildings?: RoomType[];
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   /** Incomplete idle output carried between claims; absent in legacy saves. */
   idleRemainder?: { operationGold: number; productionGold: number; materials: Record<string, number> };

@@ -24,6 +24,7 @@ const ROOM_LABELS: Record<string, string> = {
   guardian: '수호실', tower: '망루', scroll_library: '서고', gold: '황금실',
   trap: '함정실', trap_corridor: '함정 복도', armory: '무기고', medicine_hall: '의전실',
   spirit_altar: '영혼 제단', dragons_lair: '용소', celestial_shrine: '천상 성소', void_forge: '공허 대장간',
+  grand_vault: '대형 보물고', elite_den: '고급 몬스터 굴',
 };
 
 export function showCodexMonsterDetail(

@@ -26,6 +26,7 @@ export function drawRoomDecoration(
       drawScrollLibrary(g, inner, theme);
       break;
     case 'gold':
+    case 'grand_vault':
       drawGold(g, inner, theme);
       break;
     case 'trap':
@@ -44,6 +45,7 @@ export function drawRoomDecoration(
       drawSpiritAltar(g, inner, theme);
       break;
     case 'dragons_lair':
+    case 'elite_den':
       drawDragonsLair(g, inner, theme);
       break;
   }

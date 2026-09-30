@@ -16,6 +16,7 @@ import {
   IDLE_PER_LEVEL,
   IDLE_PER_GUARDIAN,
   IDLE_PER_GOLD_ROOM,
+  IDLE_PER_GRAND_VAULT,
   IDLE_DM_BONUS,
   IDLE_PANEL_MIN_MS,
   IDLE_IN_SESSION_PANEL_MIN_MS,
@@ -185,6 +186,13 @@ describe('operating income (P1 ③)', () => {
     const plain = dungeonGoldPerMin(makeState({ dungeonSlots: [slot('combat')] }));
     const vein  = dungeonGoldPerMin(makeState({ dungeonSlots: [{ ...slot('combat'), building: 'gold' }] }));
     expect(vein - plain).toBeCloseTo(IDLE_PER_GOLD_ROOM * (1 + IDLE_DM_BONUS * makeState().dmLevel) * getWisdomBonuses(makeState()).idleIncomeMult, 5);
+  });
+
+  it('a 대형 보물고 out-earns the gold vein (IDLE_PER_GRAND_VAULT per minute)', () => {
+    const plain = dungeonGoldPerMin(makeState({ dungeonSlots: [slot('support')] }));
+    const vault = dungeonGoldPerMin(makeState({ dungeonSlots: [{ ...slot('support'), building: 'grand_vault' }] }));
+    expect(IDLE_PER_GRAND_VAULT).toBeGreaterThan(IDLE_PER_GOLD_ROOM);
+    expect(vault - plain).toBeCloseTo(IDLE_PER_GRAND_VAULT * (1 + IDLE_DM_BONUS * makeState().dmLevel) * getWisdomBonuses(makeState()).idleIncomeMult, 5);
   });
 
   it('the accumulation window is 12h and doubles to 24h from notoriety tier 5', () => {

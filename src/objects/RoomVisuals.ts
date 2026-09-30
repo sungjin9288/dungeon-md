@@ -38,6 +38,8 @@ const ROOM_TYPE_TO_FIXTURE_VIS: Record<string, 'combat' | 'trap' | 'support' | '
   dragons_lair:     'magic',
   celestial_shrine: 'magic',
   void_forge:       'magic',
+  grand_vault:      'support',
+  elite_den:        'magic',
 };
 
 export function drawStoneVisual(room: Room): void {

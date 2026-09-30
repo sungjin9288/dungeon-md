@@ -4,8 +4,11 @@ import {
   getHighestUnlockedChapter,
   getSlotBuilding,
   getSlotBuildingName,
+  PREMIUM_BUILDING_GEMS,
   isRoomBuildingUnlocked,
+  listLockedPremiumBuildings,
   listUnlockedBuildings,
+  purchasePremiumBuilding,
 } from './roomBuildings';
 import { loadGameState, type GameState } from './wisdom';
 
@@ -75,9 +78,35 @@ describe('building unlocks follow the campaign', () => {
     const early = listUnlockedBuildings(stateReaching(1));
     expect(early).toEqual(['guardian', 'tower', 'trap', 'gold', 'medicine_hall', 'scroll_library']);
     const late = listUnlockedBuildings(stateReaching(9));
-    expect(late).toHaveLength(Object.keys(ROOM_DEFS).length);
+    // Every campaign building by chapter 9; the gem-unlocked special rooms stay out until bought.
+    expect(late).toHaveLength(Object.keys(ROOM_DEFS).length - Object.keys(PREMIUM_BUILDING_GEMS).length);
     expect(late.map(type => ROOM_FAMILY[type])).toEqual([...late.map(type => ROOM_FAMILY[type])].sort(
       (a, b) => ['combat', 'trap', 'support', 'magic'].indexOf(a) - ['combat', 'trap', 'support', 'magic'].indexOf(b),
     ));
   });
 });
+
+describe('보석 특수 방', () => {
+  it('챕터와 무관하게 보석으로 산 뒤에만 열린다', () => {
+    const late = stateReaching(9);
+    expect(isRoomBuildingUnlocked('grand_vault', late)).toBe(false);
+    expect(listLockedPremiumBuildings(late)).toEqual(['elite_den', 'grand_vault']);
+    const owned = { ...stateReaching(1), premiumBuildings: ['grand_vault' as RoomType] };
+    expect(isRoomBuildingUnlocked('grand_vault', owned)).toBe(true);
+    expect(listUnlockedBuildings(owned)).toContain('grand_vault');
+    expect(listLockedPremiumBuildings(owned)).toEqual(['elite_den']);
+  });
+
+  it('구매는 보석을 쓰고 영구 목록에 더한다 — 이미 있음·잔액 부족·일반 방은 거절(상태 그대로)', () => {
+    const base = { ...stateReaching(1), gems: 500 };
+    const bought = purchasePremiumBuilding(base, 'elite_den');
+    expect(bought).toMatchObject({ ok: true, cost: PREMIUM_BUILDING_GEMS.elite_den });
+    expect(bought.state.gems).toBe(500 - (PREMIUM_BUILDING_GEMS.elite_den ?? 0));
+    expect(bought.state.premiumBuildings).toEqual(['elite_den']);
+    expect(purchasePremiumBuilding(bought.state, 'elite_den')).toMatchObject({ ok: false, reason: 'owned' });
+    const poor = { ...base, gems: 10 };
+    expect(purchasePremiumBuilding(poor, 'grand_vault')).toMatchObject({ ok: false, reason: 'insufficient_gems', state: poor });
+    expect(purchasePremiumBuilding(base, 'tower')).toMatchObject({ ok: false, reason: 'not_premium', state: base });
+  });
+});
+

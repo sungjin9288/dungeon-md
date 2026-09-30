@@ -8,7 +8,7 @@
 
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
-import type { RoomData } from '../data/rooms';
+import type { RoomData, RoomType } from '../data/rooms';
 import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, GRID_Y } from '../constants/layout';
 import { showGoldFloat } from './VisualEffects';
@@ -39,6 +39,8 @@ export interface BattleEventContext {
   /** 떠돌이 몬스터 포섭으로 얻은 부족 조각(전투 끝에 홈으로 정산). */
   readonly tribeShardsEarnedThisRun: Record<string, number>;
   get goldStolenThisRun(): number;    set goldStolenThisRun(v: number);
+  /** 떠돌이 몬스터가 향하는 굴의 건물(용의 둥지·고급 몬스터 굴), 없으면 null. */
+  wandererDen(): RoomType | null;
 
   hasSynergy(id: string): boolean;
   applyRoomSlotDamage(pct: number): void;
@@ -90,7 +92,7 @@ function handleAdventurerEscape(ctx: BattleEventContext, inv: Invader): void {
 
 /** 떠돌이 몬스터가 굴에 닿음: 포섭 판정 — 성공하면 그 부족 조각. */
 function handleWandererArrival(ctx: BattleEventContext, inv: Invader): void {
-  const recruit = resolveWandererArrival(inv.def.type, Math.random());
+  const recruit = resolveWandererArrival(inv.def.type, Math.random(), ctx.wandererDen());
   if (recruit) {
     ctx.tribeShardsEarnedThisRun[recruit.tribe] = (ctx.tribeShardsEarnedThisRun[recruit.tribe] ?? 0) + recruit.shards;
   }
