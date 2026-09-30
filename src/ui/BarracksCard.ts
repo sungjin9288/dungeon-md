@@ -3,6 +3,8 @@
 // per guardian. Room plan, equipment and skills live in the detail panel.
 // State and navigation remain scene-owned.
 
+import { EVOLUTION_MATERIALS } from '../data/fusionCandidates';
+import { getNextEvolution } from '../data/fusion';
 import Phaser from 'phaser';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
@@ -63,7 +65,11 @@ export function buildMonsterTile(
     ...(ctx.gs.ownedEquipment ?? []),
     ...(ctx.gs.craftedEquipment ?? []).map(item => item.id),
   ]).size;
-  const action = getMonsterCardActionCue(monster, xpPct, Boolean(equipment), deployed, roomPlan, equippable);
+  const copies = ctx.copyCounts?.get(monster.id) ?? 1;
+  // Three of a kind outranks the usual next step: the evolution ritual is the big jump.
+  const action = copies >= EVOLUTION_MATERIALS && getNextEvolution(monster.id)
+    ? { ...getMonsterCardActionCue(monster, xpPct, Boolean(equipment), deployed, roomPlan, equippable), label: '진화 가능', accent: 0x6fbf73, fill: 0x13261a, textColor: '#bfe8c4' }
+    : getMonsterCardActionCue(monster, xpPct, Boolean(equipment), deployed, roomPlan, equippable);
   const cx = x + TILE_W / 2;
 
   ctx.contentContainer.add(addPanelShadow(scene, x, y, TILE_W, TILE_H, 8, { offsetY: 3, opacity: 0.45 }));
@@ -100,7 +106,6 @@ export function buildMonsterTile(
     equippedSkins: ctx.gs.equippedSkins ?? {},
   });
   // Spare copies (3-of-a-kind evolution, absorption fodder) ride on the one tile's name line.
-  const copies = ctx.copyCounts?.get(monster.id) ?? 1;
 
   ctx.contentContainer.add(scene.add.text(cx, y + 101, `${truncateLabel(def.name, copies > 1 ? 6 : 7)}${copies > 1 ? ` ×${copies}` : ''}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,

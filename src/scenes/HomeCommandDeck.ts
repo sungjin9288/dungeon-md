@@ -143,6 +143,21 @@ export function buildCommandDeck(scene: DungeonHomeScene): void {
       .setOrigin(0, 0).setName('home-staffing-chip').setInteractive({ useHandCursor: true });
     staffZone.on('pointerdown', () => scene.navigateFromHome('ProductionScene'));
     deck.add(staffZone);
+    headerX += staffChip.width + 6;
+  }
+  // Three of a kind is ready to evolve (duplicate summons join the roster): say so and open the ritual.
+  if (todos.evolutions > 0 && headerX < deckX + deckW - 150) {
+    const evoChip = scene.add.text(headerX, deckY + 15, `· 진화 ${todos.evolutions}`, {
+      fontFamily: 'sans-serif',
+      fontSize: '11px',
+      color: CASUAL_CSS.GOLD,
+      fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    deck.add(evoChip);
+    const evoZone = scene.add.zone(headerX - 4, deckY - 7, evoChip.width + 12, 44)
+      .setOrigin(0, 0).setName('home-evolution-chip').setInteractive({ useHandCursor: true });
+    evoZone.on('pointerdown', () => scene.navigateFromHome('FusionScene'));
+    deck.add(evoZone);
   }
 
   const readinessCss = dungeonMetrics.readiness >= 80

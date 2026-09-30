@@ -9,6 +9,8 @@ import { BOND_ACTION_ORDER, BOND_MAX } from './bond';
 import { canPerformBondAction, getBondAffinity } from './bondTransactions';
 import { FACILITY_ORDER } from './production';
 import { buildTrapForgeRows } from './trapForgeView';
+import { listEvolutionCandidates } from './fusionCandidates';
+import { groupOwnedCopies } from './ownedCopies';
 import type { GameState } from './wisdom';
 
 export interface HomeTodos {
@@ -18,10 +20,13 @@ export interface HomeTodos {
   readonly unstaffedFacilities: number;
   /** Tier-2/3 traps craftable right now (the fusion the player may not notice). */
   readonly trapFusions: number;
+  /** Kinds with 3 copies that can evolve now (duplicate summons join the roster as copies). */
+  readonly evolutions: number;
 }
 
 export function getHomeTodos(state: GameState, today: string): HomeTodos {
-  const bondGuardians = (state.ownedMonsters ?? []).filter(monster => (
+  // Bond is per kind (by id): a spare copy is not another guardian to talk to.
+  const bondGuardians = groupOwnedCopies(state.ownedMonsters ?? []).map(group => group.monster).filter(monster => (
     getBondAffinity(state, monster.id) < BOND_MAX
     && BOND_ACTION_ORDER.some(action => canPerformBondAction(state, monster.id, action, today).ok)
   )).length;
@@ -32,9 +37,11 @@ export function getHomeTodos(state: GameState, today: string): HomeTodos {
 
   const trapFusions = buildTrapForgeRows(state).filter(row => row.def.tier > 1 && row.craft.ok).length;
 
-  return { bondGuardians, unstaffedFacilities, trapFusions };
+  const evolutions = listEvolutionCandidates(state.ownedMonsters ?? []).filter(candidate => candidate.ready).length;
+
+  return { bondGuardians, unstaffedFacilities, trapFusions, evolutions };
 }
 
 export function hasHomeTodos(todos: HomeTodos): boolean {
-  return todos.bondGuardians > 0 || todos.unstaffedFacilities > 0 || todos.trapFusions > 0;
+  return todos.bondGuardians > 0 || todos.unstaffedFacilities > 0 || todos.trapFusions > 0 || todos.evolutions > 0;
 }

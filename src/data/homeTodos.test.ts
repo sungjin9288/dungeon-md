@@ -33,7 +33,18 @@ describe('home todos', () => {
   });
 
   it('hasHomeTodos is true when any count is non-zero', () => {
-    expect(hasHomeTodos({ bondGuardians: 0, unstaffedFacilities: 0, trapFusions: 0 })).toBe(false);
-    expect(hasHomeTodos({ bondGuardians: 0, unstaffedFacilities: 1, trapFusions: 0 })).toBe(true);
+    expect(hasHomeTodos({ bondGuardians: 0, unstaffedFacilities: 0, trapFusions: 0, evolutions: 0 })).toBe(false);
+    expect(hasHomeTodos({ bondGuardians: 0, unstaffedFacilities: 1, trapFusions: 0, evolutions: 0 })).toBe(true);
+  });
+});
+
+describe('home todos — copies', () => {
+  it('counts kinds that can evolve now (3 of a kind), and spare copies are not extra bond guardians', () => {
+    const three = [owned('dokkaebi_warrior'), owned('dokkaebi_warrior'), owned('dokkaebi_warrior'), owned('village_archer')];
+    const todos = getHomeTodos(state({ ownedMonsters: three }), TODAY);
+    expect(todos.evolutions).toBe(1);
+    expect(todos.bondGuardians).toBe(2);
+    expect(hasHomeTodos({ bondGuardians: 0, unstaffedFacilities: 0, trapFusions: 0, evolutions: 1 })).toBe(true);
+    expect(getHomeTodos(state({ ownedMonsters: three.slice(1) }), TODAY).evolutions).toBe(0);
   });
 });
