@@ -113,47 +113,31 @@ function drawSkinCard(
   const monsterName = MONSTER_DEFS[skin.monsterId]?.name ?? skin.monsterId;
 
   addShopPanel(ctx.scene, ctx.contentCtr, { x, y, w, h, accent });
-  addMonsterPortrait(ctx.scene, ctx.contentCtr, x + 40, y + 46, skin.monsterId, {
-    size: 58,
+  const cx = x + w / 2;
+  addMonsterPortrait(ctx.scene, ctx.contentCtr, cx, y + 58, skin.monsterId, {
+    size: 96,
     frameColor: accent,
     glowColor: skin.particleColor,
     bgColor: DUNGEON_UI.VOID,
     equippedSkins: { [skin.monsterId]: skin.id },
   });
-
-  ctx.contentCtr.add(ctx.scene.add.text(x + 76, y + 13, skin.name, {
-    fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
-    wordWrap: { width: w - 84 }, lineSpacing: 1,
-  }).setFixedSize(w - 84, 34));
-  ctx.contentCtr.add(ctx.scene.add.text(x + 76, y + 54, monsterName, {
-    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
-  }));
-  ctx.contentCtr.add(ctx.scene.add.text(x + 76, y + 72, rarity.label, {
+  ctx.contentCtr.add(ctx.scene.add.text(x + 9, y + 8, rarity.label, {
     fontFamily: 'monospace', fontSize: '10px', fontStyle: 'bold', color: rarity.css,
   }));
+  if (owned) drawOwnedBadge(ctx, cx, y + 106, equipped);
 
-  const divider = ctx.scene.add.graphics();
-  divider.lineStyle(1, DUNGEON_UI.IRON, 0.86);
-  divider.lineBetween(x + 10, y + 90, x + w - 10, y + 90);
-  ctx.contentCtr.add(divider);
-
-  const questTitle = skin.unlockRef ? (getQuest(skin.unlockRef)?.title ?? skin.unlockRef) : '';
-  const stateLabel = equipped
-    ? '장착 중'
-    : owned
-      ? '보유 중'
-      : questOnly
-        ? '퀘스트 전용'
-        : `보석 ${skin.gemCost}`;
-  ctx.contentCtr.add(ctx.scene.add.text(x + 12, y + 101, stateLabel, {
-    fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-    color: equipped ? DUNGEON_UI_CSS.JADE : questOnly ? DUNGEON_UI_CSS.MUTED : DUNGEON_UI_CSS.TEXT,
-  }));
-  ctx.contentCtr.add(ctx.scene.add.text(x + 12, y + 122,
-    questOnly ? questTitle : owned ? '장착 상태를 즉시 전환합니다.' : '구매 후 보유 목록에 추가됩니다.', {
+  ctx.contentCtr.add(ctx.scene.add.text(cx, y + 124, skin.name, {
+    fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+  }).setOrigin(0.5));
+  ctx.contentCtr.add(ctx.scene.add.text(cx, y + 142, monsterName, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold', color: DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0.5));
+  if (questOnly && !owned) {
+    const questTitle = skin.unlockRef ? (getQuest(skin.unlockRef)?.title ?? skin.unlockRef) : '퀘스트';
+    ctx.contentCtr.add(ctx.scene.add.text(cx, y + 158, `🔒 ${clip(questTitle, 13)}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
-      wordWrap: { width: w - 24 }, lineSpacing: 2,
-    }).setFixedSize(w - 24, 42));
+    }).setOrigin(0.5));
+  }
 
   addShopButton(ctx.scene, ctx.contentCtr, {
     x: x + 8,
@@ -168,7 +152,7 @@ function drawSkinCard(
   });
 
   const canAct = owned || !questOnly;
-  const actionLabel = owned ? (equipped ? '해제' : '장착') : questOnly ? '퀘스트' : '구매';
+  const actionLabel = owned ? (equipped ? '해제' : '장착') : questOnly ? '퀘스트 보상' : `보석 ${skin.gemCost}`;
   addShopButton(ctx.scene, ctx.contentCtr, {
     x: x + 86,
     y: y + h - 52,
@@ -203,6 +187,27 @@ function drawSkinCard(
       });
     },
   });
+}
+
+/** 보유·장착 표시 — 초상 아래 가장자리에 걸친 알약. */
+function drawOwnedBadge(ctx: ShopSkinTabContext, cx: number, y: number, equipped: boolean): void {
+  const label = equipped ? '장착 중' : '보유';
+  const color = equipped ? DUNGEON_UI.JADE : DUNGEON_UI.EDGE;
+  const w = equipped ? 52 : 36;
+  const pill = ctx.scene.add.graphics();
+  pill.fillStyle(DUNGEON_UI.VOID, 0.96);
+  pill.fillRoundedRect(cx - w / 2, y - 8, w, 16, 8);
+  pill.lineStyle(1, color, 0.9);
+  pill.strokeRoundedRect(cx - w / 2, y - 8, w, 16, 8);
+  ctx.contentCtr.add(pill);
+  ctx.contentCtr.add(ctx.scene.add.text(cx, y, label, {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: equipped ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.TEXT,
+  }).setOrigin(0.5));
+}
+
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
 function skinOutcome(
