@@ -145,6 +145,11 @@ export function drawDungeonMapBackdrop(
   g.lineStyle(1.5, LAIR_IRON, 0.72);
   g.strokeRoundedRect(mapX + 3.5, mapY + 3.5, mapW - 7, mapH - 7, 12);
 
+  if (scene.boardLayout.horizontal) {
+    drawCorridorScenery(scene, c, g);
+    return;
+  }
+
   // ── Entrance strip — drawn by drawDungeonEntranceGate (skip pre-fill here) ──
   // Just draw a bottom seam for the entrance → B1 transition
   const entranceBtmY = entrance.y + (entrance.y - mapY);
@@ -179,4 +184,72 @@ export function drawDungeonMapBackdrop(
     drawDungeonEntranceGate(scene, c, g, entrance.x, entrance.y, CASUAL.RED);
     drawDungeonHeartCore(scene, c, g, heart.x, heart.y, CASUAL.GOLD);
   }
+}
+
+// ─── Horizontal corridor board (entrance left → heart right) ─────────────────
+
+/** 가로 통로 보드: 띠 구분선 + 주 통로 바닥 + 왼쪽 입구 문 + 오른쪽 심장부. */
+function drawCorridorScenery(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+): void {
+  const { floors, entrance, heart, slotH } = scene.boardLayout;
+  const corridorBand = floors[1]?.bandRect;
+  if (corridorBand) {
+    // The main corridor reads as the trodden floor; side bands stay as open rock.
+    g.fillStyle(0x000000, 0.22);
+    g.fillRect(corridorBand.x, corridorBand.y, corridorBand.w, corridorBand.h);
+    g.lineStyle(1, LAIR_BRASS, 0.22);
+    g.lineBetween(corridorBand.x, corridorBand.y, corridorBand.x + corridorBand.w, corridorBand.y);
+    g.lineBetween(corridorBand.x, corridorBand.y + corridorBand.h, corridorBand.x + corridorBand.w, corridorBand.y + corridorBand.h);
+  }
+  drawCorridorEntrance(scene, c, g, entrance.x, entrance.y, slotH);
+  drawCorridorHeart(scene, c, g, heart.x, heart.y);
+}
+
+function drawCorridorEntrance(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  cellH: number,
+): void {
+  const halfH = Math.min(46, cellH / 2 - 4);
+  g.fillStyle(LAIR_STONE, 0.94);
+  g.fillRoundedRect(x - 15, y - halfH, 30, halfH * 2, 10);
+  g.lineStyle(2, LAIR_IRON, 0.94);
+  g.strokeRoundedRect(x - 15, y - halfH, 30, halfH * 2, 10);
+  g.fillStyle(0x020302, 0.98);
+  g.fillRoundedRect(x - 9, y - halfH + 18, 18, halfH * 2 - 26, 8);
+  g.fillStyle(CASUAL.RED, 0.9);
+  g.fillTriangle(x - 4, y - 6, x - 4, y + 6, x + 6, y);
+  c.add(scene.add.text(x, y - halfH + 9, '입구', {
+    fontFamily: 'sans-serif', fontSize: '10px', color: LAIR_PARCHMENT, fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(3));
+}
+
+function drawCorridorHeart(
+  scene: DungeonHomeScene,
+  c: Phaser.GameObjects.Container,
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+): void {
+  const readiness = calculateDungeonMetrics(scene.gs, getDungeonRoomCount(scene.gs)).readiness;
+  const accent = readiness >= 70 ? CASUAL.GOLD : readiness >= 40 ? 0xffaa22 : 0xff5544;
+  const css = readiness >= 70 ? '#ffd24a' : readiness >= 40 ? '#ffaa44' : '#ff7766';
+  g.fillStyle(accent, 0.12);
+  g.fillCircle(x, y, 22);
+  g.lineStyle(2, accent, 0.86);
+  g.strokeCircle(x, y, 14);
+  g.fillStyle(accent, 0.92);
+  g.fillCircle(x, y, 6);
+  c.add(scene.add.text(x, y - 32, '심장부', {
+    fontFamily: 'sans-serif', fontSize: '11px', color: css, fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(3));
+  c.add(scene.add.text(x, y + 30, `${readiness}%`, {
+    fontFamily: 'sans-serif', fontSize: '10px', color: css, fontStyle: 'bold',
+  }).setOrigin(0.5).setDepth(3));
 }

@@ -13,6 +13,7 @@ import { SLOT_UNLOCK_LEVELS, ROOM_SLOT_TYPE_DEFS } from '../data/wisdom';
 import type { DungeonTheme } from '../themes/themes';
 import type { GameState } from '../data/wisdom';
 import { drawRoomLoadoutRail } from './RoomLoadoutRail';
+import { getDungeonPlan } from '../data/dungeonPlan';
 import { drawPixelRoom } from '../art/PixelRoom';
 import { generateMonsterSprite, generateRoomToken } from '../art/PortraitGenerator';
 import { addSigil, drawSigil } from './Sigils';
@@ -22,7 +23,11 @@ import { ROOM_TYPE_SIGILS, sigilFor } from './sigilMaps';
 
 export const SLOT_W = 100;
 export const SLOT_H = 100;
-export const INVASION_ORDER = [3, 2, 1, 4, 5, 6, 9, 8, 7];
+/** 침입 순서 배지 번호: 주 통로에서 몇 번째 방인가(1부터). 곁방은 침입 순서가 없다(undefined). */
+function invasionOrderOf(gs: GameState, slotIdx: number): number | undefined {
+  const position = getDungeonPlan(gs).corridor.indexOf(slotIdx);
+  return position >= 0 ? position + 1 : undefined;
+}
 
 // Saturated casual accents per room type — used as chunky cell borders on cream.
 const ROOM_TYPE_ACCENT: Record<string, number> = {
@@ -450,7 +455,7 @@ export function drawBattleSlot(
     }).setOrigin(0.5));
     drawActionHintBadge(scene, c, g, x, y, actionHint);
     // Invasion order badge
-    const order = INVASION_ORDER[index];
+    const order = invasionOrderOf(gs, index);
     if (order !== undefined) {
       const bg2 = scene.add.graphics();
       bg2.fillStyle(CASUAL.RED, 0.95);
@@ -648,7 +653,7 @@ export function drawBattleSlot(
   }
 
   // ── Invasion order badge (top-left, all unlocked slots) ───────────────────
-  const order = INVASION_ORDER[index];
+  const order = invasionOrderOf(gs, index);
   if (order !== undefined && !slot?.roomType) {
     const badgeG = scene.add.graphics();
     badgeG.fillStyle(CASUAL.GOLD, 0.95);

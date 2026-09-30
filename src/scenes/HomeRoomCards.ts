@@ -5,7 +5,9 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
-import { getDungeonRoomCount } from '../data/dungeonPlan';
+import { getDigSpotView, showSideDigSpots } from '../data/dungeonDigView';
+import { openDigPanel } from '../ui/HomeDigPanel';
+import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
 import { getSlotBuildingName } from '../data/roomBuildings';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
@@ -77,7 +79,8 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     regionTop:     GRID_START_Y,
     regionBottom:  boardRegionBottom,
     canvasWidth:   CANVAS_WIDTH,
-    mode:          'vertical-cutaway',
+    mode:          'corridor',
+    plan:          getDungeonPlan(scene.gs),
   });
 
   const g = scene.add.graphics();
@@ -136,7 +139,9 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
         .setDepth(10).setInteractive({ useHandCursor: true });
       zone.on('pointerover', () => focusAffordance.setHover(true));
       zone.on('pointerout', () => focusAffordance.setHover(false));
-      zone.on('pointerdown', () => {
+      // On release, and only if the press was not a board drag (the board scrolls sideways).
+      zone.on('pointerup', () => {
+        if (scene.boardDragMoved) return;
         focusAffordance.pulse();
         scene.selectRoomForPlacement(_idx);
       });
@@ -144,8 +149,89 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
     }
   }
 
+  drawDigSpots(scene, c);
   scene.addActionQueueRankMarkers(c, unlockedCount);
   drawSynergySummary(synergyCtx, c, CANVAS_WIDTH);
+  enableBoardScroll(scene, c, boardRegionBottom);
+}
+
+// ─── Dig spots + board scroll (corridor dungeon) ─────────────────────────────
+
+/** 굴착 자리 타일: 주 통로 끝은 항상, 곁방 자리는 곁방 허가가 남았을 때만(보드가 +로 뒤덮이지 않게). */
+function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Container): void {
+  const spots = scene.boardLayout.digSpots ?? [];
+  const sides = showSideDigSpots(scene.gs);
+  for (const spot of spots) {
+    if (spot.kind !== 'corridor' && !sides) continue;
+    const view = getDigSpotView(scene.gs, spot.kind);
+    const { x, y, w, h } = spot.rect;
+    const inset = spot.kind === 'corridor' ? 10 : 18;
+    const accent = view.canDig ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
+    const g = scene.add.graphics();
+    g.fillStyle(0x000000, view.canDig ? 0.34 : 0.22);
+    g.fillRoundedRect(x + inset, y + inset, w - inset * 2, h - inset * 2, 12);
+    g.lineStyle(2, accent, view.canDig ? 0.9 : 0.5);
+    g.strokeRoundedRect(x + inset, y + inset, w - inset * 2, h - inset * 2, 12);
+    const cx = x + w / 2, cy = y + h / 2 - 8;
+    g.lineStyle(3, accent, view.canDig ? 1 : 0.6);
+    g.lineBetween(cx - 10, cy, cx + 10, cy);
+    g.lineBetween(cx, cy - 10, cx, cy + 10);
+    c.add(g);
+    const label = spot.kind === 'corridor'
+      ? (view.canDig ? `굴착 ${view.cost.toLocaleString('ko-KR')}` : view.blocker ?? '굴착')
+      : (view.canDig ? '곁방' : view.blocker ?? '곁방');
+    c.add(scene.add.text(cx, cy + 22, label, {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
+      color: view.canDig ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+    }).setOrigin(0.5));
+    const zone = scene.add.zone(x + w / 2, y + h / 2, w - inset * 2, h - inset * 2)
+      .setName(`home-dig-${spot.kind}-${spot.anchor}`)
+      .setDepth(10).setInteractive({ useHandCursor: true });
+    zone.on('pointerup', () => { if (!scene.boardDragMoved) openDigPanel(scene, spot); });
+    c.add(zone);
+  }
+}
+
+const BOARD_DRAG_THRESHOLD = 10;
+
+/** 보드가 화면보다 넓으면 보드 영역 안에서만 가로로 끌어 스크롤한다(마스크 + 컨테이너 x). */
+function enableBoardScroll(scene: DungeonHomeScene, c: Phaser.GameObjects.Container, regionBottom: number): void {
+  const maxScroll = Math.max(0, Math.ceil(scene.boardLayout.boardRect.w - CANVAS_WIDTH));
+  scene.boardScrollX = Phaser.Math.Clamp(scene.boardScrollX, 0, maxScroll);
+  c.x = -scene.boardScrollX;
+  if (maxScroll === 0) return;
+
+  const top = scene.boardLayout.boardRect.y - 6;
+  const maskShape = scene.make.graphics({}, false);
+  maskShape.fillStyle(0xffffff, 1).fillRect(0, top, CANVAS_WIDTH, regionBottom - top + 6);
+  c.setMask(maskShape.createGeometryMask());
+  c.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
+
+  let startX: number | null = null;
+  let startScroll = 0;
+  const onDown = (pointer: Phaser.Input.Pointer): void => {
+    scene.boardDragMoved = false;
+    startX = pointer.worldY >= top && pointer.worldY <= regionBottom ? pointer.worldX : null;
+    startScroll = scene.boardScrollX;
+  };
+  const onMove = (pointer: Phaser.Input.Pointer): void => {
+    if (startX === null || !pointer.isDown) return;
+    const dx = pointer.worldX - startX;
+    if (!scene.boardDragMoved && Math.abs(dx) < BOARD_DRAG_THRESHOLD) return;
+    scene.boardDragMoved = true;
+    scene.boardScrollX = Phaser.Math.Clamp(startScroll - dx, 0, maxScroll);
+    if (c.active) c.x = -scene.boardScrollX;
+  };
+  const onUp = (): void => { startX = null; };
+  scene.input.on(Phaser.Input.Events.POINTER_DOWN, onDown);
+  scene.input.on(Phaser.Input.Events.POINTER_MOVE, onMove);
+  scene.input.on(Phaser.Input.Events.POINTER_UP, onUp);
+  // The board is rebuilt often; drop this board's listeners with it.
+  c.once(Phaser.GameObjects.Events.DESTROY, () => {
+    scene.input.off(Phaser.Input.Events.POINTER_DOWN, onDown);
+    scene.input.off(Phaser.Input.Events.POINTER_MOVE, onMove);
+    scene.input.off(Phaser.Input.Events.POINTER_UP, onUp);
+  });
 }
 
 function drawHomeDungeonHotspot(

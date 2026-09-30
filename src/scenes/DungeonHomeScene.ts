@@ -151,6 +151,10 @@ export class DungeonHomeScene extends Phaser.Scene {
   /** @internal */ boardLayout!: DungeonBoardLayout;
   /** @internal */ recentlyChangedRoomIdx: number | null = null;
   /** @internal */ selectedRoomIdx: number | null = null;
+  /** @internal 홈 보드 가로 스크롤(주 통로가 화면보다 길 때). 보드를 다시 그려도 유지. */
+  boardScrollX = 0;
+  /** @internal 이번 누름이 보드 끌기였는지 — 끌기 뒤 손을 떼도 방·굴착 탭으로 처리하지 않는다. */
+  boardDragMoved = false;
   /** @internal */ pendingRoomFeedback: HomeRoomFeedback | null = null;
   /** @internal */ roomFocusTransitionActive = false;
 

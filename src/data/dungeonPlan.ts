@@ -98,7 +98,6 @@ export function getDigCost(nthRoom: number): number {
 
 /**
  * 옛 전투 경로가 격자 칸을 지나던 순서(입구 쪽 먼저): 0행 오른쪽→왼쪽, 1행 왼쪽→오른쪽, 2행 오른쪽→왼쪽.
- * `DungeonBoardLayout` INVASION_ORDER와 같은 순서다.
  */
 export const LEGACY_GRID_ROUTE: readonly number[] = [2, 1, 0, 3, 4, 5, 8, 7, 6];
 

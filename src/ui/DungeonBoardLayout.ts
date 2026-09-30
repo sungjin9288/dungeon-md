@@ -6,6 +6,8 @@
  * Phase B will fill `mode:'vertical-cutaway'`.
  */
 
+import type { DungeonPlan } from '../data/dungeonPlan';
+
 // ─── Primitive geometry types ─────────────────────────────────────────────────
 
 export interface Rect  { x: number; y: number; w: number; h: number; }
@@ -57,6 +59,10 @@ export interface DungeonBoardLayout {
    * minDeckY = contentBottomY + 8  (the existing +8 offset is preserved at call site).
    */
   readonly contentBottomY:  number;
+  /** corridor 모드만: 굴착 자리(없으면 빈 배열). */
+  readonly digSpots?:       readonly DigSpot[];
+  /** 가로 통로 보드인가 — 입구·심장부 장식이 좌우 끝에 붙는다(세로 단면은 위아래). */
+  readonly horizontal?:     boolean;
 }
 
 // ─── Input ────────────────────────────────────────────────────────────────────
@@ -67,7 +73,18 @@ export interface BoardLayoutInput {
   readonly regionTop:     number;    // first pixel the grid may use (≈ GRID_START_Y)
   readonly regionBottom:  number;    // last pixel available (not used in flat-grid)
   readonly canvasWidth:   number;
-  readonly mode:          'flat-grid' | 'vertical-cutaway';
+  readonly mode:          'flat-grid' | 'vertical-cutaway' | 'corridor';
+  /** corridor 모드: 던전 배치도(주 통로 순서 + 곁방). */
+  readonly plan?:         DungeonPlan;
+}
+
+/** corridor 모드의 굴착 자리: 주 통로 끝 한 칸, 또는 주 통로 방의 빈 위·아래. */
+export interface DigSpot {
+  readonly kind:   'corridor' | 'up' | 'down';
+  /** 곁방이면 붙을 주 통로 위치, 주 통로 끝이면 새 방이 들어갈 위치(= 현재 길이). */
+  readonly anchor: number;
+  readonly rect:   Rect;
+  readonly center: Point;
 }
 
 // ─── Constants mirrored from the existing layout block ───────────────────────
@@ -89,6 +106,9 @@ const INVASION_ORDER: readonly number[] = [3, 2, 1, 4, 5, 6, 9, 8, 7];
 // ─── Builder ─────────────────────────────────────────────────────────────────
 
 export function buildDungeonBoardLayout(input: BoardLayoutInput): DungeonBoardLayout {
+  if (input.mode === 'corridor') {
+    return buildCorridor(input);
+  }
   if (input.mode === 'vertical-cutaway') {
     return buildVerticalCutaway(input);
   }
@@ -98,6 +118,90 @@ export function buildDungeonBoardLayout(input: BoardLayoutInput): DungeonBoardLa
 /** Home shows operational rooms plus one reclaimable seal, never a wall of future locks. */
 export function isVisibleHomeSlot(slotIdx: number, unlockedCount: number): boolean {
   return slotIdx < unlockedCount || slotIdx === unlockedCount;
+}
+
+// ─── Corridor implementation ─────────────────────────────────────────────────
+
+/** corridor 모드 칸 폭(px) — 3칸이면 화면(390)에 거의 맞고, 길어지면 보드 안에서 가로 스크롤. */
+export const CORRIDOR_CELL_W = 112;
+const CORRIDOR_GAP = 6;
+const CORRIDOR_ENTRANCE_W = 34;
+const CORRIDOR_HEART_W = 40;
+const CORRIDOR_BAND_LABELS = ['위 곁방', '주 통로', '아래 곁방'] as const;
+
+/**
+ * 가로 단면도: 3단 띠(위 곁방 / 주 통로 / 아래 곁방), 입구 왼쪽 → 심장부 오른쪽.
+ * 보드 폭(boardRect.w)은 화면보다 넓을 수 있다 — 소비 쪽이 보드 영역 안에서 스크롤한다.
+ */
+function buildCorridor(input: BoardLayoutInput): DungeonBoardLayout {
+  const plan = input.plan ?? { corridor: [], sides: [] };
+  const { regionTop, regionBottom } = input;
+  const bandGap = 6;
+  const bandH = Math.floor((regionBottom - regionTop - 2 * bandGap) / 3);
+  const cellW = CORRIDOR_CELL_W;
+  const cellH = bandH - 8;
+  const x0 = 8 + CORRIDOR_ENTRANCE_W;
+  const colX = (col: number): number => x0 + col * (cellW + CORRIDOR_GAP);
+  const rowY = (row: number): number => regionTop + row * (bandH + bandGap) + 4;
+  const cellAt = (slotIdx: number, row: number, col: number): BoardCell => {
+    const rect: Rect = { x: colX(col), y: rowY(row), w: cellW, h: cellH };
+    return { slotIdx, rect, center: { x: rect.x + cellW / 2, y: rect.y + cellH / 2 }, isUnlocked: true, floor: row, colInFloor: col };
+  };
+
+  const allCells: BoardCell[] = [
+    ...plan.corridor.map((slot, col) => cellAt(slot, 1, col)),
+    ...plan.sides
+      .filter(side => side.anchor >= 0 && side.anchor < plan.corridor.length)
+      .map(side => cellAt(side.slot, side.side === 'up' ? 0 : 2, side.anchor)),
+  ];
+  const cellsByIdx = new Map<number, BoardCell>(allCells.map(cell => [cell.slotIdx, cell]));
+  const cols = plan.corridor.length;
+
+  const spot = (kind: DigSpot['kind'], anchor: number, row: number, col: number): DigSpot => {
+    const rect: Rect = { x: colX(col), y: rowY(row), w: cellW, h: cellH };
+    return { kind, anchor, rect, center: { x: rect.x + cellW / 2, y: rect.y + cellH / 2 } };
+  };
+  const digSpots: DigSpot[] = [spot('corridor', cols, 1, cols)];
+  for (let col = 0; col < cols; col++) {
+    if (!plan.sides.some(s => s.anchor === col && s.side === 'up')) digSpots.push(spot('up', col, 0, col));
+    if (!plan.sides.some(s => s.anchor === col && s.side === 'down')) digSpots.push(spot('down', col, 2, col));
+  }
+
+  const corridorY = rowY(1) + cellH / 2;
+  const entrance: Point = { x: 8 + CORRIDOR_ENTRANCE_W / 2, y: corridorY };
+  // The heart sits after the dig column so extending the corridor never overlaps it.
+  const heart: Point = { x: colX(cols + 1) + CORRIDOR_HEART_W / 2, y: corridorY };
+  const routePolyline: Point[] = [entrance, ...plan.corridor.map(slot => cellsByIdx.get(slot)!.center), heart];
+
+  const floors: FloorBand[] = CORRIDOR_BAND_LABELS.map((label, row) => {
+    const top = regionTop + row * (bandH + bandGap);
+    return {
+      floor: row,
+      label,
+      labelPos: { x: 8 + 22, y: top },
+      bandRect: { x: 8, y: top, w: heart.x + CORRIDOR_HEART_W, h: bandH },
+      cells: allCells.filter(cell => cell.floor === row),
+      tunnelInY: corridorY,
+      tunnelOutY: corridorY,
+    };
+  });
+
+  const boardW = heart.x + CORRIDOR_HEART_W / 2 + 8;
+  const boardH = 3 * bandH + 2 * bandGap;
+  return {
+    entrance,
+    heart,
+    floors,
+    cellsByIdx,
+    route: [...plan.corridor],
+    routePolyline,
+    slotW: cellW,
+    slotH: cellH,
+    boardRect: { x: 0, y: regionTop, w: Math.max(input.canvasWidth, boardW), h: boardH },
+    contentBottomY: regionTop + boardH,
+    digSpots,
+    horizontal: true,
+  };
 }
 
 // ─── Vertical-cutaway implementation ─────────────────────────────────────────
