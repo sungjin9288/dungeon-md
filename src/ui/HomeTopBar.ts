@@ -403,7 +403,7 @@ export function buildStatsBar(
   const clearedStages = gs.stageProgress.filter(p => p.bestStars > 0).length;
   const stats = [
     { val: (gs.totalKills        ?? 0).toLocaleString('ko-KR'), label: '처치' },
-    { val: (gs.totalGoldEarned   ?? 0).toLocaleString('ko-KR'), label: '황금' },
+    { val: (gs.totalGoldEarned   ?? 0).toLocaleString('ko-KR'), label: '누적 황금' },
     { val: `${clearedStages}/${gs.stageProgress.length}`, label: '정복' },
   ];
 

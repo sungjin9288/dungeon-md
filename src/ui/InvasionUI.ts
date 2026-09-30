@@ -178,35 +178,39 @@ export function showReminderIcon(
     const remaining = Math.max(0, COUNTDOWN_MS - elapsed);
     const mins = Math.floor(remaining / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
-    return `침략 ${mins}:${String(secs).padStart(2, '0')} 후 — 탭하여 준비`;
+    return `⚔ 침략 ${mins}:${String(secs).padStart(2, '0')}`;
   };
 
-  const c = scene.add.container(CANVAS_WIDTH / 2, 74).setDepth(30);
+  // A compact chip at the right end of the quest line (y 64–86): a full-width pill here
+  // covered the quest objective text. Tapping it reopens the invasion alert.
+  const CHIP_W = 96;
+  const CHIP_H = 20;
+  const c = scene.add.container(CANVAS_WIDTH - 8 - CHIP_W / 2, 75).setDepth(30);
   const frame = addFramedPanel(scene, {
-    x: -154,
-    y: -17,
-    w: 308,
-    h: 34,
-    radius: 10,
+    x: -CHIP_W / 2,
+    y: -CHIP_H / 2,
+    w: CHIP_W,
+    h: CHIP_H,
+    radius: 9,
     fillColor: 0x220400,
     borderColor: 0xff6655,
-    borderAlpha: 0.72,
+    borderAlpha: 0.8,
     accentColor: 0xff6655,
-    accentAlpha: 0.55,
+    accentAlpha: 0.5,
     glowColor: 0xff6655,
     glowOpacity: 0.06,
-    shadowOpacity: 0.42,
-    shadowOffsetY: 2,
+    shadowOpacity: 0.3,
+    shadowOffsetY: 1,
   });
   c.add([frame.shadow, frame.panel, frame.glow]);
 
-  state.reminderIcon = scene.add.text(0, 1, getLabel(), {
-    fontFamily: 'Georgia, serif', fontSize: '11px', color: '#ff6655',
+  state.reminderIcon = scene.add.text(0, 0, getLabel(), {
+    fontFamily: 'sans-serif', fontSize: '11px', color: '#ff7766', fontStyle: 'bold',
   }).setOrigin(0.5);
 
-  const zone = scene.add.zone(-154, -17, 308, 34).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+  const zone = scene.add.zone(-CHIP_W / 2, -22, CHIP_W, 44).setOrigin(0, 0).setInteractive({ useHandCursor: true });
   zone.on('pointerover', () => state.reminderIcon?.setColor('#ff9977'));
-  zone.on('pointerout', () => state.reminderIcon?.setColor('#ff6655'));
+  zone.on('pointerout', () => state.reminderIcon?.setColor('#ff7766'));
   c.add([state.reminderIcon, zone]);
   state.reminderBanner = c;
 

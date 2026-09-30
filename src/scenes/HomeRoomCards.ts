@@ -8,7 +8,8 @@
 import { getDigSpotView, showSideDigSpots } from '../data/dungeonDigView';
 import { openDigPanel } from '../ui/HomeDigPanel';
 import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
-import { getSlotBuildingName } from '../data/roomBuildings';
+import { getSlotBuilding, getSlotBuildingName } from '../data/roomBuildings';
+import { IDLE_PER_GOLD_ROOM } from '../data/idleIncome';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, ROOT_NAV_Y } from '../constants/layout';
@@ -165,31 +166,59 @@ function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Container):
     if (spot.kind !== 'corridor' && !sides) continue;
     const view = getDigSpotView(scene.gs, spot.kind);
     const { x, y, w, h } = spot.rect;
-    const inset = spot.kind === 'corridor' ? 10 : 18;
+    // The corridor end is the main expansion; side spots stay quiet (dashed outline, small +)
+    // so a board full of empty dig spots does not outshine the rooms that exist.
+    const main = spot.kind === 'corridor';
+    const inset = main ? 10 : 22;
     const accent = view.canDig ? CASUAL.GREEN : CASUAL.EDGE_SOFT;
     const g = scene.add.graphics();
-    g.fillStyle(0x000000, view.canDig ? 0.34 : 0.22);
-    g.fillRoundedRect(x + inset, y + inset, w - inset * 2, h - inset * 2, 12);
-    g.lineStyle(2, accent, view.canDig ? 0.9 : 0.5);
-    g.strokeRoundedRect(x + inset, y + inset, w - inset * 2, h - inset * 2, 12);
+    const rx = x + inset, ry = y + inset, rw = w - inset * 2, rh = h - inset * 2;
+    if (main) {
+      g.fillStyle(0x000000, view.canDig ? 0.34 : 0.22);
+      g.fillRoundedRect(rx, ry, rw, rh, 12);
+      g.lineStyle(2, accent, view.canDig ? 0.9 : 0.5);
+      g.strokeRoundedRect(rx, ry, rw, rh, 12);
+    } else {
+      strokeDashedRect(g, rx, ry, rw, rh, accent, view.canDig ? 0.55 : 0.3);
+    }
     const cx = x + w / 2, cy = y + h / 2 - 8;
-    g.lineStyle(3, accent, view.canDig ? 1 : 0.6);
-    g.lineBetween(cx - 10, cy, cx + 10, cy);
-    g.lineBetween(cx, cy - 10, cx, cy + 10);
+    const arm = main ? 10 : 6;
+    g.lineStyle(main ? 3 : 2, accent, view.canDig ? (main ? 1 : 0.7) : 0.5);
+    g.lineBetween(cx - arm, cy, cx + arm, cy);
+    g.lineBetween(cx, cy - arm, cx, cy + arm);
     c.add(g);
     const label = spot.kind === 'corridor'
       ? (view.canDig ? `굴착 ${view.cost.toLocaleString('ko-KR')}` : view.blocker ?? '굴착')
       : (view.canDig ? '곁방' : view.blocker ?? '곁방');
     c.add(scene.add.text(cx, cy + 22, label, {
-      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
-      color: view.canDig ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5));
+      fontFamily: 'sans-serif', fontSize: main ? '11px' : '10px', fontStyle: 'bold',
+      color: view.canDig && main ? CASUAL_CSS.GREEN : CASUAL_CSS.INK_SOFT,
+    }).setOrigin(0.5).setAlpha(main ? 1 : 0.8));
     const zone = scene.add.zone(x + w / 2, y + h / 2, w - inset * 2, h - inset * 2)
       .setName(`home-dig-${spot.kind}-${spot.anchor}`)
       .setDepth(10).setInteractive({ useHandCursor: true });
     zone.on('pointerup', () => { if (!scene.boardDragMoved) openDigPanel(scene, spot); });
     c.add(zone);
   }
+}
+
+/** Dashed rounded-ish outline (corners left open) for quiet placeholders. */
+function strokeDashedRect(
+  g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number, color: number, alpha: number,
+): void {
+  const dash = 7, gap = 5;
+  g.lineStyle(1.5, color, alpha);
+  const edge = (x1: number, y1: number, x2: number, y2: number): void => {
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    for (let d = 6; d < len - 6; d += dash + gap) {
+      const e = Math.min(len - 6, d + dash);
+      g.lineBetween(x1 + ((x2 - x1) * d) / len, y1 + ((y2 - y1) * d) / len, x1 + ((x2 - x1) * e) / len, y1 + ((y2 - y1) * e) / len);
+    }
+  };
+  edge(x, y, x + w, y);
+  edge(x + w, y, x + w, y + h);
+  edge(x + w, y + h, x, y + h);
+  edge(x, y + h, x, y);
 }
 
 const BOARD_DRAG_THRESHOLD = 10;
@@ -207,6 +236,28 @@ function enableBoardScroll(scene: DungeonHomeScene, c: Phaser.GameObjects.Contai
   c.setMask(maskShape.createGeometryMask());
   c.once(Phaser.GameObjects.Events.DESTROY, () => maskShape.destroy());
 
+  // Edge cues: the corridor runs past the screen. Fixed to the screen (not the scrolling
+  // container) and hidden at the end they point to.
+  const midY = scene.boardLayout.heart.y;
+  const cue = (side: 'left' | 'right'): Phaser.GameObjects.Container => {
+    const x = side === 'left' ? 0 : CANVAS_WIDTH - 22;
+    const bg = scene.add.graphics();
+    bg.fillStyle(0x000000, 0.42);
+    bg.fillRect(x, top + 6, 22, regionBottom - top - 6);
+    const arrow = scene.add.text(x + 11, midY, side === 'left' ? '‹' : '›', {
+      fontFamily: 'sans-serif', fontSize: '26px', color: '#e8c060', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    return scene.add.container(0, 0, [bg, arrow]).setDepth(12);
+  };
+  const leftCue = cue('left');
+  const rightCue = cue('right');
+  const syncCues = (): void => {
+    leftCue.setVisible(scene.boardScrollX > 4);
+    rightCue.setVisible(scene.boardScrollX < maxScroll - 4);
+  };
+  syncCues();
+  c.once(Phaser.GameObjects.Events.DESTROY, () => { leftCue.destroy(); rightCue.destroy(); });
+
   let startX: number | null = null;
   let startScroll = 0;
   const onDown = (pointer: Phaser.Input.Pointer): void => {
@@ -221,6 +272,7 @@ function enableBoardScroll(scene: DungeonHomeScene, c: Phaser.GameObjects.Contai
     scene.boardDragMoved = true;
     scene.boardScrollX = Phaser.Math.Clamp(startScroll - dx, 0, maxScroll);
     if (c.active) c.x = -scene.boardScrollX;
+    syncCues();
   };
   const onUp = (): void => { startX = null; };
   scene.input.on(Phaser.Input.Events.POINTER_DOWN, onDown);
@@ -345,12 +397,17 @@ function drawHomeDungeonHotspot(
   } else if (trapCount > 0) {
     drawTrapSilhouette(g, cx, floorY - 3, accent);
   } else {
-    drawRoomEmblem(g, cx, innerY + innerH / 2 + 3, slot.roomType, accent);
+    drawRoomEmblem(g, cx, innerY + innerH / 2 + 3, getSlotBuilding(slot) === 'gold' ? 'gold' : slot.roomType, accent);
   }
 
-  c.add(scene.add.text(cx, floorY - 7, `준비 ${metrics.readiness}% · M${monsterIds.length} T${trapCount}`, {
+  // An income room earns rather than defends: show its revenue, not a combat readiness.
+  const isIncomeRoom = getSlotBuilding(slot) === 'gold';
+  const footer = isIncomeRoom
+    ? `💰 +${IDLE_PER_GOLD_ROOM}/분`
+    : `${metrics.readiness}% · 👹${monsterIds.length} 🕸${trapCount}`;
+  c.add(scene.add.text(cx, floorY - 7, footer, {
     fontFamily: 'sans-serif', fontSize: '10px',
-    color: metrics.readiness >= 70 ? '#d8c187' : '#e89271', fontStyle: 'bold',
+    color: isIncomeRoom || metrics.readiness >= 70 ? '#d8c187' : '#e89271', fontStyle: 'bold',
   }).setOrigin(0.5, 1).setDepth(8));
 }
 
@@ -416,6 +473,15 @@ function drawRoomEmblem(
   } else if (roomType === 'trap') {
     g.lineBetween(cx - 12, cy + 8, cx, cy - 10);
     g.lineBetween(cx, cy - 10, cx + 12, cy + 8);
+  } else if (roomType === 'gold') {
+    // Income room: a stacked coin, not the support cross (which read as "add a guardian").
+    g.fillStyle(0xe8c060, 0.85);
+    g.fillEllipse(cx, cy + 5, 22, 9);
+    g.fillEllipse(cx, cy - 1, 22, 9);
+    g.fillStyle(0xfff0b0, 0.9);
+    g.fillEllipse(cx, cy - 6, 22, 9);
+    g.lineStyle(1.5, 0x8a6420, 0.9);
+    g.strokeEllipse(cx, cy - 6, 22, 9);
   } else if (roomType === 'support') {
     g.lineBetween(cx - 11, cy, cx + 11, cy);
     g.lineBetween(cx, cy - 11, cx, cy + 11);
