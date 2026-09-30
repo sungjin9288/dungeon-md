@@ -16,6 +16,7 @@ import {
   getLicenses,
   getSideCapacity,
   getSidePermit,
+  type DungeonPlan,
 } from './dungeonPlan';
 import type { DungeonLicenseKind } from './dungeonPlanTransactions';
 import type { GameState } from './wisdom';
@@ -84,4 +85,12 @@ export function showSideDigSpots(state: Readonly<GameState>): boolean {
   const capacity = getSideCapacity(state);
   if (getDungeonPlan(state).sides.length < capacity) return true;
   return capacity > 0 && getLicenses(state).side < MAX_SIDE_LICENSES;
+}
+
+/** 배치도 안에서 방의 자리 한 줄: "주 통로 3번째" / "곁방 · 2번째 방 위". 배치도에 없으면 null. */
+export function roomPositionLabel(plan: DungeonPlan, slot: number): string | null {
+  const position = plan.corridor.indexOf(slot);
+  if (position >= 0) return `주 통로 ${position + 1}번째`;
+  const side = plan.sides.find(room => room.slot === slot);
+  return side ? `곁방 · ${side.anchor + 1}번째 방 ${side.side === 'up' ? '위' : '아래'}` : null;
 }

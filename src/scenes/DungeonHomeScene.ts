@@ -154,6 +154,8 @@ export class DungeonHomeScene extends Phaser.Scene {
   boardDragMoved = false;
   /** @internal */ pendingRoomFeedback: HomeRoomFeedback | null = null;
   /** @internal */ roomFocusTransitionActive = false;
+  /** @internal 방 자리 바꾸기 모드에서 옮길 방(null이면 모드 아님) — 카드 탭이 트레이 대신 확인 창을 연다. */
+  swapSourceIdx: number | null = null;
 
   // Quest log panel
   private questLogState: QuestLogState = { questLogOpen: false };
@@ -254,6 +256,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.commandDeckRect = null;
     this.recentlyChangedRoomIdx = null;
     this.selectedRoomIdx = null;
+    this.swapSourceIdx = null;
     // Phaser reuses the instance: a restart inside a pending settle window must
     // not leave quest settlement blocked for the next Home visit.
     this.questSettlePending = false;
@@ -262,6 +265,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       closePlacementTray();
       this.selectedRoomIdx = null;
+      this.swapSourceIdx = null;
     });
     this.pendingRoomFeedback = this.consumeHomeRoomFeedback();
     this.roomFocusTransitionActive = false;

@@ -173,6 +173,7 @@ const returnTo = this.registry.get('returnTo');   // 'DungeonHomeScene' → 침�
   설계 `docs/design/DUNGEON_EXPANSION_DESIGN.md`). 방 수는 `getDungeonRoomCount`, 순서는
   `getDungeonPlan(state).corridor`. 새 게임은 주 통로 1칸, 방은 레벨 **허가** 안에서 골드로 **굴착**하고
   보석 **허가증**으로 한계를 넘긴다(최대 주 통로 12 · 곁방 12). 레벨업은 방이 아니라 허가를 준다.
+  방 자리 바꾸기(`swapDungeonRooms`, 골드 또는 보석 10)는 배치도 번호만 맞바꾼다 — 방 내용은 번호를 따라간다.
   `getUnlockedSlotCount`는 옛 3×3 세이브 이전용이다. 스테이지 설정에 슬롯 수를 넣지 말 것.
 - 방 레벨 상한 `MAX_ROOM_LEVEL = 5`(wisdom.ts). DM 게이트는 `getMaxRoomLevel`:
   **Lv2는 DM3**, Lv3 DM10, Lv4 DM15, Lv5 DM20. UI의 필요 DM 안내는 `getDmLevelForRoomLevel`로 게이트에서 역산한다(표를 복사하지 말 것). Lv2가 DM5에 있던 동안 스테이지

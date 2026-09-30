@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDigSpotView, showSideDigSpots } from './dungeonDigView';
+import { getDigSpotView, roomPositionLabel, showSideDigSpots } from './dungeonDigView';
 import { getDigCost } from './dungeonPlan';
 import { loadGameState, type GameState } from './wisdom';
 
@@ -39,5 +39,12 @@ describe('굴착 자리 보기', () => {
     const maxed = state({ dmLevel: 4, dungeonPlan: usedSide, dungeonLicenses: { side: 4 } });
     const fullyUsed = { ...usedSide, sides: [0, 1, 2, 3, 4].map(i => ({ slot: i + 1, anchor: 0, side: 'up' as const })) };
     expect(showSideDigSpots({ ...maxed, dungeonPlan: fullyUsed })).toBe(false);
+  });
+
+  it('방 자리 한 줄 — 주 통로 순번, 곁방은 붙은 방과 위아래', () => {
+    const plan = { corridor: [0, 2, 1], sides: [{ slot: 3, anchor: 1, side: 'down' as const }] };
+    expect(roomPositionLabel(plan, 1)).toBe('주 통로 3번째');
+    expect(roomPositionLabel(plan, 3)).toBe('곁방 · 2번째 방 아래');
+    expect(roomPositionLabel(plan, 9)).toBeNull();
   });
 });

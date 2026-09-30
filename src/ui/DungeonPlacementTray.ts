@@ -5,6 +5,7 @@
 
 import Phaser from 'phaser';
 import { showToast } from './Toast';
+import { countRooms, getDungeonPlan } from '../data/dungeonPlan';
 import { COLORS } from '../constants/colors';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, TOUCH_MIN } from '../constants/layout';
 import {
@@ -42,6 +43,7 @@ export interface PlacementTrayCtx {
   openDetail:   (slotIdx: number) => void;     // advanced overlay fallback
   onClose:      () => void;                    // deselect room
   openForgeTraps: () => void;                  // crafted trap out of stock → forge '함정' tab
+  startSwap?:   (slotIdx: number) => void;     // 방 자리 바꾸기 모드(방이 둘 이상일 때)
 }
 
 const TAB_BAR_H = 64;
@@ -170,6 +172,14 @@ function render(): void {
   c.add(scene.add.text(20, TRAY_Y + 11, `방 #${activeSlot + 1}  ·  ${typeDef ? typeDef.name : '미설계'}`, {
     fontFamily: 'Georgia, serif', fontSize: '15px', color: '#f0e6c8', fontStyle: 'bold',
   }).setDepth(122));
+  if (ctxRef?.startSwap && countRooms(getDungeonPlan(gs)) >= 2) {
+    addTextButton(c, CANVAS_WIDTH - 170, TRAY_Y + 10, '⇄ 자리', '#d8b45a', () => {
+      const idx = activeSlot;
+      const start = ctxRef?.startSwap;
+      closePlacementTray();
+      start?.(idx);
+    }, 'placement-swap');
+  }
   addTextButton(c, CANVAS_WIDTH - 100, TRAY_Y + 10, '상세 ▸', '#9a8a6a', () => {
     const idx = activeSlot;
     const open = ctxRef?.openDetail;
@@ -491,7 +501,7 @@ function addText(
 }
 
 function addTextButton(
-  c: Phaser.GameObjects.Container, x: number, y: number, label: string, color: string, onTap: () => void,
+  c: Phaser.GameObjects.Container, x: number, y: number, label: string, color: string, onTap: () => void, name?: string,
 ): void {
   const s = ctxRef!.scene;
   const t = s.add.text(x, y, label, {
@@ -500,6 +510,7 @@ function addTextButton(
   // Zone is the touch target, not the glyph: 13px labels would otherwise leave
   // a 28px-tall tap area, under the 44px minimum the harness enforces.
   const z = s.add.zone(x + t.width / 2, y + 8, Math.max(t.width, TOUCH_MIN) + 14, TOUCH_MIN).setInteractive({ useHandCursor: true }).setDepth(124);
+  if (name) z.setName(name);
   z.on('pointerdown', onTap);
   c.add(t); c.add(z);
 }

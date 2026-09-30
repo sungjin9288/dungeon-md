@@ -10,6 +10,7 @@ const opened: PlacementTrayCtx[] = [];
 vi.mock('../ui/DungeonPlacementTray', () => ({
   openPlacementTray: (ctx: PlacementTrayCtx) => { opened.push(ctx); },
 }));
+vi.mock('../ui/HomeRoomSwap', () => ({ beginRoomSwap: vi.fn() }));
 vi.mock('../ui/RoomDetailOverlay', () => ({ openRoomDetail: vi.fn() }));
 vi.mock('../ui/RoomSlotRenderer', () => ({ drawBattleSlot: vi.fn(), SLOT_W: 120, SLOT_H: 120 }));
 vi.mock('../themes/decorations', () => ({ drawStalactites: vi.fn(), drawStalagmites: vi.fn(), addWaterDrip: vi.fn() }));

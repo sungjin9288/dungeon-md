@@ -6,6 +6,7 @@
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
 import { getDigSpotView, showSideDigSpots } from '../data/dungeonDigView';
+import { handleSwapTarget } from '../ui/HomeRoomSwap';
 import { openDigPanel } from '../ui/HomeDigPanel';
 import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
 import { getSlotBuilding, getSlotBuildingName } from '../data/roomBuildings';
@@ -128,6 +129,12 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
       hl.lineStyle(2, COLORS.JADE, 1);
       hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
       c.add(hl);
+    } else if (scene.swapSourceIdx !== null && isUnlocked) {
+      // Swap mode: every other room is a target.
+      const hl = scene.add.graphics().setDepth(9);
+      hl.lineStyle(1.5, COLORS.TORCH_AMBER, 0.75);
+      hl.strokeRoundedRect(sx - 2, sy - 2, cellW + 4, cellH + 4, 10);
+      c.add(hl);
     }
 
     if (isUnlocked) {
@@ -144,7 +151,8 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
       zone.on('pointerup', () => {
         if (scene.boardDragMoved) return;
         focusAffordance.pulse();
-        scene.selectRoomForPlacement(_idx);
+        if (scene.swapSourceIdx !== null) handleSwapTarget(scene, _idx);
+        else scene.selectRoomForPlacement(_idx);
       });
       c.add(zone);
     }
@@ -197,7 +205,7 @@ function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Container):
     const zone = scene.add.zone(x + w / 2, y + h / 2, w - inset * 2, h - inset * 2)
       .setName(`home-dig-${spot.kind}-${spot.anchor}`)
       .setDepth(10).setInteractive({ useHandCursor: true });
-    zone.on('pointerup', () => { if (!scene.boardDragMoved) openDigPanel(scene, spot); });
+    zone.on('pointerup', () => { if (!scene.boardDragMoved && scene.swapSourceIdx === null) openDigPanel(scene, spot); });
     c.add(zone);
   }
 }

@@ -11,6 +11,7 @@ import { openPlacementTray } from '../ui/DungeonPlacementTray';
 import { drawBattleSlot as _drawBattleSlot, SLOT_W, SLOT_H } from '../ui/RoomSlotRenderer';
 import { drawStalactites, drawStalagmites, addWaterDrip } from '../themes/decorations';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { beginRoomSwap } from '../ui/HomeRoomSwap';
 import { audioManager } from '../audio/AudioManager';
 import { addRoomActivityAura as _addRoomActivityAura, drawDungeonRoomAlcove as _drawDungeonRoomAlcove, getHomeRoomTitle, makeRoomSlotCtx as _makeRoomSlotCtx } from './HomeRoomCards';
 
@@ -264,6 +265,7 @@ export function selectRoomForPlacement(scene: DungeonHomeScene, slotIdx: number)
       scene.selectedRoomIdx = null;
       scene.rebuildDungeonSlots();
     },
+    startSwap: (idx) => beginRoomSwap(scene, idx),
     openForgeTraps: () => {
       scene.registry.set('forgeReturnScene', 'DungeonHomeScene');
       scene.registry.set('forgeTab', 'trap');
