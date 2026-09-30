@@ -78,6 +78,9 @@ async function seedHome(page, { stageNumber, kind }) {
     state.dmLevel = home.dmLevel;
     state.ownedMonsters = home.ownedMonsters;
     state.dungeonSlots = home.dungeonSlots;
+    // The battle fights the dungeon plan, not the slot array: without it the new-game plan (one room) wins.
+    state.dungeonPlan = home.dungeonPlan;
+    state.dungeonLicenses = { corridor: 0, side: 0, legacyCorridor: 0, legacyWisdom: 0 };
     state.tutorialStage = 99;
     state.stageProgress = state.stageProgress.map((entry, index) => ({ ...entry, unlocked: index < stageNumber }));
     wisdom.saveGameState(state);

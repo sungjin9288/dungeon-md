@@ -3,7 +3,7 @@
  * so every stage is held against what the pacing model says a player's home
  * can be by then (see campaignPacing.ts for the model and its assumptions).
  *
- *   starter  — one level-1 guardian room with the starter monster: stage 1 must
+ *   starter  — the one-room new dungeon with the starter monsters: stage 1 must
  *              be winnable by a player who has done nothing else.
  *   lean     — DM XP and gold from stage clears alone, no quest finished: every
  *              stage must be winnable from this floor.
@@ -32,7 +32,7 @@ import {
   veteranHome,
 } from './campaignPacing';
 import { STARTER_ROSTER } from './barracks';
-import { MAX_DUNGEON_SLOTS } from './wisdom';
+import { MAX_CORRIDOR_ROOMS } from './dungeonPlanRules';
 
 const LEAN_MIN_MARGIN = 1.15;
 const EXPECTED_MIN_MARGIN = 1.3;
@@ -54,7 +54,7 @@ describe('pacing model — shape', () => {
       expect(home.dmLevel, `stage ${stage.id} dm`).toBeGreaterThanOrEqual(prev.dmLevel);
       expect(home.slotCount, `stage ${stage.id} slots`).toBeGreaterThanOrEqual(prev.slotCount);
       expect(home.roomLevel, `stage ${stage.id} room level`).toBeGreaterThanOrEqual(prev.roomLevel);
-      expect(home.slotCount).toBeLessThanOrEqual(MAX_DUNGEON_SLOTS);
+      expect(home.slotCount).toBeLessThanOrEqual(MAX_CORRIDOR_ROOMS);
       prev = home;
     }
   });

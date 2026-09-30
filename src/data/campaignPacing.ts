@@ -31,10 +31,10 @@ import type { StageConfig } from './stages';
 import {
   getMaxRoomLevel,
   getRoomSlotCapacity,
-  getUnlockedSlots,
   type DungeonSlot,
   type OwnedMonster,
 } from './wisdom';
+import { getCorridorPermit, getDigCost, type DungeonPlan } from './dungeonPlanRules';
 
 /** Attackers a player is expected to own by stage N: the starters plus one per three stages. */
 export function expectedRosterSize(stageNumber: number): number {
@@ -51,6 +51,8 @@ export interface ExpectedHome {
   readonly roster: readonly MonsterId[];
   readonly dungeonSlots: DungeonSlot[];
   readonly ownedMonsters: OwnedMonster[];
+  /** The corridor those slots stand in (entrance → heart). */
+  readonly dungeonPlan: DungeonPlan;
 }
 
 export interface PacingRow {
@@ -215,6 +217,27 @@ export function cumulativeGoldByStage(stageNumber: number): number {
 }
 
 /**
+ * Rooms the model home has dug by this DM level: the main-corridor permit. Side rooms are left out on
+ * purpose — a range-1 guardian in a side room cannot reach the corridor (corridorReach), so they add
+ * little defence and the model stays conservative.
+ */
+export function expectedRoomCount(dmLevel: number): number {
+  return getCorridorPermit(dmLevel);
+}
+
+/** Gold spent digging rooms 2..n (the first room comes with the dungeon). */
+export function digCostTotal(roomCount: number): number {
+  let total = 0;
+  for (let n = 2; n <= roomCount; n++) total += getDigCost(n);
+  return total;
+}
+
+/** Upgrade budget left after digging: digging comes first, it is what makes a room exist at all. */
+function upgradeBudget(gold: number, roomCount: number): number {
+  return Math.max(0, gold - digCostTotal(roomCount));
+}
+
+/**
  * Room level the budget buys when every slot is raised together, capped by
  * the DM-level gate. Raising all slots at once is what the readiness directive
  * steers players toward, so it is the fair expectation.
@@ -305,6 +328,7 @@ function buildHome(
     guardianLevel,
     roster: placed as MonsterId[],
     dungeonSlots,
+    dungeonPlan: { corridor: Array.from({ length: slotCount }, (_, slot) => slot), sides: [] },
     ownedMonsters: placed.map(id => ({
       ...defaultOwnedMonster(id),
       level: guardianLevel,
@@ -316,8 +340,8 @@ function buildHome(
 
 export function expectedHome(stageNumber: number): ExpectedHome {
   const dmLevel = expectedDmLevel(stageNumber);
-  const slotCount = getUnlockedSlots(dmLevel);
-  const roomLevel = expectedRoomLevel(cumulativeGoldByStage(stageNumber - 1), slotCount, dmLevel);
+  const slotCount = expectedRoomCount(dmLevel);
+  const roomLevel = expectedRoomLevel(upgradeBudget(cumulativeGoldByStage(stageNumber - 1), slotCount), slotCount, dmLevel);
   return buildHome(stageNumber, dmLevel, slotCount, roomLevel, expectedRoster(stageNumber));
 }
 
@@ -328,8 +352,8 @@ export function expectedHome(stageNumber: number): ExpectedHome {
  */
 export function veteranHome(stageNumber: number): ExpectedHome {
   const dmLevel = expectedDmLevel(stageNumber);
-  const slotCount = getUnlockedSlots(dmLevel);
-  const roomLevel = expectedRoomLevel(cumulativeGoldByStage(stageNumber - 1), slotCount, dmLevel);
+  const slotCount = expectedRoomCount(dmLevel);
+  const roomLevel = expectedRoomLevel(upgradeBudget(cumulativeGoldByStage(stageNumber - 1), slotCount), slotCount, dmLevel);
   const roster = (Object.values(MONSTER_DEFS) as MonsterDef[])
     .filter(def => def.unlockStage <= stageNumber && monsterDps(def) > 0)
     .sort((a, b) => monsterDps(b) - monsterDps(a))
@@ -346,19 +370,19 @@ export function veteranHome(stageNumber: number): ExpectedHome {
 export function leanHome(stageNumber: number): ExpectedHome {
   const clearsBefore = Math.max(0, stageNumber - 1);
   const dmLevel = dmLevelForXp(STAGE_CLEAR_DM_XP * clearsBefore);
-  const slotCount = getUnlockedSlots(dmLevel);
+  const slotCount = expectedRoomCount(dmLevel);
   let loot = 0;
   for (const stage of ALL_STAGES) {
     if (stage.id >= stageNumber) break;
     loot += stageLootPotential(stage);
   }
-  const roomLevel = expectedRoomLevel(loot, slotCount, dmLevel);
+  const roomLevel = expectedRoomLevel(upgradeBudget(loot, slotCount), slotCount, dmLevel);
   return buildHome(stageNumber, dmLevel, slotCount, roomLevel, expectedRoster(stageNumber));
 }
 
-/** The very first home: the DM-1 board (three level-1 guardian rooms) with the starter roster, nothing else. */
+/** The very first home: the one-room DM-1 dungeon with the starter roster, nothing else. */
 export function starterHome(): ExpectedHome {
-  return buildHome(1, 1, getUnlockedSlots(1), 1, STARTER_ROSTER, { traps: false });
+  return buildHome(1, 1, expectedRoomCount(1), 1, STARTER_ROSTER, { traps: false });
 }
 
 // ─── Evaluation ───────────────────────────────────────────────────────────────
