@@ -4,6 +4,7 @@
 // 800-line limit.
 
 import Phaser from 'phaser';
+import { trackHomeModal } from './homeModalQueue';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { addFramedPanel, addIconGlyph, addInfoRow, addPrimaryActionButton } from './GameUiPrimitives';
@@ -38,6 +39,7 @@ export function showBattleReturnOverlay(
   callout?: BattleResultCallout,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
+  trackHomeModal(scene, c);
   c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const growthSummary = buildBattleReturnGrowthSummary(growth);
@@ -143,6 +145,7 @@ export function showDmLevelUpOverlay(
   const permitGained = newPermits > prevPermits;
 
   const c = scene.add.container(0, 0).setDepth(75);
+  trackHomeModal(scene, c);
   c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const PW = 304, PH = 222;
@@ -223,6 +226,7 @@ export function showBattleDefeatOverlay(
   callout?: BattleResultCallout,
 ): void {
   const c = scene.add.container(0, 0).setDepth(70);
+  trackHomeModal(scene, c);
   c.add(buildOverlayDim(scene, 0x1a0000, 0.5));
 
   const PW = 310, PH = callout ? 286 : 208;
@@ -298,6 +302,7 @@ export function showChapterCompleteOverlay(
   scene: Phaser.Scene,
 ): void {
   const c = scene.add.container(0, 0).setDepth(90);
+  trackHomeModal(scene, c);
   c.add(buildOverlayDim(scene, 0x000000, 0.5));
 
   const PW = 340, PH = 280;

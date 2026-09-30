@@ -9,6 +9,7 @@
 // modal harness measures it against the same 390×844 contract.
 
 import Phaser from 'phaser';
+import { trackHomeModal } from './homeModalQueue';
 import { drawSigil, type SigilKind } from './Sigils';
 import type { DungeonHomeScene } from '../scenes/DungeonHomeScene';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
@@ -98,6 +99,7 @@ export function showForecastTray(scene: DungeonHomeScene): void {
   const cards = gs.forecast?.date === today ? gs.forecast.cards : [];
 
   const container = scene.add.container(0, 0).setDepth(95).setName('forecast-tray');
+  trackHomeModal(scene, container);
   const close = (): void => container.destroy(true);
   const dim = scene.add.graphics();
   dim.fillStyle(0x000000, 0.58);

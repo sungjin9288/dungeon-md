@@ -5,6 +5,7 @@
 // to PreBattleScene.
 
 import Phaser from 'phaser';
+import { whenHomeModalsClear } from './homeModalQueue';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { getPendingQuestInvasion, getQuest, type InvasionConfig } from '../data/quests';
 import type { GameState } from '../data/wisdom';
@@ -48,7 +49,8 @@ export function checkForInvasion(
   state.invasionConfig = invasion;
   state.cachedGs = gs;
   showZoneAPulse(scene, gridStartY, gridRows, slotPadY);
-  scene.time.delayedCall(1500, () => showInvasionBanner(scene, state, () => goToPreBattle(scene, gs, state)));
+  // The alert waits behind any open home modal instead of stacking on top of it.
+  scene.time.delayedCall(1500, () => whenHomeModalsClear(scene, () => showInvasionBanner(scene, state, () => goToPreBattle(scene, gs, state))));
 }
 
 // ─── Zone A pulse ────────────────────────────────────────────────────────────

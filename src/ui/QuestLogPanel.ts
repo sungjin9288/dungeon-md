@@ -3,6 +3,7 @@
  */
 
 import Phaser from 'phaser';
+import { trackHomeModal } from './homeModalQueue';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, CASUAL_CSS, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -47,6 +48,7 @@ export const MAIN_QUEST_RESULT_DEPTH = 130;
 
 export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
   const c = scene.add.container(0, 0).setDepth(MAIN_QUEST_RESULT_DEPTH);
+  trackHomeModal(scene, c);
 
   // Dim
   const dim = scene.add.graphics();
@@ -138,6 +140,7 @@ export function showQuestCompleteOverlay(scene: Phaser.Scene, quest: MainQuest):
 
 export function showGameCompleteOverlay(scene: Phaser.Scene, quest: MainQuest): void {
   const c = scene.add.container(0, 0).setDepth(MAIN_QUEST_RESULT_DEPTH);
+  trackHomeModal(scene, c);
 
   // Dim
   const dim = scene.add.graphics();

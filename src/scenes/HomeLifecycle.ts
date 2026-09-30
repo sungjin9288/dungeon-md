@@ -7,6 +7,7 @@
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
 import { getDigPermitTotal, getDungeonRoomCount } from '../data/dungeonPlan';
+import { trackHomeModal, whenHomeModalsClear } from '../ui/homeModalQueue';
 import { getDigSpotView } from '../data/dungeonDigView';
 import { openDigPanel } from '../ui/HomeDigPanel';
 import type { DungeonHomeScene } from './DungeonHomeScene';
@@ -83,7 +84,7 @@ export function maybeShowIdleIncome(scene: DungeonHomeScene): void {
     autoCollectIdleIncome(scene, now);
     return;
   }
-  scene.time.delayedCall(550, () => showIdleIncomePanel(scene, reward));
+  scene.time.delayedCall(550, () => whenHomeModalsClear(scene, () => showIdleIncomePanel(scene, reward)));
 }
 
 /** Short in-session absence: claim without the blocking panel, announce with a toast. */
@@ -133,6 +134,7 @@ export function showIdleIncomePanel(scene: DungeonHomeScene, reward: IdleReward)
   );
 
   const overlay = scene.add.container(0, 0).setDepth(900);
+  trackHomeModal(scene, overlay);
 
   const frame = addFramedPanel(scene, {
     x: px, y: py, w, h, radius: 6,
@@ -422,16 +424,21 @@ export function settlePendingQuestCompletion(scene: DungeonHomeScene): boolean {
   if (!done) return false;
   scene.questSettlePending = true;
   scene.time.delayedCall(350, () => {
-    scene.questSettlePending = false;
-    if (!scene.scene.isActive('DungeonHomeScene')) return;
-    handleQuestComplete(scene, done);
-    checkForInvasion(
-      scene, scene.gs, scene.invasionState,
-      GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
-    );
-    // The next quest may start already satisfied (auto-met objectives) —
-    // drain the chain so back-to-back completions settle without user input.
-    settlePendingQuestCompletion(scene);
+    if (!scene.scene.isActive('DungeonHomeScene')) { scene.questSettlePending = false; return; }
+    // Wait for any open home modal (idle income, battle summary, level-up) first:
+    // the quest popup used to open on top of the idle-income panel. Settlement stays
+    // held until the popup is up, so a second call cannot queue another one meanwhile.
+    whenHomeModalsClear(scene, () => {
+      scene.questSettlePending = false;
+      handleQuestComplete(scene, done);
+      checkForInvasion(
+        scene, scene.gs, scene.invasionState,
+        GRID_START_Y, GRID_ROWS_HOME, SLOT_PAD_Y,
+      );
+      // The next quest may start already satisfied (auto-met objectives) —
+      // drain the chain so back-to-back completions settle without user input.
+      settlePendingQuestCompletion(scene);
+    });
   });
   return true;
 }
