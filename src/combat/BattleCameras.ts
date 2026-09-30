@@ -40,7 +40,15 @@ export class BattleCameras {
   private dragStartScroll = 0;
   private dragging = false;
 
-  constructor(private readonly scene: Phaser.Scene, private readonly worldWidth: number) {
+  /**
+   * @param dragMaxY 이 논리 y보다 아래(웨이브 버튼·미니맵·스킬 바)에서 누른 것은 전장 끌기가 아니다 —
+   *   미니맵을 끄는 손가락이 카메라를 반대로 끌지 않도록.
+   */
+  constructor(
+    private readonly scene: Phaser.Scene,
+    private readonly worldWidth: number,
+    private readonly dragMaxY = Number.POSITIVE_INFINITY,
+  ) {
     const world = scene.cameras.main;
     world.setOrigin(0, 0).setScroll(0, 0);
     this.hud = scene.cameras.add(0, 0, world.width, world.height)
@@ -53,8 +61,8 @@ export class BattleCameras {
   }
 
   /** 전투 update에서 매 프레임: 손으로 끄는 중이 아니면 선두 침입자를 부드럽게 따라간다. */
-  follow(leadX: number | null, now: number): void {
-    if (this.dragging || now < this.manualUntil || leadX === null || battleScrollMax(this.worldWidth) === 0) return;
+  follow(leadX: number | null, _now?: number): void {
+    if (this.dragging || this.realNow() < this.manualUntil || leadX === null || battleScrollMax(this.worldWidth) === 0) return;
     const world = this.scene.cameras.main;
     const target = followScrollTarget(leadX, this.worldWidth);
     world.scrollX += (target - world.scrollX) * 0.08;
@@ -68,7 +76,28 @@ export class BattleCameras {
     }
   }
 
+  /** 화면 왼쪽 끝을 이 월드 x에 둔다(미니맵 이동). 한동안 자동 따라가기를 쉰다. */
+  panTo(scrollX: number): void {
+    this.scene.cameras.main.scrollX = Phaser.Math.Clamp(scrollX, 0, battleScrollMax(this.worldWidth));
+    this.manualUntil = this.realNow() + MANUAL_PAN_HOLD_MS;
+  }
+
+  /**
+   * The manual-pan hold runs on real (unscaled) frame time: the scene clock runs 3× in a
+   * 3× battle, which cut the hold to under a second — and the update() time argument is a
+   * third clock again, so mixing them ended the hold at once.
+   */
+  private realNow(): number {
+    return this.scene.game.loop.time;
+  }
+
+  /** 지금 보이는 월드 가로 범위(미니맵 표시용). */
+  view(): { readonly left: number; readonly width: number } {
+    return { left: this.scene.cameras.main.scrollX, width: CANVAS_WIDTH };
+  }
+
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
+    if (pointer.y / (this.scene.cameras.main.zoom || 1) > this.dragMaxY) { this.dragStartX = null; return; }
     this.dragStartX = pointer.x;
     this.dragStartScroll = this.scene.cameras.main.scrollX;
     this.dragging = false;
@@ -84,7 +113,7 @@ export class BattleCameras {
   }
 
   private onPointerUp(): void {
-    if (this.dragging) this.manualUntil = this.scene.time.now + MANUAL_PAN_HOLD_MS;
+    if (this.dragging) this.manualUntil = this.realNow() + MANUAL_PAN_HOLD_MS;
     this.dragStartX = null;
     this.dragging = false;
   }

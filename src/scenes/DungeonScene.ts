@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BattleCameras } from '../combat/BattleCameras';
+import { BattleMinimap } from '../combat/BattleMinimap';
 import { battlefieldWidth, buildBattleTopology, corridorWaypoints, visitorWaypoints, type BattleTopology } from '../data/battleTopology';
 import { getDungeonPlan, type DungeonPlan } from '../data/dungeonPlan';
 import { findVisitorTarget, type VisitorKind } from '../data/visitors';
@@ -55,6 +56,7 @@ import { checkAchievementsAndToast as _checkAchievementsAndToast, tickQuestAndNo
 import {
   drawDungeonBackground,
   buildInvaderPath,
+  WAVE_BUTTON_H,
   drawVisitorDetour,
   pathFromWaypoints,
   buildDungeonGrid,
@@ -139,6 +141,7 @@ export class DungeonScene extends Phaser.Scene {
   /** 전장 전체 폭(주 통로가 길면 화면보다 넓다). */
   worldWidth = CANVAS_WIDTH;
   private battleCameras?: BattleCameras;
+  private minimap?: BattleMinimap;
   activeInvaders: Invader[] = [];
   /** Invader behaviors already announced (trait callout) — once per run. */
   seenTraitBehaviors: Set<string> = new Set();
@@ -392,7 +395,20 @@ export class DungeonScene extends Phaser.Scene {
     this.initSwapManager();
     // main.ts re-applies the DPR camera on CREATE; the two battle cameras go after it.
     this.events.once(Phaser.Scenes.Events.CREATE, () => {
-      this.battleCameras = new BattleCameras(this, this.worldWidth);
+      // Below the battlefield (wave button, minimap, skills) a drag is not a battlefield pan.
+      const battlefieldBottom = GRID_Y + GRID_ROWS * this.effectiveCellSize + 10;
+      const cameras = new BattleCameras(this, this.worldWidth, battlefieldBottom);
+      this.battleCameras = cameras;
+      this.minimap = new BattleMinimap(this, {
+        rect: { x: 22, y: battlefieldBottom + WAVE_BUTTON_H + 44, w: CANVAS_WIDTH - 44, h: 66 },
+        topology: this.topology,
+        worldWidth: this.worldWidth,
+        gridX: GRID_X,
+        gridY: GRID_Y,
+        cellSize: this.effectiveCellSize,
+        roomTypeAt: (row, col) => this.roomGrid[row]?.[col]?.type ?? null,
+        onPan: scrollX => cameras.panTo(scrollX),
+      });
     });
 
     audioManager.resume().then(() => audioManager.playBgm('battle'));
@@ -446,6 +462,7 @@ export class DungeonScene extends Phaser.Scene {
 
   update(_time: number, _delta: number): void {
     this.battleCameras?.follow(this.leadInvaderX(), _time);
+    if (this.battleCameras) this.minimap?.update(this.activeInvaders, this.battleCameras.view(), _time);
     if (!this.waveActive) return;
     const rmCtx = buildRoomMechanicsCtx(this);
     this.runCombat(_time, rmCtx);
