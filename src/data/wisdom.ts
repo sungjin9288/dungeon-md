@@ -1,4 +1,5 @@
 import { type OwnedMonster, STARTER_ROSTER, defaultOwnedMonster } from './barracks';
+import type { DungeonLicenses, DungeonPlan } from './dungeonPlan';
 import { type AbyssState, DEFAULT_ABYSS_STATE } from './abyss';
 import type { RoomFamily, RoomType } from './rooms';
 import type { ForecastCard } from './forecast';
@@ -301,6 +302,10 @@ export interface GameState {
   abyss:             AbyssState;                // 심연 farming progress (depth + sweep keys)
   craftedEquipment:  Array<{ id: string; name: string; type: string; rarity: number; emoji: string; stats: Record<string, number> }>;
   dungeonSlots:      DungeonSlot[];   // per-slot room config (indexed by slot position)
+  /** 던전 배치도(주 통로 + 곁방). 없으면 옛 3×3 격자에서 계산한다 — dungeonPlan.ts getDungeonPlan. */
+  dungeonPlan?:      DungeonPlan;
+  /** 보석 허가증·옛 던전 허가. 없으면 0. */
+  dungeonLicenses?:  DungeonLicenses;
   lastIdleCollect:   number;          // timestamp ms of last idle (offline) income collection (0 = uninitialized)
   /** Incomplete idle output carried between claims; absent in legacy saves. */
   idleRemainder?: { operationGold: number; productionGold: number; materials: Record<string, number> };
