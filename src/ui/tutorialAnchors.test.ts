@@ -12,6 +12,7 @@ const anchors = {
   'first-room':   { x: 8, y: 132, w: 120, h: 131 },
   'command-deck': { x: 8, y: 602, w: 374, h: 142 },
   'invasion-tab': { x: 292.5, y: 780, w: 97.5, h: 64 },
+  'invasion-alert': { x: 234, y: 44, w: 132, h: 52 },
 };
 const contains = (outer: { x: number; y: number; w: number; h: number }, inner: typeof outer) =>
   outer.x <= inner.x && outer.y <= inner.y && outer.x + outer.w >= inner.x + inner.w && outer.y + outer.h >= inner.y + inner.h;
@@ -36,6 +37,14 @@ describe('tutorial steps follow the live Home layout', () => {
     const battle = TUTORIAL_STEPS.find(step => step.anchor === 'command-deck')!;
     expect(battle.body).not.toContain('퀘스트 패널');
     expect(battle.body).toContain('방어 준비');
+  });
+
+  it('step 3 can point at the invasion alert instead (it says to start from the alert up top)', () => {
+    const battle = TUTORIAL_STEPS.find(step => step.stage === 3)!;
+    const resolved = resolveTutorialStep({ ...battle, anchor: 'invasion-alert' }, anchors);
+    expect(contains(resolved.highlight!, anchors['invasion-alert'])).toBe(true);
+    const card = { x: (390 - TUTORIAL_CARD.w) / 2, y: TUTORIAL_CARD.cardY(resolved.highlight), w: TUTORIAL_CARD.w, h: TUTORIAL_CARD.h };
+    expect(overlaps(card, resolved.highlight!)).toBe(false);
   });
 
   it('keeps the authored rectangle when an anchor is unavailable', () => {

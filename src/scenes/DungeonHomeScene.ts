@@ -130,6 +130,8 @@ export interface HomeRoomFeedback {
 export class DungeonHomeScene extends Phaser.Scene {
   /** @internal */ gs = loadGameState();
   /** @internal */ tutorialOverlay: TutorialOverlay | null = null;
+  /** @internal 다음 튜토리얼 단계가 다른 창이 닫히길 기다리는 중(중복 예약 방지). */
+  tutorialPending = false;
   /** @internal */ roomDetailState: RoomDetailState = createRoomDetailState();
   /** @internal */ roomDetailCallbacks: RoomDetailCallbacks = {
     getGameState: () => this.gs,
@@ -231,6 +233,7 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.rebuildDungeonSlots();
     this.buildCommandDeck();
     this.settlePendingQuestCompletion();
+    this.maybeShowTutorial();   // a room design / guardian placement may unlock the next step
   }
 
   /** @internal */ applyGameStateResult<T extends GameStateResult>(result: T): T {
@@ -257,6 +260,8 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.recentlyChangedRoomIdx = null;
     this.selectedRoomIdx = null;
     this.swapSourceIdx = null;
+    this.tutorialOverlay = null;
+    this.tutorialPending = false;
     // Phaser reuses the instance: a restart inside a pending settle window must
     // not leave quest settlement blocked for the next Home visit.
     this.questSettlePending = false;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   TUTORIAL_DONE_STAGE,
   advanceTutorialStage,
+  isTutorialStepReady,
   settleTutorialStageAdvance,
 } from './tutorialTransactions';
 import type { GameState } from './wisdom';
@@ -91,5 +92,20 @@ describe('tutorialTransactions — tutorial flow advancement', () => {
     expect(result.completed).toBe(true);
     expect(result.nextStage).toBeNull();
     expect(result.state).toBe(state);
+  });
+});
+
+describe('tutorialTransactions — steps wait for the action they teach', () => {
+  const slot = (roomType?: string, monster?: string) => ({ roomType, monsterIds: [monster], trapIds: [], roomLevel: 1, hp: 200, maxHp: 200 });
+  it('gates each step on the previous step being done', () => {
+    const empty = { dungeonSlots: [slot()], totalKills: 0 } as unknown as GameState;
+    const designed = { dungeonSlots: [slot('combat')], totalKills: 0 } as unknown as GameState;
+    const staffed = { dungeonSlots: [slot('combat', 'dokkaebi_warrior')], totalKills: 0 } as unknown as GameState;
+    const fought = { ...staffed, totalKills: 3 } as GameState;
+    expect([1, 2, 3, 4].map(stage => isTutorialStepReady(stage, empty))).toEqual([true, false, false, false]);
+    expect([2, 3, 4].map(stage => isTutorialStepReady(stage, designed))).toEqual([true, false, false]);
+    expect([3, 4].map(stage => isTutorialStepReady(stage, staffed))).toEqual([true, false]);
+    expect(isTutorialStepReady(4, fought)).toBe(true);
+    expect(isTutorialStepReady(TUTORIAL_DONE_STAGE, fought)).toBe(false);
   });
 });

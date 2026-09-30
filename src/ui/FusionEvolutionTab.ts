@@ -1,4 +1,5 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { onReleaseTap } from './releaseTap';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster } from '../data/barracks';
@@ -232,7 +233,7 @@ function drawEvolutionCandidates(
     // Visible row is 38px; the touch zone meets the 44px minimum.
     const zone = ctx.scene.add.zone(x + w / 2, rowY + 19, w - 16, 44).setInteractive({ useHandCursor: true })
       .setName(`fusion-evo-candidate-${candidate.id}`);
-    zone.on('pointerup', () => {
+    onReleaseTap(zone, () => {
       const fresh = loadGameState().ownedMonsters ?? [];
       rememberFusionSources(fresh);
       const picked = pickEvolutionMaterials(fresh, candidate.id);

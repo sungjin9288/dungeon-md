@@ -3,6 +3,7 @@
 // 방 타입·몬스터·함정을 한 탭에서 즉시 배치한다. 전체화면 폼(RoomDetailOverlay)
 // 다이빙을 대체하는 핵심 루프 UI. 데이터 변경은 roomSlotTransactions 재사용.
 
+import { onReleaseTap } from './releaseTap';
 import Phaser from 'phaser';
 import { showToast } from './Toast';
 import { countRooms, getDungeonPlan } from '../data/dungeonPlan';
@@ -530,9 +531,12 @@ function buildStrip(
   return inner;
 }
 
-/** 가로 목록 칸의 탭: 손을 뗄 때, 그 누름이 목록 끌기가 아니었을 때만. */
+/**
+ * 가로 목록 칸의 탭: 손을 뗄 때, 그 누름이 이 칸에서 시작됐고(`downTime` 일치) 목록 끌기가 아니었을 때만.
+ * 누름 시작을 확인하지 않으면 위에 뜬 창(튜토리얼 '확인' 등)이 누름에 닫힌 뒤 손을 떼는 순간 아래 칸이 눌린다.
+ */
 function onChipTap(z: Phaser.GameObjects.Zone, onTap: () => void): void {
-  z.on('pointerup', () => { if (!stripDragMoved) onTap(); });
+  onReleaseTap(z, onTap, () => stripDragMoved);
 }
 
 function chipBase(

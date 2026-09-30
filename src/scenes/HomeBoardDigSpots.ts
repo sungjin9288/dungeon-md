@@ -2,6 +2,7 @@
  * 홈 보드(가로 던전)의 굴착 자리 타일과 가로 끌기 스크롤. HomeRoomCards.rebuildDungeonSlots가 보드를 그린 뒤 부른다.
  * DungeonHomeScene은 타입으로만 import한다(런타임 순환 방지).
  */
+import { onReleaseTap } from '../ui/releaseTap';
 import Phaser from 'phaser';
 import type { DungeonHomeScene } from './DungeonHomeScene';
 import { CANVAS_WIDTH } from '../constants/layout';
@@ -48,7 +49,7 @@ export function drawDigSpots(scene: DungeonHomeScene, c: Phaser.GameObjects.Cont
     const zone = scene.add.zone(x + w / 2, y + h / 2, w - inset * 2, h - inset * 2)
       .setName(`home-dig-${spot.kind}-${spot.anchor}`)
       .setDepth(10).setInteractive({ useHandCursor: true });
-    zone.on('pointerup', () => { if (!scene.boardDragMoved && scene.swapSourceIdx === null) openDigPanel(scene, spot); });
+    onReleaseTap(zone, () => openDigPanel(scene, spot), () => scene.boardDragMoved || scene.swapSourceIdx !== null);
     c.add(zone);
   }
 }

@@ -7,7 +7,7 @@
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
 import { getDigPermitTotal, getDungeonRoomCount } from '../data/dungeonPlan';
-import { trackHomeModal, whenHomeModalsClear } from '../ui/homeModalQueue';
+import { isHomeModalOpen, trackHomeModal, whenHomeModalsClear } from '../ui/homeModalQueue';
 import { getDigSpotView } from '../data/dungeonDigView';
 import { openDigPanel } from '../ui/HomeDigPanel';
 import type { DungeonHomeScene } from './DungeonHomeScene';
@@ -26,7 +26,8 @@ import {
   settleCompletedHomeMainQuest,
   type HomeMainQuestCompletionResult,
 } from '../data/questLifecycleTransactions';
-import { settleTutorialStageAdvance } from '../data/tutorialTransactions';
+import { isTutorialStepReady, settleTutorialStageAdvance } from '../data/tutorialTransactions';
+import { closePlacementTray, isPlacementTrayOpen } from '../ui/DungeonPlacementTray';
 import {
   TutorialOverlay, TUTORIAL_STEPS, TUTORIAL_DONE, resolveTutorialStep,
   type TutorialAnchors, type TutorialRect,
@@ -633,32 +634,61 @@ export function revealDigPermit(scene: DungeonHomeScene): void {
 // ─── maybeShowTutorial ────────────────────────────────────────────────────────
 
 export function maybeShowTutorial(scene: DungeonHomeScene): void {
-  const stage = scene.gs.tutorialStage ?? 0;
-  if (stage >= TUTORIAL_DONE) return;
-
-  const nextStageNum = stage === 0 ? 1 : stage;
-  const step = TUTORIAL_STEPS.find(s => s.stage === nextStageNum);
+  if (scene.tutorialOverlay || scene.tutorialPending) return;
+  const stored = scene.gs.tutorialStage ?? 0;
+  if (stored >= TUTORIAL_DONE) return;
+  const stage = stored === 0 ? 1 : stored;
+  // A step waits for the action the previous step asked for (build, place, fight).
+  if (!isTutorialStepReady(stage, scene.gs)) return;
+  const step = TUTORIAL_STEPS.find(s => s.stage === stage);
   if (!step) return;
 
-  scene.time.delayedCall(700, () => {
-    if (!scene.tutorialOverlay) {
-      scene.tutorialOverlay = new TutorialOverlay(scene, (completedStage) => {
-        const result = scene.applyGameStateResult(
-          settleTutorialStageAdvance(scene.gs, completedStage),
-        );
-        if (result.nextStage !== null) {
-          const nextStep = TUTORIAL_STEPS.find(s => s.stage === result.nextStage);
-          if (nextStep && scene.tutorialOverlay) {
-            scene.tutorialOverlay.show(resolveTutorialStep(nextStep, collectTutorialAnchors(scene)));
-          }
-        } else {
-          scene.tutorialOverlay = null;
-        }
-      });
+  scene.tutorialPending = true;
+  // Let quest/idle popups that the same action queued open first, then wait for them to close.
+  scene.time.delayedCall(700, () => showWhenSettled(0, 0));
+  // Wait out popups and the quest/battle-return settlement they chain into (the next popup opens only after
+  // the previous one closes, so a bare "no popup open" check can land in the gap). Step 3 points at the
+  // invasion alert, whose banner slides in a moment after the others.
+  const showWhenSettled = (busyTries: number, alertTries: number): void => {
+    if (!scene.sys.isActive()) { scene.tutorialPending = false; return; }
+    const busy = isHomeModalOpen(scene) || scene.questSettlePending || scene.battleReturnPresenting;
+    if (busy && busyTries < TUTORIAL_WAIT_MAX_TRIES) {
+      scene.time.delayedCall(TUTORIAL_WAIT_MS, () => showWhenSettled(busyTries + 1, alertTries));
+      return;
     }
-    scene.tutorialOverlay.show(resolveTutorialStep(step, collectTutorialAnchors(scene)));
-  });
+    const alertComing = stage === 3 && !!scene.invasionState.invasionConfig && !scene.invasionState.alertBanner;
+    if (alertComing && alertTries < TUTORIAL_ALERT_WAIT_TRIES) {
+      scene.time.delayedCall(TUTORIAL_WAIT_MS, () => showWhenSettled(busyTries, alertTries + 1));
+      return;
+    }
+    showStep();
+  };
+  const showStep = (): void => {
+    scene.tutorialPending = false;
+    if (!scene.sys.isActive() || scene.tutorialOverlay) return;
+    if ((scene.gs.tutorialStage ?? 0) >= TUTORIAL_DONE) return;
+    // The step points at the board or the command deck; a tray left open would cover it.
+    if (isPlacementTrayOpen()) {
+      closePlacementTray();
+      scene.selectedRoomIdx = null;
+      scene.rebuildDungeonSlots();
+    }
+    scene.tutorialOverlay = new TutorialOverlay(scene, (completedStage) => {
+      scene.tutorialOverlay = null;
+      scene.applyGameStateResult(settleTutorialStageAdvance(scene.gs, completedStage));
+      maybeShowTutorial(scene);   // the next step shows now only if its action is already done
+    });
+    const anchors = collectTutorialAnchors(scene);
+    // Step 3 says "start the battle from the alert up top": point there when an invasion is waiting.
+    const shown = step.stage === 3 && anchors['invasion-alert'] ? { ...step, anchor: 'invasion-alert' as const } : step;
+    scene.tutorialOverlay.show(resolveTutorialStep(shown, anchors));
+  };
 }
+
+const TUTORIAL_WAIT_MS = 300;
+/** The alert wait gives up after ~3s; a popup that never closes, after ~60s (the tutorial then shows anyway). */
+const TUTORIAL_ALERT_WAIT_TRIES = 10;
+const TUTORIAL_WAIT_MAX_TRIES = 200;
 
 /** Live Home geometry for tutorial highlights (room cards carry a pill 8px above the cell). */
 export function collectTutorialAnchors(scene: DungeonHomeScene): TutorialAnchors {
@@ -680,6 +710,8 @@ export function collectTutorialAnchors(scene: DungeonHomeScene): TutorialAnchors
     ...(first ? { 'first-room': withPill(first) } : {}),
     ...(union ? { 'room-row': withPill(union) } : {}),
     ...(scene.commandDeckRect ? { 'command-deck': scene.commandDeckRect } : {}),
+    // The invasion alert's 방어 준비 button (InvasionUI: banner slides to y 0, button at right).
+    ...(scene.invasionState.alertBanner ? { 'invasion-alert': { x: CANVAS_WIDTH - 156, y: 44, w: 132, h: 52 } } : {}),
     'invasion-tab': { x: tabW * 3, y: ROOT_NAV_Y, w: tabW, h: CANVAS_HEIGHT - ROOT_NAV_Y },
   };
 }

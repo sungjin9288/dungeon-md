@@ -5,6 +5,7 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonHomeScene TYPE only to avoid a runtime circular dependency.
  */
+import { onReleaseTap } from '../ui/releaseTap';
 import { handleSwapTarget } from '../ui/HomeRoomSwap';
 import { drawDigSpots, enableBoardScroll } from './HomeBoardDigSpots';
 import { getDungeonPlan, getDungeonRoomCount } from '../data/dungeonPlan';
@@ -146,12 +147,11 @@ export function rebuildDungeonSlots(scene: DungeonHomeScene): void {
       zone.on('pointerover', () => focusAffordance.setHover(true));
       zone.on('pointerout', () => focusAffordance.setHover(false));
       // On release, and only if the press was not a board drag (the board scrolls sideways).
-      zone.on('pointerup', () => {
-        if (scene.boardDragMoved) return;
+      onReleaseTap(zone, () => {
         focusAffordance.pulse();
         if (scene.swapSourceIdx !== null) handleSwapTarget(scene, _idx);
         else scene.selectRoomForPlacement(_idx);
-      });
+      }, () => scene.boardDragMoved);
       c.add(zone);
     }
   }

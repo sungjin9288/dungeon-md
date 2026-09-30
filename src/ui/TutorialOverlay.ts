@@ -3,13 +3,14 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { COLORS } from '../constants/colors';
 import { TUTORIAL_DONE_STAGE } from '../data/tutorialTransactions';
 import { getReducedMotion } from '../utils/reducedMotion';
+import { trackHomeModal } from './homeModalQueue';
 
 // ─── Tutorial step definitions ────────────────────────────────────────────────
 
 export interface TutorialRect { x: number; y: number; w: number; h: number }
 
 /** Live Home geometry a step points at; resolved when the step is shown. */
-export type TutorialAnchor = 'room-row' | 'first-room' | 'command-deck' | 'invasion-tab';
+export type TutorialAnchor = 'room-row' | 'first-room' | 'command-deck' | 'invasion-tab' | 'invasion-alert';
 export type TutorialAnchors = Partial<Record<TutorialAnchor, TutorialRect>>;
 
 export interface TutorialStep {
@@ -37,7 +38,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     stage:     1,
     title:     '첫 수호실을 건설하세요',
-    body:      '빛나는 빈 터를 눌러 방을 건설하세요.\n방은 침입 경로를 끊는 핵심 시설입니다.',
+    body:      '빛나는 빈 터를 누르고 \'방 설계\'에서 건물을 고르세요.\n방은 침입 경로를 끊는 핵심 시설입니다.',
     anchor:    'room-row',
     highlight: { x: 8, y: 132, w: 374, h: 131 },
     arrowFrom: { x: 195, y: 545 },
@@ -116,6 +117,8 @@ export class TutorialOverlay {
     const s = this.scene;
     const ctr = s.add.container(0, 0).setDepth(1000);
     this.container = ctr;
+    // Counts as an open Home popup, so queued notices (quest results, alerts) wait for the card.
+    trackHomeModal(s, ctr);
 
     // ── Dim mask with hole cutout ──────────────────────────────────────────
     const mask = s.add.graphics();
