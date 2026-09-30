@@ -27,6 +27,8 @@ import {
 } from '../data/abyss';
 import { settleAbyssBattle, sweepAbyssFloor } from '../data/abyssTransactions';
 import type { BattleReturnResult } from '../data/invasionTransactions';
+import { ABYSS_BACK_LABEL, ABYSS_RETURN_SCENE_KEY, nextAbyssReturnScene, type AbyssReturnScene } from '../data/abyssBattle';
+import { FUSION_RETURN_SCENE_KEY } from '../data/fusionCandidates';
 import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import {
   addFramedPanel,
@@ -76,6 +78,8 @@ export class AbyssScene extends Phaser.Scene {
   private selectedFloor = 1;
   private pageStart = 1;
   private receipt: AbyssReceipt | null = null;
+  /** '← 뒤로' 목적지. 씬 인스턴스가 재사용되므로 원정 전투 왕복 동안 유지된다. */
+  private returnScene: AbyssReturnScene = 'StageSelectScene';
   private transactionPending = false;
   private lastTransactionAt = 0;
 
@@ -88,6 +92,11 @@ export class AbyssScene extends Phaser.Scene {
     this.receipt = null;
     this.transactionPending = false;
     this.lastTransactionAt = 0;
+
+    const returningFromBattle = this.registry.get('abyssPendingFloor') !== undefined;
+    const handoff = this.registry.get(ABYSS_RETURN_SCENE_KEY);
+    NAVIGATION_CONTEXT_OPERATIONS['abyss-entry'].consume.forEach(field => this.registry.remove(field));
+    this.returnScene = nextAbyssReturnScene(handoff, returningFromBattle, this.returnScene);
 
     const returnedFloor = this.resolveReturnedBattle();
     const refilled = refilledKeys(this.gs.abyss, today());
@@ -163,8 +172,9 @@ export class AbyssScene extends Phaser.Scene {
     addSceneHeader(this, {
       title: '심연 원정실',
       subtitle: '깊이를 정찰하고 재료 보급선을 확보',
+      backLabel: ABYSS_BACK_LABEL[this.returnScene],
       onBack: () => {
-        if (!this.transactionPending) this.scene.start('StageSelectScene');
+        if (!this.transactionPending) this.scene.start(this.returnScene);
       },
     });
 
@@ -515,7 +525,10 @@ export class AbyssScene extends Phaser.Scene {
       hoverFillColor: DUNGEON_UI.IRON,
       borderColor: DUNGEON_UI.BRASS,
       textColor: DUNGEON_UI_CSS.PARCHMENT,
-      onPress: () => this.scene.start('ForgeScene'),
+      onPress: () => {
+        this.registry.set('forgeReturnScene', 'AbyssScene');
+        this.scene.start('ForgeScene');
+      },
     });
     forge.zone.setName('abyss-route-forge');
     this.bindRouteAction(forge.zone);
@@ -532,7 +545,10 @@ export class AbyssScene extends Phaser.Scene {
       hoverFillColor: DUNGEON_UI.IRON,
       borderColor: COLORS.MAGIC_GLOW,
       textColor: DUNGEON_UI_CSS.PARCHMENT,
-      onPress: () => this.scene.start('FusionScene'),
+      onPress: () => {
+        this.registry.set(FUSION_RETURN_SCENE_KEY, 'AbyssScene');
+        this.scene.start('FusionScene');
+      },
     });
     fusion.zone.setName('abyss-route-fusion');
     this.bindRouteAction(fusion.zone);

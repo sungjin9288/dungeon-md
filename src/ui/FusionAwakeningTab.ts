@@ -1,4 +1,5 @@
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../constants/layout';
+import { ABYSS_RETURN_SCENE_KEY } from '../data/abyssBattle';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
 import { loadGameState, saveGameState } from '../data/wisdom';
 import { type OwnedMonster, AWAKENED_ATK_MULT } from '../data/barracks';
@@ -157,7 +158,10 @@ export function buildAwakeningTab(
     label: '각성석 획득처 · 심연 보스층으로 이동', fontSize: '12px', once: true,
     showArrow: false, fillColor: DUNGEON_UI.STONE_RAISED, borderColor: DUNGEON_UI.EDGE,
     hoverFillColor: DUNGEON_UI.IRON, hoverBorderColor: TAB_ACCENT['각성'],
-    onPress: () => ctx.scene.scene.start('AbyssScene'),
+    onPress: () => {
+      ctx.scene.registry.set(ABYSS_RETURN_SCENE_KEY, 'FusionScene');
+      ctx.scene.scene.start('AbyssScene');
+    },
   });
   c.add([farm.bg, farm.text, farm.zone]);
 

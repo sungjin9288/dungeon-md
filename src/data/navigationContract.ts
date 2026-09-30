@@ -108,6 +108,9 @@ export const NAVIGATION_CONTEXT_FIELDS = [
   'abyssPendingFloor',
   'battleResult',
   'forecastCardId',
+  'fusionEvolveId',
+  'fusionReturnScene',
+  'abyssReturnScene',
 ] as const;
 
 export type NavigationContextField = (typeof NAVIGATION_CONTEXT_FIELDS)[number];
@@ -119,7 +122,9 @@ export type NavigationContextOperation =
   | 'prebattle-resume'
   | 'battle-result'
   | 'abyss-return'
-  | 'forecast-return';
+  | 'forecast-return'
+  | 'fusion-entry'
+  | 'abyss-entry';
 
 /**
  * Registry field ownership mirrors existing scene behavior. These are a testable
@@ -174,6 +179,19 @@ export const NAVIGATION_CONTEXT_OPERATIONS: Readonly<Record<
   'forecast-return': {
     consume: ['forecastCardId', 'battleResult', 'returnTo'],
     preserve: [],
+  },
+  // The fusion chamber opened with materials picked (barracks detail) and/or a back target.
+  'fusion-entry': {
+    consume: ['fusionEvolveId', 'fusionReturnScene'],
+    preserve: [],
+  },
+  /**
+   * Where the expedition hall's back button goes (forge '심연 수급', the awakening tab).
+   * A climb's round trip keeps the target: the hall re-creates on return without a new hand-off.
+   */
+  'abyss-entry': {
+    consume: ['abyssReturnScene'],
+    preserve: ['abyssPendingFloor'],
   },
 };
 

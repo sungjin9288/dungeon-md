@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadGameState, type GameState } from './wisdom';
-import { abyssBattleFloor, getAbyssBattleLabels } from './abyssBattle';
+import { abyssBattleFloor, getAbyssBattleLabels, nextAbyssReturnScene } from './abyssBattle';
 import { settleAbyssBattle } from './abyssTransactions';
 
 const ALWAYS = (): number => 0;
@@ -52,5 +52,17 @@ describe('심연 전투 정산', () => {
     expect(out.state.abyss.highestFloor).toBe(0);
     expect(out.state.homeGold).toBe(200);
     expect(out.state.materials.common_ore).toBe(2);
+  });
+});
+
+describe('원정실 돌아갈 곳', () => {
+  it('들어온 곳으로 돌아가고, 원정 전투 왕복 동안은 그대로 유지한다', () => {
+    const fromForge = nextAbyssReturnScene('ForgeScene', false, 'StageSelectScene');
+    expect(fromForge).toBe('ForgeScene');
+    // Back from a climb: no new hand-off, keep the forge.
+    expect(nextAbyssReturnScene(undefined, true, fromForge)).toBe('ForgeScene');
+    // A fresh entry without a hand-off (expedition menu, map bottom) goes back to the invasion map.
+    expect(nextAbyssReturnScene(undefined, false, fromForge)).toBe('StageSelectScene');
+    expect(nextAbyssReturnScene('DungeonScene', false, 'ForgeScene')).toBe('StageSelectScene');
   });
 });

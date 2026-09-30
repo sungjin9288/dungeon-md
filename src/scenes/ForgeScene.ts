@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ABYSS_RETURN_SCENE_KEY } from '../data/abyssBattle';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_HEIGHT } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS, ZONE_ACCENTS } from '../constants/colors';
 import {
@@ -166,7 +167,7 @@ export class ForgeScene extends Phaser.Scene {
     }).setOrigin(0.5));
 
     buildZoneBackButton(this, {
-      label: this.returnScene === 'BarracksScene' ? '← 군단' : '← 던전',
+      label: this.returnScene === 'BarracksScene' ? '← 군단' : this.returnScene === 'AbyssScene' ? '← 심연' : '← 던전',
       width: 86,
       fillColor: DUNGEON_UI.STONE,
       borderColor: DUNGEON_UI.IRON,
@@ -185,9 +186,7 @@ export class ForgeScene extends Phaser.Scene {
     });
 
     if (this.focusRoomSlotIdx === null) {
-      this.buildHeaderAction(c, CANVAS_WIDTH - 96, '심연 수급', 'supply', DUNGEON_UI.BRASS, () => {
-        this.scene.start('AbyssScene');
-      });
+      this.buildHeaderAction(c, CANVAS_WIDTH - 96, '심연 수급', 'supply', DUNGEON_UI.BRASS, () => this.openAbyss());
     }
 
     if (this.focusRoomSlotIdx !== null) {
@@ -265,6 +264,12 @@ export class ForgeScene extends Phaser.Scene {
     const tab = this.registry.get('forgeTab');
     this.registry.remove('forgeTab');
     return tab === 'trap' || tab === 'dismantle' ? tab : 'craft';
+  }
+
+  /** 원정실 '← 뒤로'가 공방으로 돌아오게 한다. */
+  private openAbyss(): void {
+    this.registry.set(ABYSS_RETURN_SCENE_KEY, 'ForgeScene');
+    this.scene.start('AbyssScene');
   }
 
   private consumeReturnScene(): string {
@@ -428,7 +433,7 @@ export class ForgeScene extends Phaser.Scene {
         this.selectedEqIdx = this.selectedEqIdx === idx ? null : idx;
         this.renderContent();
       },
-      onOpenAbyss:        ()             => this.scene.start('AbyssScene'),
+      onOpenAbyss:        ()             => this.openAbyss(),
       onPageChange: (page) => {
         if (this.activeTab === 'craft') this.craftPage = Math.max(0, page);
         else if (this.activeTab === 'trap') this.trapPage = Math.max(0, page);

@@ -104,7 +104,7 @@ export class FusionScene extends Phaser.Scene {
   private consumeReturnScene(): string {
     const scene = this.registry.get(FUSION_RETURN_SCENE_KEY);
     this.registry.remove(FUSION_RETURN_SCENE_KEY);
-    return scene === 'BarracksScene' ? scene : 'DungeonHomeScene';
+    return scene === 'BarracksScene' || scene === 'AbyssScene' ? scene : 'DungeonHomeScene';
   }
 
   private pickInitialAwakeningTarget(): OwnedMonster | null {

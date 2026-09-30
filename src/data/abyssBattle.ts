@@ -6,6 +6,28 @@
 import { getAbyssFloorConfig } from './abyss';
 
 export const ABYSS_SCENE_KEY = 'AbyssScene';
+/** registry 인계 — 원정실 '← 뒤로'가 돌아갈 씬(navigationContract 'abyss-entry'). */
+export const ABYSS_RETURN_SCENE_KEY = 'abyssReturnScene';
+const ABYSS_RETURN_SCENES = ['ForgeScene', 'FusionScene', 'StageSelectScene'] as const;
+export type AbyssReturnScene = (typeof ABYSS_RETURN_SCENES)[number];
+export const ABYSS_BACK_LABEL: Readonly<Record<AbyssReturnScene, string>> = {
+  ForgeScene: '← 공방',
+  FusionScene: '← 의식실',
+  StageSelectScene: '← 침공',
+};
+
+/**
+ * 원정실의 돌아갈 곳. 새 인계가 있으면 그것, 전투에서 막 돌아왔으면(인계 없음) 지금 값 유지, 그 밖에는 침공 지도.
+ */
+export function nextAbyssReturnScene(
+  handoff: unknown,
+  returningFromBattle: boolean,
+  current: AbyssReturnScene,
+): AbyssReturnScene {
+  if ((ABYSS_RETURN_SCENES as readonly unknown[]).includes(handoff)) return handoff as AbyssReturnScene;
+  return returningFromBattle ? current : 'StageSelectScene';
+}
+
 export const ABYSS_LOSE_RETURN_LABEL = '심연 원정실로 · 전리품 정산';
 
 /** 심연 전투면 그 층, 아니면 null. 두 인계값이 모두 맞아야 심연 전투다. */
