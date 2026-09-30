@@ -146,3 +146,13 @@ describe('applyClearRewards', () => {
   });
 });
 
+
+describe('심연 전투(stageNumber 0)는 스테이지가 아니다', () => {
+  it('명성·관문 진행을 건드리지 않는다 — 예전에는 매번 "첫 클리어"로 명성이 올랐다', () => {
+    const before = makeState({ notoriety: 40 });
+    const after = applyClearRewards(before, { earnedCrystals: 5, stageNumber: 0, stars: 3, hpPercent: 100 });
+    expect(after.notoriety).toBe(40);
+    expect(after.stageProgress).toBe(before.stageProgress);
+    expect(after.soulCrystals).toBe(15);
+  });
+});

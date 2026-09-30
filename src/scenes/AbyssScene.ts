@@ -25,7 +25,8 @@ import {
   refilledKeys,
   type AbyssLoot,
 } from '../data/abyss';
-import { clearAbyssFloor, sweepAbyssFloor } from '../data/abyssTransactions';
+import { settleAbyssBattle, sweepAbyssFloor } from '../data/abyssTransactions';
+import type { BattleReturnResult } from '../data/invasionTransactions';
 import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import {
   addFramedPanel,
@@ -103,7 +104,7 @@ export class AbyssScene extends Phaser.Scene {
 
   private resolveReturnedBattle(): number | null {
     const pendingFloor = this.registry.get('abyssPendingFloor') as number | undefined;
-    const result = this.registry.get('battleResult') as { won: boolean } | undefined;
+    const result = this.registry.get('battleResult') as BattleReturnResult | undefined;
     if (pendingFloor === undefined) return null;
 
     // Drop every field the abyss hand-off owns. Driving this from the shared
@@ -113,25 +114,42 @@ export class AbyssScene extends Phaser.Scene {
     });
 
     const deepestBefore = this.gs.abyss.highestFloor;
-    if (result?.won) {
-      const resolved = clearAbyssFloor(this.gs, pendingFloor);
-      this.gs = resolved.state;
-      saveGameState(this.gs);
+    if (!result) {
       this.receipt = {
-        title: resolved.firstClear
+        title: `${pendingFloor}층 원정 결과 확인 불가`,
+        detail: '진행과 보상은 변경되지 않았습니다',
+        tone: 'warning',
+      };
+      return pendingFloor;
+    }
+
+    // The battle's own loot (gold, DM XP, drops) settles win or lose, like every other battle.
+    const settled = settleAbyssBattle(this.gs, pendingFloor, result, { now: Date.now() });
+    this.gs = settled.state;
+    saveGameState(this.gs);
+    const levelUp = settled.didLevelUp ? `DM Lv.${this.gs.dmLevel}` : null;
+    const clear = settled.clear;
+    if (clear) {
+      const floorLoot = clear.blueprint
+        ? `설계도 「${BLUEPRINT_DEFS[clear.blueprint]?.name ?? clear.blueprint}」 획득 · ${this.formatLoot(clear.loot, result.goldEarned)}`
+        : this.formatLoot(clear.loot, result.goldEarned);
+      this.receipt = {
+        title: clear.firstClear
           ? `${pendingFloor}층 정복 완료 · 최심 ${deepestBefore}→${this.gs.abyss.highestFloor}`
           : `${pendingFloor}층 원정 완료 · 최심 ${this.gs.abyss.highestFloor}층`,
-        detail: resolved.blueprint
-          ? `설계도 「${BLUEPRINT_DEFS[resolved.blueprint]?.name ?? resolved.blueprint}」 획득 · ${this.formatLoot(resolved.loot)}`
-          : this.formatLoot(resolved.loot),
+        detail: [floorLoot, levelUp].filter(Boolean).join(' · '),
         tone: 'success',
       };
       return pendingFloor;
     }
 
     this.receipt = {
-      title: result ? `${pendingFloor}층 원정 실패 · 최심 ${deepestBefore}층 유지` : `${pendingFloor}층 원정 결과 확인 불가`,
-      detail: result ? '심연 정복 보상 없음 · 같은 층에 다시 도전할 수 있습니다' : '진행과 보상은 변경되지 않았습니다',
+      title: `${pendingFloor}층 원정 실패 · 최심 ${deepestBefore}층 유지`,
+      detail: [
+        result.goldEarned > 0 ? `전리품 골드 +${result.goldEarned.toLocaleString('ko-KR')}` : '정복 보상 없음',
+        levelUp,
+        '같은 층에 다시 도전할 수 있습니다',
+      ].filter(Boolean).join(' · '),
       tone: 'warning',
     };
     return pendingFloor;
@@ -639,11 +657,13 @@ export class AbyssScene extends Phaser.Scene {
     this.scene.start('DungeonScene');
   }
 
-  private formatLoot(loot: AbyssLoot): string {
+  /** `battleGold` — 같은 원정의 전투 전리품. 층 보상 골드와 한 숫자로 보여 준다. */
+  private formatLoot(loot: AbyssLoot, battleGold = 0): string {
     const parts = Object.entries(loot.materials)
       .map(([id, quantity]) => `${MATERIAL_DEFS[id]?.name ?? id} +${quantity}`);
     if (loot.awakeningStones > 0) parts.push(`각성석 +${loot.awakeningStones}`);
-    if (loot.gold > 0) parts.push(`골드 +${loot.gold.toLocaleString('ko-KR')}`);
+    const gold = loot.gold + battleGold;
+    if (gold > 0) parts.push(`골드 +${gold.toLocaleString('ko-KR')}`);
     return parts.length > 0 ? parts.join(' · ') : '획득 보상 없음';
   }
 }

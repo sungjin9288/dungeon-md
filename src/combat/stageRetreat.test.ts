@@ -23,7 +23,7 @@ function ctx(returnTo?: string, adRevivesUsed = 0) {
       setAdRevivesUsed: (n: number) => { revives.used = n; },
       setDungeonHp: vi.fn(), setWaveEndChecked: vi.fn(), setWave: vi.fn(), startWave: vi.fn(),
       scene: {
-        registry: { set: (k: string, v: unknown) => registry.set(k, v) },
+        registry: { set: (k: string, v: unknown) => registry.set(k, v), get: (k: string) => registry.get(k) },
         scene: { stop: vi.fn(), start: (key: string) => started.push(key) },
       },
     },
@@ -50,6 +50,16 @@ describe('battle defeat options', () => {
     expect([saved.homeGold, saved.dmXP, saved.materials]).toEqual([620, 10 + STAGE_DEFEAT_DM_XP, { old_cloth: 1 }]);
     expect(c.registry.has('battleResult')).toBe(false);
     expect(c.started).toEqual(['DungeonHomeScene']);
+  });
+
+  it('an abyss climb retreats to the expedition hall, not to the dungeon', () => {
+    const c = ctx('AbyssScene');
+    c.registry.set('abyssPendingFloor', 2);
+    const retreat = buildFailOptions(c.value as never, ov as never, null)[0];
+    expect(retreat.label).toBe('심연 원정실로 · 전리품 정산');
+    retreat.action();
+    expect(c.registry.get('battleResult')).toMatchObject({ won: false, goldEarned: 120 });
+    expect(c.started).toEqual(['AbyssScene']);
   });
 
   it('keeps the invasion hand-off to Home for returnTo battles', () => {

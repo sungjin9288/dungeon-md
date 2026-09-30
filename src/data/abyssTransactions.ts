@@ -8,6 +8,7 @@
 
 import type { GameState } from './wisdom';
 import { abyssBlueprintFor, grantBlueprint } from './blueprintSources';
+import { applyBattleReturnSettlement, type BattleReturnResult } from './invasionTransactions';
 import {
   type AbyssState,
   type AbyssLoot,
@@ -107,4 +108,29 @@ export function clearAbyssFloor(
   const blueprint = abyssBlueprintFor(next, floor);
   next = grantBlueprint(next, blueprint);
   return { state: next, loot, firstClear, blueprint };
+}
+
+export interface AbyssBattleSettlement {
+  readonly state: GameState;
+  /** 전투 전리품 정산으로 DM 레벨이 올랐는가. */
+  readonly didLevelUp: boolean;
+  /** 이겼을 때의 층 정복 결과, 졌으면 null. */
+  readonly clear: AbyssClearResult | null;
+}
+
+/**
+ * 원정실로 돌아온 심연 전투를 정산한다: 전투에서 번 전리품 골드·DM 경험치·재료·부족 조각은 홈 침략·침공 스테이지와
+ * 같이 이기든 지든 들어오고(`applyBattleReturnSettlement`, 침략 방어 목표는 올리지 않음), 이기면 층 정복 보상이 더해진다.
+ * 예전에는 층 정복 보상만 넣어 전투 전리품이 사라졌다.
+ */
+export function settleAbyssBattle(
+  state: GameState,
+  floor: number,
+  result: BattleReturnResult,
+  { now, rng = Math.random }: { readonly now: number; readonly rng?: () => number },
+): AbyssBattleSettlement {
+  const settled = applyBattleReturnSettlement(state, result, { defendInvasion: false, now });
+  if (!result.won) return { state: settled.state, didLevelUp: settled.didLevelUp, clear: null };
+  const clear = clearAbyssFloor(settled.state, floor, rng);
+  return { state: clear.state, didLevelUp: settled.didLevelUp, clear };
 }

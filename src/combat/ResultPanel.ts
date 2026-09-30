@@ -14,6 +14,7 @@
 //   resetStage       — full stage reset (called by fail-panel action)
 
 import { drawSigil } from '../ui/Sigils';
+import { ABYSS_LOSE_RETURN_LABEL, abyssBattleFloor } from '../data/abyssBattle';
 import { MATERIAL_SIGILS } from '../ui/sigilMaps';
 import { STAGE_DEFEAT_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
 import { loadGameState, saveGameState } from '../data/wisdom';
@@ -469,7 +470,12 @@ export function buildFailOptions(
     scene.scene.start(ctx.returnTo ?? 'DungeonHomeScene');
   };
   return [
-    { label: '던전으로 귀환 · 방어선 보강', tone: 'primary', action: retreat },
+    {
+      label: abyssBattleFloor(ctx.returnTo, scene.registry.get('abyssPendingFloor')) !== null
+        ? ABYSS_LOSE_RETURN_LABEL
+        : '던전으로 귀환 · 방어선 보강',
+      tone: 'primary', action: retreat,
+    },
     ctx.adRevivesUsed < AD_REVIVES_PER_BATTLE
       ? {
         label: '광고 확인 후 부활',

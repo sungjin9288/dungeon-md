@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { abyssBattleFloor, getAbyssBattleLabels } from '../data/abyssBattle';
 import {
   CASUAL,
   CASUAL_CSS,
@@ -102,13 +103,15 @@ export class UIScene extends Phaser.Scene {
     titlePlate.strokeRoundedRect(10, st + 8, 154, 44, 7);
 
     // Main title
-    this.add.text(18, st + 15, '침공 방어전', {
+    const abyssFloor = abyssBattleFloor(this.registry.get('returnTo'), this.registry.get('abyssPendingFloor'));
+    const abyssLabels = abyssFloor !== null ? getAbyssBattleLabels(abyssFloor) : null;
+    this.add.text(18, st + 15, abyssLabels?.hudTitle ?? '침공 방어전', {
       fontFamily: 'sans-serif',
       fontSize: '18px',
       fontStyle: 'bold',
       color: DUNGEON_UI_CSS.PARCHMENT,
     });
-    this.add.text(18, st + 38, modifier ? `도전 변수 · ${modifier.name}` : '전선 작전 · DUNGEON DEFENSE', {
+    this.add.text(18, st + 38, modifier ? `도전 변수 · ${modifier.name}` : abyssLabels?.hudSubtitle ?? '전선 작전 · DUNGEON DEFENSE', {
       fontFamily: 'sans-serif',
       fontSize: '10px',
       fontStyle: 'bold',

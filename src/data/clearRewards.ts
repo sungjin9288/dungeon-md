@@ -26,12 +26,14 @@ export function applyClearRewards(state: GameState, options: ClearRewardOptions)
     weeklyBossMode = null,
   } = options;
 
-  const stageProgress = stageNumber !== undefined
+  // Stage numbers start at 1; an abyss climb carries stageNumber 0 and is not a stage.
+  const isStage = stageNumber !== undefined && stageNumber >= 1;
+  const stageProgress = isStage
     ? applyStageClear(state.stageProgress, stageNumber - 1, stars, hpPercent)
     : state.stageProgress;
 
   // A stage's first clear spreads the dungeon's name, scaled by its chapter.
-  const firstClear = stageNumber !== undefined && (state.stageProgress?.[stageNumber - 1]?.bestStars ?? 0) === 0;
+  const firstClear = isStage && (state.stageProgress?.[stageNumber - 1]?.bestStars ?? 0) === 0;
   const chapter = firstClear ? (ALL_STAGES.find(stage => stage.id === stageNumber)?.chapter ?? 1) : 0;
   const notoriety = (state.notoriety ?? 0) + (firstClear ? NOTORIETY_GAIN.stageClearPerChapter * chapter : 0);
 

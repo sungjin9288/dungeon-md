@@ -3,6 +3,7 @@
 // Full-game-clear (stageNumber 90, Ch9 finale) delegates immediately to GameCompleteFlow.
 
 import { STAGE_CLEAR_DM_XP, applyBattleReturnSettlement } from '../data/invasionTransactions';
+import { abyssBattleFloor, getAbyssBattleLabels } from '../data/abyssBattle';
 import { TRIBE_LABELS } from '../ui/BarracksShared';
 import Phaser from 'phaser';
 import { audioManager } from '../audio/AudioManager';
@@ -58,7 +59,10 @@ export function showChapterClear(ctx: ResultFlowContext): void {
   // Persist all clear rewards immutably
   const gs = loadGameState();
   const stageCfg = scene.registry.get('stageConfig') as { stageNumber?: number } | undefined;
-  const stageNum = stageCfg?.stageNumber;
+  // An abyss climb carries stageNumber 0 — not a stage (no clear record, quest tick or stage title).
+  const stageNum = stageCfg?.stageNumber || undefined;
+  const abyssFloor = abyssBattleFloor(ctx.returnTo, scene.registry.get('abyssPendingFloor'));
+  const abyssLabels = abyssFloor !== null ? getAbyssBattleLabels(abyssFloor) : null;
   const hpPercent = Math.round((ctx.dungeonHp / ctx.maxHp) * 100);
 
   const updated = applyClearRewards(gs, {
@@ -149,10 +153,12 @@ export function showChapterClear(ctx: ResultFlowContext): void {
     ? `${ctx.dailyMode.name} · 작전 완료`
     : ctx.weeklyBossMode
     ? `${ctx.weeklyBossMode.name} · 격파`
+    : abyssLabels
+    ? abyssLabels.clearTitle
     : ctx.returnTo
     ? '침공 방어 성공'
-    : stageCfgX?.stageNumber !== undefined
-    ? stageClearTitle(stageCfgX.stageNumber)
+    : stageNum !== undefined
+    ? stageClearTitle(stageNum)
     : `${chLabel} 전선 확보`;
   const title = scene.add.text(CANVAS_WIDTH / 2, cy + 32, clearTitle, {
     fontFamily: 'sans-serif', fontSize: '24px', fontStyle: 'bold', color: DUNGEON_UI_CSS.BRASS,
@@ -317,7 +323,7 @@ export function showChapterClear(ctx: ResultFlowContext): void {
       enabled: !!nextCfg,
     }]),
     {
-      label: ctx.returnTo ? '던전으로 귀환 · 방어선 확인' : '침공 전선으로',
+      label: abyssLabels ? abyssLabels.winReturnLabel : ctx.returnTo ? '던전으로 귀환 · 방어선 확인' : '침공 전선으로',
       action: () => {
         if (ctx.returnTo) {
           scene.registry.set('battleResult', {
