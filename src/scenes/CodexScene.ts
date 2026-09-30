@@ -93,7 +93,12 @@ const W = CANVAS_WIDTH - X * 2;
 const STATUS_Y = 74;
 const TABS_Y = 132;
 const CONTENT_Y = 182;
-const RECORDS_PER_GUARDIAN_PAGE = 3;
+/** Two rows of four: a tribe of 20 fits in three pages instead of seven. */
+const GUARDIAN_COLS = 4;
+const RECORDS_PER_GUARDIAN_PAGE = GUARDIAN_COLS * 2;
+const GUARDIAN_CARD_H = 82;
+/** Pager sits under the two card rows; the one-line detail under the pager, clear of the reward panel (614). */
+const GUARDIAN_DETAIL_Y = 344 + 2 * (GUARDIAN_CARD_H + 6) + 46;
 const RECORDS_PER_INVADER_PAGE = 3;
 const RECORDS_PER_INTEL_PAGE = 4;
 const COOLDOWN_MS = 250;
@@ -338,14 +343,19 @@ export class CodexScene extends Phaser.Scene {
     this.visibleArtIds = new Set(visible.map(monster => monster.id));
     getCharacterArtStreamer(this.game).request(this.visibleArtIds);
     const gap = 6;
-    const cardW = (W - gap * 2) / 3;
-    visible.forEach((monster, index) => this.drawGuardianCard(monster, X + index * (cardW + gap), 344, cardW));
+    const cardW = (W - gap * (GUARDIAN_COLS - 1)) / GUARDIAN_COLS;
+    visible.forEach((monster, index) => this.drawGuardianCard(
+      monster,
+      X + (index % GUARDIAN_COLS) * (cardW + gap),
+      344 + Math.floor(index / GUARDIAN_COLS) * (GUARDIAN_CARD_H + gap),
+      cardW,
+    ));
     if (visible.length === 0) {
       this.panel(344, 96, DUNGEON_UI.IRON);
       this.centerText(CANVAS_WIDTH / 2, 392, '현재 filter에 표시할 수호자가 없습니다', 11, DUNGEON_UI_CSS.MUTED);
     }
     this.pager({
-      y: 446,
+      y: 344 + 2 * (GUARDIAN_CARD_H + gap),
       label: records.length ? `${start + 1}–${Math.min(records.length, start + visible.length)} / ${records.length}` : '0 / 0',
       page: this.guardianPage,
       pageCount,
@@ -364,31 +374,32 @@ export class CodexScene extends Phaser.Scene {
     const selected = monster.id === this.selectedMonsterId;
     const owned = this.isOwned(monster.id);
     const rarity = getRarityMeta(monster.rarityTier);
+    const h = GUARDIAN_CARD_H;
     const g = this.add.graphics();
     g.fillStyle(selected ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.STONE, 1);
-    g.fillRoundedRect(x, y, w, 96, 8);
+    g.fillRoundedRect(x, y, w, h, 8);
     g.lineStyle(selected ? 2 : 1, selected ? DUNGEON_UI.BRASS_BRIGHT : owned ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, selected ? 1 : 0.8);
-    g.strokeRoundedRect(x, y, w, 96, 8);
+    g.strokeRoundedRect(x, y, w, h, 8);
     if (selected) {
+      // Along the bottom edge: at the top it crossed the dex number.
       g.fillStyle(DUNGEON_UI.BRASS, 1);
-      g.fillRect(x + 6, y + 6, w - 12, 3);
+      g.fillRect(x + 8, y + GUARDIAN_CARD_H - 4, w - 16, 2);
     }
     if (owned) {
       const skin = getSkinForMonster(monster.id, this.gameState.equippedSkins ?? {});
       const key = generatePortrait(this, monster.id, skin?.id);
-      if (this.textures.exists(key)) this.add.image(x + w / 2, y + 31, key).setDisplaySize(43, 43);
-      else this.centerText(x + w / 2, y + 31, skin?.emoji ?? monster.emoji, 28, '#ffffff');
+      if (this.textures.exists(key)) this.add.image(x + w / 2, y + 40, key).setDisplaySize(40, 40);
+      else this.centerText(x + w / 2, y + 40, skin?.emoji ?? monster.emoji, 26, '#ffffff');
     } else {
       g.fillStyle(DUNGEON_UI.VOID, 0.88);
-      g.fillCircle(x + w / 2, y + 31, 22);
-      this.centerText(x + w / 2, y + 31, '?', 24, DUNGEON_UI_CSS.MUTED, true);
+      g.fillCircle(x + w / 2, y + 40, 18);
+      this.centerText(x + w / 2, y + 40, '?', 20, DUNGEON_UI_CSS.MUTED, true);
     }
-    this.leftText(x + 10, y + 12, `#${getDexNo(monster.id)}`, 10, rarity.css, true);
-    this.rightText(x + w - 9, y + 12, rarity.label, 10, rarity.css, true);
-    this.centerText(x + w / 2, y + 64, monster.name, 10, DUNGEON_UI_CSS.PARCHMENT, true, w - 12);
-    this.centerText(x + w / 2, y + 84, owned ? '보유 · 열람 가능' : '미보유 · 기본 기록', 10,
-      owned ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED);
-    const zone = this.add.zone(x, y, w, 96).setOrigin(0).setInteractive({ useHandCursor: true });
+    // Owned = jade frame; the old "보유 · 열람 가능" line did not fit four across.
+    this.leftText(x + 6, y + 11, `#${getDexNo(monster.id)}`, 10, rarity.css, true);
+    this.rightText(x + w - 6, y + 11, rarity.label, 10, rarity.css, true);
+    this.centerText(x + w / 2, y + h - 12, monster.name, 10, owned ? DUNGEON_UI_CSS.PARCHMENT : DUNGEON_UI_CSS.MUTED, true, w - 8);
+    const zone = this.add.zone(x, y, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
     zone.setName(`codex-guardian-record-${monster.id}`);
     zone.on('pointerdown', () => {
       if (this.transactionPending || this.detailOverlay || this.selectedMonsterId === monster.id) return;
@@ -397,22 +408,24 @@ export class CodexScene extends Phaser.Scene {
     });
   }
 
+  /** One line under the pager: the selected record's gist and the detail button (was a 112px panel). */
   private drawGuardianDetail(records: readonly MonsterRecord[]): void {
     const monster = records.find(record => record.id === this.selectedMonsterId) ?? records[0];
     const owned = monster ? this.isOwned(monster.id) : false;
-    this.panel(496, 112, owned ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, owned ? DUNGEON_UI.JADE : DUNGEON_UI.IRON);
+    const y = GUARDIAN_DETAIL_Y;
+    this.panel(y, 44, owned ? DUNGEON_UI.JADE : DUNGEON_UI.IRON, owned ? DUNGEON_UI.JADE : DUNGEON_UI.IRON);
     if (!monster) {
-      this.centerText(CANVAS_WIDTH / 2, 552, '선택 가능한 기록이 없습니다', 11, DUNGEON_UI_CSS.MUTED);
+      this.centerText(CANVAS_WIDTH / 2, y + 22, '선택 가능한 기록이 없습니다', 11, DUNGEON_UI_CSS.MUTED);
       return;
     }
     const rarity = getRarityMeta(monster.rarityTier);
-    this.leftText(32, 516, monster.name, 14, DUNGEON_UI_CSS.PARCHMENT, true);
-    this.leftText(32, 541, `${rarity.stars} ${rarity.label} · ${this.elementLabel(monster.element)} · Chapter ${monster.chapter ?? 1}`, 10, rarity.css, true);
-    this.leftText(32, 566, `ATK ${monster.baseDamage} · COOL ${(monster.attackCooldown / 1000).toFixed(1)}s · RANGE ${monster.range}`, 10, DUNGEON_UI_CSS.TEXT);
-    this.leftText(32, 589, owned ? '보유 기록 · 패시브/배치/성장 정보 열람 가능' : `획득 경로 · ${this.unlockLabel(monster.unlockMethod)}`, 10,
-      owned ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED);
+    this.leftText(30, y + 13, `${monster.name} · ${rarity.stars} ${rarity.label} · ${this.elementLabel(monster.element)}`, 11,
+      DUNGEON_UI_CSS.PARCHMENT, true, W - 130);
+    this.leftText(30, y + 31, owned
+      ? `ATK ${monster.baseDamage} · COOL ${(monster.attackCooldown / 1000).toFixed(1)}s · RANGE ${monster.range}`
+      : `획득 · ${this.unlockLabel(monster.unlockMethod)}`, 10, owned ? DUNGEON_UI_CSS.TEXT : DUNGEON_UI_CSS.MUTED, false, W - 130);
     this.button({
-      name: 'codex-detail-open', x: X + W - 100, y: 554, w: 88,
+      name: 'codex-detail-open', x: X + W - 96, y, w: 88,
       label: owned ? '상세 열람' : '미보유', fontSize: '10px', enabled: owned,
       fill: DUNGEON_UI.JADE, border: DUNGEON_UI.JADE, textColor: '#07110b',
       onPress: () => {
