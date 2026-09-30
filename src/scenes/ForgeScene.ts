@@ -10,7 +10,7 @@ import {
   type GameState,
 } from '../data/wisdom';
 import {
-  BLUEPRINT_DEFS, RARITY_COLORS,
+  BLUEPRINT_DEFS, forgeRarityCss,
   type BlueprintDef,
 } from '../data/fusion';
 import {
@@ -603,7 +603,7 @@ export class ForgeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '16px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
     }).setOrigin(0.5));
     ov.add(this.add.text(cx - pw / 2 + 82, top + 58, bp.name, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
+      fontFamily: 'sans-serif', fontSize: '14px', color: forgeRarityCss(bp.rarity),
       fontStyle: 'bold',
     }));
     ov.add(this.add.text(cx - pw / 2 + 82, top + 80, blueprintEffectText(bp), {
@@ -692,7 +692,7 @@ export class ForgeScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '16px', color: DUNGEON_UI_CSS.EMBER, fontStyle: 'bold',
     }).setOrigin(0.5));
     ov.add(this.add.text(cx - pw / 2 + 84, top + 58, eq.name, {
-      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: RARITY_COLORS[eq.rarity] ?? DUNGEON_UI_CSS.BRASS,
+      fontFamily: 'sans-serif', fontSize: '14px', fontStyle: 'bold', color: forgeRarityCss(eq.rarity),
     }));
     ov.add(this.add.text(cx - pw / 2 + 84, top + 82, '이 장비를 재료로 되돌립니다.', {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,

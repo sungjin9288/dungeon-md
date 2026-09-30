@@ -8,6 +8,30 @@ export const RARITY_STARS     = ['⭐', '⭐⭐', '⭐⭐⭐', '⭐⭐⭐⭐', '
 export const RARITY_COLORS    = ['#aaaaaa', '#44cc44', '#4488cc', '#aa44ff', '#ffaa22'] as const;
 export const RARITY_XP_VALUES = [30, 80, 200, 500, 1200] as const;
 
+/**
+ * 제작 장비(설계도) 등급: 몬스터 등급표와 같은 0부터의 등급(4 = 전설)에 원초 장비만 쓰는 6번째 등급
+ * '특수'(5)를 더한다. 설계도 `rarity`는 이 등급 번호다(별은 등급+1개). 공방의 모든 표기는 이 함수를 거친다 —
+ * 표를 직접 읽던 시절에는 5가 화면마다 '일반'·'특수'·회색·주황으로 갈렸다.
+ */
+export const FORGE_RARITY_NAMES = [...RARITY_NAMES, '특수'] as const;
+export const FORGE_RARITY_COLORS = [...RARITY_COLORS, '#ff6b8b'] as const;
+
+function forgeTier(rarity: number): number {
+  return Math.max(0, Math.min(FORGE_RARITY_NAMES.length - 1, Math.floor(rarity)));
+}
+
+export function forgeRarityName(rarity: number): string {
+  return FORGE_RARITY_NAMES[forgeTier(rarity)];
+}
+
+export function forgeRarityCss(rarity: number): string {
+  return FORGE_RARITY_COLORS[forgeTier(rarity)];
+}
+
+export function forgeRarityHex(rarity: number): number {
+  return Number.parseInt(forgeRarityCss(rarity).replace('#', ''), 16);
+}
+
 // ─── Monster display data ─────────────────────────────────────────────────────
 
 const RARITY_PREFIXES = ['', '강화 ', '정예 ', '영웅 ', '전설 '];

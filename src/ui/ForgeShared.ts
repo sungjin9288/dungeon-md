@@ -2,7 +2,7 @@
 // 제작소 씬 공유 상수·타입·순수 헬퍼. 최하층 — 씬을 import하지 않는다 (순환 방지).
 
 import {
-  BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS,
+  BLUEPRINT_DEFS, MATERIAL_DEFS, forgeRarityHex,
   type BlueprintDef,
 } from '../data/fusion';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
@@ -112,8 +112,7 @@ export function formatForgeMaterialStatus(material: ForgeMaterialProjection): st
 }
 
 export function rarityHex(rarity: number): number {
-  const color = RARITY_COLORS[rarity] ?? '#aaaaaa';
-  return Number.parseInt(color.replace('#', ''), 16);
+  return forgeRarityHex(rarity);
 }
 
 export function getForgeRarityStars(rarity: number): string {

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
-import { BLUEPRINT_DEFS, RARITY_COLORS, RARITY_NAMES, type BlueprintDef } from '../data/fusion';
+import { BLUEPRINT_DEFS, forgeRarityCss, forgeRarityName, type BlueprintDef } from '../data/fusion';
 import { getDismantleReturns } from '../data/forgeTransactions';
 import { rankForgeBlueprints } from '../data/forgeRecommendations';
 import { getBlueprintSource } from '../data/blueprintSources';
@@ -134,10 +134,10 @@ export function drawBlueprintCardShell(
 
   c.add(scene.add.text(iconX, y + 12, `도면 ${cardNo}`, {
     fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
-    color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
+    color: forgeRarityCss(bp.rarity),
   }).setOrigin(0.5));
   c.add(scene.add.text(iconX, y + 77, getForgeRarityStars(bp.rarity), {
-    fontFamily: 'sans-serif', fontSize: '10px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
+    fontFamily: 'sans-serif', fontSize: '10px', color: forgeRarityCss(bp.rarity),
   }).setOrigin(0.5));
   c.add(scene.add.text(iconX, y + 96, canCraft ? '제작 가능' : '재료 부족', {
     fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
@@ -177,7 +177,7 @@ export function buildCraftTab(
   visible.forEach((projection, index) => {
     const { blueprint: bp, recommendation, craftable, materials, whyNow } = projection;
     const isSelected = ctx.selectedBpId === bp.id;
-    const rarityColor = RARITY_COLORS[bp.rarity] ?? '#aaaaaa';
+    const rarityColor = forgeRarityCss(bp.rarity);
     const rarityHexVal = rarityHex(bp.rarity);
     const typeMeta = getForgeTypeMeta(bp.type);
     const targetEquipment = recommendation
@@ -226,7 +226,7 @@ export function buildCraftTab(
     c.add(scene.add.text(textX, oy + 13, truncateLabel(bp.name, 12), {
       fontFamily: 'sans-serif', fontSize: '13px', color: rarityColor, fontStyle: 'bold',
     }));
-    c.add(scene.add.text(textX, oy + 32, `${typeMeta.label} · ${RARITY_NAMES[bp.rarity] ?? '일반'} · ${targetLine}`, {
+    c.add(scene.add.text(textX, oy + 32, `${typeMeta.label} · ${forgeRarityName(bp.rarity)} · ${targetLine}`, {
       fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.TEXT,
     }));
     c.add(scene.add.text(textX, oy + 49, whyNow, {
@@ -370,8 +370,7 @@ function drawBlueprintLeads(
   }));
   leads.forEach(({ bp, source }, i) => {
     const ry = y + 22 + i * (rowH + 4);
-    // Same rarity reading as the rest of the forge (rarityHex / craft FX): value as the table index.
-    const css: string = RARITY_COLORS[bp.rarity] ?? '#ffaa44';
+    const css = forgeRarityCss(bp.rarity);
     const color = rarityHex(bp.rarity);
     const g = scene.add.graphics();
     g.fillStyle(DUNGEON_UI.STONE, 1);
@@ -384,7 +383,7 @@ function drawBlueprintLeads(
     c.add(scene.add.text(x + 16, ry + rowH / 2, `${bp.resultEmoji} ${bp.name}`, {
       fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0, 0.5));
-    c.add(scene.add.text(x + 132, ry + rowH / 2, RARITY_NAMES[bp.rarity] ?? '특수', {
+    c.add(scene.add.text(x + 132, ry + rowH / 2, forgeRarityName(bp.rarity), {
       fontFamily: 'sans-serif', fontSize: '10px', color: css,
     }).setOrigin(0, 0.5));
     c.add(scene.add.text(x + w - 10, ry + rowH / 2, source.label, {
@@ -416,7 +415,7 @@ export function buildDismantleTab(
   const rowH = 120;
   visible.forEach(({ equipment: eq, index: idx }) => {
     const isSelected = ctx.selectedEqIdx === idx;
-    const rarityColor = RARITY_COLORS[eq.rarity] ?? '#aaaaaa';
+    const rarityColor = forgeRarityCss(eq.rarity);
     const rarityHexVal = rarityHex(eq.rarity);
     const typeMeta = getForgeTypeMeta(eq.type);
     const effectLabels = summarizeEquipmentEffects(eq);

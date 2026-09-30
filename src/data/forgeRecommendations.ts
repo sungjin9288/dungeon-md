@@ -4,7 +4,7 @@
 
 import { resolveOwnedMonsterProfile, type OwnedMonsterProfile } from './monsters';
 import { getMonsterAtk, getEquipmentStats, type EquipmentStats, type OwnedMonster } from './barracks';
-import { BLUEPRINT_DEFS, MATERIAL_DEFS, RARITY_COLORS, type BlueprintDef } from './fusion';
+import { BLUEPRINT_DEFS, MATERIAL_DEFS, forgeRarityHex, type BlueprintDef } from './fusion';
 import { canCraftBlueprint } from './forgeTransactions';
 import {
   projectRoomReinforcement,
@@ -61,8 +61,7 @@ export interface ForgeFocusContext {
 }
 
 export function getForgeRarityHex(rarity: number): number {
-  const color = RARITY_COLORS[rarity] ?? '#aaaaaa';
-  return Number.parseInt(color.replace('#', ''), 16);
+  return forgeRarityHex(rarity);
 }
 
 export function getBlueprintRecommendation(

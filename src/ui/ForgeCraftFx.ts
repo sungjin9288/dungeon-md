@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
-import { RARITY_COLORS, RARITY_NAMES, type BlueprintDef } from '../data/fusion';
+import { forgeRarityCss, forgeRarityName, type BlueprintDef } from '../data/fusion';
 import { loadGameState } from '../data/wisdom';
 import { getBlueprintRecommendation } from '../data/forgeRecommendations';
 import {
@@ -83,7 +83,7 @@ export function showCraftAnimation(
   const c = scene.add.container(0, 0).setDepth(50);
   const typeMeta = getForgeTypeMeta(bp.type);
   const accent = rarityHex(bp.rarity);
-  const rarityColor = RARITY_COLORS[bp.rarity] ?? '#ffaa44';
+  const rarityColor = forgeRarityCss(bp.rarity);
 
   const dim = scene.add.graphics();
   dim.fillStyle(0x000000, 0.78);
@@ -339,7 +339,7 @@ function showCraftCompleteCard(
     fontFamily: 'sans-serif', fontSize: '18px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }).setOrigin(0.5));
   c.add(scene.add.text(cx, top + 133, bp.name, {
-    fontFamily: 'sans-serif', fontSize: '18px', color: RARITY_COLORS[bp.rarity] ?? DUNGEON_UI_CSS.BRASS,
+    fontFamily: 'sans-serif', fontSize: '18px', color: forgeRarityCss(bp.rarity),
     fontStyle: 'bold',
   }).setOrigin(0.5));
   c.add(scene.add.text(cx, top + 111, `${typeMeta.label} · ${getForgeRarityStars(bp.rarity)} · 장비 도감 등록`, {
@@ -356,7 +356,7 @@ function showCraftCompleteCard(
 
   drawEffectChips(scene, c, summarizeBlueprintEffects(bp), cx - 137, top + 183, accent, 274);
 
-  c.add(scene.add.text(cx, top + 210, `${RARITY_NAMES[bp.rarity] ?? '특수'} 장비가 보관함에 추가되었습니다.`, {
+  c.add(scene.add.text(cx, top + 210, `${forgeRarityName(bp.rarity)} 장비가 보관함에 추가되었습니다.`, {
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS,
   }).setOrigin(0.5));
 
