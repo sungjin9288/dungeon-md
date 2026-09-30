@@ -233,6 +233,17 @@ function _pathCenters(
  * Segments up to (not including) frontierLocalIdx are "lit" (bright/gold).
  * Segments from frontierLocalIdx onward are "dim" (muted stone).
  */
+/**
+ * 관문 노드의 월드 y(지도 스크롤용). 1장은 씬이 직접 그려서 시작 y를 받는다. 범위 밖이면 마지막 관문.
+ */
+export function journeyNodeY(stageIdx: number, ch1PathStart: number, ch1Count: number): number {
+  if (stageIdx < ch1Count) return buildJourneyPathPositions(ch1Count, ch1PathStart)[Math.max(0, stageIdx)].y;
+  const section = CHAPTER_SECTION_DATA.find(s => stageIdx >= s.startIdx && stageIdx < s.startIdx + s.stageCount)
+    ?? CHAPTER_SECTION_DATA[CHAPTER_SECTION_DATA.length - 1];
+  const local = Math.min(section.stageCount - 1, Math.max(0, stageIdx - section.startIdx));
+  return buildJourneyPathPositions(section.stageCount, section.gridStartY)[local].y;
+}
+
 export function drawJourneyTrail(
   scene:            Phaser.Scene,
   positions:        { x: number; y: number }[],

@@ -26,12 +26,16 @@ import {
 import {
   CHAPTER_PLAQUE_THEMES, CHAPTER_SECTION_DATA,
   drawChapterSection, drawChapterProgressBar,
-  drawGenericPlaque, buildJourneyPathPositions, drawJourneyTrail,
+  drawGenericPlaque, buildJourneyPathPositions, drawJourneyTrail, journeyNodeY,
   JOURNEY_NODE_W, JOURNEY_NODE_H,
   type PlaqueTheme,
 } from '../ui/StagePlaque';
 
 export type { StageProgress };
+
+/** Chapter 1 is drawn by the scene itself: its stage count and path start y. */
+const CH1_STAGE_COUNT = 10;
+const CH1_PATH_START = 136;
 export { TOTAL_STAGES, STAGE_CONFIGS, loadProgress, saveProgress, recordClear };
 
 // ── Chapter 1 plaque theme ────────────────────────────────────────────────────
@@ -135,6 +139,19 @@ export class StageSelectScene extends Phaser.Scene {
       cam.setScroll(0, newScrollY);
     });
     this.input.on('pointerup', () => { this.isDragging = false; });
+    // Open on the stage to play next, not on chapter 1. After CREATE: main.ts re-centres the
+    // DPR camera on that event, so an earlier scroll would be overwritten.
+    this.events.once(Phaser.Scenes.Events.CREATE, () => this.scrollToStage(this.frontierIdx));
+  }
+
+  /** Centre the map on a stage node, inside the same scroll range the drag handler uses. */
+  private scrollToStage(stageIdx: number): void {
+    const cam = this.cameras.main;
+    const viewH = cam.height / cam.zoom;
+    const topScrollY = -(cam.height - viewH) / 2;
+    const bottomScrollY = topScrollY + Math.max(0, this.contentHeight - viewH);
+    const nodeY = journeyNodeY(Math.min(stageIdx, TOTAL_STAGES - 1), CH1_PATH_START, CH1_STAGE_COUNT);
+    cam.setScroll(0, Phaser.Math.Clamp(topScrollY + nodeY - viewH / 2, topScrollY, bottomScrollY));
   }
 
   // ─── Background ─────────────────────────────────────────────────────────
@@ -172,7 +189,10 @@ export class StageSelectScene extends Phaser.Scene {
       onBack: () => this.scene.start(getContextualBackTarget('StageSelectScene')),
     });
 
-    const subtitle = this.add.text(CANVAS_WIDTH / 2, 76, '도깨비 숲 · 제1장 · 관문 1–10', {
+    // The chapter being played now (the map opens scrolled to it), not always chapter 1.
+    const frontierChapter = this.frontierChapter();
+    const lastStage = frontierChapter.startIdx + frontierChapter.stageCount;
+    const subtitle = this.add.text(CANVAS_WIDTH / 2, 76, `${frontierChapter.name} · 제${frontierChapter.num}장 · 관문 ${frontierChapter.startIdx + 1}–${lastStage}`, {
       fontFamily: 'sans-serif',
       fontSize: '12px',
       color: DUNGEON_UI_CSS.MUTED,
@@ -191,7 +211,15 @@ export class StageSelectScene extends Phaser.Scene {
     div.fillTriangle(CANVAS_WIDTH / 2 - 5, 99, CANVAS_WIDTH / 2 + 5, 99, CANVAS_WIDTH / 2, 105);
     this.fixedHeaderContainer?.add(div);
 
-    drawChapterProgressBar(this, 0, 10, 113, this.progress, this.fixedHeaderContainer);
+    drawChapterProgressBar(this, frontierChapter.startIdx, frontierChapter.stageCount, 113, this.progress, this.fixedHeaderContainer);
+  }
+
+  /** Chapter holding the next stage to play (the last chapter once everything is cleared). */
+  private frontierChapter(): { num: number; name: string; startIdx: number; stageCount: number } {
+    const idx = Math.min(this.frontierIdx, TOTAL_STAGES - 1);
+    if (idx < CH1_STAGE_COUNT) return { num: 1, name: '도깨비 숲', startIdx: 0, stageCount: CH1_STAGE_COUNT };
+    return CHAPTER_SECTION_DATA.find(section => idx >= section.startIdx && idx < section.startIdx + section.stageCount)
+      ?? CHAPTER_SECTION_DATA[CHAPTER_SECTION_DATA.length - 1];
   }
 
   /**
@@ -234,8 +262,8 @@ export class StageSelectScene extends Phaser.Scene {
   // Ch1 header ends at ~124; path starts at 136.
 
   private drawChapter1Path(): void {
-    const CH1_COUNT  = 10;
-    const PATH_START = 136;
+    const CH1_COUNT  = CH1_STAGE_COUNT;
+    const PATH_START = CH1_PATH_START;
     const positions  = buildJourneyPathPositions(CH1_COUNT, PATH_START);
 
     // Local frontier (0–9 within Ch1, or CH1_COUNT if all cleared)
