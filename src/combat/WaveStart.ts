@@ -4,6 +4,7 @@
 // a new wave: HUD updates, per-wave reset, synergy timed events, spawn queue
 // construction and dispatch.
 
+import { markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
@@ -155,6 +156,7 @@ export function startWave(ctx: WaveStartContext): void {
     { fontFamily: 'sans-serif', fontSize: '11px', color: '#cc8844',
       stroke: '#000000', strokeThickness: 2 },
   ).setOrigin(1, 0).setDepth(92).setAlpha(0.85);
+  markBattleHud(ctx.killCounterText);
 
   // ── Wave event multipliers ───────────────────────────────────────────────────
   // Restore what the event card rolled for THIS wave, else neutral. Hardcoding

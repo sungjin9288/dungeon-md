@@ -7,6 +7,7 @@
 // VISUAL STYLE: dungeon command plate. Soot and iron carry the structure;
 // ember marks boss danger and moonlight marks the enraged phase.
 
+import { BATTLE_HUD_KEY, markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import { CANVAS_WIDTH, TOP_BAR_HEIGHT } from '../constants/layout';
@@ -77,7 +78,7 @@ export class BossHud {
     const pw = BAR_WIDTH + 8;
     const ph = BAR_HEIGHT + 4;
 
-    this.bg = this.scene.add.graphics().setDepth(95);
+    this.bg = markBattleHud(this.scene.add.graphics().setDepth(95));
     this.bg.fillStyle(DUNGEON_UI.VOID, 0.65);
     this.bg.fillRoundedRect(px + 2, py + 3, pw, ph, 5);
     this.bg.fillStyle(DUNGEON_UI.STONE, 1);
@@ -93,14 +94,14 @@ export class BossHud {
     this.bg.lineStyle(1, DUNGEON_UI.IRON, 1);
     this.bg.strokeRoundedRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, 3);
 
-    this.fill = this.scene.add.graphics().setDepth(96);
+    this.fill = markBattleHud(this.scene.add.graphics().setDepth(96));
 
     // ── Boss name + HP numbers ──
     this.label = this.scene.add.text(CANVAS_WIDTH / 2, BAR_Y + BAR_HEIGHT / 2, resolveBossHudLabel(this.explicitLabel, undefined), {
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: DUNGEON_UI_CSS.EMBER,
       stroke: '#030504', strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(97);
+    }).setOrigin(0.5).setDepth(97).setData(BATTLE_HUD_KEY, true);
   }
 
   /**

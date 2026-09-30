@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { markBattleHud } from './battleHudMark';
 import { resolveOwnedMonsterProfile } from '../data/monsters';
 import type { RoomData } from '../data/rooms';
 import {
@@ -125,7 +126,7 @@ export class SynergyManager {
     this.display?.destroy();
     if (this.activeSynergies.length === 0 && this.activeElementCombos.length === 0) return;
 
-    this.display = this.scene.add.container(0, 0).setDepth(85);
+    this.display = markBattleHud(this.scene.add.container(0, 0).setDepth(85));
     // The top of the battle is UIScene's HUD (these pills used to sit hidden
     // under it). They now stack upward in the free corners beside the skill
     // dock: tribe synergies on the right, element combos on the left.
@@ -233,22 +234,22 @@ export class SynergyManager {
   ): void {
     if (lines.length === 0 || right <= left) return;
     const zoneTop = Math.min(top, bottom - TOUCH_MIN);
-    const zone = this.scene.add.zone(left, zoneTop, right - left, bottom - zoneTop)
+    const zone = markBattleHud(this.scene.add.zone(left, zoneTop, right - left, bottom - zoneTop)
       .setOrigin(0, 0)
       .setInteractive({ useHandCursor: true })
-      .setDepth(90);
+      .setDepth(90));
     this.tooltipZones.push(zone);
     zone.on('pointerdown', () => {
       const tipX = align === 'right' ? right : left;
       const tipY = zoneTop - 4;
-      const tip = this.scene.add.text(tipX, tipY, lines.join('\n'), {
+      const tip = markBattleHud(this.scene.add.text(tipX, tipY, lines.join('\n'), {
         fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold',
         color: CASUAL_CSS.INK,
         backgroundColor: CASUAL_CSS.CREAM,
         padding: { x: 8, y: 5 },
         lineSpacing: 3,
         wordWrap: { width: 264, useAdvancedWrap: true },
-      }).setOrigin(align === 'right' ? 1 : 0, 1).setDepth(200);
+      }).setOrigin(align === 'right' ? 1 : 0, 1).setDepth(200));
       this.scene.tweens.add({
         targets: tip,
         alpha: { from: 1, to: 0 },

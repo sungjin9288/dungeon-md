@@ -52,7 +52,7 @@ export interface RoomInputContext {
 export interface RepairUIContext {
   scene: Phaser.Scene;
   roomGrid: (RoomData | null)[][];
-  rooms: Array<Array<{ x: number; y: number; updateHpBar: () => void }>>;
+  rooms: Array<Array<{ x: number; y: number; homeSlot: number | null; updateHpBar: () => void }>>;
   get gold(): number;
   showFloatText: (x: number, y: number, text: string, color: string) => void;
   setGold: (v: number) => void;
@@ -74,7 +74,7 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
   const canAfford = ctx.gold >= cost;
   const hpPct     = data.maxRoomHp > 0 ? data.roomHp / data.maxRoomHp : 1;
   const dmgPct    = Math.round((1 - hpPct) * 100);
-  const slotIndex = getSlotIndex(row, col);
+  const slotIndex = room.homeSlot;
   const roomName  = ROOM_SLOT_TYPE_DEFS.find(slot => slot.id === loadGameState().dungeonSlots?.[slotIndex ?? -1]?.roomType)?.name
     ?? def.koreanName;
   const beforeHp  = Math.round(data.roomHp);
@@ -226,10 +226,6 @@ export function showRepairOption(ctx: RepairUIContext, row: number, col: number)
 
 // ─── Room Intel Tip ──────────────────────────────────────────────────────────
 
-function getSlotIndex(row: number, col: number): number | null {
-  return col >= 3 ? null : row * 3 + col;
-}
-
 function shorten(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
@@ -243,7 +239,7 @@ function showRoomIntelTip(room: Room): void {
   scene.children.getByName('roomIntelTip')?.destroy();
 
   const gs = loadGameState();
-  const slotIndex = getSlotIndex(room.row, room.col);
+  const slotIndex = room.homeSlot;
   const slot = slotIndex === null ? undefined : gs.dungeonSlots?.[slotIndex];
   const def = room.roomData ? ROOM_DEFS[room.roomData.type] : undefined;
   if (!def) return;

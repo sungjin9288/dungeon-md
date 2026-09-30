@@ -5,6 +5,7 @@
  * Tap skill → targeting mode → tap room → activateSkill().
  */
 
+import { markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { CASUAL, DUNGEON_UI, DUNGEON_UI_CSS } from '../constants/colors';
@@ -45,7 +46,7 @@ export class SkillHUD {
   constructor(scene: Phaser.Scene, equippedSkillIds: string[], callbacks: SkillHUDCallbacks) {
     this.scene = scene;
     this.callbacks = callbacks;
-    this.container = scene.add.container(0, 0).setDepth(90);
+    this.container = markBattleHud(scene.add.container(0, 0).setDepth(90));
 
     const barW = MAX_SLOTS * SLOT_SIZE + SLOT_GAP * (MAX_SLOTS + 1);
     const barX = (CANVAS_WIDTH - barW) / 2;

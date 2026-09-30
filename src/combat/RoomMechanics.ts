@@ -4,6 +4,7 @@
  * Each function receives a RoomMechanicsContext that provides read/write
  * access to scene state, plus any per-mechanic local state structures.
  */
+import { corridorReach } from '../data/battleTopology';
 import { applyEquipmentBasicEffects } from './EquipmentAttacks';
 import { equipmentAuraAttackMult } from '../data/equipmentAuras';
 import { equipmentBonusDamage, equipmentMagicAttackMult } from '../data/equipmentCombat';
@@ -241,6 +242,8 @@ export function runSoulHarvest(ctx: RoomMechanicsContext, now: number): void {
       for (const inv of ctx.activeInvaders) {
         if (!inv.active || inv.isDecoy) continue;
         if (Math.abs(inv.y - cellCenterY) > cs * 1.5) continue;
+        // "Its row" on the old 3-wide grid ≈ ±1.5 cells of corridor now.
+        if (Math.abs(inv.x - ctx.rooms[row][col].x) > cs * 1.5) continue;
         const pct = inv.hp / inv.maxHp;
         if (pct <= 0.15) {
           // Execute!
@@ -453,6 +456,7 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
         for (const inv of ctx.activeInvaders) {
           if (!inv.active || inv.isInvisible) continue;
           if (Math.abs(inv.y - cellCenterY) > rowRange) continue;
+          if (Math.abs(inv.x - ctx.rooms[row][col].x) > corridorReach(cs, mDef.range ?? 1)) continue;
           const d = Math.hypot(inv.x - ctx.rooms[row][col].x, inv.y - cellCenterY);
           if (d < bestDist) { bestDist = d; target = inv; }
         }

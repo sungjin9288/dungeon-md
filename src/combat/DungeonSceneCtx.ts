@@ -5,6 +5,7 @@
  * required by the corresponding combat subsystem. DungeonScene is imported as
  * a TYPE ONLY to avoid a circular-dependency at runtime.
  */
+import { cellOfSlot } from '../data/battleTopology';
 import type { DungeonScene } from '../scenes/DungeonScene';
 import type { ObjectiveType } from '../data/quests';
 import { loadGameState, saveGameState } from '../data/wisdom';
@@ -523,7 +524,8 @@ export function buildBattleEventCtx(ds: DungeonScene): BattleEventContext {
     set breakthruCount(v)        { ds.breakthruCount = v; },
     hasSynergy:         (id)  => ds.synergyManager.hasSpecial(id),
     applyRoomSlotDamage:(pct) => _applyRoomSlotDamage(ds.dungeonTrapSlots, pct, ds.equipmentMap, index => {
-      const data = ds.roomGrid[Math.floor(index / 3)]?.[index % 3];
+      const cell = cellOfSlot(ds.topology, index);
+      const data = cell ? ds.roomGrid[cell.row]?.[cell.col] : null;
       return data ? [data.monsterSlot, ...data.monsterSlots] : [];
     }),
     triggerWaveFail:    ()    => ds.triggerWaveFail(),

@@ -410,6 +410,20 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     this.hexGfx = undefined;
   }
 
+  // ─── Path jump (boss teleports) ─────────────────────────────────────────────
+
+  /**
+   * 경로 진행도 `progress`(0~1) 지점으로 도약하고 그 위치를 돌려준다. 좌표를 직접 옮기면 경로 추종이
+   * 다음 프레임에 되돌리거나(옛 코드) 주 통로 밖으로 튀어 나간다.
+   */
+  jumpAlongPath(progress: number): { x: number; y: number } {
+    const t = Phaser.Math.Clamp(progress, 0, 0.98);
+    if (this.pathTween) this.pathTween.seek(t);
+    const point = (this.path as Phaser.Curves.Path).getPoint(t);
+    this.setPosition(point.x, point.y);
+    return { x: point.x, y: point.y };
+  }
+
   // ─── Pushback (TIDE_THRUST) ────────────────────────────────────────────────
 
   applyPushback(pixels: number): void {

@@ -4,6 +4,7 @@ import {
   battlefieldWidth,
   buildBattleTopology,
   cellOfSlot,
+  corridorReach,
   corridorWaypoints,
   slotAt,
 } from './battleTopology';
@@ -49,5 +50,13 @@ describe('침입 경로', () => {
     const short = battlefieldWidth(buildBattleTopology({ corridor: [0], sides: [] }), geometry);
     const long = battlefieldWidth(buildBattleTopology({ corridor: [0, 1, 2, 3, 4, 5, 6, 7, 8], sides: [] }), geometry);
     expect(long - short).toBe(8 * 110);
+  });
+});
+
+describe('가로 도달 거리', () => {
+  it('사거리 1은 좌우 1.3칸, 사거리가 늘면 칸 단위로 늘어난다', () => {
+    expect(corridorReach(110, 1)).toBeCloseTo(143);
+    expect(corridorReach(110, 2)).toBeCloseTo(253);
+    expect(corridorReach(110, 0)).toBeCloseTo(143);   // 사거리 0 이하도 최소 1칸
   });
 });

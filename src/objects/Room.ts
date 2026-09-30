@@ -43,6 +43,8 @@ export class Room extends Phaser.GameObjects.Container {
   equipmentMap?: ReadonlyMap<string, EquipmentStats>;
   readonly row: number;
   readonly col: number;
+  /** 이 전투 칸에 놓인 홈 방의 dungeonSlots 인덱스(배치도 기준). 방이 없는 칸은 null. */
+  homeSlot: number | null = null;
 
   /** @internal */ bg: Phaser.GameObjects.Graphics;
   private outline: Phaser.GameObjects.Graphics;

@@ -6,6 +6,7 @@
 //   showEndlessResult()      — save, set registry, transition to result scene
 //   checkWaveEnd()           — per-frame guard that fires the wave-clear flow
 
+import { markBattleHud } from './battleHudMark';
 import type Phaser from 'phaser';
 import type { Invader } from '../objects/Invader';
 import { INVADER_DEFS } from '../data/invaders';
@@ -231,12 +232,12 @@ export function enableWaveButton(ctx: WavePrepContext): void {
 
   if (!reducedMotion) {
     // Fill glow: soft gold wash inside the button
-    const fillPulse = scene.add.graphics().setDepth(63).setAlpha(0);
+    const fillPulse = markBattleHud(scene.add.graphics().setDepth(63).setAlpha(0));
     fillPulse.fillStyle(CASUAL.GOLD, 0.18);
     fillPulse.fillRoundedRect(bx + 2, by + 2, bw - 4, bh - 4, 6);
 
     // Ring outline: 3px gold border around the button
-    const ringPulse = scene.add.graphics().setDepth(64).setAlpha(0);
+    const ringPulse = markBattleHud(scene.add.graphics().setDepth(64).setAlpha(0));
     ringPulse.lineStyle(3, CASUAL.GOLD, 1);
     ringPulse.strokeRoundedRect(bx - 3, by - 3, bw + 6, bh + 6, 9);
 
@@ -266,10 +267,10 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
   const barBy = GRID_Y + GRID_ROWS * ctx.effectiveCellSize + 78;
 
   if (!ctx.countdownBar) {
-    const barBg = scene.add.graphics().setDepth(70);
+    const barBg = markBattleHud(scene.add.graphics().setDepth(70));
     barBg.fillStyle(COLORS.STONE_DARK, 1);
     barBg.fillRoundedRect(barBx, barBy, 260, 10, 3);
-    ctx.setCountdownBar(scene.add.graphics().setDepth(71));
+    ctx.setCountdownBar(markBattleHud(scene.add.graphics().setDepth(71)));
   }
 
   // Big countdown number above the bar
@@ -278,6 +279,7 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
     fontFamily: 'monospace', fontSize: '20px', fontStyle: 'bold',
     color: '#c8921a', stroke: '#000000', strokeThickness: 2,
   }).setOrigin(0.5).setDepth(72).setAlpha(0.9);
+  markBattleHud(cdNum);
 
   // Next wave invader preview
   const nextCfg = ctx.waveConfigs[ctx.wave]; // wave is 1-indexed; [wave] = next wave (0-indexed)
@@ -291,11 +293,12 @@ export function startPrepCountdown(ctx: WavePrepContext): void {
       color: hasBoss ? '#ff8844' : '#aaaacc',
       stroke: '#000000', strokeThickness: 1,
     }).setOrigin(0.5).setDepth(72).setAlpha(0.85);
+    markBattleHud(previewT);
   }
 
   // Circular countdown ring overlaid on the wave button center
   const btnCY = GRID_Y + GRID_ROWS * ctx.effectiveCellSize + 50;
-  const ringGfx = scene.add.graphics().setDepth(72);
+  const ringGfx = markBattleHud(scene.add.graphics().setDepth(72));
   const _drawRing = (remaining: number) => {
     ringGfx.clear();
     const pct  = remaining / 10;

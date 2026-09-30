@@ -1,4 +1,7 @@
 import Phaser from 'phaser';
+import { BattleCameras } from '../combat/BattleCameras';
+import { battlefieldWidth, buildBattleTopology, corridorWaypoints, type BattleTopology } from '../data/battleTopology';
+import { getDungeonPlan } from '../data/dungeonPlan';
 import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { applyBattleSpeed, BATTLE_PAUSED_SCALE } from '../combat/BattleSpeed';
@@ -7,8 +10,8 @@ import { Invader } from '../objects/Invader';
 import { audioManager } from '../audio/AudioManager';
 import { getActiveTheme, type DungeonTheme } from '../themes/themes';
 import {
-  CANVAS_HEIGHT,
-  GRID_COLS, GRID_ROWS, CELL_SIZE,
+  CANVAS_WIDTH, CANVAS_HEIGHT,
+  GRID_COLS, GRID_ROWS, CELL_SIZE, GRID_X, GRID_Y,
 } from '../constants/layout';
 import { type RoomData } from '../data/rooms';
 import type { InvaderType, InvaderDef } from '../data/invaders';
@@ -94,6 +97,9 @@ import {
   setupEvents as _setupEvents,
 } from './DungeonSceneVisuals';
 
+/** 입구·심장부가 격자 밖으로 나가는 거리(px). */
+const ROUTE_MARGIN = 50;
+
 export class DungeonScene extends Phaser.Scene {
   // ── Dynamic grid dimensions (overridden per chapter) ───────────────────────
   effectiveCols     = GRID_COLS;   // 3 for Ch1, 4 for Ch2
@@ -115,6 +121,11 @@ export class DungeonScene extends Phaser.Scene {
 
   // ── Combat ─────────────────────────────────────────────────────────────────
   invaderPath!: Phaser.Curves.Path;
+  /** 배치도 → 전투 칸(주 통로 가운데 줄 + 곁방). create()에서 홈 던전으로부터 만든다. */
+  topology!: BattleTopology;
+  /** 전장 전체 폭(주 통로가 길면 화면보다 넓다). */
+  worldWidth = CANVAS_WIDTH;
+  private battleCameras?: BattleCameras;
   activeInvaders: Invader[] = [];
   /** Invader behaviors already announced (trait callout) — once per run. */
   seenTraitBehaviors: Set<string> = new Set();
@@ -275,11 +286,15 @@ export class DungeonScene extends Phaser.Scene {
     this.maxWave        = this.isEndless ? 9999 : setup.waveConfigs.length;
     this.stageChapter   = setup.stageChapter;
     this.stageNumber    = setup.stageNumber;
-    this.effectiveCols  = setup.effectiveCols;
-    this.effectiveCellSize = this.effectiveCols === GRID_COLS
-      ? CELL_SIZE
-      : Math.floor((GRID_COLS * CELL_SIZE) / this.effectiveCols);  // keep same total width
-    this.waterCells = setup.waterCells;
+    // The battlefield is the home dungeon itself (corridor + side rooms), whatever
+    // the stage: stage grid widths and water cells no longer apply.
+    this.topology       = buildBattleTopology(getDungeonPlan(gameState));
+    this.effectiveCols  = this.topology.cols;
+    this.effectiveCellSize = CELL_SIZE;
+    this.waterCells = new Set<number>();
+    this.worldWidth = Math.max(CANVAS_WIDTH, battlefieldWidth(this.topology, {
+      gridX: GRID_X, cellSize: CELL_SIZE, margin: ROUTE_MARGIN,
+    }));
 
     this.gold             = 0;
 
@@ -352,6 +367,10 @@ export class DungeonScene extends Phaser.Scene {
     // ── Combat interaction subsystems ────────────────────────────────────────
     this.initSkillHUD(gameState);
     this.initSwapManager();
+    // main.ts re-applies the DPR camera on CREATE; the two battle cameras go after it.
+    this.events.once(Phaser.Scenes.Events.CREATE, () => {
+      this.battleCameras = new BattleCameras(this, this.worldWidth);
+    });
 
     audioManager.resume().then(() => audioManager.playBgm('battle'));
 
@@ -403,6 +422,7 @@ export class DungeonScene extends Phaser.Scene {
   private fpsText?: Phaser.GameObjects.Text;
 
   update(_time: number, _delta: number): void {
+    this.battleCameras?.follow(this.leadInvaderX(), _time);
     if (!this.waveActive) return;
     const rmCtx = buildRoomMechanicsCtx(this);
     this.runCombat(_time, rmCtx);
@@ -441,28 +461,35 @@ export class DungeonScene extends Phaser.Scene {
     }
   }
 
+  /** 심장부에 가장 가까운 침입자의 x — 전투 카메라가 따라간다. */
+  private leadInvaderX(): number | null {
+    let lead: { x: number; progress: number } | null = null;
+    for (const inv of this.activeInvaders) {
+      if (!inv.active || inv.isDead) continue;
+      const progress = inv.pathTween?.progress ?? 0;
+      if (!lead || progress > lead.progress) lead = { x: inv.x, progress };
+    }
+    return lead?.x ?? null;
+  }
+
   // ─── Background / Path / Grid / Atmosphere ───────────────────────────────
   // Implementations live in combat/DungeonLayout.ts — these wrappers keep the
   // original private call sites (`this.drawBackground()` etc.) intact.
 
   private drawBackground(): void {
-    drawDungeonBackground(this, this.theme, this.effectiveCols, this.effectiveCellSize, this.stageChapter);
+    drawDungeonBackground(this, this.theme, this.topology, this.effectiveCellSize, this.stageChapter, this.worldWidth);
   }
 
   private buildPath(): void {
-    this.invaderPath = buildInvaderPath(this);
+    this.invaderPath = buildInvaderPath(this, corridorWaypoints(this.topology, {
+      gridX: GRID_X, gridY: GRID_Y, cellSize: this.effectiveCellSize, margin: ROUTE_MARGIN,
+    }));
   }
 
   private buildGrid(): void {
-    const gc = this.effectiveCols;
-    // baseSlots already includes the wisdom-tree extra slots (see
-    // getUnlockedSlotCount); the battle grid mirrors the home board exactly.
-    const availableSlots = Math.min(GRID_ROWS * gc, this.baseSlots);
     this.rooms = buildDungeonGrid(this, {
-      effectiveCols:     gc,
+      topology:          this.topology,
       effectiveCellSize: this.effectiveCellSize,
-      availableSlots,
-      waterCells:        this.waterCells,
       dungeonTrapSlots:  this.dungeonTrapSlots,
       onRoomClick:       (r) => this.onRoomClick(r),
     });
@@ -481,7 +508,7 @@ export class DungeonScene extends Phaser.Scene {
   }
 
   private placeTorches(): void {
-    placeDungeonTorches(this);
+    placeDungeonTorches(this, this.topology, this.effectiveCellSize);
   }
 
   private addDustMotes(): void {

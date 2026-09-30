@@ -4,6 +4,7 @@
 // inputs as plain parameters and mutate only the scene's display list and
 // the Room array passed back to the caller.
 
+import { markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { Room } from '../objects/Room';
 import { Torch } from '../objects/Torch';
@@ -12,7 +13,6 @@ import { addSceneAtmosphere } from '../ui/SceneAtmosphere';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   GRID_ROWS, GRID_X, GRID_Y,
-  TORCH_POSITIONS, INVADER_WAYPOINTS,
   TOP_BAR_HEIGHT, FOG_START_Y, FOG_HEIGHT,
 } from '../constants/layout';
 import type { DungeonTheme } from '../themes/themes';
@@ -24,11 +24,10 @@ import { getSlotBuilding } from '../data/roomBuildings';
 import { tempoCooldown } from '../data/combatTempo';
 import { resolveMonsterAttackCooldown, resolveOwnedMonsterProfile, type ElementId } from '../data/monsters';
 import type { EquipmentStats } from '../data/barracks';
+import { CORRIDOR_ROW, slotAt, type BattleTopology, type Point } from '../data/battleTopology';
 
 export const WAVE_BUTTON_W = 270;
 export const WAVE_BUTTON_H = 60;
-
-const HOME_SLOT_COLS = 3;
 
 const SLOT_VISUAL_ACCENT: Record<RoomSlotType, number> = {
   combat:  0xff8a45,
@@ -57,10 +56,6 @@ export interface DungeonSlotDeploymentSummary {
   readonly brokenRooms:      number;
 }
 
-function getHomeSlotIndex(row: number, col: number): number | null {
-  return col >= HOME_SLOT_COLS ? null : row * HOME_SLOT_COLS + col;
-}
-
 function getDefinedIds(ids: readonly (string | undefined | null)[] | undefined): string[] {
   return (ids ?? []).filter((id): id is string => Boolean(id));
 }
@@ -85,7 +80,7 @@ export function deployDungeonSlotsToGrid(cfg: DungeonSlotDeploymentConfig): Dung
     for (let col = 0; col < effectiveCols; col++) {
       const room = rooms[row]?.[col];
       if (room) room.equipmentMap = equipmentMap;
-      const slotIndex = getHomeSlotIndex(row, col);
+      const slotIndex = room?.homeSlot ?? null;
       if (slotIndex === null) continue;
 
       const slot = dungeonTrapSlots[slotIndex];
@@ -183,22 +178,26 @@ function casualDecorTheme(theme: DungeonTheme): DungeonTheme {
 export function drawDungeonBackground(
   scene:             Phaser.Scene,
   theme:             DungeonTheme,
-  effectiveCols:     number,
+  topology:          BattleTopology,
   effectiveCellSize: number,
   chapter            = 1,
+  worldWidth         = CANVAS_WIDTH,
 ): void {
   const t = theme;
+  const effectiveCols = topology.cols;
+  // The corridor can outgrow the screen; the backdrop spans the whole battlefield.
+  const W = Math.max(CANVAS_WIDTH, worldWidth);
   // Warm-stone override fed to the shared decoration helpers (visual-only).
   const decorTheme = casualDecorTheme(t);
   const g = scene.add.graphics().setDepth(-20);
 
   // Base — warm light vertical gradient (replaces the dark cave fill).
   g.fillGradientStyle(CASUAL.BG_TOP, CASUAL.BG_TOP, CASUAL.BG_BOTTOM, CASUAL.BG_BOTTOM, 1);
-  g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  g.fillRect(0, 0, W, CANVAS_HEIGHT);
 
   // Subtle floor-tile grid — warm stone seams at very low alpha.
   const ts = 40;
-  for (let x = 0; x < CANVAS_WIDTH; x += ts)
+  for (let x = 0; x < W; x += ts)
     for (let y = TOP_BAR_HEIGHT; y < CANVAS_HEIGHT; y += ts) {
       g.lineStyle(0.4, CASUAL.EDGE_SOFT, 0.12);
       g.strokeRect(x, y, ts, ts);
@@ -206,14 +205,14 @@ export function drawDungeonBackground(
 
   // Upper area — soft warm "ceiling" band.
   g.fillStyle(CASUAL.PANEL_SOFT, 1);
-  g.fillRect(0, TOP_BAR_HEIGHT, CANVAS_WIDTH, GRID_Y - TOP_BAR_HEIGHT);
+  g.fillRect(0, TOP_BAR_HEIGHT, W, GRID_Y - TOP_BAR_HEIGHT);
   for (let y = TOP_BAR_HEIGHT + 8; y < GRID_Y; y += 14) {
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, CANVAS_WIDTH, 2);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, W, 2);
   }
 
   // Stalactites at grid top — warm-brown decorative, not gloomy.
   if (t.decorations.includes('stalactites')) {
-    drawStalactites(g, decorTheme, GRID_Y - 4, CANVAS_WIDTH, 31);
+    drawStalactites(g, decorTheme, GRID_Y - 4, W, 31);
   }
 
   // Grid separator line — warm seam.
@@ -223,19 +222,19 @@ export function drawDungeonBackground(
   // Floor area — slightly deeper warm band, low contrast.
   const floorY = GRID_Y + GRID_ROWS * effectiveCellSize + 4;
   g.fillStyle(CASUAL.BG_BOTTOM, 0.55);
-  g.fillRect(0, floorY, CANVAS_WIDTH, CANVAS_HEIGHT - floorY);
+  g.fillRect(0, floorY, W, CANVAS_HEIGHT - floorY);
   for (let y = floorY; y < CANVAS_HEIGHT; y += 8) {
-    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, CANVAS_WIDTH, 4);
+    g.fillStyle(CASUAL.EDGE_SOFT, 0.08); g.fillRect(0, y, W, 4);
   }
 
   // Stalagmites at bottom — warm-brown decorative.
   if (t.decorations.includes('stalagmites')) {
-    drawStalagmites(g, decorTheme, floorY + 2, CANVAS_WIDTH, 88);
+    drawStalagmites(g, decorTheme, floorY + 2, W, 88);
   }
 
   // Faint warm rock strata texture (uses CASUAL.EDGE_SOFT via override theme).
-  drawCaveWallTexture(g, decorTheme, 0, TOP_BAR_HEIGHT, CANVAS_WIDTH, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
-  drawDungeonDefenseFrame(scene, t, effectiveCols, effectiveCellSize, chapter);
+  drawCaveWallTexture(g, decorTheme, 0, TOP_BAR_HEIGHT, W, CANVAS_HEIGHT - TOP_BAR_HEIGHT, 67);
+  drawDungeonDefenseFrame(scene, t, topology, effectiveCellSize, chapter);
 
   // Atmosphere over the surround: torch glow + drifting embers for depth/life.
   // Vignette OFF — never darken battle edges where invaders enter (readability).
@@ -245,11 +244,11 @@ export function drawDungeonBackground(
 function drawDungeonDefenseFrame(
   scene: Phaser.Scene,
   _theme: DungeonTheme,   // visual-only reskin ignores the dark theme; uses CASUAL palette
-  effectiveCols: number,
+  topology: BattleTopology,
   effectiveCellSize: number,
   chapter = 1,
 ): void {
-  const gridW = effectiveCols * effectiveCellSize;
+  const gridW = topology.cols * effectiveCellSize;
   const gridH = GRID_ROWS * effectiveCellSize;
   const x = GRID_X;
   const y = GRID_Y;
@@ -276,8 +275,9 @@ function drawDungeonDefenseFrame(
   g.lineStyle(1, CASUAL.EDGE_SOFT, 0.4);
   g.strokeRoundedRect(x - 7, y - 8, gridW + 14, gridH + 16, 10);
 
-  for (let row = 0; row < GRID_ROWS; row++) {
-    for (let col = 0; col < effectiveCols; col++) {
+  // Alcoves only where the dungeon has a room: corridor (middle row) and its side rooms.
+  for (const { row, col } of topology.cells) {
+    {
       const cellX = x + col * effectiveCellSize;
       const cellY = y + row * effectiveCellSize;
       const inset = 9;
@@ -295,18 +295,19 @@ function drawDungeonDefenseFrame(
     }
   }
 
-  // Entry gate — ember signal against the carved stone route.
-  const gateY = y + effectiveCellSize / 2;
+  // Entry gate (left) — ember signal where invaders step onto the corridor.
+  const corridorY = y + effectiveCellSize * (CORRIDOR_ROW + 0.5);
+  const gateY = corridorY;
   g.fillStyle(CASUAL.PANEL, 0.95);
-  g.fillRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
+  g.fillRoundedRect(x - 18, gateY - 30, 24, 60, 8);
   g.lineStyle(2.5, CASUAL.RED, 1);
-  g.strokeRoundedRect(x + gridW - 6, gateY - 30, 24, 60, 8);
+  g.strokeRoundedRect(x - 18, gateY - 30, 24, 60, 8);
   g.fillStyle(CASUAL.RED, 0.9);
-  g.fillTriangle(x + gridW + 12, gateY, x + gridW + 2, gateY - 9, x + gridW + 2, gateY + 9);
+  g.fillTriangle(x + 2, gateY, x - 8, gateY - 9, x - 8, gateY + 9);
 
-  // Core "heart" — brass on a dark seal with an iron ring.
-  const heartX = x - 14;
-  const heartY = y + gridH - effectiveCellSize / 2;
+  // Core "heart" (right end of the corridor) — brass on a dark seal with an iron ring.
+  const heartX = x + gridW + 14;
+  const heartY = corridorY;
   g.fillStyle(CASUAL.PANEL, 1);
   g.fillCircle(heartX, heartY, 18);
   g.lineStyle(2.5, CASUAL.EDGE, 1);
@@ -330,22 +331,22 @@ function drawDungeonDefenseFrame(
 
 // ─── Path ─────────────────────────────────────────────────────────────────────
 
-export function buildInvaderPath(scene: Phaser.Scene): Phaser.Curves.Path {
-  const [first, ...rest] = INVADER_WAYPOINTS;
+/** 침입 경로: 배치도의 주 통로를 따라 입구(왼쪽) → 심장부(오른쪽). battleTopology.corridorWaypoints. */
+export function buildInvaderPath(scene: Phaser.Scene, waypoints: readonly Point[]): Phaser.Curves.Path {
+  const [first, ...rest] = waypoints;
   const path = new Phaser.Curves.Path(first.x, first.y);
   for (const pt of rest) path.lineTo(pt.x, pt.y);
 
-  drawInvasionRoute(scene);
+  drawInvasionRoute(scene, waypoints);
 
   return path;
 }
 
-function drawInvasionRoute(scene: Phaser.Scene): void {
+function drawInvasionRoute(scene: Phaser.Scene, waypoints: readonly Point[]): void {
   const routeBase = scene.add.graphics().setDepth(48);
   const routeGlow = scene.add.graphics().setDepth(49).setAlpha(0.34);
   const markers = scene.add.graphics().setDepth(51);
 
-  const waypoints = INVADER_WAYPOINTS;
   for (let i = 0; i < waypoints.length - 1; i++) {
     const from = waypoints[i];
     const to = waypoints[i + 1];
@@ -365,7 +366,7 @@ function drawInvasionRoute(scene: Phaser.Scene): void {
   }
 
   drawRouteEndpoint(scene, waypoints[1].x - 8, waypoints[1].y, '침입', 0xff6b1a, 1);
-  drawRouteEndpoint(scene, waypoints[waypoints.length - 2].x + 8, waypoints[waypoints.length - 2].y, '심장부', 0xffe27a, -1);
+  drawRouteEndpoint(scene, waypoints[waypoints.length - 2].x + 8, waypoints[waypoints.length - 2].y, '심장부', 0xffe27a, 1);
 
   scene.tweens.add({
     targets: routeGlow,
@@ -451,10 +452,8 @@ function drawRouteEndpoint(
 // ─── Grid ─────────────────────────────────────────────────────────────────────
 
 export interface GridBuildConfig {
-  effectiveCols:     number;
+  topology:          BattleTopology;                 // 배치도 → 칸(주 통로 가운데 줄, 곁방 위·아래)
   effectiveCellSize: number;
-  availableSlots:    number;                         // total slots the player has unlocked
-  waterCells:        Set<number>;                    // flat indices forced to water
   dungeonTrapSlots:  DungeonSlot[];                  // persistent slot config (monsters/traps)
   onRoomClick:       (room: Room) => void;
 }
@@ -468,30 +467,23 @@ export function buildDungeonGrid(
   scene: Phaser.Scene,
   cfg:   GridBuildConfig,
 ): Room[][] {
-  const { effectiveCols: gc, effectiveCellSize: cs, availableSlots, waterCells, dungeonTrapSlots, onRoomClick } = cfg;
+  const { topology, effectiveCellSize: cs, dungeonTrapSlots, onRoomClick } = cfg;
+  const gc = topology.cols;
   const rooms: Room[][] = [];
 
-  // Only the home board's 3 columns can hold rooms: the battle mirrors the home
-  // slot for slot, so a wider stage grid (4 columns from chapter 2) keeps its
-  // extra column as sealed path. Counting that column as a buildable cell used
-  // to push two of the player's nine rooms off the board.
+  // The battle is the home dungeon, cell for cell: the corridor runs along the
+  // middle row and side rooms sit above/below their anchor. A cell with no
+  // room is an inert, invisible 'locked' Room so grid loops keep their shape.
   for (let row = 0; row < GRID_ROWS; row++) {
     rooms[row] = [];
     for (let col = 0; col < gc; col++) {
       const cx = GRID_X + col * cs + cs / 2;
       const cy = GRID_Y + row * cs + cs / 2;
-      const flatIdx = row * gc + col;
-      const homeSlotIdx = getHomeSlotIndex(row, col);
-      let state: 'empty' | 'locked' | 'water';
-      if (homeSlotIdx !== null) {
-        // A stage cannot flood the player's own rooms: water on a home column is
-        // ignored, and the cell shows exactly what the home board holds.
-        state = homeSlotIdx < availableSlots ? 'empty' : 'locked';
-      } else {
-        state = waterCells.has(flatIdx) ? 'water' : 'locked';
-      }
-      const room = new Room(scene, cx, cy, row, col, state, onRoomClick, cs);
+      const homeSlot = slotAt(topology, row, col);
+      const room = new Room(scene, cx, cy, row, col, homeSlot === null ? 'locked' : 'empty', onRoomClick, cs);
+      room.homeSlot = homeSlot;
       room.setDepth(10);
+      if (homeSlot === null) room.setVisible(false);
       rooms[row][col] = room;
     }
   }
@@ -501,10 +493,9 @@ export function buildDungeonGrid(
   // dynamic-cast pattern verbatim to avoid scope-creep into Room's public API.
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < gc; col++) {
-      const idx  = getHomeSlotIndex(row, col);
-      const slot = idx === null ? undefined : dungeonTrapSlots[idx];
-      if (!slot) continue;
       const room = rooms[row][col];
+      const slot = room.homeSlot === null ? undefined : dungeonTrapSlots[room.homeSlot];
+      if (!slot) continue;
       if (room.state !== 'empty') continue;
       const raw = room as unknown as Record<string, unknown>;
       raw['_slotMonsterIds'] = slot.monsterIds ?? [];
@@ -519,8 +510,13 @@ export function buildDungeonGrid(
 
 // ─── Torches ──────────────────────────────────────────────────────────────────
 
-export function placeDungeonTorches(scene: Phaser.Scene): void {
-  TORCH_POSITIONS.forEach(({ x, y }) => new Torch(scene, x, y));
+/** 주 통로 양 끝(입구·심장부 쪽)의 위·아래 모서리에 횃불. */
+export function placeDungeonTorches(scene: Phaser.Scene, topology: BattleTopology, cellSize: number): void {
+  const left = GRID_X;
+  const right = GRID_X + topology.cols * cellSize;
+  const top = GRID_Y + CORRIDOR_ROW * cellSize;
+  const bottom = top + cellSize;
+  [[left, top], [right, top], [left, bottom], [right, bottom]].forEach(([x, y]) => new Torch(scene, x, y));
 }
 
 // ─── Atmosphere ───────────────────────────────────────────────────────────────
@@ -612,7 +608,7 @@ export function buildWaveStartButton(
   const bx = CANVAS_WIDTH / 2 - bw / 2;
   const by = GRID_Y + GRID_ROWS * effectiveCellSize + 20;
 
-  const bg = scene.add.graphics().setDepth(60);
+  const bg = markBattleHud(scene.add.graphics().setDepth(60));
   paintWaveButton(bg, bx, by, bw, bh, false);
 
   const label = scene.add.text(CANVAS_WIDTH / 2, by + bh / 2 - 1, '침입 방어 개시', {
@@ -623,9 +619,10 @@ export function buildWaveStartButton(
     stroke: '#030504',
     strokeThickness: 2,
   }).setOrigin(0.5).setDepth(61);
+  markBattleHud(label);
 
-  const zone = scene.add.zone(CANVAS_WIDTH / 2, by + bh / 2, bw, bh)
-    .setInteractive().setDepth(62);
+  const zone = markBattleHud(scene.add.zone(CANVAS_WIDTH / 2, by + bh / 2, bw, bh)
+    .setInteractive().setDepth(62));
 
   zone.on('pointerover', () => {
     if (callbacks.isLocked()) return;
@@ -644,7 +641,7 @@ export function buildWaveStartButton(
 }
 
 export function addDungeonFog(scene: Phaser.Scene): void {
-  const fog = scene.add.graphics().setDepth(90);
+  const fog = markBattleHud(scene.add.graphics().setDepth(90));
   fog.fillGradientStyle(
     COLORS.BLACK, COLORS.BLACK, COLORS.BLACK, COLORS.BLACK, 0, 0, 0.88, 0.88,
   );
@@ -657,7 +654,7 @@ export function addDungeonFog(scene: Phaser.Scene): void {
     { x: 330, y: CANVAS_HEIGHT - 110 },
   ];
   candles.forEach(({ x, y }) => {
-    const c = scene.add.graphics().setDepth(91);
+    const c = markBattleHud(scene.add.graphics().setDepth(91));
     c.fillStyle(0xd4c8a0, 0.6); c.fillRect(x - 2, y, 5, 14);
     c.fillStyle(COLORS.TORCH_GLOW, 0.75); c.fillTriangle(x + 0.5, y - 10, x - 5, y + 1, x + 6, y + 1);
     c.fillStyle(0xffee44, 0.7);           c.fillTriangle(x + 0.5, y - 5,  x - 3, y + 1, x + 4, y + 1);

@@ -93,6 +93,8 @@ export function findTarget(
   cellCenterY:    number,
   rowRange:       number,
   now:            number,
+  /** 가로 도달 거리(battleTopology.corridorReach). 생략하면 가로 제한 없음(옛 동작). */
+  colReach        = Infinity,
 ): Invader | null {
   const isSunDive = mDef?.passive === 'SUN_DIVE';
   let target: Invader | null = null;
@@ -117,6 +119,7 @@ export function findTarget(
       if (prog > bestDist) { bestDist = prog; target = inv; }
     } else {
       if (Math.abs(inv.y - cellCenterY) > rowRange) continue;
+      if (Math.abs(inv.x - roomX) > colReach) continue;
       const dist = Math.hypot(inv.x - roomX, inv.y - cellCenterY);
       if (dist < bestDist) { bestDist = dist; target = inv; }
     }

@@ -4,6 +4,7 @@
  * Each function receives a WaveEventContext that provides read/write
  * access to wave multiplier state and scene rendering capabilities.
  */
+import { markBattleHud } from './battleHudMark';
 import { WAVE_EVENT_SIGILS } from '../ui/sigilMaps';
 import { addSigil } from '../ui/Sigils';
 import Phaser from 'phaser';
@@ -207,7 +208,7 @@ function applyWaveEventEffects(ctx: WaveEventContext, evt: WaveEventDef): void {
   }
 
   if (evt.type === 'fog') {
-    ctx.waveFogOverlay = ctx.scene.add.graphics().setDepth(15).setAlpha(0.3);
+    ctx.waveFogOverlay = markBattleHud(ctx.scene.add.graphics().setDepth(15).setAlpha(0.3));
     ctx.waveFogOverlay.fillStyle(0x556677, 0.25);
     ctx.waveFogOverlay.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }

@@ -9,10 +9,10 @@
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import { showHolyBurst } from './VisualEffects';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, GRID_X, GRID_Y, GRID_ROWS } from '../constants/layout';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { logger } from '../utils/logger';
 import type { BossContext } from './BossBehaviors';
-import { showBossPhaseText, buildBossHpBar } from './BossBehaviors';
+import { showBossPhaseText, buildBossHpBar, TELEPORT_NEAR_HEART } from './BossBehaviors';
 
 // ─── Three God Destroyer (Ch5) ────────────────────────────────────────────────
 
@@ -54,8 +54,7 @@ export function setupThreeGodDestroyer(ctx: BossContext, inv: Invader): void {
             callback: () => {
               if (!inv.active || inv.ch5BossPhase < 3) return;
               inv.setAlpha(0);
-              const cs = ctx.effectiveCellSize;
-              inv.setPosition(GRID_X + cs / 2, GRID_Y + (GRID_ROWS - 1) * cs + cs / 2);
+              inv.jumpAlongPath(TELEPORT_NEAR_HEART);
               scene.tweens.add({ targets: inv, alpha: 1, duration: 300 });
               logger.debug('[THREE_GOD] phase 3 void teleport');
             },

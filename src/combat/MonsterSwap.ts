@@ -6,6 +6,7 @@
  * 30-second cooldown between swaps.
  */
 
+import { BATTLE_HUD_KEY, markBattleHud } from './battleHudMark';
 import Phaser from 'phaser';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 
@@ -108,7 +109,7 @@ export class MonsterSwapManager {
     const cx = this.scene.cameras.main.width / 2;
     const pillW = 200, pillH = 44, pillX = cx - pillW / 2, pillY = 90;
 
-    this.swapPillBg = this.scene.add.graphics().setDepth(95);
+    this.swapPillBg = markBattleHud(this.scene.add.graphics().setDepth(95));
     this.swapPillBg.fillStyle(CASUAL.PANEL, 1);
     this.swapPillBg.fillRoundedRect(pillX, pillY, pillW, pillH, 8);
     this.swapPillBg.lineStyle(2, CASUAL.EDGE, 1);
@@ -117,12 +118,12 @@ export class MonsterSwapManager {
     this.swapHeader = this.scene.add.text(cx, pillY + 12, '🔄 교체 모드', {
       fontFamily: 'sans-serif', fontSize: '13px', fontStyle: 'bold',
       color: CASUAL_CSS.GOLD,
-    }).setOrigin(0.5, 0).setDepth(96);
+    }).setOrigin(0.5, 0).setDepth(96).setData(BATTLE_HUD_KEY, true);
 
     this.swapBody = this.scene.add.text(cx, pillY + 28, '교체할 방을 선택하세요', {
       fontFamily: 'sans-serif', fontSize: '11px',
       color: CASUAL_CSS.INK_SOFT,
-    }).setOrigin(0.5, 0).setDepth(96);
+    }).setOrigin(0.5, 0).setDepth(96).setData(BATTLE_HUD_KEY, true);
   }
 
   cancelSwapMode(): void {
@@ -142,7 +143,7 @@ export class MonsterSwapManager {
     const cx = this.scene.cameras.main.width / 2;
     const pillW = 200, pillH = 30, pillX = cx - pillW / 2, pillY = 142;
 
-    this.cooldownPillBg = this.scene.add.graphics().setDepth(95);
+    this.cooldownPillBg = markBattleHud(this.scene.add.graphics().setDepth(95));
     this.cooldownPillBg.fillStyle(CASUAL.PANEL, 1);
     this.cooldownPillBg.fillRoundedRect(pillX, pillY, pillW, pillH, 8);
     this.cooldownPillBg.lineStyle(2, CASUAL.EDGE, 1);
@@ -155,7 +156,7 @@ export class MonsterSwapManager {
       {
         fontFamily: 'sans-serif', fontSize: '11px', color: CASUAL_CSS.RED,
       },
-    ).setOrigin(0.5).setDepth(96);
+    ).setOrigin(0.5).setDepth(96).setData(BATTLE_HUD_KEY, true);
 
     this.scene.time.delayedCall(1500, () => {
       this.cooldownPillBg?.destroy();

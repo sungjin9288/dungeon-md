@@ -5,6 +5,8 @@
  * one-line delegators that keep the original `this.<name>(...)` call sites).
  * Import the DungeonScene TYPE only to avoid a runtime circular dependency.
  */
+import { BATTLE_HUD_KEY, markBattleHud } from '../combat/battleHudMark';
+import { corridorReach } from '../data/battleTopology';
 import { equipmentAttackIntervalMult } from '../data/equipmentCombat';
 import { loadGameState } from '../data/wisdom';
 import { staffedMonsterIds } from '../data/productionTransactions';
@@ -61,7 +63,7 @@ export function showDungeonDeploymentToast(
       backgroundColor: '#080b09',
       padding: { x: 10, y: 5 },
     },
-  ).setOrigin(0.5).setDepth(120).setAlpha(0);
+  ).setOrigin(0.5).setDepth(120).setAlpha(0).setData(BATTLE_HUD_KEY, true);
 
   scene.tweens.add({
     targets: toast,
@@ -99,7 +101,7 @@ export function buildDungeonCommandStrip(
   const warningColor = isWarning ? DUNGEON_UI.EMBER : DUNGEON_UI.JADE;
 
   const y = GRID_Y - 8;
-  const strip = scene.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0);
+  const strip = markBattleHud(scene.add.container(CANVAS_WIDTH / 2, y).setDepth(76).setAlpha(0));
   const g = scene.add.graphics();
   const w = CANVAS_WIDTH - 24;
   const h = 24;
@@ -173,7 +175,7 @@ export function runCombat(scene: DungeonScene, now: number): void {
 
       const target = _findTarget(
         scene.activeInvaders, data, mDef,
-        scene.rooms[row][col].x, cellCenterY, rowRange, now,
+        scene.rooms[row][col].x, cellCenterY, rowRange, now, corridorReach(cs, range),
       );
       if (target && _resolveAttack(ctx, row, col, data, mDef, target, cellCenterY, now)) continue;
     }

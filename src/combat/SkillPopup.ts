@@ -63,10 +63,6 @@ function getCategoryLabel(category: typeof ACTIVE_SKILLS[number]['category']): s
   }
 }
 
-function getSlotIndex(row: number, col: number): number | null {
-  return col >= 3 ? null : row * 3 + col;
-}
-
 function getMonsterName(monsterId: string | null | undefined): string {
   if (!monsterId) return '수호자';
   return resolveOwnedMonsterProfile(monsterId)?.name ?? monsterId;
@@ -95,7 +91,7 @@ export function showSkillPopup(ctx: SkillPopupContext): void {
   const om = monsterId ? gs.ownedMonsters.find(m => m.id === monsterId) : undefined;
   const skills = om?.equippedSkills ?? [];
   const monsterName = getMonsterName(monsterId);
-  const slotIndex = getSlotIndex(room.row, room.col);
+  const slotIndex = room.homeSlot;
 
   // Even without owned monster skills, show an empty-state tip briefly
   if (skills.length === 0) {

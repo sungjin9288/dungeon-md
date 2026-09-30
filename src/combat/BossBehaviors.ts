@@ -12,9 +12,18 @@ import type { InvaderType } from '../data/invaders';
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT,
   GRID_ROWS, GRID_X, GRID_Y,
-  INVADER_WAYPOINTS,
 } from '../constants/layout';
+import { CORRIDOR_ROW } from '../data/battleTopology';
 import { logger } from '../utils/logger';
+
+/** 보스 순간이동 도착 지점(경로 진행도). 옛 격자의 "마지막 행(출구 옆)"·"가운데 행"에 해당한다. */
+export const TELEPORT_NEAR_HEART = 0.85;
+export const TELEPORT_MIDWAY = 0.45;
+
+/** 주 통로 입구(첫 방 앞) — 소환 연출 위치. */
+export function entrancePoint(cellSize: number): { x: number; y: number } {
+  return { x: GRID_X, y: GRID_Y + cellSize * (CORRIDOR_ROW + 0.5) };
+}
 import { BossHud } from './BossHud';
 
 // ─── BossContext ─────────────────────────────────────────────────────────────
@@ -104,7 +113,8 @@ export function setupFoxQueenPhase(ctx: BossContext, inv: Invader): void {
           if (!inv.active || phase < 3) return;
           for (let i = 0; i < 3; i++)
             scene.time.delayedCall(i * 500, () => ctx.spawnInvader('shadow_ninja'));
-          const portal = scene.add.text(INVADER_WAYPOINTS[0].x, INVADER_WAYPOINTS[0].y, '🌀', {
+          const gate = entrancePoint(ctx.effectiveCellSize);
+          const portal = scene.add.text(gate.x, gate.y, '🌀', {
             fontFamily: 'sans-serif', fontSize: '24px',
           }).setOrigin(0.5).setDepth(50);
           scene.tweens.add({ targets: portal, alpha: 0, duration: 1200, onComplete: () => portal.destroy() });
@@ -194,18 +204,16 @@ export function setupDecoyClone(ctx: BossContext, inv: Invader): void {
 // ─── Void Teleport (Ch3) ───────────────────────────────────────────────────
 
 export function scheduleVoidTeleport(ctx: BossContext, inv: Invader): void {
-  const { scene, effectiveCellSize } = ctx;
+  const { scene } = ctx;
   scene.time.delayedCall(2000, () => {
     if (!inv.active) return;
-    const cs = effectiveCellSize;
-    const finalRowY = GRID_Y + (GRID_ROWS - 1) * cs + cs / 2;
-    const targetX   = GRID_X + cs / 2;
     const flash = scene.add.graphics().setDepth(60);
     flash.fillStyle(0x220044, 0.9);
     flash.fillCircle(inv.x, inv.y, 28);
     scene.tweens.add({ targets: flash, scaleX: 2.5, scaleY: 2.5, alpha: 0, duration: 400,
       onComplete: () => flash.destroy() });
-    inv.setPosition(targetX, finalRowY);
+    // Old grid: the last row, next to the exit → now: just short of the heart.
+    const { x: targetX, y: finalRowY } = inv.jumpAlongPath(TELEPORT_NEAR_HEART);
     inv.setAlpha(0);
     scene.tweens.add({ targets: inv, alpha: 1, duration: 300 });
     const t = scene.add.text(targetX, finalRowY - 22, '공허 이동!', {
@@ -273,7 +281,7 @@ function showDragonPhaseTransition(ctx: BossContext, _inv: Invader, phase: numbe
 // ─── Void Stealth Elite (Ch4) ──────────────────────────────────────────────
 
 export function setupVoidStealthElite(ctx: BossContext, inv: Invader): void {
-  const { scene, effectiveCellSize } = ctx;
+  const { scene } = ctx;
   scene.time.delayedCall(2000, () => {
     if (!inv.active) return;
     const flash = scene.add.graphics().setDepth(60);
@@ -281,8 +289,8 @@ export function setupVoidStealthElite(ctx: BossContext, inv: Invader): void {
     flash.fillCircle(inv.x, inv.y, 22);
     scene.tweens.add({ targets: flash, scaleX: 2, scaleY: 2, alpha: 0, duration: 350, onComplete: () => flash.destroy() });
 
-    const cs = effectiveCellSize;
-    inv.setPosition(GRID_X + cs / 2, GRID_Y + Math.floor(GRID_ROWS / 2) * cs + cs / 2);
+    // Old grid: the middle row → now: the middle of the corridor.
+    inv.jumpAlongPath(TELEPORT_MIDWAY);
     inv.isInvisible = true;
     inv.setAlpha(0.15);
 
@@ -352,7 +360,8 @@ export function setupDeathEmissary(ctx: BossContext, inv: Invader): void {
     if (!inv.active) return;
     const delay = emissaryPhase >= 2 ? 12000 : 20000;
     ctx.spawnInvader('ghost_add');
-    const t = scene.add.text(INVADER_WAYPOINTS[0].x, INVADER_WAYPOINTS[0].y, '👻', {
+    const gate = entrancePoint(ctx.effectiveCellSize);
+    const t = scene.add.text(gate.x, gate.y, '👻', {
       fontFamily: 'sans-serif', fontSize: '20px',
     }).setOrigin(0.5).setDepth(50);
     scene.tweens.add({ targets: t, alpha: 0, y: t.y - 30, duration: 800, onComplete: () => t.destroy() });

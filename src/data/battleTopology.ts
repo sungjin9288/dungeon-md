@@ -70,3 +70,12 @@ export function battlefieldWidth(
 ): number {
   return geometry.gridX * 2 + topology.cols * geometry.cellSize + geometry.margin;
 }
+
+/**
+ * 주 통로 방향(가로) 공격 도달 거리. 경로가 가로 한 줄이라 옛 "같은 행 띠" 검사만으로는 통로의 모든 적이
+ * 사거리에 들어온다. 사거리 1 ≈ 좌우 1.3칸 — 옛 격자에서 사거리 1 방이 자기 행(약 3칸)을 지나는 적을
+ * 치던 노출량과 비슷하다.
+ */
+export function corridorReach(cellSize: number, range: number): number {
+  return cellSize * (Math.max(1, range) + 0.3);
+}

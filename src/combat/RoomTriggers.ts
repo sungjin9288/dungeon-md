@@ -19,17 +19,18 @@ import type { RoomData } from '../data/rooms';
 import { getArmoryDmgBonus, getArmoryRadius } from '../data/rooms';
 import type { DungeonSlot } from '../data/wisdom';
 import { getTrapDef, trapMasteryMult, type AfflictionId } from '../data/traps';
-import { GRID_ROWS, GRID_X, GRID_Y, CELL_SIZE } from '../constants/layout';
+import { GRID_ROWS, GRID_X, GRID_Y } from '../constants/layout';
+import { CORRIDOR_ROW } from '../data/battleTopology';
 import { logger } from '../utils/logger';
 import type { RoomMechanicsContext } from './RoomMechanics';
 
-// ─── Trap column centers (static) ───────────────────────────────────────────
+/** 방 중심에서 이 거리(칸의 비율) 안에 들어서면 그 방의 함정이 발동한다(옛 45px / 110px). */
+const TRAP_TRIGGER_FRACTION = 0.41;
 
-const TRAP_COL_CENTERS = [
-  GRID_X + CELL_SIZE * 0.5,
-  GRID_X + CELL_SIZE * 1.5,
-  GRID_X + CELL_SIZE * 2.5,
-];
+/** 전투 칸의 홈 슬롯(배치도 기준). 방이 없는 칸은 null. */
+function slotOfCell(ctx: RoomMechanicsContext, row: number, col: number): number | null {
+  return ctx.rooms[row]?.[col]?.homeSlot ?? null;
+}
 
 // ─── updateArmoryBonuses ────────────────────────────────────────────────────
 
@@ -65,19 +66,19 @@ export function runTrapEffects(ctx: RoomMechanicsContext, now: number): void {
     if (!('_trapCols' in inv)) (inv as unknown as Record<string, unknown>)['_trapCols'] = new Set<number>();
     const triggered = (inv as unknown as Record<string, unknown>)['_trapCols'] as Set<number>;
 
-    for (let col = 0; col < 3; col++) {
-      const cx = TRAP_COL_CENTERS[col];
-      if (Math.abs(inv.x - cx) > 45 || triggered.has(col)) continue;
+    const cs = ctx.effectiveCellSize;
+    for (let col = 0; col < ctx.effectiveCols; col++) {
+      const cx = GRID_X + col * cs + cs / 2;
+      if (Math.abs(inv.x - cx) > cs * TRAP_TRIGGER_FRACTION || triggered.has(col)) continue;
       triggered.add(col);
 
-      // Check all rows of dungeonSlots for this column
-      for (let row = 0; row < GRID_ROWS; row++) {
-        const slotIdx = row * 3 + col;
-        const slot    = ctx.dungeonTrapSlots[slotIdx];
-        if (!slot) continue;
-        for (const trapId of (slot.trapIds ?? [])) {
-          applyTrapToInvader(ctx, inv, slot, slotIdx, trapId, now);
-        }
+      // Only the corridor room the invader is walking through; a side room's traps
+      // are for the visitors who enter that side room.
+      const slotIdx = slotOfCell(ctx, CORRIDOR_ROW, col);
+      const slot    = slotIdx === null ? undefined : ctx.dungeonTrapSlots[slotIdx];
+      if (!slot || slotIdx === null) continue;
+      for (const trapId of (slot.trapIds ?? [])) {
+        applyTrapToInvader(ctx, inv, slot, slotIdx, trapId, now);
       }
     }
   }
@@ -271,7 +272,8 @@ export function recalcRoomTypeBonuses(ctx: RoomMechanicsContext): void {
 
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < gc; c++) {
-      const idx  = r * gc + c;
+      const idx  = slotOfCell(ctx, r, c);
+      if (idx === null) continue;
       const slot = ctx.dungeonTrapSlots[idx];
       if (!slot || slot.hp <= 0) continue;   // broken rooms grant no bonus
 
@@ -286,7 +288,8 @@ export function recalcRoomTypeBonuses(ctx: RoomMechanicsContext): void {
       // synergy: combat + magic adjacent
       if (slot.roomType === 'combat') {
         const hasMagicNeighbor = adj(r, c).some(([nr, nc]) => {
-          const ns = ctx.dungeonTrapSlots[nr * gc + nc];
+          const nsIdx = slotOfCell(ctx, nr, nc);
+          const ns = nsIdx === null ? undefined : ctx.dungeonTrapSlots[nsIdx];
           return ns && ns.roomType === 'magic' && ns.hp > 0;
         });
         if (hasMagicNeighbor) {
@@ -297,7 +300,8 @@ export function recalcRoomTypeBonuses(ctx: RoomMechanicsContext): void {
       }
       if (slot.roomType === 'magic') {
         const hasCombatNeighbor = adj(r, c).some(([nr, nc]) => {
-          const ns = ctx.dungeonTrapSlots[nr * gc + nc];
+          const nsIdx = slotOfCell(ctx, nr, nc);
+          const ns = nsIdx === null ? undefined : ctx.dungeonTrapSlots[nsIdx];
           return ns && ns.roomType === 'combat' && ns.hp > 0;
         });
         if (hasCombatNeighbor) {
@@ -309,7 +313,8 @@ export function recalcRoomTypeBonuses(ctx: RoomMechanicsContext): void {
       // synergy: trap + support adjacent
       if (slot.roomType === 'trap') {
         const hasSupportNeighbor = adj(r, c).some(([nr, nc]) => {
-          const ns = ctx.dungeonTrapSlots[nr * gc + nc];
+          const nsIdx = slotOfCell(ctx, nr, nc);
+          const ns = nsIdx === null ? undefined : ctx.dungeonTrapSlots[nsIdx];
           return ns && ns.roomType === 'support' && ns.hp > 0;
         });
         if (hasSupportNeighbor) {
