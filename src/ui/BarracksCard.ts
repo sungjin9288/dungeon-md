@@ -29,6 +29,8 @@ export interface BarracksCardContext {
   readonly contentContainer: Phaser.GameObjects.Container;
   readonly onSelect: (m: OwnedMonster) => void;
   readonly tweens: Phaser.Tweens.TweenManager;
+  /** Copies owned per kind (spares are evolution/absorption material); absent = 1. */
+  readonly copyCounts?: ReadonlyMap<string, number>;
 }
 
 /** 3열 보관함 타일 — 한 화면에 9~12체. 세부(배치 계획·장비·스킬)는 탭하면 여는 상세 창에 있다. */
@@ -97,8 +99,10 @@ export function buildMonsterTile(
     bgColor: DUNGEON_UI.SOOT,
     equippedSkins: ctx.gs.equippedSkins ?? {},
   });
+  // Spare copies (3-of-a-kind evolution, absorption fodder) ride on the one tile's name line.
+  const copies = ctx.copyCounts?.get(monster.id) ?? 1;
 
-  ctx.contentContainer.add(scene.add.text(cx, y + 101, truncateLabel(def.name, 7), {
+  ctx.contentContainer.add(scene.add.text(cx, y + 101, `${truncateLabel(def.name, copies > 1 ? 6 : 7)}${copies > 1 ? ` ×${copies}` : ''}`, {
     fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
   }).setOrigin(0.5));
   ctx.contentContainer.add(scene.add.text(cx, y + 117, `Lv.${monster.level} · ATK ${atk}`, {

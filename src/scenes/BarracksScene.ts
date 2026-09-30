@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { groupOwnedCopies } from '../data/ownedCopies';
 import { getDungeonRoomCount } from '../data/dungeonPlan';
 import { getCharacterArtStreamer } from '../art/CharacterArtStreamer';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
@@ -167,7 +168,8 @@ export class BarracksScene extends Phaser.Scene {
       color: DUNGEON_UI_CSS.PARCHMENT,
     }).setOrigin(0.5).setDepth(10);
 
-    const power = this.gs.ownedMonsters.reduce((s, m) => {
+    // Spare copies are evolution/absorption material, not extra fighters: count each kind once.
+    const power = groupOwnedCopies(this.gs.ownedMonsters).map(group => group.monster).reduce((s, m) => {
       const def = resolveOwnedMonsterProfile(m.id);
       return def ? s + getOwnedMonsterBattleAtk(def.baseDamage, m, this.gs) : s;
     }, 0);
@@ -389,7 +391,9 @@ export class BarracksScene extends Phaser.Scene {
     this.contentMask.fillRect(0, CARD_START_Y - 8, CANVAS_WIDTH, (ROOT_NAV_Y - 8) - (CARD_START_Y - 8));
     this.contentContainer.setMask(this.contentMask.createGeometryMask());
 
-    const sorted = [...this.gs.ownedMonsters]
+    const groups = groupOwnedCopies(this.gs.ownedMonsters);
+    const copyCounts = new Map(groups.map(group => [group.monster.id, group.copies]));
+    const sorted = groups.map(group => group.monster)
       .filter(m => {
         const def = resolveOwnedMonsterProfile(m.id);
         if (!def) return false;
@@ -413,6 +417,7 @@ export class BarracksScene extends Phaser.Scene {
       contentContainer: this.contentContainer,
       onSelect:         (m) => this.showMonsterDetail(m),
       tweens:           this.tweens,
+      copyCounts,
     };
 
     sorted.forEach((m, i) => {

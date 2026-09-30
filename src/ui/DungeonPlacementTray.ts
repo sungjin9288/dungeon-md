@@ -3,6 +3,7 @@
 // 방 타입·몬스터·함정을 한 탭에서 즉시 배치한다. 전체화면 폼(RoomDetailOverlay)
 // 다이빙을 대체하는 핵심 루프 UI. 데이터 변경은 roomSlotTransactions 재사용.
 
+import { groupOwnedCopies } from '../data/ownedCopies';
 import { onReleaseTap } from './releaseTap';
 import Phaser from 'phaser';
 import { showToast } from './Toast';
@@ -383,7 +384,8 @@ function buyAndBuild(type: RoomType): void {
 
 // ── 몬스터 ───────────────────────────────────────────────────────────────────
 function renderMonsterStrip(c: Phaser.GameObjects.Container, gs: GameState, slot: DungeonSlot | undefined, y: number, h: number): void {
-  const owned = gs.ownedMonsters ?? [];
+  // One chip per kind: placement is by id, spare copies are fusion material.
+  const owned = groupOwnedCopies(gs.ownedMonsters ?? []).map(group => group.monster);
   const items = owned.map(om => {
     return resolveOwnedMonsterProfile(om.id) ? { om } : null;
   }).filter((v): v is { om: typeof owned[number] } => v !== null);

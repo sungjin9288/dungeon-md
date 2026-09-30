@@ -69,6 +69,7 @@ describe('summonTransactions — applySummonPull', () => {
         tribeShards: 0,
         awakeningStones: 0,
         ceilingHit: false,
+        copies: 1,
       },
     ]);
     expect(result.state.gems).toBe(70);
@@ -92,7 +93,7 @@ describe('summonTransactions — applySummonPull', () => {
     expect(state.ownedMonsters).toEqual([]);
   });
 
-  it('grants soul crystal compensation for duplicate monsters', () => {
+  it('a duplicate adds a copy (evolution needs 3, absorption needs fodder) and still pays the duplicate bonus', () => {
     const existing = defaultOwnedMonster('dokkaebi_warrior');
     const state = makeState({
       gems: 100,
@@ -116,7 +117,9 @@ describe('summonTransactions — applySummonPull', () => {
       awakeningStones: 0,
     });
     expect(result.state.soulCrystals).toBe(5);
-    expect(result.state.ownedMonsters).toEqual([existing]);
+    expect(result.state.ownedMonsters.map(monster => monster.id)).toEqual(['dokkaebi_warrior', 'dokkaebi_warrior']);
+    expect(result.state.ownedMonsters[0]).toBe(existing);   // the trained copy is untouched
+    expect(result.results[0].copies).toBe(2);
     expect(result.state.summonHistory[0].scCompensation).toBe(5);
   });
 

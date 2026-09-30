@@ -374,10 +374,13 @@ children)를 파생한다. **목표 핀** `GameState.lineageGoal`(monster id | n
 
 ### 중복 소환 → 각성석 · 부족 조각 (2026-09-18, Phase 4 / P4 ②)
 
-중복 뽑기는 영혼 결정 보상(`SC_COMP`)에 더해 **각성석**(희귀도별 0/0/1/1/2)과
+중복 뽑기도 **복사본으로 보유 목록에 들어가고**(2026-09-30 — 진화는 같은 몬스터 3체, 흡수는 희생 재료, 계보도는
+"×3 모으기 · 소환"을 요구하는데 중복이 보상으로만 바뀌어 셋 다 도달 불가였다; `SummonPullResult.copies`),
+영혼 결정 보상(`SC_COMP`)에 더해 **각성석**(희귀도별 0/0/1/1/2)과
 **부족 조각**(5/8/15/25/40, 그 몬스터의 `tribe`)을 준다(`tribeShards.ts
 duplicateReward`, `applySummonPull` 중복 분기, `SummonPullResult.tribe/tribeShards/
-awakeningStones`). `GameState.tribeShards[tribe]` 100개 → `redeemTribeShards`가 그
+awakeningStones`). 수호자는 id로 식별되므로 첫 복사본이 그 수호자이고 나머지는 재료다 — 병영·배치 목록은
+`groupOwnedCopies`로 한 칸(`이름 ×N`)만 보이고 총 전투력도 종류당 한 번 센다. `GameState.tribeShards[tribe]` 100개 → `redeemTribeShards`가 그
 부족의 **미보유·소환 가능**(`RARITY_POOLS` ∪, 해금 스테이지 게이트) 1체를 확정 지급.
 UI: 소환 탭 카드 아래 44px 스트립(`SummonTribeShards.ts`, 선두 부족 하나 + 바 +
 `summon-shard-redeem` 버튼; 시즌 배너가 활성일 땐 공간이 없어 생략), 결과 뱃지에

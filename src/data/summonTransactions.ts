@@ -24,6 +24,8 @@ export interface SummonPullResult {
   tribe: string | null;
   tribeShards: number;
   awakeningStones: number;
+  /** Copies of this monster owned after the pull (a duplicate joins the roster as evolution/absorption material). */
+  copies: number;
 }
 
 export type SummonTransactionFailureReason =
@@ -200,9 +202,10 @@ export function applySummonPull(
     const alreadyOwned = ownedMonsters.some(monster => monster.id === monsterId);
     let scComp = 0;
     let dup: ReturnType<typeof duplicateReward> = { tribe: null, shards: 0, awakeningStones: 0 };
-    if (!alreadyOwned) {
-      ownedMonsters.push(defaultOwnedMonster(monsterId));
-    } else {
+    // Every pull joins the roster: evolution fuses 3 copies and absorption eats spares, and the lineage
+    // guide tells the player to "collect ×3 · summon" — a duplicate that only paid a bonus left both unreachable.
+    ownedMonsters.push(defaultOwnedMonster(monsterId));
+    if (alreadyOwned) {
       scComp = SC_COMP[rarityIdx];
       soulCrystals += scComp;
       dup = duplicateReward(monsterId, rarityIdx);
@@ -222,7 +225,8 @@ export function applySummonPull(
       ceilingHit: ceilingHit || undefined,
     };
     summonHistory.push(record);
-    results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit, tribe: dup.tribe, tribeShards: dup.shards, awakeningStones: dup.awakeningStones });
+    const copies = ownedMonsters.filter(monster => monster.id === monsterId).length;
+    results.push({ monsterId, rarity, rarityIdx, isNew: !alreadyOwned, scComp, ceilingHit, tribe: dup.tribe, tribeShards: dup.shards, awakeningStones: dup.awakeningStones, copies });
   }
 
   const wisdomSoulCrystals = Math.max(0, getWisdomBonuses(state).summonBonusCrystal * count);
