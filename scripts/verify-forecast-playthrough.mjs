@@ -102,6 +102,8 @@ async function seedHome(page) {
     state.dmLevel = home.dmLevel;
     state.ownedMonsters = home.ownedMonsters;
     state.dungeonSlots = home.dungeonSlots;
+    // Battles fight the dungeon plan; a fresh loadGameState() carries the one-room new-game plan.
+    state.dungeonPlan = home.dungeonPlan;
     state.tutorialStage = 99;
     state.notoriety = 40;
     wisdom.saveGameState(state);

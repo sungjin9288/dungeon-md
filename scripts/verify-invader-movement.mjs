@@ -53,6 +53,8 @@ try {
     state.dungeonSlots = home.dungeonSlots.map((slot, i) => (
       i === 0 ? { ...slot, roomType: 'trap', building: 'trap', trapIds: ['storm_cage', 'hellmouth'] } : slot
     ));
+    // Battles fight the dungeon plan; a fresh loadGameState() carries the one-room new-game plan.
+    state.dungeonPlan = home.dungeonPlan;
     state.tutorialStage = 99;
     state.stageProgress = state.stageProgress.map((entry, i) => ({ ...entry, unlocked: i < stageNumber }));
     wisdom.saveGameState(state);

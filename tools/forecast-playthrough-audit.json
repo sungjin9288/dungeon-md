@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-09-18T00:06:35.219Z",
+  "generatedAt": "2026-09-30T05:25:25.514Z",
   "base": "http://127.0.0.1:8083",
   "scope": "One forecast raid card fought organically from the home tray and settled on return. Not a multi-day or multi-card endurance run.",
   "method": "Home seeded with the starter board and a stage-10 lean home (campaignPacing.leanHome) so the tier-1 raid is winnable; the tray is opened by pressing the deck chip, the raid card by its own button; waves advance through window.advanceTime at 3x; return via the result-flow button.",
   "sourceHashes": {
-    "src/ui/ForecastTray.ts": "51c55f95a6c5a770d21486c38e5ec09888cb7e678103d5e1b0b47bfa299243c7",
-    "src/scenes/HomeLifecycle.ts": "d3868273222fe1a98edd38ce0209df2eeeb6056d2aeb36a5a4de16f7acdb6bf8",
-    "src/data/forecastTransactions.ts": "8a8ea8e4acf6be2ef2e1f5eb891bfe59c22468d7be0af490acddf36cd0060426",
-    "scripts/verify-forecast-playthrough.mjs": "4f1c6217a3d09175bee0d247543d783ebe8c4d74eb73c0f0fe9c88a2fa9a5b36"
+    "src/ui/ForecastTray.ts": "e6de71006e28a55360f907f2aa9087426a8260959d59a5f7af0c4fdb20416988",
+    "src/scenes/HomeLifecycle.ts": "54cb18fc580d7bda1f72731082e854450f5da1e0fb64cb2f53059362717caa0f",
+    "src/data/forecastTransactions.ts": "c91a0132c856ff6956b87a3fdf4719de332a0796e07a618363c7917f7d2f974a",
+    "scripts/verify-forecast-playthrough.mjs": "4294b3f68f938e98af46b562f1171c34ede796710f483ffb36fb2bd4e17f9318"
   },
   "runs": [
     {
       "seeded": {
         "dmLevel": 5,
-        "slotCount": 6,
+        "slotCount": 4,
         "roomLevel": 2,
         "roster": 6
       },
@@ -23,22 +23,22 @@
         ],
         "notoriety": 40,
         "tier": 1,
-        "homeGold": 200,
+        "homeGold": 502,
         "forecast": {
-          "date": "2026-09-18",
+          "date": "2026-09-30",
           "cards": [
             {
-              "id": "2026-09-18-0",
+              "id": "2026-09-30-0",
               "kind": "raid",
               "tier": 1
             },
             {
-              "id": "2026-09-18-1",
-              "kind": "elite",
-              "tier": 1
+              "id": "2026-09-30-1",
+              "kind": "raid",
+              "tier": 2
             },
             {
-              "id": "2026-09-18-2",
+              "id": "2026-09-30-2",
               "kind": "merchant",
               "tier": 1
             }
@@ -59,21 +59,21 @@
       "takeCard": {
         "pressed": true,
         "label": "맞이",
-        "candidates": 1
+        "candidates": 2
       },
       "battle": {
         "started": true,
         "wave": 6,
         "maxWave": 6,
-        "dungeonHp": 800,
+        "dungeonHp": 1400,
         "maxHp": 1500,
-        "gold": 740
+        "gold": 960
       },
       "outcome": "win",
       "returned": {
         "pressed": true,
         "label": "던전으로 귀환 · 방어선 확인",
-        "candidates": 2
+        "candidates": 1
       },
       "after": {
         "activeScenes": [
@@ -81,28 +81,28 @@
         ],
         "notoriety": 50,
         "tier": 1,
-        "homeGold": 1063,
+        "homeGold": 1928,
         "forecast": {
-          "date": "2026-09-18",
+          "date": "2026-09-30",
           "cards": [
             {
-              "id": "2026-09-18-0",
+              "id": "2026-09-30-0",
               "kind": "raid",
               "tier": 1
             },
             {
-              "id": "2026-09-18-1",
-              "kind": "elite",
-              "tier": 1
+              "id": "2026-09-30-1",
+              "kind": "raid",
+              "tier": 2
             },
             {
-              "id": "2026-09-18-2",
+              "id": "2026-09-30-2",
               "kind": "merchant",
               "tier": 1
             }
           ],
           "taken": [
-            "2026-09-18-0"
+            "2026-09-30-0"
           ]
         },
         "residue": {
@@ -113,7 +113,7 @@
       },
       "errors": [],
       "screenshot": "tools/screenshots/forecast-playthrough.png",
-      "sha256": "3c121a9e6032e211623ceb4022003d608b8832d7dba19df20b7b7379336e62ff"
+      "sha256": "12ed676cc6cdaf3fc21b75efb0eaaf2922fa6fb315477f6951559e339a735837"
     }
   ],
   "failures": [],

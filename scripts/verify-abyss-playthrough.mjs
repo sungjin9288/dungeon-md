@@ -71,6 +71,8 @@ async function seedDefence(page, { armed }) {
     state.dungeonSlots = armed
       ? roster.map(id => ({ roomType: 'combat', monsterIds: [id], trapIds: [], roomLevel: 5, hp: 400, maxHp: 400 }))
       : [];
+    // Battles fight the dungeon plan; a fresh loadGameState() carries the one-room new-game plan.
+    state.dungeonPlan = { corridor: state.dungeonSlots.map((_, slot) => slot), sides: [] };
     wisdom.saveGameState(state);
     return { slots: state.dungeonSlots.length, armed: state.dungeonSlots.filter(slot => slot.monsterIds.length).length };
   }, { armed, roster: ROSTER, floorBelow: FLOOR - 1 });
