@@ -49,6 +49,11 @@ export function getFusionPickerSourceIndex(monster: OwnedMonster): number | unde
   return pickerSourceIndices.get(monster);
 }
 
+/** 선택 창을 거치지 않고 슬롯을 채울 때(진화 후보 한 번 누르기) 같은 임시 번호를 매긴다. */
+export function rememberFusionSources(owned: readonly OwnedMonster[]): void {
+  owned.forEach((monster, index) => pickerSourceIndices.set(monster, index));
+}
+
 function addPanel(
   scene: Phaser.Scene,
   container: Phaser.GameObjects.Container,

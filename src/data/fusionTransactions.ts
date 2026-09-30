@@ -94,6 +94,19 @@ function applySuccessfulFusionProgress(state: GameState): GameState {
   return tickSubQuestProgress(questUpdated, 'fuse_monsters');
 }
 
+/**
+ * Takes the owned copy the player picked out of `pool` (mutates `pool`, a working copy). OwnedMonster has no
+ * instance id, so copies are told apart by value: an identical copy first, then same kind and level, then any copy
+ * of that kind. Copies that tie on every field are interchangeable.
+ */
+function takeOwnedCopy(pool: OwnedMonster[], selection: OwnedMonster): OwnedMonster | null {
+  const key = JSON.stringify(selection);
+  let index = pool.findIndex(monster => JSON.stringify(monster) === key);
+  if (index < 0) index = pool.findIndex(monster => monster.id === selection.id && monster.level === selection.level);
+  if (index < 0) index = pool.findIndex(monster => monster.id === selection.id);
+  return index < 0 ? null : pool.splice(index, 1)[0];
+}
+
 export function applyFusionCombination(
   state: GameState,
   slotA: OwnedMonster | null,
@@ -108,16 +121,8 @@ export function applyFusionCombination(
   }
 
   const remainingSources = [...(state.ownedMonsters ?? [])];
-  const takeOwnedSource = (selection: OwnedMonster): OwnedMonster | null => {
-    let index = remainingSources.findIndex(monster =>
-      monster.id === selection.id && monster.level === selection.level,
-    );
-    if (index < 0) index = remainingSources.findIndex(monster => monster.id === selection.id);
-    if (index < 0) return null;
-    return remainingSources.splice(index, 1)[0];
-  };
-  const sourceA = takeOwnedSource(slotA);
-  const sourceB = takeOwnedSource(slotB);
+  const sourceA = takeOwnedCopy(remainingSources, slotA);
+  const sourceB = takeOwnedCopy(remainingSources, slotB);
   if (!sourceA || !sourceB) {
     return { ok: false, state, reason: 'combination_source_not_owned' };
   }
@@ -197,15 +202,13 @@ export function applyFusionEvolution(
     return { ok: false, state, reason: 'insufficient_evolution_materials' };
   }
 
-  const maxLevel = Math.max(...selected.map(monster => monster.level));
-  let toRemove = 3;
-  const remainingMonsters = ownedMonsters.filter(monster => {
-    if (toRemove > 0 && monster.id === consumedMonsterId) {
-      toRemove--;
-      return false;
-    }
-    return true;
-  });
+  // Consume the picked copies (a higher-level copy left out of the ritual must survive it).
+  const remainingMonsters = [...ownedMonsters];
+  const consumed = selected.map(selection => takeOwnedCopy(remainingMonsters, selection));
+  if (consumed.some(copy => copy === null)) {
+    return { ok: false, state, reason: 'insufficient_evolution_materials' };
+  }
+  const maxLevel = Math.max(...consumed.map(copy => copy!.level));
 
   const evolved: OwnedMonster = {
     id: tier.resultId,
@@ -255,10 +258,13 @@ export function applyFusionAbsorption(
   }
 
   const ownedMonsters = state.ownedMonsters ?? [];
-  const freshTarget = ownedMonsters.find(monster => monster.id === target.id);
+  // Work on the picked copies: the target keeps its place in the list; other copies of its kind are untouched.
+  const pool = [...ownedMonsters];
+  const freshTarget = takeOwnedCopy(pool, target);
   if (!freshTarget) {
     return { ok: false, state, reason: 'absorption_target_not_owned' };
   }
+  const targetIndex = ownedMonsters.indexOf(freshTarget);
 
   const ownedCounts = countById(ownedMonsters);
   const sacrificeCounts = countById(sacrifices);
@@ -276,15 +282,12 @@ export function applyFusionAbsorption(
     if (getBaseId(sacrifice.id) === getBaseId(target.id)) sameTypeCount++;
   }
 
-  const removalCounts = new Map(sacrificeCounts);
-  const remainingMonsters = ownedMonsters.filter(monster => {
-    const count = removalCounts.get(monster.id) ?? 0;
-    if (count > 0) {
-      removalCounts.set(monster.id, count - 1);
-      return false;
-    }
-    return true;
-  });
+  const consumed = new Set<OwnedMonster>();
+  for (const sacrifice of sacrifices) {
+    const copy = takeOwnedCopy(pool, sacrifice);
+    if (!copy) return { ok: false, state, reason: 'insufficient_absorption_materials' };
+    consumed.add(copy);
+  }
 
   const targetCopy = {
     ...freshTarget,
@@ -299,9 +302,9 @@ export function applyFusionAbsorption(
     ok: true,
     state: applySuccessfulFusionProgress({
       ...state,
-      ownedMonsters: remainingMonsters.map(monster =>
-        monster.id === target.id ? updatedTarget : monster,
-      ),
+      ownedMonsters: ownedMonsters
+        .map((monster, index) => (index === targetIndex ? updatedTarget : monster))
+        .filter(monster => !consumed.has(monster)),
     }),
     target: updatedTarget,
     totalXp,

@@ -9,6 +9,7 @@ import {
   getNextEvolution,
 } from '../data/fusion';
 import { applyFusionEvolution } from '../data/fusionTransactions';
+import { EVOLUTION_MATERIALS, listEvolutionCandidates, pickEvolutionMaterials } from '../data/fusionCandidates';
 import { logger } from '../utils/logger';
 import { addMonsterPortrait } from './MonsterPortraitView';
 import { addPrimaryActionButton } from './GameUiPrimitives';
@@ -19,6 +20,7 @@ import {
   drawMonsterSlot,
   getFusionPickerSourceIndex,
   openMonsterPicker,
+  rememberFusionSources,
   showConfirmDialog,
   showFusionAnimation,
   showFusionResultPanel,
@@ -48,7 +50,7 @@ export function buildEvolutionTab(
   c.add(ctx.scene.add.text(panelX + 16, panelY + 20, '삼중 결속진', {
     fontFamily: 'sans-serif', fontSize: '15px', color: DUNGEON_UI_CSS.PARCHMENT, fontStyle: 'bold',
   }).setOrigin(0, 0.5));
-  c.add(ctx.scene.add.text(panelX + panelW - 16, panelY + 20, '동일 ID 3체 필요', {
+  c.add(ctx.scene.add.text(panelX + panelW - 16, panelY + 20, '같은 몬스터 3체', {
     fontFamily: 'sans-serif', fontSize: '10px', color: DUNGEON_UI_CSS.MUTED,
   }).setOrigin(1, 0.5));
 
@@ -132,6 +134,8 @@ export function buildEvolutionTab(
       `기본 ATK ${baseAtk} → ${resultAtk}`, {
         fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.JADE, fontStyle: 'bold',
       }).setOrigin(0, 0.5));
+  } else if (state.evoSlots.every(slot => slot === null)) {
+    drawEvolutionCandidates(ctx, c, state, resultX, resultY, resultW);
   } else {
     c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, resultY + 42,
       allFilled ? '이 개체는 더 진화할 수 없습니다' : '재료 3체를 지정하면 결과를 예측합니다', {
@@ -145,7 +149,7 @@ export function buildEvolutionTab(
 
   const warningY = resultY + resultH + 18;
   c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, warningY,
-    tier ? '주의: 선택한 재료 3체는 영구 소멸합니다' : '동일 개체 3체를 선택하세요', {
+    tier ? '주의: 선택한 재료 3체는 영구 소멸합니다' : '', {
       fontFamily: 'sans-serif', fontSize: '11px',
       color: tier ? DUNGEON_UI_CSS.EMBER : DUNGEON_UI_CSS.MUTED,
       fontStyle: 'bold',
@@ -156,7 +160,7 @@ export function buildEvolutionTab(
     y: warningY + 18,
     w: panelW - 32,
     h: 48,
-    label: tier ? '진화 의식 준비' : '재료를 먼저 선택하세요',
+    label: tier ? '진화 의식 준비' : '재료 3체를 고르세요',
     fontSize: '15px',
     enabled: Boolean(tier),
     once: true,
@@ -183,6 +187,61 @@ export function buildEvolutionTab(
       );
     });
   c.add([action.bg, action.text, action.zone]);
+}
+
+/** 재료가 비었을 때: 지금 진화할 수 있는 몬스터(누르면 재료 3체를 채운다), 없으면 가장 가까운 후보. */
+function drawEvolutionCandidates(
+  ctx: FusionTabContext,
+  c: Phaser.GameObjects.Container,
+  state: EvolutionState,
+  x: number,
+  y: number,
+  w: number,
+): void {
+  const owned = loadGameState().ownedMonsters ?? [];
+  const candidates = listEvolutionCandidates(owned);
+  const ready = candidates.filter(candidate => candidate.ready).slice(0, 2);
+  c.add(ctx.scene.add.text(x + 12, y + 14, ready.length > 0 ? '지금 진화 가능 · 누르면 재료를 채웁니다' : '지금 진화할 수 있는 몬스터가 없습니다', {
+    fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
+    color: ready.length > 0 ? DUNGEON_UI_CSS.JADE : DUNGEON_UI_CSS.MUTED,
+  }).setOrigin(0, 0.5));
+  if (ready.length === 0) {
+    const nearest = candidates[0];
+    c.add(ctx.scene.add.text(CANVAS_WIDTH / 2, y + 60, nearest
+      ? `가장 가까운 후보 · ${getMonsterDisplayName(nearest.id)} ${nearest.count}/${EVOLUTION_MATERIALS}체\n같은 몬스터는 소환 중복으로 모입니다`
+      : '소환으로 같은 몬스터 3체를 모으세요', {
+      fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, align: 'center', lineSpacing: 4,
+    }).setOrigin(0.5));
+    return;
+  }
+  ready.forEach((candidate, index) => {
+    const rowY = y + 24 + index * 42;
+    const g = ctx.scene.add.graphics();
+    g.fillStyle(DUNGEON_UI.STONE_RAISED, 1);
+    g.fillRoundedRect(x + 8, rowY, w - 16, 38, 6);
+    g.lineStyle(1, TAB_ACCENT['진화'], 0.7);
+    g.strokeRoundedRect(x + 8, rowY, w - 16, 38, 6);
+    c.add(g);
+    c.add(ctx.scene.add.text(x + 20, rowY + 19,
+      `${getMonsterDisplayName(candidate.id)} ×${candidate.count}  →  ${getMonsterDisplayName(candidate.resultId)}`, {
+        fontFamily: 'sans-serif', fontSize: '12px', fontStyle: 'bold', color: DUNGEON_UI_CSS.PARCHMENT,
+      }).setOrigin(0, 0.5));
+    c.add(ctx.scene.add.text(x + w - 20, rowY + 19, '채우기 ›', {
+      fontFamily: 'sans-serif', fontSize: '11px', fontStyle: 'bold', color: DUNGEON_UI_CSS.JADE,
+    }).setOrigin(1, 0.5));
+    // Visible row is 38px; the touch zone meets the 44px minimum.
+    const zone = ctx.scene.add.zone(x + w / 2, rowY + 19, w - 16, 44).setInteractive({ useHandCursor: true })
+      .setName(`fusion-evo-candidate-${candidate.id}`);
+    zone.on('pointerup', () => {
+      const fresh = loadGameState().ownedMonsters ?? [];
+      rememberFusionSources(fresh);
+      const picked = pickEvolutionMaterials(fresh, candidate.id);
+      if (picked.length === 0) return;
+      state.setEvoSlots(picked);
+      ctx.refreshTab();
+    });
+    c.add(zone);
+  });
 }
 
 function executeEvolution(ctx: FusionTabContext, state: EvolutionState): void {

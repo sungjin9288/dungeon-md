@@ -509,3 +509,49 @@ describe('fusionTransactions — awakening', () => {
     if (!noStones.ok) expect(noStones.reason).toBe('insufficient_awakening_stones');
   });
 });
+
+describe('fusionTransactions — the selected copies are the ones used', () => {
+  // OwnedMonster has no instance id; copies of one kind differ only by level/xp/etc. The transaction must act on
+  // the copies the player picked, not on the first copies of that kind in the owned list.
+  it('evolution consumes the three picked copies and keeps an unpicked higher-level copy', () => {
+    const veteran = monster('dokkaebi_warrior', 10);
+    const fodder = [monster('dokkaebi_warrior', 1), monster('dokkaebi_warrior', 1), monster('dokkaebi_warrior', 1)];
+    const state = makeState({ ownedMonsters: [veteran, ...fodder] });
+
+    const result = applyFusionEvolution(state, fodder.map(m => ({ ...m })));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.monster.level).toBe(1);
+    expect(result.state.ownedMonsters.filter(m => m.id === 'dokkaebi_warrior').map(m => m.level)).toEqual([10]);
+  });
+
+  it('absorption feeds the picked target copy and leaves other copies of that kind alone', () => {
+    const rookie = monster('dokkaebi_warrior', 1);
+    const champion = monster('dokkaebi_warrior', 9);
+    const sacrifice = monster('gumiho_guardian', 1);
+    const state = makeState({ ownedMonsters: [rookie, champion, sacrifice] });
+
+    const result = applyFusionAbsorption(state, { ...champion }, [{ ...sacrifice }]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const warriors = result.state.ownedMonsters.filter(m => m.id === 'dokkaebi_warrior');
+    expect(warriors).toHaveLength(2);
+    expect(warriors.find(m => m.level === 1)).toEqual(rookie);
+    expect(result.target.level).toBeGreaterThanOrEqual(9);
+  });
+
+  it('absorption removes the picked sacrifice copy, not a stronger copy of the same kind', () => {
+    const target = monster('white_tiger', 5);
+    const strong = monster('gumiho_guardian', 8);
+    const weak = monster('gumiho_guardian', 1);
+    const state = makeState({ ownedMonsters: [target, strong, weak] });
+
+    const result = applyFusionAbsorption(state, { ...target }, [{ ...weak }]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.ownedMonsters.filter(m => m.id === 'gumiho_guardian').map(m => m.level)).toEqual([8]);
+  });
+});
