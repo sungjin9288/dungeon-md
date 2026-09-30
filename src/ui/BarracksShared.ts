@@ -21,8 +21,6 @@ import type { OwnedMonsterProfile, RarityId } from '../data/monsters';
 // ─── Card Geometry Constants ──────────────────────────────────────────────────
 
 export const CARD_W          = 362;
-export const CARD_H          = 180;
-export const CARD_PAD        = 10;
 export const CARD_START_X    = 14;
 export const GROWTH_PANEL_Y  = 88;
 export const GROWTH_PANEL_H  = 150;

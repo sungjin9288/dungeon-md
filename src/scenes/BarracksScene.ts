@@ -17,8 +17,6 @@ import { getOwnedMonsterBattleAtk } from '../data/barracks';
 import { showMonsterDetailPanel, showSkillShopPanel, type MonsterDetailTab } from '../ui/MonsterDetailPanel';
 
 import {
-  CARD_H,
-  CARD_PAD,
   CARD_START_X,
   CARD_START_Y,
   SUMMON_ROW_H,
@@ -31,7 +29,11 @@ import {
   type BarracksFilterType,
 } from '../ui/BarracksShared';
 import {
-  buildMonsterCard,
+  buildMonsterTile,
+  TILE_COLS,
+  TILE_GAP,
+  TILE_H,
+  TILE_W,
   buildSummonSlot,
   type BarracksCardContext,
 } from '../ui/BarracksCard';
@@ -414,13 +416,14 @@ export class BarracksScene extends Phaser.Scene {
     };
 
     sorted.forEach((m, i) => {
-      const x = CARD_START_X;
-      const y = CARD_START_Y + i * (CARD_H + CARD_PAD);
+      const x = CARD_START_X + (i % TILE_COLS) * (TILE_W + TILE_GAP);
+      const y = CARD_START_Y + Math.floor(i / TILE_COLS) * (TILE_H + TILE_GAP);
       if (this.focusMonsterId === m.id) focusCardY = y;
-      buildMonsterCard(this, cardCtx, m, x, y);
+      buildMonsterTile(this, cardCtx, m, x, y);
     });
 
-    const summonY = CARD_START_Y + sorted.length * (CARD_H + CARD_PAD);
+    const rows = Math.ceil(sorted.length / TILE_COLS);
+    const summonY = CARD_START_Y + rows * (TILE_H + TILE_GAP);
     buildSummonSlot(this, cardCtx, CARD_START_X, summonY);
 
     const contentBottom = summonY + SUMMON_ROW_H;
