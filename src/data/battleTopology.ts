@@ -45,6 +45,17 @@ export function cellOfSlot(topology: BattleTopology, slot: number): TopologyCell
 }
 
 /**
+ * 상하좌우로 붙은 방의 슬롯 — 전투의 인접 규칙(왕관·지원실·시너지)과 같다. 홈 표시·추천도 이것을 쓴다.
+ */
+export function neighborSlots(topology: BattleTopology, slot: number): number[] {
+  const cell = cellOfSlot(topology, slot);
+  if (!cell) return [];
+  return topology.cells
+    .filter(other => Math.abs(other.row - cell.row) + Math.abs(other.col - cell.col) === 1)
+    .map(other => other.slot);
+}
+
+/**
  * 침입 경로: 왼쪽 입구 → 주 통로 줄을 따라 → 오른쪽 심장부. 입구·심장부는 격자 밖 `margin`만큼.
  * 모든 방을 같은 방향으로 한 번씩 지나며, 뱀처럼 꺾이지 않는다.
  */

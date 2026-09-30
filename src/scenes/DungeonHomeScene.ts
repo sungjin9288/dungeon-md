@@ -90,7 +90,6 @@ import {
 import {
   buildBackground as _buildBackground,
   buildDungeonGrid as _buildDungeonGrid,
-  rebuildDungeonBlueprintPanel as _rebuildDungeonBlueprintPanel,
   addAmbientEffects as _addAmbientEffects,
   openRoomDetail as _openRoomDetail,
   selectRoomForPlacement as _selectRoomForPlacement,
@@ -144,7 +143,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     resumePreBattle: () => this.resumePreBattleFromRoomEdit(),
   };
   /** @internal */ dungeonContainer: Phaser.GameObjects.Container | null = null;
-  /** @internal */ dungeonBlueprintContainer: Phaser.GameObjects.Container | null = null;
   /** @internal */ commandDeckContainer: Phaser.GameObjects.Container | null = null;
   /** @internal */ commandDeckRect: { x: number; y: number; w: number; h: number } | null = null;
   /** @internal */ boardLayout!: DungeonBoardLayout;
@@ -228,7 +226,6 @@ export class DungeonHomeScene extends Phaser.Scene {
   }
 
   /** @internal */ refreshHomeDynamicPanels(): void {
-    this.rebuildDungeonBlueprintPanel();
     this.rebuildDungeonSlots();
     this.buildCommandDeck();
     this.settlePendingQuestCompletion();
@@ -253,7 +250,6 @@ export class DungeonHomeScene extends Phaser.Scene {
     this.currencyTexts = [];
     this.topBarRefs = null;
     this.dungeonContainer = null;
-    this.dungeonBlueprintContainer = null;
     this.commandDeckContainer = null;
     this.commandDeckRect = null;
     this.recentlyChangedRoomIdx = null;
@@ -384,7 +380,6 @@ export class DungeonHomeScene extends Phaser.Scene {
 
   private buildDungeonGrid(): void { _buildDungeonGrid(this); }
 
-  /** @internal */ rebuildDungeonBlueprintPanel(): void { _rebuildDungeonBlueprintPanel(this); }
 
   /** @internal */ rebuildDungeonSlots(): void { _rebuildDungeonSlots(this); }
 

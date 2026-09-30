@@ -1,4 +1,5 @@
-import { getDungeonRoomCount } from './dungeonPlan';
+import { getDungeonPlan, getDungeonRoomCount } from './dungeonPlan';
+import { buildBattleTopology, neighborSlots } from './battleTopology';
 import {
   getRoomSlotCapacity,
   type DungeonSlot,
@@ -14,7 +15,6 @@ export interface RoomDesignRecommendation {
 }
 
 const ROOM_TYPES: readonly RoomSlotType[] = ['combat', 'trap', 'support', 'magic'];
-const GRID_COLS = 3;
 
 const ROOM_RECOMMENDATION_COPY: Record<RoomSlotType, Omit<RoomDesignRecommendation, 'roomType'>> = {
   combat: {
@@ -54,7 +54,8 @@ export function getRoomDesignRecommendation(
   if (counts.combat === 0) return buildRecommendation('combat');
   if (unassignedMonsters > gaps.monsterGaps) return buildRecommendation('combat');
   if (counts.trap === 0) return buildRecommendation('trap');
-  if (shouldRecommendSupport(slots, slotIdx, counts)) return buildRecommendation('support');
+  const neighbors = neighborSlots(buildBattleTopology(getDungeonPlan(state)), slotIdx);
+  if (shouldRecommendSupport(slots, neighbors, counts)) return buildRecommendation('support');
   if ((state.dmLevel ?? 1) >= 4 && counts.magic === 0) return buildRecommendation('magic');
   if (gaps.trapGaps <= 0 && counts.trap <= counts.combat) return buildRecommendation('trap');
 
@@ -96,23 +97,10 @@ function countLoadoutGaps(slots: readonly (DungeonSlot | undefined)[]): {
 
 function shouldRecommendSupport(
   slots: readonly (DungeonSlot | undefined)[],
-  slotIdx: number,
+  neighbors: readonly number[],
   counts: Record<RoomSlotType, number>,
 ): boolean {
   if (counts.support > 0) return false;
-  const adjacentBuiltRooms = getAdjacentSlotIndices(slotIdx, slots.length)
-    .filter(idx => !!slots[idx]?.roomType)
-    .length;
+  const adjacentBuiltRooms = neighbors.filter(idx => !!slots[idx]?.roomType).length;
   return adjacentBuiltRooms >= 2 || (counts.combat > 0 && counts.trap > 0 && slots.length >= 3);
-}
-
-function getAdjacentSlotIndices(slotIdx: number, slotCount: number): number[] {
-  const col = slotIdx % GRID_COLS;
-  const candidates = [
-    col > 0 ? slotIdx - 1 : -1,
-    col < GRID_COLS - 1 ? slotIdx + 1 : -1,
-    slotIdx - GRID_COLS,
-    slotIdx + GRID_COLS,
-  ];
-  return candidates.filter(idx => idx >= 0 && idx < slotCount);
 }

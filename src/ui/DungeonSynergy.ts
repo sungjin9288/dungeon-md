@@ -37,6 +37,18 @@ const SYNERGY_COLOR: Record<string, number> = {
   magic:   0x3366cc,
 };
 
+/** Corridor board: every pair of rooms that touch up/down/left/right (the battle adjacency rule). */
+function corridorPairs(layout: DungeonBoardLayout): Array<[number, number]> {
+  const cells = [...layout.cellsByIdx.values()];
+  const pairs: Array<[number, number]> = [];
+  cells.forEach((a, i) => {
+    for (const b of cells.slice(i + 1)) {
+      if (Math.abs(a.floor - b.floor) + Math.abs(a.colInFloor - b.colInFloor) === 1) pairs.push([a.slotIdx, b.slotIdx]);
+    }
+  });
+  return pairs;
+}
+
 /**
  * Draw subtle resource channels between adjacent rooms of the same type.
  * The caller draws this before room shells so synergy reads as floor wiring,
@@ -50,8 +62,8 @@ export function drawSynergyConnectors(
   const { scene, slots, gridCols, gridRows, slotPadX, slotPadY, gridStartY, layout } = ctx;
   const reducedMotion = getReducedMotion();
 
-  const pairs: Array<[number, number]> = [];
-  for (let row = 0; row < gridRows; row++) {
+  const pairs: Array<[number, number]> = layout?.horizontal ? corridorPairs(layout) : [];
+  for (let row = 0; row < gridRows && !layout?.horizontal; row++) {
     for (let col = 0; col < gridCols; col++) {
       const idx = row * gridCols + col;
       if (idx >= unlockedCount) continue;

@@ -6,6 +6,7 @@
 import Phaser from 'phaser';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants/layout';
 import { type GameState } from '../data/wisdom';
+import { getDungeonPlan } from '../data/dungeonPlan';
 import type { InvasionConfig } from '../data/quests';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
 import { getReducedMotion } from '../utils/reducedMotion';
@@ -361,9 +362,13 @@ export function buildDefenseLoadout(
   drawStatPill(304, 'DEF',  `${defenseTotals.totalPower}`, readinessAccent);
 
   const roomByIndex = new Map(defenseRooms.map(room => [room.index, room]));
+  // The rail is the invasion route: main-corridor rooms from the entrance. Side rooms sit off the route.
+  const plan = getDungeonPlan(gs);
+  const route = plan.corridor;
   const railY = dY + 134 + directiveExtraH;
-  const cellW = 29, cellH = 28, cellGap = 5;
-  const railX = Math.floor((CANVAS_WIDTH - (9 * cellW + 8 * cellGap)) / 2);
+  const cellGap = 5, cellH = 28;
+  const cellW = Math.min(29, Math.floor((CANVAS_WIDTH - 64 - (route.length - 1) * cellGap) / Math.max(1, route.length)));
+  const railX = Math.floor((CANVAS_WIDTH - (route.length * cellW + (route.length - 1) * cellGap)) / 2);
   dg.fillStyle(DUNGEON_UI.STONE, 1);
   dg.fillRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
   dg.fillStyle(ZONE_ACCENTS.invasion, 0.64);
@@ -372,43 +377,43 @@ export function buildDefenseLoadout(
   dg.strokeRoundedRect(24, railY, CANVAS_WIDTH - 48, 58, 10);
   // Direction lives in the title: end labels under the nodes collided with the
   // active node's ring.
-  scene.add.text(32, railY + 10, '침략 루트 · 입구 → 던전 심장', {
+  const sideNote = plan.sides.length > 0 ? ` · 곁방 ${plan.sides.length}` : '';
+  scene.add.text(32, railY + 10, `침략 루트 · 입구 → 던전 심장${sideNote}`, {
     fontFamily: 'sans-serif', fontSize: '11px', color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
   }).setOrigin(0, 0.5);
   scene.add.text(CANVAS_WIDTH - 32, railY + 10, `권장 DEF ${directive.pressure || '-'}`, {
     fontFamily: 'monospace', fontSize: '10px', color: DUNGEON_UI_CSS.BRASS, fontStyle: 'bold',
   }).setOrigin(1, 0.5);
   dg.lineStyle(3, DUNGEON_UI.IRON, 0.72);
-  dg.lineBetween(railX + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2, railX + 8 * (cellW + cellGap) + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2);
-  for (let i = 0; i < 9; i++) {
-    const slot = gs.dungeonSlots?.[i];
+  dg.lineBetween(railX + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2, railX + (route.length - 1) * (cellW + cellGap) + cellW / 2, railY + RAIL_NODE_TOP + cellH / 2);
+  route.forEach((slotIdx, i) => {
+    const slot = gs.dungeonSlots?.[slotIdx];
     const style = ROOM_STYLE[slot?.roomType ?? 'empty'];
-    const queueItem = actionBySlot.get(i);
-    const unlocked = i < defenseTotals.unlockedSlots;
-    const built = unlocked && !!slot?.roomType;
-    const room = roomByIndex.get(i);
-    const isActionTarget = directive.actionSlotIdx === i && Boolean(directive.actionLabel);
+    const queueItem = actionBySlot.get(slotIdx);
+    const built = !!slot?.roomType;
+    const room = roomByIndex.get(slotIdx);
+    const isActionTarget = directive.actionSlotIdx === slotIdx && Boolean(directive.actionLabel);
     const cx = railX + i * (cellW + cellGap);
     const cy = railY + RAIL_NODE_TOP;
-    dg.fillStyle(built ? style.bg : unlocked ? DUNGEON_UI.STONE_RAISED : DUNGEON_UI.SOOT, 1);
+    dg.fillStyle(built ? style.bg : DUNGEON_UI.STONE_RAISED, 1);
     dg.fillRoundedRect(cx, cy, cellW, cellH, 6);
     if (built) {
       dg.fillStyle(0xffffff, 0.05);
       dg.fillRoundedRect(cx + 3, cy + 4, cellW - 6, 8, 3);
       dg.fillStyle(style.accent, 0.16);
       dg.fillRoundedRect(cx + 4, cy + cellH - 7, cellW - 8, 3, 2);
-    } else if (unlocked) {
+    } else {
       dg.fillStyle(DUNGEON_UI.EDGE, 0.42);
       dg.fillRect(cx + 4, cy + 4, 2, cellH - 8);
     }
-    dg.lineStyle(built ? 1.5 : 1, built ? style.accent : DUNGEON_UI.IRON, built ? 0.85 : unlocked ? 0.9 : 0.52);
+    dg.lineStyle(built ? 1.5 : 1, built ? style.accent : DUNGEON_UI.IRON, built ? 0.85 : 0.9);
     dg.strokeRoundedRect(cx, cy, cellW, cellH, 6);
     if (built) {
       drawSigil(dg, sigilFor(ROOM_TYPE_SIGILS, slot?.roomType ?? '', 'shield'), cx + cellW / 2, cy + 12, 14, style.accent, { disc: false });
     } else {
       scene.add.text(cx + cellW / 2, cy + 12, String(i + 1), {
         fontFamily: 'sans-serif', fontSize: '11px',
-        color: unlocked ? DUNGEON_UI_CSS.TEXT : '#526158', fontStyle: 'bold',
+        color: DUNGEON_UI_CSS.TEXT, fontStyle: 'bold',
       }).setOrigin(0.5);
     }
     if (built && room) {
@@ -425,7 +430,7 @@ export function buildDefenseLoadout(
     } else if (isActionTarget) {
       drawDefenseRouteActionRing(scene, cx, cy, cellW, cellH, directive.accent, 1);
     }
-  }
+  });
 
   const showRoomInfo = (room: DefenseRoomSummary): void => {
     scene.children.getByName('defenseRoomInfoOv')?.destroy();
@@ -572,28 +577,26 @@ export function buildDefenseLoadout(
     });
   };
 
-  for (let i = 0; i < 9; i++) {
-    const queueItem = actionBySlot.get(i);
-    const unlocked = i < defenseTotals.unlockedSlots;
-    const room = roomByIndex.get(i);
-    if (!unlocked) continue;
+  route.forEach((slotIdx, i) => {
+    const queueItem = actionBySlot.get(slotIdx);
+    const room = roomByIndex.get(slotIdx);
     const cx = railX + i * (cellW + cellGap);
     const cy = railY + RAIL_NODE_TOP;
-    const routeHitZone = scene.add.zone(cx - 8, cy - 8, cellW + 16, cellH + 16)
+    const routeHitZone = scene.add.zone(cx - cellGap / 2, cy - 8, cellW + cellGap, cellH + 16)
       .setOrigin(0)
       .setInteractive({ useHandCursor: true });
     routeHitZone.on('pointerdown', () => {
       if (queueItem || !room) {
-        onReturnToDungeonRoom(i);
+        onReturnToDungeonRoom(slotIdx);
         return;
       }
       showRoomInfo(room);
     });
-  }
+  });
 
   const cardW = 166, cardH = 64, cardGap = 10;
   const cardsY = dY + 206 + directiveExtraH;
-  const emptyEntries = Array.from({ length: defenseTotals.unlockedSlots }, (_, index) => index)
+  const emptyEntries = [...route, ...plan.sides.map(side => side.slot)]
     .filter(index => !roomByIndex.has(index));
   const cardEntries = [
     ...defenseRooms.map(room => ({ index: room.index, room })),

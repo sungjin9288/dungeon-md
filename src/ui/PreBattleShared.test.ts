@@ -187,6 +187,15 @@ describe('getDefenseTotals', () => {
     expect(totals.monsterCount).toBe(1);
   });
 
+  it('lists rooms in invasion order — main corridor from the entrance, then side rooms', () => {
+    const gs = makeGs({
+      dmLevel: 8,
+      dungeonPlan: { corridor: [2, 0, 1], sides: [{ slot: 3, anchor: 0, side: 'up' }] },
+      dungeonSlots: Array.from({ length: 4 }, () => makeCombatSlot({ monsterIds: ['dokkaebi_warrior'] })),
+    });
+    expect(getDefenseRooms(gs).map(room => room.index)).toEqual([2, 0, 1, 3]);
+  });
+
   it('sums totalPower across rooms', () => {
     const gs = makeGs({
       dmLevel: 2,

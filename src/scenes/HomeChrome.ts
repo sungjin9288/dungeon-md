@@ -6,7 +6,6 @@ import type { DungeonHomeScene } from './DungeonHomeScene';
 import { CANVAS_WIDTH, CANVAS_HEIGHT, ROOT_NAV_Y } from '../constants/layout';
 import { CASUAL, CASUAL_CSS } from '../constants/colors';
 import { getDungeonActionQueue, type RoomActionRecommendation } from '../data/roomActionRecommendations';
-import { buildDungeonBlueprintPanel } from '../ui/DungeonBlueprintPanel';
 import { openRoomDetail as openRoomDetailOverlay } from '../ui/RoomDetailOverlay';
 import { openPlacementTray } from '../ui/DungeonPlacementTray';
 import { drawBattleSlot as _drawBattleSlot, SLOT_W, SLOT_H } from '../ui/RoomSlotRenderer';
@@ -23,8 +22,6 @@ const BOT_Y = ROOT_NAV_Y;
 const GRID_ROWS_HOME = 3;
 const SLOT_PAD_Y = 8;
 const QUEST_BANNER_H = 22;
-const BLUEPRINT_Y = TOP_H + QUEST_BANNER_H + 5;
-const BLUEPRINT_H = 0;
 const GRID_START_Y = TOP_H + QUEST_BANNER_H + 10;
 
 // ─── buildBackground ─────────────────────────────────────────────────────────
@@ -68,22 +65,6 @@ export function buildDungeonGrid(scene: DungeonHomeScene): void {
   }
 
   scene.rebuildDungeonSlots();
-}
-
-// ─── rebuildDungeonBlueprintPanel ─────────────────────────────────────────────
-
-export function rebuildDungeonBlueprintPanel(scene: DungeonHomeScene): void {
-  if (scene.dungeonBlueprintContainer) scene.dungeonBlueprintContainer.destroy();
-  if (BLUEPRINT_H <= 0) {
-    scene.dungeonBlueprintContainer = null;
-    return;
-  }
-  scene.dungeonBlueprintContainer = buildDungeonBlueprintPanel(scene, scene.gs, scene.theme, {
-    x: 10,
-    y: BLUEPRINT_Y,
-    w: CANVAS_WIDTH - 86,
-    h: BLUEPRINT_H,
-  });
 }
 
 // ─── addAmbientEffects ────────────────────────────────────────────────────────

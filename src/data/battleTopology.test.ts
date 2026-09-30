@@ -6,6 +6,7 @@ import {
   cellOfSlot,
   corridorReach,
   corridorWaypoints,
+  neighborSlots,
   slotAt,
 } from './battleTopology';
 
@@ -29,6 +30,12 @@ describe('배치도 → 전투 칸', () => {
     expect(slotAt(topology, 0, 0)).toBeNull();
     expect(cellOfSlot(topology, 11)).toBeNull();
     expect(cellOfSlot(topology, 0)).toEqual({ slot: 0, row: 1, col: 2 });
+  });
+
+  it('인접 = 주 통로 앞뒤 + 붙은 곁방 + 옆 열의 같은 줄 곁방', () => {
+    expect(neighborSlots(topology, 1).sort((a, b) => a - b)).toEqual([0, 2, 9]);   // 주 통로 2번째 방
+    expect(neighborSlots(topology, 9)).toEqual([1]);                                // 위 곁방은 붙은 방만
+    expect(neighborSlots(topology, 11)).toEqual([]);                                // 버려진 곁방
   });
 
   it('빈 던전도 한 열은 있다', () => {
