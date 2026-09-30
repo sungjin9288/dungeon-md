@@ -306,14 +306,14 @@ export class PreBattleScene extends Phaser.Scene {
     commandBg.lineStyle(1, readinessAccent, 0.72);
     commandBg.strokeRoundedRect(18, commandY + 7, CANVAS_WIDTH - 36, 18, 4);
 
-    this.add.text(24, commandY + 10, '출격 명령', {
+    this.add.text(24, commandY + 16, '출격 명령', {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
       color: DUNGEON_UI_CSS.TEXT,
     }).setOrigin(0, 0.5);
 
-    this.add.text(92, commandY + 10, commandStatus, {
+    this.add.text(92, commandY + 16, commandStatus, {
       fontFamily: 'sans-serif',
       fontSize: '11px',
       fontStyle: 'bold',
@@ -322,7 +322,7 @@ export class PreBattleScene extends Phaser.Scene {
         directive.severity === 'warning' ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0, 0.5);
 
-    this.add.text(CANVAS_WIDTH - 24, commandY + 10, hasBattleTarget
+    this.add.text(CANVAS_WIDTH - 24, commandY + 16, hasBattleTarget
       ? `DEF ${pressureText} · 준비 ${readinessText}`
       : '침공 데이터 확인 필요', {
       fontFamily: 'sans-serif',

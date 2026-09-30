@@ -224,6 +224,25 @@ describe('getDefenseDirective', () => {
     expect(directive.actionSlotIdx).toBeDefined();
   });
 
+  it('a room chore (empty seat) is advice when power already covers the invasion, a warning when it does not', () => {
+    const plan = { corridor: [0, 1, 2], sides: [] };
+    const chore = (monsterIds: string[]) => Array.from({ length: 3 }, (_, i) => makeCombatSlot({
+      monsterIds: i === 0 ? [] : monsterIds, trapIds: ['spike_trap'], roomLevel: 5, hp: 500, maxHp: 500,
+    }));
+    const strong = makeGs({ dmLevel: 12, dungeonPlan: plan, dungeonSlots: chore(['dokkaebi_warrior', 'dokkaebi_warrior']) });
+    const light: InvasionConfig = { ...makeInvasionConfig(1, 1) };
+    const strongRooms = getDefenseRooms(strong);
+    const ready = getDefenseDirective(strongRooms, getDefenseTotals(strong, strongRooms), strong, light);
+    expect(ready.readiness).toBeGreaterThanOrEqual(100);
+    expect(ready.severity).toBe('ready');
+    expect(ready.actionLabel).toBeDefined();      // the chore and its button stay
+
+    const heavy: InvasionConfig = { ...makeInvasionConfig(3, 40) };
+    const weak = getDefenseDirective(strongRooms, getDefenseTotals(strong, strongRooms), strong, heavy);
+    expect(weak.readiness).toBeLessThan(100);
+    expect(weak.severity).not.toBe('ready');
+  });
+
   it('has readiness >= 100 when totalPower far exceeds pressure', () => {
     // Build multiple rooms with traps so totalPower far exceeds minimal pressure
     const slots: DungeonSlot[] = Array.from({ length: 3 }, () =>

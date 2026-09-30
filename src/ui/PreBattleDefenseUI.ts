@@ -699,8 +699,8 @@ export function buildDefenseLoadout(
       fontFamily: 'monospace', fontSize: '10px', color: room.style.text,
     }).setOrigin(0, 0.5);
     // Trap count only: the trap badge sat under the action pin, and its emoji ran into the DEF badge.
-    scene.add.text(cx + 42, cy + 45, `M${room.monsterIds.length}/${room.capacity.monsters} E${room.equipment.length} T${room.trapIds.length}/${room.capacity.traps}`, {
-      fontFamily: 'monospace', fontSize: '10px', color: CASUAL_CSS.BLUE,
+    scene.add.text(cx + 42, cy + 45, `👹${room.monsterIds.length}/${room.capacity.monsters} 🕸${room.trapIds.length}/${room.capacity.traps}`, {
+      fontFamily: 'sans-serif', fontSize: '10px', color: CASUAL_CSS.BLUE,
     }).setOrigin(0, 0.5);
 
     if (room.equipment.length > 0) {

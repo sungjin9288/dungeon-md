@@ -455,7 +455,14 @@ export function getDefenseDirective(
   const actionQueue = getDungeonActionQueue(gs, totals.unlockedSlots);
   const firstRoomAction = actionQueue[0];
   if (firstRoomAction && firstRoomAction.kind !== 'growth') {
-    return buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure);
+    const chore = buildDefenseDirectiveFromRoomAction(firstRoomAction, readiness, pressure);
+    // Already strong enough for this invasion: a room chore (an empty seat, a missing trap)
+    // is advice, not a reason to hold the sortie — "보강 권장" at 50x the needed power misled.
+    // The chore stays on the card and its button; only the verdict turns to ready.
+    if (readiness >= 100 && chore.severity === 'warning') {
+      return { ...chore, severity: 'ready', chip: '여유', accent: 0xffe27a, fill: defenseDirectiveFill('ready') };
+    }
+    return chore;
   }
 
   if (pressure > 0 && readiness < 80) {
