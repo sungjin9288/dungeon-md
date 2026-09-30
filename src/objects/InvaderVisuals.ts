@@ -220,6 +220,7 @@ export function updateHpBar(invader: Invader): void {
   if (invader.bossLabel) {
     invader.bossLabel.setPosition(invader.x, by - 2);
   }
+  invader.visitorBadge?.setPosition(bx - 9, by + bh / 2);
 
   invader.hpBarBg.clear();
   invader.hpBarBg.fillStyle(0x000000, 0.75);
@@ -353,6 +354,7 @@ export function cleanup(invader: Invader): void {
   invader.hpBarBg.destroy();
   invader.hpBarFill.destroy();
   invader.bossLabel?.destroy();
+  invader.visitorBadge?.destroy();
   invader.hitTween?.stop();
   invader.breathTween?.stop();
   if (invader.active) invader.destroy();

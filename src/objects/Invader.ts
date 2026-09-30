@@ -19,7 +19,8 @@ import {
   invaderPreUpdate,
 } from './InvaderVisuals';
 import { isMovementLocked, restingPathSpeed } from './movementLock';
-import type { VisitorKind } from '../data/visitors';
+import { VISITOR_COLOR, type VisitorKind } from '../data/visitors';
+import { drawSigil } from '../ui/Sigils';
 
 // ─── Burn stack ───────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   /** @internal */ hpBarBg:    Phaser.GameObjects.Graphics;
   /** @internal */ hpBarFill:  Phaser.GameObjects.Graphics;
   /** @internal */ bossLabel?: Phaser.GameObjects.Text;
+  /** @internal 모험가·떠돌이 몬스터 표식(HP 바 왼쪽). 토벌대는 없다. */ visitorBadge?: Phaser.GameObjects.Graphics;
   /** @internal */ crisisRing?: Phaser.GameObjects.Graphics;
   /** @internal */ crisisTween?: Phaser.Tweens.Tween;
 
@@ -231,6 +233,26 @@ export class Invader extends Phaser.GameObjects.PathFollower {
         color: '#ff6644', stroke: '#000000', strokeThickness: 2,
       }).setOrigin(0.5, 1).setDepth(this.depth + 3);
     }
+  }
+
+  // ─── Visitor badge ────────────────────────────────────────────────────────
+
+  /**
+   * 목적이 있는 손님은 HP 바 왼쪽에 표식을 단다 — 모험가는 보물 상자, 떠돌이 몬스터는 도깨비불.
+   * 미니맵 점과 같은 색이라 전장과 미니맵이 같은 말을 한다. 위치는 `updateHpBar`가 따라 옮긴다.
+   */
+  markVisitor(kind: VisitorKind): void {
+    this.visitorBadge?.destroy();
+    this.visitorBadge = undefined;
+    if (kind === 'raider') return;
+    const color = VISITOR_COLOR[kind];
+    const g = this.scene.add.graphics().setDepth(this.depth + 3);
+    g.fillStyle(0x000000, 0.8);
+    g.fillCircle(0, 0, 7);
+    g.lineStyle(1.5, color, 1);
+    g.strokeCircle(0, 0, 7);
+    drawSigil(g, kind === 'adventurer' ? 'chest' : 'wisp', 0, 0, 9, color);
+    this.visitorBadge = g;
   }
 
   // ─── Stun ─────────────────────────────────────────────────────────────────

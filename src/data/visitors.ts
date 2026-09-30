@@ -25,6 +25,13 @@ export const VISITOR_TARGET_BUILDINGS: Readonly<Record<Exclude<VisitorKind, 'rai
   wanderer: ['dragons_lair', 'elite_den'],
 };
 
+/** 손님 색 — 전투 미니맵 점과 전장의 손님 표식이 같은 색을 쓴다. */
+export const VISITOR_COLOR: Readonly<Record<VisitorKind, number>> = {
+  raider: 0xff5a4a,
+  adventurer: 0xf2c14e,
+  wanderer: 0xb48cf0,
+};
+
 export const VISITOR_LABEL: Readonly<Record<VisitorKind, string>> = {
   raider: '토벌대',
   adventurer: '모험가',

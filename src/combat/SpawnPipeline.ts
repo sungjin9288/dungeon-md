@@ -100,6 +100,7 @@ export function spawnInvaderWithDef(ctx: SpawnPipelineContext, def: InvaderDef, 
   inv.visitor = route.targetSlot === null ? 'raider' : visitor;
   inv.visitorTargetSlot = route.targetSlot;
   inv.setDepth(40);
+  inv.markVisitor(inv.visitor);
 
   playInvaderSpawnEntrance(ctx.scene, inv, !!modDef.isBoss);
 

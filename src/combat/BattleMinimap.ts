@@ -10,10 +10,11 @@ import { ROOM_DEFS, type RoomType } from '../data/rooms';
 import type { BattleTopology } from '../data/battleTopology';
 import type { Invader } from '../objects/Invader';
 import { markBattleHud } from './battleHudMark';
+import { VISITOR_COLOR } from '../data/visitors';
 import { MINIMAP_ROWS, minimapScrollFor, minimapX, minimapY, type MinimapRect } from './battleMinimapGeometry';
 
 const REDRAW_MS = 100;
-const VISITOR_DOT: Record<string, number> = { raider: 0xff5a4a, adventurer: 0xf2c14e, wanderer: 0xb48cf0 };
+const VISITOR_DOT: Record<string, number> = VISITOR_COLOR;
 
 export interface BattleMinimapOptions {
   readonly rect: MinimapRect;
