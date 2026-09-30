@@ -19,6 +19,8 @@ import { loadGameState } from '../data/wisdom';
 import { STAGE_CINEMATICS } from '../data/cinematics';
 import { logger } from '../utils/logger';
 import { addSigil, type SigilKind } from '../ui/Sigils';
+import { buildExpeditionButton, isExpeditionMenuOpen } from '../ui/ExpeditionMenu';
+import { getExpeditionRoutes, type ExpeditionRouteKey } from '../data/expeditionRoutes';
 import {
   type StageProgress, TOTAL_STAGES, STAGE_CONFIGS,
   loadProgress, saveProgress, recordClear,
@@ -110,6 +112,11 @@ export class StageSelectScene extends Phaser.Scene {
     buildHomeZoneNavigation(this, 'invasion', (zone) => {
       this.scene.start(getZoneDestination(zone));
     });
+    buildExpeditionButton(
+      this,
+      () => getExpeditionRoutes(loadGameState(), this.progress, new Date().toISOString().slice(0, 10)),
+      route => this.openExpeditionRoute(route.key),
+    );
 
     // Camera scroll via drag.
     // NOTE: main.ts applyDprCamera() zooms the camera by dpr and centerOn()s the
@@ -120,8 +127,8 @@ export class StageSelectScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, CANVAS_WIDTH, this.contentHeight);
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       const pointerY = getLogicalViewportPointerY(p.y, this.cameras.main.zoom);
-      // Fixed header and root navigation are controls, never drag handles.
-      if (pointerY < 124 || pointerY >= ROOT_NAV_Y) {
+      // Fixed header, root navigation and the expedition menu are controls, never drag handles.
+      if (pointerY < 124 || pointerY >= ROOT_NAV_Y || isExpeditionMenuOpen(this)) {
         this.isDragging = false;
         return;
       }
@@ -301,7 +308,7 @@ export class StageSelectScene extends Phaser.Scene {
       btnX, btnY, btnW, btnH,
       `선조의 지혜 · 결정 ${crystals}`,
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
-      () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AncestralWisdomScene'); },
+      () => this.openExpeditionRoute('wisdom'),
       '14px', 'pagoda',
     );
   }
@@ -321,10 +328,7 @@ export class StageSelectScene extends Phaser.Scene {
         btnX, btnY, btnW, btnH,
         '무한 던전',
         CASUAL.RED, CASUAL_CSS.RED,
-        () => {
-          this.registry.set('stageConfig', { stageNumber: 0, endless: true });
-          this.scene.start('DungeonScene');
-        },
+        () => this.openExpeditionRoute('endless'),
         '12px', 'infinity',
       );
     } else {
@@ -356,7 +360,7 @@ export class StageSelectScene extends Phaser.Scene {
       btnX, btnY, btnW, btnH,
       '업적',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
-      () => { this.registry.set('previousScene', 'StageSelectScene'); this.scene.start('AchievementScene'); },
+      () => this.openExpeditionRoute('achievement'),
       '12px', 'star',
     );
   }
@@ -388,18 +392,39 @@ export class StageSelectScene extends Phaser.Scene {
     this.buildDungeonCommand(
       startX, btnY, btnW, btnH, '심연',
       CASUAL.PURPLE, CASUAL_CSS.PURPLE,
-      () => this.scene.start('AbyssScene'), '13px', 'orb',
+      () => this.openExpeditionRoute('abyss'), '13px', 'orb',
     );
     this.buildDungeonCommand(
       startX + btnW + gap, btnY, btnW, btnH, '생산',
       CASUAL.GOLD, CASUAL_CSS.GOLD,
-      () => this.scene.start('ProductionScene'), '13px', 'hammer',
+      () => this.openExpeditionRoute('production'), '13px', 'hammer',
     );
     this.buildDungeonCommand(
       startX + (btnW + gap) * 2, btnY, btnW, btnH, '장식',
       CASUAL.GREEN, CASUAL_CSS.GREEN,
-      () => this.scene.start('DecorationScene'), '13px', 'banner',
+      () => this.openExpeditionRoute('decoration'), '13px', 'banner',
     );
+  }
+
+  /** 원정 메뉴와 지도 맨 아래 입구가 같은 길로 간다. */
+  private openExpeditionRoute(key: ExpeditionRouteKey): void {
+    switch (key) {
+      case 'endless':
+        this.registry.set('stageConfig', { stageNumber: 0, endless: true });
+        this.scene.start('DungeonScene');
+        return;
+      case 'wisdom':
+        this.registry.set('previousScene', 'StageSelectScene');
+        this.scene.start('AncestralWisdomScene');
+        return;
+      case 'achievement':
+        this.registry.set('previousScene', 'StageSelectScene');
+        this.scene.start('AchievementScene');
+        return;
+      case 'abyss':      this.scene.start('AbyssScene'); return;
+      case 'production': this.scene.start('ProductionScene'); return;
+      case 'decoration': this.scene.start('DecorationScene'); return;
+    }
   }
 
   // ─── Dungeon command helper ────────────────────────────────────────────────

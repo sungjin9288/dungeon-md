@@ -80,6 +80,8 @@ EndlessResultScene        엔드리스 결과
 - **`loadProgress() / saveProgress() / recordClear()`** — localStorage 키 `dungeonStageProgress`
 - `StageProgress` = `StageProgressEntry` (wisdom.ts 타입 재사용)
 - 스크롤 하단에는 `ROOT_NAV_HEIGHT`만큼 여백을 두어 생산·심연·장식 버튼이 고정 메뉴에 가리지 않게 한다.
+- 관문 밖 입구(심연·무한·지혜·업적·생산·장식)는 헤더 '원정' 메뉴(`ui/ExpeditionMenu.ts`, 목록 `data/expeditionRoutes.ts`)와
+  지도 맨 아래 버튼이 같은 `openExpeditionRoute`로 간다. 새 입구는 두 곳이 아니라 목록 + 이 스위치에 추가한다.
 
 ### `src/data/quests.ts`
 - `completeAndAdvance()` — 퀘스트 완료·보상·다음 퀘스트 시작
