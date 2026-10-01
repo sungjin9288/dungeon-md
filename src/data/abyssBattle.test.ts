@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadGameState, type GameState } from './wisdom';
-import { abyssBattleFloor, getAbyssBattleLabels, nextAbyssReturnScene } from './abyssBattle';
+import { abyssBattleFloor, abyssBattleStageConfig, getAbyssBattleLabels, nextAbyssReturnScene } from './abyssBattle';
+import { abyssFloorDungeonHp, buildAbyssFloorWaves } from './abyss';
 import { settleAbyssBattle } from './abyssTransactions';
 
 const ALWAYS = (): number => 0;
@@ -64,5 +65,25 @@ describe('원정실 돌아갈 곳', () => {
     // A fresh entry without a hand-off (expedition menu, map bottom) goes back to the invasion map.
     expect(nextAbyssReturnScene(undefined, false, fromForge)).toBe('StageSelectScene');
     expect(nextAbyssReturnScene('DungeonScene', false, 'ForgeScene')).toBe('StageSelectScene');
+  });
+});
+
+describe('심연 전투의 장 번호', () => {
+  const cleared = (count: number) => ({
+    stageProgress: Array.from({ length: 90 }, (_, i) => ({ bestStars: i < count ? 1 : 0 })),
+  });
+
+  it('플레이어가 깬 가장 깊은 스테이지의 장으로 싸운다 — 3·4장 방 기믹이 심연에서도 켜진다', () => {
+    expect(abyssBattleStageConfig(5, cleared(0)).chapter).toBe(1);
+    expect(abyssBattleStageConfig(5, cleared(25)).chapter).toBe(3);
+    expect(abyssBattleStageConfig(5, cleared(40)).chapter).toBe(4);
+    expect(abyssBattleStageConfig(5, cleared(90)).chapter).toBe(9);
+  });
+
+  it('웨이브·던전 HP는 층이 정하고, 인라인 전투(스테이지 번호 0)다', () => {
+    const config = abyssBattleStageConfig(12, cleared(30));
+    expect(config.stageNumber).toBe(0);
+    expect(config.waves).toEqual(buildAbyssFloorWaves(12));
+    expect(config.dungeonHp).toBe(abyssFloorDungeonHp(12));
   });
 });

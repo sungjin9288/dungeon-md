@@ -15,8 +15,6 @@ import { MATERIAL_DEFS } from '../data/fusion';
 import {
   ABYSS_KEY_MAX,
   ABYSS_MAX_FLOOR,
-  abyssFloorDungeonHp,
-  buildAbyssFloorWaves,
   canSweepAbyss,
   getAbyssFloorConfig,
   getAbyssFloorLoot,
@@ -27,7 +25,7 @@ import {
 } from '../data/abyss';
 import { settleAbyssBattle, sweepAbyssFloor } from '../data/abyssTransactions';
 import type { BattleReturnResult } from '../data/invasionTransactions';
-import { ABYSS_BACK_LABEL, ABYSS_RETURN_SCENE_KEY, nextAbyssReturnScene, type AbyssReturnScene } from '../data/abyssBattle';
+import { ABYSS_BACK_LABEL, ABYSS_RETURN_SCENE_KEY, abyssBattleStageConfig, nextAbyssReturnScene, type AbyssReturnScene } from '../data/abyssBattle';
 import { FUSION_RETURN_SCENE_KEY } from '../data/fusionCandidates';
 import { NAVIGATION_CONTEXT_OPERATIONS } from '../data/navigationContract';
 import {
@@ -665,11 +663,7 @@ export class AbyssScene extends Phaser.Scene {
     this.registry.remove('battleResult');
     this.registry.set('abyssPendingFloor', floor);
     this.registry.set('returnTo', 'AbyssScene');
-    this.registry.set('stageConfig', {
-      stageNumber: 0,
-      waves: buildAbyssFloorWaves(floor),
-      dungeonHp: abyssFloorDungeonHp(floor),
-    });
+    this.registry.set('stageConfig', abyssBattleStageConfig(floor, this.gs));
     this.scene.start('DungeonScene');
   }
 

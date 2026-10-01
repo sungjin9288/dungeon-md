@@ -14,6 +14,7 @@ import {
   CHAPTER_6, CHAPTER_7, CHAPTER_8, CHAPTER_9,
   type StageConfig,
 } from './stages';
+import { highestClearedStage } from './stageProgress';
 
 /**
  * 장별 노련도 — 그 장 스테이지 일반 무리(보스 제외)의 HP·심장부 피해 배율(`WaveSpec` 무리의 `veteranMult`,
@@ -76,4 +77,14 @@ export const ALL_STAGES: StageConfig[] = RAW_STAGES.map(stage => withChapterVete
 /** Resolve a stage definition by its 1-based stage id, or undefined if unknown. */
 export function findStageById(id: number): StageConfig | undefined {
   return ALL_STAGES.find(s => s.id === id);
+}
+
+/**
+ * 플레이어의 캠페인 위치(가장 깊이 깬 스테이지)의 장, 아직 아무것도 못 깼으면 1. 관문 밖 전투(무한 던전·심연)는
+ * 스테이지 번호가 없어 이 장으로 싸운다 — 전투는 장 번호로 방 기믹을 켜므로(3장+ 사신 처형·약방·무기고,
+ * 4장+ 영혼 제단·월광·홀림 베일) 장을 안 넘기면 플레이어가 가진 방이 관문 밖에서만 멈춘다.
+ */
+export function standingChapter(state: Parameters<typeof highestClearedStage>[0]): number {
+  const standing = highestClearedStage(state);
+  return ALL_STAGES.find(stage => stage.id === standing)?.chapter ?? 1;
 }

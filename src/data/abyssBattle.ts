@@ -3,7 +3,9 @@
  * 심연 전투는 인라인 웨이브 + `returnTo: 'AbyssScene'` + `abyssPendingFloor`로 시작한다(AbyssScene.climb).
  * 이 판정이 없으면 결과 창·HUD가 홈 침략 방어("침공 방어 성공 · 던전으로 귀환")로 읽혔다.
  */
-import { getAbyssFloorConfig } from './abyss';
+import { abyssFloorDungeonHp, buildAbyssFloorWaves, getAbyssFloorConfig } from './abyss';
+import { standingChapter } from './allStages';
+import type { WaveSpec } from './stagesChapter1';
 
 export const ABYSS_SCENE_KEY = 'AbyssScene';
 /** registry 인계 — 원정실 '← 뒤로'가 돌아갈 씬(navigationContract 'abyss-entry'). */
@@ -26,6 +28,29 @@ export function nextAbyssReturnScene(
 ): AbyssReturnScene {
   if ((ABYSS_RETURN_SCENES as readonly unknown[]).includes(handoff)) return handoff as AbyssReturnScene;
   return returningFromBattle ? current : 'StageSelectScene';
+}
+
+export interface AbyssBattleStageConfig {
+  readonly stageNumber: 0;
+  readonly waves: WaveSpec[];
+  readonly dungeonHp: number;
+  readonly chapter: number;
+}
+
+/**
+ * 심연 N층 전투의 `stageConfig`(AbyssScene.climb). 장은 플레이어의 캠페인 위치(`standingChapter`) — 예전엔 장을 안 넘겨
+ * 1장 규칙으로 싸웠고, 3·4장부터 켜지는 방 기믹(사신 처형·약방·영혼 제단 등)이 심연에서만 꺼져 있었다.
+ */
+export function abyssBattleStageConfig(
+  floor: number,
+  state: Parameters<typeof standingChapter>[0],
+): AbyssBattleStageConfig {
+  return {
+    stageNumber: 0,
+    waves: buildAbyssFloorWaves(floor),
+    dungeonHp: abyssFloorDungeonHp(floor),
+    chapter: standingChapter(state),
+  };
 }
 
 export const ABYSS_LOSE_RETURN_LABEL = '심연 원정실로 · 전리품 정산';

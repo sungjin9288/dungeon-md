@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_STAGES, CHAPTER_VETERAN_MULT, chapterVeteranFor, findStageById } from './allStages';
+import { ALL_STAGES, CHAPTER_VETERAN_MULT, chapterVeteranFor, findStageById, standingChapter } from './allStages';
 
 // These guard the canonical battle-stage union. The Ch8/Ch9-unplayable bug
 // happened because DungeonSceneInit kept its OWN [...CHAPTER_1..7] literal that
@@ -78,5 +78,21 @@ describe('장별 노련도', () => {
     for (const stage of ALL_STAGES.filter(s => CHAPTER_VETERAN_MULT[s.chapter] === undefined)) {
       for (const wave of stage.waves) for (const group of wave.invaders) expect(group.veteranMult).toBeUndefined();
     }
+  });
+});
+
+describe('standingChapter — 관문 밖 전투의 장', () => {
+  const progress = (stars: number[]) => ({ stageProgress: stars.map(bestStars => ({ bestStars })) });
+
+  it('아무것도 못 깼으면 1장', () => {
+    expect(standingChapter({})).toBe(1);
+    expect(standingChapter(progress([0, 0, 0]))).toBe(1);
+  });
+
+  it('가장 깊이 깬 스테이지의 장 — 사이에 못 깬 관문이 있어도', () => {
+    expect(standingChapter(progress([1, 1, 1]))).toBe(1);
+    const stars = Array.from({ length: 90 }, (_, i) => (i === 0 || i === 32 ? 1 : 0));
+    expect(standingChapter(progress(stars))).toBe(4);
+    expect(standingChapter(progress(Array(90).fill(3)))).toBe(9);
   });
 });

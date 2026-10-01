@@ -12,7 +12,7 @@ import { getDungeonRoomCount } from '../data/dungeonPlan';
 import Phaser from 'phaser';
 import { logger } from '../utils/logger';
 import { type WaveSpec } from '../data/stages';
-import { ALL_STAGES } from '../data/allStages';
+import { ALL_STAGES, standingChapter } from '../data/allStages';
 import { highestClearedStage } from '../data/stageProgress';
 import { loadGameState, type WisdomBonuses } from '../data/wisdom';
 import { getEquipmentStats, type EquipmentStats } from '../data/barracks';
@@ -135,7 +135,7 @@ export function resolveStageSetup(
     const standing = Math.max(1, Math.min(ALL_STAGES.length, highestClearedStage(gameState)));
     stageNumber    = 0;
     waveConfigs    = [];
-    stageChapter   = ALL_STAGES.find(s => s.id === standing)?.chapter ?? 1;
+    stageChapter   = standingChapter(gameState);
     effectiveCols  = GRID_COLS;
     waterCells     = new Set<number>();
     stageDungeonHp = endlessDungeonHp(standing);

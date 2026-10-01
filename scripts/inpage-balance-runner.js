@@ -25,7 +25,9 @@ async function runBattle(spec) {
   const { NOTORIETY_BANDS } = await import('/src/data/notoriety.ts');
   const { buildBandWaves } = await import('/src/data/forecast.ts');
   const { seededRand } = await import('/src/data/daily.ts');
-  const refStage = spec.kind === 'tier' ? TIER_REFERENCE_STAGE[spec.tier - 1] : spec.stageNumber;
+  // kind 'abyss': floor `spec.floor` fought by the home of campaign stage `spec.refStage`.
+  const refStage = spec.kind === 'tier' ? TIER_REFERENCE_STAGE[spec.tier - 1]
+    : spec.kind === 'abyss' ? spec.refStage : spec.stageNumber;
   const home = spec.home === 'starter' ? pacing.starterHome()
     : spec.home === 'expected' ? pacing.expectedHome(refStage)
     : spec.home === 'veteran' ? pacing.veteranHome(refStage)
@@ -52,6 +54,13 @@ async function runBattle(spec) {
     // chapter (death messenger, armory, spirit altar…) only run from Ch3/Ch4. spec.chapter overrides.
     stageConfig = { waves, dungeonHp: band.dungeonHp, chapter: spec.chapter ?? band.tier };
     simStage = { id: 0, chapter: band.tier, waves, dungeonHp: band.dungeonHp };
+  } else if (spec.kind === 'abyss') {
+    // Same config AbyssScene.climb builds, for a player whose deepest clear is refStage; spec.chapter overrides.
+    const { abyssBattleStageConfig } = await import('/src/data/abyssBattle.ts');
+    const cleared = { stageProgress: Array.from({ length: refStage }, () => ({ bestStars: 1 })) };
+    const built = abyssBattleStageConfig(spec.floor, cleared);
+    stageConfig = { ...built, chapter: spec.chapter ?? built.chapter };
+    simStage = { id: 0, chapter: stageConfig.chapter, waves: built.waves, dungeonHp: built.dungeonHp };
   } else {
     stageConfig = { stageNumber: spec.stageNumber };
     simStage = ALL_STAGES.find(entry => entry.id === spec.stageNumber);
@@ -164,7 +173,7 @@ window.__balanceStart = specs => {
 };
 window.__fmt = r => {
   if (r.error) return JSON.stringify(r);
-  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.stageVeteran ? ` v${r.spec.stageVeteran}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}`;
+  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}` : r.spec.kind === 'abyss' ? `A${r.spec.floor}@${r.spec.refStage} ${r.spec.home}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.stageVeteran ? ` v${r.spec.stageVeteran}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}`;
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
 };
 
