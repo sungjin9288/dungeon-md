@@ -10,7 +10,7 @@ import type { VisitorKind } from '../data/visitors';
 import Phaser from 'phaser';
 import { Invader } from '../objects/Invader';
 import type { InvaderDef, InvaderType } from '../data/invaders';
-import { INVADER_DEFS } from '../data/invaders';
+import { INVADER_DEFS, veteranInvaderDef } from '../data/invaders';
 import type { RoomData } from '../data/rooms';
 import type { WaveSpec } from '../data/stages';
 import type { DungeonSlot } from '../data/wisdom';
@@ -221,9 +221,10 @@ export function startWave(ctx: WaveStartContext): void {
   } else {
     const cfg = ctx.waveConfigs[Math.min(ctx.wave - 1, ctx.waveConfigs.length - 1)];
     const queue: SpawnQueueItem[] = [];
-    cfg.invaders.forEach((item: { type: InvaderType; count: number; spawnDelay: number; visitor?: VisitorKind }) => {
+    cfg.invaders.forEach((item: { type: InvaderType; count: number; spawnDelay: number; visitor?: VisitorKind; veteranMult?: number }) => {
+      const def = veteranInvaderDef(INVADER_DEFS[item.type], item.veteranMult);
       for (let i = 0; i < item.count; i++) {
-        queue.push({ def: INVADER_DEFS[item.type], delay: item.spawnDelay, visitor: item.visitor });
+        queue.push({ def, delay: item.spawnDelay, visitor: item.visitor });
       }
     });
     ctx.spawnQueue = queue;

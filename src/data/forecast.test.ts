@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getDailyDungeon, getWeeklyBoss } from './daily';
-import { FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, buildWandererWaves, forecastBattleWaves, forecastVisitor, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
+import { BAND_HEAD_GROWTH, MAX_BAND_WAVE_HEADS, FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, buildWandererWaves, forecastBattleWaves, forecastVisitor, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
 import { WANDERER_TRIBE } from './visitors';
 import { invaderThreshold } from './notoriety';
-import { INVADER_DEFS } from './invaders';
+import { INVADER_DEFS, veteranInvaderDef } from './invaders';
 import { getNotorietyBand, NOTORIETY_BANDS } from './notoriety';
 import { seededRand } from './daily';
 
@@ -70,6 +70,42 @@ describe('buildBandWaves', () => {
       expect(last.invaders.some(g => g.isBoss && band.bosses.includes(g.type))).toBe(true);
       expect(elite.length).toBe(raid.length + 1);
     }
+  });
+
+  it('each wave is led by the band lead pool (tier 1 by peasants, like campaign stages 1–2)', () => {
+    for (const band of NOTORIETY_BANDS) {
+      for (let seed = 1; seed <= 5; seed++) {
+        for (const wave of buildBandWaves(band, 'raid', seededRand(seed * 1000 + band.tier))) {
+          expect(band.lead, `tier ${band.tier}`).toContain(wave.invaders[0].type);
+        }
+      }
+    }
+    expect(getNotorietyBand(1).lead).toEqual(['peasant']);
+  });
+
+  it('veteran bands carry their HP/heart-damage multiplier on rank-and-file only, never on the boss', () => {
+    for (const band of NOTORIETY_BANDS) {
+      const elite = buildBandWaves(band, 'elite', seededRand(band.tier));
+      for (const wave of elite) {
+        for (const group of wave.invaders) {
+          const expected = group.isBoss || band.veteranMult === 1 ? undefined : band.veteranMult;
+          expect(group.veteranMult, `tier ${band.tier} ${group.type}`).toBe(expected);
+        }
+      }
+    }
+    const def = INVADER_DEFS.soldier;
+    expect(veteranInvaderDef(def, 2)).toMatchObject({ hp: def.hp * 2, damage: def.damage * 2, speed: def.speed });
+    expect(veteranInvaderDef(def, undefined)).toBe(def);
+  });
+
+  it('head count grows with the tier and stays under the per-wave cap', () => {
+    const heads = (tier: number) => buildBandWaves(getNotorietyBand(tier), 'raid', seededRand(7))
+      .map(wave => wave.invaders.reduce((sum, group) => sum + group.count, 0));
+    for (const band of NOTORIETY_BANDS) {
+      for (const count of heads(band.tier)) expect(count).toBeLessThanOrEqual(MAX_BAND_WAVE_HEADS + 1);
+    }
+    const sum = (tier: number) => heads(tier).slice(0, 6).reduce((a, b) => a + b, 0);
+    expect(sum(8)).toBeGreaterThan(sum(1) * (1 + BAND_HEAD_GROWTH * 5));
   });
 
   it('a higher tier fields more waves and pays more', () => {

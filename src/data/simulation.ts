@@ -4,7 +4,7 @@
  */
 import { buildGuardianAtkMultMap } from './barracks';
 import { resolveMonsterDef } from './monsters';
-import { INVADER_DEFS } from './invaders';
+import { INVADER_DEFS, veteranInvaderDef } from './invaders';
 import { ROOM_DEFS } from './rooms';
 import { getSlotBuilding } from './roomBuildings';
 import { GRID_ROWS } from '../constants/layout';
@@ -143,7 +143,8 @@ export function simulateWavesAtDps(
     let totalCount = 0;
 
     for (const grp of wave.invaders) {
-      const def = INVADER_DEFS[grp.type];
+      const baseDef = INVADER_DEFS[grp.type];
+      const def = baseDef ? veteranInvaderDef(baseDef, grp.veteranMult) : baseDef;
       if (!def) {
         diagnostics.push({
           kind: 'unknown-invader-type',

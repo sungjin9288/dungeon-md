@@ -94,20 +94,31 @@ function pick<T>(items: readonly T[], rand: () => number): T {
 }
 
 /**
+ * Head count grows with the tier: the reference home grows from 4 rooms (tier 1) to 10 (tiers 9–10),
+ * and a fixed 3–9 per wave let tiers 3–8 end at 100% dungeon HP (organic, 2026-10-01).
+ * Capped where the corridor board stops spacing a wave out.
+ */
+export const BAND_HEAD_GROWTH = 0.12;
+export const MAX_BAND_WAVE_HEADS = 14;
+
+/**
  * A band-tier expedition: 6–10 waves whose head count scales with the tier and
  * whose roster is drawn from the band pool, closing with a boss for elites.
  */
 export function buildBandWaves(band: NotorietyBand, kind: 'raid' | 'elite', rand: () => number): WaveSpec[] {
   const waveCount = Math.min(10, 6 + Math.floor((band.tier - 1) / 2));
+  const headMult = 1 + BAND_HEAD_GROWTH * (band.tier - 1);
   const waves: WaveSpec[] = [];
   for (let w = 1; w <= waveCount; w++) {
-    const count = 3 + Math.floor(w * 0.6) + Math.floor(rand() * 2);
+    const base = 3 + Math.floor(w * 0.6) + Math.floor(rand() * 2);
+    const count = Math.min(MAX_BAND_WAVE_HEADS, Math.round(base * headMult));
     const delay = Math.max(1200, 2400 - band.tier * 80 - w * 60);
-    const lead = pick(band.pool, rand);
-    const invaders: WaveSpec['invaders'] = [{ type: lead, count: Math.ceil(count * 0.65), spawnDelay: delay }];
+    const lead = pick(band.lead, rand);
+    const veteran = band.veteranMult !== 1 ? { veteranMult: band.veteranMult } : {};
+    const invaders: WaveSpec['invaders'] = [{ type: lead, count: Math.ceil(count * 0.65), spawnDelay: delay, ...veteran }];
     if (w >= 3) {
       const second = pick(band.pool, rand);
-      invaders.push({ type: second, count: Math.max(1, Math.floor(count * 0.35)), spawnDelay: delay });
+      invaders.push({ type: second, count: Math.max(1, Math.floor(count * 0.35)), spawnDelay: delay, ...veteran });
     }
     const reward = Math.round((40 + w * 15) * band.lootMult);
     waves.push({ wave: w, clearReward: reward, invaders });
@@ -117,7 +128,10 @@ export function buildBandWaves(band: NotorietyBand, kind: 'raid' | 'elite', rand
     waves.push({
       wave: waveCount + 1,
       clearReward: Math.round(300 * band.lootMult),
-      invaders: [{ type: boss, count: 1, spawnDelay: 0, isBoss: true }, { type: pick(band.pool, rand), count: 3, spawnDelay: 1500 }],
+      invaders: [
+        { type: boss, count: 1, spawnDelay: 0, isBoss: true },
+        { type: pick(band.pool, rand), count: 3, spawnDelay: 1500, ...(band.veteranMult !== 1 ? { veteranMult: band.veteranMult } : {}) },
+      ],
     });
   }
   return waves;

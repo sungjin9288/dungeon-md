@@ -349,3 +349,9 @@ export const INVADER_DEFS: Record<InvaderType, InvaderDef> = {
   plague_rat:  { type: 'plague_rat',  koreanName: '역병 쥐떼', hp: 90,  speed: 115, reward: 18, damage: 70,  color: 0x6a8a3a, radius: 10, endlessOnly: true },
   bone_archer: { type: 'bone_archer', koreanName: '해골 궁수', hp: 200, speed: 78,  reward: 45, damage: 150, color: 0xc8c0a8, radius: 13, endlessOnly: true },
 };
+
+/** 노련한 무리(명성 티어 토벌대): HP와 심장부 피해가 `mult`배. 1이면 원래 정의 그대로. */
+export function veteranInvaderDef(def: InvaderDef, mult: number | undefined): InvaderDef {
+  if (!mult || mult === 1) return def;
+  return { ...def, hp: Math.round(def.hp * mult), damage: Math.round(def.damage * mult) };
+}

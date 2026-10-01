@@ -4,7 +4,8 @@ import type { VisitorKind } from './visitors';
 export interface WaveSpec {
   wave?: number;
   /** `visitor` 없으면 토벌대(심장부로). 모험가·떠돌이 몬스터는 목적 방을 찾는다(visitors.ts). */
-  invaders: Array<{ type: InvaderType; count: number; spawnDelay: number; isBoss?: boolean; visitor?: VisitorKind }>;
+  /** `veteranMult` — 이 무리의 HP·심장부 피해 배율(명성 티어 토벌대, notoriety.ts). 없으면 1. */
+  invaders: Array<{ type: InvaderType; count: number; spawnDelay: number; isBoss?: boolean; visitor?: VisitorKind; veteranMult?: number }>;
   clearReward?: number;
 }
 
