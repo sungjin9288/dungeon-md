@@ -33,7 +33,14 @@ async function runBattle(spec) {
   let stageConfig;
   let simStage;
   if (spec.kind === 'tier') {
-    const band = NOTORIETY_BANDS[spec.tier - 1];
+    // Calibration (spec.budgetScale): scale the band's wave threat budget without editing src/.
+    const baseBand = NOTORIETY_BANDS[spec.tier - 1];
+    // spec.veteranScale does the same for veteranMult — through buildBandWaves, so head counts follow it.
+    const band = {
+      ...baseBand,
+      ...(spec.budgetScale ? { wavePeakThreat: baseBand.wavePeakThreat * spec.budgetScale } : {}),
+      ...(spec.veteranScale ? { veteranMult: baseBand.veteranMult * spec.veteranScale } : {}),
+    };
     // Same seed formula as notorietyBands.test.ts.
     const built = buildBandWaves(band, spec.card, seededRand((spec.seed ?? 1) * 1000 + band.tier));
     // Calibration only: scale every non-boss group (spec.headScale) without editing src/.
@@ -140,13 +147,17 @@ window.__balanceStart = specs => {
 };
 window.__fmt = r => {
   if (r.error) return JSON.stringify(r);
-  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}`;
+  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}`;
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
 };
 
 /** Queue every tier × seed (raid unless `cards` says otherwise). Tiers 9–10 use the veteran home. */
-window.__balanceTiers = ({ tiers, seeds = [1, 2, 3, 4], cards = ['raid'] }) => window.__balanceStart(
-  tiers.flatMap(tier => seeds.flatMap(seed => cards.map(card => ({ kind: 'tier', tier, card, seed, home: tier >= 9 ? 'veteran' : 'lean' })))),
+window.__balanceTiers = ({ tiers, seeds = [1, 2, 3, 4], cards = ['raid'], budgetScale, veteranScale }) => window.__balanceStart(
+  tiers.flatMap(tier => seeds.flatMap(seed => cards.map(card => ({
+    kind: 'tier', tier, card, seed, home: tier >= 9 ? 'veteran' : 'lean',
+    ...(budgetScale ? { budgetScale: typeof budgetScale === 'number' ? budgetScale : budgetScale[tier] } : {}),
+    ...(veteranScale ? { veteranScale: typeof veteranScale === 'number' ? veteranScale : veteranScale[tier] } : {}),
+  })))),
 );
 
 /** Per spec with the seed folded out: wins/attempts, HP% sorted, mean HP% (losses count as 0). */

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { getDailyDungeon, getWeeklyBoss } from './daily';
-import { BAND_HEAD_GROWTH, MAX_BAND_WAVE_HEADS, FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, buildWandererWaves, forecastBattleWaves, forecastVisitor, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
+import { MAX_BAND_WAVE_HEADS, FORECAST_CARDS_PER_DAY, WEEKLY_BOSS_MIN_TIER, buildBandWaves, buildWandererWaves, forecastBattleWaves, forecastVisitor, isBattleCard, issueForecastCards, type ForecastIssueInput } from './forecast';
 import { WANDERER_TRIBE } from './visitors';
-import { invaderThreshold } from './notoriety';
+import { bandWaveBudget, invaderThreshold } from './notoriety';
 import { INVADER_DEFS, veteranInvaderDef } from './invaders';
 import { getNotorietyBand, NOTORIETY_BANDS } from './notoriety';
 import { seededRand } from './daily';
+import type { WaveSpec } from './stages';
 
 function input(date: string, tier: number, isMonday = false): ForecastIssueInput {
   return { date, tier, isMonday, daily: getDailyDungeon(), weeklyBoss: getWeeklyBoss() };
@@ -98,14 +99,47 @@ describe('buildBandWaves', () => {
     expect(veteranInvaderDef(def, undefined)).toBe(def);
   });
 
-  it('head count grows with the tier and stays under the per-wave cap', () => {
-    const heads = (tier: number) => buildBandWaves(getNotorietyBand(tier), 'raid', seededRand(7))
-      .map(wave => wave.invaders.reduce((sum, group) => sum + group.count, 0));
+  it('every wave spends its threat budget, whatever the draw — and stays under the head cap', () => {
+    const threat = (wave: WaveSpec) => wave.invaders.reduce(
+      (sum, group) => sum + group.count * invaderThreshold(group.type) * (group.veteranMult ?? 1), 0);
     for (const band of NOTORIETY_BANDS) {
-      for (const count of heads(band.tier)) expect(count).toBeLessThanOrEqual(MAX_BAND_WAVE_HEADS + 1);
+      const perWave: number[][] = [];
+      for (let seed = 1; seed <= 200; seed++) {
+        buildBandWaves(band, 'raid', seededRand(seed * 1000 + band.tier)).forEach((wave, i) => {
+          expect(wave.invaders.reduce((sum, group) => sum + group.count, 0)).toBeLessThanOrEqual(MAX_BAND_WAVE_HEADS);
+          (perWave[i] ??= []).push(threat(wave) / bandWaveBudget(band, i + 1));
+        });
+      }
+      // Mean on budget; spread small. Before the budget, tier 10's per-wave threat varied ±50%.
+      for (const ratios of perWave) {
+        const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+        const sd = Math.sqrt(ratios.reduce((a, b) => a + (b - mean) ** 2, 0) / ratios.length);
+        expect(mean, `tier ${band.tier} mean`).toBeGreaterThan(0.8);
+        expect(mean, `tier ${band.tier} mean`).toBeLessThan(1.25);
+        expect(sd, `tier ${band.tier} spread`).toBeLessThan(0.3);
+      }
     }
-    const sum = (tier: number) => heads(tier).slice(0, 6).reduce((a, b) => a + b, 0);
-    expect(sum(8)).toBeGreaterThan(sum(1) * (1 + BAND_HEAD_GROWTH * 5));
+  });
+
+  it('the configured budgets are spent, not swallowed by the head cap (stronger units come instead)', () => {
+    const threat = (wave: WaveSpec) => wave.invaders.reduce(
+      (sum, group) => sum + group.count * invaderThreshold(group.type) * (group.veteranMult ?? 1), 0);
+    for (const band of NOTORIETY_BANDS) {
+      const ratios: number[] = [];
+      for (let seed = 1; seed <= 100; seed++) {
+        buildBandWaves(band, 'raid', seededRand(seed)).forEach((wave, i) => ratios.push(threat(wave) / bandWaveBudget(band, i + 1)));
+      }
+      const mean = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+      // Before units were picked strong enough for their share, tier 2 at 2.5× its budget stayed under the
+      // cap with peasants and nothing changed. Past each tier's ceiling, raise veteranMult instead.
+      expect(mean, `tier ${band.tier}`).toBeGreaterThan(0.9);
+    }
+  });
+
+  it('a higher tier asks for more threat per wave', () => {
+    for (let i = 1; i < NOTORIETY_BANDS.length - 1; i++) {
+      expect(bandWaveBudget(NOTORIETY_BANDS[i], 6)).toBeGreaterThan(bandWaveBudget(NOTORIETY_BANDS[i - 1], 6));
+    }
   });
 
   it('a higher tier fields more waves and pays more', () => {
