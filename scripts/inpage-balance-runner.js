@@ -7,6 +7,11 @@
 //   __balanceStart([{ kind: 'tier', tier: 3, card: 'raid', seed: 1, home: 'expected' },
 //                   { kind: 'stage', stageNumber: 20, home: 'lean' }]);
 //   __balance.results.map(__fmt)    // poll; __balance.running is false when the queue is empty
+//   __balanceTiers({ tiers: [1, 2, 3], seeds: [1, 2, 3, 4] });   // a tier sweep over several compositions
+//   __balanceSummary()               // win rate · HP% spread · mean per spec (seed folded in)
+//
+// One battle says little: the same spec has ended at 100% and at 2% (2026-10-01). Read win rates
+// over several seeds, never a single result.
 //
 // Replaces dungeonGameState / dungeonStageProgress with a fresh save per battle: back up the save
 // first and restore it afterwards. Do not edit src/
@@ -137,4 +142,29 @@ window.__fmt = r => {
   if (r.error) return JSON.stringify(r);
   const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}`;
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
+};
+
+/** Queue every tier × seed (raid unless `cards` says otherwise). Tiers 9–10 use the veteran home. */
+window.__balanceTiers = ({ tiers, seeds = [1, 2, 3, 4], cards = ['raid'] }) => window.__balanceStart(
+  tiers.flatMap(tier => seeds.flatMap(seed => cards.map(card => ({ kind: 'tier', tier, card, seed, home: tier >= 9 ? 'veteran' : 'lean' })))),
+);
+
+/** Per spec with the seed folded out: wins/attempts, HP% sorted, mean HP% (losses count as 0). */
+window.__balanceSummary = () => {
+  const groups = new Map();
+  for (const r of window.__balance.results) {
+    if (r.error) continue;
+    const { seed: _seed, ...rest } = r.spec;
+    const key = JSON.stringify(rest);
+    const entry = groups.get(key) ?? { spec: rest, wins: 0, attempts: 0, hp: [] };
+    entry.attempts++;
+    if (r.outcome === 'win') entry.wins++;
+    entry.hp.push(r.outcome === 'win' ? r.hpPct : 0);
+    groups.set(key, entry);
+  }
+  return [...groups.values()].map(entry => {
+    const label = entry.spec.kind === 'tier' ? `T${entry.spec.tier}${entry.spec.card[0]} ${entry.spec.home}` : `S${entry.spec.stageNumber} ${entry.spec.home}`;
+    const mean = Math.round(entry.hp.reduce((a, b) => a + b, 0) / entry.hp.length);
+    return `${label}: ${entry.wins}/${entry.attempts} wins · hp ${[...entry.hp].sort((a, b) => a - b).join(',')} · mean ${mean}`;
+  });
 };
