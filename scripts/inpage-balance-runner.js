@@ -54,6 +54,15 @@ async function runBattle(spec) {
     stageConfig = { stageNumber: spec.stageNumber };
     simStage = ALL_STAGES.find(entry => entry.id === spec.stageNumber);
   }
+  // Calibration (spec.stageVeteran): swap the stage's waves for a copy at that chapter veteran
+  // multiplier for this battle — the battle reads ALL_STAGES by id — and put them back after.
+  const stageEntry = spec.kind === 'stage' && spec.stageVeteran ? ALL_STAGES.find(entry => entry.id === spec.stageNumber) : null;
+  const originalWaves = stageEntry?.waves;
+  if (stageEntry) {
+    const { withChapterVeteran } = await import('/src/data/allStages.ts');
+    const bare = { ...stageEntry, waves: stageEntry.waves.map(w => ({ ...w, invaders: w.invaders.map(g => { const { veteranMult: _v, ...rest } = g; return rest; }) })) };
+    stageEntry.waves = withChapterVeteran(bare, spec.stageVeteran).waves;
+  }
   const sim = pacing.simulateHome(home, simStage);
   // Calibration only (spec.hpScale): raise every invader's HP for this battle, restored after it.
   const { INVADER_DEFS } = await import('/src/data/invaders.ts');
@@ -124,6 +133,7 @@ async function runBattle(spec) {
   game.scene.getScenes(true).forEach(scene => game.scene.stop(scene.scene.key));
   return result;
   } finally {
+    if (stageEntry && originalWaves) stageEntry.waves = originalWaves;
     if (hpBackup) for (const [type, [hp, damage]] of Object.entries(hpBackup)) { INVADER_DEFS[type].hp = hp; INVADER_DEFS[type].damage = damage; }
   }
 }
@@ -147,7 +157,7 @@ window.__balanceStart = specs => {
 };
 window.__fmt = r => {
   if (r.error) return JSON.stringify(r);
-  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}`;
+  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.stageVeteran ? ` v${r.spec.stageVeteran}` : ''}`;
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
 };
 

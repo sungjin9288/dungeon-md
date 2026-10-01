@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ALL_STAGES, findStageById } from './allStages';
+import { ALL_STAGES, CHAPTER_VETERAN_MULT, chapterVeteranFor, findStageById } from './allStages';
 
 // These guard the canonical battle-stage union. The Ch8/Ch9-unplayable bug
 // happened because DungeonSceneInit kept its OWN [...CHAPTER_1..7] literal that
@@ -34,5 +34,27 @@ describe('ALL_STAGES — canonical battle-stage union', () => {
   it('findStageById returns undefined for out-of-range ids', () => {
     expect(findStageById(0)).toBeUndefined();
     expect(findStageById(91)).toBeUndefined();
+  });
+});
+
+describe('장별 노련도', () => {
+  it('2장은 첫 스테이지 0.58에서 끝 스테이지 0.84로 오르고, 보스에는 걸리지 않는다', () => {
+    expect(CHAPTER_VETERAN_MULT[2]).toEqual([0.58, 0.84]);
+    const ch2 = ALL_STAGES.filter(stage => stage.chapter === 2);
+    const mults = ch2.map(stage => chapterVeteranFor(stage, ALL_STAGES));
+    expect(mults[0]).toBe(0.58);
+    expect(mults[mults.length - 1]).toBe(0.84);
+    for (let i = 1; i < mults.length; i++) expect(mults[i]).toBeGreaterThanOrEqual(mults[i - 1]);
+    for (const [i, stage] of ch2.entries()) {
+      for (const wave of stage.waves) for (const group of wave.invaders) {
+        expect(group.veteranMult, `stage ${stage.id} ${group.type}`).toBe(group.isBoss ? undefined : mults[i]);
+      }
+    }
+  });
+
+  it('표에 없는 장은 그대로다', () => {
+    for (const stage of ALL_STAGES.filter(s => CHAPTER_VETERAN_MULT[s.chapter] === undefined)) {
+      for (const wave of stage.waves) for (const group of wave.invaders) expect(group.veteranMult).toBeUndefined();
+    }
   });
 });
