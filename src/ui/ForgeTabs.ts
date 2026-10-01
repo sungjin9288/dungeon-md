@@ -15,6 +15,7 @@ import {
   getEquipmentHolderDisplay,
   getMonsterEquipmentDisplay,
   formatForgeMaterialStatus,
+  getForgeShortageSource,
   truncateLabel,
   type ForgeContext,
 } from './ForgeShared';
@@ -269,8 +270,11 @@ export function buildCraftTab(
       fontFamily: 'sans-serif', fontSize: '10px', fontStyle: 'bold',
       color: craftable ? '#07100b' : DUNGEON_UI_CSS.EMBER,
     }).setOrigin(0.5));
-    c.add(scene.add.text(buttonX + buttonW / 2, buttonY + 31, craftable ? '단조 시작 ›' : '재료 필요', {
-      fontFamily: 'sans-serif', fontSize: '10px', color: craftable ? '#173426' : DUNGEON_UI_CSS.MUTED,
+    // A short card names where the first missing material drops and opens the abyss.
+    const shortage = craftable ? null : getForgeShortageSource(materials);
+    c.add(scene.add.text(buttonX + buttonW / 2, buttonY + 31, craftable ? '단조 시작 ›' : shortage ? `${shortage.label} ›` : '재료 필요', {
+      fontFamily: 'sans-serif', fontSize: '10px',
+      color: craftable ? '#173426' : shortage ? DUNGEON_UI_CSS.BRASS : DUNGEON_UI_CSS.MUTED,
     }).setOrigin(0.5));
 
     const rowZoneW = buttonX - pad - 8;
@@ -282,6 +286,11 @@ export function buildCraftTab(
       const zone = scene.add.zone(buttonX, buttonY, buttonW, buttonH).setOrigin(0)
         .setInteractive({ useHandCursor: true });
       zone.on('pointerdown', () => ctx.onConfirmCraft(bp.id));
+      c.add(zone);
+    } else if (shortage) {
+      const zone = scene.add.zone(buttonX, buttonY, buttonW, buttonH).setOrigin(0)
+        .setInteractive({ useHandCursor: true }).setName(`forge-shortage-${bp.id}`);
+      zone.on('pointerdown', ctx.onOpenAbyss);
       c.add(zone);
     }
     oy += rowH;

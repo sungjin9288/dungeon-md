@@ -9,6 +9,7 @@ import { defaultOwnedMonster } from '../data/barracks';
 import { getMonsterDefForOwned } from '../data/forgeRecommendations';
 import { loadGameState } from '../data/wisdom';
 import {
+  getForgeShortageSource,
   getBlueprintMaterialProgress,
   getForgeRarityStars,
   summarizeStatEffects,
@@ -123,5 +124,20 @@ describe('buildForgeTargetCue', () => {
     const unfocused = buildForgeTargetCue(gs, monster, null);
     expect(focused.priority).toBeGreaterThan(unfocused.priority);
     expect(focused.monsterId).toBe(monster.id);
+  });
+});
+
+describe('getForgeShortageSource', () => {
+  const material = (id: string, have: number, need: number) =>
+    ({ id, name: id, emoji: '', have, need, missing: Math.max(0, need - have) });
+
+  it('names where the first missing abyss material drops', () => {
+    expect(getForgeShortageSource([material('iron_shard', 4, 2), material('dok_fragment', 1, 3)]))
+      .toEqual({ materialId: 'dok_fragment', label: '심연 1층~' });
+  });
+
+  it('is null when nothing is missing or nothing missing drops in the abyss', () => {
+    expect(getForgeShortageSource([material('iron_shard', 4, 2)])).toBeNull();
+    expect(getForgeShortageSource([material('not_a_material', 0, 2)])).toBeNull();
   });
 });

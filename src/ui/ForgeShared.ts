@@ -13,6 +13,7 @@ import {
 } from '../data/forgeRecommendations';
 import type { GameState } from '../data/wisdom';
 import type { CraftedEquipment } from '../data/forgeTransactions';
+import { abyssMaterialSourceLabel } from '../data/abyss';
 
 // ─── Layout Constants ─────────────────────────────────────────────────────────
 
@@ -109,6 +110,21 @@ export function getBlueprintMaterialProgress(
 export function formatForgeMaterialStatus(material: ForgeMaterialProjection): string {
   const status = material.missing > 0 ? `부족 ${material.missing}` : '충족';
   return `${material.name} ${material.have}/${material.need} · ${status}`;
+}
+
+/**
+ * 재료가 모자란 설계도 카드의 안내: 첫 번째로 모자란 재료 가운데 심연에서 나오는 것과 그 층(예: "심연 1층~").
+ * 심연에서 안 나오는 재료뿐이면 null — 카드는 그냥 '재료 필요'로 남는다.
+ */
+export function getForgeShortageSource(
+  materials: readonly ForgeMaterialProjection[],
+): { readonly materialId: string; readonly label: string } | null {
+  for (const material of materials) {
+    if (material.missing <= 0) continue;
+    const label = abyssMaterialSourceLabel(material.id);
+    if (label) return { materialId: material.id, label };
+  }
+  return null;
 }
 
 export function rarityHex(rarity: number): number {

@@ -116,6 +116,8 @@ const BAND_LOOT: AbyssLootEntry[][] = [
     { id: 'old_cloth',  chance: 0.55, min: 1, max: 2 },
     { id: 'herb',       chance: 0.50, min: 1, max: 2 },
     { id: 'iron_shard', chance: 0.40, min: 1, max: 2 },
+    // The starter blueprint 도깨비 방망이 (MQ-007) needs 3; it used to drop only from floor 26.
+    { id: 'dok_fragment', chance: 0.30, min: 1, max: 1 },
   ],
   // Band 1 (11-25)
   [
