@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { INVADER_DEFS } from './invaders';
-import { expectedHome, requiredDps, simulateHome, veteranHome } from './campaignPacing';
+import { expectedHome, requiredDps, simulateHome } from './campaignPacing';
 import { seededRand } from './daily';
 import { buildBandWaves } from './forecast';
 import { NOTORIETY_BANDS } from './notoriety';
@@ -19,9 +19,9 @@ const SEEDS = [1, 2, 3, 4, 5];
 describe('notoriety bands are held by the expected home of their reference stage', () => {
   for (const band of NOTORIETY_BANDS) {
     const stageNumber = TIER_REFERENCE_STAGE[band.tier - 1];
-    // Tiers 9–10 close with the campaign's phase bosses: like chapter 9 itself,
-    // they are tuned for a grown roster.
-    const home = band.tier >= 9 ? veteranHome(stageNumber) : expectedHome(stageNumber);
+    // Every tier, 9–10 included, is held by the expected home (tiers 9–10 used
+    // veteranHome until real combat showed it 5–7x stronger than any real roster, P5-q).
+    const home = expectedHome(stageNumber);
     for (const kind of ['raid', 'elite'] as const) {
       it(`tier ${band.tier} ${kind} vs stage-${stageNumber} home`, () => {
         for (const seed of SEEDS) {

@@ -62,16 +62,16 @@ export interface NotorietyBand {
   /**
    * 노련도 — 이 티어 토벌대 일반 무리(보스 호위 포함, 보스 제외)의 HP·심장부 피해 배율. 명성이 오를수록 노련한
    * 토벌대가 온다. 웨이브 위협 예산(`wavePeakThreat`) 안에서 쓰이므로 올리면 인원이 줄고 한 명이 단단해진다 — 예산을 1.5배
-   * 넘게 올리면 인원 상한이 먼저 차는 고티어에서 긴장을 만드는 레버다. 값은 시드 1~4 실전 측정(2026-10-01, 티어 1~8 최소
-   * 성장 홈 · 9~10 강한 로스터 홈)으로 정했다 — 티어 1~9 모두 4판 중 3판 이상 승 · 평균 HP 47~83%. 티어 10은 강한 로스터
-   * 홈을 예산·노련도 각 2배로도 흔들지 못해 그대로다(DUNGEON_EXPANSION_DESIGN.md P5-n).
+   * 넘게 올리면 인원 상한이 먼저 차는 고티어에서 긴장을 만드는 레버다. 값은 시드 1~4 실전 측정(최소 성장 홈)으로 정했다 —
+   * 4판 중 3판 이상 승 · 평균 HP 47~83%. 티어 9·10은 처음에 강한 로스터 홈(해금된 가장 센 공격수 31명, 기대 홈 DPS의
+   * 5~7배)에 맞췄다가 최소 성장 홈 기준으로 옮겼다 — 그 홈엔 티어 9가 4~6웨이브 벽, 티어 10이 HP 100%였다(P5-q).
    */
   readonly veteranMult: number;
   /**
    * 웨이브 위협 예산의 정점 — 웨이브가 요구하는 지속 DPS(`invaderThreshold` × 노련도의 합)의 최대치. 웨이브 w의 예산은
    * `bandWaveBudget`(정점 × 0.35 + 0.13·(w−1), 1에서 멈춤). 인원은 이 예산을 고른 유닛의 위협도로 나눠 정한다 — 센 유닛이면
    * 적게, 약한 유닛이면 많이. 값 = 예산 도입 전 생성기의 카드 평균 위협도(시드 400개) × 실전 측정 배율(최소 성장 홈 ·
-   * 티어 9·10 강한 로스터, 2026-10-01): 1.0·2.2·1.69·1.45·1.42·1.25·1.25·1.6·1.2·1.5. 위협이 고르게 퍼지자 같은 평균에서
+   * 2026-10-01): 1.0·2.2·1.69·1.45·1.42·1.25·1.25·1.6·0.9·1.2(티어 9·10은 P5-q 재보정). 위협이 고르게 퍼지자 같은 평균에서
    * 쉬워져서(새게 만들던 몰린 웨이브가 사라짐) 올렸다. 1.5배 넘게 올리면 고티어는 인원 상한이 먼저 찬다 — 그때는 노련도로.
    */
   readonly wavePeakThreat: number;
@@ -128,8 +128,8 @@ export const NOTORIETY_BANDS: readonly NotorietyBand[] = [
   { tier: 6,  pool: T6, lead: [...R5, ...R6], veteranMult: 1.75, wavePeakThreat: 949,  bosses: ['dragon_king'],                                                         lootMult: 2.0,  dungeonHp: 2900 },
   { tier: 7,  pool: T7, lead: [...R6, ...R7], veteranMult: 2.2, wavePeakThreat: 1183,  bosses: ['death_emissary'],                                                      lootMult: 2.4,  dungeonHp: 3300 },
   { tier: 8,  pool: T8, lead: [...R7, ...R8], veteranMult: 2.3, wavePeakThreat: 1875,  bosses: ['celestial_dragon'],                                                    lootMult: 2.9,  dungeonHp: 3800 },
-  { tier: 9,  pool: T9, lead: [...R8, ...R9], veteranMult: 2.4, wavePeakThreat: 2862,  bosses: ['three_god_destroyer'],                                                 lootMult: 3.5,  dungeonHp: 4400 },
-  { tier: 10, pool: T10, lead: [...R9, ...R10], veteranMult: 1.4, wavePeakThreat: 3080, bosses: ['eternal_emperor', 'three_god_destroyer', 'god_emperor', 'primordial_titan', 'void_sovereign'], lootMult: 4.5, dungeonHp: 5000 },
+  { tier: 9,  pool: T9, lead: [...R8, ...R9], veteranMult: 2.4, wavePeakThreat: 2150,  bosses: ['three_god_destroyer'],                                                 lootMult: 3.5,  dungeonHp: 4400 },
+  { tier: 10, pool: T10, lead: [...R9, ...R10], veteranMult: 2.4, wavePeakThreat: 2460, bosses: ['eternal_emperor', 'three_god_destroyer', 'god_emperor', 'primordial_titan', 'void_sovereign'], lootMult: 4.5, dungeonHp: 5000 },
 ];
 
 export function clampNotorietyTier(tier: number): number {

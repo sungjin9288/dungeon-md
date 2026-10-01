@@ -101,10 +101,12 @@ describe('campaign is winnable by the home dungeon', () => {
     expect(sim.winPct).toBeGreaterThanOrEqual(50);
   });
 
-  // Chapters 1–8 are the campaign body: a player who only ever cleared stages
-  // must get through. Chapter 9 is the endgame and is tuned for a grown roster
-  // (veteranHome): the weakest possible roster is *meant* to hit that wall.
-  const CAMPAIGN_BODY_LAST_STAGE = 80;
+  // The whole campaign is the body: a player who only ever cleared stages must
+  // get through. Chapter 9 used to be tuned for veteranHome (the 31 strongest
+  // unlocked attackers, 5–7x the expected home's DPS) and real combat showed even
+  // the lean floor cleared it at full HP, so it is now held to the same floor
+  // (CHAPTER_VETERAN_MULT[9], P5-q).
+  const CAMPAIGN_BODY_LAST_STAGE = 90;
 
   it(`every stage through ${CAMPAIGN_BODY_LAST_STAGE} clears from the lean floor with margin ≥ ${LEAN_MIN_MARGIN}`, () => {
     for (const row of campaignPacingTable(leanHome)) {

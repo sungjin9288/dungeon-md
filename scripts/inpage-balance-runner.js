@@ -168,10 +168,10 @@ window.__fmt = r => {
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
 };
 
-/** Queue every tier × seed (raid unless `cards` says otherwise). Tiers 9–10 use the veteran home. */
+/** Queue every tier × seed (raid unless `cards` says otherwise). Every tier uses the lean home (P5-q). */
 window.__balanceTiers = ({ tiers, seeds = [1, 2, 3, 4], cards = ['raid'], budgetScale, veteranScale }) => window.__balanceStart(
   tiers.flatMap(tier => seeds.flatMap(seed => cards.map(card => ({
-    kind: 'tier', tier, card, seed, home: tier >= 9 ? 'veteran' : 'lean',
+    kind: 'tier', tier, card, seed, home: 'lean',
     ...(budgetScale ? { budgetScale: typeof budgetScale === 'number' ? budgetScale : budgetScale[tier] } : {}),
     ...(veteranScale ? { veteranScale: typeof veteranScale === 'number' ? veteranScale : veteranScale[tier] } : {}),
   })))),

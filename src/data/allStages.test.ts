@@ -69,9 +69,9 @@ describe('장별 노련도', () => {
     }
   });
 
-  it('4~8장은 노련도를 받고(최소 성장 홈이 HP 100%로 지나가던 장), 1·3·9장은 받지 않는다', () => {
-    for (const chapter of [4, 5, 6, 7, 8]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeDefined();
-    for (const chapter of [1, 3, 9]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeUndefined();
+  it('4~9장은 노련도를 받고(최소 성장 홈이 HP 100%로 지나가던 장), 1·3장은 받지 않는다', () => {
+    for (const chapter of [4, 5, 6, 7, 8, 9]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeDefined();
+    for (const chapter of [1, 3]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeUndefined();
   });
 
   it('표에 없는 장은 그대로다', () => {
