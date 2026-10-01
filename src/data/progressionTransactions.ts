@@ -51,7 +51,7 @@ export function buildAchievementContext(state: GameState): AchievementContext {
     totalKills:        state.totalKills       ?? 0,
     totalGoldEarned:   state.totalGoldEarned  ?? 0,
     roomsBuilt:        state.roomsBuilt       ?? [],
-    bossesKilled:      state.bossesKilled     ?? [],
+    killsByType:       state.invaderKillCounts ?? {},
     endlessHighScore:  state.endlessHighScore ?? 0,
     consecutiveDays:   state.consecutiveDays  ?? 0,
     soulCrystals:      state.soulCrystals     ?? 0,
@@ -164,7 +164,7 @@ export function applyInvaderKillProgress(
   const killState: GameState = {
     ...state,
     totalKills:   (state.totalKills ?? 0) + 1,
-    bossesKilled: [...(state.bossesKilled ?? []), invaderType],
+    invaderKillCounts: { ...(state.invaderKillCounts ?? {}), [invaderType]: (state.invaderKillCounts?.[invaderType] ?? 0) + 1 },
   };
   const dailyResult = applyDailyChallengeTick(killState, 'kill_count');
 

@@ -17,7 +17,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     totalKills: 0,
     totalGoldEarned: 0,
     roomsBuilt: [],
-    bossesKilled: [],
+    invaderKillCounts: {},
     endlessHighScore: 0,
     consecutiveDays: 0,
     lastPlayDate: '',
@@ -50,7 +50,7 @@ describe('progressionTransactions — achievements', () => {
       totalKills: 7,
       totalGoldEarned: 200,
       roomsBuilt: ['trap_room'],
-      bossesKilled: ['dragon_king'],
+      invaderKillCounts: { dragon_king: 1 },
       endlessHighScore: 11,
       consecutiveDays: 3,
       soulCrystals: 9,
@@ -75,6 +75,7 @@ describe('progressionTransactions — achievements', () => {
     const context = buildAchievementContext(state);
 
     expect(context.totalKills).toBe(7);
+    expect(context.killsByType).toEqual({ dragon_king: 1 });
     expect(context.ownedMonsterCount).toBe(1);
     expect(context.ownedSkinCount).toBe(1);
     expect(context.questSkinsOwned).toBe(1);
@@ -219,7 +220,7 @@ describe('progressionTransactions — invader kill progress', () => {
     const state = makeState({
       totalKills: 2,
       totalGoldEarned: 30,
-      bossesKilled: ['knight'],
+      invaderKillCounts: { knight: 1 },
       gems: 5,
       dailyChallengeDate: '2000-01-01',
       dailyChallenges: {
@@ -233,7 +234,7 @@ describe('progressionTransactions — invader kill progress', () => {
     expect(result.state).not.toBe(state);
     expect(result.state.totalKills).toBe(3);
     expect(result.state.totalGoldEarned).toBe(30); // loot counts at settlement (§34)
-    expect(result.state.bossesKilled).toEqual(['knight', 'shaman']);
+    expect(result.state.invaderKillCounts).toEqual({ knight: 1, shaman: 1 });
     expect(result.state.dailyChallengeDate).toBe(getTodayString());
     expect(result.state.dailyChallenges['dc-old-0']).toBeUndefined();
     for (const challenge of getDailyChallenges().filter(ch => ch.objective.type === 'kill_count')) {
@@ -241,7 +242,7 @@ describe('progressionTransactions — invader kill progress', () => {
     }
     expect(state.totalKills).toBe(2);
     expect(state.totalGoldEarned).toBe(30);
-    expect(state.bossesKilled).toEqual(['knight']);
+    expect(state.invaderKillCounts).toEqual({ knight: 1 });
   });
 });
 

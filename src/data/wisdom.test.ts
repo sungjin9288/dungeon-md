@@ -165,6 +165,17 @@ describe('getUnlockedSlots', () => {
 // ─── Save / Load roundtrip ───────────────────────────────────────────────────
 
 describe('loadGameState / saveGameState', () => {
+  it('folds the old ever-growing bossesKilled array into per-type kill counts', () => {
+    const legacy = { ...loadGameState(), invaderKillCounts: { knight: 2 } } as Record<string, unknown>;
+    legacy.bossesKilled = ['knight', 'peasant', 'peasant', 'shaman'];
+    localStorage.setItem('dungeonGameState', JSON.stringify(legacy));
+    const loaded = loadGameState();
+    expect(loaded.invaderKillCounts).toEqual({ knight: 3, peasant: 2, shaman: 1 });
+    expect(loaded.bossesKilled).toBeUndefined();
+    saveGameState(loaded);
+    expect(localStorage.getItem('dungeonGameState')).not.toContain('bossesKilled');
+  });
+
   it('returns default state when nothing saved', () => {
     const state = loadGameState();
     expect(state.dmLevel).toBe(1);

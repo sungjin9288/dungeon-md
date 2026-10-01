@@ -39,7 +39,8 @@ export interface AchievementContext {
   totalKills:       number;
   totalGoldEarned:  number;
   roomsBuilt:       string[];
-  bossesKilled:     string[];
+  /** 침입자 종류별 처치 수(GameState.invaderKillCounts). */
+  killsByType:      Readonly<Record<string, number>>;
   endlessHighScore: number;
   consecutiveDays:  number;
   soulCrystals:     number;
@@ -117,7 +118,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'combat',
     target: 1,
     reward: { gems: 10 },
-    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'knight').length,
+    getProgress: ctx => ctx.killsByType.knight ?? 0,
   },
   {
     id: 'shaman_bane',
@@ -127,7 +128,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'combat',
     target: 50,
     reward: { gems: 10 },
-    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'shaman').length,
+    getProgress: ctx => ctx.killsByType.shaman ?? 0,
   },
   {
     id: 'void_vanquisher',
@@ -137,7 +138,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'combat',
     target: 1,
     reward: { gems: 10 },
-    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'void').length,
+    getProgress: ctx => ctx.killsByType.void ?? 0,
   },
   {
     id: 'undying_slayer',
@@ -147,7 +148,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'combat',
     target: 1,
     reward: { gems: 10 },
-    getProgress: ctx => ctx.bossesKilled.filter(t => t === 'undying').length,
+    getProgress: ctx => ctx.killsByType.undying ?? 0,
   },
 
   // ── Economy ───────────────────────────────────────────────────────────────
@@ -445,7 +446,7 @@ export const ACHIEVEMENT_DEFS: AchievementDef[] = [
     category: 'mastery',
     target: 6,
     reward: { gems: 20 },
-    getProgress: ctx => new Set(ctx.bossesKilled).size,
+    getProgress: ctx => Object.values(ctx.killsByType).filter(count => count > 0).length,
   },
 
   // ── Collection ─────────────────────────────────────────────────────────────

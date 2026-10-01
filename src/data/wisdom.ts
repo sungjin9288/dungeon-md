@@ -266,7 +266,13 @@ export interface GameState {
   totalKills:       number;
   totalGoldEarned:  number;
   roomsBuilt:       string[];   // room type ids placed (duplicates allowed)
-  bossesKilled:     string[];   // invader type ids (e.g. 'knight')
+  /**
+   * 침입자 종류별 처치 수(업적용). 예전 `bossesKilled`는 처치마다 종류 id를 배열에 덧붙여 끝없이 자랐다 —
+   * 처치 9천 번이면 문자열 9천 개, 처치마다 저장 전체를 읽고 써서 플레이할수록 처치 처리가 무거워졌다(2026-10-01).
+   */
+  invaderKillCounts: Record<string, number>;
+  /** @deprecated 옛 세이브 필드 — 불러오기·복원 때 `invaderKillCounts`로 합쳐지고 사라진다. */
+  bossesKilled?:    string[];
   // Achievements
   achievements: Record<string, AchievementEntry>;
   // Streak tracking
@@ -383,7 +389,7 @@ function defaultGameState(): GameState {
     totalKills:       0,
     totalGoldEarned:  0,
     roomsBuilt:       [],
-    bossesKilled:     [],
+    invaderKillCounts: {},
     achievements:     {},
     consecutiveDays:   0,
     lastPlayDate:      '',
@@ -453,6 +459,15 @@ function defaultGameState(): GameState {
 }
 
 /** Migrate a raw saved DungeonSlot (old or new format) to the current schema. */
+/** 옛 `bossesKilled` 배열을 종류별 처치 수에 합친다. 결과에는 `bossesKilled`가 없다(undefined로 덮어 지운다). */
+export function foldLegacyKills(
+  saved: Readonly<Partial<Pick<GameState, 'invaderKillCounts' | 'bossesKilled'>>>,
+): Pick<GameState, 'invaderKillCounts' | 'bossesKilled'> {
+  const counts: Record<string, number> = { ...(saved.invaderKillCounts ?? {}) };
+  for (const type of saved.bossesKilled ?? []) counts[type] = (counts[type] ?? 0) + 1;
+  return { invaderKillCounts: counts, bossesKilled: undefined };
+}
+
 function migrateDungeonSlot(raw: Record<string, unknown>): DungeonSlot {
   // Old format had monsterId / trapId / trapId2
   if (!Array.isArray(raw['monsterIds'])) {
@@ -510,6 +525,7 @@ export function loadGameState(): GameState {
         dungeonSlots,
         // A save from before the corridor dungeon has no plan: never inherit the new-game plan.
         dungeonPlan:       saved.dungeonPlan,
+        ...foldLegacyKills(saved),
       };
       if (merged.dungeonPlan) return merged;
       backupPrePlanSave(raw);
@@ -591,6 +607,7 @@ export function importGameState(encoded: string): { success: boolean; error?: st
       abyss:         { ...DEFAULT_ABYSS_STATE, ...(parsed.abyss ?? {}) },
       dungeonSlots,
       dungeonPlan:   parsed.dungeonPlan,
+      ...foldLegacyKills(parsed),
     };
     // Old flat exports only contain GameState progress. Replace the destination's
     // campaign too; retaining it would mix two different players' progression.

@@ -21,7 +21,7 @@ const emptyCtx: AchievementContext = {
   totalKills:        0,
   totalGoldEarned:   0,
   roomsBuilt:        [],
-  bossesKilled:      [],
+  killsByType:       {},
   endlessHighScore:  0,
   consecutiveDays:   0,
   soulCrystals:      0,
@@ -206,9 +206,9 @@ describe('getProgress — combat', () => {
     expect(def.getProgress(makeCtx({ totalKills: 1 }))).toBe(1);
   });
 
-  it('kill_all_types: counts unique types in bossesKilled', () => {
+  it('kill_all_types: counts killed invader types', () => {
     const def = getAchievementDef('kill_all_types')!;
-    const ctx = makeCtx({ bossesKilled: ['knight', 'shaman', 'void', 'knight', 'undying'] });
+    const ctx = makeCtx({ killsByType: { knight: 2, shaman: 1, void: 1, undying: 1, peasant: 0 } });
     // 4 unique types
     expect(def.getProgress(ctx)).toBe(4);
   });
@@ -486,30 +486,29 @@ describe('getProgress — combat (boss kills)', () => {
     expect(def.getProgress(emptyCtx)).toBe(0);
   });
 
-  it('boss_slayer: 1 when bossesKilled contains "knight"', () => {
+  it('boss_slayer: knight kill count', () => {
     const def = getAchievementDef('boss_slayer')!;
-    expect(def.getProgress(makeCtx({ bossesKilled: ['knight'] }))).toBe(1);
+    expect(def.getProgress(makeCtx({ killsByType: { knight: 1 } }))).toBe(1);
   });
 
-  it('shaman_bane: counts shaman entries in bossesKilled', () => {
+  it('shaman_bane: counts shaman kills', () => {
     const def = getAchievementDef('shaman_bane')!;
-    const kills = Array.from({ length: 35 }, () => 'shaman');
-    expect(def.getProgress(makeCtx({ bossesKilled: kills }))).toBe(35);
+    expect(def.getProgress(makeCtx({ killsByType: { shaman: 35 } }))).toBe(35);
   });
 
   it('shaman_bane: target is 50', () => {
     expect(getAchievementDef('shaman_bane')!.target).toBe(50);
   });
 
-  it('void_vanquisher: 1 when bossesKilled contains "void"', () => {
+  it('void_vanquisher: void kill count', () => {
     const def = getAchievementDef('void_vanquisher')!;
-    expect(def.getProgress(makeCtx({ bossesKilled: ['knight', 'void'] }))).toBe(1);
-    expect(def.getProgress(makeCtx({ bossesKilled: ['knight'] }))).toBe(0);
+    expect(def.getProgress(makeCtx({ killsByType: { knight: 1, void: 1 } }))).toBe(1);
+    expect(def.getProgress(makeCtx({ killsByType: { knight: 1 } }))).toBe(0);
   });
 
-  it('undying_slayer: 1 when bossesKilled contains "undying"', () => {
+  it('undying_slayer: undying kill count', () => {
     const def = getAchievementDef('undying_slayer')!;
-    expect(def.getProgress(makeCtx({ bossesKilled: ['undying'] }))).toBe(1);
+    expect(def.getProgress(makeCtx({ killsByType: { undying: 1 } }))).toBe(1);
     expect(def.getProgress(emptyCtx)).toBe(0);
   });
 
@@ -586,11 +585,10 @@ describe('getProgress — mastery (extended)', () => {
     expect(def.getProgress(makeCtx({ consecutiveDays: 100 }))).toBe(30);
   });
 
-  it('kill_all_types: counts unique types in bossesKilled (Set size)', () => {
+  it('kill_all_types: counts distinct killed types', () => {
     const def = getAchievementDef('kill_all_types')!;
     expect(def.target).toBe(6);
-    const kills = ['knight', 'shaman', 'void', 'undying', 'knight', 'shaman'];
-    expect(def.getProgress(makeCtx({ bossesKilled: kills }))).toBe(4);
+    expect(def.getProgress(makeCtx({ killsByType: { knight: 2, shaman: 2, void: 1, undying: 1 } }))).toBe(4);
   });
 
   it('story_complete: 1 when stageProgress[71].bestStars > 0', () => {

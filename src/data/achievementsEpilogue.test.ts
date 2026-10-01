@@ -13,7 +13,7 @@ const emptyCtx: AchievementContext = {
   totalKills:        0,
   totalGoldEarned:   0,
   roomsBuilt:        [],
-  bossesKilled:      [],
+  killsByType:       {},
   endlessHighScore:  0,
   consecutiveDays:   0,
   soulCrystals:      0,
