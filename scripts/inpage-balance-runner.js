@@ -48,7 +48,9 @@ async function runBattle(spec) {
       ...wave,
       invaders: wave.invaders.map(group => (group.isBoss ? group : { ...group, count: Math.max(1, Math.round(group.count * spec.headScale)) })),
     })) : built;
-    stageConfig = { waves, dungeonHp: band.dungeonHp };
+    // Same chapter the live forecast passes (ForecastTray: chapter = bandTier) — rooms gated by
+    // chapter (death messenger, armory, spirit altar…) only run from Ch3/Ch4. spec.chapter overrides.
+    stageConfig = { waves, dungeonHp: band.dungeonHp, chapter: spec.chapter ?? band.tier };
     simStage = { id: 0, chapter: band.tier, waves, dungeonHp: band.dungeonHp };
   } else {
     stageConfig = { stageNumber: spec.stageNumber };
@@ -62,6 +64,11 @@ async function runBattle(spec) {
     const { withChapterVeteran } = await import('/src/data/allStages.ts');
     const bare = { ...stageEntry, waves: stageEntry.waves.map(w => ({ ...w, invaders: w.invaders.map(g => { const { veteranMult: _v, ...rest } = g; return rest; }) })) };
     stageEntry.waves = withChapterVeteran(bare, spec.stageVeteran).waves;
+  }
+  // Calibration only (spec.chapter on a stage): run the stage's own waves inline under another chapter.
+  if (spec.kind === 'stage' && spec.chapter) {
+    const entry = ALL_STAGES.find(item => item.id === spec.stageNumber);
+    stageConfig = { waves: entry.waves, dungeonHp: entry.dungeonHp, chapter: spec.chapter };
   }
   const sim = pacing.simulateHome(home, simStage);
   // Calibration only (spec.hpScale): raise every invader's HP for this battle, restored after it.
@@ -157,7 +164,7 @@ window.__balanceStart = specs => {
 };
 window.__fmt = r => {
   if (r.error) return JSON.stringify(r);
-  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.stageVeteran ? ` v${r.spec.stageVeteran}` : ''}`;
+  const head = r.spec.kind === 'tier' ? `T${r.spec.tier}${r.spec.card[0]} s${r.spec.seed ?? 1}${r.spec.headScale ? ` x${r.spec.headScale}` : ''}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.dmgScale ? ` dmg${r.spec.dmgScale}` : ''}${r.spec.budgetScale ? ` b${r.spec.budgetScale}` : ''}${r.spec.veteranScale ? ` v${r.spec.veteranScale}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}` : `S${r.spec.stageNumber} ${r.spec.home}${r.spec.hpScale ? ` hp${r.spec.hpScale}` : ''}${r.spec.stageVeteran ? ` v${r.spec.stageVeteran}` : ''}${r.spec.chapter ? ` c${r.spec.chapter}` : ''}`;
   return `${head} → ${r.outcome} ${r.hpPct}% ${r.waves}${r.stalls ? ` st${r.stalls}` : ''}`;
 };
 

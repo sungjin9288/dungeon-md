@@ -52,6 +52,28 @@ describe('장별 노련도', () => {
     }
   });
 
+  it('표의 모든 장은 첫·끝 스테이지가 경사 양 끝이고, 그 사이는 두 값 안에 있으며 보스는 빠진다', () => {
+    for (const [chapterKey, entry] of Object.entries(CHAPTER_VETERAN_MULT)) {
+      const [first, last] = typeof entry === 'number' ? [entry, entry] : entry!;
+      const stages = ALL_STAGES.filter(stage => stage.chapter === Number(chapterKey));
+      const mults = stages.map(stage => chapterVeteranFor(stage, ALL_STAGES));
+      expect(mults[0], `chapter ${chapterKey} first`).toBe(first);
+      expect(mults[mults.length - 1], `chapter ${chapterKey} last`).toBe(last);
+      for (const [i, stage] of stages.entries()) {
+        expect(mults[i]).toBeGreaterThanOrEqual(Math.min(first, last));
+        expect(mults[i]).toBeLessThanOrEqual(Math.max(first, last));
+        for (const wave of stage.waves) for (const group of wave.invaders) {
+          if (group.isBoss) expect(group.veteranMult, `stage ${stage.id} boss ${group.type}`).toBeUndefined();
+        }
+      }
+    }
+  });
+
+  it('4~8장은 노련도를 받고(최소 성장 홈이 HP 100%로 지나가던 장), 1·3·9장은 받지 않는다', () => {
+    for (const chapter of [4, 5, 6, 7, 8]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeDefined();
+    for (const chapter of [1, 3, 9]) expect(CHAPTER_VETERAN_MULT[chapter], `chapter ${chapter}`).toBeUndefined();
+  });
+
   it('표에 없는 장은 그대로다', () => {
     for (const stage of ALL_STAGES.filter(s => CHAPTER_VETERAN_MULT[s.chapter] === undefined)) {
       for (const wave of stage.waves) for (const group of wave.invaders) expect(group.veteranMult).toBeUndefined();
