@@ -411,6 +411,8 @@ export function resolveAttack(
   const combo = target.comboCount(now);
   const comboMult = comboMultiplier(combo);
   target.takeDamage(finalDmg * comboMult * equipmentBossDamageMult(eqStats, target.def));
+  // A mirror reflect inside that hit can end the battle and clear the field (Invader.takeDamage).
+  if (!target.scene) return true;
   equipmentEffects();
   // Teach the combo: announce only when it escalates, above the invader.
   if (target.noteComboAnnounce(combo)) {

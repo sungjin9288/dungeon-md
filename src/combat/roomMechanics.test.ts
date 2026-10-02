@@ -28,6 +28,7 @@ describe('runExtraMonsterAttacks', () => {
       effectiveCellSize: cellSize,
       activeInvaders: [{
         active: true,
+        scene: {},
         isInvisible: false,
         x: 0,
         y: GRID_Y + cellSize / 2,
@@ -62,7 +63,7 @@ describe('equipment on an extra guardian', () => {
     const ctx = {
       roomGrid: [[data], [null], [null]], rooms: [[{ x: 0 }]],
       effectiveCols: 1, effectiveCellSize: 40,
-      activeInvaders: [{ active: true, x: 0, y: GRID_Y + 20, def: { isBoss },
+      activeInvaders: [{ active: true, scene: {}, x: 0, y: GRID_Y + 20, def: { isBoss },
         comboCount: () => 0, takeDamage }],
       extraMonsterCooldowns: new Map(), equipmentMap: new Map([
         ['village_archer', getEquipmentStats('eq_boss_amulet')],
@@ -79,7 +80,7 @@ describe('equipment on an extra guardian', () => {
       monsterSlots: ['dokkaebi_warrior', 'village_archer'] } as RoomData;
     const ctx = {
       roomGrid: [[data], [null], [null]], rooms: [[{ x: 0 }]], effectiveCols: 1, effectiveCellSize: 40,
-      activeInvaders: [{ active: true, x: 0, y: GRID_Y + 20, comboCount: () => 0, takeDamage }],
+      activeInvaders: [{ active: true, scene: {}, x: 0, y: GRID_Y + 20, comboCount: () => 0, takeDamage }],
       extraMonsterCooldowns: new Map(), equipmentMap: new Map([['village_archer', getEquipmentStats('eq_moonstone_pendant')]]),
       speedMult, synergyAttackIntervalMult: .8 / 1.15, tauntBoostActiveUntil: 0,
       hasDivineTerritory: () => false, flashRoom: () => {},
@@ -89,5 +90,31 @@ describe('equipment on an extra guardian', () => {
     expect(takeDamage).not.toHaveBeenCalled();
     runExtraMonsterAttacks(ctx, boundary + .01);
     expect(takeDamage).toHaveBeenCalledOnce();
+  });
+});
+
+describe('a hit that ends the battle', () => {
+  // A mirror knight reflects 30% of each hit to the heart. When the reflect empties it,
+  // handleMirrorReflect fails the battle on the spot and destroys every invader — inside the
+  // attacker's damage loop. The loop then drew float text through the dead target's scene
+  // (undefined) and threw out of the update step (tier-6 forecast, 2 of 3 runs, 2026-10-02).
+  it('stops the extra-slot loop once the target has left the scene', () => {
+    const flashRoom = vi.fn();
+    const target: { active: boolean; scene: object | undefined; x: number; y: number; comboCount: () => number; takeDamage: () => void } = {
+      active: true, scene: {}, x: 0, y: GRID_Y + 20, comboCount: () => 0,
+      takeDamage: vi.fn(() => { target.scene = undefined; }),
+    };
+    const data = { type: 'guardian', level: 1, roomTypeDmgMult: 1,
+      monsterSlots: ['village_archer', 'dokkaebi_warrior', 'dokkaebi_warrior'] } as RoomData;
+    const ctx = {
+      roomGrid: [[data], [null], [null]], rooms: [[{ x: 0 }]], effectiveCols: 1, effectiveCellSize: 40,
+      activeInvaders: [target],
+      extraMonsterCooldowns: new Map(), equipmentMap: new Map([['dokkaebi_warrior', getEquipmentStats('eq_dragon_fang')]]),
+      speedMult: 1, tauntBoostActiveUntil: 0,
+      hasDivineTerritory: () => false, flashRoom,
+    } as unknown as RoomMechanicsContext;
+    expect(() => runExtraMonsterAttacks(ctx, 10000)).not.toThrow();
+    expect(target.takeDamage).toHaveBeenCalledOnce();
+    expect(flashRoom).not.toHaveBeenCalled();
   });
 });

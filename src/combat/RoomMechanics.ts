@@ -485,6 +485,8 @@ export function runExtraMonsterAttacks(ctx: RoomMechanicsContext, now: number): 
           data.type === 'trap' || data.type === 'trap_corridor', mDef.passive === 'GHOST_ARROW');
         if (dmg <= 0) continue;
         target.takeDamage(dmg);
+        // A mirror reflect inside that hit can end the battle and clear the field — stop attacking.
+        if (!target.scene) return;
         applyEquipmentBasicEffects(eqStats, mId, ctx.equipmentAttackCounts, mDef, data.type,
           equipmentBaseDamage, target, ctx.activeInvaders, now, { roomLevel: data.level, pierceMagic });
         ctx.flashRoom(row, col);

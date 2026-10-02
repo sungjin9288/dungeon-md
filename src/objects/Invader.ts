@@ -524,7 +524,9 @@ export class Invader extends Phaser.GameObjects.PathFollower {
   // ─── Damage ───────────────────────────────────────────────────────────────
 
   takeDamage(amount: number, isMagic = false): void {
-    if (this.isDead) return;
+    // destroy() is not die(): an invader removed from the field (a defeat clears it) keeps
+    // isDead false but loses its scene, and AoE loops over a copied list still reach it.
+    if (this.isDead || !this.scene) return;
     // STUN_IMMUNE: only takes damage while stunned
     if (this.isDamageImmune && !this.isStunned) {
       return;  // damage blocked — caller must show immune visual
@@ -533,6 +535,9 @@ export class Invader extends Phaser.GameObjects.PathFollower {
     if (this.hasMirrorShield && this.mirrorHitsRemaining > 0) {
       this.mirrorHitsRemaining--;
       this.scene.events.emit('mirrorReflect', this, Math.round(amount * 0.3));
+      // The reflect can be the hit that empties the heart: handleMirrorReflect then fails the
+      // battle on the spot and destroys every invader, this one included.
+      if (!this.scene) return;
       if (this.mirrorHitsRemaining === 0) {
         this.hasMirrorShield = false;
         this.mirrorGfx?.destroy();
