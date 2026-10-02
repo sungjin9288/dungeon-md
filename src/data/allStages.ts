@@ -32,11 +32,12 @@ import { highestClearedStage } from './stageProgress';
  * 시뮬 가드(campaignPacing.test — 기대 홈 HP 60%↑, 피날레 ≥ 첫 판)가 묶는다: 72의 보스 아닌 천룡이 2.4배부터 샌다.
  * 9장: 강한 로스터 홈(해금된 가장 센 공격수 31명 — 기대 홈 DPS의 5~7배)에 맞춰 둔 장이라 최소 성장 홈마저 90까지 HP 100%로
  * 이겼다. 다른 장처럼 최소 성장 홈 절벽 아래로(81: 2.1배 79 · 2.5배 13, 90: 1.7배 57 · 2.0배 패배). 측정은 설계 문서 P5-p·P5-q.
+ * 5장 끝은 측정 도구 수정(P5-s) 뒤 52가 5.0배에서 4판 중 3판 패배라 4.6으로 낮췄다(77·85%).
  */
 export const CHAPTER_VETERAN_MULT: Readonly<Partial<Record<number, number | readonly [number, number]>>> = {
   2: [0.58, 0.84],
   4: [3.9, 4.4],
-  5: [4.5, 5.0],
+  5: [4.5, 4.6],
   6: 3.0,
   7: [2.6, 2.3],
   8: [3.5, 2.4],

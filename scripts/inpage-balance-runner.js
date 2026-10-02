@@ -111,12 +111,37 @@ async function runBattle(spec) {
   game.registry.remove('returnTo');
   game.registry.remove('abyssPendingFloor');
   game.registry.set('stageConfig', stageConfig);
+  // Clock modes (P5-s). Default 'virtual': window.advanceTime steps the game on a virtual clock that runs
+  // far ahead of real time, and Phaser's own loop is put to sleep for the battle — otherwise it keeps
+  // calling game.step with the REAL time in between and Clock.update sets scene.time.now to it, so the
+  // battle clock jumps back and forth. 'mixed' keeps the real loop running (the old behaviour).
+  // 'realtime' plays the battle on the real loop at 3x with no stepping at all — slow, but it is what a
+  // player gets, so it is the reference the other two are checked against.
+  const clock = spec.clock ?? 'virtual';
+  const loop = game.loop;
+  const loopWasRunning = loop.running;
+  if (clock === 'virtual') loop.sleep();
+  else if (!loop.running) loop.wake();
   game.scene.start('DungeonScene');
-  window.advanceTime(2000);
+  if (clock === 'realtime') await new Promise(resolve => setTimeout(resolve, 700));
+  else window.advanceTime(2000);
   if (game.scene.isActive('DungeonHomeScene')) game.scene.stop('DungeonHomeScene');
   const ds = game.scene.getScene('DungeonScene');
   const yieldToTimers = () => new Promise(resolve => setTimeout(resolve, 0));
-  const pump = ms => { let left = ms; while (left > 0) { const chunk = Math.min(10000, left); window.advanceTime(chunk); left -= chunk; } };
+  const pump = clock === 'realtime'
+    ? ms => new Promise(resolve => setTimeout(resolve, ms / 3))
+    : async ms => {
+      // 250 ms chunks: a boss kill dips the clock to 0.15x and ImpactVfx restores it with a REAL 160 ms
+      // window.setTimeout, which cannot fire inside a synchronous pump — so the dip used to last the whole
+      // 2.5 s slice. Restore it after the chunk it started in, about as long as a player sees it.
+      let left = ms;
+      while (left > 0) {
+        const chunk = Math.min(250, left);
+        window.advanceTime(chunk);
+        left -= chunk;
+        if (ds.time.timeScale !== ds.speedMult) { ds.time.timeScale = ds.speedMult; ds.tweens.timeScale = ds.speedMult; }
+      }
+    };
   ds.setSpeed(3);
   const budget = spec.budget ?? 160;
   let slices = 0;
@@ -126,17 +151,17 @@ async function runBattle(spec) {
     if (ds.wave >= ds.maxWave && !ds.waveActive) break;
     if (!ds.waveActive) {
       ds.resultOverlay?.destroy(); ds.resultOverlay = undefined; ds.prepActive = false;
-      ds.startWave(); pump(1000); await yieldToTimers();
+      ds.startWave(); await pump(1000); await yieldToTimers();
     }
     let idle = 0;
     while (slices < budget) {
-      pump(2500); slices++;
+      await pump(2500); slices++;
       await yieldToTimers();
       const alive = (ds.activeInvaders ?? []).filter(invader => invader.active).length;
       const queued = (ds.spawnQueue ?? []).length;
       if ((!ds.waveActive && queued === 0 && alive === 0) || ds.dungeonHp <= 0) break;
       idle = ds.waveActive && alive === 0 && queued === 0 ? idle + 1 : 0;
-      if (idle >= 2) { stalls++; ds.checkWaveEnd?.(); pump(500); if (ds.waveActive) ds.waveActive = false; break; }
+      if (idle >= 2) { stalls++; ds.checkWaveEnd?.(); await pump(500); if (ds.waveActive) ds.waveActive = false; break; }
     }
     if (ds.dungeonHp <= 0) break;
   }
@@ -147,6 +172,7 @@ async function runBattle(spec) {
     waves: `${ds.wave}/${ds.maxWave}`, stalls, slices,
   };
   game.scene.getScenes(true).forEach(scene => game.scene.stop(scene.scene.key));
+  if (clock === 'virtual' && loopWasRunning) loop.wake();
   return result;
   } finally {
     if (stageEntry && originalWaves) stageEntry.waves = originalWaves;
@@ -165,7 +191,7 @@ window.__balanceStart = specs => {
     while (state.queue.length) {
       const spec = state.queue.shift();
       try { state.results.push(await runBattle(spec)); }
-      catch (error) { state.results.push({ spec, error: String(error) }); }
+      catch (error) { state.results.push({ spec, error: String(error), stack: error?.stack }); }
     }
     state.running = false;
   })();

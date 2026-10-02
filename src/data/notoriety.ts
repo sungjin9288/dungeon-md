@@ -71,8 +71,9 @@ export interface NotorietyBand {
    * 웨이브 위협 예산의 정점 — 웨이브가 요구하는 지속 DPS(`invaderThreshold` × 노련도의 합)의 최대치. 웨이브 w의 예산은
    * `bandWaveBudget`(정점 × 0.35 + 0.13·(w−1), 1에서 멈춤). 인원은 이 예산을 고른 유닛의 위협도로 나눠 정한다 — 센 유닛이면
    * 적게, 약한 유닛이면 많이. 값 = 예산 도입 전 생성기의 카드 평균 위협도(시드 400개) × 실전 측정 배율(최소 성장 홈 ·
-   * 2026-10-01): 1.0·2.2·1.69·1.45·1.42·1.25·1.25·1.6·0.9·1.2(티어 9·10은 P5-q 재보정). 위협이 고르게 퍼지자 같은 평균에서
-   * 쉬워져서(새게 만들던 몰린 웨이브가 사라짐) 올렸다. 1.5배 넘게 올리면 고티어는 인원 상한이 먼저 찬다 — 그때는 노련도로.
+   * 2026-10-01): 0.85·2.11·1.27·1.31·1.42·1.25·1.25·1.54·0.77·1.2(티어 9·10은 P5-q, 1~4·8·9는 P5-s 측정 도구
+   * 수정 후 재보정 — 2·8은 사다리 단조를 지키려 조금 낮춤). 위협이 고르게 퍼지자 같은 평균에서 쉬워져서(새게 만들던 몰린 웨이브가 사라짐) 올렸다. 1.5배 넘게 올리면
+   * 고티어는 인원 상한이 먼저 찬다 — 그때는 노련도로.
    */
   readonly wavePeakThreat: number;
   /** Boss-tier invaders an elite expedition of this tier closes with. */
@@ -120,15 +121,15 @@ export const NOTORIETY_BANDS: readonly NotorietyBand[] = [
   // 53% lighter at tier 5 than tier 4 and 37% lighter at tier 8 than tier 7 —
   // so raising 명성, which the player does by explicit approval, made the elite
   // card EASIER at two rungs. notorietyBands.test.ts now guards monotonicity.
-  { tier: 1,  pool: T1, lead: ['peasant'], veteranMult: 1.0, wavePeakThreat: 52,  bosses: ['knight'],                                                              lootMult: 1.0,  dungeonHp: 1500 },
-  { tier: 2,  pool: T2, lead: T2, veteranMult: 1.0, wavePeakThreat: 266,  bosses: ['knight'],                                                              lootMult: 1.15, dungeonHp: 1700 },
-  { tier: 3,  pool: T3, lead: [...R2, ...R3], veteranMult: 2.6, wavePeakThreat: 348,  bosses: ['iron_golem'],                                                          lootMult: 1.3,  dungeonHp: 1900 },
-  { tier: 4,  pool: T4, lead: [...R3, ...R4], veteranMult: 1.25, wavePeakThreat: 425,  bosses: ['fox_queen'],                                                           lootMult: 1.5,  dungeonHp: 2200 },
+  { tier: 1,  pool: T1, lead: ['peasant'], veteranMult: 1.0, wavePeakThreat: 44,  bosses: ['knight'],                                                              lootMult: 1.0,  dungeonHp: 1500 },
+  { tier: 2,  pool: T2, lead: T2, veteranMult: 1.0, wavePeakThreat: 255,  bosses: ['knight'],                                                              lootMult: 1.15, dungeonHp: 1700 },
+  { tier: 3,  pool: T3, lead: [...R2, ...R3], veteranMult: 2.3, wavePeakThreat: 261,  bosses: ['iron_golem'],                                                          lootMult: 1.3,  dungeonHp: 1900 },
+  { tier: 4,  pool: T4, lead: [...R3, ...R4], veteranMult: 1.25, wavePeakThreat: 383,  bosses: ['fox_queen'],                                                           lootMult: 1.5,  dungeonHp: 2200 },
   { tier: 5,  pool: T5, lead: [...R4, ...R5], veteranMult: 1.0, wavePeakThreat: 430,  bosses: ['abyss_reaver'],                                                         lootMult: 1.75, dungeonHp: 2500 },
   { tier: 6,  pool: T6, lead: [...R5, ...R6], veteranMult: 1.75, wavePeakThreat: 949,  bosses: ['dragon_king'],                                                         lootMult: 2.0,  dungeonHp: 2900 },
   { tier: 7,  pool: T7, lead: [...R6, ...R7], veteranMult: 2.2, wavePeakThreat: 1183,  bosses: ['death_emissary'],                                                      lootMult: 2.4,  dungeonHp: 3300 },
-  { tier: 8,  pool: T8, lead: [...R7, ...R8], veteranMult: 2.3, wavePeakThreat: 1875,  bosses: ['celestial_dragon'],                                                    lootMult: 2.9,  dungeonHp: 3800 },
-  { tier: 9,  pool: T9, lead: [...R8, ...R9], veteranMult: 2.4, wavePeakThreat: 2150,  bosses: ['three_god_destroyer'],                                                 lootMult: 3.5,  dungeonHp: 4400 },
+  { tier: 8,  pool: T8, lead: [...R7, ...R8], veteranMult: 2.3, wavePeakThreat: 1800,  bosses: ['celestial_dragon'],                                                    lootMult: 2.9,  dungeonHp: 3800 },
+  { tier: 9,  pool: T9, lead: [...R8, ...R9], veteranMult: 2.4, wavePeakThreat: 1830,  bosses: ['three_god_destroyer'],                                                 lootMult: 3.5,  dungeonHp: 4400 },
   { tier: 10, pool: T10, lead: [...R9, ...R10], veteranMult: 2.4, wavePeakThreat: 2460, bosses: ['eternal_emperor', 'three_god_destroyer', 'god_emperor', 'primordial_titan', 'void_sovereign'], lootMult: 4.5, dungeonHp: 5000 },
 ];
 
